@@ -153,29 +153,28 @@ export function PipelineView({
     <div className="space-y-4">
       {/* Getting Started — only when ALL coaches are new leads */}
       {allNewLeads && (
-        <div className={cn(
-          'p-6 rounded-2xl text-center',
-          'glass-standard'
-        )}>
-          <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-            <IconRocket size={28} className="text-primary-600" />
+        <div className="glass-standard p-6 rounded-2xl text-center">
+          <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
+            <IconRocket size={24} className="text-primary-600" />
           </div>
-          <h3 className="text-lg font-bold text-warm-900 mb-2">Ready to start your pipeline</h3>
+          <h3 className="text-base font-semibold text-warm-900 mb-1.5 tracking-tight">Ready to start your pipeline</h3>
           <p className="text-sm text-warm-500 max-w-md mx-auto mb-4">
             All {stats.total} coaches are new leads. Start by contacting your top prospects and moving them through the pipeline.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-2">
             <button
+              type="button"
               onClick={() => handleResearchNext(10)}
               disabled={processing}
-              className="px-4 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors text-sm shadow-sm shadow-primary-500/20 disabled:opacity-50"
             >
-              <span className="flex items-center gap-2"><IconZap size={16} /> Research Top 10</span>
+              <IconZap size={14} /> Research Top 10
             </button>
             <button
+              type="button"
               onClick={() => handleResearchNext(25)}
               disabled={processing}
-              className="px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
+              className="px-4 py-2 bg-white/60 border border-warm-200/60 text-warm-700 rounded-xl font-medium hover:bg-white/80 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
             </button>
@@ -184,23 +183,23 @@ export function PipelineView({
       )}
 
       {/* Pipeline Funnel Summary — pill-shaped stages */}
-      <div className="flex items-center gap-2 p-3 bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-x-auto scrollbar-hide">
+      <div className="glass-standard flex items-center gap-2 p-3 rounded-2xl overflow-x-auto scrollbar-hide">
         {pipelineStages.map((stage, index) => {
           const count = coachesByStage[stage.id]?.length || 0;
           return (
             <div key={stage.id} className="flex items-center flex-1 min-w-0">
               <div className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-full transition-all w-full',
+                'flex items-center gap-2 px-3 py-2 rounded-full transition-colors w-full',
                 count > 0 ? `${stage.bgColor} ${stage.color}` : 'bg-warm-50 text-warm-400'
               )}>
-                <span className="text-sm flex-shrink-0">{stage.icon}</span>
+                <span className="flex-shrink-0">{stage.icon}</span>
                 <div className="min-w-0">
-                  <div className="text-label font-medium truncate">{stage.label}</div>
+                  <div className="text-xs font-medium truncate">{stage.label}</div>
                   <div className="text-base font-bold tabular-nums leading-tight">{count}</div>
                 </div>
               </div>
               {index < pipelineStages.length - 1 && (
-                <IconArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" />
+                <IconArrowRight size={14} className="mx-1 text-warm-300 flex-shrink-0" aria-hidden="true" />
               )}
             </div>
           );
@@ -226,38 +225,37 @@ export function PipelineView({
               onDragLeave={() => setDropTarget(null)}
               onDrop={(e) => handleDrop(e, stage)}
             >
-              {/* Column Header — premium glass with status color accent */}
-              <div className={cn(
-                'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-hidden mb-2',
-              )}>
-                {/* Status color accent bar */}
-                <div className={cn('h-1', stageColors?.dot || 'bg-warm-300')} />
-                <div className="px-3 py-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="flex-shrink-0">{stage.icon}</span>
-                      <h3 className="text-sm font-semibold text-warm-900 truncate">{stage.label}</h3>
-                    </div>
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
-                      columnCoaches.length > 0
-                        ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
-                        : 'bg-warm-100 text-warm-400'
-                    )}>
-                      {columnCoaches.length}
-                    </span>
+              {/* Column Header — glass-standard with status color accent */}
+              <div className="glass-standard rounded-2xl overflow-hidden mb-2">
+                <div className={cn('h-1', stageColors?.dot || 'bg-warm-300')} aria-hidden="true" />
+                <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="flex-shrink-0" aria-hidden="true">{stage.icon}</span>
+                    <h3 className="text-sm font-semibold text-warm-900 truncate tracking-tight">{stage.label}</h3>
                   </div>
+                  <span className={cn(
+                    'px-2 py-0.5 rounded-full text-xs font-medium tabular-nums flex-shrink-0',
+                    columnCoaches.length > 0
+                      ? `${stageColors?.bg || 'bg-warm-50'} ${stageColors?.text || 'text-warm-700'}`
+                      : 'bg-warm-100 text-warm-400'
+                  )}>
+                    {columnCoaches.length}
+                  </span>
                 </div>
               </div>
 
               {/* Cards Container */}
-              <div className={cn(
-                'rounded-2xl p-2 space-y-2 flex-1 overflow-y-auto transition-all',
-                'bg-warm-50/30 border border-warm-100/30',
-                isDropping && 'bg-primary-50/40 border-primary-200/50 ring-2 ring-primary-200/50'
-              )} style={{ maxHeight: '70vh' }}>
+              <div
+                className={cn(
+                  'rounded-2xl p-2 space-y-2 flex-1 overflow-y-auto transition-colors',
+                  'bg-warm-50/30 border border-warm-100/40',
+                  isDropping && 'bg-primary-50/40 border-primary-200/60 ring-2 ring-primary-200/50'
+                )}
+                style={{ maxHeight: '70vh' }}
+                aria-label={`${stage.label} column, ${columnCoaches.length} coaches`}
+              >
                 {columnCoaches.length === 0 ? (
-                  <EmptyColumn stage={stage} />
+                  <EmptyColumn />
                 ) : (
                   <>
                     {visibleCoaches.map((coach) => (
@@ -267,7 +265,6 @@ export function PipelineView({
                         nextStatus={nextStatus}
                         isDragging={draggingId === coach.id}
                         statusConfig={statusConfig}
-                        priorityConfig={priorityConfig}
                         onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
                         onClick={() => onCoachClick(coach)}
@@ -276,12 +273,20 @@ export function PipelineView({
                       />
                     ))}
                     {hasMore && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/50 rounded-xl transition-all duration-200">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(stage.id)}
+                        className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/60 rounded-xl transition-colors"
+                      >
                         Show {columnCoaches.length - CARDS_PER_PAGE} more…
                       </button>
                     )}
                     {isExpanded && columnCoaches.length > CARDS_PER_PAGE && (
-                      <button onClick={() => toggleExpanded(stage.id)} className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/50 rounded-xl transition-all duration-200">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(stage.id)}
+                        className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/60 rounded-xl transition-colors"
+                      >
                         Show less
                       </button>
                     )}
@@ -297,17 +302,16 @@ export function PipelineView({
 }
 
 // ============================================================================
-// KANBAN CARD — premium glass card with hover lift + keyboard accessibility
+// KANBAN CARD — glass-standard card with hover lift + keyboard accessibility
 // ============================================================================
 function KanbanCard({
-  coach, nextStatus, isDragging, priorityConfig,
+  coach, nextStatus, isDragging,
   onDragStart, onDragEnd, onClick, onStatusChange, onToggleStar,
 }: {
   coach: Coach;
   nextStatus: CoachStatus | null;
   isDragging: boolean;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode; order: number }>;
-  priorityConfig: Record<number, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
   onDragStart: (e: React.DragEvent, coach: Coach) => void;
   onDragEnd: () => void;
   onClick: () => void;
@@ -340,9 +344,9 @@ function KanbanCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
       className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-3 shadow-sm',
-        'hover:shadow-md hover:-translate-y-0.5',
-        'focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-300',
+        'glass-standard rounded-2xl p-3',
+        'hover:-translate-y-0.5 hover:bg-white/80',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',
         isDragging && 'opacity-40 scale-95',
@@ -350,17 +354,19 @@ function KanbanCard({
     >
       {/* Name + Star */}
       <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1">{coach.name}</p>
+        <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
         <button
+          type="button"
           onClick={(e) => { e.stopPropagation(); onToggleStar(coach.id, coach.is_starred); }}
-          className="flex-shrink-0 mt-0.5"
+          className="flex-shrink-0 mt-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
           tabIndex={-1}
-          aria-label={coach.is_starred ? 'Unstar coach' : 'Star coach'}
+          aria-label={coach.is_starred ? `Unstar ${coach.name}` : `Star ${coach.name}`}
+          aria-pressed={coach.is_starred}
         >
           {coach.is_starred ? (
-            <IconStar size={14} className="text-amber-500 fill-amber-500" />
+            <IconStar size={14} className="text-amber-500 fill-amber-500" aria-hidden="true" />
           ) : (
-            <IconStar size={14} className="text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <IconStar size={14} className="text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
           )}
         </button>
       </div>
@@ -380,7 +386,7 @@ function KanbanCard({
           </span>
           {/* Priority dot */}
           {coach.priority > 0 && priorityCfg?.icon && (
-            <span className="flex-shrink-0">{priorityCfg.icon}</span>
+            <span className="flex-shrink-0" aria-label={priorityCfg.label}>{priorityCfg.icon}</span>
           )}
         </div>
 
@@ -394,13 +400,14 @@ function KanbanCard({
       {nextStatus && (
         <div className="flex justify-end mt-1.5">
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
             className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
             title="Advance to next stage"
             aria-label={`Advance ${coach.name} to next stage`}
             tabIndex={-1}
           >
-            <IconArrowRight size={12} />
+            <IconArrowRight size={12} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -411,11 +418,11 @@ function KanbanCard({
 // ============================================================================
 // EMPTY COLUMN — clean muted state, no emoji
 // ============================================================================
-function EmptyColumn({ stage }: { stage: PipelineStage }) {
+function EmptyColumn() {
   return (
     <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
       <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mb-2 text-warm-300">
-        <IconUsers size={20} />
+        <IconUsers size={20} aria-hidden="true" />
       </div>
       <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
       <p className="text-[10px] text-warm-300 mt-0.5">Drag coaches here or update their status</p>

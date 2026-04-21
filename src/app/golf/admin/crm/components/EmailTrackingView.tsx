@@ -1,21 +1,21 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
   IconMail,
   IconCheckCircle2,
-  IconWarning,
   IconChevronDown,
   IconChevronRight,
   IconClock,
-  IconSend,
   IconEye,
+  IconActivity,
   IconTarget as MousePointerClick,
-  IconShieldAlert as ShieldAlert,
   IconXCircle as Ban,
   IconUsers,
+  IconExternalLink,
 } from '@/components/icons';
 
 // ============================================================================
@@ -110,6 +110,19 @@ function getEmailStatus(events: EmailEvent[]): string {
   return 'sent';
 }
 
+/** Pure helper: derive aggregate stats from a list of emails (fallback when RPC missing). */
+function computeEmailStats(emailList: EmailRecord[]): EmailStats {
+  const stats: EmailStats = { total_sent: emailList.length, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
+  for (const email of emailList) {
+    const status = getEmailStatus(email.crm_email_events || []);
+    if (status === 'delivered' || status === 'opened' || status === 'clicked') stats.delivered++;
+    if (status === 'opened' || status === 'clicked') stats.opened++;
+    if (status === 'clicked') stats.clicked++;
+    if (status === 'bounced') stats.bounced++;
+  }
+  return stats;
+}
+
 /** Group emails into campaigns: same subject + send time within 1 hour */
 function groupIntoCampaigns(emails: EmailRecord[]): Campaign[] {
   const campaigns: Campaign[] = [];
@@ -189,40 +202,35 @@ export function EmailTrackingView() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch emails
+      // Fetch Helm-sent emails (with Resend tracking events)
       const emailsRes = await supabase
         .from('crm_contact_log')
         .select('*, crm_coaches!coach_id(id, name, school, email, email_status), crm_email_events(event_type, occurred_at)')
         .not('resend_message_id', 'is', null)
         .order('contact_date', { ascending: false });
 
-      if (emailsRes.data) {
-        setEmails(emailsRes.data as unknown as EmailRecord[]);
-      }
+      const helmEmails = (emailsRes.data as unknown as EmailRecord[]) ?? [];
+      setEmails(helmEmails);
 
-      // Also fetch ALL email contacts (including Gmail BCC)
+      // Also fetch ALL email contacts (including Gmail BCC / manual log entries)
       const allEmailsRes = await supabase
         .from('crm_contact_log')
         .select('*, crm_coaches!coach_id(id, name, school, email, email_status)')
         .eq('contact_type', 'email')
         .order('contact_date', { ascending: false });
 
-      if (allEmailsRes.data) {
-        setAllOutreach(allEmailsRes.data as unknown as EmailRecord[]);
-      }
+      setAllOutreach((allEmailsRes.data as unknown as EmailRecord[]) ?? []);
 
-      // Fetch stats via RPC — may not exist, so handle gracefully
+      // Fetch stats via RPC — may not exist, so fall back to client-side compute
       try {
         const { data: rpcData, error: rpcError } = await supabase.rpc('get_crm_email_stats');
         if (!rpcError && rpcData) {
           setStats(rpcData as unknown as EmailStats);
         } else {
-          // RPC failed or doesn't exist — compute stats from emails
-          computeStatsFromEmails(emailsRes.data as unknown as EmailRecord[] ?? []);
+          setStats(computeEmailStats(helmEmails));
         }
       } catch {
-        // RPC doesn't exist — compute stats from emails
-        computeStatsFromEmails(emailsRes.data as unknown as EmailRecord[] ?? []);
+        setStats(computeEmailStats(helmEmails));
       }
     } catch {
       // Silently handle — stats/emails will show empty state
@@ -230,18 +238,6 @@ export function EmailTrackingView() {
       setLoading(false);
     }
   }, [supabase]);
-
-  const computeStatsFromEmails = (emailList: EmailRecord[]) => {
-    const computed: EmailStats = { total_sent: emailList.length, delivered: 0, opened: 0, clicked: 0, bounced: 0 };
-    for (const email of emailList) {
-      const status = getEmailStatus(email.crm_email_events || []);
-      if (status === 'delivered' || status === 'opened' || status === 'clicked') computed.delivered++;
-      if (status === 'opened' || status === 'clicked') computed.opened++;
-      if (status === 'clicked') computed.clicked++;
-      if (status === 'bounced') computed.bounced++;
-    }
-    setStats(computed);
-  };
 
   useEffect(() => {
     fetchData();
@@ -396,7 +392,6 @@ export function EmailTrackingView() {
 
   const deliveryRate = stats.total_sent > 0 ? Math.round((stats.delivered / stats.total_sent) * 100) : 0;
   const openRate = stats.total_sent > 0 ? Math.round((stats.opened / stats.total_sent) * 100) : 0;
-  const clickRate = stats.total_sent > 0 ? Math.round((stats.clicked / stats.total_sent) * 100) : 0;
 
   // Compute outreach summary from ALL contacts (Gmail + Helm)
   const totalOutreach = allOutreach.length;
@@ -432,7 +427,25 @@ export function EmailTrackingView() {
   ];
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
+    <div className="space-y-5 max-w-[1400px] mx-auto">
+      {/* ══════════════ Header ══════════════ */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-warm-900 tracking-tight">Email outreach</h2>
+          <p className="text-sm text-warm-500 mt-1">
+            Coach-level contact history across Helm and Gmail. For full deliverability analytics, see{' '}
+            <a
+              href="/golf/admin/crm?tab=resend"
+              className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 font-medium underline-offset-2 hover:underline transition-colors"
+            >
+              Resend activity
+              <IconExternalLink size={11} aria-hidden="true" />
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+
       {/* ══════════════ Stats Header Cards ══════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -470,24 +483,36 @@ export function EmailTrackingView() {
 
       {/* ══════════════ Sub-Tab Navigation ══════════════ */}
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass overflow-hidden">
-        <div className="flex gap-0 border-b border-warm-100">
-          {SUB_TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setSubTab(tab.id)}
-              className={cn(
-                'px-5 py-3 text-sm font-medium transition-colors relative',
-                subTab === tab.id
-                  ? 'text-warm-900'
-                  : 'text-warm-400 hover:text-warm-600'
-              )}
-            >
-              {tab.label}
-              {subTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500 rounded-full" />
-              )}
-            </button>
-          ))}
+        <div
+          role="tablist"
+          aria-label="Email outreach views"
+          className="flex gap-0 border-b border-warm-100 overflow-x-auto scrollbar-hide"
+        >
+          {SUB_TABS.map(tab => {
+            const isActive = subTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`email-panel-${tab.id}`}
+                onClick={() => setSubTab(tab.id)}
+                className={cn(
+                  'px-5 py-3 text-sm font-medium transition-colors relative whitespace-nowrap',
+                  isActive ? 'text-warm-900' : 'text-warm-400 hover:text-warm-600'
+                )}
+              >
+                {tab.label}
+                {isActive && (
+                  <motion.div
+                    layoutId="email-tab-underline"
+                    className="absolute bottom-0 left-1 right-1 h-[2px] bg-primary-500 rounded-full"
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="p-5">
@@ -506,7 +531,7 @@ export function EmailTrackingView() {
                         <div key={entry.id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-warm-50/50 transition-colors">
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-warm-800 truncate">{coach.name}</p>
-                            <p className="text-xs text-warm-400 truncate">{coach.school} \u00B7 {entry.subject || '(no subject)'}</p>
+                            <p className="text-xs text-warm-400 truncate">{coach.school} · {entry.subject || '(no subject)'}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
                             <span className={cn(
@@ -583,7 +608,7 @@ export function EmailTrackingView() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {coach.subject && (
-                        <span className="text-xs text-warm-400 truncate max-w-[200px] hidden lg:block">\u201C{coach.subject}\u201D</span>
+                        <span className="text-xs text-warm-400 truncate max-w-[200px] hidden lg:block">“{coach.subject}”</span>
                       )}
                       <span className={cn(
                         'px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider',
@@ -607,12 +632,18 @@ export function EmailTrackingView() {
           {/* ── Campaigns Tab ── */}
           {subTab === 'campaigns' && (
             <div>
+              <CrossRefBanner
+                icon={<IconActivity size={14} />}
+                text="This view groups Helm-sent emails by subject. For per-email events, domain breakdowns, and live activity, open"
+                linkLabel="Resend activity"
+              />
               <div className="flex items-center justify-between mb-4">
-                <div className="flex gap-1">
+                <div className="flex gap-1" role="group" aria-label="Filter campaigns by status">
                   {FILTER_TABS.map(tab => (
                     <button
                       key={tab.id}
                       onClick={() => setFilterTab(tab.id)}
+                      aria-pressed={filterTab === tab.id}
                       className={cn(
                         'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
                         filterTab === tab.id
@@ -626,6 +657,7 @@ export function EmailTrackingView() {
                 </div>
                 <button
                   onClick={() => setSortField(sortField === 'date' ? 'status' : 'date')}
+                  aria-label={`Sort campaigns by ${sortField === 'date' ? 'status' : 'date'}`}
                   className="text-xs font-medium text-warm-500 hover:text-warm-700 px-2.5 py-1.5 rounded-lg hover:bg-warm-50 transition-colors"
                 >
                   Sort: {sortField === 'date' ? 'Date' : 'Status'}
@@ -771,6 +803,11 @@ export function EmailTrackingView() {
           {/* ── Bounced Tab ── */}
           {subTab === 'bounced' && (
             <div>
+              <CrossRefBanner
+                icon={<IconActivity size={14} />}
+                text="This list shows coaches whose Helm sends bounced. For the full bounces and complaints feed from Resend, see"
+                linkLabel="Resend activity"
+              />
               {bouncedCoaches.length === 0 ? (
                 <div className="py-12 text-center">
                   <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mx-auto mb-2">
@@ -791,7 +828,7 @@ export function EmailTrackingView() {
                     >
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
-                        <p className="text-xs text-warm-500 truncate">{coach.school} \u00B7 {coach.email}</p>
+                        <p className="text-xs text-warm-500 truncate">{coach.school} · {coach.email}</p>
                       </div>
                       <button
                         onClick={() => handleSuppress(coach.id)}
@@ -820,6 +857,43 @@ export function EmailTrackingView() {
 // ============================================================================
 // SUB-COMPONENTS
 // ============================================================================
+
+/**
+ * Small inline banner that points users toward the Resend tab for deeper
+ * deliverability analytics (domain breakdowns, live feed, full event timeline).
+ */
+function CrossRefBanner({
+  icon,
+  text,
+  linkLabel,
+}: {
+  icon: React.ReactNode;
+  text: string;
+  linkLabel: string;
+}) {
+  return (
+    <div
+      role="note"
+      className="flex items-start gap-2.5 px-3.5 py-2.5 mb-4 rounded-xl bg-primary-50/60 border border-primary-100/60 text-xs text-warm-700"
+    >
+      <span className="text-primary-600 flex-shrink-0 mt-0.5" aria-hidden="true">
+        {icon}
+      </span>
+      <p className="leading-relaxed">
+        {text}{' '}
+        <a
+          href="/golf/admin/crm?tab=resend"
+          className="inline-flex items-center gap-1 text-primary-700 hover:text-primary-800 font-semibold underline-offset-2 hover:underline transition-colors"
+        >
+          {linkLabel}
+          <IconExternalLink size={10} aria-hidden="true" />
+        </a>
+        .
+      </p>
+    </div>
+  );
+}
+
 function StatCard({
   icon, iconBg, iconColor, label, value, subtitle,
 }: {

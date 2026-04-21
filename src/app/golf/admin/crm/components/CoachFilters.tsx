@@ -102,10 +102,10 @@ export function CoachFilters({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             className={cn(
-              'w-full pl-9 pr-8 py-2.5 rounded-xl text-sm',
-              'bg-white/50 border border-warm-200/60',
+              'w-full pl-9 pr-8 py-2 rounded-lg text-sm',
+              'bg-white/60 border border-warm-200/60',
               'text-warm-900 placeholder:text-warm-400',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-300',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400',
               'transition-all duration-200'
             )}
           />
@@ -117,7 +117,7 @@ export function CoachFilters({
         </div>
 
         {/* Division segment control */}
-        <div className="flex items-center gap-1 bg-warm-100/50 rounded-full p-0.5">
+        <div className="inline-flex items-center gap-0.5 p-0.5 bg-white/60 border border-warm-200/60 rounded-full">
           {(['all', 'D2', 'D3'] as const).map(div => (
             <button
               key={div}
@@ -135,7 +135,7 @@ export function CoachFilters({
         </div>
 
         {/* Program segment control */}
-        <div className="flex items-center gap-1 bg-warm-100/50 rounded-full p-0.5">
+        <div className="inline-flex items-center gap-0.5 p-0.5 bg-white/60 border border-warm-200/60 rounded-full">
           {([
             { value: 'all', label: 'All' },
             { value: 'mens', label: "Men's" },
@@ -193,9 +193,9 @@ export function CoachFilters({
             value={filters.conference}
             onChange={(e) => setFilters(f => ({ ...f, conference: e.target.value }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
-              'bg-white/50 border border-warm-200/60 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
+              'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+              'bg-white/60 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400',
               'max-w-[180px] cursor-pointer',
               filters.conference !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}
@@ -209,9 +209,9 @@ export function CoachFilters({
             value={filters.status}
             onChange={(e) => setFilters(f => ({ ...f, status: e.target.value as Filters['status'] }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
-              'bg-white/50 border border-warm-200/60 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
+              'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+              'bg-white/60 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400',
               'cursor-pointer',
               filters.status !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}
@@ -225,9 +225,9 @@ export function CoachFilters({
             value={filters.priority}
             onChange={(e) => setFilters(f => ({ ...f, priority: e.target.value }))}
             className={cn(
-              'px-4 py-2.5 rounded-xl text-xs font-medium transition-all duration-200',
-              'bg-white/50 border border-warm-200/60 text-warm-600',
-              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
+              'px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200',
+              'bg-white/60 border border-warm-200/60 text-warm-600',
+              'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400',
               'cursor-pointer',
               filters.priority !== 'all' && 'border-primary-300 bg-primary-50 text-primary-700'
             )}

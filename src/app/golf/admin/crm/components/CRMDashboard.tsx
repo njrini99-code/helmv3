@@ -44,7 +44,7 @@ export function CRMDashboard({
   allCoaches,
   stats,
   pipelineStages,
-  statusConfig,
+  statusConfig: _statusConfig,
   onBulkUpdate,
   onRefresh,
   onNavigate,
@@ -275,10 +275,15 @@ export function CRMDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline Funnel — 2 cols */}
         <div className="lg:col-span-2 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2">
-              <IconChartBar size={16} className="text-warm-400" />
-              <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Pipeline Funnel</h3>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <IconChartBar size={16} className="text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-warm-900">Pipeline Funnel</h3>
+                <p className="text-xs text-warm-500">Conversion by stage</p>
+              </div>
             </div>
             <button
               onClick={() => onNavigate('pipeline')}
@@ -330,9 +335,16 @@ export function CRMDashboard({
 
         {/* Conference Breakdown — 1 col */}
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">Top Conferences</h3>
-            <span className="text-xs text-warm-400">{conferenceStats.length} shown</span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+                <IconTrophy size={16} className="text-violet-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-warm-900">Top Conferences</h3>
+                <p className="text-xs text-warm-500">{conferenceStats.length} shown</p>
+              </div>
+            </div>
           </div>
           <div className="space-y-2.5">
             {conferenceStats.map((conf) => {
@@ -381,7 +393,6 @@ export function CRMDashboard({
                 <CoachRow
                   key={coach.id}
                   coach={coach}
-                  statusConfig={statusConfig}
                   onClick={handleCoachRowClick}
                   badge={
                     coach.next_follow_up_at
@@ -417,7 +428,6 @@ export function CRMDashboard({
                 <CoachRow
                   key={coach.id}
                   coach={coach}
-                  statusConfig={statusConfig}
                   onClick={handleCoachRowClick}
                   badge={
                     coach.last_contacted_at
@@ -453,7 +463,6 @@ export function CRMDashboard({
                 <CoachRow
                   key={coach.id}
                   coach={coach}
-                  statusConfig={statusConfig}
                   onClick={handleCoachRowClick}
                   badge={formatRelative(coach.updated_at)}
                 />
@@ -545,7 +554,15 @@ export function CRMDashboard({
           'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm',
           allNewLeads && 'lg:col-span-2'
         )}>
-          <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider mb-4">Division Breakdown</h3>
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center">
+              <IconUsers size={16} className="text-warm-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-warm-900">Division Breakdown</h3>
+              <p className="text-xs text-warm-500">D2 vs D3 distribution</p>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <DivisionCard label="D2" count={divisionStats.d2} total={stats.total} color="blue" />
             <DivisionCard label="D3" count={divisionStats.d3} total={stats.total} color="primary" />
@@ -629,16 +646,17 @@ function CoachRow({
   coach, badge, badgeColor, onClick,
 }: {
   coach: Coach;
-  statusConfig?: Record<CoachStatus, { label: string; color: string; bgColor: string; icon: React.ReactNode }>;
   badge?: string;
   badgeColor?: string;
   onClick?: (coach: Coach) => void;
 }) {
   const statusColor = STATUS_COLORS[coach.status];
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onClick?.(coach)}
-      className="flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors cursor-pointer"
+      className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
+      aria-label={`Open ${coach.name} at ${coach.school}`}
     >
       <span className={cn(
         'text-micro font-bold px-1.5 py-0.5 rounded flex-shrink-0',
@@ -658,7 +676,7 @@ function CoachRow({
           {badge}
         </span>
       )}
-    </div>
+    </button>
   );
 }
 

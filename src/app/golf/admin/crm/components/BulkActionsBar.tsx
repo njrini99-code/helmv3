@@ -42,7 +42,7 @@ export function BulkActionsBar({
       <div className="relative">
         <button
           onClick={() => setShowStatusMenu(!showStatusMenu)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
         >
           <IconArrowRight size={14} /> Move to
           <IconChevronUp size={12} className={cn('transition-transform', showStatusMenu && 'rotate-180')} />
@@ -64,7 +64,7 @@ export function BulkActionsBar({
       {/* Email */}
       <button
         onClick={() => onAction('email')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconMail size={14} /> Email
       </button>
@@ -72,7 +72,7 @@ export function BulkActionsBar({
       {/* Star */}
       <button
         onClick={() => onAction('star')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconStar size={14} /> Star
       </button>
@@ -80,7 +80,7 @@ export function BulkActionsBar({
       {/* Unstar */}
       <button
         onClick={() => onAction('unstar')}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-warm-700 hover:bg-warm-50 transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconStar size={14} className="text-warm-400" /> Unstar
       </button>
@@ -89,7 +89,7 @@ export function BulkActionsBar({
 
       {/* Delete */}
       {confirmDelete ? (
-        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5">
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
           <span className="text-sm font-medium text-red-700">Delete {selectedCount}?</span>
           <button onClick={() => { onAction('delete'); setConfirmDelete(false); }}
             className="px-2 py-0.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm font-bold">Yes</button>
@@ -98,7 +98,7 @@ export function BulkActionsBar({
         </div>
       ) : (
         <button onClick={() => setConfirmDelete(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
           <IconTrash size={14} /> Delete
         </button>
       )}
@@ -106,8 +106,8 @@ export function BulkActionsBar({
       <div className="w-px h-5 bg-warm-200" />
 
       {/* Dismiss */}
-      <button onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-xl hover:bg-warm-50 transition-colors text-warm-500">
-        <IconX size={16} aria-hidden="true" />
+      <button onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+        <IconX size={14} aria-hidden="true" />
       </button>
     </div>
   );

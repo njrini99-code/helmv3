@@ -426,8 +426,8 @@ function CoachDetailPanelInner({
                     <button onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</button>
                   </div>
                 </div>
-                <button onClick={handleClose} aria-label="Close" className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600 ml-2">
-                  <IconX size={18} aria-hidden="true" />
+                <button onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2">
+                  <IconX size={14} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -488,12 +488,12 @@ function CoachDetailPanelInner({
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => setEditingContact(true)}
                     aria-label="Edit contact info"
-                    className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600"
+                    className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900"
                     title="Edit contact info">
                     <Pencil size={14} aria-hidden="true" />
                   </button>
-                  <button onClick={handleClose} aria-label="Close" className="p-2 rounded-xl hover:bg-white/60 active:bg-white/80 transition-colors text-warm-400 hover:text-warm-600">
-                    <IconX size={18} aria-hidden="true" />
+                  <button onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+                    <IconX size={14} aria-hidden="true" />
                   </button>
                 </div>
               </div>

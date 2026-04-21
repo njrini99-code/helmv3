@@ -68,7 +68,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
   return (
     <div className="space-y-4">
       {/* Stage Pipeline */}
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm">
+      <div className="glass-standard rounded-2xl p-6">
         <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4">Sales Pipeline</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {(['lead', 'active', 'closing', 'closed'] as const).map((stage, index) => {
@@ -78,13 +78,13 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
             return (
               <div key={stage} className="relative">
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 relative overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                <div className="glass-standard rounded-2xl p-4 relative overflow-hidden hover:bg-white/80 transition-colors">
                   {/* Color accent bar at top */}
-                  <div className={cn('absolute top-0 left-0 right-0 h-1 bg-gradient-to-r', config.gradient)} />
+                  <div className={cn('absolute top-0 left-0 right-0 h-1 bg-gradient-to-r', config.gradient)} aria-hidden="true" />
 
                   <div className="relative pt-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center', config.iconBg, config.iconColor)}>
+                      <div className={cn('w-8 h-8 rounded-xl flex items-center justify-center', config.iconBg, config.iconColor)} aria-hidden="true">
                         {config.icon}
                       </div>
                       <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider">{config.label}</span>
@@ -92,7 +92,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
                     <div className="text-3xl font-bold text-warm-900 tabular-nums">{stats.count}</div>
                   </div>
 
-                  {/* Progress bar using STATUS_COLORS */}
+                  {/* Progress bar */}
                   <div className="mt-3 h-1.5 bg-warm-100 rounded-full overflow-hidden">
                     <div
                       className={cn('h-full rounded-full transition-all duration-500 bg-gradient-to-r', config.gradient)}
@@ -110,8 +110,8 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
                         const colors = STATUS_COLORS[status as CoachStatus];
                         return (
                           <div key={status} className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1.5">
-                              <span className={cn('w-2 h-2 rounded-full', colors?.dot)} />
+                            <span className="flex items-center gap-1.5 min-w-0">
+                              <span className={cn('w-2 h-2 rounded-full flex-shrink-0', colors?.dot)} aria-hidden="true" />
                               <span className="text-warm-500 truncate">
                                 {statusConfig[status as CoachStatus]?.label}
                               </span>
@@ -125,7 +125,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
                 {/* Arrow connector */}
                 {index < 3 && (
-                  <div className="absolute right-0 top-1/3 translate-x-1/2 -translate-y-1/2 z-10 hidden lg:flex items-center justify-center">
+                  <div className="absolute right-0 top-1/3 translate-x-1/2 -translate-y-1/2 z-10 hidden lg:flex items-center justify-center" aria-hidden="true">
                     <IconArrowRight size={14} className="text-warm-300" />
                   </div>
                 )}
@@ -137,28 +137,30 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="glass-standard rounded-2xl p-4 hover:bg-white/80 transition-colors">
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Total Coaches</div>
           <div className="text-2xl font-bold text-warm-900 tabular-nums">{coaches.length}</div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="glass-standard rounded-2xl p-4 hover:bg-white/80 transition-colors">
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">D2 / D3</div>
-          <div className="text-2xl font-bold text-warm-900 tabular-nums">
+          <div className="text-2xl font-bold tabular-nums">
             <span className="text-blue-600">{divisionStats.d2}</span>
             <span className="text-warm-300 mx-1">/</span>
             <span className="text-primary-700">{divisionStats.d3}</span>
           </div>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="glass-standard rounded-2xl p-4 hover:bg-white/80 transition-colors">
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Conversion</div>
           <div className="text-2xl font-bold text-primary-600 tabular-nums">{conversionRate}%</div>
         </div>
 
         <div className={cn(
-          'backdrop-blur-xl rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all duration-200',
-          followUpsDue > 0 ? 'bg-orange-50/70 border-orange-200/50' : 'bg-white/70 border-white/20'
+          'rounded-2xl p-4 transition-colors',
+          followUpsDue > 0
+            ? 'bg-orange-50/70 backdrop-blur-xl border border-orange-200/50'
+            : 'glass-standard hover:bg-white/80'
         )}>
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Follow-ups Due</div>
           <div className={cn(
@@ -170,8 +172,10 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         </div>
 
         <div className={cn(
-          'backdrop-blur-xl rounded-2xl border p-4 shadow-sm hover:shadow-md transition-all duration-200',
-          hotLeads > 0 ? 'bg-red-50/70 border-red-200/50' : 'bg-white/70 border-white/20'
+          'rounded-2xl p-4 transition-colors',
+          hotLeads > 0
+            ? 'bg-red-50/70 backdrop-blur-xl border border-red-200/50'
+            : 'glass-standard hover:bg-white/80'
         )}>
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Hot Leads</div>
           <div className={cn(
