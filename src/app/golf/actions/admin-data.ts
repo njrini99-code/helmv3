@@ -1417,16 +1417,34 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // 2. Kick off Slice A + Slice B in parallel — Slice C needs Slice A's
   //    `allRoundsMinimal` so it runs in the next wave.
-  const [rollupA, rollupB] = await Promise.all([
-    fetchAdminRollupA(),
-    fetchAdminRollupB(),
-  ]);
+  // TEMP DEBUG: wrap each rollup in a labeled try/catch so the production
+  // Server Components error handler surfaces which slice actually threw.
+  let rollupA: RollupA;
+  let rollupB: RollupB;
+  try {
+    [rollupA, rollupB] = await Promise.all([
+      fetchAdminRollupA().catch((e) => {
+        console.error('[admin-data] fetchAdminRollupA threw:', e?.message, e?.stack);
+        throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
+      }),
+      fetchAdminRollupB().catch((e) => {
+        console.error('[admin-data] fetchAdminRollupB threw:', e?.message, e?.stack);
+        throw new Error(`rollupB failed: ${e?.message ?? String(e)}`);
+      }),
+    ]);
+  } catch (e) {
+    console.error('[admin-data] outer A+B Promise.all threw:', e);
+    throw e;
+  }
 
   // 3. Slice C + kept calls (Vercel HTTP + platform health RPC + one-off
   //    shot-quality counts) run in parallel. `dataQuality` is not owned by
   //    any slice — we issue a single grouped query.
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
-    fetchAdminRollupC(rollupA.allRoundsMinimal),
+    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
+      console.error('[admin-data] fetchAdminRollupC threw:', e?.message, e?.stack);
+      throw new Error(`rollupC failed: ${e?.message ?? String(e)}`);
+    }),
     fetchVercelAnalytics(),
     (async (): Promise<PlatformHealthStatsResult | null> => {
       try {
