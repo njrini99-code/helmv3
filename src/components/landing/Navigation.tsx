@@ -38,8 +38,7 @@ export function Navigation() {
 
         {/* Floating pill nav — fixed center on desktop */}
         <div className="hidden md:fixed md:top-4 md:left-1/2 md:-translate-x-1/2 md:z-[70] md:grid grid-cols-3 items-center gap-1
-                        backdrop-blur-2xl bg-[rgba(237,232,221,0.55)] border border-white/50 rounded-full px-1.5 py-1.5
-                        shadow-[0_4px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)]">
+                        backdrop-blur-2xl bg-[rgba(237,232,221,0.55)] border border-white/50 rounded-full px-1.5 py-1.5">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -58,7 +57,6 @@ export function Navigation() {
             className="hidden md:block px-4 py-2 rounded-full text-sm font-medium tracking-[-0.01em]
                        text-neutral-900 hover:bg-white/40 border border-white/40
                        backdrop-blur-2xl bg-[rgba(237,232,221,0.55)]
-                       shadow-[0_4px_20px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.03)]
                        transition-colors duration-200 ease-out"
           >
             Log in
