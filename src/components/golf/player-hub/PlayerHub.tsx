@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fadeUp, staggerContainer } from '@/lib/motion';
@@ -169,11 +169,9 @@ interface TabDef {
 // Sub-components
 // ============================================================================
 
-function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) {
+const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripData; now: Date | null; onExpand: () => void }) {
   const fmtDate = useFormatDate();
-  const [tripNow, setTripNow] = useState<Date | null>(null);
-  useEffect(() => { setTripNow(new Date()); }, []);
-  const status = getTripStatus(trip, tripNow);
+  const status = getTripStatus(trip, now);
 
   return (
     <m.div
@@ -233,7 +231,7 @@ function TripCard({ trip, onExpand }: { trip: TripData; onExpand: () => void }) 
       </div>
     </m.div>
   );
-}
+});
 
 function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => void }) {
   const fmtDate = useFormatDate();
@@ -362,16 +360,16 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
   );
 }
 
-function PlayerTaskCard({
+const PlayerTaskCard = memo(function PlayerTaskCard({
   task,
+  now,
   onComplete,
 }: {
   task: PlayerTask;
+  now: Date | null;
   onComplete: () => void;
 }) {
   const [completing, setCompleting] = useState(false);
-  const [taskNow, setTaskNow] = useState<Date | null>(null);
-  useEffect(() => { setTaskNow(new Date()); }, []);
 
   const handleComplete = async () => {
     setCompleting(true);
@@ -452,7 +450,7 @@ function PlayerTaskCard({
                   isOverdue ? 'text-red-600 font-medium' : 'text-warm-400',
                 )}>
                   <IconClock size={12} />
-                  {isOverdue ? 'Overdue \u00b7 ' : ''}{formatRelativeDate(task.due_date, taskNow)}
+                  {isOverdue ? 'Overdue \u00b7 ' : ''}{formatRelativeDate(task.due_date, now)}
                 </span>
               )}
               {task.category && (
@@ -466,7 +464,7 @@ function PlayerTaskCard({
               {isCompleted && task.completed_at && (
                 <span className="flex items-center gap-1 text-primary-600">
                   <IconCheckCheck size={12} />
-                  Done {formatRelativeDate(task.completed_at, taskNow)}
+                  Done {formatRelativeDate(task.completed_at, now)}
                 </span>
               )}
             </div>
@@ -475,20 +473,20 @@ function PlayerTaskCard({
       </div>
     </m.div>
   );
-}
+});
 
-function EventRSVPCard({
+const EventRSVPCard = memo(function EventRSVPCard({
   event,
+  now,
   onRSVP,
 }: {
   event: EventInvite;
+  now: Date | null;
   onRSVP: (status: 'accepted' | 'declined' | 'tentative') => void;
 }) {
   const [submitting, setSubmitting] = useState<string | null>(null);
   const fmtDate = useFormatDate();
   const style = getEventTypeStyle(event.event_type);
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => { setNow(new Date()); }, []);
   const eventDate = new Date(event.start_time);
   const isToday = now ? now.toDateString() === eventDate.toDateString() : false;
   const isPast = now ? eventDate < now : false;
@@ -610,7 +608,7 @@ function EventRSVPCard({
       </div>
     </m.div>
   );
-}
+});
 
 // ============================================================================
 // Overview Cards (compact summaries for the overview tab)
@@ -800,7 +798,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                 >
                   <div className="space-y-3">
                     {upcomingTrips.slice(0, 2).map(trip => (
-                      <TripCard key={trip.id} trip={trip} onExpand={() => setSelectedTrip(trip)} />
+                      <TripCard key={trip.id} trip={trip} now={now} onExpand={() => setSelectedTrip(trip)} />
                     ))}
                   </div>
                 </OverviewSection>
@@ -820,6 +818,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                       <PlayerTaskCard
                         key={task.id}
                         task={task}
+                        now={now}
                         onComplete={() => handleCompleteTask(task.id)}
                       />
                     ))}
@@ -841,6 +840,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                       <EventRSVPCard
                         key={event.id}
                         event={event}
+                        now={now}
                         onRSVP={(status: 'accepted' | 'declined' | 'tentative') => handleRSVP(event.event_id, status)}
                       />
                     ))}
@@ -870,7 +870,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               {trips.length > 0 ? (
                 <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
                   {trips.map(trip => (
-                    <TripCard key={trip.id} trip={trip} onExpand={() => setSelectedTrip(trip)} />
+                    <TripCard key={trip.id} trip={trip} now={now} onExpand={() => setSelectedTrip(trip)} />
                   ))}
                 </m.div>
               ) : (
@@ -903,6 +903,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                           <PlayerTaskCard
                             key={task.id}
                             task={task}
+                            now={now}
                             onComplete={() => handleCompleteTask(task.id)}
                           />
                         ))}
@@ -921,6 +922,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                           <PlayerTaskCard
                             key={task.id}
                             task={task}
+                            now={now}
                             onComplete={() => handleCompleteTask(task.id)}
                           />
                         ))}
@@ -960,6 +962,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                             <EventRSVPCard
                               key={event.id}
                               event={event}
+                              now={now}
                               onRSVP={(status) => handleRSVP(event.event_id, status)}
                             />
                           ))}
@@ -981,6 +984,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                             <EventRSVPCard
                               key={event.id}
                               event={event}
+                              now={now}
                               onRSVP={(status) => handleRSVP(event.event_id, status)}
                             />
                           ))}
