@@ -330,24 +330,43 @@ export default function CRMPage() {
   // COMPUTED
   // ============================================================================
   const stats = useMemo(() => {
-    const total = allCoaches.length;
-    const byStatus = Object.keys(STATUS_CONFIG).reduce((acc, status) => {
-      acc[status as CoachStatus] = allCoaches.filter(c => c.status === status).length;
-      return acc;
-    }, {} as Record<CoachStatus, number>);
+    const byStatus = Object.fromEntries(
+      Object.keys(STATUS_CONFIG).map(k => [k, 0]),
+    ) as Record<CoachStatus, number>;
+    const byStage = Object.fromEntries(
+      PIPELINE_STAGES.map(s => [s.id, 0]),
+    ) as Record<string, number>;
 
-    const byStage = PIPELINE_STAGES.reduce((acc, stage) => {
-      acc[stage.id] = allCoaches.filter(c => stage.statuses.includes(c.status)).length;
-      return acc;
-    }, {} as Record<string, number>);
+    const s = {
+      total: allCoaches.length,
+      byStatus,
+      byStage,
+      starred: 0,
+      hot: 0,
+      followUpsDue: 0,
+      contacted: 0,
+      inPipeline: 0,
+    };
 
-    const starred = allCoaches.filter(c => c.is_starred).length;
-    const hot = allCoaches.filter(c => c.priority >= 2).length;
-    const followUpsDue = allCoaches.filter(c => c.next_follow_up_at && new Date(c.next_follow_up_at) <= new Date()).length;
-    const contacted = allCoaches.filter(c => c.status !== 'new_lead').length;
-    const inPipeline = allCoaches.filter(c => !['new_lead', 'won', 'lost', 'nurture'].includes(c.status)).length;
+    const now = Date.now();
+    const notInPipeline = new Set<CoachStatus>(['new_lead', 'won', 'lost', 'nurture']);
 
-    return { total, byStatus, byStage, starred, hot, followUpsDue, contacted, inPipeline };
+    for (const c of allCoaches) {
+      s.byStatus[c.status] = (s.byStatus[c.status] ?? 0) + 1;
+      for (const stage of PIPELINE_STAGES) {
+        if (stage.statuses.includes(c.status)) {
+          s.byStage[stage.id] = (s.byStage[stage.id] ?? 0) + 1;
+          break;
+        }
+      }
+      if (c.is_starred) s.starred++;
+      if (c.priority >= 2) s.hot++;
+      if (c.next_follow_up_at && Date.parse(c.next_follow_up_at) <= now) s.followUpsDue++;
+      if (c.status !== 'new_lead') s.contacted++;
+      if (!notInPipeline.has(c.status)) s.inPipeline++;
+    }
+
+    return s;
   }, [allCoaches]);
 
   // ============================================================================
