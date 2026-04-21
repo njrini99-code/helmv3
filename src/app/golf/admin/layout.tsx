@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
+import { AdminMotionProvider } from './_motion-provider';
 
 export default async function AdminLayout({
   children,
@@ -27,9 +28,9 @@ export default async function AdminLayout({
   // Hide admin panel from the native iOS app — prevents Apple reviewers
   // from seeing the desktop-oriented CRM (avoids Guideline 4.2.2 risk).
   return (
-    <>
+    <AdminMotionProvider>
       <AdminNativeGuard />
       {children}
-    </>
+    </AdminMotionProvider>
   );
 }

@@ -1,12 +1,20 @@
 'use server';
 
-import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
+import { revalidatePath, unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
 // ============================================
+//
+// Caching pattern: auth + role check happens OUTSIDE the cache body (the
+// server client needs request state). The cache body uses only the
+// service-role client, which does not read request state — Next.js 16 forbids
+// request helpers inside an unstable_cache body.
+//
+// The RPC itself also enforces admin-role via auth.uid() (migration 00004) so
+// the cache can't leak admin data even if a non-admin ever reached it.
 
 /** Shape returned by `public.get_admin_dashboard_rollup()` (see migration
  *  20260421000001_admin_dashboard_rollup.sql). */
@@ -50,17 +58,12 @@ export interface AdminDashboardRollup {
 
 export const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
 
-// Cached wrapper: 1-minute revalidation window, keyed by tag so realtime
-// admin_events writes can invalidate via `invalidateAdminDashboardRollup()`.
-const cachedAdminDashboardRollup = unstable_cache(
+// Cached RPC-only function: uses the service-role client so no request state
+// is read. The RPC itself enforces admin-only access via auth.uid() + role.
+const cachedAdminDashboardData = unstable_cache(
   async (): Promise<AdminDashboardRollup> => {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // RPC is typed in database.ts only after local `supabase db push`; cast
-    // through `unknown` so prod deploys don't break if types lag behind.
-    const { data, error } = await (supabase.rpc as unknown as (
+    const admin = createAdminClient();
+    const { data, error } = await (admin.rpc as unknown as (
       fn: 'get_admin_dashboard_rollup',
     ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>)(
       'get_admin_dashboard_rollup',
@@ -73,17 +76,33 @@ const cachedAdminDashboardRollup = unstable_cache(
   { tags: [ADMIN_DASHBOARD_CACHE_TAG], revalidate: 60 },
 );
 
-/** Server-side entrypoint: one RPC round-trip, cached 60s, tag-invalidated. */
+/** Server-side entrypoint: admin check, then one RPC round-trip (cached 60s). */
 export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
-  return cachedAdminDashboardRollup();
+  // Auth check has to live OUTSIDE the cache — the server client reads
+  // request state that the unstable_cache body forbids in Next.js 16. The
+  // cache value is shared across all admin callers, which is correct: admin
+  // data is not per-user-scoped.
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if (userRow?.role !== 'admin') throw new Error('Forbidden');
+
+  return cachedAdminDashboardData();
 }
 
-/** Call from mutation paths / realtime webhook handlers that change the
- *  underlying admin data (users / golf_rounds / admin_events). */
+/** Call from mutation paths that change admin-surfaced data (users, rounds,
+ *  admin_events). Uses revalidatePath (the invalidation primitive the rest of
+ *  the admin codebase uses); the 60s unstable_cache revalidate window is the
+ *  background freshness floor. Currently not wired to any mutation — the 60s
+ *  window is the only guarantee today. */
 export async function invalidateAdminDashboardRollup(): Promise<void> {
-  // Next.js 16 requires a profile arg — 'default' matches the unstable_cache
-  // config above (60s revalidate).
-  revalidateTag(ADMIN_DASHBOARD_CACHE_TAG, 'default');
+  revalidatePath('/golf/admin');
 }
 
 // ============================================
