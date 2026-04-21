@@ -185,13 +185,17 @@ export async function getEmailsList(
   }
 
   if (filters.search && filters.search.trim()) {
-    const q = filters.search.trim();
-    // Match subject OR any recipient. Supabase `or` with array contains is
-    // tricky — do two queries if needed, but for now search subject
-    // (trigram indexed) and fall back to exact match on to_addresses.
-    query = query.or(
-      `subject.ilike.%${q}%,from_address.ilike.%${q}%,to_addresses.cs.{${q}}`
-    );
+    // Sanitize: strip every character PostgREST's `or()` DSL treats as a
+    // metacharacter (commas split OR terms; parens group; colons split
+    // column.op.value; braces delimit array literals; backslashes escape;
+    // percent is a wildcard already implied by our %...% wrap). Without
+    // this, admin-supplied search input can inject arbitrary filter terms.
+    const q = filters.search.trim().replace(/[,()\\:{}%]/g, '');
+    if (q) {
+      query = query.or(
+        `subject.ilike.%${q}%,from_address.ilike.%${q}%,to_addresses.cs.{${q}}`
+      );
+    }
   }
 
   if (filters.status && filters.status !== 'all') {
