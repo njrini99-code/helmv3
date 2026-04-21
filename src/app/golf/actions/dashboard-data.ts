@@ -281,15 +281,15 @@ export async function getCoachDashboardData(
         supabase.from('golf_team_members').select('id', { count: 'exact', head: true }).eq('team_id', teamId).eq('status', 'active'),
         supabase.from('golf_events').select('id', { count: 'exact', head: true }).eq('team_id', teamId).gte('start_time', now),
         supabase.from('golf_qualifiers').select('id', { count: 'exact', head: true }).eq('team_id', teamId).in('status', ['upcoming', 'in_progress']),
-        // Today's events with RSVP counts
-        supabase
-            .from('golf_events')
-            .select('id, title, event_type, start_time, end_time, location')
-            .eq('team_id', teamId)
-            .gte('start_time', todayStart)
-            .lt('start_time', todayEnd)
-            .order('start_time', { ascending: true })
-            .limit(10),
+        // Today's events + RSVP counts in a single RPC (consolidates the
+        // sequential RSVP fetch that previously ran outside this Promise.all).
+        // Returns jsonb array of { id, title, event_type, start_time, end_time, location, rsvp_yes, rsvp_total }.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase as any).rpc('get_coach_today_schedule', {
+            p_team_id:     teamId,
+            p_today_start: todayStart,
+            p_today_end:   todayEnd,
+        }) as Promise<{ data: TodayEvent[] | null; error: unknown }>,
         // All active players for round queries
         supabase.from('golf_team_members')
             .select('player:golf_players(id, first_name, last_name, avatar_url)')
@@ -326,40 +326,9 @@ export async function getCoachDashboardData(
     const upcomingEvents = eventsCountResult.count || 0;
     const activeQualifiers = qualifiersCountResult.count || 0;
 
-    // Build today events with RSVP counts
-    const todayEventsRaw = todayEventsResult.data || [];
-    let todayEvents: TodayEvent[] = todayEventsRaw.map(e => ({
-        id: e.id,
-        title: e.title,
-        event_type: e.event_type,
-        start_time: e.start_time,
-        end_time: e.end_time,
-        location: e.location,
-    }));
-
-    // Fetch RSVP counts for today's events
-    if (todayEvents.length > 0) {
-        const eventIds = todayEvents.map(e => e.id);
-        const { data: rsvps } = await supabase
-            .from('golf_event_attendance')
-            .select('event_id, status')
-            .in('event_id', eventIds);
-
-        if (rsvps) {
-            const rsvpMap = new Map<string, { yes: number; total: number }>();
-            for (const r of rsvps) {
-                if (!rsvpMap.has(r.event_id)) rsvpMap.set(r.event_id, { yes: 0, total: 0 });
-                const entry = rsvpMap.get(r.event_id)!;
-                entry.total++;
-                if (r.status === 'attending' || r.status === 'yes') entry.yes++;
-            }
-            todayEvents = todayEvents.map(e => ({
-                ...e,
-                rsvp_yes: rsvpMap.get(e.id)?.yes ?? 0,
-                rsvp_total: rsvpMap.get(e.id)?.total ?? 0,
-            }));
-        }
-    }
+    // Today events + RSVP counts are now delivered fully-shaped by the
+    // get_coach_today_schedule RPC above.
+    const todayEvents: TodayEvent[] = (todayEventsResult.data as TodayEvent[] | null) ?? [];
 
     // Extract players
     const teamMembersData = playersResult.data as Array<{ player: { id: string; first_name: string | null; last_name: string | null; avatar_url: string | null } | null }> | null;
