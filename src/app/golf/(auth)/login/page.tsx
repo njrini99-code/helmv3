@@ -1,166 +1,17 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
+import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
+import { CourseScene } from '@/components/golf/scenes/CourseScene';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
-
-// ─────────────────────────────────────────────────────────────
-// Painterly "golf course at dusk" scene — pure background decoration.
-// Ported from the Scenic Chooser design (Helm design file).
-// ─────────────────────────────────────────────────────────────
-function CourseScene() {
-  const P = {
-    cream1: '#FFFEFA',
-    cream2: '#FFF7E0',
-    cream3: '#FDEAC0',
-    glow: 'rgba(255, 214, 168, 0.55)',
-    tree: ['#a9bf86', '#88a06d', '#5f7d45', '#3f5930'],
-    trunk: '#6a503a',
-    grass: '#c2c681',
-    grassShadow: '#a2ad62',
-    sand: '#f2e0bc',
-    sandShadow: '#d6bb90',
-    flag: '#b83a29',
-  };
-
-  const Tree = ({ x, y, scale = 1, sway = 0 }: { x: number; y: number; scale?: number; sway?: number }) => (
-    <g transform={`translate(${x}, ${y})`}>
-      <g
-        style={{
-          transformBox: 'fill-box',
-          transformOrigin: '50% 100%',
-          animation: `treeSway ${7 + sway}s ease-in-out infinite`,
-          animationDelay: `${sway * 0.5}s`,
-        }}
-      >
-        <path
-          d={`M -2 ${18 * scale} Q -1 ${36 * scale}, -3 ${50 * scale} L 3 ${50 * scale} Q 1 ${36 * scale}, 2 ${18 * scale} Z`}
-          fill={P.trunk}
-          opacity="0.85"
-        />
-        <circle cx={0} cy={0} r={24 * scale} fill={P.tree[0]} />
-        <circle cx={-16 * scale} cy={-4 * scale} r={18 * scale} fill={P.tree[1]} />
-        <circle cx={14 * scale} cy={-10 * scale} r={17 * scale} fill={P.tree[0]} />
-        <circle cx={-4 * scale} cy={-22 * scale} r={15 * scale} fill={P.tree[1]} />
-        <circle cx={12 * scale} cy={-22 * scale} r={12 * scale} fill={P.tree[2]} />
-        <circle cx={-2 * scale} cy={10 * scale} r={20 * scale} fill={P.tree[2]} />
-        <circle cx={16 * scale} cy={8 * scale} r={14 * scale} fill={P.tree[3]} />
-        <circle cx={-18 * scale} cy={12 * scale} r={13 * scale} fill={P.tree[3]} />
-        <circle cx={6 * scale} cy={-16 * scale} r={6 * scale} fill="#e8eec8" opacity="0.35" />
-      </g>
-    </g>
-  );
-
-  return (
-    <div aria-hidden="true" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(180deg, ${P.cream1} 0%, ${P.cream2} 55%, ${P.cream3} 100%)`,
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: -140,
-          left: '30%',
-          width: 480,
-          height: 480,
-          background: `radial-gradient(circle, ${P.glow} 0%, transparent 70%)`,
-          animation: 'sunPulse 8s ease-in-out infinite',
-          pointerEvents: 'none',
-        }}
-      />
-      <svg
-        style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 340, pointerEvents: 'none', display: 'block' }}
-        viewBox="0 0 390 340"
-        preserveAspectRatio="xMidYMax slice"
-      >
-        <path
-          d="M -20 220 C 40 200, 90 225, 150 215 C 210 200, 260 225, 330 215 C 370 210, 400 220, 410 225 L 410 360 L -20 360 Z"
-          fill={P.grass}
-          opacity="0.85"
-        />
-        <path d="M 20 260 Q 120 248, 220 262 Q 310 255, 390 268" stroke={P.grassShadow} strokeWidth="1.5" fill="none" opacity="0.5" />
-        <path d="M -10 300 Q 100 290, 200 302 Q 300 295, 400 305" stroke={P.grassShadow} strokeWidth="1.5" fill="none" opacity="0.4" />
-        <path
-          d="M 30 240 C 10 238, -5 252, 5 268 C 15 285, 55 288, 95 280 C 130 275, 145 260, 125 248 C 95 240, 60 238, 30 240 Z"
-          fill={P.sand}
-        />
-        <path d="M 10 270 C 35 282, 75 284, 115 276" stroke={P.sandShadow} strokeWidth="1.2" fill="none" opacity="0.6" />
-        <path
-          d="M 290 260 C 315 254, 365 258, 395 268 C 405 285, 375 295, 340 292 C 305 288, 275 278, 285 266 Z"
-          fill={P.sand}
-        />
-        <path d="M 300 280 C 335 290, 375 288, 395 280" stroke={P.sandShadow} strokeWidth="1.2" fill="none" opacity="0.6" />
-        <ellipse cx="200" cy="260" rx="72" ry="22" fill={P.grassShadow} opacity="0.95" />
-        <ellipse cx="200" cy="258" rx="66" ry="18" fill={P.grass} opacity="0.7" />
-        <ellipse cx="205" cy="258" rx="4.5" ry="2.2" fill="#1a1612" />
-        <ellipse cx="205" cy="257.5" rx="3.5" ry="1.5" fill="#000" />
-        <g transform="translate(205, 258)">
-          <line x1="0" y1="0" x2="0" y2="-52" stroke="#2d2a25" strokeWidth="2.4" strokeLinecap="round" />
-          <g style={{ transformBox: 'fill-box', transformOrigin: '0% 50%', animation: 'flagFlutter 2.4s ease-in-out infinite' }}>
-            <path
-              d="M 0 -52 C 7 -54, 15 -50, 22 -52 L 22 -38 C 15 -36, 7 -40, 0 -38 Z"
-              fill={P.flag}
-              stroke="#7a2418"
-              strokeWidth="0.8"
-              strokeOpacity="0.5"
-            />
-          </g>
-          <circle cx="0" cy="0" r="2" fill="#1c1917" />
-        </g>
-      </svg>
-      <svg
-        style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: 340, pointerEvents: 'none', display: 'block' }}
-        viewBox="0 0 390 340"
-        preserveAspectRatio="xMidYMax slice"
-      >
-        <Tree x={42} y={258} scale={1.35} sway={0} />
-        <Tree x={22} y={290} scale={1.0} sway={1} />
-        <Tree x={345} y={260} scale={1.2} sway={2} />
-        <Tree x={368} y={295} scale={0.95} sway={0.5} />
-        <Tree x={112} y={278} scale={0.7} sway={1.5} />
-        <Tree x={290} y={282} scale={0.7} sway={2.5} />
-      </svg>
-      <svg
-        style={{
-          position: 'absolute',
-          inset: -20,
-          width: 'calc(100% + 40px)',
-          height: 'calc(100% + 40px)',
-          opacity: 0.05,
-          mixBlendMode: 'multiply',
-          pointerEvents: 'none',
-          animation: 'grainShift 1.4s steps(4) infinite',
-        }}
-      >
-        <filter id="grain-filter-login">
-          <feTurbulence type="fractalNoise" baseFrequency="1.8" numOctaves="2" stitchTiles="stitch" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#grain-filter-login)" />
-      </svg>
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 220,
-          background:
-            'linear-gradient(180deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.45) 40%, rgba(255,255,255,0) 100%)',
-          pointerEvents: 'none',
-        }}
-      />
-    </div>
-  );
-}
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -181,11 +32,20 @@ function LoginContent() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isNative, setIsNative] = useState(false);
-  const supabase = createClient();
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  // `createClient()` returns a fresh browser client per call — memoize so the
+  // auth-check effect below doesn't treat it as a new dep on every render.
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     setIsNative(isNativeApp());
   }, []);
+
+  // Prefetch the welcome page bundle — if the user is already authed we'll
+  // replace() to it immediately, and we don't want to wait for JS.
+  useEffect(() => {
+    router.prefetch('/golf/welcome');
+  }, [router]);
 
   useEffect(() => {
     async function checkAuth() {
@@ -195,11 +55,7 @@ function LoginContent() {
         const admin = (data?.role as string) === 'admin';
         setIsAdmin(admin);
         setIsLoggedIn(true);
-        const dest = returnTo && (returnTo.startsWith('/golf/') || returnTo.startsWith('/baseball/'))
-          ? returnTo
-          : admin
-          ? '/golf/admin'
-          : '/golf/dashboard';
+        const dest = isSafeInternalPath(returnTo) ? returnTo : admin ? '/golf/admin' : '/golf/dashboard';
         router.replace(`/golf/welcome?next=${encodeURIComponent(dest)}`);
         return;
       }
@@ -207,7 +63,7 @@ function LoginContent() {
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase, supabase.auth, returnTo, router]);
+  }, [returnTo, router, supabase]);
 
   async function handleSignOut() {
     setIsLoggingOut(true);
@@ -233,7 +89,14 @@ function LoginContent() {
           Skip to login form
         </a>
 
-        <CourseScene />
+        {/*
+         * Exactly one scene renders per viewport — avoids paying paint, memory
+         * and the background CSS-animation tick for the inactive scene.
+         * Mobile/iOS native = portrait Scenic; desktop ≥768px = landscape Coastal.
+         * SSR renders the mobile scene (matches iOS, our native target) and
+         * `useMediaQuery` swaps to Coastal after hydration on desktop.
+         */}
+        {isDesktop ? <CoastalScene idSuffix="login-coastal" /> : <CourseScene idSuffix="login" />}
 
         {/* Content — flex column that fits any iPhone without scroll */}
         <div
@@ -250,7 +113,7 @@ function LoginContent() {
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col items-center gap-2.5 shrink-0"
           >
-            <div style={{ animation: 'logoFloat 5s ease-in-out infinite' }}>
+            <div data-scene-animated style={{ animation: 'helmSceneLogoFloat 5s ease-in-out infinite', willChange: 'transform' }}>
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt=""
@@ -323,7 +186,7 @@ function LoginContent() {
             <div className="mt-4">
               {checkingAuth ? (
                 <div className="flex justify-center py-6">
-                  <span className="flex items-center gap-1.5" aria-label="Loading">
+                  <span role="status" aria-label="Checking sign-in status" className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
                     <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
                     <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />
@@ -382,38 +245,10 @@ function LoginContent() {
           <div className="flex-1" />
         </div>
 
-        <style jsx>{`
-          @keyframes sunPulse {
-            0%, 100% { opacity: 0.55; transform: scale(1); }
-            50%      { opacity: 0.75; transform: scale(1.06); }
-          }
-          @keyframes flagFlutter {
-            0%, 100% { transform: rotate(-1.5deg) scaleY(1); }
-            25%      { transform: rotate(0.5deg) scaleY(0.96); }
-            50%      { transform: rotate(2deg) scaleY(1); }
-            75%      { transform: rotate(0.5deg) scaleY(0.98); }
-          }
-          @keyframes treeSway {
-            0%, 100% { transform: rotate(-0.6deg); }
-            50%      { transform: rotate(0.6deg); }
-          }
-          @keyframes logoFloat {
-            0%, 100% { transform: translateY(0); }
-            50%      { transform: translateY(-2px); }
-          }
-          @keyframes grainShift {
-            0%, 100% { transform: translate(0, 0); }
-            25%      { transform: translate(-2%, 1%); }
-            50%      { transform: translate(1%, -2%); }
-            75%      { transform: translate(2%, 2%); }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            :global(*) {
-              animation-duration: 0.01ms !important;
-              animation-iteration-count: 1 !important;
-            }
-          }
-        `}</style>
+        {/* Scene keyframes live in `src/app/globals.css` (prefixed `helmScene…`)
+            so they're shared across scenes and scoped reduced-motion hits
+            `[data-scene-animated]` only — never touches focus rings or status
+            indicators. */}
       </div>
     </LazyMotion>
   );
@@ -423,8 +258,8 @@ export default function GolfLoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center" style={{ height: '100dvh', background: '#FFFEFA' }}>
-          <span className="flex items-center gap-1.5" aria-label="Loading">
+        <div className="flex items-center justify-center" style={{ height: '100svh', background: '#FFFEFA' }}>
+          <span role="status" aria-label="Loading sign-in" className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
             <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />
             <span className="w-2 h-2 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '300ms' }} />

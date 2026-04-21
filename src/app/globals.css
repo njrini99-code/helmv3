@@ -2448,3 +2448,51 @@ select:-webkit-autofill {
   transform: scale(0.985);
 }
 
+
+/* ============================================================
+ * SCENE KEYFRAMES — shared by Course/Coastal/etc. painterly scenes
+ * ============================================================ */
+@keyframes helmSceneSunPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 0.75; transform: scale(1.06); }
+}
+@keyframes helmSceneFlagFlutter {
+  0%, 100% { transform: rotate(-1.5deg) scaleY(1); }
+  25%      { transform: rotate(0.5deg) scaleY(0.96); }
+  50%      { transform: rotate(2deg) scaleY(1); }
+  75%      { transform: rotate(0.5deg) scaleY(0.98); }
+}
+@keyframes helmSceneTreeSway {
+  0%, 100% { transform: rotate(-0.6deg); }
+  50%      { transform: rotate(0.6deg); }
+}
+@keyframes helmSceneLogoFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+@keyframes helmSceneGrainShift {
+  0%, 100% { transform: translate(0, 0); }
+  25%      { transform: translate(-2%, 1%); }
+  50%      { transform: translate(1%, -2%); }
+  75%      { transform: translate(2%, 2%); }
+}
+@keyframes helmSceneWaveShift {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(8px); }
+}
+@keyframes helmSceneCypressSway {
+  0%, 100% { transform: rotate(-0.5deg); }
+  50%      { transform: rotate(0.5deg); }
+}
+@keyframes helmSceneGullDrift {
+  from { transform: translateX(-6%); }
+  to   { transform: translateX(106%); }
+}
+
+/* Kill scene animations under reduced-motion. Scoped to data attribute
+ * so we never nuke focus indicators or legitimate status animations. */
+@media (prefers-reduced-motion: reduce) {
+  [data-scene-animated] {
+    animation: none !important;
+  }
+}

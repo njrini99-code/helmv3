@@ -29,9 +29,13 @@ export function CapacitorProvider() {
 
       // Keyboard lifecycle — dynamic import to avoid "Keyboard plugin
       // is not implemented on web" errors. The static import was causing
-      // unhandled rejections on every web page load.
+      // unhandled rejections on every web page load. A `cancelled` flag
+      // prevents listener leaks if the component unmounts before the
+      // dynamic-import promise resolves (fast route-nav case).
+      let cancelled = false;
       let cleanupKeyboard: (() => void) | undefined;
       import('@capacitor/keyboard').then(({ Keyboard }) => {
+        if (cancelled) return;
         const showListener = Keyboard.addListener('keyboardWillShow', (info) => {
           document.body.classList.add('keyboard-open');
           document.documentElement.style.setProperty(
@@ -52,6 +56,7 @@ export function CapacitorProvider() {
       });
 
       return () => {
+        cancelled = true;
         cancelAnimationFrame(rafId);
         if (innerRaf) cancelAnimationFrame(innerRaf);
         cleanupKeyboard?.();
