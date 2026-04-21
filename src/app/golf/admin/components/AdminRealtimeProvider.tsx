@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useCallback, useMemo } from 'react';
 import { AdminToastProvider, useAdminToast } from './AdminToast';
 import { useAdminRealtime, type UseAdminRealtimeReturn } from '@/hooks/useAdminRealtime';
 import { useAdminPresence, type UseAdminPresenceReturn } from '@/hooks/useAdminPresence';
@@ -93,12 +93,15 @@ function AdminRealtimeInnerProvider({
     onNewAlert: handleNewAlert,
   });
 
-  const value: AdminRealtimeContextValue = {
-    realtime,
-    presence,
-    alerts,
-    currentUserId,
-  };
+  const value = useMemo<AdminRealtimeContextValue>(
+    () => ({
+      realtime,
+      presence,
+      alerts,
+      currentUserId,
+    }),
+    [realtime, presence, alerts, currentUserId],
+  );
 
   return (
     <AdminRealtimeContext.Provider value={value}>
