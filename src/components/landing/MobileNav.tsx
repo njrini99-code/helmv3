@@ -191,13 +191,11 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           closed: {
                             opacity: 0,
                             y: 20,
-                            filter: 'blur(8px)',
                             transition: { duration: 0.12 },
                           },
                           open: {
                             opacity: 1,
                             y: 0,
-                            filter: 'blur(0px)',
                             transition: { duration: 0.5, ease: smooth },
                           },
                         }}
