@@ -297,14 +297,28 @@ export default function CRMPage() {
     }
   };
 
-  const toggleStar = async (coachId: string, currentStarred: boolean) => {
+  const toggleStar = useCallback(async (coachId: string, currentStarred: boolean) => {
     await updateCoach(coachId, { is_starred: !currentStarred });
-  };
+    // updateCoach captures current state via closures but its signature is
+    // stable; intentionally omitting from deps for a stable function ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleCoachClick = (coach: Coach) => {
+  const handleCoachClick = useCallback((coach: Coach) => {
     setSelectedCoach(coach);
     setDetailPanelOpen(true);
-  };
+  }, []);
+
+  // Stable handlers for list/pipeline/conferences views — avoid creating
+  // new function refs on every CRMPage render (which would defeat the
+  // React.memo on CoachTableRow).
+  const handleStatusChange = useCallback((id: string, status: CoachStatus) => {
+    updateCoach(id, { status });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const handleLogContact = useCallback((coach: Coach) => {
+    setQuickActionsCoach(coach);
+  }, []);
 
   const handleSendFollowup = (
     recipients: Array<{ email: string; name?: string | null; coach_id?: string | null }>,
@@ -651,10 +665,10 @@ export default function CRMPage() {
                   loading={loading}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
-                  onStatusChange={(id, status) => updateCoach(id, { status })}
+                  onStatusChange={handleStatusChange}
                   onToggleStar={toggleStar}
                   onCoachClick={handleCoachClick}
-                  onLogContact={(coach) => setQuickActionsCoach(coach)}
+                  onLogContact={handleLogContact}
                   statusConfig={STATUS_CONFIG}
                   priorityConfig={PRIORITY_CONFIG}
                 />
@@ -667,7 +681,7 @@ export default function CRMPage() {
             <PipelineView
               coaches={allCoaches}
               onCoachClick={handleCoachClick}
-              onStatusChange={(id, status) => updateCoach(id, { status })}
+              onStatusChange={handleStatusChange}
               onToggleStar={toggleStar}
               statusConfig={STATUS_CONFIG}
               priorityConfig={PRIORITY_CONFIG}
@@ -693,9 +707,9 @@ export default function CRMPage() {
                 selectedIds={selectedIds}
                 onSelectionChange={setSelectedIds}
                 onCoachClick={handleCoachClick}
-                onStatusChange={(id, status) => updateCoach(id, { status })}
+                onStatusChange={handleStatusChange}
                 onToggleStar={toggleStar}
-                onLogContact={(coach) => setQuickActionsCoach(coach)}
+                onLogContact={handleLogContact}
                 statusConfig={STATUS_CONFIG}
                 priorityConfig={PRIORITY_CONFIG}
               />
