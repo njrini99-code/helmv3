@@ -4668,6 +4668,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           archived_by: string | null
+          athletics_url: string | null
           best_contact_method: string | null
           best_contact_time: string | null
           budget_range: string | null
@@ -4704,6 +4705,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
+          athletics_url?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null
@@ -4740,6 +4742,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_by?: string | null
+          athletics_url?: string | null
           best_contact_method?: string | null
           best_contact_time?: string | null
           budget_range?: string | null

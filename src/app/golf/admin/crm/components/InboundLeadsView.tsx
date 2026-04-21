@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -11,6 +11,18 @@ import {
   IconRefresh,
   IconExternalLink,
 } from '@/components/icons';
+import { EmailStatusBadge } from './EmailStatusBadge';
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+interface CoachEmailRow {
+  id: string;
+  email: string | null;
+  email_status: string | null;
+  last_email_event_type: string | null;
+  last_email_event_at: string | null;
+}
 
 interface DemoRequest {
   id: string;
@@ -30,29 +42,34 @@ interface DemoRequest {
 
 type FilterStatus = 'all' | 'new' | 'contacted' | 'converted';
 
+const FILTER_LABELS: Record<FilterStatus, string> = {
+  all: 'All',
+  new: 'New',
+  contacted: 'Contacted',
+  converted: 'Added',
+};
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 export function InboundLeadsView() {
-  const [requests, setRequests] = useState<DemoRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<DemoRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [processing, setProcessing] = useState<string | null>(null);
 
   const supabase = createClient();
 
+  // Fetch once — filter client-side so we get stats + filtered view from one query.
   const fetchRequests = useCallback(async () => {
     setLoading(true);
-    let query = supabase
+    const { data } = await supabase
       .from('demo_requests')
       .select('*')
       .order('created_at', { ascending: false });
-
-    if (filter !== 'all') {
-      query = query.eq('status', filter);
-    }
-
-    const { data } = await query;
-    setRequests((data || []) as DemoRequest[]);
+    setAllRequests((data || []) as DemoRequest[]);
     setLoading(false);
-  }, [supabase, filter]);
+  }, [supabase]);
 
   useEffect(() => { fetchRequests(); }, [fetchRequests]);
 
@@ -69,7 +86,6 @@ export function InboundLeadsView() {
   const addToCRM = async (request: DemoRequest) => {
     setProcessing(request.id);
 
-    // Check if coach already exists
     const { data: existing } = await supabase
       .from('crm_coaches')
       .select('id')
@@ -100,26 +116,84 @@ export function InboundLeadsView() {
     setProcessing(null);
   };
 
-  // Refetch all for stats regardless of filter
-  const [allRequests, setAllRequests] = useState<DemoRequest[]>([]);
-  useEffect(() => {
-    async function fetchAll() {
-      const { data } = await supabase.from('demo_requests').select('*');
-      setAllRequests((data || []) as DemoRequest[]);
-    }
-    fetchAll();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requests]);
-
-  const allStats = {
+  const allStats = useMemo(() => ({
     total: allRequests.length,
     new: allRequests.filter(r => !r.status || r.status === 'new').length,
     contacted: allRequests.filter(r => r.status === 'contacted').length,
     converted: allRequests.filter(r => r.status === 'converted').length,
-  };
+  }), [allRequests]);
+
+  const requests = useMemo(() => {
+    if (filter === 'all') return allRequests;
+    if (filter === 'new') {
+      return allRequests.filter(r => !r.status || r.status === 'new');
+    }
+    return allRequests.filter(r => r.status === filter);
+  }, [allRequests, filter]);
+
+  // Batch-fetch CRM coach email status for the currently visible leads so we
+  // can render the EmailStatusBadge inline. One query, one map lookup per row.
+  const leadEmails = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of requests) {
+      if (r.email) set.add(r.email.toLowerCase());
+    }
+    return Array.from(set);
+  }, [requests]);
+
+  const [coachByEmail, setCoachByEmail] = useState<Map<string, CoachEmailRow>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCoaches() {
+      if (leadEmails.length === 0) {
+        if (!cancelled) setCoachByEmail(new Map());
+        return;
+      }
+      // Stream 1's migration adds `last_email_event_type` and
+      // `last_email_event_at`; the generated Database types may not yet
+      // include them, so we widen the client here and narrow via the local
+      // CoachEmailRow type below.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const client = supabase as any;
+      const { data } = await client
+        .from('crm_coaches')
+        .select('id, email, email_status, last_email_event_type, last_email_event_at')
+        .in('email', leadEmails);
+      if (cancelled) return;
+      const next = new Map<string, CoachEmailRow>();
+      const rows = (data ?? []) as CoachEmailRow[];
+      for (const row of rows) {
+        if (row.email) next.set(row.email.toLowerCase(), row);
+      }
+      setCoachByEmail(next);
+    }
+    fetchCoaches();
+    return () => { cancelled = true; };
+  }, [supabase, leadEmails]);
 
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto">
+    <div className="space-y-5 max-w-[1200px] mx-auto">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-warm-900 tracking-tight">
+            Inbound leads
+          </h2>
+          <p className="text-sm text-warm-500 mt-1">
+            Demo requests from the landing page. Triage, contact, then promote into the CRM.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={fetchRequests}
+          aria-label="Refresh inbound leads"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200/60 text-warm-600 hover:text-warm-900 hover:bg-white transition-colors self-start sm:self-auto"
+        >
+          <IconRefresh size={13} aria-hidden="true" />
+          Refresh
+        </button>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -153,43 +227,62 @@ export function InboundLeadsView() {
         />
       </div>
 
-      {/* Filter Tabs + Refresh */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-white/60 backdrop-blur-sm border border-white/20">
-          {(['all', 'new', 'contacted', 'converted'] as FilterStatus[]).map((f) => (
+      {/* Filter Tabs */}
+      <div
+        role="tablist"
+        aria-label="Filter inbound leads by status"
+        className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/60 border border-warm-200/60 backdrop-blur-sm"
+      >
+        {(Object.keys(FILTER_LABELS) as FilterStatus[]).map((f) => {
+          const isActive = filter === f;
+          const count =
+            f === 'all' ? allStats.total :
+            f === 'new' ? allStats.new :
+            f === 'contacted' ? allStats.contacted :
+            allStats.converted;
+          return (
             <button
               key={f}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls="inbound-leads-list"
               onClick={() => setFilter(f)}
               className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 capitalize',
-                filter === f
-                  ? 'bg-white shadow-sm text-warm-900'
-                  : 'text-warm-500 hover:text-warm-700 hover:bg-white/40'
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
+                isActive
+                  ? 'bg-warm-900 text-white shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900',
               )}
             >
-              {f === 'all' ? 'All' : f}
-              {f === 'new' && allStats.new > 0 && (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">
-                  {allStats.new}
-                </span>
-              )}
+              {FILTER_LABELS[f]}
+              <span
+                className={cn(
+                  'px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums',
+                  isActive
+                    ? 'bg-white/20 text-white'
+                    : f === 'new' && count > 0
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-warm-100 text-warm-600',
+                )}
+              >
+                {count}
+              </span>
             </button>
-          ))}
-        </div>
-        <button
-          onClick={fetchRequests}
-          aria-label="Refresh leads"
-          className="p-2 rounded-lg hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
-        >
-          <IconRefresh size={16} aria-hidden="true" />
-        </button>
+          );
+        })}
       </div>
 
       {/* Request List */}
-      <div className="glass-standard rounded-2xl overflow-hidden">
+      <div
+        id="inbound-leads-list"
+        role="tabpanel"
+        aria-live="polite"
+        className="glass-standard rounded-2xl overflow-hidden"
+      >
         {loading ? (
           <div className="p-6 space-y-4">
-            {[...Array(5)].map((_, i) => (
+            {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 animate-pulse">
                 <div className="w-10 h-10 rounded-xl bg-warm-100" />
                 <div className="flex-1 space-y-2">
@@ -201,23 +294,34 @@ export function InboundLeadsView() {
             ))}
           </div>
         ) : requests.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="py-16 px-6 text-center">
             <div className="w-14 h-14 rounded-2xl bg-warm-50 flex items-center justify-center mx-auto mb-4">
-              <IconMail size={24} className="text-warm-300" />
+              <IconMail size={24} className="text-warm-300" aria-hidden="true" />
             </div>
-            <p className="text-sm font-medium text-warm-500">No demo requests yet</p>
-            <p className="text-xs text-warm-400 mt-1">Requests from the landing page will appear here</p>
+            <p className="text-sm font-semibold text-warm-900">
+              {filter === 'all'
+                ? 'No demo requests yet'
+                : `No ${FILTER_LABELS[filter].toLowerCase()} leads`}
+            </p>
+            <p className="text-xs text-warm-500 mt-1 max-w-sm mx-auto">
+              {filter === 'all'
+                ? 'Requests submitted from the landing page will appear here in real time.'
+                : 'Adjust the filter above to see other leads.'}
+            </p>
           </div>
         ) : (
-          <div className="divide-y divide-warm-100/50">
+          <ul className="divide-y divide-warm-100/60">
             {requests.map((request) => {
               const isNew = !request.status || request.status === 'new';
               const isContacted = request.status === 'contacted';
               const isConverted = request.status === 'converted';
               const isProcessing = processing === request.id;
+              const coachRow = request.email
+                ? coachByEmail.get(request.email.toLowerCase())
+                : undefined;
 
               return (
-                <div
+                <li
                   key={request.id}
                   className={cn(
                     'flex items-center gap-4 px-6 py-4 transition-colors',
@@ -225,12 +329,15 @@ export function InboundLeadsView() {
                   )}
                 >
                   {/* Status indicator */}
-                  <div className={cn(
-                    'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                    isNew && 'bg-amber-100',
-                    isContacted && 'bg-violet-100',
-                    isConverted && 'bg-primary-100',
-                  )}>
+                  <div
+                    className={cn(
+                      'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0',
+                      isNew && 'bg-amber-100',
+                      isContacted && 'bg-violet-100',
+                      isConverted && 'bg-primary-100',
+                    )}
+                    aria-hidden="true"
+                  >
                     {isNew && <IconMail size={18} className="text-amber-600" />}
                     {isContacted && <IconCheckCircle2 size={18} className="text-violet-600" />}
                     {isConverted && <IconUserPlus size={18} className="text-primary-600" />}
@@ -238,90 +345,108 @@ export function InboundLeadsView() {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-sm font-medium text-warm-900 truncate">
                         {request.email}
                       </p>
                       {isNew && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-100 text-amber-700">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">
                           New
                         </span>
                       )}
+                      {coachRow ? (
+                        <EmailStatusBadge
+                          email_status={coachRow.email_status}
+                          last_email_event_type={coachRow.last_email_event_type}
+                          last_email_event_at={coachRow.last_email_event_at}
+                          compact
+                        />
+                      ) : (
+                        <span
+                          className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-warm-200/80 bg-warm-50 text-warm-500 text-[10px] font-medium"
+                          title="This lead is not yet in the CRM"
+                        >
+                          Not in CRM
+                        </span>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3 mt-0.5">
+                    <div className="flex items-center gap-x-3 gap-y-0.5 mt-1 flex-wrap text-xs text-warm-500">
                       {request.name && (
-                        <span className="text-xs text-warm-500">{request.name}</span>
+                        <span className="text-warm-600">{request.name}</span>
                       )}
                       {request.organization && (
-                        <span className="text-xs text-warm-400">{request.organization}</span>
+                        <span>{request.organization}</span>
                       )}
-                      <span className="text-xs text-warm-400 flex items-center gap-1">
-                        <IconClock size={10} />
+                      <span className="flex items-center gap-1 tabular-nums" title={request.created_at ?? undefined}>
+                        <IconClock size={10} aria-hidden="true" />
                         {request.created_at ? formatRelative(request.created_at) : 'Unknown'}
                       </span>
                       {request.interest_type && (
-                        <span className="text-xs text-warm-400 capitalize">{request.interest_type.replace('_', ' ')}</span>
+                        <span className="capitalize">{request.interest_type.replace(/_/g, ' ')}</span>
                       )}
                     </div>
                     {request.message && (
-                      <p className="text-xs text-warm-500 mt-1 truncate max-w-md">&ldquo;{request.message}&rdquo;</p>
+                      <p className="text-xs text-warm-500 mt-1 truncate max-w-md italic">
+                        &ldquo;{request.message}&rdquo;
+                      </p>
                     )}
                   </div>
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isNew && (
-                      <>
-                        <button
-                          onClick={() => markContacted(request.id)}
-                          disabled={isProcessing}
-                          className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors disabled:opacity-50"
-                        >
-                          Mark Contacted
-                        </button>
-                        <button
-                          onClick={() => addToCRM(request)}
-                          disabled={isProcessing}
-                          className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center gap-1"
-                        >
-                          <IconUserPlus size={12} />
-                          Add to CRM
-                        </button>
-                      </>
-                    )}
-                    {isContacted && (
                       <button
+                        type="button"
+                        onClick={() => markContacted(request.id)}
+                        disabled={isProcessing}
+                        aria-label={`Mark ${request.email} as contacted`}
+                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200/60 text-warm-700 hover:bg-white hover:text-warm-900 transition-colors disabled:opacity-50"
+                      >
+                        Mark Contacted
+                      </button>
+                    )}
+                    {(isNew || isContacted) && (
+                      <button
+                        type="button"
                         onClick={() => addToCRM(request)}
                         disabled={isProcessing}
-                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center gap-1"
+                        aria-label={`Add ${request.email} to CRM`}
+                        className="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors disabled:opacity-50 inline-flex items-center gap-1"
                       >
-                        <IconUserPlus size={12} />
+                        <IconUserPlus size={12} aria-hidden="true" />
                         Add to CRM
                       </button>
                     )}
                     {isConverted && (
-                      <span className="text-xs text-primary-600 font-medium flex items-center gap-1">
-                        <IconCheckCircle2 size={12} />
+                      <span
+                        className="inline-flex items-center gap-1 text-xs text-primary-600 font-medium"
+                        aria-label="Already in CRM"
+                      >
+                        <IconCheckCircle2 size={12} aria-hidden="true" />
                         In CRM
                       </span>
                     )}
                     <a
                       href={`mailto:${request.email}`}
-                      className="p-1.5 rounded-lg hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
+                      aria-label={`Compose email to ${request.email}`}
+                      className="p-1.5 rounded-lg hover:bg-white text-warm-400 hover:text-warm-700 transition-colors"
                     >
-                      <IconExternalLink size={14} />
+                      <IconExternalLink size={14} aria-hidden="true" />
                     </a>
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </div>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Subcomponents
+// ---------------------------------------------------------------------------
 function StatCard({
   icon, iconBg, iconColor, label, value, highlight,
 }: {
@@ -335,14 +460,14 @@ function StatCard({
   return (
     <div className={cn(
       'bg-white/70 backdrop-blur-xl border rounded-2xl shadow-glass p-4 lg:p-5 transition-all',
-      highlight ? 'border-amber-200/50 ring-1 ring-amber-200/30' : 'border-white/20',
+      highlight ? 'border-amber-200/60 ring-1 ring-amber-200/40' : 'border-white/20',
     )}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-label font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
+          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">{label}</p>
           <p className="text-3xl font-bold text-warm-900 tabular-nums tracking-tight mt-1">{value}</p>
         </div>
-        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg, iconColor)}>
+        <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', iconBg, iconColor)} aria-hidden="true">
           {icon}
         </div>
       </div>
@@ -350,6 +475,9 @@ function StatCard({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 function formatRelative(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);

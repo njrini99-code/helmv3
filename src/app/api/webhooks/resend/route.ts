@@ -73,9 +73,13 @@ export async function POST(request: Request) {
       .eq('resend_message_id', event.data.email_id)
       .maybeSingle();
 
-    // Upsert the event (idempotent via unique constraint)
+    // Upsert the event (idempotent via unique constraint).
+    // Table renamed from `crm_email_events` -> `email_events` in
+    // 20260420000000_resend_activity_mirror.sql. A trigger on this table
+    // auto-syncs the `emails` snapshot used by the admin dashboard.
     const { error } = await adminClient
-      .from('crm_email_events')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .from('email_events' as any)
       .upsert(
         {
           contact_log_id: contactLog?.id || null,

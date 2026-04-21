@@ -5,6 +5,13 @@ import { cn } from '@/lib/utils';
 import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus } from '../crm-config';
+import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
+
+// The Coach type from crm-config.tsx predates Stream 1's migration that added
+// `last_email_event_type` and `last_email_event_at` to crm_coaches. Extend it
+// locally as an additive intersection so both fields are available without
+// modifying the shared type.
+type CoachRow = Coach & EmailStatusFields;
 
 interface CoachTableProps {
   coaches: Coach[];
@@ -177,6 +184,7 @@ export function CoachTable({
             <div className="h-3 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
             <div className="h-5 w-10 bg-warm-100/60 rounded-full skeleton-shimmer" />
             <div className="h-5 w-20 bg-warm-100/60 rounded-full skeleton-shimmer" />
+            <div className="h-4 w-14 bg-warm-100/60 rounded-full skeleton-shimmer" />
             <div className="h-3 w-16 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
         ))}
@@ -229,6 +237,7 @@ export function CoachTable({
             <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
             <TH field="conference" label="Conference" onSort={handleSort} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
             <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
+            <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-24">Email</th>
             <TH field="priority" label="Priority" onSort={handleSort} className="hidden lg:table-cell w-20"><SortArrow field="priority" /></TH>
             <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} className="hidden lg:table-cell"><SortArrow field="last_contacted_at" /></TH>
             <th className="w-12 px-4 py-3" />
@@ -303,7 +312,7 @@ export function CoachTable({
                     >
                       <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
                       <span>{statusConfig[coach.status]?.label}</span>
-                      <IconChevronDown size={9} className="opacity-40" />
+                      <IconChevronDown size={12} className="opacity-50" />
                     </button>
                     {openStatusDropdown === coach.id && (
                       <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
@@ -320,6 +329,16 @@ export function CoachTable({
                       </div>
                     )}
                   </div>
+                </td>
+
+                {/* Email status — hidden below md */}
+                <td className="hidden md:table-cell px-4 py-3">
+                  <EmailStatusBadge
+                    email_status={(coach as CoachRow).email_status}
+                    last_email_event_type={(coach as CoachRow).last_email_event_type}
+                    last_email_event_at={(coach as CoachRow).last_email_event_at}
+                    compact
+                  />
                 </td>
 
                 {/* Priority — hidden below lg */}
@@ -468,7 +487,7 @@ function TH({ field, label, onSort, children, className }: {
 }) {
   return (
     <th
-      className={cn('text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wider cursor-pointer hover:text-warm-700 transition-colors', className)}
+      className={cn('text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700 transition-colors', className)}
       onClick={() => onSort(field)}
     >
       {label}{children}

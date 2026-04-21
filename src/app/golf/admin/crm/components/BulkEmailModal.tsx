@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   IconX,
@@ -17,10 +17,17 @@ import {
 import type { Coach } from '../crm-config';
 import { TemplatePicker } from './TemplatePicker';
 
+type PrefilledRecipient = {
+  email: string;
+  name?: string | null;
+  coach_id?: string | null;
+};
+
 interface BulkEmailModalProps {
   coaches: Coach[];
   onClose: () => void;
   onSuccess: () => void;
+  prefilledRecipients?: PrefilledRecipient[];
 }
 
 type SendMode = 'gmail' | 'helm';
@@ -42,7 +49,7 @@ const MERGE_TAGS = [
   { label: '{division}', value: '{division}' },
 ] as const;
 
-export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalProps) {
+export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipients }: BulkEmailModalProps) {
   const [mode, setMode] = useState<SendMode>('helm');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -64,8 +71,83 @@ export function BulkEmailModal({ coaches, onClose, onSuccess }: BulkEmailModalPr
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const cursorPosRef = useRef<number>(0);
 
-  const coachesWithEmail = coaches.filter(c => c.email);
-  const coachesWithoutEmail = coaches.filter(c => !c.email);
+  // Merge prefilledRecipients into the effective coach list.
+  // Match strategy: coach_id first, else case-insensitive email. Unmatched
+  // prefills become ad-hoc recipients (synthesized minimal Coach objects) so
+  // they flow through the existing send path exactly like manual selections.
+  const effectiveCoaches = useMemo<Coach[]>(() => {
+    if (!prefilledRecipients || prefilledRecipients.length === 0) {
+      return coaches;
+    }
+
+    const byId = new Map<string, Coach>();
+    const byEmail = new Map<string, Coach>();
+    for (const c of coaches) {
+      byId.set(c.id, c);
+      if (c.email) byEmail.set(c.email.toLowerCase(), c);
+    }
+
+    const seenIds = new Set<string>();
+    const matched: Coach[] = [];
+    const adHoc: Coach[] = [];
+
+    for (const r of prefilledRecipients) {
+      let hit: Coach | undefined;
+      if (r.coach_id) hit = byId.get(r.coach_id);
+      if (!hit && r.email) hit = byEmail.get(r.email.toLowerCase());
+
+      if (hit) {
+        if (!seenIds.has(hit.id)) {
+          seenIds.add(hit.id);
+          matched.push(hit);
+        }
+      } else if (r.email) {
+        adHoc.push({
+          id: `adhoc:${r.email.toLowerCase()}`,
+          name: r.name || r.email,
+          title: null,
+          email: r.email,
+          phone: null,
+          school: '',
+          conference: '',
+          division: 'D2',
+          program: 'mens',
+          status: 'contacted',
+          priority: 0,
+          highlight_color: null,
+          is_starred: false,
+          notes: null,
+          internal_comments: null,
+          tags: null,
+          team_size: null,
+          current_software: null,
+          budget_range: null,
+          decision_timeline: null,
+          pain_points: null,
+          best_contact_method: null,
+          best_contact_time: null,
+          timezone: null,
+          last_contacted_at: null,
+          next_follow_up_at: null,
+          email_status: 'unknown',
+          source: null,
+          is_archived: false,
+          archived_at: null,
+          archived_by: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          athletics_url: null,
+        });
+      }
+    }
+
+    // If caller passed prefills, those ARE the selection — replace the
+    // coaches list entirely rather than merging with unrelated selections.
+    return [...matched, ...adHoc];
+  }, [coaches, prefilledRecipients]);
+
+  const coachesWithEmail = effectiveCoaches.filter(c => c.email);
+  const coachesWithoutEmail = effectiveCoaches.filter(c => !c.email);
   const bccList = coachesWithEmail.map(c => c.email!).join(',');
 
   // Use first coach's data for merge tag preview

@@ -16,6 +16,7 @@ import {
   IconTarget,
   IconWarning,
   IconMail,
+  IconActivity,
   IconClipboardList as ClipboardList,
   IconLayoutGrid as LayoutDashboard,
   IconArrowLeft as ArrowLeft,
@@ -43,6 +44,7 @@ import { BulkActionsBar } from './components/BulkActionsBar';
 import { BulkEmailModal } from './components/BulkEmailModal';
 import { EmailTrackingView } from './components/EmailTrackingView';
 import { InboundLeadsView } from './components/InboundLeadsView';
+import { ResendActivityView } from './components/resend/ResendActivityView';
 // FAB removed — actions available via sidebar buttons
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
@@ -58,7 +60,8 @@ const TABS = [
   { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '3', description: 'Kanban sales pipeline' },
   { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
   { id: 'email', label: 'Email', Icon: IconMail, shortcut: '5', description: 'Email tracking & analytics' },
-  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '6', description: 'Demo requests & inbound leads' },
+  { id: 'resend', label: 'Resend', Icon: IconActivity, shortcut: '6', description: 'Live email deliverability from Resend' },
+  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '7', description: 'Demo requests & inbound leads' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -109,6 +112,9 @@ export default function CRMPage() {
   const [editingEvent, setEditingEvent] = useState<CRMEvent | null>(null);
   const [showBulkEmailModal, setShowBulkEmailModal] = useState(false);
   const [bulkEmailCoaches, setBulkEmailCoaches] = useState<Coach[]>([]);
+  const [followupRecipients, setFollowupRecipients] = useState<
+    Array<{ email: string; name?: string | null; coach_id?: string | null }>
+  >([]);
 
   const supabase = createClient();
 
@@ -252,6 +258,28 @@ export default function CRMPage() {
   const handleCoachClick = (coach: Coach) => {
     setSelectedCoach(coach);
     setDetailPanelOpen(true);
+  };
+
+  const handleSendFollowup = (
+    recipients: Array<{ email: string; name?: string | null; coach_id?: string | null }>,
+  ) => {
+    if (recipients.length === 0) return;
+    // Hydrate any matching CRM coach rows so merge-tag data is available.
+    const matched: Coach[] = [];
+    const seen = new Set<string>();
+    for (const r of recipients) {
+      const hit =
+        (r.coach_id && allCoaches.find(c => c.id === r.coach_id)) ||
+        (r.email && allCoaches.find(c => c.email?.toLowerCase() === r.email.toLowerCase())) ||
+        null;
+      if (hit && !seen.has(hit.id)) {
+        seen.add(hit.id);
+        matched.push(hit);
+      }
+    }
+    setBulkEmailCoaches(matched);
+    setFollowupRecipients(recipients);
+    setShowBulkEmailModal(true);
   };
 
   const handleBulkAction = async (action: string, value?: unknown) => {
@@ -612,6 +640,9 @@ export default function CRMPage() {
           {/* ── Email Tab ── */}
           {activeTab === 'email' && <EmailTrackingView />}
 
+          {/* ── Resend Tab ── */}
+          {activeTab === 'resend' && <ResendActivityView onSendFollowup={handleSendFollowup} />}
+
           {/* ── Inbound Tab ── */}
           {activeTab === 'inbound' && <InboundLeadsView />}
         </div>
@@ -684,10 +715,15 @@ export default function CRMPage() {
           onSuccess={() => { setShowImportModal(false); refreshData(); }}
         />
       )}
-      {showBulkEmailModal && bulkEmailCoaches.length > 0 && (
+      {showBulkEmailModal && (bulkEmailCoaches.length > 0 || followupRecipients.length > 0) && (
         <BulkEmailModal
           coaches={bulkEmailCoaches}
-          onClose={() => { setShowBulkEmailModal(false); setBulkEmailCoaches([]); }}
+          prefilledRecipients={followupRecipients}
+          onClose={() => {
+            setShowBulkEmailModal(false);
+            setBulkEmailCoaches([]);
+            setFollowupRecipients([]);
+          }}
           onSuccess={() => { setSelectedIds(new Set()); refreshData(); }}
         />
       )}
