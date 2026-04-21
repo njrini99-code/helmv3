@@ -151,7 +151,13 @@ export default function CRMPage() {
         .order('is_starred', { ascending: false })
         .order('priority', { ascending: false })
         .order('updated_at', { ascending: false });
-      const coachData = (data || []) as Coach[];
+      // Precompute a lowercased search blob once at fetch time so we don't
+      // call toLowerCase() 4x per row per keystroke in filteredCoaches.
+      const rows = (data || []) as Coach[];
+      const coachData: Array<Coach & { _searchBlob: string }> = rows.map(c => ({
+        ...c,
+        _searchBlob: `${c.name ?? ''} ${c.school ?? ''} ${c.email ?? ''} ${c.conference ?? ''}`.toLowerCase(),
+      }));
       setAllCoaches(coachData);
       const uniqueConferences = [...new Set(coachData.map(c => c.conference))].sort();
       setConferences(uniqueConferences);
@@ -163,35 +169,48 @@ export default function CRMPage() {
   }, [supabase]);
 
   // Client-side filtering from allCoaches — eliminates server round-trips on every keystroke
-  // and fixes the search bar flicker/reset bug caused by the fetch→re-render→state-reset loop
+  // and fixes the search bar flicker/reset bug caused by the fetch→re-render→state-reset loop.
+  // Single-pass loop over allCoaches to avoid 10 intermediate array allocations per recompute.
   const filteredCoaches = useMemo(() => {
-    let result = [...allCoaches];
+    const now = new Date().toISOString();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const cutoff = thirtyDaysAgo.toISOString();
 
-    if (filters.status !== 'all') result = result.filter(c => c.status === filters.status);
-    if (filters.division !== 'all') result = result.filter(c => c.division === filters.division);
-    if (filters.conference !== 'all') result = result.filter(c => c.conference === filters.conference);
-    if (filters.program !== 'all') result = result.filter(c => c.program === filters.program);
-    if (filters.priority !== 'all') result = result.filter(c => c.priority === parseInt(filters.priority));
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(c =>
-        c.name?.toLowerCase().includes(q) ||
-        c.school?.toLowerCase().includes(q) ||
-        c.email?.toLowerCase().includes(q) ||
-        c.conference?.toLowerCase().includes(q)
-      );
-    }
-    if (filters.followUpDue) {
-      const now = new Date().toISOString();
-      result = result.filter(c => c.next_follow_up_at && c.next_follow_up_at <= now);
-    }
-    if (filters.starred) result = result.filter(c => c.is_starred);
-    if (filters.hasNotes) result = result.filter(c => c.notes);
-    if (filters.noContact30Days) {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const cutoff = thirtyDaysAgo.toISOString();
-      result = result.filter(c => !c.last_contacted_at || c.last_contacted_at < cutoff);
+    const q = filters.search ? filters.search.toLowerCase() : null;
+    const priorityNum = filters.priority !== 'all' ? parseInt(filters.priority) : null;
+    const hasStatus = filters.status !== 'all';
+    const hasDivision = filters.division !== 'all';
+    const hasConference = filters.conference !== 'all';
+    const hasProgram = filters.program !== 'all';
+
+    const result: Coach[] = [];
+    for (const c of allCoaches) {
+      if (hasStatus && c.status !== filters.status) continue;
+      if (hasDivision && c.division !== filters.division) continue;
+      if (hasConference && c.conference !== filters.conference) continue;
+      if (hasProgram && c.program !== filters.program) continue;
+      if (priorityNum !== null && c.priority !== priorityNum) continue;
+      if (q) {
+        const blob = (c as Coach & { _searchBlob?: string })._searchBlob;
+        if (blob !== undefined) {
+          if (!blob.includes(q)) continue;
+        } else if (
+          !(
+            c.name?.toLowerCase().includes(q) ||
+            c.school?.toLowerCase().includes(q) ||
+            c.email?.toLowerCase().includes(q) ||
+            c.conference?.toLowerCase().includes(q)
+          )
+        ) {
+          continue;
+        }
+      }
+      if (filters.followUpDue && !(c.next_follow_up_at && c.next_follow_up_at <= now)) continue;
+      if (filters.starred && !c.is_starred) continue;
+      if (filters.hasNotes && !c.notes) continue;
+      if (filters.noContact30Days && c.last_contacted_at && c.last_contacted_at >= cutoff) continue;
+      result.push(c);
     }
 
     // Sort: starred first, then by priority desc, then by updated_at desc
@@ -227,7 +246,21 @@ export default function CRMPage() {
     try {
       const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).eq('id', coachId);
       if (updateError) throw updateError;
-      setAllCoaches(prev => prev.map(c => c.id === coachId ? { ...c, ...finalUpdates } : c));
+      setAllCoaches(prev => prev.map(c => {
+        if (c.id !== coachId) return c;
+        const merged = { ...c, ...finalUpdates } as Coach & { _searchBlob?: string };
+        // If a searchable field changed, recompute the search blob
+        if (
+          'name' in finalUpdates ||
+          'school' in finalUpdates ||
+          'email' in finalUpdates ||
+          'conference' in finalUpdates
+        ) {
+          merged._searchBlob =
+            `${merged.name ?? ''} ${merged.school ?? ''} ${merged.email ?? ''} ${merged.conference ?? ''}`.toLowerCase();
+        }
+        return merged;
+      }));
       if (selectedCoach?.id === coachId) setSelectedCoach(prev => prev ? { ...prev, ...finalUpdates } : null);
     } catch (err) {
       console.error('Failed to update coach:', err);
@@ -244,7 +277,20 @@ export default function CRMPage() {
       const { error: updateError } = await supabase.from('crm_coaches').update(finalUpdates).in('id', ids);
       if (updateError) throw updateError;
       const idSet = new Set(ids);
-      setAllCoaches(prev => prev.map(c => idSet.has(c.id) ? { ...c, ...finalUpdates } : c));
+      const touchesSearchable =
+        'name' in finalUpdates ||
+        'school' in finalUpdates ||
+        'email' in finalUpdates ||
+        'conference' in finalUpdates;
+      setAllCoaches(prev => prev.map(c => {
+        if (!idSet.has(c.id)) return c;
+        const merged = { ...c, ...finalUpdates } as Coach & { _searchBlob?: string };
+        if (touchesSearchable) {
+          merged._searchBlob =
+            `${merged.name ?? ''} ${merged.school ?? ''} ${merged.email ?? ''} ${merged.conference ?? ''}`.toLowerCase();
+        }
+        return merged;
+      }));
     } catch (err) {
       console.error('Failed to bulk update:', err);
       fetchAllCoaches();
