@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { IconRefresh, IconActivity } from '@/components/icons';
 import type { EmailEventRow } from '@/app/golf/actions/resend-activity';
 import { getRecentActivityFeed } from '@/app/golf/actions/resend-activity';
 import { EVENT_CONFIG, formatRelative, formatFullTimestamp } from './shared';
+import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 
 interface LiveActivityFeedProps {
   initialLimit?: number;
@@ -75,11 +76,10 @@ export function LiveActivityFeed({
     };
   }, [isPaused]);
 
-  // Tick every 30s to update relative times
-  useEffect(() => {
-    const iv = setInterval(() => setTick((t) => t + 1), 30000);
-    return () => clearInterval(iv);
-  }, []);
+  // Tick every 30s to update relative times. Pauses when the tab is
+  // hidden so we don't re-render the feed while off-screen.
+  const tickRelativeTimes = useCallback(() => setTick((t) => t + 1), []);
+  useVisibilityAwareInterval(tickRelativeTimes, 30_000);
 
   const handleRefresh = async () => {
     setLoading(true);

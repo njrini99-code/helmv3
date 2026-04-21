@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 import {
   IconActivity,
   IconMail,
@@ -95,11 +96,10 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
     loadStats();
   }, [loadStats]);
 
-  // Poll stats every 60s for freshness (cheap — single RPC)
-  useEffect(() => {
-    const iv = setInterval(loadStats, 60_000);
-    return () => clearInterval(iv);
-  }, [loadStats]);
+  // Poll stats every 60s for freshness (cheap — single RPC).
+  // Pauses when the tab is hidden so we don't keep hitting the RPC while
+  // the user is on another tab/window.
+  useVisibilityAwareInterval(loadStats, 60_000);
 
   return (
     <div className="space-y-5">
