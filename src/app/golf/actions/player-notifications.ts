@@ -326,97 +326,20 @@ export async function getPlayerHubAnnouncements(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
-    // Get recent published announcements (last 30 days)
-    const { data: announcements, error } = await supabase
-      .from('golf_announcements')
-      .select('*')
-      .eq('team_id', teamId)
-      .not('published_at', 'is', null)
-      .gte('published_at', new Date(Date.now() - 30 * 86400000).toISOString())
-      .order('published_at', { ascending: false })
-      .limit(10);
+    // Single RPC call — replaces the 5-query block
+    // (announcements → recipients → acks → docs → tasks → JS visibility filter).
+    // Server-side visibility matches the old semantic: no recipients rows = all-team;
+    // otherwise player must be in recipients.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any).rpc('get_player_hub_announcements', {
+      p_team_id:   teamId,
+      p_player_id: playerId,
+    });
 
     if (error) return { success: false, error: 'Failed to load announcements' };
-    if (!announcements || announcements.length === 0) return { success: true, data: [] };
 
-    const announcementIds = announcements.map(a => a.id);
-
-    // Fetch recipients + acknowledgements in parallel
-    const [recipientsResult, acksResult, docsResult, tasksResult] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from('golf_announcement_recipients')
-        .select('announcement_id, player_id')
-        .in('announcement_id', announcementIds) as Promise<{ data: Array<{ announcement_id: string; player_id: string }> | null }>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from('golf_announcement_acknowledgements')
-        .select('announcement_id, player_id')
-        .in('announcement_id', announcementIds) as Promise<{ data: Array<{ announcement_id: string; player_id: string }> | null }>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from('golf_announcement_documents')
-        .select('announcement_id')
-        .in('announcement_id', announcementIds) as Promise<{ data: Array<{ announcement_id: string }> | null }>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (supabase as any)
-        .from('golf_announcement_tasks')
-        .select('announcement_id')
-        .in('announcement_id', announcementIds) as Promise<{ data: Array<{ announcement_id: string }> | null }>,
-    ]);
-
-    const allRecipients = recipientsResult.data || [];
-    const allAcks = acksResult.data || [];
-    const allDocs = docsResult.data || [];
-    const allTasks = tasksResult.data || [];
-
-    // Build maps
-    const recipientsByAnn: Record<string, string[]> = {};
-    for (const r of allRecipients) {
-      if (!recipientsByAnn[r.announcement_id]) recipientsByAnn[r.announcement_id] = [];
-      recipientsByAnn[r.announcement_id]!.push(r.player_id);
-    }
-
-    const acksByAnn: Record<string, string[]> = {};
-    for (const a of allAcks) {
-      if (!acksByAnn[a.announcement_id]) acksByAnn[a.announcement_id] = [];
-      acksByAnn[a.announcement_id]!.push(a.player_id);
-    }
-
-    const docCountByAnn: Record<string, number> = {};
-    for (const d of allDocs) {
-      docCountByAnn[d.announcement_id] = (docCountByAnn[d.announcement_id] || 0) + 1;
-    }
-
-    const taskCountByAnn: Record<string, number> = {};
-    for (const t of allTasks) {
-      taskCountByAnn[t.announcement_id] = (taskCountByAnn[t.announcement_id] || 0) + 1;
-    }
-
-    // Filter to player-visible and build meta
-    const result: GolfAnnouncementMeta[] = [];
-    for (const ann of announcements) {
-      const recipients = recipientsByAnn[ann.id] || [];
-      // Filter: all-team (no recipients) or player is in recipients
-      if (recipients.length > 0 && !recipients.includes(playerId)) continue;
-
-      const acks = acksByAnn[ann.id] || [];
-
-      result.push({
-        ...ann,
-        recipient_count: recipients.length,
-        acknowledged_count: acks.length,
-        total_recipients: recipients.length || 0,
-        task_count: taskCountByAnn[ann.id] || 0,
-        completed_task_count: 0, // lightweight: not needed for hub cards
-        document_count: docCountByAnn[ann.id] || 0,
-        has_player_acknowledged: acks.includes(playerId),
-      });
-
-      if (result.length >= 5) break;
-    }
-
-    return { success: true, data: result };
+    const rows = (data as GolfAnnouncementMeta[] | null) ?? [];
+    return { success: true, data: rows };
   } catch (error) {
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch hub announcements' };
   }
