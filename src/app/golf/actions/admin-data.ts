@@ -1,8 +1,88 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, revalidateTag, unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+
+// ============================================
+// ADMIN DASHBOARD ROLLUP (single-call RPC)
+// ============================================
+
+/** Shape returned by `public.get_admin_dashboard_rollup()` (see migration
+ *  20260421000001_admin_dashboard_rollup.sql). */
+export interface AdminDashboardRollup {
+  generated_at: string;
+  users: {
+    total: number;
+    admins: number;
+    coaches: number;
+    players: number;
+    new_last_7d: number;
+    new_last_30d: number;
+    active_1h: number;
+    active_24h: number;
+    active_7d: number;
+    active_30d: number;
+  };
+  rounds: {
+    total_rounds: number;
+    rounds_last_7d: number;
+    rounds_last_30d: number;
+    active_players: number;
+    players_active_30d: number;
+    at_risk_players: number;
+  };
+  rounds_today: number;
+  teams: {
+    golf_teams: number;
+    golf_teams_new_30d: number;
+    golf_teams_active: number;
+    baseball_teams: number;
+  };
+  onboarding: {
+    coaches_onboarded: number;
+    players_onboarded: number;
+    coaches_total: number;
+    players_total: number;
+  };
+  signup_trend_30d: { date: string; count: number }[];
+}
+
+export const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
+
+// Cached wrapper: 1-minute revalidation window, keyed by tag so realtime
+// admin_events writes can invalidate via `invalidateAdminDashboardRollup()`.
+const cachedAdminDashboardRollup = unstable_cache(
+  async (): Promise<AdminDashboardRollup> => {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Unauthorized');
+
+    // RPC is typed in database.ts only after local `supabase db push`; cast
+    // through `unknown` so prod deploys don't break if types lag behind.
+    const { data, error } = await (supabase.rpc as unknown as (
+      fn: 'get_admin_dashboard_rollup',
+    ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>)(
+      'get_admin_dashboard_rollup',
+    );
+    if (error) throw error instanceof Error ? error : new Error(String(error));
+    if (!data) throw new Error('Empty rollup response');
+    return data;
+  },
+  ['admin-dashboard-rollup'],
+  { tags: [ADMIN_DASHBOARD_CACHE_TAG], revalidate: 60 },
+);
+
+/** Server-side entrypoint: one RPC round-trip, cached 60s, tag-invalidated. */
+export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
+  return cachedAdminDashboardRollup();
+}
+
+/** Call from mutation paths / realtime webhook handlers that change the
+ *  underlying admin data (users / golf_rounds / admin_events). */
+export async function invalidateAdminDashboardRollup(): Promise<void> {
+  revalidateTag(ADMIN_DASHBOARD_CACHE_TAG);
+}
 
 // ============================================
 // TYPES
@@ -1347,6 +1427,13 @@ function buildFunnelSteps(stages: { step: string; count: number }[]): BIFunnelSt
 // MAIN DATA FETCHER
 // ============================================
 
+/**
+ * @deprecated Fires ~95 Supabase round-trips per call. New code should
+ *   prefer `getAdminDashboardRollup()` (single JSONB RPC, tag-cached).
+ *   This function is retained during the rollout so existing tabs that
+ *   still expect the fully-nested `AdminDashboardData` shape keep working.
+ *   Target removal: wave 3 of the perf remediation.
+ */
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const startTime = performance.now();
   const supabase = await createClient();

@@ -1,6 +1,9 @@
 'use client';
 
-import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import type {
+  AdminDashboardData,
+  AdminDashboardRollup,
+} from '@/app/golf/actions/admin-data';
 import {
   StatusBar,
   OverviewBriefing,
@@ -14,6 +17,9 @@ import { PlatformHealthCard } from './PlatformHealthCard';
 
 interface Props {
   data: AdminDashboardData;
+  /** Optional: fast cached rollup (1 RPC). When present we can prefer its
+   *  numbers over the legacy fetch. Left optional while tabs are migrated. */
+  rollup?: AdminDashboardRollup | null;
   onNavigateTab?: (tab: string) => void;
 }
 
@@ -48,7 +54,10 @@ function KpiCard({
   );
 }
 
-export function OverviewTab({ data, onNavigateTab }: Props) {
+export function OverviewTab({ data, rollup: _rollup, onNavigateTab }: Props) {
+  // _rollup: reserved for wave-3 migration away from the 95-query AdminDashboardData.
+  // Presence at this layer lets us start swapping KpiCard sources without
+  // touching the tab's callers again.
   // Compute subtitles for deep dives
   const funnel = data.playerFunnel.funnel;
   const signupStage = funnel.find((s) => s.stage.toLowerCase().includes('sign'));

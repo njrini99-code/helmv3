@@ -5,8 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { getAdminDashboardData } from '@/app/golf/actions/admin-data';
-import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import {
+  getAdminDashboardData,
+  getAdminDashboardRollup,
+} from '@/app/golf/actions/admin-data';
+import type {
+  AdminDashboardData,
+  AdminDashboardRollup,
+} from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { useAnalyticsTracking } from '@/hooks/useAnalyticsTracking';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
@@ -201,6 +207,9 @@ function AdminDashboardContent() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [crmStats, setCrmStats] = useState<CRMStats | null>(null);
+  // Cached, single-RPC rollup used for quick stats. Full legacy fetch is
+  // retained until all tabs are migrated off AdminDashboardData.
+  const [rollup, setRollup] = useState<AdminDashboardRollup | null>(null);
   const { trackFeature } = useAnalyticsTracking();
   const supabase = useMemo(() => createClient(), []);
 
@@ -242,15 +251,19 @@ function AdminDashboardContent() {
     if (!silent) setLoading(true);
     else setIsRefreshing(true);
     try {
-      // Fetch main data and CRM data in parallel
+      // Fetch main data, rollup, and CRM data in parallel.
+      // The rollup is 1 RPC round-trip, cached + tag-invalidated; the full
+      // legacy fetch is ~95 queries and stays until every tab is migrated.
       const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
 
-      const [result, crmResult] = await Promise.all([
+      const [result, rollupResult, crmResult] = await Promise.all([
         getAdminDashboardData(),
+        getAdminDashboardRollup().catch(() => null),
         supabase.from('crm_coaches').select('status').gte('created_at', ninetyDaysAgo),
       ]);
 
       setData(result);
+      if (rollupResult) setRollup(rollupResult);
       setLastRefresh(new Date());
       setError(null);
 
@@ -889,7 +902,11 @@ function AdminDashboardContent() {
                 </div>
               )}
               {activeTab === 'overview' && (
-                <OverviewTab data={data} onNavigateTab={handleNavigateTab} />
+                <OverviewTab
+                  data={data}
+                  rollup={rollup}
+                  onNavigateTab={handleNavigateTab}
+                />
               )}
               <Suspense fallback={<TabLoadingSkeleton />}>
                 {activeTab === 'people' && <PeopleTab data={data} />}
