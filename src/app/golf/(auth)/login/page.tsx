@@ -121,7 +121,6 @@ function LoginContent() {
                 height={64}
                 className="object-contain"
                 priority
-                unoptimized
                 style={{ filter: 'drop-shadow(0 2px 6px rgba(60,40,20,0.22)) drop-shadow(0 1px 2px rgba(60,40,20,0.18))' }}
               />
             </div>
