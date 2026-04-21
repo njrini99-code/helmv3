@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { Browser } from '@capacitor/browser';
 import { Haptics, ImpactStyle, NotificationType as HapticNotificationType } from '@capacitor/haptics';
@@ -6,11 +7,12 @@ import { SplashScreen } from '@capacitor/splash-screen';
 
 /**
  * Detect if the app is running inside a Capacitor native shell (iOS/Android).
- * Uses the standard Capacitor detection pattern.
+ * `window.Capacitor` exists on web too (it's the web-proxy entry point), so
+ * `isNativePlatform()` is the only reliable way to tell native from browser.
  */
 export function isNativeApp(): boolean {
   if (typeof window === 'undefined') return false;
-  return !!(window as unknown as Record<string, unknown>).Capacitor;
+  return Capacitor.isNativePlatform();
 }
 
 /**
