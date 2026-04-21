@@ -56,7 +56,9 @@ export interface AdminDashboardRollup {
   signup_trend_30d: { date: string; count: number }[];
 }
 
-export const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
+// Module-level constant (not exported — 'use server' files only allow async
+// function exports).
+const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
 
 // Cached RPC-only function: uses the service-role client so no request state
 // is read. The RPC itself enforces admin-only access via auth.uid() + role.
