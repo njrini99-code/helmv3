@@ -32,6 +32,7 @@ function LoginContent() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isNative, setIsNative] = useState(false);
+  const [brandMountDone, setBrandMountDone] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   // `createClient()` returns a fresh browser client per call — memoize so the
   // auth-check effect below doesn't treat it as a new dep on every render.
@@ -111,9 +112,20 @@ function LoginContent() {
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            onAnimationComplete={() => setBrandMountDone(true)}
             className="flex flex-col items-center gap-2.5 shrink-0"
           >
-            <div data-scene-animated style={{ animation: 'helmSceneLogoFloat 5s ease-in-out infinite', willChange: 'transform' }}>
+            <div
+              data-scene-animated
+              style={{
+                animation: 'helmSceneLogoFloat 5s ease-in-out infinite',
+                // Only force GPU promotion during the initial mount animation.
+                // After Framer Motion's enter animation completes, the CSS
+                // keyframe's gentle translate is fine without the layer hint
+                // and we avoid paying a permanent composite-layer cost.
+                willChange: brandMountDone ? undefined : 'transform',
+              }}
+            >
               <Image
                 src="/helm-golf-logo-transparent.png"
                 alt=""
@@ -121,7 +133,7 @@ function LoginContent() {
                 height={64}
                 className="object-contain"
                 priority
-                style={{ filter: 'drop-shadow(0 2px 6px rgba(60,40,20,0.22)) drop-shadow(0 1px 2px rgba(60,40,20,0.18))' }}
+                style={{ filter: 'drop-shadow(0 1px 3px rgba(60,40,20,0.22))' }}
               />
             </div>
             <h1
