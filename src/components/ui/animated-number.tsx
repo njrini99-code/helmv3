@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { motion, useSpring, useTransform, useInView } from 'framer-motion';
+import { m, useSpring, useTransform, useInView } from 'framer-motion';
 
 interface AnimatedNumberProps {
   value: number;
@@ -43,9 +43,9 @@ export function AnimatedNumber({
 
   return (
     <>
-      <motion.span ref={ref} className={className} aria-hidden="true">
+      <m.span ref={ref} className={className} aria-hidden="true">
         {display}
-      </motion.span>
+      </m.span>
       <span className="sr-only">{finalDisplay}</span>
     </>
   );
