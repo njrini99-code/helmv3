@@ -150,9 +150,7 @@ function LoginContent() {
             className="w-full max-w-[420px] mt-5 shrink-0"
             style={{
               padding: '22px 20px 18px',
-              background: 'rgba(255,253,245,0.82)',
-              backdropFilter: 'blur(28px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(28px) saturate(180%)',
+              background: 'rgba(255, 253, 245, 0.94)',
               borderRadius: 24,
               border: '0.5px solid rgba(255,255,255,0.9)',
               boxShadow:
