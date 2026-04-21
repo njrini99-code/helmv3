@@ -730,7 +730,8 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       {/* Content */}
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
           {/* =============== OVERVIEW TAB =============== */}
-          <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
+          {activeTab === 'overview' && (
+          <div>
             <div
               className="space-y-8"
             >
@@ -859,9 +860,11 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               )}
             </div>
           </div>
+          )}
 
           {/* =============== TRIPS TAB =============== */}
-          <div className={activeTab === 'trips' ? 'block' : 'hidden'}>
+          {activeTab === 'trips' && (
+          <div>
             <div
             >
               {trips.length > 0 ? (
@@ -881,9 +884,11 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               )}
             </div>
           </div>
+          )}
 
           {/* =============== TASKS TAB =============== */}
-          <div className={activeTab === 'tasks' ? 'block' : 'hidden'}>
+          {activeTab === 'tasks' && (
+          <div>
             <div>
               {tasks.length > 0 ? (
                 <div className="space-y-6">
@@ -934,9 +939,11 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               )}
             </div>
           </div>
+          )}
 
           {/* =============== EVENTS TAB =============== */}
-          <div className={activeTab === 'events' ? 'block' : 'hidden'}>
+          {activeTab === 'events' && (
+          <div>
             <div>
               {events.length > 0 ? (
                 <div className="space-y-6">
@@ -993,6 +1000,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               )}
             </div>
           </div>
+          )}
       </div>
 
       {/* Trip detail sheet */}
