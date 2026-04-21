@@ -133,7 +133,7 @@ export function Hero() {
           className="object-cover"
           priority
           fetchPriority="high"
-          quality={90}
+          quality={72}
           sizes="100vw"
         />
       </div>
