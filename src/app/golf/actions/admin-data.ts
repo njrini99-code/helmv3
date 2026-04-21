@@ -81,7 +81,9 @@ export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
 /** Call from mutation paths / realtime webhook handlers that change the
  *  underlying admin data (users / golf_rounds / admin_events). */
 export async function invalidateAdminDashboardRollup(): Promise<void> {
-  revalidateTag(ADMIN_DASHBOARD_CACHE_TAG);
+  // Next.js 16 requires a profile arg — 'default' matches the unstable_cache
+  // config above (60s revalidate).
+  revalidateTag(ADMIN_DASHBOARD_CACHE_TAG, 'default');
 }
 
 // ============================================
