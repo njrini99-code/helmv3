@@ -142,38 +142,6 @@ async function logClientError(
   });
 }
 
-/**
- * Log a critical client-side error
- */
-async function logCriticalClientError(
-  error: Error | unknown,
-  context: {
-    title?: string;
-    metadata?: Record<string, unknown>;
-  } = {}
-): Promise<boolean> {
-  return logClientError(error, { ...context, severity: 'critical' });
-}
-
-// ============================================
-// FEATURE TRACKING
-// ============================================
-
-/**
- * Log feature usage from the client
- */
-async function logClientFeatureUse(
-  featureName: string,
-  metadata?: Record<string, unknown>
-): Promise<boolean> {
-  return logClientEvent({
-    eventType: 'feature_use',
-    title: `Feature used: ${featureName}`,
-    severity: 'info',
-    metadata: { featureName, ...metadata },
-  });
-}
-
 // ============================================
 // GLOBAL ERROR HANDLER
 // ============================================
@@ -279,28 +247,6 @@ export function setupGlobalErrorHandler() {
   });
   
   console.log('[AdminLoggerClient] Global error handler installed');
-}
-
-// ============================================
-// REACT ERROR BOUNDARY HELPER
-// ============================================
-
-/**
- * Log error from a React Error Boundary
- * Use in componentDidCatch or error boundary component
- */
-async function logReactError(
-  error: Error,
-  errorInfo: { componentStack?: string }
-): Promise<boolean> {
-  return logClientError(error, {
-    title: `React error: ${error.message.slice(0, 100)}`,
-    severity: 'error',
-    metadata: {
-      componentStack: errorInfo.componentStack,
-      isReactError: true,
-    },
-  });
 }
 
 // ============================================

@@ -200,8 +200,4 @@ const errorMonitoring = new ErrorMonitoring();
 
 // Convenience exports
 export const logError = errorMonitoring.logError.bind(errorMonitoring);
-const logException = errorMonitoring.logException.bind(errorMonitoring);
 export const logCritical = errorMonitoring.logCritical.bind(errorMonitoring);
-const logWarning = errorMonitoring.logWarning.bind(errorMonitoring);
-const setUser = errorMonitoring.setUser.bind(errorMonitoring);
-const clearUser = errorMonitoring.clearUser.bind(errorMonitoring);

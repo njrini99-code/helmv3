@@ -86,56 +86,6 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
 // ERROR HELPERS
 // ============================================
 
-/**
- * Log an error with full context
- * Extracts stack trace and formats error details
- */
-async function logAdminError(
-  error: Error | unknown,
-  context: {
-    title?: string;
-    severity?: AdminEventSeverity;
-    userId?: string;
-    userEmail?: string;
-    url?: string;
-    metadata?: Record<string, unknown>;
-  } = {}
-): Promise<string | null> {
-  const err = error instanceof Error ? error : new Error(String(error));
-  
-  return logAdminEvent({
-    eventType: 'error',
-    title: context.title ?? err.message.slice(0, 200),
-    severity: context.severity ?? 'error',
-    message: err.message,
-    stackTrace: err.stack,
-    userId: context.userId,
-    userEmail: context.userEmail,
-    url: context.url,
-    metadata: {
-      ...context.metadata,
-      errorName: err.name,
-      errorMessage: err.message,
-    },
-  });
-}
-
-/**
- * Log a critical error (will trigger alerts)
- */
-async function logCriticalError(
-  error: Error | unknown,
-  context: {
-    title?: string;
-    userId?: string;
-    userEmail?: string;
-    url?: string;
-    metadata?: Record<string, unknown>;
-  } = {}
-): Promise<string | null> {
-  return logAdminError(error, { ...context, severity: 'critical' });
-}
-
 // ============================================
 // EVENT HELPERS
 // ============================================
@@ -218,44 +168,6 @@ export async function logAIGeneration(
 }
 
 /**
- * Log feature usage
- */
-async function logFeatureUse(
-  featureName: string,
-  userId?: string,
-  userEmail?: string,
-  metadata?: Record<string, unknown>
-): Promise<string | null> {
-  return logAdminEvent({
-    eventType: 'feature_use',
-    title: `Feature used: ${featureName}`,
-    severity: 'info',
-    userId,
-    userEmail,
-    metadata: { featureName, ...metadata },
-  });
-}
-
-/**
- * Log onboarding milestone
- */
-async function logOnboardingMilestone(
-  userId: string,
-  userEmail: string,
-  milestone: string,
-  metadata?: Record<string, unknown>
-): Promise<string | null> {
-  return logAdminEvent({
-    eventType: 'onboarding',
-    title: `Onboarding: ${milestone}`,
-    severity: 'info',
-    userId,
-    userEmail,
-    metadata: { milestone, ...metadata },
-  });
-}
-
-/**
  * Log security event
  */
 export async function logSecurityEvent(
@@ -271,70 +183,3 @@ export async function logSecurityEvent(
   });
 }
 
-/**
- * Log system event (deployments, maintenance, etc.)
- */
-async function logSystemEvent(
-  title: string,
-  severity: AdminEventSeverity = 'info',
-  metadata?: Record<string, unknown>
-): Promise<string | null> {
-  return logAdminEvent({
-    eventType: 'system',
-    title,
-    severity,
-    metadata,
-  });
-}
-
-// ============================================
-// SERVER ACTION WRAPPER
-// ============================================
-
-/**
- * Wrap a server action with error logging
- * Automatically logs errors with context
- */
-function withAdminLogging<T extends (...args: unknown[]) => Promise<unknown>>(
-  actionName: string,
-  action: T,
-  options?: {
-    logSuccess?: boolean;
-    getUserContext?: (...args: Parameters<T>) => { userId?: string; userEmail?: string };
-  }
-): T {
-  return (async (...args: Parameters<T>) => {
-    const startTime = Date.now();
-    const userContext = options?.getUserContext?.(...args) ?? {};
-
-    try {
-      const result = await action(...args);
-      
-      if (options?.logSuccess) {
-        await logAdminEvent({
-          eventType: 'api',
-          title: `${actionName} succeeded`,
-          severity: 'info',
-          metadata: {
-            actionName,
-            durationMs: Date.now() - startTime,
-          },
-          ...userContext,
-        });
-      }
-      
-      return result;
-    } catch (error) {
-      await logAdminError(error, {
-        title: `${actionName} failed`,
-        url: actionName,
-        metadata: {
-          actionName,
-          durationMs: Date.now() - startTime,
-        },
-        ...userContext,
-      });
-      throw error;
-    }
-  }) as T;
-}

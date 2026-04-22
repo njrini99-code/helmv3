@@ -152,28 +152,6 @@ export function logError(
 }
 
 /**
- * Log a critical error that requires immediate attention
- */
-function logCriticalError(error: Error, context?: ErrorContext): void {
-  logError(error, context, 'critical');
-
-  // Additional actions for critical errors
-  if (process.env.NODE_ENV === 'production') {
-    // Could trigger alerts, notifications, etc.
-    console.error('CRITICAL ERROR:', error.message);
-  }
-}
-
-/**
- * Log a warning (non-blocking error)
- */
-function logWarning(message: string, context?: ErrorContext): void {
-  const error = new Error(message);
-  error.name = 'Warning';
-  logError(error, context, 'low');
-}
-
-/**
  * Send error to external monitoring service
  * Replace this with your actual error monitoring service integration
  */
@@ -231,61 +209,3 @@ export function setupGlobalErrorHandlers(): void {
   }
 }
 
-/**
- * Helper to get current user context for error logging
- */
-async function getCurrentUserContext(): Promise<ErrorContext | undefined> {
-  try {
-    // This would typically fetch from your auth context/store
-    // For now, return undefined
-    // const user = await getCurrentUser();
-    // return {
-    //   userId: user?.id,
-    //   userEmail: user?.email,
-    //   route: window.location.pathname,
-    // };
-    return {
-      route: typeof window !== 'undefined' ? window.location.pathname : undefined,
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Wrapper for async operations with automatic error logging
- */
-async function withErrorLogging<T>(
-  operation: () => Promise<T>,
-  context?: ErrorContext
-): Promise<T | null> {
-  try {
-    return await operation();
-  } catch (error) {
-    logError(
-      error instanceof Error ? error : new Error(String(error)),
-      context,
-      'medium'
-    );
-    return null;
-  }
-}
-
-/**
- * Performance monitoring helper
- */
-function logPerformanceMetric(
-  metricName: string,
-  value: number,
-  context?: ErrorContext
-): void {
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`📊 Performance: ${metricName} = ${value}ms`, context);
-  }
-
-  // Send to monitoring service in production
-  if (process.env.NODE_ENV === 'production') {
-    // Example: Send to monitoring service
-    // sendMetricToService(metricName, value, context);
-  }
-}

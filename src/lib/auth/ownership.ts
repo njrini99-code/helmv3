@@ -55,25 +55,6 @@ export async function requireCoach() {
 }
 
 /**
- * Get the current player profile or throw
- */
-async function requirePlayer() {
-  const { supabase, user } = await requireAuth();
-
-  const { data: player, error } = await supabase
-    .from('baseball_players')
-    .select('id, user_id')
-    .eq('user_id', user.id)
-    .single();
-
-  if (error || !player) {
-    throw new AuthorizationError('Player profile not found');
-  }
-
-  return { supabase, user, player };
-}
-
-/**
  * Get the current golf coach profile or throw
  * Note: golf_coaches doesn't have team_id - we look it up via organization_id -> golf_teams
  */
@@ -128,40 +109,6 @@ export async function verifyWatchlistOwnership(
 }
 
 /**
- * Verify organization admin
- */
-async function verifyOrganizationAdmin(
-  supabase: SupabaseClient,
-  organizationId: string,
-  userId: string
-): Promise<void> {
-  const { data: org, error } = await supabase
-    .from('organizations')
-    .select('id, admin_user_id')
-    .eq('id', organizationId)
-    .single();
-
-  if (error || !org) {
-    throw new NotFoundError('Organization');
-  }
-
-  // Check if user is admin or associated coach
-  if (org.admin_user_id !== userId) {
-    // Also check if user is a coach for this org
-    const { data: coach } = await supabase
-      .from('baseball_coaches')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('organization_id', organizationId)
-      .single();
-
-    if (!coach) {
-      throw new AuthorizationError('Not organization admin');
-    }
-  }
-}
-
-/**
  * Verify golf team ownership
  * Note: golf_players doesn't have team_id - we look it up via golf_team_members
  */
@@ -202,43 +149,3 @@ export async function verifyGolfTeamOwnership(
   }
 }
 
-/**
- * Verify team invitation and return player from current user
- */
-async function verifyTeamInvitationForCurrentUser(
-  supabase: SupabaseClient,
-  inviteCode: string,
-  userId: string
-): Promise<{ playerId: string; teamId: string }> {
-  // Get current user's player profile
-  const { data: player, error: playerError } = await supabase
-    .from('baseball_players')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
-
-  if (playerError || !player) {
-    throw new AuthorizationError('Player profile not found');
-  }
-
-  // Validate invitation
-  const { data: invitation, error: invError } = await supabase
-    .from('team_invitations')
-    .select('id, team_id, expires_at, used')
-    .eq('invite_code', inviteCode)
-    .single();
-
-  if (invError || !invitation) {
-    throw new NotFoundError('Invitation');
-  }
-
-  if (invitation.used) {
-    throw new AuthorizationError('Invitation already used');
-  }
-
-  if (invitation.expires_at && new Date(invitation.expires_at) < new Date()) {
-    throw new AuthorizationError('Invitation expired');
-  }
-
-  return { playerId: player.id, teamId: invitation.team_id };
-}
