@@ -21,6 +21,26 @@ import type {
   DispersionPattern,
 } from '../types';
 
+/**
+ * Pattern actionability score derived from the strongest tendency's frequency.
+ *
+ * Fixes operator-precedence bug (LIVE-14): the prior inline expression
+ *   `pattern.tendencies[0]?.frequency ?? 0 > 0.5 ? 0.9 : 0.6`
+ * parses as `freq ?? ((0 > 0.5) ? 0.9 : 0.6)`, which means when frequency is
+ * defined the `?? 0.6` branch is never reached, so every defined frequency —
+ * regardless of magnitude — returned itself as a number rather than 0.9.
+ * When frequency was undefined it short-circuited to `0.6`. Net effect:
+ * `actionability` was effectively `frequency ?? 0.6`, never `0.9` or `0.6`.
+ *
+ * Correct behavior: strong tendency (>0.5) gets 0.9, otherwise 0.6.
+ */
+export function computeActionability(
+  tendencies: Array<Pick<MissTendency, 'frequency'>>,
+): number {
+  const freq = tendencies[0]?.frequency ?? 0;
+  return freq > 0.5 ? 0.9 : 0.6;
+}
+
 /** Standard distance ranges for analysis */
 const DISTANCE_RANGES: DistanceRange[] = [
   { min: 0, max: 50, label: 'Wedge (0-50)' },
@@ -679,7 +699,7 @@ export class ShotPatternMiner {
           lift: 1, // Not applicable for shot patterns
           conviction: 1,
           stroke_impact: 0, // Calculated differently for shots
-          actionability: pattern.tendencies[0]?.frequency ?? 0 > 0.5 ? 0.9 : 0.6,
+          actionability: computeActionability(pattern.tendencies),
           sample_size: pattern.sampleSize,
           first_detected: pattern.createdAt,
           last_occurrence: pattern.updatedAt,
