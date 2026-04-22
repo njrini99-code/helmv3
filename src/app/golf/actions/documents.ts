@@ -678,16 +678,35 @@ export async function getPreviewUrl(
 
       return { data: { url: signedUrl.signedUrl, mimeType: version.mime_type }, error: null };
     } else {
-      // Get current version from document
-      const { data: document, error } = await supabase
-        .from('golf_documents')
-        .select('file_url, file_type')
-        .eq('id', documentId)
+      // Get latest version's storage_path — `documents` bucket is private,
+      // so we always issue a short-lived signed URL instead of returning the
+      // stored file_url (which was a public URL pre-LIVE-29).
+      const { data: latestVersion, error: versionLookupError } = await supabase
+        .from('golf_document_versions' as any)
+        .select('storage_path, mime_type')
+        .eq('document_id', documentId)
+        .order('version_number', { ascending: false })
+        .limit(1)
         .single();
 
-      if (error) throw error;
+      if (versionLookupError || !latestVersion) {
+        throw versionLookupError ?? new Error('No version found for document');
+      }
+      const version = latestVersion as unknown as Pick<DocumentVersionRow, 'storage_path' | 'mime_type'>;
 
-      return { data: { url: document.file_url, mimeType: document.file_type || 'application/octet-stream' }, error: null };
+      const { data: signedUrl, error: signError } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(version.storage_path, 3600);
+
+      if (signError) throw signError;
+
+      return {
+        data: {
+          url: signedUrl.signedUrl,
+          mimeType: version.mime_type || 'application/octet-stream',
+        },
+        error: null,
+      };
     }
   } catch (error) {
     return { data: null, error: handleError(error) };
