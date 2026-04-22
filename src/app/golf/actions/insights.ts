@@ -1895,6 +1895,13 @@ export async function generateTeamInsight(): Promise<{
       allPatterns.push(...teamPatterns);
     }
 
+    // TODO(engine): `generateTeamForecasts` is the sole remaining caller of
+    // `@/lib/coachhelm/v2/prediction/team-forecaster`. Plan task B11 proposed
+    // removing it as dead code; Phase 3 audit (2026-04-21) confirmed this
+    // call path IS live — its output feeds `allPredictions` which are
+    // surfaced on the intelligence dashboard. If the future workflow refactor
+    // folds team-level forecasts into `coachHelmIntelligence.generatePredictions`,
+    // delete this call and the module together.
     const teamForecasts = generateTeamForecasts(
       players as Array<{ id: string; first_name: string; last_name: string }>,
       statsRows ?? [],
