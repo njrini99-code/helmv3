@@ -38,6 +38,7 @@ import { deriveTone, type DerivedTone } from './tone-derivation';
 import { MovementPill } from './MovementPill';
 import { WhyPopover } from './WhyPopover';
 import { DrillChips } from './DrillChips';
+import { ResolutionCelebration } from './ResolutionCelebration';
 
 export type InsightAction =
   | 'rate_helpful'
@@ -155,8 +156,8 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(function
     );
   }
 
-  if (density === 'hero') {
-    return (
+  const cardNode =
+    density === 'hero' ? (
       <HeroInsightCardInner
         ref={ref}
         insight={insight}
@@ -169,23 +170,29 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(function
         onClick={onClick}
         className={className}
       />
+    ) : (
+      <DefaultInsightCard
+        ref={ref}
+        insight={insight}
+        tone={tone}
+        config={config}
+        audience={audience}
+        showDrills={showDrills}
+        hasActions={hasActions}
+        onAction={onAction}
+        onClick={onClick}
+        className={className}
+      />
     );
+
+  // Resolved + player surfaces get the celebration wrapper (Rule 7 + Rule 10).
+  // Confetti only fires on first view — the wrapper reads
+  // `metadata.celebration_shown_at` to gate it.
+  if (insight.lifecycle_state === 'resolved' && audience === 'player') {
+    return <ResolutionCelebration insight={insight}>{cardNode}</ResolutionCelebration>;
   }
 
-  return (
-    <DefaultInsightCard
-      ref={ref}
-      insight={insight}
-      tone={tone}
-      config={config}
-      audience={audience}
-      showDrills={showDrills}
-      hasActions={hasActions}
-      onAction={onAction}
-      onClick={onClick}
-      className={className}
-    />
-  );
+  return cardNode;
 });
 
 // ---------------------------------------------------------------------------
@@ -345,7 +352,11 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
           {/* Drill chips inline on collapsed default (Rule 3). */}
           {hasDrills && insight.drills && (
             <div className="mt-3">
-              <DrillChips insightId={insight.id} drills={insight.drills} />
+              <DrillChips
+                insightId={insight.id}
+                drills={insight.drills}
+                insight={{ title: insight.title, category: insight.category }}
+              />
             </div>
           )}
         </div>
@@ -463,7 +474,11 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
 
           {hasDrills && insight.drills && (
             <div>
-              <DrillChips insightId={insight.id} drills={insight.drills} />
+              <DrillChips
+                insightId={insight.id}
+                drills={insight.drills}
+                insight={{ title: insight.title, category: insight.category }}
+              />
             </div>
           )}
 

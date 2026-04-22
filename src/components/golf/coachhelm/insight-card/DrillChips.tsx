@@ -2,50 +2,63 @@
 
 /**
  * DrillChips — horizontal scroll row of drill chips rendered inline in the
- * collapsed default + hero densities of `<InsightCard>`. Tapping a chip
- * opens a bottom sheet with the drill's full detail (reused via
- * `<DrillAttachment>` body).
+ * collapsed default + hero densities of `<InsightCard>`. Tapping a chip opens
+ * the shared `<DrillSheet>` with full detail + CTAs.
  *
  * Rule 3 of the Insight Delivery design contract — drills must be reachable
  * in one tap from the collapsed card, not two clicks deep behind an expand.
+ *
+ * Wave 1D change: we previously rendered a minimal drill detail inline in a
+ * bottom sheet. That was a visual placeholder; `<DrillSheet>` now owns the
+ * full presentation (video embed, "Add to practice plan", "Log drill"). We
+ * also accept the parent `insight` so the sheet can render the "Recommended
+ * because of:" breadcrumb without a second data fetch.
  */
 import { useState, useTransition } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconPlay, IconTarget } from '@/components/icons';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
 import {
   recordDrillView as defaultRecordDrillView,
 } from '@/app/golf/actions/drills';
-import type { InsightAttachedDrill } from '@/app/golf/actions/insight-delivery';
+import type {
+  EvidenceInsight,
+  InsightAttachedDrill,
+} from '@/app/golf/actions/insight-delivery';
+import { DrillSheet } from './DrillSheet';
 
 export interface DrillChipsProps {
   insightId: string;
   drills: InsightAttachedDrill[];
-  /** Injected for tests. */
+  /**
+   * Optional insight for the sheet's "Recommended because of:" line.
+   * The primitive passes this automatically; tests often omit it.
+   */
+  insight?: Pick<EvidenceInsight, 'title' | 'category'>;
+  /** Injected for tests — logs drill view. */
   onView?: (drillId: string) => Promise<void> | void;
   className?: string;
 }
 
-const DIFFICULTY_LABEL: Record<string, string> = {
-  beginner: 'Beginner',
-  intermediate: 'Intermediate',
-  advanced: 'Advanced',
-};
-
 export function DrillChips({
   insightId,
   drills,
+  insight,
   onView = defaultRecordDrillView,
   className,
 }: DrillChipsProps) {
-  const [activeDrill, setActiveDrill] = useState<InsightAttachedDrill | null>(null);
+  const [openDrillId, setOpenDrillId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   if (!drills || drills.length === 0) return null;
 
+  const openDrill = drills.find((d) => d.id === openDrillId) ?? null;
+
   const handleChipClick = (drill: InsightAttachedDrill) => {
-    setActiveDrill(drill);
+    setOpenDrillId(drill.id);
+    // Log the view as soon as the sheet opens. Doing it here (not inside the
+    // sheet) keeps DrillSheet fully testable in isolation — the sheet itself
+    // doesn't need to know about the insight id.
     startTransition(() => {
       void Promise.resolve(onView(drill.id));
     });
@@ -55,6 +68,7 @@ export function DrillChips({
     <>
       <div
         data-testid="drill-chips"
+        data-insight-id={insightId}
         className={cn(
           'flex items-center gap-2 overflow-x-auto',
           // Keep the chip row tidy on narrow screens — no wrap, soft scroll.
@@ -80,16 +94,31 @@ export function DrillChips({
         )}
       </div>
 
-      <BottomSheet
-        open={!!activeDrill}
-        onClose={() => setActiveDrill(null)}
-        title={activeDrill?.title}
-        description="Drill detail"
-      >
-        {activeDrill && (
-          <DrillDetail drill={activeDrill} insightId={insightId} />
-        )}
-      </BottomSheet>
+      {openDrill && (
+        <DrillSheet
+          open
+          onClose={() => setOpenDrillId(null)}
+          drill={{
+            id: openDrill.id,
+            title: openDrill.title,
+            // `InsightAttachedDrill` intentionally doesn't carry the full
+            // description — the primitive renders a short default when
+            // that's missing so the sheet never looks empty.
+            description:
+              'Open this drill to work on the specific skill this insight flagged.\nEach rep counts — keep it under the time estimate and log it when you’re done so CoachHelm can re-evaluate your numbers.',
+            duration_min: openDrill.duration_min,
+            difficulty: openDrill.difficulty,
+          }}
+          insightContext={
+            insight
+              ? {
+                  title: insight.title,
+                  category: insight.category ?? '',
+                }
+              : undefined
+          }
+        />
+      )}
     </>
   );
 }
@@ -121,38 +150,5 @@ function DrillChipButton({ drill, onClick }: DrillChipButtonProps) {
       <span className="truncate max-w-[140px]">{drill.title}</span>
       <span className="text-warm-500 tabular-nums">{drill.duration_min}m</span>
     </m.button>
-  );
-}
-
-interface DrillDetailProps {
-  drill: InsightAttachedDrill;
-  insightId: string;
-}
-
-function DrillDetail({ drill, insightId }: DrillDetailProps) {
-  const difficultyLabel = DIFFICULTY_LABEL[drill.difficulty] ?? drill.difficulty;
-  return (
-    <div className="space-y-4" data-testid="drill-detail" data-insight-id={insightId}>
-      <div className="flex items-center gap-2 text-xs text-warm-600">
-        <span className="px-2 py-0.5 rounded-full bg-warm-100">{difficultyLabel}</span>
-        <span className="tabular-nums">{drill.duration_min} min</span>
-      </div>
-      <p className="text-sm text-warm-700 leading-relaxed">
-        Open this drill to work on the specific skill this insight flagged.
-        Each rep counts — keep it under {drill.duration_min} minutes and log
-        it when you&apos;re done so CoachHelm can re-evaluate your numbers.
-      </p>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          className={cn(
-            'flex-1 px-4 py-2 rounded-xl bg-primary-500 text-white',
-            'text-sm font-medium hover:bg-primary-600 active:scale-[0.98] transition-all',
-          )}
-        >
-          Add to my plan
-        </button>
-      </div>
-    </div>
   );
 }
