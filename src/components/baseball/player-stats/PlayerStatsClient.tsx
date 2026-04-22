@@ -34,7 +34,7 @@ interface PlayerStatsClientProps {
   teamName: string;
 }
 
-function PlayerStatsClient({
+export function PlayerStatsClient({
   player,
   stats,
   aggregates,

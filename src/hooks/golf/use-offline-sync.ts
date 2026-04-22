@@ -29,7 +29,6 @@ import {
   cleanupSyncedShots,
   isIndexedDBAvailable,
   type OfflineShot,
-  type OfflineRound,
   MAX_SYNC_ATTEMPTS,
 } from '@/lib/offline/indexed-db';
 import { saveRoundDraft, type RoundDraftData } from '@/app/golf/actions/round-drafts';

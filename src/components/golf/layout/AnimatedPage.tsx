@@ -91,7 +91,7 @@ interface AnimatedListProps {
   staggerDelay?: number;
 }
 
-function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
+export function AnimatedList({ children, className, staggerDelay = 0.04 }: AnimatedListProps) {
   return (
     <m.div
       variants={{

@@ -112,7 +112,7 @@ export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
 // STATS CARD SKELETON
 // ============================================================================
 
-function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
+export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-6 overflow-clip"
@@ -221,7 +221,7 @@ export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
 // CALENDAR EVENT SKELETON
 // ============================================================================
 
-function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
+export function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
       className="flex items-center gap-3 p-3 rounded-lg"
@@ -605,7 +605,7 @@ export function DetailedStatsSkeleton() {
 // SHOT STATS TAB SKELETON (for individual tab content loading)
 // ============================================================================
 
-function ShotStatsTabSkeleton() {
+export function ShotStatsTabSkeleton() {
   return (
     <div className="space-y-4">
       {/* Key Metrics Grid */}
@@ -1069,7 +1069,7 @@ export function ClassesPageSkeleton() {
 // GRID SKELETON (for loading multiple cards)
 // ============================================================================
 
-function SkeletonGrid({
+export function SkeletonGrid({
   type = 'metric',
   count = 4,
   columns = 4,

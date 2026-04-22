@@ -60,7 +60,6 @@ export function PipelineView({
   onStatusChange,
   onToggleStar,
   statusConfig,
-  priorityConfig,
   pipelineStages,
   stats,
   onBulkUpdate,

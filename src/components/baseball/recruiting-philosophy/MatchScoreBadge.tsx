@@ -16,7 +16,7 @@ interface MatchScoreBadgeProps {
   className?: string;
 }
 
-function MatchScoreBadge({
+export function MatchScoreBadge({
   score,
   breakdown,
   meetsStandards = true,
@@ -149,7 +149,7 @@ function MatchScoreBadge({
 /**
  * Compact inline match score for player cards in list view.
  */
-function MatchScoreInline({
+export function MatchScoreInline({
   score,
   className,
 }: {
@@ -180,7 +180,7 @@ function MatchScoreInline({
 /**
  * Match score progress ring for larger displays.
  */
-function MatchScoreRing({
+export function MatchScoreRing({
   score,
   size = 64,
   className,

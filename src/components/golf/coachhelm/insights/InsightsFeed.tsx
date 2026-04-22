@@ -13,7 +13,7 @@ interface InsightsFeedProps {
   coachId?: string;
 }
 
-function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: InsightsFeedProps) {
+export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: InsightsFeedProps) {
   const [insights, setInsights] = useState<InsightWithPlayer[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);

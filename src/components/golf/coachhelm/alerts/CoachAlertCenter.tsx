@@ -16,7 +16,7 @@ interface CoachAlertCenterProps {
   compact?: boolean;
 }
 
-function CoachAlertCenter({
+export function CoachAlertCenter({
   coachId,
   teamId,
   initialAlerts = [],

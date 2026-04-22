@@ -18,7 +18,7 @@ interface AlertCounts {
   total: number;
 }
 
-function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
+export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
   const [counts, setCounts] = useState<AlertCounts>({ critical: 0, warning: 0, info: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -143,7 +143,7 @@ interface NavAlertBadgeProps {
   className?: string;
 }
 
-function NavAlertBadge({ count, hasCritical = false, className }: NavAlertBadgeProps) {
+export function NavAlertBadge({ count, hasCritical = false, className }: NavAlertBadgeProps) {
   if (count === 0) return null;
 
   const displayCount = count > 99 ? '99+' : count;
@@ -184,7 +184,7 @@ function NavAlertBadge({ count, hasCritical = false, className }: NavAlertBadgeP
 }
 
 // Hook for getting alert counts (for use in parent components)
-function useAlertCounts(coachId: string, teamId: string) {
+export function useAlertCounts(coachId: string, teamId: string) {
   const [counts, setCounts] = useState<AlertCounts>({ critical: 0, warning: 0, info: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
 

@@ -6,7 +6,7 @@ import { Check, Circle } from 'lucide-react';
 /**
  * Abstract development plan mockup
  */
-function DevPlanMockup() {
+export function DevPlanMockup() {
   return (
     <div className={cn(
       "bg-white/45 backdrop-blur-xl rounded-lg p-2",

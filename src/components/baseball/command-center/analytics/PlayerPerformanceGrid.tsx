@@ -115,7 +115,7 @@ function getHeatmapColor(
   return colors[level] ?? 'bg-slate-100 text-slate-600';
 }
 
-function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
+export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
   const [sortMetric, setSortMetric] = useState<MetricKey>('avg');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 

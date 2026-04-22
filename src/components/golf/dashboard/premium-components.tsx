@@ -122,7 +122,7 @@ interface PremiumStatCardProps {
     ariaLabel?: string;
 }
 
-const PremiumStatCard = memo(function PremiumStatCard({
+export const PremiumStatCard = memo(function PremiumStatCard({
     icon,
     iconColor,
     iconBg,
@@ -226,7 +226,7 @@ interface QuickActionCardProps {
     variant?: 'default' | 'primary';
 }
 
-const QuickActionCard = memo(function QuickActionCard({
+export const QuickActionCard = memo(function QuickActionCard({
     icon,
     label,
     description,

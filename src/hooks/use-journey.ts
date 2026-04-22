@@ -240,20 +240,3 @@ export async function updateInterestStatus(interestId: string, status: string) {
   return { success: true };
 }
 
-async function updateInterestNotes(interestId: string, notes: string) {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from('baseball_recruiting_interests')
-    .update({
-      notes,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', interestId);
-
-  if (error) {
-    throw new Error('Failed to update notes');
-  }
-
-  return { success: true };
-}

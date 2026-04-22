@@ -20,12 +20,10 @@ import {
   Clock,
   ChevronRight,
   AlertCircle,
-  Calendar,
 } from 'lucide-react';
 import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
-import { getEventTypeConfig, formatTime } from '@/lib/calendar/event-styles';
+import { formatTime } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import type { EventType } from '@/lib/types/calendar';
 
 interface MobileEventCardProps {
   event: CalendarEvent;

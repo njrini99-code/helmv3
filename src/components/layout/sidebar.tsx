@@ -5,13 +5,10 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
-import { ModeToggle, type Mode } from './mode-toggle';
 import {
   IconHome,
-  IconSearch,
   IconUsers,
   IconMessage,
-  IconChart,
   IconSettings,
   IconLogOut,
   IconUser,
@@ -19,8 +16,6 @@ import {
   IconVideo,
   IconCalendar,
   IconNote,
-  IconTarget,
-  IconStar,
   IconEye,
   IconHelp,
   IconGraduationCap,
@@ -34,7 +29,6 @@ import {
   IconMap,
   IconBell,
   IconAirplane,
-  IconBookmark,
 } from '@/components/icons';
 import { TeamSwitcher } from './team-switcher';
 import { useTeams } from '@/hooks/use-teams';
@@ -182,7 +176,7 @@ interface SidebarProps {
 export function Sidebar({ isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, coach, player, signOut, coachMode, setCoachMode } = useAuth();
+  const { user, coach, player, signOut } = useAuth();
   const { unreadCount } = useUnreadCount();
   const { collapsed, setCollapsed, setMobileOpen } = useSidebar();
 
@@ -194,14 +188,6 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   // Determine sport-specific dashboard href based on pathname
   const isGolf = pathname.startsWith('/golf');
   const dashboardHref = isGolf ? '/golf/dashboard' : '/baseball/dashboard';
-
-  // Determine if user should see mode toggle
-  const showModeToggle =
-    (coach?.coach_type === 'juco' || coach?.coach_type === 'college') ||
-    (player && player.recruiting_activated && player.player_type !== 'college');
-
-  // Use persisted coach mode from Zustand store
-  const currentMode = coachMode as Mode;
 
   // Determine navigation based on role, coach type, and mode
   // ARCHIVED: Recruiting mode branches removed — all users see team mode only
@@ -243,19 +229,6 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
   const displayName = coach?.full_name || (player ? `${player.first_name} ${player.last_name}` : 'User');
   const isShowcaseCoach = coach?.coach_type === 'showcase';
   const subtitle = coach ? ((coach.organization as { name?: string })?.name || 'Coach') : (player ? `${player.primary_position} • ${player.grad_year}` : '');
-
-  const handleModeChange = (mode: Mode) => {
-    setCoachMode(mode as 'recruiting' | 'team');
-    if (mode === 'recruiting') {
-      router.push('/baseball/dashboard');
-    } else {
-      if (coach?.coach_type === 'high_school') {
-        router.push('/baseball/dashboard/team/high-school');
-      } else {
-        router.push('/baseball/dashboard/team');
-      }
-    }
-  };
 
   const handleNavClick = () => {
     if (isMobile) {

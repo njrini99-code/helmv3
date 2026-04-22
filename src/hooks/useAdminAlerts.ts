@@ -169,7 +169,7 @@ export function useAdminAlerts(options: UseAdminAlertsOptions = {}): UseAdminAle
  * Hook that combines useAdminAlerts with toast notifications
  * Must be used within AdminToastProvider
  */
-function useAdminAlertsWithToast(
+export function useAdminAlertsWithToast(
   toastFn: {
     warning: (title: string, message?: string) => void;
     error: (title: string, message?: string) => void;
@@ -215,7 +215,7 @@ function useAdminAlertsWithToast(
 /**
  * Get a human-readable description of the alert
  */
-function getAlertDescription(alert: AdminAlert): string {
+export function getAlertDescription(alert: AdminAlert): string {
   const { event } = alert;
   
   switch (event.event_type) {
@@ -243,7 +243,7 @@ function getAlertDescription(alert: AdminAlert): string {
 /**
  * Get severity color classes
  */
-function getSeverityClasses(severity: AdminEventSeverity): {
+export function getSeverityClasses(severity: AdminEventSeverity): {
   bg: string;
   text: string;
   border: string;

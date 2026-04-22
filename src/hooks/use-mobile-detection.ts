@@ -111,7 +111,7 @@ export function useMobileDetection(): MobileDetectionResult {
 /**
  * Simple hook to check if current viewport is mobile-sized
  */
-function useIsMobile(): boolean {
+export function useIsMobile(): boolean {
   const { isMobile } = useMobileDetection();
   return isMobile;
 }

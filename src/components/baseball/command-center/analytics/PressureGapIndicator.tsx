@@ -53,12 +53,6 @@ function getGapLabel(gap: number): string {
   return 'consistent';
 }
 
-function getGapCategory(gap: number): 'clutch' | 'consistent' | 'struggling' {
-  if (gap > 0.02) return 'clutch';
-  if (gap < -0.02) return 'struggling';
-  return 'consistent';
-}
-
 // ============================================================================
 // COMPACT INDICATOR
 // ============================================================================

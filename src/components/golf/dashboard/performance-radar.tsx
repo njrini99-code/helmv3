@@ -113,7 +113,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
 
                 {/* Horizontal bar chart */}
                 <div className="space-y-3">
-                    {SG_CATEGORIES.map((cat, i) => {
+                    {SG_CATEGORIES.map((cat) => {
                         const value = data[cat.key];
                         if (value === null) return null;
 

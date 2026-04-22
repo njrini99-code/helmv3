@@ -9,8 +9,6 @@ import {
   IconChevronRight,
   IconMessage,
   IconUser,
-  IconTrendingDown,
-  IconTrendingUp,
   IconWarning,
   IconInfo,
   IconAlertCircle,

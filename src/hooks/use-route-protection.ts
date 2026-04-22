@@ -68,7 +68,7 @@ export function useRecruitingRouteProtection() {
  * Team-only pages (roster, dev-plans, college-interest)
  * Only HS, Showcase, and JUCO coaches can access
  */
-function useTeamRouteProtection() {
+export function useTeamRouteProtection() {
   return useRouteProtection({
     allowedCoachTypes: ['high_school', 'showcase', 'juco'],
     redirectTo: '/baseball/dashboard',

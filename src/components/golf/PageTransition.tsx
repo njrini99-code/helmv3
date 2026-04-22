@@ -7,7 +7,7 @@ interface PageTransitionProps {
   className?: string;
 }
 
-function PageTransition({ children, className }: PageTransitionProps) {
+export function PageTransition({ children, className }: PageTransitionProps) {
   return (
     <div className={cn(
       'animate-page-enter',
@@ -26,7 +26,7 @@ interface StaggeredListProps {
   delay?: number;
 }
 
-function StaggeredList({
+export function StaggeredList({
   children,
   className,
   itemClassName,
@@ -57,7 +57,7 @@ interface FadeInCardProps {
   delay?: number;
 }
 
-function FadeInCard({ children, className, delay = 0 }: FadeInCardProps) {
+export function FadeInCard({ children, className, delay = 0 }: FadeInCardProps) {
   return (
     <div 
       className={cn('animate-fade-in-up', className)}

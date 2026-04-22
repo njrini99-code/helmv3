@@ -11,7 +11,7 @@ interface ReminderBadgeProps {
   size?: 'sm' | 'md';
 }
 
-function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
+export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => { setNow(new Date()); }, []);
 

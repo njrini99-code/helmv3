@@ -12,7 +12,7 @@
  * - Today indicator and quick navigation
  */
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   format,

@@ -295,7 +295,7 @@ export function RouteErrorBoundary({
  * />
  * ```
  */
-function CompactRouteErrorBoundary({
+export function CompactRouteErrorBoundary({
   error,
   reset,
   route,

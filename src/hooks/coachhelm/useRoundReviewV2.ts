@@ -78,9 +78,6 @@ interface UseRoundReviewResult {
   needsGeneration: boolean;
 }
 
-// Backwards compatible type alias
-type UseRoundReviewV2Result = UseRoundReviewResult;
-
 function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundReviewResult {
   const [review, setReview] = useState<RoundReview | null>(null);
   const [ruleBasedContent, setRuleBasedContent] = useState<RoundReviewContent | null>(null);

@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { IconCheck, IconClock } from '@/components/icons';
+import { IconCheck } from '@/components/icons';
 
 interface AcknowledgementTrackerProps {
   acknowledgedCount: number;
