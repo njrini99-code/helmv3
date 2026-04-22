@@ -32,24 +32,24 @@ jobs:
         run: |
           # Generate fresh types to a temp file (override the redirect in package.json)
           npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > /tmp/generated-types.ts 2>&1 || {
-            echo "⚠️  Could not generate types (project ID may be missing or invalid)"
+            echo "Could not generate types (project ID may be missing or invalid)"
             exit 0  # Don't fail CI if we can't verify
           }
-          
+
           # Compare with committed version (if types file exists)
           if [ -f src/lib/types/database.ts ]; then
             if ! diff -q src/lib/types/database.ts /tmp/generated-types.ts > /dev/null 2>&1; then
-              echo "❌ Database types are out of date!"
-              echo "Run 'SUPABASE_PROJECT_ID=${{ secrets.SUPABASE_PROJECT_ID }} npm run db:types' to regenerate"
+              echo "Database types are out of date!"
+              echo "Run SUPABASE_PROJECT_ID=<id> npm run db:types to regenerate"
               echo ""
               echo "Diff preview:"
               diff src/lib/types/database.ts /tmp/generated-types.ts | head -50 || true
               exit 1
             else
-              echo "✅ Database types are up to date"
+              echo "Database types are up to date"
             fi
           else
-            echo "⚠️  Warning: database.ts file not found"
+            echo "Warning: database.ts file not found"
           fi
 
       - name: Typecheck
@@ -57,6 +57,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Unit tests
+        run: npm run test -- --run
 
       - name: Build
         run: npm run build
