@@ -16,6 +16,9 @@ import {
   IconHelp,
 } from '@/components/icons';
 import type { ComposedInsight, InsightTone } from '@/lib/coachhelm/v2/types';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { EvidencePanel } from '@/components/golf/coachhelm/insights/EvidencePanel';
+import { DrillAttachment } from '@/components/golf/coachhelm/insights/DrillAttachment';
 
 /**
  * ComposedInsight does not currently carry a DB id (insights are composed
@@ -23,8 +26,17 @@ import type { ComposedInsight, InsightTone } from '@/lib/coachhelm/v2/types';
  * persisted `golf_coach_insights` row, upstream code tags the insight with
  * an `id`. We read it opportunistically — if an id isn't present we skip
  * the feedback handler so the UI doesn't fire a no-op server action.
+ *
+ * The Insight Quality phase adds `evidence` and `category` to every
+ * persisted insight. Those fields are attached by the data fetcher when
+ * surfacing evidence-backed insights; older in-memory composed insights
+ * simply omit them and the EvidencePanel no-ops.
  */
-type InsightWithMaybeId = ComposedInsight & { id?: string };
+type InsightWithMaybeId = ComposedInsight & {
+  id?: string;
+  evidence?: InsightEvidence | null;
+  category?: string;
+};
 
 export type InsightRating = 'helpful' | 'not_helpful';
 
@@ -109,12 +121,14 @@ function InsightCard({
   const config = toneConfig[insight.tone] || toneConfig.neutral;
   const Icon = config.icon;
   const confidencePercent = Math.round(Number(insight.confidence ?? 0) * 100);
+  const [showEvidenceDetails, setShowEvidenceDetails] = useState(false);
 
   // Only render the feedback row when at least one handler is supplied AND we
   // have an id to target — without an id we'd fire a meaningless call.
   const hasHandler = Boolean(onRate || onAcknowledge || onDismiss);
   const insightId = insight.id;
   const showActions = hasHandler && !!insightId;
+  const hasEvidence = Boolean(insight.evidence);
 
   return (
     <m.div
@@ -153,6 +167,14 @@ function InsightCard({
           <p className="text-xs text-warm-600 line-clamp-2">
             {insight.body}
           </p>
+
+          {/* Compact evidence pill — the single-row summary sits right under
+              the body so players see "38% vs 52% D2 avg" before deciding
+              whether to expand the card. Renders nothing for legacy
+              composed insights that predate the evidence foundation. */}
+          {hasEvidence && (
+            <EvidencePanel evidence={insight.evidence} compact />
+          )}
 
           {/* Meta info */}
           <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -202,6 +224,30 @@ function InsightCard({
               <p className="text-sm text-warm-700 leading-relaxed">
                 {insight.body}
               </p>
+
+              {/* Show details toggle + expanded evidence grid + attached
+                  drills. We keep these behind the expanded view so the card
+                  list stays scannable. */}
+              {hasEvidence && (
+                <div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowEvidenceDetails((s) => !s);
+                    }}
+                    className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+                  >
+                    {showEvidenceDetails ? 'Hide details' : 'Show details'}
+                  </button>
+                  {showEvidenceDetails && (
+                    <EvidencePanel evidence={insight.evidence} compact={false} />
+                  )}
+                </div>
+              )}
+              {insightId && hasEvidence && (
+                <DrillAttachment insightId={insightId} />
+              )}
 
               {/* Evidence metrics */}
               {insight.evidenceMetrics && insight.evidenceMetrics.length > 0 && (

@@ -5,11 +5,14 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconCheck, IconX, IconChevronDown, IconChevronUp, IconSparkles, IconTarget } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
-import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
+import type { CoachInsight, InsightWithPlayer } from '@/lib/coachhelm/insight-types';
 import { getInsightConfig, getPriorityColor, formatInsightAge } from '@/lib/coachhelm/insight-types';
 import { acknowledgeInsight, dismissInsight, resolveInsight } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { Avatar } from '@/components/ui/avatar';
+import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { EvidencePanel } from './EvidencePanel';
+import { DrillAttachment } from './DrillAttachment';
 
 interface InsightCardProps {
   insight: InsightWithPlayer;
@@ -20,11 +23,19 @@ interface InsightCardProps {
 export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const [creatingFocusArea, setCreatingFocusArea] = useState(false);
 
   const config = getInsightConfig(insight.insight_type);
   const priorityColor = getPriorityColor(insight.priority);
+
+  // The new `evidence` JSONB column lives on `golf_coach_insights` post the
+  // Insight Quality foundation migration. It's not yet on the `CoachInsight`
+  // TypeScript interface, so we read it structurally — legacy rows missing
+  // the column come through as `undefined` and EvidencePanel no-ops.
+  const evidence = (insight as CoachInsight & { evidence?: InsightEvidence | null }).evidence ?? undefined;
+  const hasEvidence = Boolean(evidence);
 
   const handleAcknowledge = async () => {
     setLoading(true);
@@ -131,6 +142,12 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
               {insight.description}
             </p>
 
+            {/* Compact evidence pill — always visible when the insight was
+                minted with structured evidence. Legacy rows render nothing. */}
+            {hasEvidence && (
+              <EvidencePanel evidence={evidence} compact />
+            )}
+
             {/* Player Info */}
             {insight.player && (
               <div className="flex items-center gap-2 mt-2">
@@ -162,6 +179,27 @@ export function InsightCard({ insight, coachId, onUpdate }: InsightCardProps) {
               {insight.description}
             </p>
           </div>
+
+          {/* Evidence — compact by default, full grid on "Show details".
+              Drill attachments only surface in the expanded view so we don't
+              clutter the card list with 3-drill stacks on every row. */}
+          {hasEvidence && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowDetails((s) => !s)}
+                className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+              >
+                {showDetails ? 'Hide details' : 'Show details'}
+              </button>
+              {showDetails && (
+                <EvidencePanel evidence={evidence} compact={false} />
+              )}
+            </div>
+          )}
+          {expanded && (
+            <DrillAttachment insightId={insight.id} />
+          )}
 
           {/* Recommendation */}
           {insight.recommendation && (

@@ -2367,12 +2367,26 @@ export async function getPlayerCoachHelmDashboard(
               : 'stable'
           : 'unknown';
 
+    // Fold in evidence-backed insights persisted to `golf_coach_insights`
+    // by the new Tier-1 generators (putt-analytics, approach-analytics, …).
+    // These rows carry the canonical `evidence` JSONB shape and should be
+    // surfaced to the player UI alongside the in-memory composed insights.
+    // We prepend them so the evidence-heavy material is the first thing the
+    // player reads — the in-memory engine still produces broader narrative
+    // insights below.
+    const persistedInsights = await loadEvidenceBackedInsights(supabase, playerId);
+
+    const mergedInsights: ComposedInsight[] = [
+      ...persistedInsights,
+      ...(analysis?.insights ?? []),
+    ];
+
     const dashboardData: PlayerCoachHelmDashboardData = {
       playerId,
       playerName,
       lastUpdated: new Date().toISOString(),
       prediction: analysis?.predictions?.[0] ?? null,
-      insights: analysis?.insights ?? [],
+      insights: mergedInsights,
       focusAreas,
       recentRounds,
       playerState,
@@ -2386,6 +2400,63 @@ export async function getPlayerCoachHelmDashboard(
       featureArea: 'insights',
     });
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Loads evidence-backed insights from `golf_coach_insights` for surfacing in
+ * the player dashboard. Only pulls rows that carry structured `evidence`
+ * (the new foundation shape) and are in a player-facing lifecycle state.
+ *
+ * Returns ComposedInsight objects with `id`, `evidence`, and `category`
+ * tagged on so the UI can render the EvidencePanel + DrillAttachment and
+ * route feedback actions to the right row.
+ */
+async function loadEvidenceBackedInsights(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+): Promise<ComposedInsight[]> {
+  try {
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select('id, title, content, evidence, category, lifecycle_state, metadata, created_at')
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null)
+      .in('lifecycle_state', ['detected', 'matured', 'addressed'])
+      .eq('dismissed', false)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error || !data) return [];
+
+    return data
+      .filter((row): row is typeof row & { evidence: Record<string, unknown> } => !!row.evidence)
+      .map((row) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const evidence = row.evidence as any;
+        const confidence =
+          typeof evidence?.confidence === 'number' ? evidence.confidence : 0.6;
+        const tone =
+          row.lifecycle_state === 'matured' ? 'urgent' : 'cautionary';
+
+        // The ComposedInsight shape carries headline/body/tone; we preserve
+        // the original DB title/content so the generator's authored copy
+        // flows through unchanged. `id`, `evidence`, and `category` ride
+        // along as optional fields on the object — AIInsightsPanel reads
+        // them opportunistically.
+        return {
+          headline: row.title,
+          body: row.content ?? '',
+          tone,
+          confidence,
+          strokeImpact: typeof evidence?.strokes_impact === 'number' ? evidence.strokes_impact : undefined,
+          id: row.id,
+          evidence,
+          category: row.category ?? undefined,
+        } as ComposedInsight & { id: string; evidence: unknown; category?: string };
+      });
+  } catch {
+    return [];
   }
 }
 
