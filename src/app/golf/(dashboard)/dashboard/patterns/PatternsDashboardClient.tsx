@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useTransition } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -39,8 +39,21 @@ export function PatternsDashboardClient({
 }: PatternsDashboardClientProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [patterns] = useState(initialPatterns);
-  const [stats] = useState(initialStats);
+
+  // Initialise from the server-rendered prop, then RE-SYNC on every
+  // subsequent prop change. Without the useEffect, router.refresh() would
+  // fetch fresh data from the server but the client would keep showing
+  // the first-render snapshot forever.
+  const [patterns, setPatterns] = useState(initialPatterns);
+  const [stats, setStats] = useState(initialStats);
+
+  useEffect(() => {
+    setPatterns(initialPatterns);
+  }, [initialPatterns]);
+
+  useEffect(() => {
+    setStats(initialStats);
+  }, [initialStats]);
 
   const handleRefresh = useCallback(() => {
     startTransition(() => {
