@@ -34,11 +34,14 @@ import {
   AreasToReviewSection,
   StrokesGainedSection,
   ReviewSummary,
-  V2PatternsSection,
-  V2PredictionCard,
-  V2CausalInsights,
+  RoundTakeaway,
   V2ReviewSummary,
 } from '@/components/golf/coachhelm/round-review';
+import {
+  getRoundTakeawayInsight,
+  getInsightsForPlayer,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 
 // ============================================================================
@@ -92,6 +95,12 @@ export default function RoundReviewPage() {
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Evidence-backed insight delivery — takeaway + supporting list. Fetched
+  // from `golf_coach_insights` (NOT the in-memory engine) so the round-review
+  // surface reads from the same source as the Hub + CoachHelm dashboard.
+  const [takeawayInsight, setTakeawayInsight] = useState<EvidenceInsight | null>(null);
+  const [supportingInsights, setSupportingInsights] = useState<EvidenceInsight[]>([]);
 
   // Use existing CoachHelm hook for V2 features
   const {
@@ -192,6 +201,45 @@ export default function RoundReviewPage() {
     }
 
     fetchReviewAndAverages();
+  }, [round, roundId]);
+
+  // Fetch evidence-backed takeaway + supporting insights in parallel once we
+  // know which player the round belongs to. Server actions handle auth +
+  // drill pre-fetch — the page stays a 'use client' island but defers all
+  // data access to `getRoundTakeawayInsight` / `getInsightsForPlayer`.
+  useEffect(() => {
+    if (!round) return;
+    let cancelled = false;
+
+    async function loadInsightDelivery() {
+      if (!round) return;
+      try {
+        const [takeaway, supporting] = await Promise.all([
+          getRoundTakeawayInsight(round.player_id, roundId),
+          getInsightsForPlayer(round.player_id, { limit: 6 }),
+        ]);
+        if (cancelled) return;
+        setTakeawayInsight(takeaway);
+        // Drop the takeaway row from the supporting list so we never render
+        // it twice. V2ReviewSummary also filters defensively, but clipping
+        // upstream keeps the prop shape tight.
+        setSupportingInsights(
+          takeaway ? supporting.filter((i) => i.id !== takeaway.id) : supporting,
+        );
+      } catch {
+        // Server actions already route to `logServerError`. Fall through to
+        // the empty state — an insight-delivery failure must never block the
+        // rest of the review.
+        if (cancelled) return;
+        setTakeawayInsight(null);
+        setSupportingInsights([]);
+      }
+    }
+
+    void loadInsightDelivery();
+    return () => {
+      cancelled = true;
+    };
   }, [round, roundId]);
 
   // Generate review if needed
@@ -371,6 +419,17 @@ export default function RoundReviewPage() {
   // Note: scramble percentage not available at round level - would need hole-level data
   const scramblePct = null;
 
+  // Round-level score-to-par used for the RoundTakeaway framing line. Prefer
+  // the server-stored `score_to_par`; fall back to (total_score - sum(par))
+  // when the round is missing the cached column.
+  const roundScoreToPar = (() => {
+    if (round.score_to_par !== null && round.score_to_par !== undefined) return round.score_to_par;
+    if (round.total_score === null || round.total_score === undefined) return null;
+    const parSum = (round.holes ?? []).reduce((sum, h) => sum + (h.par ?? 0), 0);
+    if (parSum === 0) return null;
+    return round.total_score - parSum;
+  })();
+
   return (
     <m.div
       variants={containerVariants}
@@ -430,24 +489,22 @@ export default function RoundReviewPage() {
           teamAvg={teamAvg}
         />
 
-        {/* V2 Enhanced Sections (from CoachHelm) */}
-        {isV2Enabled && v2Review && (
-          <>
-            {v2Review.patternsApplied && v2Review.patternsApplied.length > 0 && (
-              <V2PatternsSection patterns={v2Review.patternsApplied} />
-            )}
-
-            {v2Review.prediction && (
-              <V2PredictionCard prediction={v2Review.prediction} />
-            )}
-
-            {v2Review.causalInsights && v2Review.causalInsights.length > 0 && (
-              <V2CausalInsights insights={v2Review.causalInsights} />
-            )}
-          </>
+        {/* HERO takeaway — one insight that matters for today.
+            When V2 is enabled we let V2ReviewSummary compose the hero + the
+            AI-prose block + the collapsed "See more analysis" disclosure so
+            the round-review surface reads like a single narrative. When V2
+            is disabled we still render the RoundTakeaway so players without
+            CoachHelm V2 see the hero card on its own. */}
+        {!isV2Enabled && (
+          <RoundTakeaway
+            insight={takeawayInsight}
+            roundScore={roundScoreToPar}
+            roundId={roundId}
+          />
         )}
 
-        {/* Legacy V1 Review Components (fallback) */}
+        {/* Legacy V1 Review Components (fallback — shown when there is no
+            stored review content and V1 has something to say). */}
         {v1Review && !storedReview?.review_content && (
           <>
             <CompletionCard review={v1Review} />
@@ -459,9 +516,16 @@ export default function RoundReviewPage() {
           </>
         )}
 
-        {/* Summary */}
+        {/* Summary — V2 path composes the hero + supporting cards; V1 falls
+            back to the legacy text summary. */}
         {isV2Enabled && v2Review ? (
-          <V2ReviewSummary review={v2Review} />
+          <V2ReviewSummary
+            review={v2Review}
+            takeawayInsight={takeawayInsight}
+            supportingInsights={supportingInsights}
+            roundId={roundId}
+            roundScore={roundScoreToPar}
+          />
         ) : (
           v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
