@@ -3157,7 +3157,7 @@ export async function triggerPlayerInsightsAfterRound(
             });
           }
         } catch (pushErr) {
-          await logServerError(`[Push] coachhelm_insight notification failed: ${pushErr instanceof Error ? pushErr.message : String(pushErr)}`, { action: 'insights.triggerPlayerInsightsAfterRound' });
+          console.error('[Push] coachhelm_insight notification failed:', pushErr);
         }
       })();
     }

@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -106,7 +105,7 @@ export async function getTeamItineraries(teamId: string) {
     .order('departure_date', { ascending: true, nullsFirst: false });
 
   if (error) {
-    await logServerError(`[Baseball Travel] Error fetching itineraries: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.getTeamItineraries' });
+    console.error('[Baseball Travel] Error fetching itineraries:', error);
     return { success: false as const, error: 'Failed to fetch itineraries.', data: [] as BaseballTravelItinerary[] };
   }
 
@@ -149,7 +148,7 @@ export async function createItinerary(teamId: string, data: {
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Travel] Create error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.createItinerary' });
+      console.error('[Baseball Travel] Create error:', error);
       return { success: false as const, error: 'Failed to create itinerary.' };
     }
 
@@ -159,7 +158,7 @@ export async function createItinerary(teamId: string, data: {
     if (err instanceof z.ZodError) {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.createItinerary' });
+    console.error('[Baseball Travel] Unexpected error:', err);
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }
@@ -188,7 +187,7 @@ export async function updateItinerary(id: string, data: {
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Travel] Update error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.updateItinerary' });
+      console.error('[Baseball Travel] Update error:', error);
       return { success: false as const, error: 'Failed to update itinerary.' };
     }
 
@@ -198,7 +197,7 @@ export async function updateItinerary(id: string, data: {
     if (err instanceof z.ZodError) {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.updateItinerary' });
+    console.error('[Baseball Travel] Unexpected error:', err);
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }
@@ -220,7 +219,7 @@ export async function deleteItinerary(id: string) {
     .eq('id', id);
 
   if (error) {
-    await logServerError(`[Baseball Travel] Delete error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteItinerary' });
+    console.error('[Baseball Travel] Delete error:', error);
     return { success: false as const, error: 'Failed to delete itinerary.' };
   }
 
@@ -269,7 +268,7 @@ export async function addExpense(itineraryId: string, teamId: string, data: {
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Travel] Add expense error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.addExpense' });
+      console.error('[Baseball Travel] Add expense error:', error);
       return { success: false as const, error: 'Failed to add expense.' };
     }
 
@@ -279,7 +278,7 @@ export async function addExpense(itineraryId: string, teamId: string, data: {
     if (err instanceof z.ZodError) {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
-    await logServerError(`[Baseball Travel] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'travel.addExpense' });
+    console.error('[Baseball Travel] Unexpected error:', err);
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }
@@ -295,7 +294,7 @@ export async function getItineraryExpenses(itineraryId: string) {
     .order('expense_date', { ascending: false, nullsFirst: false });
 
   if (error) {
-    await logServerError(`[Baseball Travel] Fetch expenses error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.getItineraryExpenses' });
+    console.error('[Baseball Travel] Fetch expenses error:', error);
     return { success: false as const, error: 'Failed to fetch expenses.', data: [] as BaseballTravelExpense[] };
   }
 
@@ -312,7 +311,7 @@ export async function deleteExpense(expenseId: string) {
     .eq('id', expenseId);
 
   if (error) {
-    await logServerError(`[Baseball Travel] Delete expense error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.deleteExpense' });
+    console.error('[Baseball Travel] Delete expense error:', error);
     return { success: false as const, error: 'Failed to delete expense.' };
   }
 
@@ -330,7 +329,7 @@ export async function getExpenseSummary(itineraryId: string): Promise<{ success:
     .eq('itinerary_id', itineraryId);
 
   if (error) {
-    await logServerError(`[Baseball Travel] Expense summary error: ${error instanceof Error ? error.message : String(error)}`, { action: 'travel.getExpenseSummary' });
+    console.error('[Baseball Travel] Expense summary error:', error);
     return { success: false, error: 'Failed to fetch expense summary.' };
   }
 

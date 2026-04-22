@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -102,7 +101,7 @@ export async function getTeamAcademics(teamId: string) {
     .eq('team_id', teamId);
 
   if (membersError) {
-    await logServerError(`[Baseball Academics] Team members error: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'academics.getTeamAcademics' });
+    console.error('[Baseball Academics] Team members error:', membersError);
     return { success: false as const, error: 'Failed to load team data.' };
   }
 
@@ -185,7 +184,7 @@ export async function getPlayerClasses(playerId: string) {
     .order('start_time', { ascending: true });
 
   if (error) {
-    await logServerError(`[Baseball Academics] Fetch classes error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getPlayerClasses' });
+    console.error('[Baseball Academics] Fetch classes error:', error);
     return { success: false as const, error: 'Failed to load classes.' };
   }
 
@@ -233,7 +232,7 @@ export async function addPlayerClass(playerId: string, data: {
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Add class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.addPlayerClass' });
+      console.error('[Baseball Academics] Add class error:', error);
       return { success: false as const, error: 'Failed to add class.' };
     }
 
@@ -243,7 +242,7 @@ export async function addPlayerClass(playerId: string, data: {
     if (err instanceof z.ZodError) {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
-    await logServerError(`[Baseball Academics] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'academics.addPlayerClass' });
+    console.error('[Baseball Academics] Unexpected error:', err);
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }
@@ -272,7 +271,7 @@ export async function updatePlayerClass(classId: string, data: {
     .single();
 
   if (error) {
-    await logServerError(`[Baseball Academics] Update class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updatePlayerClass' });
+    console.error('[Baseball Academics] Update class error:', error);
     return { success: false as const, error: 'Failed to update class.' };
   }
 
@@ -290,7 +289,7 @@ export async function deletePlayerClass(classId: string) {
     .eq('id', classId);
 
   if (error) {
-    await logServerError(`[Baseball Academics] Delete class error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.deletePlayerClass' });
+    console.error('[Baseball Academics] Delete class error:', error);
     return { success: false as const, error: 'Failed to delete class.' };
   }
 
@@ -313,7 +312,7 @@ export async function getTeamEligibility(teamId: string) {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    await logServerError(`[Baseball Academics] Eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.getTeamEligibility' });
+    console.error('[Baseball Academics] Eligibility error:', error);
     return { success: false as const, error: 'Failed to load eligibility data.' };
   }
 
@@ -341,7 +340,7 @@ export async function updateEligibility(id: string, data: {
     .single();
 
   if (error) {
-    await logServerError(`[Baseball Academics] Update eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.updateEligibility' });
+    console.error('[Baseball Academics] Update eligibility error:', error);
     return { success: false as const, error: 'Failed to update eligibility.' };
   }
 
@@ -384,7 +383,7 @@ export async function createEligibilityRecord(playerId: string, data: {
       .single();
 
     if (error) {
-      await logServerError(`[Baseball Academics] Create eligibility error: ${error instanceof Error ? error.message : String(error)}`, { action: 'academics.createEligibilityRecord' });
+      console.error('[Baseball Academics] Create eligibility error:', error);
       return { success: false as const, error: 'Failed to create eligibility record.' };
     }
 
@@ -394,7 +393,7 @@ export async function createEligibilityRecord(playerId: string, data: {
     if (err instanceof z.ZodError) {
       return { success: false as const, error: err.issues[0]?.message || 'Invalid data.' };
     }
-    await logServerError(`[Baseball Academics] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'academics.createEligibilityRecord' });
+    console.error('[Baseball Academics] Unexpected error:', err);
     return { success: false as const, error: 'An unexpected error occurred.' };
   }
 }

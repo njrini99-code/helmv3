@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -104,7 +103,7 @@ export async function createFocusArea(
   });
 
   if (error) {
-    await logServerError(`Failed to create focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.createFocusArea' });
+    console.error('Failed to create focus area:', error);
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
@@ -134,7 +133,7 @@ export async function createFocusArea(
       }
     }
   } catch (notifErr) {
-    await logServerError(`[createFocusArea] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'development.createFocusArea' });
+    console.error('[createFocusArea] Notification error (non-fatal):', notifErr);
   }
 
   revalidatePath('/golf/dashboard/development');
@@ -180,7 +179,7 @@ export async function updateFocusArea(
     .eq('coach_id', coach.id);
 
   if (error) {
-    await logServerError(`Failed to update focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusArea' });
+    console.error('Failed to update focus area:', error);
     return { success: false, error: 'Failed to update focus area. Please try again.' };
   }
 
@@ -221,7 +220,7 @@ export async function deleteFocusArea(id: string): Promise<DevelopmentActionResu
     .eq('coach_id', coach.id);
 
   if (error) {
-    await logServerError(`Failed to delete focus area: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.deleteFocusArea' });
+    console.error('Failed to delete focus area:', error);
     return { success: false, error: 'Failed to delete focus area. Please try again.' };
   }
 
@@ -255,7 +254,7 @@ export async function updateFocusAreaProgress(
     .eq('id', id);
 
   if (error) {
-    await logServerError(`Failed to update focus area progress: ${error instanceof Error ? error.message : String(error)}`, { action: 'development.updateFocusAreaProgress' });
+    console.error('Failed to update focus area progress:', error);
     return { success: false, error: 'Failed to update progress. Please try again.' };
   }
 
@@ -423,7 +422,7 @@ export async function createFocusAreaFromInsight(
     .single();
 
   if (insertError) {
-    await logServerError(`Failed to create focus area from insight: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'development.createFocusAreaFromInsight' });
+    console.error('Failed to create focus area from insight:', insertError);
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 

@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import { logServerError } from '@/lib/server-error-logger';
 
 interface PhilosophySettings {
   coachId: string;
@@ -63,7 +62,7 @@ export async function savePhilosophySettings(
     });
 
   if (upsertError) {
-    await logServerError(`Failed to save philosophy: ${upsertError instanceof Error ? upsertError.message : String(upsertError)}`, { action: 'philosophy.savePhilosophySettings' });
+    console.error('Failed to save philosophy:', upsertError);
     return { success: false, error: 'Failed to save settings' };
   }
 

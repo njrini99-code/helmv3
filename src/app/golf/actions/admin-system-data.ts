@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // TYPES
@@ -230,7 +229,10 @@ export async function getSystemTabData(): Promise<SystemTabData> {
       systemHealth,
     };
   } catch (error) {
-    await logServerError(`[admin-system-data] Failed to fetch system tab data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_system_data.getSystemTabData' });
+    console.error(
+      '[admin-system-data] Failed to fetch system tab data:',
+      error
+    );
     return emptySystemTabData();
   }
 }

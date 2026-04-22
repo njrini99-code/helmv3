@@ -10,7 +10,6 @@ import {
   type CSVRow,
   type PlayerMatch,
 } from '@/lib/baseball/csv-utils';
-import { logServerError } from '@/lib/server-error-logger';
 
 // Re-export types and utilities for backward compatibility
 export { parseCSV, findBestPlayerMatch, type CSVRow, type PlayerMatch };
@@ -258,7 +257,7 @@ export async function uploadStatsCSV(
       .insert(statsToInsert);
 
     if (insertError) {
-      await logServerError(`Failed to insert stats: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'stats.uploadStatsCSV' });
+      console.error('Failed to insert stats:', insertError);
     }
   }
 

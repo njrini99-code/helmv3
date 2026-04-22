@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -94,7 +93,7 @@ export async function removePlayerFromTeam(playerId: string): Promise<RosterActi
     .eq('team_id', teamId);
 
   if (deleteError) {
-    await logServerError(`Failed to remove player from team: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'roster.removePlayerFromTeam' });
+    console.error('Failed to remove player from team:', deleteError);
     return { success: false, error: 'Failed to remove player. Please try again.' };
   }
 
@@ -158,7 +157,7 @@ export async function getTeamPlayers(): Promise<{
     .eq('team_id', teamId);
 
   if (membersError) {
-    await logServerError(`Failed to fetch team members: ${membersError instanceof Error ? membersError.message : String(membersError)}`, { action: 'roster.getTeamPlayers' });
+    console.error('Failed to fetch team members:', membersError);
     return { success: false, error: 'Failed to load roster' };
   }
 
@@ -175,7 +174,7 @@ export async function getTeamPlayers(): Promise<{
     .order('last_name', { ascending: true });
 
   if (playersError) {
-    await logServerError(`Failed to fetch team players: ${playersError instanceof Error ? playersError.message : String(playersError)}`, { action: 'roster.getTeamPlayers' });
+    console.error('Failed to fetch team players:', playersError);
     return { success: false, error: 'Failed to load roster' };
   }
 

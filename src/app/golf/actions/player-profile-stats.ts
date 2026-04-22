@@ -18,7 +18,6 @@ import {
   type RoundInfo,
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -98,7 +97,7 @@ export async function getPlayerProfileStats(
       .order('round_date', { ascending: false });
 
     if (roundsError) {
-      await logServerError(`[getPlayerProfileStats] Error fetching rounds: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+      console.error('[getPlayerProfileStats] Error fetching rounds:', roundsError);
       return { success: false, error: 'Failed to fetch rounds', stats: null, rounds: [] };
     }
 
@@ -138,7 +137,7 @@ export async function getPlayerProfileStats(
       .order('shot_number');
 
     if (shotsError) {
-      await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+      console.error('[getPlayerProfileStats] Error fetching shots:', shotsError);
       return { success: false, error: 'Failed to fetch shot data', stats: null, rounds };
     }
 
@@ -247,7 +246,7 @@ export async function getPlayerProfileStats(
       rounds,
     };
   } catch (error) {
-    await logServerError(`[getPlayerProfileStats] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
+    console.error('[getPlayerProfileStats] Unexpected error:', error);
     return {
       success: false,
       error: 'An unexpected error occurred',

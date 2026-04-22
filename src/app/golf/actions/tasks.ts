@@ -14,7 +14,6 @@ import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { notifyTaskAssigned } from '@/lib/notifications';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -111,7 +110,7 @@ export async function completeTask(
       .maybeSingle() as { data: ExistingAssignment | null; error: Error | null };
 
     if (assignmentError) {
-      await logServerError(`[completeTask Error]: ${assignmentError instanceof Error ? assignmentError.message : String(assignmentError)}`, { action: 'tasks.completeTask' });
+      console.error('[completeTask Error]', assignmentError);
       return { success: false, error: 'Failed to check task assignment' };
     }
 
@@ -130,7 +129,7 @@ export async function completeTask(
         .eq('id', existingAssignment.id);
 
       if (updateError) {
-        await logServerError(`[completeTask Update Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.completeTask' });
+        console.error('[completeTask Update Error]', updateError);
         return { success: false, error: updateError.message };
       }
     } else {
@@ -161,7 +160,7 @@ export async function completeTask(
         });
 
       if (insertError) {
-        await logServerError(`[completeTask Insert Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'tasks.completeTask' });
+        console.error('[completeTask Insert Error]', insertError);
         return { success: false, error: insertError.message };
       }
     }
@@ -170,7 +169,7 @@ export async function completeTask(
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
-    await logServerError(`[completeTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.completeTask' });
+    console.error('[completeTask Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -216,7 +215,7 @@ export async function uncompleteTask(taskId: string): Promise<ActionResult> {
       .eq('player_id', player.id);
 
     if (updateError) {
-      await logServerError(`[uncompleteTask Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.uncompleteTask' });
+      console.error('[uncompleteTask Error]', updateError);
       return { success: false, error: updateError.message };
     }
 
@@ -224,7 +223,7 @@ export async function uncompleteTask(taskId: string): Promise<ActionResult> {
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
-    await logServerError(`[uncompleteTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.uncompleteTask' });
+    console.error('[uncompleteTask Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -267,7 +266,7 @@ export async function getPlayerTasks(): Promise<ActionResult<TaskWithAssignment[
       .order('created_at', { ascending: false }) as { data: TaskAssignment[] | null; error: Error | null };
 
     if (assignmentsError) {
-      await logServerError(`[getPlayerTasks Error]: ${assignmentsError instanceof Error ? assignmentsError.message : String(assignmentsError)}`, { action: 'tasks.getPlayerTasks' });
+      console.error('[getPlayerTasks Error]', assignmentsError);
       return { success: false, error: 'Failed to fetch task assignments' };
     }
 
@@ -283,7 +282,7 @@ export async function getPlayerTasks(): Promise<ActionResult<TaskWithAssignment[
       .in('id', taskIds);
 
     if (tasksError) {
-      await logServerError(`[getPlayerTasks Tasks Error]: ${tasksError instanceof Error ? tasksError.message : String(tasksError)}`, { action: 'tasks.getPlayerTasks' });
+      console.error('[getPlayerTasks Tasks Error]', tasksError);
       return { success: false, error: 'Failed to fetch task details' };
     }
 
@@ -316,7 +315,7 @@ export async function getPlayerTasks(): Promise<ActionResult<TaskWithAssignment[
 
     return { success: true, data: playerTasks };
   } catch (error) {
-    await logServerError(`[getPlayerTasks Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getPlayerTasks' });
+    console.error('[getPlayerTasks Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -374,7 +373,7 @@ export async function getTaskCompletionStatus(
       },
     };
   } catch (error) {
-    await logServerError(`[getTaskCompletionStatus Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getTaskCompletionStatus' });
+    console.error('[getTaskCompletionStatus Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -447,7 +446,7 @@ export async function createTask(
       .single();
 
     if (taskError || !task) {
-      await logServerError(`[createTask Error]: ${taskError instanceof Error ? taskError.message : String(taskError)}`, { action: 'tasks.createTask' });
+      console.error('[createTask Error]', taskError);
       return { success: false, error: 'Failed to create task' };
     }
 
@@ -466,7 +465,7 @@ export async function createTask(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTask Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`, { action: 'tasks.createTask' });
+        console.error('[createTask Assignment Error]', assignError);
         // Task was created but assignments failed - still return success with warning
       }
 
@@ -499,7 +498,7 @@ export async function createTask(
           }
         }
       } catch (notifErr) {
-        await logServerError(`[createTask] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'tasks.createTask' });
+        console.error('[createTask] Notification error (non-fatal):', notifErr);
       }
     }
 
@@ -507,7 +506,7 @@ export async function createTask(
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
-    await logServerError(`[createTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTask' });
+    console.error('[createTask Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -574,7 +573,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
       .eq('id', taskId);
 
     if (deleteError) {
-      await logServerError(`[deleteTask Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'tasks.deleteTask' });
+      console.error('[deleteTask Error]', deleteError);
       return { success: false, error: deleteError.message };
     }
 
@@ -582,7 +581,7 @@ export async function deleteTask(taskId: string): Promise<ActionResult> {
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteTask Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.deleteTask' });
+    console.error('[deleteTask Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -654,14 +653,14 @@ export async function setTaskReminder(
       .eq('id', taskId);
 
     if (updateError) {
-      await logServerError(`[setTaskReminder Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.setTaskReminder' });
+      console.error('[setTaskReminder Error]', updateError);
       return { success: false, error: updateError.message };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`[setTaskReminder Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.setTaskReminder' });
+    console.error('[setTaskReminder Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -726,14 +725,14 @@ export async function clearTaskReminder(taskId: string): Promise<ActionResult> {
       .eq('id', taskId);
 
     if (updateError) {
-      await logServerError(`[clearTaskReminder Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.clearTaskReminder' });
+      console.error('[clearTaskReminder Error]', updateError);
       return { success: false, error: updateError.message };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    await logServerError(`[clearTaskReminder Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.clearTaskReminder' });
+    console.error('[clearTaskReminder Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -777,13 +776,13 @@ export async function getTaskTemplates(
       .order('title', { ascending: true }) as { data: TaskTemplate[] | null; error: Error | null };
 
     if (templatesError) {
-      await logServerError(`[getTaskTemplates Error]: ${templatesError instanceof Error ? templatesError.message : String(templatesError)}`, { action: 'tasks.getTaskTemplates' });
+      console.error('[getTaskTemplates Error]', templatesError);
       return { success: false, error: 'Failed to fetch templates' };
     }
 
     return { success: true, data: templates || [] };
   } catch (error) {
-    await logServerError(`[getTaskTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.getTaskTemplates' });
+    console.error('[getTaskTemplates Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -857,13 +856,13 @@ export async function createTaskTemplate(
       .single() as { data: TemplateInsertResult | null; error: Error | null };
 
     if (templateError || !template) {
-      await logServerError(`[createTaskTemplate Error]: ${templateError instanceof Error ? templateError.message : String(templateError)}`, { action: 'tasks.createTaskTemplate' });
+      console.error('[createTaskTemplate Error]', templateError);
       return { success: false, error: 'Failed to create template' };
     }
 
     return { success: true, data: { templateId: template.id } };
   } catch (error) {
-    await logServerError(`[createTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTaskTemplate' });
+    console.error('[createTaskTemplate Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -947,13 +946,13 @@ export async function updateTaskTemplate(
       .eq('id', templateId);
 
     if (updateError) {
-      await logServerError(`[updateTaskTemplate Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'tasks.updateTaskTemplate' });
+      console.error('[updateTaskTemplate Error]', updateError);
       return { success: false, error: updateError.message };
     }
 
     return { success: true };
   } catch (error) {
-    await logServerError(`[updateTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.updateTaskTemplate' });
+    console.error('[updateTaskTemplate Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1015,13 +1014,13 @@ export async function deleteTaskTemplate(templateId: string): Promise<ActionResu
       .eq('id', templateId);
 
     if (deleteError) {
-      await logServerError(`[deleteTaskTemplate Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'tasks.deleteTaskTemplate' });
+      console.error('[deleteTaskTemplate Error]', deleteError);
       return { success: false, error: deleteError.message };
     }
 
     return { success: true };
   } catch (error) {
-    await logServerError(`[deleteTaskTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.deleteTaskTemplate' });
+    console.error('[deleteTaskTemplate Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1064,7 +1063,7 @@ export async function createTaskFromTemplate(
       .single() as { data: TaskTemplate | null; error: Error | null };
 
     if (templateError || !template) {
-      await logServerError(`[createTaskFromTemplate Error]: ${templateError instanceof Error ? templateError.message : String(templateError)}`, { action: 'tasks.createTaskFromTemplate' });
+      console.error('[createTaskFromTemplate Error]', templateError);
       return { success: false, error: 'Template not found' };
     }
 
@@ -1094,7 +1093,7 @@ export async function createTaskFromTemplate(
       .single();
 
     if (taskError || !task) {
-      await logServerError(`[createTaskFromTemplate Task Error]: ${taskError instanceof Error ? taskError.message : String(taskError)}`, { action: 'tasks.createTaskFromTemplate' });
+      console.error('[createTaskFromTemplate Task Error]', taskError);
       return { success: false, error: 'Failed to create task' };
     }
 
@@ -1127,7 +1126,7 @@ export async function createTaskFromTemplate(
         .insert(assignments);
 
       if (assignError) {
-        await logServerError(`[createTaskFromTemplate Assignment Error]: ${assignError instanceof Error ? assignError.message : String(assignError)}`, { action: 'tasks.createTaskFromTemplate' });
+        console.error('[createTaskFromTemplate Assignment Error]', assignError);
         // Task was created but assignments failed - still return success with the task
       }
     }
@@ -1136,7 +1135,7 @@ export async function createTaskFromTemplate(
     updateTag(CACHE_TAGS.DASHBOARD);
     return { success: true, data: { taskId: task.id } };
   } catch (error) {
-    await logServerError(`[createTaskFromTemplate Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.createTaskFromTemplate' });
+    console.error('[createTaskFromTemplate Error]', error);
     return formatSafeErrorResponse(error);
   }
 }
@@ -1246,13 +1245,13 @@ export async function seedDefaultTemplates(teamId: string): Promise<ActionResult
       .insert(defaultTemplates);
 
     if (insertError) {
-      await logServerError(`[seedDefaultTemplates Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'tasks.seedDefaultTemplates' });
+      console.error('[seedDefaultTemplates Error]', insertError);
       return { success: false, error: 'Failed to seed templates' };
     }
 
     return { success: true };
   } catch (error) {
-    await logServerError(`[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.seedDefaultTemplates' });
+    console.error('[seedDefaultTemplates Error]', error);
     return formatSafeErrorResponse(error);
   }
 }

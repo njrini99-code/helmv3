@@ -13,7 +13,6 @@ import {
 } from '@/lib/validation/server-action-validator';
 import { notifyWatchlistAdd, notifyPipelineStageChange } from '@/lib/notifications';
 import { WatchlistSchemas } from '@/lib/validation/action-schemas';
-import { logServerError } from '@/lib/server-error-logger';
 
 export async function addToWatchlist(coachId: string, playerId: string) {
   const supabase = await createClient();
@@ -108,7 +107,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
       }
     }
   } catch (notifErr) {
-    await logServerError(`[addToWatchlist] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'watchlist.addToWatchlist' });
+    console.error('[addToWatchlist] Notification error (non-fatal):', notifErr);
   }
 
   return { success: true };
@@ -185,7 +184,7 @@ export async function updateWatchlistStatus(
       .eq('coach_id', coach.id); // Belt and suspenders
 
     if (error) {
-      await logServerError(`[Security] Watchlist update failed: ${{ watchlistId, coachId: coach.id, error: error.message } instanceof Error ? { watchlistId, coachId: coach.id, error: error.message }.message : String({ watchlistId, coachId: coach.id, error: error.message })}`, { action: 'watchlist.updateWatchlistStatus' });
+      console.error('[Security] Watchlist update failed:', { watchlistId, coachId: coach.id, error: error.message });
       return { success: false, error: 'Failed to update status' };
     }
 
@@ -222,7 +221,7 @@ export async function updateWatchlistStatus(
         }
       }
     } catch (notifErr) {
-      await logServerError(`[updateWatchlistStatus] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'watchlist.updateWatchlistStatus' });
+      console.error('[updateWatchlistStatus] Notification error (non-fatal):', notifErr);
     }
 
     revalidatePath('/baseball/dashboard/watchlist');
@@ -267,7 +266,7 @@ export async function updateWatchlistPriority(
       .eq('coach_id', coach.id);
 
     if (error) {
-      await logServerError(`[Security] Watchlist priority update failed: ${{ watchlistId, coachId: coach.id, error: error.message } instanceof Error ? { watchlistId, coachId: coach.id, error: error.message }.message : String({ watchlistId, coachId: coach.id, error: error.message })}`, { action: 'watchlist.updateWatchlistPriority' });
+      console.error('[Security] Watchlist priority update failed:', { watchlistId, coachId: coach.id, error: error.message });
       return { success: false, error: 'Failed to update priority' };
     }
 
@@ -312,7 +311,7 @@ export async function addWatchlistNote(
       .eq('coach_id', coach.id);
 
     if (error) {
-      await logServerError(`[Security] Watchlist note update failed: ${{ watchlistId, coachId: coach.id, error: error.message } instanceof Error ? { watchlistId, coachId: coach.id, error: error.message }.message : String({ watchlistId, coachId: coach.id, error: error.message })}`, { action: 'watchlist.addWatchlistNote' });
+      console.error('[Security] Watchlist note update failed:', { watchlistId, coachId: coach.id, error: error.message });
       return { success: false, error: 'Failed to add note' };
     }
 

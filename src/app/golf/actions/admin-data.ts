@@ -6,7 +6,6 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
 import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
 import { fetchAdminRollupC, type RollupC } from './admin/rollup-c';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
@@ -1425,16 +1424,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   try {
     [rollupA, rollupB] = await Promise.all([
       fetchAdminRollupA().catch((e) => {
-        await logServerError(`[admin-data] fetchAdminRollupA threw: ${e?.message instanceof Error ? e?.message.message : String(e?.message)}`, { action: 'admin_data.getAdminDashboardData', metadata: { arg0: e?.stack } });
+        console.error('[admin-data] fetchAdminRollupA threw:', e?.message, e?.stack);
         throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
       }),
       fetchAdminRollupB().catch((e) => {
-        await logServerError(`[admin-data] fetchAdminRollupB threw: ${e?.message instanceof Error ? e?.message.message : String(e?.message)}`, { action: 'admin_data.getAdminDashboardData', metadata: { arg0: e?.stack } });
+        console.error('[admin-data] fetchAdminRollupB threw:', e?.message, e?.stack);
         throw new Error(`rollupB failed: ${e?.message ?? String(e)}`);
       }),
     ]);
   } catch (e) {
-    await logServerError(`[admin-data] outer A+B Promise.all threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData' });
+    console.error('[admin-data] outer A+B Promise.all threw:', e);
     throw e;
   }
 
@@ -1443,7 +1442,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   //    any slice — we issue a single grouped query.
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
     fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      await logServerError(`[admin-data] fetchAdminRollupC threw: ${e?.message instanceof Error ? e?.message.message : String(e?.message)}`, { action: 'admin_data.getAdminDashboardData', metadata: { arg0: e?.stack } });
+      console.error('[admin-data] fetchAdminRollupC threw:', e?.message, e?.stack);
       throw new Error(`rollupC failed: ${e?.message ?? String(e)}`);
     }),
     fetchVercelAnalytics(),
@@ -1492,8 +1491,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     });
   } catch (e) {
     const err = e as Error;
-    await logServerError(`[admin-data] assembleAdminDashboardData threw: ${err?.message instanceof Error ? err?.message.message : String(err?.message)}`, { action: 'admin_data.getAdminDashboardData' });
-    await logServerError(`[admin-data] assembleAdminDashboardData stack: ${err?.stack instanceof Error ? err?.stack.message : String(err?.stack)}`, { action: 'admin_data.getAdminDashboardData' });
+    console.error('[admin-data] assembleAdminDashboardData threw:', err?.message);
+    console.error('[admin-data] assembleAdminDashboardData stack:', err?.stack);
     throw new Error(`assembleAdminDashboardData failed: ${err?.message ?? String(e)}`);
   }
 }

@@ -16,7 +16,6 @@ import {
   formatLockoutMessage,
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
-import { logServerError } from '@/lib/server-error-logger';
 
 export type LoginResult = {
   success: boolean;
@@ -302,19 +301,11 @@ export async function signupAction(
   });
 
   if (error) {
-    await logServerError(`[Auth] Signup error: ${{
+    console.error('[Auth] Signup error:', {
       email: normalizedEmail,
       error: error.message,
       ip,
-    } instanceof Error ? {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    }.message : String({
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    })}`, { action: 'auth.signupAction' });
+    });
 
     // Handle Supabase rate limiting with user-friendly message
     if (error.message.includes('security purposes') || error.message.includes('rate limit')) {
@@ -417,19 +408,11 @@ export async function requestPasswordResetAction(
   });
 
   if (error) {
-    await logServerError(`[Auth] Password reset error: ${{
+    console.error('[Auth] Password reset error:', {
       email: normalizedEmail,
       error: error.message,
       ip,
-    } instanceof Error ? {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    }.message : String({
-      email: normalizedEmail,
-      error: error.message,
-      ip,
-    })}`, { action: 'auth.requestPasswordResetAction' });
+    });
 
     // Return generic message even on error to prevent email enumeration
     return {

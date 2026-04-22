@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { notifyProfileView } from '@/lib/notifications';
-import { logServerError } from '@/lib/server-error-logger';
 
 export interface PlayerPeekData {
   id: string;
@@ -150,7 +149,7 @@ export async function getPlayerPeekData(playerId: string): Promise<{
           }
         }
       } catch (notifErr) {
-        await logServerError(`[playerPeek] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'player_peek.getPlayerPeekData' });
+        console.error('[playerPeek] Notification error (non-fatal):', notifErr);
       }
     }
 
@@ -188,7 +187,7 @@ export async function getPlayerPeekData(playerId: string): Promise<{
       },
     };
   } catch (error) {
-    await logServerError(`Error fetching player peek data: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_peek.getPlayerPeekData' });
+    console.error('Error fetching player peek data:', error);
     return { success: false, error: 'Failed to load player data' };
   }
 }

@@ -8,7 +8,6 @@ import { randomBytes } from 'crypto';
 import { checkRateLimit, RATE_LIMITS, formatTimeRemaining } from '@/lib/auth/supabase-rate-limit';
 import { validatePassword } from '@/lib/auth/password-validation';
 import type { User } from '@supabase/supabase-js';
-import { logServerError } from '@/lib/server-error-logger';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +105,7 @@ export async function completeCoachOnboarding(
     .upsert({ id: user.id, email: user.email || '', role: 'coach' }, { onConflict: 'id' });
 
   if (userError) {
-    await logServerError(`[Onboarding] Failed to upsert user: ${userError instanceof Error ? userError.message : String(userError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    console.error('[Onboarding] Failed to upsert user:', userError);
     return { success: false, error: 'Unable to set up your account. Please try again.' };
   }
 
@@ -124,7 +123,7 @@ export async function completeCoachOnboarding(
     .single();
 
   if (orgError) {
-    await logServerError(`[Onboarding] Failed to create organization: ${orgError instanceof Error ? orgError.message : String(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    console.error('[Onboarding] Failed to create organization:', orgError);
     return { success: false, error: 'Unable to create your program. Please try again.' };
   }
 
@@ -142,7 +141,7 @@ export async function completeCoachOnboarding(
     });
 
   if (coachError) {
-    await logServerError(`[Onboarding] Failed to create coach profile: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    console.error('[Onboarding] Failed to create coach profile:', coachError);
     return { success: false, error: 'Unable to create your profile. Please try again.' };
   }
 
@@ -160,7 +159,7 @@ export async function completeCoachOnboarding(
 
   if (teamError) {
     // Non-fatal — log but don't block onboarding
-    await logServerError(`[Onboarding] Failed to create team (non-fatal): ${teamError instanceof Error ? teamError.message : String(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
+    console.error('[Onboarding] Failed to create team (non-fatal):', teamError);
   }
 
   revalidatePath('/baseball');
@@ -293,7 +292,7 @@ export async function signupAndCompleteCoachOnboarding(data: {
       };
     }
 
-    await logServerError(`[Onboarding] Signup error: ${{ email: normalizedEmail, error: authError.message, ip } instanceof Error ? { email: normalizedEmail, error: authError.message, ip }.message : String({ email: normalizedEmail, error: authError.message, ip })}`, { action: 'onboarding.signupAndCompleteCoachOnboarding' });
+    console.error('[Onboarding] Signup error:', { email: normalizedEmail, error: authError.message, ip });
     return { success: false, error: 'Unable to create account. Please try again.' };
   }
 
@@ -378,7 +377,7 @@ export async function completeBaseballSignup(data: {
     });
 
     if (coachError) {
-      await logServerError(`[Onboarding] Failed to create coach profile: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeBaseballSignup' });
+      console.error('[Onboarding] Failed to create coach profile:', coachError);
       return { success: false, error: 'Unable to create your profile. Please try again.' };
     }
 
@@ -404,7 +403,7 @@ export async function completeBaseballSignup(data: {
     });
 
     if (playerError) {
-      await logServerError(`[Onboarding] Failed to create player profile: ${playerError instanceof Error ? playerError.message : String(playerError)}`, { action: 'onboarding.completeBaseballSignup' });
+      console.error('[Onboarding] Failed to create player profile:', playerError);
       return { success: false, error: 'Unable to create your profile. Please try again.' };
     }
 

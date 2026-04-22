@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { Json } from '@/lib/types/database.types';
-import { logServerError } from '@/lib/server-error-logger';
 
 // Goal status types
 export type GoalStatus = 'not_started' | 'in_progress' | 'completed';
@@ -58,7 +57,7 @@ export async function getPlayerDevPlans(playerId: string): Promise<Developmental
     .order('created_at', { ascending: false });
 
   if (error) {
-    await logServerError(`Error fetching player dev plans: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getPlayerDevPlans' });
+    console.error('Error fetching player dev plans:', error);
     throw error;
   }
 
@@ -92,7 +91,7 @@ export async function getActiveDevPlan(playerId: string): Promise<DevelopmentalP
       // No active plan found
       return null;
     }
-    await logServerError(`Error fetching active dev plan: ${error instanceof Error ? error.message : String(error)}`, { action: 'dev_plans.getActiveDevPlan' });
+    console.error('Error fetching active dev plan:', error);
     throw error;
   }
 
@@ -136,7 +135,7 @@ export async function updateGoalProgress(
   }
 
   if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.updateGoalProgress' });
+    console.error('Error fetching plan:', fetchError);
     throw fetchError;
   }
 
@@ -173,7 +172,7 @@ export async function updateGoalProgress(
     .eq('id', planId);
 
   if (updateError) {
-    await logServerError(`Error updating goal progress: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.updateGoalProgress' });
+    console.error('Error updating goal progress:', updateError);
     throw updateError;
   }
 
@@ -213,7 +212,7 @@ export async function completeGoal(
   }
 
   if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.completeGoal' });
+    console.error('Error fetching plan:', fetchError);
     throw fetchError;
   }
 
@@ -249,7 +248,7 @@ export async function completeGoal(
     .eq('id', planId);
 
   if (updateError) {
-    await logServerError(`Error completing goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.completeGoal' });
+    console.error('Error completing goal:', updateError);
     throw updateError;
   }
 
@@ -289,7 +288,7 @@ export async function uncompleteGoal(
   }
 
   if (fetchError) {
-    await logServerError(`Error fetching plan: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`, { action: 'dev_plans.uncompleteGoal' });
+    console.error('Error fetching plan:', fetchError);
     throw fetchError;
   }
 
@@ -325,7 +324,7 @@ export async function uncompleteGoal(
     .eq('id', planId);
 
   if (updateError) {
-    await logServerError(`Error uncompleting goal: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'dev_plans.uncompleteGoal' });
+    console.error('Error uncompleting goal:', updateError);
     throw updateError;
   }
 

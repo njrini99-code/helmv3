@@ -1714,7 +1714,7 @@ export async function submitGolfRoundComprehensive(
             );
           }
         } catch (pushErr) {
-          await logServerError(`[Push] round_submitted notification failed: ${pushErr instanceof Error ? pushErr.message : String(pushErr)}`, { action: 'golf.submitGolfRoundComprehensive' });
+          console.error('[Push] round_submitted notification failed:', pushErr);
         }
       })();
     }
