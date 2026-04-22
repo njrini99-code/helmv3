@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // TYPES
@@ -273,7 +274,7 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
       featureStickiness,
     };
   } catch (error) {
-    console.error('[admin-bi-data] Failed to fetch BI data:', error);
+    await logServerError(`[admin-bi-data] Failed to fetch BI data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_bi_data.getEnhancedBIData' });
     return emptyBIData();
   }
 }
