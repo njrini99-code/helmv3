@@ -7,6 +7,7 @@ import {
   logSecurityEvent
 } from '@/lib/validation/server-action-validator';
 import { TeamSchemas } from '@/lib/validation/action-schemas';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -294,7 +295,7 @@ export async function joinTeam(playerId: string, teamId: string) {
     });
 
   if (error) {
-    console.error('Error joining team:', error);
+    await logServerError(`Error joining team: ${error instanceof Error ? error.message : String(error)}`, { action: 'teams.joinTeam' });
     return {
       success: false,
       error: 'Failed to join team. Please try again.',
@@ -555,7 +556,7 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
     .eq('id', teamId);
 
   if (updateError) {
-    console.error('Failed to generate invite code:', updateError);
+    await logServerError(`Failed to generate invite code: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'teams.generateTeamInviteCode' });
     return { success: false, error: 'Failed to generate invite code. Please try again.' };
   }
 
@@ -620,7 +621,7 @@ export async function regenerateTeamInviteCode(teamId: string): Promise<TeamInvi
     .eq('id', teamId);
 
   if (updateError) {
-    console.error('Failed to regenerate invite code:', updateError);
+    await logServerError(`Failed to regenerate invite code: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'teams.regenerateTeamInviteCode' });
     return { success: false, error: 'Failed to regenerate invite code. Please try again.' };
   }
 

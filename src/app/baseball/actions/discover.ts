@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { Organization, Player } from '@/lib/types';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Coach type for discoverability filtering
 export type CoachType = 'college' | 'juco' | 'high_school' | 'showcase';
@@ -270,7 +271,7 @@ export async function getDiscoverPlayers(
     .range(offset, offset + perPage - 1);
 
   if (error) {
-    console.error('Error fetching players:', error);
+    await logServerError(`Error fetching players: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getDiscoverPlayers' });
     return { players: [], count: 0, pages: 0 };
   }
 
@@ -356,7 +357,7 @@ export async function getDiscoverTeams(
     .range(offset, offset + perPage - 1);
 
   if (error) {
-    console.error('Error fetching teams:', error);
+    await logServerError(`Error fetching teams: ${error instanceof Error ? error.message : String(error)}`, { action: 'discover.getDiscoverTeams' });
     return { teams: [], count: 0, pages: 0 };
   }
 

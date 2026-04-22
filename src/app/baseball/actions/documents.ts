@@ -6,6 +6,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // TYPE DEFINITIONS
@@ -53,7 +54,7 @@ export interface BaseballDocumentVersion {
 
 // Error handling helper
 function handleError(error: unknown): string {
-  console.error('Baseball document action error:', error);
+  await logServerError(`Baseball document action error: ${error instanceof Error ? error.message : String(error)}`, { action: 'documents.handleError' });
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred';
 }
@@ -246,7 +247,7 @@ export async function createBaseballDocument(data: {
       });
 
     if (versionError) {
-      console.error('Failed to create version record:', versionError);
+      await logServerError(`Failed to create version record: ${versionError instanceof Error ? versionError.message : String(versionError)}`, { action: 'documents.createBaseballDocument' });
       // Don't fail the whole operation if version record fails
     }
 

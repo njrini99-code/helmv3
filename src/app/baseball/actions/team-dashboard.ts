@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -683,7 +684,7 @@ export async function getTeamDashboardData(teamId?: string): Promise<
 
     return { success: true, data };
   } catch (error) {
-    console.error('[getTeamDashboardData] Error:', error);
+    await logServerError(`[getTeamDashboardData] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'team_dashboard.getTeamDashboardData' });
     return { success: false, error: 'Failed to fetch dashboard data' };
   }
 }
