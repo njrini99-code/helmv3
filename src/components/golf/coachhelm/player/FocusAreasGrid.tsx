@@ -186,8 +186,11 @@ function FocusAreaCard({
     );
   }
 
+  // Task C14: link to the focus areas anchor on the same CoachHelm page,
+  // not /my-development (which only shows coach-assigned focus areas and
+  // would not contain these AI-derived ones).
   return (
-    <Link href="/golf/dashboard/my-development" className={sharedClassName}>
+    <Link href="/golf/dashboard/coachhelm#focus-areas" className={sharedClassName}>
       <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
     </Link>
   );

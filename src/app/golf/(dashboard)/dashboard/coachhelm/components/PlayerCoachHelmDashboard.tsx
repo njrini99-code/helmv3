@@ -313,7 +313,9 @@ export function PlayerCoachHelmDashboard({
 
                     {/* Right Column — Focus Areas, Prediction */}
                     <div className="lg:col-span-5 space-y-5 md:space-y-6 min-w-0">
-                      <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
+                      <section id="focus-areas" className="scroll-mt-24">
+                        <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
+                      </section>
                       <PerformancePrediction
                         prediction={dashboardData.prediction}
                         playerState={dashboardData.playerState}
