@@ -4,6 +4,19 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveRoundDraft, loadRoundDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 
+/**
+ * Historical draft shape — prior versions of the auto-save draft embedded
+ * `putts` / `shots` on each hole before shots moved to `inProgressShots`
+ * (keyed by hole index) and hole-level data was trimmed to `score`. The
+ * fingerprint below reads these fields defensively for backwards
+ * compatibility with older localStorage payloads, without widening the
+ * canonical `RoundHole` type.
+ */
+type HoleWithDraftFields = RoundHole & {
+  putts?: number | null;
+  shots?: ShotRecord[];
+};
+
 // Types
 interface RoundSetupForm {
   courseName: string;
@@ -177,21 +190,25 @@ export function useAutoSaveRound(
   const performSave = useCallback(async (data: RoundDraftData) => {
     if (!isMountedRef.current) return;
 
-    // Only save once the player has started entering shots (tracking) or is reviewing
-    if (data.step !== 'tracking' && data.step !== 'review') return;
+    // Only save once the player has started entering shots (tracking)
+    if (data.step !== 'tracking') return;
 
-    // Skip save if data hasn't changed since last successful save
-    // Include shot details (miss direction, putt break, lie) so detail edits trigger saves
+    // Skip save if data hasn't changed since last successful save.
+    // Include shot details (miss direction, putt break, lie) so detail edits trigger saves.
+    // Hole-level `putts` / `shots` are legacy draft fields (see HoleWithDraftFields);
+    // current flow stores in-progress shots in `data.inProgressShots`.
     const fingerprint = JSON.stringify({
       step: data.step,
       currentHoleIndex: data.currentHoleIndex,
-      holes: data.holes?.map(h => ({
+      holes: data.holes?.map((h: HoleWithDraftFields) => ({
         score: h.score,
         putts: h.putts,
         sc: h.shots?.length,
-        sd: h.shots?.map(s => `${s.result ?? ''}${s.missDirection ?? ''}${s.puttBreak ?? ''}${s.lieAfter ?? ''}`).join(','),
+        sd: h.shots
+          ?.map((s) => `${s.result ?? ''}${s.missDirection ?? ''}${s.puttBreak ?? ''}`)
+          .join(','),
       })),
-      ip: data.inProgressShots?.length,
+      ip: data.inProgressShots ? Object.keys(data.inProgressShots).length : 0,
     });
     if (fingerprint === lastSavedFingerprintRef.current) return;
 
@@ -226,7 +243,11 @@ export function useAutoSaveRound(
         lastSavedFingerprintRef.current = JSON.stringify({
           step: data.step,
           currentHoleIndex: data.currentHoleIndex,
-          holes: data.holes?.map(h => ({ score: h.score, putts: h.putts, shots: h.shots?.length })),
+          holes: data.holes?.map((h: HoleWithDraftFields) => ({
+            score: h.score,
+            putts: h.putts,
+            shots: h.shots?.length,
+          })),
         });
         const now = new Date();
         lastSavedRef.current = now;
