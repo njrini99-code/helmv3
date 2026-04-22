@@ -53,7 +53,8 @@ export interface BaseballDocumentVersion {
 
 // Error handling helper
 function handleError(error: unknown): string {
-  console.error('Baseball document action error:', error);
+  // Fire-and-forget: logServerError handles its own errors
+  void logServerError(`Baseball document action error: ${error instanceof Error ? error.message : String(error)}`, { action: 'documents.handleError' });
   if (error instanceof Error) return error.message;
   return 'An unexpected error occurred';
 }

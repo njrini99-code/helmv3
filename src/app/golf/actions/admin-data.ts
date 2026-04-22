@@ -1424,16 +1424,16 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   try {
     [rollupA, rollupB] = await Promise.all([
       fetchAdminRollupA().catch((e) => {
-        console.error('[admin-data] fetchAdminRollupA threw:', e?.message, e?.stack);
+        void logServerError(`[admin-data] fetchAdminRollupA threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
         throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
       }),
       fetchAdminRollupB().catch((e) => {
-        console.error('[admin-data] fetchAdminRollupB threw:', e?.message, e?.stack);
+        void logServerError(`[admin-data] fetchAdminRollupB threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
         throw new Error(`rollupB failed: ${e?.message ?? String(e)}`);
       }),
     ]);
   } catch (e) {
-    console.error('[admin-data] outer A+B Promise.all threw:', e);
+    void logServerError(`[admin-data] outer A+B Promise.all threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData' });
     throw e;
   }
 
@@ -1442,7 +1442,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   //    any slice — we issue a single grouped query.
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
     fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      console.error('[admin-data] fetchAdminRollupC threw:', e?.message, e?.stack);
+      void logServerError(`[admin-data] fetchAdminRollupC threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
       throw new Error(`rollupC failed: ${e?.message ?? String(e)}`);
     }),
     fetchVercelAnalytics(),
@@ -1491,8 +1491,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     });
   } catch (e) {
     const err = e as Error;
-    console.error('[admin-data] assembleAdminDashboardData threw:', err?.message);
-    console.error('[admin-data] assembleAdminDashboardData stack:', err?.stack);
+    await logServerError(`[admin-data] assembleAdminDashboardData threw: ${err?.message ?? String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: err?.stack } });
     throw new Error(`assembleAdminDashboardData failed: ${err?.message ?? String(e)}`);
   }
 }
