@@ -35,6 +35,7 @@ import type {
   SprayChartSummaryBand,
   SprayChartOutcomeBucket,
 } from './stats-data-types';
+import { logServerError } from '@/lib/server-error-logger';
 
 
 // ============================================================================
@@ -45,11 +46,11 @@ async function requireAuth() {
   const supabase = await createClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error) {
-    console.error('[Stats] Auth error:', error.message);
+    await logServerError(`[Stats] Auth error: ${error.message instanceof Error ? error.message.message : String(error.message)}`, { action: 'stats_data.requireAuth' });
     throw new Error('Unauthorized');
   }
   if (!user) {
-    console.error('[Stats] No user session found');
+    await logServerError('[Stats] No user session found', { action: 'stats_data.requireAuth' });
     throw new Error('Unauthorized');
   }
   return { supabase, user };
@@ -817,7 +818,7 @@ export async function getDetailedStats(
 
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {
-    console.error('[Stats] Rounds query error:', roundsError);
+    await logServerError(`[Stats] Rounds query error: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'stats_data.getDetailedStats' });
     return calculateStatsFromShots([], [], []);
   }
 
@@ -955,11 +956,11 @@ export async function getDetailedStats(
 
     return serializeDetailedStats(calculateStatsFromShots(shots, holesInfo, roundsInfo));
   } catch (error) {
-    console.error('[Stats] Falling back to round-level stats:', error);
+    await logServerError(`[Stats] Falling back to round-level stats: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getDetailedStats' });
     return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
   }
   } catch (outerError) {
-    console.error('[Stats] getDetailedStats failed:', outerError instanceof Error ? outerError.message : outerError);
+    await logServerError(`[Stats] getDetailedStats failed: ${outerError instanceof Error ? outerError.message : outerError instanceof Error ? outerError instanceof Error ? outerError.message : outerError.message : String(outerError instanceof Error ? outerError.message : outerError)}`, { action: 'stats_data.getDetailedStats' });
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
   }
 }
@@ -1029,7 +1030,7 @@ export async function getSprayChartData(
 
     const { data: fetchedRounds, error: roundsError } = await query;
     if (roundsError) {
-      console.error('[Stats] Spray rounds query error:', roundsError);
+      await logServerError(`[Stats] Spray rounds query error: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'stats_data.getSprayChartData' });
       return emptyResponse();
     }
 
@@ -1208,7 +1209,7 @@ export async function getSprayChartData(
       },
     };
   } catch (error) {
-    console.error('[Stats] getSprayChartData failed:', error instanceof Error ? error.message : error);
+    await logServerError(`[Stats] getSprayChartData failed: ${error instanceof Error ? error.message : error instanceof Error ? error instanceof Error ? error.message : error.message : String(error instanceof Error ? error.message : error)}`, { action: 'stats_data.getSprayChartData' });
     return emptyResponse();
   }
 }
@@ -1377,7 +1378,7 @@ export async function getTrendAnalysis(playerId: string): Promise<TrendAnalysisR
     personalBests,
   };
   } catch (error) {
-    console.error('[Stats] getTrendAnalysis failed:', error);
+    await logServerError(`[Stats] getTrendAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getTrendAnalysis' });
     return emptyResponse;
   }
 }
@@ -1825,7 +1826,7 @@ export async function getFilterOptions(playerId: string): Promise<FilterOptions>
 
   return { courses, seasons, roundTypes };
   } catch (error) {
-    console.error('[Stats] getFilterOptions failed:', error);
+    await logServerError(`[Stats] getFilterOptions failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getFilterOptions' });
     return { courses: [], seasons: [], roundTypes: [] };
   }
 }
@@ -1940,7 +1941,7 @@ export async function getCourseBreakdown(playerId: string): Promise<CourseBreakd
 
   return { courses, bestCourse, worstCourse };
   } catch (error) {
-    console.error('[Stats] getCourseBreakdown failed:', error);
+    await logServerError(`[Stats] getCourseBreakdown failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getCourseBreakdown' });
     return { courses: [], bestCourse: null, worstCourse: null };
   }
 }
@@ -2085,7 +2086,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     closingHolesAverage: calcAvg(closingHoles),
   };
   } catch (error) {
-    console.error('[Stats] getWorstHoleAnalysis failed:', error);
+    await logServerError(`[Stats] getWorstHoleAnalysis failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.calcAvg' });
     return { holes: [], worstHoles: [], bestHoles: [], par3Average: null, par4Average: null, par5Average: null, closingHolesAverage: null };
   }
 }
@@ -2123,7 +2124,7 @@ export async function getPlayerStrengthsWeaknesses(
 
   return generateStatisticalStrengthsWeaknesses(stats);
   } catch (error) {
-    console.error('[Stats] getPlayerStrengthsWeaknesses failed:', error instanceof Error ? error.message : error);
+    await logServerError(`[Stats] getPlayerStrengthsWeaknesses failed: ${error instanceof Error ? error.message : error instanceof Error ? error instanceof Error ? error.message : error.message : String(error instanceof Error ? error.message : error)}`, { action: 'stats_data.getPlayerStrengthsWeaknesses' });
     return null;
   }
 }

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -77,7 +78,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
     }
 
     if (!user) {
-      console.error('[Onboarding] No authenticated user after 5 attempts');
+      await logServerError('[Onboarding] No authenticated user after 5 attempts', { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
@@ -97,7 +98,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       });
 
     if (usersError) {
-      console.error('[Onboarding] Users upsert warning:', usersError);
+      await logServerError(`[Onboarding] Users upsert warning: ${usersError instanceof Error ? usersError.message : String(usersError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Continue - record might exist
     }
 
@@ -118,7 +119,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       .single();
 
     if (orgError || !org) {
-      console.error('[Onboarding] Organization creation failed:', orgError);
+      await logServerError(`[Onboarding] Organization creation failed: ${orgError instanceof Error ? orgError.message : String(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
       return { success: false, error: 'Failed to create organization. Please try again.' };
     }
 
@@ -143,7 +144,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       .single();
 
     if (coachError || !coach) {
-      console.error('[Onboarding] Coach creation failed:', coachError);
+      await logServerError(`[Onboarding] Coach creation failed: ${coachError instanceof Error ? coachError.message : String(coachError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete the organization we created
       await supabase.from('organizations').delete().eq('id', org.id);
       return { success: false, error: 'Failed to create coach profile. Please try again.' };
@@ -164,7 +165,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       .single();
 
     if (teamError || !team) {
-      console.error('[Onboarding] Team creation failed:', teamError);
+      await logServerError(`[Onboarding] Team creation failed: ${teamError instanceof Error ? teamError.message : String(teamError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete coach and organization
       await supabase.from('golf_coaches').delete().eq('id', coach.id);
       await supabase.from('organizations').delete().eq('id', org.id);
@@ -184,7 +185,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       });
 
     if (staffError) {
-      console.error('[Onboarding] Team staff assignment failed:', staffError);
+      await logServerError(`[Onboarding] Team staff assignment failed: ${staffError instanceof Error ? staffError.message : String(staffError)}`, { action: 'onboarding.completeCoachOnboarding' });
       // Cleanup: Delete team, coach, and organization
       await supabase.from('golf_teams').delete().eq('id', team.id);
       await supabase.from('golf_coaches').delete().eq('id', coach.id);
@@ -213,7 +214,7 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
       await supabase.from('organizations').delete().eq('id', createdOrgId);
     }
 
-    console.error('[Onboarding] Unexpected error:', error);
+    await logServerError(`[Onboarding] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completeCoachOnboarding' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -280,13 +281,13 @@ export async function ensurePlayerRecord() {
       .single();
 
     if (insertError) {
-      console.error('[ensurePlayerRecord] Insert failed:', insertError);
+      await logServerError(`[ensurePlayerRecord] Insert failed: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'onboarding.ensurePlayerRecord' });
       return { success: false, error: insertError.message };
     }
 
     return { success: true, playerId: player.id, onboardingCompleted: false };
   } catch (error) {
-    console.error('[ensurePlayerRecord] Error:', error);
+    await logServerError(`[ensurePlayerRecord] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.ensurePlayerRecord' });
     return { success: false, error: 'Failed to ensure player record' };
   }
 }
@@ -321,7 +322,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
     }
 
     if (!user) {
-      console.error('[Onboarding] No authenticated user after 5 attempts');
+      await logServerError('[Onboarding] No authenticated user after 5 attempts', { action: 'onboarding.completePlayerOnboarding' });
       return { success: false, error: 'Session not found. Please try logging in again, or check if email confirmation is required in Supabase settings.' };
     }
 
@@ -340,7 +341,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       });
 
     if (usersError) {
-      console.error('[Onboarding] Users upsert warning:', usersError);
+      await logServerError(`[Onboarding] Users upsert warning: ${usersError instanceof Error ? usersError.message : String(usersError)}`, { action: 'onboarding.completePlayerOnboarding' });
     }
 
     // Check for existing player record
@@ -371,7 +372,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
         .eq('id', existingPlayer.id);
 
       if (error) {
-        console.error('[Onboarding] Player update failed:', error);
+        await logServerError(`[Onboarding] Player update failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to update player profile. Please try again.' };
       }
     } else {
@@ -383,7 +384,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
         });
 
       if (error) {
-        console.error('[Onboarding] Player creation failed:', error);
+        await logServerError(`[Onboarding] Player creation failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to create player profile. Please try again.' };
       }
     }
@@ -395,7 +396,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
     };
 
   } catch (error) {
-    console.error('[Onboarding] Unexpected error:', error);
+    await logServerError(`[Onboarding] Unexpected error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
     return formatSafeErrorResponse(error);
   }
 }

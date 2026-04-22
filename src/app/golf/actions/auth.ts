@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
 import { logSignup, logLogin, logSecurityEvent } from '@/lib/admin-logger';
+import { logServerError } from '@/lib/server-error-logger';
 
 export type LoginResult = {
   success: boolean;
@@ -258,7 +259,7 @@ export async function signupAction(
     }
 
     // Log unknown errors and return generic message
-    console.error('[Golf Auth Error]', error);
+    await logServerError(`[Golf Auth Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'auth.signupAction' });
     return {
       success: false,
       error: 'Failed to create account. Please try again.',

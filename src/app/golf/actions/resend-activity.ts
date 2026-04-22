@@ -7,6 +7,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,7 +151,7 @@ export async function getResendActivityStats(
   });
 
   if (error) {
-    console.error('[resend-activity] stats rpc failed:', error);
+    await logServerError(`[resend-activity] stats rpc failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getResendActivityStats' });
     return null;
   }
 
@@ -227,7 +228,7 @@ export async function getEmailsList(
   const { data, error, count } = await query;
 
   if (error) {
-    console.error('[resend-activity] emails list failed:', error);
+    await logServerError(`[resend-activity] emails list failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getEmailsList' });
     return { rows: [], count: 0 };
   }
 
@@ -283,7 +284,7 @@ export async function getDomainBreakdown(
   });
 
   if (error) {
-    console.error('[resend-activity] domain breakdown rpc failed:', error);
+    await logServerError(`[resend-activity] domain breakdown rpc failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getDomainBreakdown' });
     return [];
   }
 
@@ -305,7 +306,7 @@ export async function getRecentActivityFeed(limit = 50): Promise<EmailEventRow[]
     .limit(Math.min(limit, 200));
 
   if (error) {
-    console.error('[resend-activity] feed failed:', error);
+    await logServerError(`[resend-activity] feed failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getRecentActivityFeed' });
     return [];
   }
 
@@ -329,7 +330,7 @@ export async function getEmailClicks(
     .order('occurred_at', { ascending: false });
 
   if (error) {
-    console.error('[resend-activity] email clicks query failed:', error);
+    await logServerError(`[resend-activity] email clicks query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getEmailClicks' });
     return [];
   }
 
@@ -355,7 +356,7 @@ export async function getCoachLastEmailActivity(
     .in('id', coachIds);
 
   if (error) {
-    console.error('[resend-activity] coach email activity query failed:', error);
+    await logServerError(`[resend-activity] coach email activity query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getCoachLastEmailActivity' });
     return {};
   }
 
@@ -392,7 +393,7 @@ export async function getFailedEmails(limit = 100): Promise<EmailRow[]> {
     .limit(Math.min(limit, 200));
 
   if (error) {
-    console.error('[resend-activity] failed emails query failed:', error);
+    await logServerError(`[resend-activity] failed emails query failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'resend_activity.getFailedEmails' });
     return [];
   }
 

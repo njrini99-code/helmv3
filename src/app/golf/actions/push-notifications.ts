@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 export async function registerDeviceToken(
   token: string,
@@ -28,7 +29,7 @@ export async function registerDeviceToken(
     );
 
   if (error) {
-    console.error('Failed to register device token:', error);
+    await logServerError(`Failed to register device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.registerDeviceToken' });
     return { success: false, error: error.message };
   }
 
@@ -48,7 +49,7 @@ export async function unregisterDeviceToken(token: string) {
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('Failed to unregister device token:', error);
+    await logServerError(`Failed to unregister device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.unregisterDeviceToken' });
     return { success: false, error: error.message };
   }
 
@@ -69,7 +70,7 @@ export async function getDeviceTokens() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Failed to get device tokens:', error);
+    await logServerError(`Failed to get device tokens: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.getDeviceTokens' });
     return { success: false, data: [], error: error.message };
   }
 
