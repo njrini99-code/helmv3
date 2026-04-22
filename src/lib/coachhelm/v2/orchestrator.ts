@@ -83,6 +83,46 @@ const ROUND_REVIEW_APPROACH_BRACKETS = [
 ];
 
 /**
+ * Default alert thresholds when `CoachPhilosophy` rows are missing.
+ * Chosen to match prior hard-coded behavior at orchestrator lines 481/493/508
+ * so rollouts don't accidentally shift alert volume for coaches who haven't
+ * saved a philosophy yet.
+ */
+const DEFAULT_DECLINE_THRESHOLD = 3;
+const DEFAULT_PRESSURE_GAP_THRESHOLD = 2;
+
+/**
+ * Apply the coach's personal alert thresholds to a single signal.
+ *
+ * LIVE-24: prior alert logic hard-coded `> 2 / > 3 / > 5` comparisons in
+ * `synthesizeAlerts`, silently ignoring the persisted `CoachPhilosophy.
+ * declineThreshold` / `pressureGapThreshold` (set via the coaching-intelligence
+ * settings screen). Aggressive coaches got the same firehose of alerts as
+ * conservative ones.
+ *
+ * This helper is pure + exported so it can be unit-tested without wiring
+ * the full orchestrator, and call sites below substitute it for the
+ * inline numeric literals.
+ */
+export function applyPhilosophyThresholds(
+  signal: { predictedValue?: number; strokeImpact?: number },
+  philosophy: { declineThreshold?: number; pressureGapThreshold?: number },
+): { shouldAlert: boolean; severity: 'critical' | 'warning' | 'info' } {
+  const decline = philosophy.declineThreshold ?? DEFAULT_DECLINE_THRESHOLD;
+  const pressure = philosophy.pressureGapThreshold ?? DEFAULT_PRESSURE_GAP_THRESHOLD;
+  const triggersDecline = (signal.predictedValue ?? 0) > decline;
+  const triggersPressure = (signal.strokeImpact ?? 0) > pressure;
+  const shouldAlert = triggersDecline || triggersPressure;
+  const isCritical = (signal.predictedValue ?? 0) > decline + 2;
+  const severity: 'critical' | 'warning' | 'info' = isCritical
+    ? 'critical'
+    : shouldAlert
+      ? 'warning'
+      : 'info';
+  return { shouldAlert, severity };
+}
+
+/**
  * Main CoachHelm Intelligence class that orchestrates all V2 components
  */
 class CoachHelmIntelligence {
@@ -412,6 +452,19 @@ class CoachHelmIntelligence {
 
     // Query team players
     const supabase = await createClient();
+
+    // LIVE-24: load coach philosophy once per run; prior code hard-coded
+    // decline/pressure thresholds and ignored persisted per-coach settings.
+    const { data: philosophyRow } = await supabase
+      .from('golf_coach_philosophy')
+      .select('decline_threshold, pressure_gap_threshold')
+      .eq('coach_id', coachId)
+      .maybeSingle();
+    const philosophy = {
+      declineThreshold: philosophyRow?.decline_threshold ?? undefined,
+      pressureGapThreshold: philosophyRow?.pressure_gap_threshold ?? undefined,
+    };
+
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
@@ -449,8 +502,13 @@ class CoachHelmIntelligence {
         // Only generate alerts for warning+ level players
         if (alertLevel === 'none' || alertLevel === 'info') continue;
 
-        // High-impact patterns become alerts
-        for (const pattern of patterns.filter(p => p.isActive && p.strokeImpact > 1.5 && p.confidence > 0.65)) {
+        // High-impact patterns become alerts — gate on the coach's
+        // persisted pressureGapThreshold (LIVE-24).
+        for (const pattern of patterns.filter((p) => {
+          if (!p.isActive || p.confidence <= 0.65) return false;
+          const gate = applyPhilosophyThresholds({ strokeImpact: p.strokeImpact }, philosophy);
+          return gate.shouldAlert;
+        })) {
           const reasoning = this.reasoningEngine.reason(
             {
               type: 'pattern_detected',
@@ -472,13 +530,17 @@ class CoachHelmIntelligence {
             recentPerformance: this.inferRecentPerformance(analysis.features),
           };
 
+          const patternGate = applyPhilosophyThresholds(
+            { strokeImpact: pattern.strokeImpact },
+            philosophy,
+          );
           alerts.push(
             this.insightComposer.compose(
               {
                 type: 'alert',
                 data: {
                   ...pattern as unknown as Record<string, unknown>,
-                  severity: pattern.strokeImpact > 2 ? 'critical' : 'warning',
+                  severity: patternGate.severity === 'critical' ? 'critical' : 'warning',
                   playerId,
                 },
                 reasoning,
@@ -489,8 +551,11 @@ class CoachHelmIntelligence {
           );
         }
 
-        // Negative predictions become alerts
-        for (const pred of predictions.filter(p => p.predictedValue > 3)) {
+        // Negative predictions become alerts — gate on declineThreshold.
+        for (const pred of predictions.filter((p) => {
+          const gate = applyPhilosophyThresholds({ predictedValue: p.predictedValue }, philosophy);
+          return gate.shouldAlert;
+        })) {
           const context: InsightContext = {
             playerId,
             isForCoach: true,
@@ -499,13 +564,17 @@ class CoachHelmIntelligence {
             recentPerformance: this.inferRecentPerformance(analysis.features),
           };
 
+          const predGate = applyPhilosophyThresholds(
+            { predictedValue: pred.predictedValue },
+            philosophy,
+          );
           alerts.push(
             this.insightComposer.compose(
               {
                 type: 'alert',
                 data: {
                   ...pred as unknown as Record<string, unknown>,
-                  severity: pred.predictedValue > 5 ? 'critical' : 'warning',
+                  severity: predGate.severity === 'critical' ? 'critical' : 'warning',
                   playerId,
                 },
               },
