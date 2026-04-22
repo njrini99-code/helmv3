@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { ReminderType, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -62,14 +63,14 @@ export async function setTaskReminder(
       .eq('id', taskId);
 
     if (updateError) {
-      console.error('Error setting reminder:', updateError);
+      await logServerError(`Error setting reminder: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'task_reminders.setTaskReminder' });
       return { success: false, error: 'Failed to set reminder' };
     }
 
     revalidatePath('/golf/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    console.error('Error in setTaskReminder:', error);
+    await logServerError(`Error in setTaskReminder: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.setTaskReminder' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -101,7 +102,7 @@ export async function cancelTaskReminder(
       .eq('id', taskId);
 
     if (updateError) {
-      console.error('Error canceling reminder:', updateError);
+      await logServerError(`Error canceling reminder: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'task_reminders.cancelTaskReminder' });
       return { success: false, error: 'Failed to cancel reminder' };
     }
 
@@ -115,7 +116,7 @@ export async function cancelTaskReminder(
     revalidatePath('/golf/dashboard/tasks');
     return { success: true };
   } catch (error) {
-    console.error('Error in cancelTaskReminder:', error);
+    await logServerError(`Error in cancelTaskReminder: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.cancelTaskReminder' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -143,7 +144,7 @@ export async function getUpcomingReminders(
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching reminders:', error);
+      await logServerError(`Error fetching reminders: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.getUpcomingReminders' });
       return { data: null, error: 'Failed to fetch reminders' };
     }
 
@@ -155,7 +156,7 @@ export async function getUpcomingReminders(
 
     return { data: filteredReminders };
   } catch (error) {
-    console.error('Error in getUpcomingReminders:', error);
+    await logServerError(`Error in getUpcomingReminders: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.getUpcomingReminders' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -186,13 +187,13 @@ export async function getDueReminders(
       .limit(batchSize);
 
     if (error) {
-      console.error('Error fetching due reminders:', error);
+      await logServerError(`Error fetching due reminders: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.getDueReminders' });
       return { data: null, error: 'Failed to fetch due reminders' };
     }
 
     return { data: reminders as TaskReminderWithTask[] };
   } catch (error) {
-    console.error('Error in getDueReminders:', error);
+    await logServerError(`Error in getDueReminders: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.getDueReminders' });
     return { data: null, error: 'An unexpected error occurred' };
   }
 }
@@ -222,7 +223,7 @@ export async function markReminderSent(
       .eq('id', reminderId);
 
     if (updateError) {
-      console.error('Error marking reminder sent:', updateError);
+      await logServerError(`Error marking reminder sent: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'task_reminders.markReminderSent' });
       return { success: false, error: 'Failed to mark reminder as sent' };
     }
 
@@ -242,7 +243,7 @@ export async function markReminderSent(
 
     return { success: true };
   } catch (error) {
-    console.error('Error in markReminderSent:', error);
+    await logServerError(`Error in markReminderSent: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.markReminderSent' });
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -293,7 +294,7 @@ export async function processReminders(): Promise<{
 
     return results;
   } catch (error) {
-    console.error('Error in processReminders:', error);
+    await logServerError(`Error in processReminders: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.processReminders' });
     results.errors.push('Failed to process reminders');
     return results;
   }
@@ -331,7 +332,7 @@ async function sendReminderNotification(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending notification:', error);
+    await logServerError(`Error sending notification: ${error instanceof Error ? error.message : String(error)}`, { action: 'task_reminders.sendReminderNotification' });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send notification',
@@ -479,12 +480,12 @@ async function sendEmailNotification(task: GolfTask): Promise<void> {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[TaskReminders] Failed to send email to ${email}:`, errorText);
+        await logServerError(`[TaskReminders] Failed to send email to ${email}: ${errorText instanceof Error ? errorText.message : String(errorText)}`, { action: 'task_reminders.sendEmailNotification' });
         throw new Error(`Email send failed: ${errorText}`);
       }
 
     } catch (err) {
-      console.error(`[TaskReminders] Error sending email to ${email}:`, err);
+      await logServerError(`[TaskReminders] Error sending email to ${email}: ${err instanceof Error ? err.message : String(err)}`, { action: 'task_reminders.sendEmailNotification' });
       throw err;
     }
   }
@@ -568,7 +569,7 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
 
     subscriptions = (data as typeof subscriptions) || [];
   } catch (err) {
-    console.error('[TaskReminders] Could not fetch push subscriptions:', err);
+    await logServerError(`[TaskReminders] Could not fetch push subscriptions: ${err instanceof Error ? err.message : String(err)}`, { action: 'task_reminders.sendPushNotification' });
     return;
   }
 
@@ -610,7 +611,7 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
         sentCount++;
       } else {
         failedCount++;
-        console.error(`[TaskReminders] Push failed for subscription ${subscription.id}:`, pushResult.error);
+        await logServerError(`[TaskReminders] Push failed for subscription ${subscription.id}: ${pushResult.error instanceof Error ? pushResult.error.message : String(pushResult.error)}`, { action: 'task_reminders.sendPushNotification' });
 
         // If subscription is expired/invalid, remove it
         if (pushResult.statusCode === 404 || pushResult.statusCode === 410) {
@@ -620,7 +621,7 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
       }
     } catch (err) {
       failedCount++;
-      console.error(`[TaskReminders] Error sending push to ${subscription.id}:`, err);
+      await logServerError(`[TaskReminders] Error sending push to ${subscription.id}: ${err instanceof Error ? err.message : String(err)}`, { action: 'task_reminders.sendPushNotification' });
     }
   }
 
