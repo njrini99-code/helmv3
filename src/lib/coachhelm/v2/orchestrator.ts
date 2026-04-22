@@ -15,6 +15,12 @@ import { createClient } from '@/lib/supabase/server';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 import { generatePuttDistanceInsights, generatePuttMissBiasInsights } from './mining/putt-analytics';
+import { generateApproachMissInsights } from './mining/approach-analytics';
+import { generateScramblingInsights } from './mining/scrambling-analytics';
+import { generateTeeStrategyInsights } from './mining/tee-strategy';
+import { generateParTypeInsights } from './mining/scoring-context';
+import { generateWorstHolesInsights, generateWarmupHoleInsight } from './mining/course-management';
+import { generatePressureGapInsight } from './mining/pressure-gap';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, CrossLearner } from './learning';
@@ -194,13 +200,20 @@ class CoachHelmIntelligence {
       patterns = await miner.minePatterns();
     }
 
-    // Tier-1 evidence-backed putt insights (Group A — Insight Quality phase).
+    // Tier-1 evidence-backed insights (Groups A + B + C — Insight Quality phase).
     // Persisted via `upsertInsight` with dedup/lifecycle, so we fire-and-forget
     // in parallel alongside the legacy mining pipeline. Errors are logged
     // inside the generators; we never let them break analyzePlayer.
     await Promise.allSettled([
       generatePuttDistanceInsights(playerId),
       generatePuttMissBiasInsights(playerId),
+      generateApproachMissInsights(playerId),
+      generateScramblingInsights(playerId),
+      generateTeeStrategyInsights(playerId),
+      generateParTypeInsights(playerId),
+      generateWorstHolesInsights(playerId),
+      generateWarmupHoleInsight(playerId),
+      generatePressureGapInsight(playerId),
     ]);
 
     // Mine shot-level patterns
