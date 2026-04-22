@@ -11,6 +11,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 
 // ============================================================================
 // TYPES
@@ -147,14 +148,18 @@ export async function getInsightEffectiveness(
     return { success: false, error: 'Unauthorized' };
   }
 
+  const access = await verifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     // Default to last 30 days if no range provided
     const end = dateRange?.end || new Date();
     const start = dateRange?.start || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Query insight effectiveness table
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: effectiveness, error } = await (supabase as any)
+    const { data: effectiveness, error } = await supabase
       .from('golf_insight_effectiveness')
       .select('*')
       .eq('team_id', teamId)
@@ -163,15 +168,21 @@ export async function getInsightEffectiveness(
       .order('insight_type');
 
     if (error) {
-      // Table might not exist or have data yet - return mock structure
-      return {
-        success: true,
-        data: generateMockInsightEffectiveness(start, end),
-      };
+      // Surface the error instead of silently masking it with empty mock
+      // data. The UI already knows how to render an error state; the old
+      // behavior made broken queries look like "no activity yet".
+      await logServerError(`getInsightEffectiveness query failed: ${error.message}`, {
+        action: 'getInsightEffectiveness',
+        featureArea: 'coachhelm_analytics',
+        extra: { teamId, errorCode: error.code },
+      });
+      return { success: false, error: error.message };
     }
 
     if (!effectiveness || effectiveness.length === 0) {
-      // No data yet - fetch from insights directly
+      // No aggregated rows yet — fall back to computing live from the
+      // insights table. This branch is a genuine "no data yet", not an
+      // error signal.
       return await calculateInsightEffectivenessFromInsights(teamId, start, end);
     }
 
@@ -280,13 +291,17 @@ export async function getPredictionPerformance(
     return { success: false, error: 'Unauthorized' };
   }
 
+  const access = await verifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     const end = dateRange?.end || new Date();
     const start = dateRange?.start || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Query prediction model performance
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: performance, error } = await (supabase as any)
+    const { data: performance, error } = await supabase
       .from('golf_prediction_model_performance')
       .select('*')
       .eq('team_id', teamId)
@@ -294,8 +309,17 @@ export async function getPredictionPerformance(
       .lte('period_end', end.toISOString().split('T')[0])
       .order('period_start', { ascending: true });
 
-    if (error || !performance || performance.length === 0) {
-      // Query predictions directly to calculate metrics
+    if (error) {
+      await logServerError(`getPredictionPerformance query failed: ${error.message}`, {
+        action: 'getPredictionPerformance',
+        featureArea: 'coachhelm_analytics',
+        extra: { teamId, errorCode: error.code },
+      });
+      return { success: false, error: error.message };
+    }
+
+    if (!performance || performance.length === 0) {
+      // Genuine empty — fall through to raw-predictions calculation.
       return await calculatePredictionPerformanceFromPredictions(teamId, start, end);
     }
 
@@ -402,6 +426,11 @@ export async function getPatternImpact(
     return { success: false, error: 'Unauthorized' };
   }
 
+  const access = await verifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     const end = dateRange?.end || new Date();
     const start = dateRange?.start || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -431,16 +460,16 @@ export async function getPatternImpact(
 
     const playerIds = teamMembers.map((m) => m.player_id);
 
-    // Query patterns
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: patterns, error } = await (supabase as any)
+    // Query patterns. Live schema uses `stroke_impact` (singular); the old
+    // plural `strokes_impact` column is empty (0/19562 rows).
+    const { data: patterns, error } = await supabase
       .from('golf_patterns_v2')
       .select(`
         id,
         player_id,
         pattern_type,
         conditions,
-        strokes_impact,
+        stroke_impact,
         lifecycle_state,
         confidence,
         first_detected,
@@ -456,10 +485,7 @@ export async function getPatternImpact(
         featureArea: 'coachhelm_analytics',
         extra: { teamId, errorCode: error.code },
       });
-      return {
-        success: true,
-        data: generateMockPatternImpact(start, end),
-      };
+      return { success: false, error: error.message };
     }
 
     // Get player names for top patterns
@@ -484,30 +510,47 @@ export async function getPatternImpact(
     let totalStrokesSaved = 0;
     const topPatterns: ImpactfulPattern[] = [];
 
-    for (const pattern of patterns || []) {
+    for (const pattern of (patterns ?? []) as Array<{
+      id: string;
+      player_id: string | null;
+      pattern_type: string | null;
+      conditions: unknown;
+      stroke_impact: number | null;
+      lifecycle_state: string | null;
+      confidence: number | null;
+      first_detected: string | null;
+      resolved_at: string | null;
+      metadata: Record<string, unknown> | null;
+    }>) {
       const state = pattern.lifecycle_state || 'detected';
       if (state in lifecycle) {
         lifecycle[state as keyof PatternLifecycle]++;
       }
 
       // Calculate strokes saved for resolved patterns
-      if (state === 'resolved' && pattern.strokes_impact) {
-        totalStrokesSaved += Math.abs(pattern.strokes_impact);
+      const impact = pattern.stroke_impact;
+      if (state === 'resolved' && impact != null) {
+        totalStrokesSaved += Math.abs(impact);
       }
 
       // Build top patterns list
-      if (pattern.strokes_impact && Math.abs(pattern.strokes_impact) > 0.5) {
-        const condition = pattern.conditions?.[0];
+      if (impact != null && Math.abs(impact) > 0.5) {
+        const conditionsArr = Array.isArray(pattern.conditions)
+          ? (pattern.conditions as Array<Record<string, unknown>>)
+          : [];
+        const condition = conditionsArr[0];
+        const metaDescription = pattern.metadata && typeof pattern.metadata.description === 'string'
+          ? pattern.metadata.description
+          : null;
         topPatterns.push({
           id: pattern.id,
-          description: typeof pattern.metadata?.description === 'string'
-            ? pattern.metadata.description
-            : `${condition?.label || 'Pattern'} affecting ${pattern.pattern_type || 'performance'}`,
-          playerName: playerMap.get(pattern.player_id) || 'Unknown Player',
-          strokesImpact: pattern.strokes_impact,
+          description: metaDescription
+            ?? `${(condition?.label as string | undefined) ?? 'Pattern'} affecting ${pattern.pattern_type || 'performance'}`,
+          playerName: (pattern.player_id && playerMap.get(pattern.player_id)) || 'Unknown Player',
+          strokesImpact: impact,
           lifecycleState: state,
           confidence: pattern.confidence || 0,
-          detectedAt: pattern.first_detected,
+          detectedAt: pattern.first_detected ?? '',
           resolvedAt: pattern.resolved_at,
         });
       }
@@ -557,6 +600,11 @@ export async function getCoachHelmOverview(
     return { success: false, error: 'Unauthorized' };
   }
 
+  const access = await verifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -572,24 +620,21 @@ export async function getCoachHelmOverview(
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
     // Query total insights in last 30 days
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: totalInsights } = await (supabase as any)
+    const { count: totalInsights } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
       .gte('created_at', thirtyDaysAgo.toISOString());
 
     // Query insights this week
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: insightsThisWeek } = await (supabase as any)
+    const { count: insightsThisWeek } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
       .gte('created_at', sevenDaysAgo.toISOString());
 
     // Query insights last week (for comparison)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: insightsLastWeek } = await (supabase as any)
+    const { count: insightsLastWeek } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
@@ -597,8 +642,7 @@ export async function getCoachHelmOverview(
       .lt('created_at', sevenDaysAgo.toISOString());
 
     // Query action rate (insights with action_taken = true)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: actedInsights } = await (supabase as any)
+    const { count: actedInsights } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
@@ -606,16 +650,14 @@ export async function getCoachHelmOverview(
       .eq('action_taken', true);
 
     // Query improvement rate
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: improvedInsights } = await (supabase as any)
+    const { count: improvedInsights } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
       .gte('created_at', thirtyDaysAgo.toISOString())
       .eq('outcome_status', 'improved');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: outcomedInsights } = await (supabase as any)
+    const { count: outcomedInsights } = await supabase
       .from('golf_coach_insights')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
@@ -623,25 +665,24 @@ export async function getCoachHelmOverview(
       .not('outcome_status', 'is', null);
 
     // Query active patterns count
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { count: activePatternsCount } = await (supabase as any)
+    const { count: activePatternsCount } = await supabase
       .from('golf_patterns_v2')
       .select('*', { count: 'exact', head: true })
       .in('player_id', playerIds)
       .eq('is_active', true);
 
-    // Query resolved patterns for strokes saved
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: resolvedPatterns } = await (supabase as any)
+    // Query resolved patterns for strokes saved. Live schema uses
+    // `stroke_impact` (singular); the old plural column is empty.
+    const { data: resolvedPatterns } = await supabase
       .from('golf_patterns_v2')
-      .select('strokes_impact')
+      .select('stroke_impact')
       .in('player_id', playerIds)
       .eq('lifecycle_state', 'resolved')
       .gte('resolved_at', thirtyDaysAgo.toISOString());
 
-    const strokesSavedEstimate = (resolvedPatterns || []).reduce(
-      (sum: number, p: { strokes_impact: number | null }) => sum + Math.abs(p.strokes_impact || 0),
-      0
+    const strokesSavedEstimate = ((resolvedPatterns ?? []) as Array<{ stroke_impact: number | null }>).reduce(
+      (sum, p) => sum + Math.abs(p.stroke_impact ?? 0),
+      0,
     );
 
     // Calculate metrics
@@ -656,8 +697,7 @@ export async function getCoachHelmOverview(
       : 0;
 
     // Query prediction accuracy (simplified - average of validated predictions)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: predictions } = await (supabase as any)
+    const { data: predictions } = await supabase
       .from('golf_predictions')
       .select('was_accurate')
       .in('player_id', playerIds)
@@ -665,10 +705,10 @@ export async function getCoachHelmOverview(
       .gte('validated_at', thirtyDaysAgo.toISOString());
 
     const predictionAccuracy = predictions && predictions.length > 0
-      ? predictions.reduce(
-        (sum: number, p: { was_accurate: boolean | null }) => sum + (p.was_accurate ? 1 : 0),
-        0
-      ) / predictions.length
+      ? (predictions as Array<{ was_accurate: boolean | null }>).reduce(
+          (sum, p) => sum + (p.was_accurate ? 1 : 0),
+          0,
+        ) / predictions.length
       : 0;
 
     return {
@@ -691,20 +731,10 @@ export async function getCoachHelmOverview(
       featureArea: 'coachhelm_analytics',
       extra: { teamId },
     });
-    // Return fallback data on error
+    // Surface the error rather than silently masking it as empty state.
     return {
-      success: true,
-      data: {
-        totalInsights: 0,
-        actionRate: 0,
-        improvementRate: 0,
-        predictionAccuracy: 0,
-        strokesSavedEstimate: 0,
-        activePatternsCount: 0,
-        insightsThisWeek: 0,
-        insightsChange: 0,
-        lastUpdated: new Date().toISOString(),
-      },
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load CoachHelm overview',
     };
   }
 }
@@ -771,28 +801,32 @@ async function calculateInsightEffectivenessFromInsights(
       .eq('team_id', teamId);
 
     if (!teamMembers || teamMembers.length === 0) {
-      return {
-        success: true,
-        data: generateMockInsightEffectiveness(start, end),
-      };
+      // Genuine "no players on this team" — return empty aggregates, not an error.
+      return { success: true, data: generateMockInsightEffectiveness(start, end) };
     }
 
     const playerIds = teamMembers.map((m) => m.player_id);
 
     // Query insights
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: insights, error } = await (supabase as any)
+    const { data: insights, error } = await supabase
       .from('golf_coach_insights')
       .select('insight_type, status, action_taken, outcome_status')
       .in('player_id', playerIds)
       .gte('created_at', start.toISOString())
       .lte('created_at', end.toISOString());
 
-    if (error || !insights || insights.length === 0) {
-      return {
-        success: true,
-        data: generateMockInsightEffectiveness(start, end),
-      };
+    if (error) {
+      await logServerError(`calculateInsightEffectivenessFromInsights query failed: ${error.message}`, {
+        action: 'calculateInsightEffectivenessFromInsights',
+        featureArea: 'coachhelm_analytics',
+        extra: { teamId, errorCode: error.code },
+      });
+      return { success: false, error: error.message };
+    }
+
+    if (!insights || insights.length === 0) {
+      // Genuine empty — no insights yet in the range.
+      return { success: true, data: generateMockInsightEffectiveness(start, end) };
     }
 
     // Aggregate by type
@@ -900,17 +934,13 @@ async function calculatePredictionPerformanceFromPredictions(
       .eq('team_id', teamId);
 
     if (!teamMembers || teamMembers.length === 0) {
-      return {
-        success: true,
-        data: generateMockPredictionPerformance(start, end),
-      };
+      return { success: true, data: generateMockPredictionPerformance(start, end) };
     }
 
     const playerIds = teamMembers.map((m) => m.player_id);
 
     // Query predictions
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: predictions, error } = await (supabase as any)
+    const { data: predictions, error } = await supabase
       .from('golf_predictions')
       .select('created_at, validated_at, was_accurate, confidence, predicted_value, actual_value, error_category')
       .in('player_id', playerIds)
@@ -918,11 +948,17 @@ async function calculatePredictionPerformanceFromPredictions(
       .lte('created_at', end.toISOString())
       .order('created_at', { ascending: true });
 
-    if (error || !predictions || predictions.length === 0) {
-      return {
-        success: true,
-        data: generateMockPredictionPerformance(start, end),
-      };
+    if (error) {
+      await logServerError(`calculatePredictionPerformanceFromPredictions query failed: ${error.message}`, {
+        action: 'calculatePredictionPerformanceFromPredictions',
+        featureArea: 'coachhelm_analytics',
+        extra: { teamId, errorCode: error.code },
+      });
+      return { success: false, error: error.message };
+    }
+
+    if (!predictions || predictions.length === 0) {
+      return { success: true, data: generateMockPredictionPerformance(start, end) };
     }
 
     // Group by date for accuracy over time
@@ -1085,16 +1121,5 @@ function generateMockPredictionPerformance(start: Date, end: Date): PredictionPe
   };
 }
 
-function generateMockPatternImpact(start: Date, end: Date): PatternImpactData {
-  return {
-    lifecycle: { detected: 0, confirmed: 0, addressed: 0, resolved: 0, dismissed: 0 },
-    totalStrokesSaved: 0,
-    patternsDetected: 0,
-    patternsAddressed: 0,
-    patternsResolved: 0,
-    conversionRate: 0,
-    topPatterns: [],
-    periodStart: start.toISOString(),
-    periodEnd: end.toISOString(),
-  };
-}
+// generateMockPatternImpact was removed — errors now surface as
+// { success: false, error } instead of silently masking as mock data.
