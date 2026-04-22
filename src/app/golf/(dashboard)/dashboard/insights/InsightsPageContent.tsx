@@ -365,7 +365,7 @@ export function InsightsPageContent({
             <InsightSearchBar
               value={query}
               onChange={handleSearchChange}
-              placeholder="Search insights by title or description..."
+              placeholder="Search insights by title or content..."
               className="max-w-md"
             />
 

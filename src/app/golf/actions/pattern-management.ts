@@ -68,8 +68,15 @@ export interface PatternFilters {
   isActive?: boolean;
 }
 
-/** Pattern with extended metadata for UI */
-export interface ExtendedPattern extends MinedPattern {
+/**
+ * Pattern with extended metadata for UI.
+ *
+ * `lifecycleState` intersects the base `MinedPattern.lifecycleState`
+ * (from coachhelm/v2/types) with this file's richer lifecycle enum.
+ * The base type is narrower, so we mirror its unions plus our extra
+ * states (`confirmed`, `addressed`) while staying compatible.
+ */
+export interface ExtendedPattern extends Omit<MinedPattern, 'lifecycleState'> {
   lifecycleState: PatternLifecycleState;
   severity: PatternSeverity;
   coachNotes?: string;
