@@ -114,47 +114,64 @@ async function fetchPuttRows(
     .toISOString()
     .slice(0, 10); // YYYY-MM-DD for comparing against round_date
 
-  const { data, error } = await supabase
-    .from('putt_details')
-    .select(
-      `
-      distance_feet,
-      made,
-      miss_tags,
-      golf_shots!inner (
-        round_id,
-        golf_rounds!inner (
-          player_id,
-          round_date
-        )
-      )
-    `,
-    )
-    .eq('golf_shots.golf_rounds.player_id', playerId)
-    .gte('golf_shots.golf_rounds.round_date', windowStart);
-
-  if (error) {
-    throw new Error(`fetchPuttRows failed: ${error.message}`);
+  // Step 1: get the player's round IDs in the window. Two-step pattern is more
+  // reliable than PostgREST 2-level nested filters (golf_shots.golf_rounds.x),
+  // which silently return empty results in some Supabase versions.
+  const { data: rounds, error: roundsError } = await supabase
+    .from('golf_rounds')
+    .select('id, round_date')
+    .eq('player_id', playerId)
+    .gte('round_date', windowStart);
+  if (roundsError) {
+    throw new Error(`fetchPuttRows.rounds failed: ${roundsError.message}`);
   }
+  if (!rounds || rounds.length === 0) return [];
+  const roundIds = rounds.map((r) => r.id);
+  const roundDateById = new Map(rounds.map((r) => [r.id, r.round_date]));
 
-  // Flatten the nested join — Supabase returns nested objects for !inner.
-  type NestedRow = {
+  // Step 2: get the shot IDs for those rounds. Same rationale.
+  const { data: shots, error: shotsError } = await supabase
+    .from('golf_shots')
+    .select('id, round_id')
+    .in('round_id', roundIds);
+  if (shotsError) {
+    throw new Error(`fetchPuttRows.shots failed: ${shotsError.message}`);
+  }
+  if (!shots || shots.length === 0) return [];
+  const shotIds = shots.map((s) => s.id);
+  const roundIdByShotId = new Map(shots.map((s) => [s.id, s.round_id]));
+
+  // Step 3: pull the putt detail rows for those shots in chunks (Supabase
+  // limits IN clauses to ~1000).
+  const CHUNK = 500;
+  const allPutts: Array<{
     distance_feet: number | null;
     made: boolean | null;
     miss_tags: string[] | null;
-    golf_shots: {
-      round_id: string | null;
-      golf_rounds: { player_id: string | null; round_date: string | null } | null;
-    } | null;
-  };
+    shot_id: string;
+  }> = [];
+  for (let i = 0; i < shotIds.length; i += CHUNK) {
+    const chunk = shotIds.slice(i, i + CHUNK);
+    const { data, error } = await supabase
+      .from('putt_details')
+      .select('distance_feet, made, miss_tags, shot_id')
+      .in('shot_id', chunk);
+    if (error) {
+      throw new Error(`fetchPuttRows.putts failed: ${error.message}`);
+    }
+    if (data) allPutts.push(...data);
+  }
 
-  return ((data ?? []) as unknown as NestedRow[]).map((row) => ({
-    distance_feet: row.distance_feet,
-    made: row.made,
-    miss_tags: row.miss_tags,
-    round_id: row.golf_shots?.round_id ?? null,
-    round_date: row.golf_shots?.golf_rounds?.round_date ?? null,
-  }));
+  return allPutts.map((row) => {
+    const round_id = roundIdByShotId.get(row.shot_id) ?? null;
+    return {
+      distance_feet: row.distance_feet,
+      made: row.made,
+      miss_tags: row.miss_tags,
+      round_id,
+      round_date: round_id ? roundDateById.get(round_id) ?? null : null,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------

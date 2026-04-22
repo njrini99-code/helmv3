@@ -37,30 +37,61 @@ const hoisted = vi.hoisted(() => {
   );
 
   function makeSupabaseStub() {
+    // 2-step fetcher: golf_rounds → golf_shots → putt_details. Each query
+    // returns a tailored shape so aggregation tests still operate on the
+    // same `mockRows.current` putt-rows fixture.
     const builder: Record<string, unknown> = {};
-    const chain: Record<string, unknown> = {};
-    Object.assign(chain, {
-      select: () => chain,
-      eq: () => chain,
-      gte: () => chain,
-      order: () => chain,
-      limit: () => Promise.resolve({ data: [], error: null }),
-      single: () =>
-        Promise.resolve({ data: { id: 'new-insight-id' }, error: null }),
-      insert: () => chain,
-      update: () => ({
-        eq: () => Promise.resolve({ data: null, error: null }),
-      }),
-      upsert: () => Promise.resolve({ data: null, error: null }),
-      overlaps: () => chain,
-      // Thenable so the module's `await supabase.from(..)....` resolves to
-      // whatever rows the current test put in `mockRows.current`. Returning
-      // undefined for `.then` would make it non-thenable; instead we return
-      // the resolved payload synchronously.
-      then: (resolve: (v: unknown) => unknown) =>
-        resolve({ data: mockRows.current, error: null }),
-    });
-    builder.from = () => chain;
+    builder.from = (table: string) => {
+      const chain: Record<string, unknown> = {};
+      Object.assign(chain, {
+        select: () => chain,
+        eq: () => chain,
+        gte: () => chain,
+        in: () => chain,
+        order: () => chain,
+        limit: () => Promise.resolve({ data: [], error: null }),
+        single: () =>
+          Promise.resolve({ data: { id: 'new-insight-id' }, error: null }),
+        insert: () => chain,
+        update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+        upsert: () => Promise.resolve({ data: null, error: null }),
+        overlaps: () => chain,
+        then: (resolve: (v: unknown) => unknown) => {
+          if (table === 'golf_rounds') {
+            // Fixed synthetic round so step 1 succeeds.
+            return resolve({
+              data: [{ id: 'round-1', round_date: '2026-04-01' }],
+              error: null,
+            });
+          }
+          if (table === 'golf_shots') {
+            // One synthetic shot per putt row, sharing the round id.
+            const shots = (mockRows.current ?? []).map((_r, idx) => ({
+              id: `shot-${idx}`,
+              round_id: 'round-1',
+            }));
+            return resolve({ data: shots, error: null });
+          }
+          if (table === 'putt_details') {
+            // Map the test fixture rows to the new flat shape (shot_id-keyed).
+            type TestRow = {
+              distance_feet: number | null;
+              made: boolean | null;
+              miss_tags: string[] | null;
+            };
+            const flat = (mockRows.current ?? []).map((r: TestRow, idx: number) => ({
+              distance_feet: r.distance_feet,
+              made: r.made,
+              miss_tags: r.miss_tags,
+              shot_id: `shot-${idx}`,
+            }));
+            return resolve({ data: flat, error: null });
+          }
+          return resolve({ data: mockRows.current, error: null });
+        },
+      });
+      return chain;
+    };
     return builder;
   }
 
