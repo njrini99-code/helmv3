@@ -6,7 +6,9 @@
  * recordAction / queryActions helpers at the bottom of this file.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -143,58 +145,117 @@ export function prioritizeForCoach(
 // DATABASE HELPERS
 // ============================================================================
 
+interface CoachBehaviorInsertRow {
+  coach_id: string;
+  action_type: CoachAction['actionType'];
+  target_id: string | null;
+  metadata: Record<string, string> | null;
+}
+
+interface CoachBehaviorSelectRow {
+  coach_id: string;
+  action_type: CoachAction['actionType'];
+  target_id: string | null;
+  metadata: Record<string, string> | null;
+  created_at: string;
+}
+
 /**
  * Records a coach action to the database.
+ *
+ * Drops the bogus `timestamp` field that prior versions inserted — the live
+ * `golf_coach_behavior_log` table has `created_at` (auto-defaulted) and no
+ * `timestamp` column. Surfaces DB errors to callers so silent writes are
+ * impossible (LIVE-10).
  */
-export async function recordAction(action: CoachAction): Promise<void> {
-  const supabase = createAdminClient();
+export async function recordAction(
+  action: CoachAction,
+  supabaseOverride?: SupabaseClient,
+): Promise<void> {
+  const supabase = supabaseOverride ?? createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coach_behavior_log' as any) as any;
-
-  await table.insert({
+  const payload: CoachBehaviorInsertRow = {
     coach_id: action.coachId,
     action_type: action.actionType,
     target_id: action.targetId ?? null,
     metadata: action.metadata ?? null,
-    timestamp: action.timestamp,
-  });
+  };
+
+  const fromFn = (supabase as unknown as {
+    from: (table: string) => {
+      insert: (row: CoachBehaviorInsertRow) => Promise<{ error: { message: string } | null }>;
+    };
+  }).from;
+
+  const { error } = await fromFn
+    .call(supabase, 'golf_coach_behavior_log')
+    .insert(payload);
+
+  if (error) {
+    await logServerError('coach-behavior.recordAction failed', {
+      action: 'coach-behavior.recordAction',
+      featureArea: 'coachhelm.feedback',
+      source: 'background_job',
+      metadata: { coachId: action.coachId, actionType: action.actionType, dbError: error as unknown },
+    });
+    throw new Error(error.message);
+  }
 }
 
 /**
  * Queries recent coach actions from the database.
+ *
+ * Reads `created_at` as the timestamp (live table column).
  */
 export async function queryActions(
   coachId: string,
-  limit = 500
+  limit = 500,
+  supabaseOverride?: SupabaseClient,
 ): Promise<CoachAction[]> {
-  const supabase = createAdminClient();
+  const supabase = supabaseOverride ?? createAdminClient();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const table = supabase.from('golf_coach_behavior_log' as any) as any;
+  const fromFn = (supabase as unknown as {
+    from: (table: string) => {
+      select: (cols: string) => {
+        eq: (col: string, val: string) => {
+          order: (
+            col: string,
+            opts: { ascending: boolean },
+          ) => {
+            limit: (
+              n: number,
+            ) => Promise<{ data: CoachBehaviorSelectRow[] | null; error: { message: string } | null }>;
+          };
+        };
+      };
+    };
+  }).from;
 
-  const { data } = (await table
-    .select('*')
+  const { data, error } = await fromFn
+    .call(supabase, 'golf_coach_behavior_log')
+    .select('coach_id, action_type, target_id, metadata, created_at')
     .eq('coach_id', coachId)
-    .order('timestamp', { ascending: false })
-    .limit(limit)) as {
-    data: Array<{
-      coach_id: string;
-      action_type: CoachAction['actionType'];
-      target_id: string | null;
-      metadata: Record<string, string> | null;
-      timestamp: string;
-    }> | null;
-  };
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
-  if (!data) return [];
+  if (error || !data) {
+    if (error) {
+      await logServerError('coach-behavior.queryActions failed', {
+        action: 'coach-behavior.queryActions',
+        featureArea: 'coachhelm.feedback',
+        source: 'background_job',
+        metadata: { coachId, dbError: error as unknown },
+      });
+    }
+    return [];
+  }
 
   return data.map((row) => ({
     coachId: row.coach_id,
     actionType: row.action_type,
     targetId: row.target_id ?? undefined,
     metadata: row.metadata ?? undefined,
-    timestamp: row.timestamp,
+    timestamp: row.created_at,
   }));
 }
 
