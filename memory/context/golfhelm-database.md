@@ -1,8 +1,8 @@
 # GolfHelm Database Schema — Complete Reference
 
 > Source: Production database (Helm-Production, project qmnssrrolpinvwjjnufo)
-> Last verified: 2026-02-13
-> Total golf tables: 74
+> Last verified: 2026-04-21 (live DB query via Supabase MCP, Team A CoachHelm fix)
+> Total golf tables: 76 (added `golf_global_patterns`, `golf_insight_player_feedback` in 20260421100000 migration)
 >
 > For table purposes and relationships, see `memory/glossary.md`
 > For TypeScript types, see `src/lib/types/golf.ts` and `src/lib/types/golf-course.ts`
