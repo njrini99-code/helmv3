@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
+import { fraunces } from '@/lib/fonts';
 import './globals.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
 import { ToastContainer } from '@/components/ui/toast';
@@ -91,7 +92,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${fraunces.variable}`} suppressHydrationWarning>
       <head>
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>
