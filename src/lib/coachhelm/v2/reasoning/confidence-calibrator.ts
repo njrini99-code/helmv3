@@ -3,7 +3,19 @@
  *
  * Self-contained implementation that matches the functional feedback module
  * but avoids circular dependency issues with the barrel export.
+ *
+ * Calibration state used to live only in per-request in-memory, which meant
+ * cold-start wiped the buckets (LIVE-19). Persisted state now lives in
+ * `golf_confidence_calibration` and the nightly cron
+ * (`/api/cron/coachhelm-calibration`) recomputes it from
+ * `golf_prediction_validations`. The `bootstrapFromDb()` + `loadBuckets()`
+ * helpers below read that persisted state so the engine's first call after
+ * cold-start is already calibrated.
  */
+
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/types/database';
+import { logServerError } from '@/lib/server-error-logger';
 
 export interface CalibrationBucket {
   rangeStart: number;
@@ -110,4 +122,171 @@ export class ConfidenceCalibrator {
   getRecord(): CalibrationRecord {
     return this.record;
   }
+
+  /**
+   * Replace in-memory buckets with a bootstrapped snapshot (from DB). Returns
+   * this for chaining.
+   */
+  setRecord(record: CalibrationRecord): this {
+    this.record = record;
+    return this;
+  }
+}
+
+// ============================================================================
+// DB PERSISTENCE + BOOTSTRAP
+// ============================================================================
+
+type AdminSupabase = SupabaseClient<Database>;
+
+/** Row shape stored in `golf_confidence_calibration`. */
+export interface CalibrationBucketRow {
+  bucket: number; // bucket start (0, 0.2, 0.4, 0.6, 0.8)
+  prediction_type: string;
+  predictions_count: number;
+  correct_count: number;
+  actual_accuracy: number;
+  calibration_error: number;
+  sample_size: number;
+}
+
+// Module-level cache so repeated calls inside the same cold-start don't
+// re-hit the DB. 5-minute TTL is enough to smooth bursty traffic without
+// starving the calibrator of fresh nightly-cron output.
+const CACHE_TTL_MS = 5 * 60 * 1000;
+let cachedBuckets: CalibrationBucketRow[] | null = null;
+let cachedAt = 0;
+
+/**
+ * Invalidate the in-process cache so the next `loadBuckets` call refetches
+ * from DB. Called by the nightly cron right after it writes.
+ */
+export function invalidateCalibrationCache(): void {
+  cachedBuckets = null;
+  cachedAt = 0;
+}
+
+/**
+ * Read the persisted calibration buckets. Cached for 5 minutes per process.
+ */
+export async function loadBuckets(
+  supabase: AdminSupabase,
+): Promise<CalibrationBucketRow[]> {
+  if (cachedBuckets && Date.now() - cachedAt < CACHE_TTL_MS) {
+    return cachedBuckets;
+  }
+
+  const { data, error } = await supabase
+    .from('golf_confidence_calibration')
+    .select('bucket, prediction_type, predictions_count, correct_count, actual_accuracy, calibration_error, sample_size');
+
+  if (error) {
+    await logServerError(
+      `loadBuckets failed: ${error.message}`,
+      {
+        action: 'confidenceCalibrator.loadBuckets',
+        featureArea: 'coachhelm',
+        extra: { code: error.code },
+      },
+      'warning',
+    );
+    return cachedBuckets ?? [];
+  }
+
+  cachedBuckets = (data ?? []).map((row) => ({
+    bucket: Number(row.bucket),
+    prediction_type: row.prediction_type,
+    predictions_count: row.predictions_count,
+    correct_count: row.correct_count,
+    actual_accuracy: Number(row.actual_accuracy),
+    calibration_error: Number(row.calibration_error),
+    sample_size: row.sample_size,
+  }));
+  cachedAt = Date.now();
+  return cachedBuckets;
+}
+
+/**
+ * Build a `CalibrationRecord` from persisted bucket rows for a given
+ * prediction_type. If no rows exist for the type, returns an empty record.
+ */
+export async function bootstrapFromDb(
+  supabase: AdminSupabase,
+  predictionType: string,
+): Promise<CalibrationRecord> {
+  const rows = await loadBuckets(supabase);
+  const forType = rows.filter((r) => r.prediction_type === predictionType);
+  const record = createEmptyRecord();
+
+  // Map persisted buckets onto the 5 [0,0.2)…[0.8,1.0] ranges.
+  for (const row of forType) {
+    const rangeIdx = record.buckets.findIndex(
+      (b) => row.bucket >= b.rangeStart && row.bucket < b.rangeEnd + 1e-9,
+    );
+    if (rangeIdx === -1) continue;
+    const bucket = record.buckets[rangeIdx]!;
+    record.buckets[rangeIdx] = {
+      ...bucket,
+      predictedCount: row.predictions_count,
+      actualCorrect: row.correct_count,
+      actualAccuracy: row.actual_accuracy,
+      calibrationError: row.calibration_error,
+    };
+    record.totalPredictions += row.predictions_count;
+  }
+
+  return record;
+}
+
+/**
+ * Helper used by the nightly cron: given a set of (confidence, wasAccurate)
+ * outcomes grouped by prediction_type, returns the bucket rows to upsert.
+ *
+ * Buckets are the canonical 5 ranges [0,0.2), [0.2,0.4), [0.4,0.6),
+ * [0.6,0.8), [0.8,1.0]. The stored `bucket` column is the range start so the
+ * PK `(bucket, prediction_type)` stays stable across recomputes.
+ */
+export function computeBucketRows(
+  validations: Array<{ prediction_type: string; confidence: number; within_interval: boolean }>,
+): CalibrationBucketRow[] {
+  const BUCKET_STARTS = [0, 0.2, 0.4, 0.6, 0.8] as const;
+  const bucketKeyFor = (c: number) => {
+    const clamped = Math.max(0, Math.min(0.9999999, c));
+    const idx = Math.min(BUCKET_STARTS.length - 1, Math.floor(clamped / 0.2));
+    return BUCKET_STARTS[idx]!;
+  };
+
+  // key = `${prediction_type}|${bucket_start}`
+  const agg = new Map<
+    string,
+    { type: string; bucket: number; count: number; correct: number }
+  >();
+
+  for (const v of validations) {
+    const bucket = bucketKeyFor(v.confidence);
+    const key = `${v.prediction_type}|${bucket}`;
+    const entry = agg.get(key) ?? {
+      type: v.prediction_type,
+      bucket,
+      count: 0,
+      correct: 0,
+    };
+    entry.count += 1;
+    if (v.within_interval) entry.correct += 1;
+    agg.set(key, entry);
+  }
+
+  return Array.from(agg.values()).map((e) => {
+    const accuracy = e.count > 0 ? e.correct / e.count : 0;
+    const midpoint = e.bucket + 0.1; // range is width 0.2
+    return {
+      bucket: e.bucket,
+      prediction_type: e.type,
+      predictions_count: e.count,
+      correct_count: e.correct,
+      actual_accuracy: accuracy,
+      calibration_error: Math.abs(midpoint - accuracy),
+      sample_size: e.count,
+    };
+  });
 }
