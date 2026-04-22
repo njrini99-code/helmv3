@@ -79,12 +79,15 @@ const hoisted = vi.hoisted(() => {
               made: boolean | null;
               miss_tags: string[] | null;
             };
-            const flat = (mockRows.current ?? []).map((r: TestRow, idx: number) => ({
-              distance_feet: r.distance_feet,
-              made: r.made,
-              miss_tags: r.miss_tags,
-              shot_id: `shot-${idx}`,
-            }));
+            const flat = (mockRows.current ?? []).map((r: unknown, idx: number) => {
+              const row = r as TestRow;
+              return {
+                distance_feet: row.distance_feet,
+                made: row.made,
+                miss_tags: row.miss_tags,
+                shot_id: `shot-${idx}`,
+              };
+            });
             return resolve({ data: flat, error: null });
           }
           return resolve({ data: mockRows.current, error: null });
@@ -102,6 +105,10 @@ const { mockRows, upsertInsightMock, attachDrillsMock } = hoisted;
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => hoisted.makeSupabaseStub()),
+}));
+
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: vi.fn(() => hoisted.makeSupabaseStub()),
 }));
 
 vi.mock('@/lib/server-error-logger', () => ({

@@ -14,7 +14,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
@@ -309,7 +309,7 @@ export async function generatePuttDistanceInsights(
 ): Promise<void> {
   let supabase: SupabaseClient;
   try {
-    supabase = (await createClient()) as unknown as SupabaseClient;
+    supabase = createAdminClient() as unknown as SupabaseClient;
   } catch (err) {
     await logServerError('putt-analytics.distance.client_init', {
       action: 'generatePuttDistanceInsights',
@@ -518,7 +518,7 @@ export async function generatePuttMissBiasInsights(
 ): Promise<void> {
   let supabase: SupabaseClient;
   try {
-    supabase = (await createClient()) as unknown as SupabaseClient;
+    supabase = createAdminClient() as unknown as SupabaseClient;
   } catch (err) {
     await logServerError('putt-analytics.miss_bias.client_init', {
       action: 'generatePuttMissBiasInsights',
