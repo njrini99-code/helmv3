@@ -10,6 +10,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -19,68 +20,6 @@ const shotAnalyticsSchema = z.object({
   playerId: z.string().uuid('Invalid player ID format'),
   periodDays: z.number().int().min(1).max(365).default(30),
 });
-
-// ============================================================================
-// AUTH HELPERS
-// ============================================================================
-
-/**
- * Verifies that the current user has access to a player's shot analytics.
- */
-async function verifyPlayerAccess(
-  playerId: string
-): Promise<{ authorized: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { authorized: false, error: 'Not authenticated' };
-  }
-
-  // Check if user is the player
-  const { data: playerRecord } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('id', playerId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (playerRecord) {
-    return { authorized: true };
-  }
-
-  // Check if user is a coach with access to this player via organization -> team -> membership
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
-
-    if (team) {
-      const { data: teamMember } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('team_id', team.id)
-        .eq('player_id', playerId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (teamMember) {
-        return { authorized: true };
-      }
-    }
-  }
-
-  return { authorized: false, error: 'Not authorized to access this player' };
-}
 
 // ============================================================================
 // TYPES
@@ -283,13 +222,17 @@ export async function getPlayerShotAnalytics(
       return { success: false, error: validated.error.issues[0]?.message || 'Invalid input' };
     }
 
-    // Verify user has access to this player
-    const access = await verifyPlayerAccess(validated.data.playerId);
-    if (!access.authorized) {
-      return { success: false, error: access.error || 'Not authorized' };
-    }
-
     const supabase = await createClient();
+
+    // Verify user has access to this player (multi-team-safe shared helper).
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    const access = await verifyPlayerAccess(validated.data.playerId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: 'Not authorized to access this player' };
+    }
 
     // Get player info
     const { data: player } = await supabase

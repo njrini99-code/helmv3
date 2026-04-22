@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -300,8 +301,16 @@ function dbRowToReview(row: ReviewDbRow, callerRole: 'player' | 'coach' = 'coach
 
 /**
  * Verify the current user has access to a review's player data.
- * Returns the user and player info if authorized, or an error.
- * Access is granted if the user IS the player, or is a coach on the player's team.
+ *
+ * Thin wrapper over the shared `verifyPlayerAccess` helper
+ * (`@/lib/auth/verify-player-access`) that preserves the local
+ * `{ authorized, callerRole, error }` shape callers in this file rely on.
+ *
+ * Access is granted if:
+ *   1. The user IS the player (self), OR
+ *   2. `role === 'player_or_coach'` and the user is a coach staffing ANY team
+ *      the player is an active member of (multi-team-safe via
+ *      `public.verify_coach_owns_player` RPC).
  */
 async function verifyReviewAccess(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -313,54 +322,21 @@ async function verifyReviewAccess(
     return { authorized: false, error: 'Not authenticated' };
   }
 
-  // Check if user is the player
-  const { data: playerRecord } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('id', playerId)
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (playerRecord) {
-    return { authorized: true, userId: user.id, playerId: playerRecord.id, callerRole: 'player' };
+  const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { authorized: false, error: 'Not authorized to access this review' };
   }
 
-  // For player-only actions, deny here
+  if (access.reason === 'self') {
+    return { authorized: true, userId: user.id, playerId, callerRole: 'player' };
+  }
+
+  // Coach branch — player-only actions deny coaches.
   if (role === 'player') {
     return { authorized: false, error: 'Not authorized - you do not own this review' };
   }
 
-  // Check if user is a coach with access to this player via organization -> team -> membership
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
-  if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
-
-    if (team) {
-      const { data: teamMember } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('team_id', team.id)
-        .eq('player_id', playerId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (teamMember) {
-        return { authorized: true, userId: user.id, playerId, callerRole: 'coach' };
-      }
-    }
-  }
-
-  return { authorized: false, error: 'Not authorized to access this review' };
+  return { authorized: true, userId: user.id, playerId, callerRole: 'coach' };
 }
 
 // ============================================================================
