@@ -178,6 +178,40 @@
 | created_at | timestamp with time zone | YES | now() |
 | updated_at | timestamp with time zone | YES | now() |
 
+## golf_causal_relationships
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|----------|
+| id | uuid | NO | gen_random_uuid() |
+| player_id | uuid | YES | - |
+| team_id | uuid | YES | - |
+| cause | text | NO | - |
+| cause_metric | text | YES | - |
+| effect | text | NO | - |
+| effect_metric | text | YES | - |
+| relationship_type | text | NO | - |
+| strength | numeric | NO | 0 |
+| confidence | numeric | NO | 0 |
+| mechanism | text | NO | - |
+| confounders | jsonb | NO | '[]'::jsonb |
+| dose_response | boolean | NO | false |
+| intervention_potential | numeric | NO | 0 |
+| evidence | jsonb | NO | '{}'::jsonb |
+| validation_count | integer | NO | 0 |
+| created_at | timestamp with time zone | NO | now() |
+| updated_at | timestamp with time zone | NO | now() |
+
+## golf_coach_behavior_log
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|----------|
+| id | uuid | NO | gen_random_uuid() |
+| coach_id | uuid | NO | - |
+| action_type | text | NO | - |
+| target_id | text | YES | - |
+| metadata | jsonb | YES | - |
+| created_at | timestamp with time zone | YES | now() |
+
 ## golf_coach_blocked_time
 
 | Column | Type | Nullable | Default |
@@ -483,6 +517,26 @@
 | created_at | timestamp with time zone | YES | now() |
 | updated_at | timestamp with time zone | YES | now() |
 
+## golf_global_patterns
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|----------|
+| id | uuid | NO | gen_random_uuid() |
+| signature | text | NO | - |
+| pattern_type | text | NO | - |
+| conditions | jsonb | NO | '{}'::jsonb |
+| outcomes | jsonb | NO | '{}'::jsonb |
+| prevalence | numeric | NO | 0 |
+| average_impact | numeric | NO | 0 |
+| confidence | numeric | NO | 0 |
+| instance_count | integer | NO | 0 |
+| player_count | integer | NO | 0 |
+| varied_by_tier | jsonb | NO | '{}'::jsonb |
+| varied_by_handicap | jsonb | NO | '{}'::jsonb |
+| contributing_players | uuid[] | NO | ARRAY[]::uuid[] |
+| created_at | timestamp with time zone | NO | now() |
+| updated_at | timestamp with time zone | NO | now() |
+
 ## golf_holes
 
 | Column | Type | Nullable | Default |
@@ -558,6 +612,17 @@
 | engine_version | text | YES | - |
 | duration_ms | integer | YES | - |
 | created_at | timestamp with time zone | YES | now() |
+
+## golf_insight_player_feedback
+
+| Column | Type | Nullable | Default |
+|--------|------|----------|----------|
+| id | uuid | NO | gen_random_uuid() |
+| insight_id | uuid | NO | - |
+| player_id | uuid | NO | - |
+| rating | text | NO | - (CHECK: helpful, not_helpful, dismissed, acknowledged) |
+| note | text | YES | - |
+| created_at | timestamp with time zone | NO | now() |
 
 ## golf_insight_weights
 
