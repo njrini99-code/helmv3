@@ -96,11 +96,13 @@ export async function searchInsights({
       )
       .eq('coach_id', coachId);
 
-    // Text search on title and description
+    // Text search on title and content.
+    // NOTE: live schema has `content` (not `description`). The old `.or()`
+    // filter referenced a nonexistent column and silently returned 0 rows.
     if (query && query.trim()) {
       const searchTerm = `%${query.trim()}%`;
       queryBuilder = queryBuilder.or(
-        `title.ilike.${searchTerm},description.ilike.${searchTerm}`
+        `title.ilike.${searchTerm},content.ilike.${searchTerm}`
       );
     }
 
@@ -265,11 +267,17 @@ export async function bulkDismissInsights(
       return { success: false, affectedCount: 0, error: 'Coach not found' };
     }
 
-    // Bulk update
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
+    // Bulk update. Live schema has BOTH a `status` enum ('active'|'dismissed'|...)
+    // AND a boolean `dismissed` + `dismissed_at` timestamp. The alerts/insights
+    // screens filter on `dismissed=false` so we must set both to make the
+    // record actually disappear from the default views.
+    const { data, error } = await supabase
       .from('golf_coach_insights')
-      .update({ status: 'dismissed' })
+      .update({
+        status: 'dismissed',
+        dismissed: true,
+        dismissed_at: new Date().toISOString(),
+      })
       .eq('coach_id', coach.id)
       .in('id', insightIds)
       .select('id');
@@ -281,6 +289,8 @@ export async function bulkDismissInsights(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/insights');
+    revalidatePath('/golf/dashboard/alerts');
+    revalidatePath('/golf/dashboard/intelligence');
 
     return { success: true, affectedCount: data?.length || 0 };
   } catch (error) {
@@ -438,9 +448,11 @@ export async function exportInsights(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Fetch insights with player data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: insights, error } = await (supabase as any)
+    // Fetch insights. Pin to columns that actually exist in live schema:
+    // no `description` (it's `content`); no `recommendation` (it lives in
+    // `metadata.recommendation`); `acknowledged_at` / `resolved_at` exist
+    // but we derive readable fields only from current columns.
+    const { data: insights, error } = await supabase
       .from('golf_coach_insights')
       .select(
         `
@@ -448,12 +460,16 @@ export async function exportInsights(
         insight_type,
         priority,
         title,
-        description,
-        recommendation,
+        content,
         status,
+        dismissed,
+        dismissed_at,
+        outcome_status,
+        metadata,
         created_at,
         acknowledged_at,
         resolved_at,
+        player_id,
         player:golf_players(first_name, last_name)
       `
       )
@@ -471,31 +487,43 @@ export async function exportInsights(
 
     const timestamp = new Date().toISOString().split('T')[0];
 
+    type ExportedInsightRow = {
+      id: string;
+      insight_type: string | null;
+      priority: string | null;
+      title: string | null;
+      content: string | null;
+      status: string | null;
+      dismissed: boolean | null;
+      dismissed_at: string | null;
+      outcome_status: string | null;
+      metadata: Record<string, unknown> | null;
+      created_at: string | null;
+      acknowledged_at: string | null;
+      resolved_at: string | null;
+      player: { first_name: string | null; last_name: string | null } | null;
+    };
+
+    const recommendationFor = (row: ExportedInsightRow): string =>
+      ((row.metadata as Record<string, unknown> | null)?.recommendation as string | undefined) ?? '';
+
     if (format === 'json') {
-      // Format as JSON
-      const exportData = insights.map((insight: {
-        id: string;
-        insight_type: string;
-        priority: string;
-        title: string;
-        description: string;
-        recommendation: string | null;
-        status: string;
-        created_at: string;
-        acknowledged_at: string | null;
-        resolved_at: string | null;
-        player: { first_name: string; last_name: string } | null;
-      }) => ({
+      // Format as JSON. Keep `description` field name in the output for
+      // backward-compat with downstream consumers expecting that key.
+      const exportData = (insights as ExportedInsightRow[]).map((insight) => ({
         id: insight.id,
         type: insight.insight_type,
         priority: insight.priority,
         player: insight.player
-          ? `${insight.player.first_name} ${insight.player.last_name}`
+          ? `${insight.player.first_name ?? ''} ${insight.player.last_name ?? ''}`.trim()
           : 'Team',
         title: insight.title,
-        description: insight.description,
-        recommendation: insight.recommendation || '',
+        description: insight.content,
+        recommendation: recommendationFor(insight),
         status: insight.status,
+        outcomeStatus: insight.outcome_status,
+        dismissed: insight.dismissed,
+        dismissedAt: insight.dismissed_at,
         createdAt: insight.created_at,
         acknowledgedAt: insight.acknowledged_at,
         resolvedAt: insight.resolved_at,
@@ -519,36 +547,28 @@ export async function exportInsights(
       'Description',
       'Recommendation',
       'Status',
+      'Outcome',
+      'Dismissed',
       'Created At',
       'Acknowledged At',
       'Resolved At',
     ];
 
-    const rows = insights.map((insight: {
-      id: string;
-      insight_type: string;
-      priority: string;
-      title: string;
-      description: string;
-      recommendation: string | null;
-      status: string;
-      created_at: string;
-      acknowledged_at: string | null;
-      resolved_at: string | null;
-      player: { first_name: string; last_name: string } | null;
-    }) => [
+    const rows = (insights as ExportedInsightRow[]).map((insight) => [
       insight.id,
-      insight.insight_type,
-      insight.priority,
+      insight.insight_type ?? '',
+      insight.priority ?? '',
       insight.player
-        ? `${insight.player.first_name} ${insight.player.last_name}`
+        ? `${insight.player.first_name ?? ''} ${insight.player.last_name ?? ''}`.trim()
         : 'Team',
       // Escape CSV special characters
       `"${(insight.title || '').replace(/"/g, '""')}"`,
-      `"${(insight.description || '').replace(/"/g, '""')}"`,
-      `"${(insight.recommendation || '').replace(/"/g, '""')}"`,
-      insight.status,
-      insight.created_at,
+      `"${(insight.content || '').replace(/"/g, '""')}"`,
+      `"${recommendationFor(insight).replace(/"/g, '""')}"`,
+      insight.status ?? '',
+      insight.outcome_status ?? '',
+      insight.dismissed ? 'true' : 'false',
+      insight.created_at ?? '',
       insight.acknowledged_at || '',
       insight.resolved_at || '',
     ]);
