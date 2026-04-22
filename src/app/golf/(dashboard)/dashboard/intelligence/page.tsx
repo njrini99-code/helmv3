@@ -1,8 +1,6 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { PageLoading } from '@/components/ui/loading';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
@@ -33,7 +31,14 @@ export default async function IntelligenceDashboardPage() {
 
   const supabase = await createClient();
 
-  // Look up team_id via organization_id
+  // Look up team_id via organization_id. This lookup is used by
+  // IntelligenceCommandCenter below. getTeamOverview and
+  // getTeamCategoryInsights currently perform their own internal team
+  // lookup (they share the same session), so there is some duplicate work
+  // at the DB. Those action signatures are owned by a neighbouring module
+  // (team-category-insights.ts) and are tracked for follow-up — once they
+  // accept an explicit teamId, pass `teamId` here and they'll become
+  // single-lookup calls.
   let teamId: string | null = null;
   if (coach.organization_id) {
     const { data: team } = await supabase
@@ -48,7 +53,7 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/dashboard');
   }
 
-  // Fetch team overview and categorized insights in parallel
+  // Fetch team overview and categorized insights in parallel.
   const [overviewResult, result] = await Promise.all([
     getTeamOverview(),
     getTeamCategoryInsights(),
@@ -94,15 +99,17 @@ export default async function IntelligenceDashboardPage() {
           </div>
         )}
 
-        {/* Deep Analysis (uses existing IntelligenceCommandCenter) */}
+        {/* Deep Analysis (uses existing IntelligenceCommandCenter).
+            No Suspense wrapper — IntelligenceCommandCenter is a 'use client'
+            component with its own internal loading states. The old Suspense
+            fallback never fired because there was nothing async above it
+            to suspend. */}
         <div className="mt-8">
-          <Suspense fallback={<PageLoading />}>
-            <IntelligenceCommandCenter
-              teamId={teamId}
-              coachId={coach.id}
-              variant="widget"
-            />
-          </Suspense>
+          <IntelligenceCommandCenter
+            teamId={teamId}
+            coachId={coach.id}
+            variant="widget"
+          />
         </div>
       </div>
     </div>
