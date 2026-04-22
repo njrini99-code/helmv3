@@ -4,11 +4,16 @@
  * Controls access to CoachHelm features based on user and team settings.
  * Provides functions to check if CoachHelm is enabled for a user.
  *
- * Note: Uses type assertions because the tables are created via migration
- * and aren't in the generated database types yet.
+ * Fail-closed contract (LIVE-17): when the coach/player record cannot be
+ * loaded due to a DB error, the gate returns `effectivelyEnabled=false`
+ * rather than the prior behavior of treating transient errors as "enabled".
+ * A missing row (data=null, error=null) still falls back to the enabled
+ * default — only DB-level errors trigger the fail-closed path.
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 import type { CoachHelmSettings, CoachHelmStatus } from './types';
 
 // Internal types for database rows (tables created via migration)
@@ -23,42 +28,50 @@ interface TeamCoachHelmSettingsRow {
   disabled_reason: string | null;
 }
 
+const LOOKUP_FAILED_REASON = 'Coach record lookup failed';
+const PLAYER_LOOKUP_FAILED_REASON = 'Player record lookup failed';
+
 /**
  * Checks if CoachHelm is enabled globally (feature flag)
  *
  * @returns Whether CoachHelm V2 is enabled globally
  */
 function isCoachHelmEnabled(): boolean {
-  // Could be controlled by environment variable or feature flag
   const envFlag = process.env.NEXT_PUBLIC_COACHHELM_ENABLED;
-  return envFlag !== 'false'; // Enabled by default unless explicitly disabled
+  return envFlag !== 'false';
 }
 
 /**
  * Gets CoachHelm settings for a coach.
- *
- * Production RLS on golf_coachhelm_settings is keyed off coach_id, so coach
- * lookups must use the coach record rather than auth user_id.
  */
 async function getCoachHelmCoachSettings(
-  coachId: string
+  coachId: string,
+  supabase: SupabaseClient,
 ): Promise<CoachHelmSettings | null> {
-  const supabase = await createClient();
-
   try {
-    // Type assertion for new table - live production schema is keyed by coach_id
-    const { data, error } = await (supabase
-      .from('golf_coachhelm_settings' as 'users')
+    const fromFn = (supabase as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            maybeSingle: () => Promise<{
+              data: CoachHelmSettingsRow | null;
+              error: { message: string } | null;
+            }>;
+          };
+        };
+      };
+    }).from;
+
+    const { data, error } = await fromFn
+      .call(supabase, 'golf_coachhelm_settings')
       .select('enabled, disabled_at, disabled_reason')
       .eq('coach_id', coachId)
-      .maybeSingle() as unknown as Promise<{
-      data: CoachHelmSettingsRow | null;
-      error: Error | null;
-    }>);
+      .maybeSingle();
 
-    if (error || !data) {
-      return null;
-    }
+    if (error || !data) return null;
 
     return {
       enabled: data.enabled,
@@ -66,44 +79,57 @@ async function getCoachHelmCoachSettings(
       disabledReason: data.disabled_reason ?? null,
     };
   } catch (err) {
-    console.error('[CoachHelm] Failed to fetch coach CoachHelm settings:', err);
+    await logServerError('gate.getCoachHelmCoachSettings threw', {
+      action: 'gate.getCoachHelmCoachSettings',
+      featureArea: 'coachhelm.gate',
+      metadata: { coachId, error: String(err) },
+    });
     return null;
   }
 }
 
 /**
  * Gets team CoachHelm settings
- *
- * @param teamId - The team's UUID
- * @returns Whether team has CoachHelm enabled
  */
 async function getTeamCoachHelmSettings(
-  teamId: string
+  teamId: string,
+  supabase: SupabaseClient,
 ): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
-  const supabase = await createClient();
-
   try {
-    const { data, error } = await (supabase
-      .from('golf_team_coachhelm_settings' as 'users')
+    const fromFn = (supabase as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            maybeSingle: () => Promise<{
+              data: (TeamCoachHelmSettingsRow & { disabled_at?: string | null }) | null;
+              error: { message: string } | null;
+            }>;
+          };
+        };
+      };
+    }).from;
+
+    const { data, error } = await fromFn
+      .call(supabase, 'golf_team_coachhelm_settings')
       .select('enabled, disabled_reason, disabled_at')
       .eq('team_id', teamId)
-      .maybeSingle() as unknown as Promise<{
-      data: TeamCoachHelmSettingsRow & { disabled_at?: string | null } | null;
-      error: Error | null;
-    }>);
+      .maybeSingle();
 
-    if (error || !data) {
-      // Table may not exist or no settings configured - return null to use defaults
-      return null;
-    }
+    if (error || !data) return null;
 
     return {
       enabled: data.enabled,
       disabledReason: data.disabled_reason,
     };
   } catch (err) {
-    // Table doesn't exist yet - return null to use defaults (enabled)
-    console.error('[CoachHelm] Failed to fetch team CoachHelm settings:', err);
+    await logServerError('gate.getTeamCoachHelmSettings threw', {
+      action: 'gate.getTeamCoachHelmSettings',
+      featureArea: 'coachhelm.gate',
+      metadata: { teamId, error: String(err) },
+    });
     return null;
   }
 }
@@ -111,15 +137,17 @@ async function getTeamCoachHelmSettings(
 /**
  * Checks if CoachHelm is enabled for a specific coach
  *
- * This checks both global feature flag, user settings, and team settings.
+ * This checks the global feature flag, coach settings, and team settings.
+ * On DB error during the primary coach lookup, returns `effectivelyEnabled=false`
+ * (fail-closed) — LIVE-17.
  *
- * @param coachId - The coach's UUID (from golf_coaches table)
- * @returns Full status including whether enabled and why disabled
+ * @param coachId          The coach's UUID (from golf_coaches table)
+ * @param supabaseOverride Optional injected client (tests)
  */
 export async function isCoachHelmEnabledForCoach(
-  coachId: string
+  coachId: string,
+  supabaseOverride?: SupabaseClient,
 ): Promise<CoachHelmStatus> {
-  // Check global flag first
   if (!isCoachHelmEnabled()) {
     return {
       userEnabled: false,
@@ -130,16 +158,53 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
 
   // Get coach record with team via organization
-  const { data: coach, error: coachError } = await supabase
-    .from('golf_coaches')
+  const fromFn = (supabase as unknown as {
+    from: (t: string) => {
+      select: (cols: string) => {
+        eq: (
+          col: string,
+          val: string,
+        ) => {
+          single: () => Promise<{
+            data: { user_id: string | null; organization_id: string | null } | null;
+            error: { message: string } | null;
+          }>;
+          maybeSingle: () => Promise<{
+            data: { id: string } | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  }).from;
+
+  const { data: coach, error: coachError } = await fromFn
+    .call(supabase, 'golf_coaches')
     .select('user_id, organization_id')
     .eq('id', coachId)
     .single();
 
-  if (coachError || !coach) {
+  if (coachError) {
+    await logServerError('gate.isCoachHelmEnabledForCoach lookup failed', {
+      action: 'gate.isCoachHelmEnabledForCoach',
+      featureArea: 'coachhelm.gate',
+      metadata: { coachId, dbError: coachError as unknown },
+    });
+    return {
+      userEnabled: false,
+      teamEnabled: false,
+      effectivelyEnabled: false,
+      disabledReason: LOOKUP_FAILED_REASON,
+      disabledBy: null,
+    };
+  }
+
+  if (!coach) {
+    // No error, just no row — fall back to enabled default for backward
+    // compatibility (prior behavior for missing records).
     return {
       userEnabled: true,
       teamEnabled: true,
@@ -149,8 +214,8 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check coach-level settings using coach_id, which matches production RLS.
-  const coachSettings = await getCoachHelmCoachSettings(coachId);
+  // Check coach-level settings
+  const coachSettings = await getCoachHelmCoachSettings(coachId, supabase);
   const userEnabled = coachSettings?.enabled ?? true;
 
   if (!userEnabled) {
@@ -163,16 +228,16 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check team-level settings if coach has an organization (find team via org)
+  // Check team-level settings if coach has an organization
   if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
+    const { data: team } = await fromFn
+      .call(supabase, 'golf_teams')
       .select('id')
       .eq('organization_id', coach.organization_id)
       .maybeSingle();
 
     if (team) {
-      const teamSettings = await getTeamCoachHelmSettings(team.id);
+      const teamSettings = await getTeamCoachHelmSettings(team.id, supabase);
       const teamEnabled = teamSettings?.enabled ?? true;
 
       if (!teamEnabled) {
@@ -199,13 +264,15 @@ export async function isCoachHelmEnabledForCoach(
 /**
  * Checks if CoachHelm is enabled for a specific player
  *
- * @param playerId - The player's UUID (from golf_players table)
- * @returns Full status including whether enabled and why disabled
+ * Fail-closed on DB lookup errors (LIVE-17).
+ *
+ * @param playerId         The player's UUID (from golf_players table)
+ * @param supabaseOverride Optional injected client (tests)
  */
 export async function isCoachHelmEnabledForPlayer(
-  playerId: string
+  playerId: string,
+  supabaseOverride?: SupabaseClient,
 ): Promise<CoachHelmStatus> {
-  // Check global flag first
   if (!isCoachHelmEnabled()) {
     return {
       userEnabled: false,
@@ -216,16 +283,52 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  const supabase = await createClient();
+  const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
 
-  // Get player record with team via golf_team_members
-  const { data: player, error: playerError } = await supabase
-    .from('golf_players')
+  const fromFn = (supabase as unknown as {
+    from: (t: string) => {
+      select: (cols: string) => {
+        eq: (
+          col: string,
+          val: string,
+        ) => {
+          single: () => Promise<{
+            data: {
+              user_id: string | null;
+              team:
+                | { team_id: string | null }
+                | Array<{ team_id: string | null }>
+                | null;
+            } | null;
+            error: { message: string } | null;
+          }>;
+        };
+      };
+    };
+  }).from;
+
+  const { data: player, error: playerError } = await fromFn
+    .call(supabase, 'golf_players')
     .select('user_id, team:golf_team_members(team_id)')
     .eq('id', playerId)
     .single();
 
-  if (playerError || !player) {
+  if (playerError) {
+    await logServerError('gate.isCoachHelmEnabledForPlayer lookup failed', {
+      action: 'gate.isCoachHelmEnabledForPlayer',
+      featureArea: 'coachhelm.gate',
+      metadata: { playerId, dbError: playerError as unknown },
+    });
+    return {
+      userEnabled: false,
+      teamEnabled: false,
+      effectivelyEnabled: false,
+      disabledReason: PLAYER_LOOKUP_FAILED_REASON,
+      disabledBy: null,
+    };
+  }
+
+  if (!player) {
     return {
       userEnabled: true,
       teamEnabled: true,
@@ -235,12 +338,11 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  // Player-specific CoachHelm rows are not part of the live production contract.
   // Check team-level settings if player has a team
   const teamMembership = Array.isArray(player.team) ? player.team[0] : player.team;
-  const playerTeamId = teamMembership?.team_id;
+  const playerTeamId = teamMembership?.team_id ?? null;
   if (playerTeamId) {
-    const teamSettings = await getTeamCoachHelmSettings(playerTeamId);
+    const teamSettings = await getTeamCoachHelmSettings(playerTeamId, supabase);
     const teamEnabled = teamSettings?.enabled ?? true;
 
     if (!teamEnabled) {
