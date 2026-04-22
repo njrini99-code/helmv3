@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 // ============================================================================
 // TYPES
@@ -24,7 +25,8 @@ interface CreateFocusAreaData {
   target_metric: string | null;
   current_value: number | null;
   target_value: number | null;
-  source_insight_id?: string | null;
+  /** Canonical live-schema column name. The old `source_insight_id` does not exist. */
+  from_insight_id?: string | null;
 }
 
 interface UpdateFocusAreaData {
@@ -246,6 +248,23 @@ export async function updateFocusAreaProgress(
     return { success: false, error: 'Not authenticated' };
   }
 
+  // Ownership guard: look up the focus area's player and verify either the
+  // player-self or a staff coach is making the update.
+  const { data: focusArea } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   const { error } = await supabase
     .from('golf_player_focus_areas')
     .update({
@@ -375,9 +394,8 @@ export async function createFocusAreaFromInsight(
     return { success: false, error: 'Not authorized to create focus areas' };
   }
 
-  // Fetch the insight to get its metadata
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: insight, error: insightError } = await (supabase as any)
+  // Fetch the insight to get its metadata (live columns: metadata, content).
+  const { data: insight, error: insightError } = await supabase
     .from('golf_coach_insights')
     .select('metadata, content')
     .eq('id', data.insight_id)
@@ -403,7 +421,8 @@ export async function createFocusAreaFromInsight(
       : insight.content;
   }
 
-  // Create the focus area with link to source insight
+  // Create the focus area with link to source insight.
+  // Live schema column is `from_insight_id`, not `source_insight_id`.
   const { data: focusArea, error: insertError } = await supabase
     .from('golf_player_focus_areas')
     .insert({
@@ -416,7 +435,7 @@ export async function createFocusAreaFromInsight(
       target_metric: data.target_metric || null,
       current_value: data.current_value ?? null,
       target_value: data.target_value ?? null,
-      source_insight_id: data.insight_id,
+      from_insight_id: data.insight_id,
       started_at: new Date().toISOString(),
     })
     .select('id')
@@ -428,8 +447,7 @@ export async function createFocusAreaFromInsight(
   }
 
   // Acknowledge the insight (mark as "acknowledged" since action was taken)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any)
+  await supabase
     .from('golf_coach_insights')
     .update({
       status: 'acknowledged',
@@ -440,6 +458,8 @@ export async function createFocusAreaFromInsight(
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/alerts');
 
   return { success: true, data: { focusAreaId: focusArea.id } };
 }
@@ -461,13 +481,12 @@ export async function resolveFocusAreaAndInsight(
     return { success: false, error: 'Not authenticated' };
   }
 
-  // Get the focus area with its source insight
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: focusArea, error: faError } = await (supabase as any)
+  // Get the focus area with its source insight (live column: from_insight_id).
+  const { data: focusArea, error: faError } = await supabase
     .from('golf_player_focus_areas')
-    .select('id, source_insight_id')
+    .select('id, from_insight_id, player_id')
     .eq('id', focusAreaId)
-    .single() as { data: { id: string; source_insight_id?: string } | null; error: unknown };
+    .single();
 
   if (faError || !focusArea) {
     return { success: false, error: 'Focus area not found' };
@@ -487,21 +506,22 @@ export async function resolveFocusAreaAndInsight(
     return { success: false, error: 'Failed to complete focus area' };
   }
 
-  // If there's a linked insight, resolve it
-  if (focusArea.source_insight_id) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (supabase as any)
+  // If there's a linked insight, resolve it (live column: from_insight_id).
+  if (focusArea.from_insight_id) {
+    await supabase
       .from('golf_coach_insights')
       .update({
         status: 'resolved',
         resolved_at: new Date().toISOString(),
       })
-      .eq('id', focusArea.source_insight_id);
+      .eq('id', focusArea.from_insight_id);
   }
 
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/development');
   revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/alerts');
 
   return { success: true };
 }
