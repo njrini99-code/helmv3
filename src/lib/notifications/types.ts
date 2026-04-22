@@ -48,13 +48,6 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   push_task_reminders: true,
 };
 
-interface NotificationPayload {
-  type: NotificationType;
-  recipientId: string;
-  recipientEmail: string;
-  data: Record<string, unknown>;
-}
-
 export interface EmailTemplate {
   subject: string;
   html: string;

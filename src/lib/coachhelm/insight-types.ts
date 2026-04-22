@@ -77,35 +77,6 @@ export interface PlayerFocusArea {
   updated_at: string;
 }
 
-interface InsightGenerationLog {
-  id: string;
-  coach_id: string;
-  generation_type: 'manual' | 'scheduled' | 'triggered';
-  trigger_event: string | null;
-  insights_created: number;
-  focus_areas_updated: number;
-  players_analyzed: number;
-  execution_time_ms: number | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  metadata: Record<string, any>;
-  created_at: string;
-}
-
-interface PlayerPerformanceSnapshot {
-  id: string;
-  player_id: string;
-  snapshot_date: string;
-  rounds_in_period: number;
-  scoring_average: number | null;
-  best_round: number | null;
-  worst_round: number | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  stats: Record<string, any>;
-  trend_direction: TrendDirection | null;
-  trend_magnitude: number | null;
-  created_at: string;
-}
-
 // ============================================================================
 // DISPLAY TYPES (with joined data)
 // ============================================================================
@@ -117,65 +88,6 @@ export interface InsightWithPlayer extends CoachInsight {
     last_name: string;
     avatar_url: string | null;
   } | null;
-}
-
-interface FocusAreaWithPlayer extends PlayerFocusArea {
-  player: {
-    id: string;
-    first_name: string;
-    last_name: string;
-    avatar_url: string | null;
-  };
-}
-
-// ============================================================================
-// INSIGHT METADATA TYPES
-// ============================================================================
-
-interface ScoringDeclineMetadata {
-  recent_avg: number;
-  previous_avg: number;
-  rounds_analyzed: number;
-  decline_amount: number;
-  confidence_score: number;
-}
-
-interface StatRegressionMetadata {
-  stat_name: string;
-  current_value: number;
-  previous_value: number;
-  decline_percentage: number;
-  rounds_analyzed: number;
-}
-
-interface TournamentPressureMetadata {
-  practice_avg: number;
-  tournament_avg: number;
-  gap: number;
-  rounds_practice: number;
-  rounds_tournament: number;
-}
-
-interface BubblePlayerMetadata {
-  current_rank: number;
-  cutoff_rank: number;
-  distance_from_cutoff: number; // in strokes
-  recent_trend: 'up' | 'down' | 'stable';
-  avg_score: number;
-}
-
-interface SurgePlayerMetadata {
-  improvement_rate: number; // strokes per round
-  rounds_analyzed: number;
-  starting_avg: number;
-  current_avg: number;
-}
-
-interface StreakMetadata {
-  streak_type: 'hot' | 'cold';
-  streak_length: number;
-  avg_during_streak: number;
-  avg_before_streak: number;
 }
 
 // ============================================================================
@@ -370,10 +282,6 @@ export function getPriorityColor(priority: InsightPriority): string {
     case 'low':
       return 'blue';
   }
-}
-
-function getPriorityLabel(priority: InsightPriority): string {
-  return priority.charAt(0).toUpperCase() + priority.slice(1);
 }
 
 export function formatInsightAge(createdAt: string): string {

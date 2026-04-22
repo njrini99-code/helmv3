@@ -277,19 +277,6 @@ function checkMinimumStandards(
 }
 
 /**
- * Sort players by match score (descending).
- */
-function sortByMatchScore(
-  players: Array<{ match_score?: number }>
-): Array<{ match_score?: number }> {
-  return [...players].sort((a, b) => {
-    const scoreA = a.match_score ?? 50;
-    const scoreB = b.match_score ?? 50;
-    return scoreB - scoreA;
-  });
-}
-
-/**
  * Get match score tier for UI display.
  */
 export function getMatchScoreTier(score: number): {
@@ -341,21 +328,3 @@ export function calculatePercentile(
   return Math.round(Math.max(0, Math.min(100, percentile)));
 }
 
-/**
- * Batch calculate match scores for multiple players.
- */
-function batchCalculateMatchScores(
-  players: Array<Pick<Player, 'id' | 'primary_position' | 'secondary_position' | 'state' | 'gpa' | 'exit_velo' | 'pitch_velo' | 'sixty_time'>>,
-  percentileMap: Map<string, PlayerPercentiles>,
-  philosophy: CoachRecruitingPhilosophy
-): Map<string, PlayerMatchScore> {
-  const results = new Map<string, PlayerMatchScore>();
-
-  for (const player of players) {
-    const percentiles = percentileMap.get(player.id) ?? null;
-    const score = calculateMatchScore(player, percentiles, philosophy);
-    results.set(player.id, score);
-  }
-
-  return results;
-}

@@ -16,7 +16,7 @@ import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
-import { BehaviorLearner, OutcomeValidator, CrossLearner } from './learning';
+import { BehaviorLearner, CrossLearner } from './learning';
 import { ReasoningEngine, ConfidenceCalibrator } from './reasoning';
 import { InsightComposer } from './nlg';
 import { buildPlayerBaseline } from './stats/baselines';
@@ -129,13 +129,11 @@ class CoachHelmIntelligence {
   private reasoningEngine: ReasoningEngine;
   private confidenceCalibrator: ConfidenceCalibrator;
   private insightComposer: InsightComposer;
-  private outcomeValidator: OutcomeValidator;
 
   constructor() {
     this.reasoningEngine = new ReasoningEngine();
     this.confidenceCalibrator = new ConfidenceCalibrator();
     this.insightComposer = new InsightComposer();
-    this.outcomeValidator = new OutcomeValidator();
   }
 
   /**

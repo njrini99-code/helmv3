@@ -39,17 +39,3 @@ export function withRateLimit(
   return null;
 }
 
-/**
- * Add rate limit headers to a successful response
- */
-function addRateLimitHeaders(
-  response: NextResponse,
-  remaining: number,
-  resetAt: number,
-  maxRequests: number
-): NextResponse {
-  response.headers.set('X-RateLimit-Limit', maxRequests.toString());
-  response.headers.set('X-RateLimit-Remaining', remaining.toString());
-  response.headers.set('X-RateLimit-Reset', resetAt.toString());
-  return response;
-}

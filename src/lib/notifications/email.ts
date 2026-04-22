@@ -69,43 +69,6 @@ export async function getUserNotificationPreferences(
 }
 
 /**
- * Update user's notification preferences
- */
-async function updateUserNotificationPreferences(
-  userId: string,
-  preferences: Partial<NotificationPreferences>
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const supabase = await createClient();
-
-    // Get current preferences and merge with updates
-    const currentPrefs = await getUserNotificationPreferences(userId);
-    const updatedPrefs = {
-      ...currentPrefs,
-      ...preferences,
-    };
-
-    const { error } = await supabase
-      .from('users')
-      .update({ notification_preferences: updatedPrefs })
-      .eq('id', userId);
-
-    if (error) {
-      console.error('Failed to update notification preferences:', error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating notification preferences:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
  * Check if user wants notifications for a specific type
  */
 function shouldSendEmail(

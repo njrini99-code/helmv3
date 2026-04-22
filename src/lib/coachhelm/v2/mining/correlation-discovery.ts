@@ -851,13 +851,3 @@ export class CorrelationDiscovery {
 // CONVENIENCE FUNCTION
 // ============================================================================
 
-/**
- * Main entry point for correlation discovery
- *
- * @param playerId - The player's UUID
- * @returns Array of discovered metric correlations
- */
-async function discoverMetricCorrelations(playerId: string): Promise<MetricCorrelation[]> {
-  const discovery = new CorrelationDiscovery(playerId);
-  return discovery.discoverMetricCorrelations();
-}

@@ -143,48 +143,6 @@ export const golfCache = {
 };
 
 // ============================================================================
-// BASEBALL CACHE HELPERS
-// ============================================================================
-
-const baseballCache = {
-  // Player discovery - filtered results
-  discover: {
-    key: (filters: string) => `baseball:discover:${filters}`,
-    ttl: TTL.MEDIUM, // 5 min
-  },
-
-  // Watchlist - changes with user actions
-  watchlist: {
-    key: (coachId: string) => `baseball:watchlist:${coachId}`,
-    ttl: TTL.SHORT, // 1 min
-  },
-
-  // Player profile - public data
-  playerProfile: {
-    key: (playerId: string) => `baseball:player:${playerId}`,
-    ttl: TTL.MEDIUM, // 5 min
-  },
-
-  // Organization/school data
-  organization: {
-    key: (orgId: string) => `baseball:org:${orgId}`,
-    ttl: TTL.VERY_LONG, // 1 hour
-  },
-
-  // Colleges list - static reference data
-  colleges: {
-    key: () => `baseball:colleges`,
-    ttl: TTL.VERY_LONG, // 1 hour
-  },
-
-  // High schools by state
-  highSchools: {
-    key: (state: string) => `baseball:highschools:${state}`,
-    ttl: TTL.VERY_LONG, // 1 hour
-  },
-};
-
-// ============================================================================
 // CACHE INVALIDATION HELPERS
 // ============================================================================
 
@@ -203,16 +161,5 @@ export const invalidateGolf = {
 
   allTeamData: (teamId: string) =>
     invalidatePattern(`golf:*:${teamId}*`),
-};
-
-const invalidateBaseball = {
-  watchlist: (coachId: string) =>
-    invalidate(baseballCache.watchlist.key(coachId)),
-
-  playerProfile: (playerId: string) =>
-    invalidate(baseballCache.playerProfile.key(playerId)),
-
-  discover: () =>
-    invalidatePattern(`baseball:discover:*`),
 };
 

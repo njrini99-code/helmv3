@@ -906,21 +906,6 @@ export function formatDaysDisplay(days: string[]): string {
   return days.join('');
 }
 
-function getDayName(abbrev: string): string {
-  const names: Record<string, string> = {
-    'Su': 'Sunday', 'M': 'Monday', 'T': 'Tuesday',
-    'W': 'Wednesday', 'Th': 'Thursday', 'F': 'Friday', 'Sa': 'Saturday',
-  };
-  return names[abbrev] || abbrev;
-}
-
-function dayToNumber(day: string): number {
-  const map: Record<string, number> = {
-    'Su': 0, 'M': 1, 'T': 2, 'W': 3, 'Th': 4, 'F': 5, 'Sa': 6,
-  };
-  return map[day] ?? -1;
-}
-
 // Curated palette — muted, non-clashing tones that look great on white/cream
 const CLASS_COLORS = [
   '#3B82F6', // blue

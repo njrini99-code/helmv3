@@ -330,16 +330,3 @@ export const SG_COMPARISON_BASELINES: Record<BenchmarkLevel, {
   },
 };
 
-/**
- * Get the default benchmark level for a given team division.
- */
-function getDefaultBenchmarkForDivision(division: string | null): BenchmarkLevel {
-  if (!division) return 'scratch';
-  const normalized = division.toLowerCase().replace(/\s+/g, '');
-  if (normalized.includes('d1') || normalized.includes('divisioni') || normalized === 'ncaadivisioni') return 'ncaa_d1';
-  if (normalized.includes('d2') || normalized.includes('divisionii')) return 'ncaa_d2';
-  if (normalized.includes('d3') || normalized.includes('divisioniii')) return 'ncaa_d3';
-  if (normalized.includes('naia')) return 'ncaa_d3';
-  if (normalized.includes('juco') || normalized.includes('juniorcollege')) return 'ncaa_d2';
-  return 'scratch';
-}

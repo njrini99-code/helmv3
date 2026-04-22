@@ -169,23 +169,3 @@ export async function notifyDevPlanAssigned(
   });
 }
 
-/**
- * Send RSVP reminder for an event
- */
-async function notifyEventRSVPReminder(
-  recipientId: string,
-  recipientEmail: string,
-  eventName: string,
-  eventDate: string,
-  location: string,
-  eventId: string
-) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
-
-  return sendEmailNotification('event_rsvp_reminder', recipientId, recipientEmail, {
-    eventName,
-    eventDate,
-    location,
-    eventUrl: `${baseUrl}/golf/dashboard/calendar?event=${eventId}`,
-  });
-}

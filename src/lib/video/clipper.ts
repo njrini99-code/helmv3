@@ -27,17 +27,6 @@ export function formatTime(seconds: number): string {
 }
 
 /**
- * Parses MM:SS format into seconds
- */
-function parseTime(timeStr: string): number {
-  const parts = timeStr.split(':');
-  if (parts.length === 2 && parts[0] && parts[1]) {
-    return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
-  }
-  return parseFloat(timeStr) || 0;
-}
-
-/**
  * Validates that a clip range is valid
  */
 export function validateClipRange(range: ClipRange, videoDuration: number): string | null {
