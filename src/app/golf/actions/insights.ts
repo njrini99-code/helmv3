@@ -3110,6 +3110,19 @@ export async function triggerPlayerInsightsAfterRound(
     }
 
     if (!analysis) {
+      // Legacy feature extraction returned null — but Tier-1 evidence-backed
+      // generators run BEFORE feature extraction inside analyzePlayer and may
+      // have already written insights. Check for those before reporting failure.
+      const sinceIso = new Date(startTime - 1000).toISOString();
+      const { count: tierOneCount } = await admin
+        .from('golf_coach_insights')
+        .select('*', { count: 'exact', head: true })
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .gte('updated_at', sinceIso);
+      if ((tierOneCount ?? 0) > 0) {
+        return { success: true, insights_created: tierOneCount ?? 0 };
+      }
       return { success: false, error: 'Player analysis returned no data (feature extraction failed)' };
     }
 
