@@ -19,7 +19,9 @@ import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
-import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
+// triggerPlayerInsightsAfterRound is no longer called directly — it's invoked
+// via fetch to /api/coachhelm/analyze-player with keepalive so the analysis
+// survives the server-action response closing.
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
 import { logServerError } from '@/lib/server-error-logger';
@@ -1647,28 +1649,54 @@ export async function submitGolfRoundComprehensive(
       }, 'warning');
     }
 
-    // Fire-and-forget: CoachHelm + logging run AFTER returning success to the
-    // client. These are non-critical and were causing client-side timeouts when
-    // awaited (the server action exceeded Next.js timeout limits).
+    // Durable CoachHelm trigger: hand off to /api/coachhelm/analyze-player via
+    // fetch+keepalive. keepalive lets Vercel's Fluid Compute runtime survive
+    // the server-action response stream closing so the analysis can finish
+    // independently of this function's lifetime (previously a raw
+    // fire-and-forget promise was being killed mid-execution, losing insights).
+    // The hourly safety-net cron re-runs any player whose latest round has no
+    // matching insight row, so a lost fetch here is eventually self-healing.
     const backgroundPlayerId = player.id;
     const backgroundRoundId = round.id;
-    triggerPlayerInsightsAfterRound(backgroundPlayerId).then(async (result) => {
-      if (result && !result.success) {
-        await logServerError(`CoachHelm trigger returned failure after round submit: ${result.error || 'unknown failure'}`, {
-          action: 'submitGolfRoundComprehensive.coachhelm.result',
-          extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
-        }, 'error');
-      }
-    }).catch(async (err) => {
-      await logServerError(`CoachHelm trigger threw after round submit: ${err instanceof Error ? err.message : String(err)}`, {
-        action: 'submitGolfRoundComprehensive.coachhelm',
-        extra: {
+    const internalSecret = process.env.COACHHELM_INTERNAL_SECRET;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://helmsportslabs.com';
+    if (!internalSecret) {
+      await logServerError('COACHHELM_INTERNAL_SECRET not set; CoachHelm trigger skipped', {
+        action: 'submitGolfRoundComprehensive.coachhelm.missingSecret',
+        featureArea: 'coachhelm',
+        extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
+      }, 'warning');
+    } else {
+      fetch(`${siteUrl}/api/coachhelm/analyze-player`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-internal-secret': internalSecret,
+        },
+        body: JSON.stringify({
           playerId: backgroundPlayerId,
           roundId: backgroundRoundId,
-          stack: err instanceof Error ? err.stack : undefined,
-        },
-      }, 'error').catch(() => {});
-    });
+          triggerReason: 'round_submitted',
+        }),
+        keepalive: true,
+      }).catch((err) => {
+        // Log only — safety-net cron (E6) re-runs analyze-player for rounds
+        // without insights, so a transient fetch failure here is recoverable.
+        void logServerError(
+          `CoachHelm analyze-player fetch failed: ${err instanceof Error ? err.message : String(err)}`,
+          {
+            action: 'submitGolfRoundComprehensive.coachhelm.fetch',
+            featureArea: 'coachhelm',
+            extra: {
+              playerId: backgroundPlayerId,
+              roundId: backgroundRoundId,
+              stack: err instanceof Error ? err.stack : undefined,
+            },
+          },
+          'warning',
+        );
+      });
+    }
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {
