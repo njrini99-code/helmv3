@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -18,7 +18,6 @@ import {
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   PerformancePrediction,
-  AIInsightsPanel,
   FocusAreasGrid,
 } from '@/components/golf/coachhelm/player';
 import { CompositeRatingCard } from '@/components/golf/coachhelm/player/CompositeRatingCard';
@@ -27,6 +26,12 @@ import { ShotAnalysisCard } from '@/components/golf/coachhelm/player/ShotAnalysi
 import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 import { ShotAnalyticsPanel } from '@/components/golf/coachhelm/analytics';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import {
+  HeroInsightCard,
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 
@@ -50,6 +55,11 @@ interface PlayerCoachHelmDashboardProps {
   trendData?: Record<string, any> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   shotData?: Record<string, any> | null;
+  /** The single highest-impact evidence-backed insight — hero card. */
+  topInsight?: EvidenceInsight | null;
+  /** The rest of the evidence-backed feed — stacked below the hero. The
+   *  component dedupes the hero id in case it appears in this list too. */
+  secondaryInsights?: EvidenceInsight[];
 }
 
 /**
@@ -67,7 +77,7 @@ function getStateGradient(state: PlayerCoachHelmDashboardData['playerState']) {
 }
 
 /**
- * Empty state component for when no data is available
+ * Empty state component for when no data is available at all.
  */
 function EmptyState() {
   return (
@@ -93,6 +103,34 @@ function EmptyState() {
   );
 }
 
+/**
+ * Smaller, friendlier empty state shown when the rest of the dashboard has
+ * data but no evidence-backed insights are available yet. Lives inline in
+ * the insights column so the rest of the dashboard still renders.
+ */
+function EmptyInsightsState() {
+  return (
+    <GlassCard className="text-center py-10">
+      <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mx-auto mb-3">
+        <IconSparkles size={22} className="text-warm-400" />
+      </div>
+      <h4 className="text-sm font-semibold text-warm-900 mb-1">
+        No insights yet
+      </h4>
+      <p className="text-xs text-warm-500 mb-4 max-w-xs mx-auto">
+        Log a few more rounds and CoachHelm will surface the patterns that move
+        your scores.
+      </p>
+      <a
+        href="/golf/dashboard/rounds/new"
+        className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
+      >
+        Log a round
+      </a>
+    </GlassCard>
+  );
+}
+
 export function PlayerCoachHelmDashboard({
   data: initialData,
   playerId,
@@ -100,6 +138,8 @@ export function PlayerCoachHelmDashboard({
   profileData,
   trendData,
   shotData,
+  topInsight = null,
+  secondaryInsights = [],
 }: PlayerCoachHelmDashboardProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -138,7 +178,8 @@ export function PlayerCoachHelmDashboard({
         setShotAnalytics(analyticsResult.data);
       }
 
-      // Refresh the page data
+      // Refresh the page data — server component re-runs the insight-delivery
+      // fetchers and passes fresh top/secondary props in.
       router.refresh();
     } catch {
       // Silently ignore refresh errors
@@ -148,21 +189,47 @@ export function PlayerCoachHelmDashboard({
   }, [playerId, router]);
 
   /**
-   * Shared submit helper for the AIInsightsPanel feedback buttons. The panel
-   * only supplies an insightId when the insight has a persisted row — server
-   * action validates the UUID, so we trust it and surface a toast per result.
+   * Unified handler wired into every `<InsightCard>` + `<HeroInsightCard>` on
+   * this surface. Maps the primitive's action union onto the existing
+   * `rateInsightAsPlayer` server action, with toast feedback.
+   *
+   * `open_details` is a no-op here — we're already on the insight-delivery
+   * surface. Coach actions (`create_focus_area`) shouldn't fire on the player
+   * dashboard either; we log the UI bug path defensively.
    */
-  const submitFeedback = useCallback(
-    async (
-      args:
-        | { kind: 'rate'; rating: 'helpful' | 'not_helpful'; insightId: string }
-        | { kind: 'acknowledged' | 'dismissed'; insightId: string },
-      successCopy: { title: string; description: string }
-    ) => {
+  const handleInsightAction = useCallback(
+    async (action: InsightAction, insightId: string) => {
+      if (action === 'open_details' || action === 'view_drill') {
+        // These are surface-local; the primitive handles them inline (drill
+        // chip sheet). No server roundtrip required.
+        return;
+      }
+
+      if (action === 'create_focus_area') {
+        // Coach-only action shouldn't arrive here, but don't crash if it does.
+        addToast({
+          type: 'error',
+          title: 'Unavailable',
+          description: 'Focus areas are created from the coach dashboard.',
+        });
+        return;
+      }
+
+      const ratingMap: Record<
+        Exclude<InsightAction, 'open_details' | 'view_drill' | 'create_focus_area'>,
+        'helpful' | 'not_helpful' | 'acknowledged' | 'dismissed'
+      > = {
+        rate_helpful: 'helpful',
+        rate_not_helpful: 'not_helpful',
+        acknowledged: 'acknowledged',
+        dismissed: 'dismissed',
+      };
+      const rating = ratingMap[action];
+
+      const successCopy = getToastCopyForAction(action);
+
       try {
-        const rating =
-          args.kind === 'rate' ? args.rating : args.kind;
-        await rateInsightAsPlayer({ insightId: args.insightId, rating });
+        await rateInsightAsPlayer({ insightId, rating });
         addToast({ type: 'success', ...successCopy });
         router.refresh();
       } catch (err) {
@@ -173,53 +240,34 @@ export function PlayerCoachHelmDashboard({
         });
       }
     },
-    [addToast, router]
+    [addToast, router],
   );
 
-  const handleRate = useCallback(
-    async (rating: 'helpful' | 'not_helpful', insightId: string) => {
-      await submitFeedback(
-        { kind: 'rate', rating, insightId },
-        {
-          title: rating === 'helpful' ? 'Thanks for the feedback' : 'Got it — we’ll tune your insights',
-          description:
-            rating === 'helpful'
-              ? 'CoachHelm will show you more like this.'
-              : 'CoachHelm will show fewer insights like this.',
-        }
-      );
-    },
-    [submitFeedback]
+  // Dedupe — the top insight is also in the `getInsightsForPlayer` result;
+  // drop it from the secondary list so we don't render the same card twice.
+  // We also cap the visible list at 5 to match the prior density.
+  const secondaryFiltered = useMemo(
+    () =>
+      secondaryInsights
+        .filter((i) => !topInsight || i.id !== topInsight.id)
+        .slice(0, 5),
+    [secondaryInsights, topInsight],
   );
 
-  const handleAcknowledge = useCallback(
-    async (insightId: string) => {
-      await submitFeedback(
-        { kind: 'acknowledged', insightId },
-        { title: 'Acknowledged', description: 'We’ll mark this insight as seen.' }
-      );
-    },
-    [submitFeedback]
-  );
+  const hasAnyInsight = Boolean(topInsight) || secondaryFiltered.length > 0;
 
-  const handleDismiss = useCallback(
-    async (insightId: string) => {
-      await submitFeedback(
-        { kind: 'dismissed', insightId },
-        { title: 'Insight dismissed', description: 'Removed from your active insights.' }
-      );
-    },
-    [submitFeedback]
-  );
-
-  // Check if we have meaningful data
-  const hasData = dashboardData.insights.length > 0 ||
-                  dashboardData.focusAreas.length > 0 ||
-                  dashboardData.prediction !== null ||
-                  dashboardData.recentRounds.length > 0 ||
-                  profileData != null ||
-                  trendData != null ||
-                  shotData != null;
+  // Dashboard-level data presence check. We now treat evidence-backed insights
+  // + the legacy focus-area / prediction shape as interchangeable signals that
+  // "some content exists" — so the dashboard doesn't collapse to the big
+  // EmptyState when only the new insight feed is populated.
+  const hasData =
+    hasAnyInsight ||
+    dashboardData.focusAreas.length > 0 ||
+    dashboardData.prediction !== null ||
+    dashboardData.recentRounds.length > 0 ||
+    profileData != null ||
+    trendData != null ||
+    shotData != null;
 
   return (
     <div className="min-h-full">
@@ -300,15 +348,36 @@ export function PlayerCoachHelmDashboard({
 
                   {/* Main Content — 2 columns */}
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 mb-6">
-                    {/* Left Column — AI Insights */}
+                    {/* Left Column — Hero insight + secondary feed */}
                     <div className="lg:col-span-7 space-y-5 md:space-y-6 min-w-0">
-                      <AIInsightsPanel
-                        insights={dashboardData.insights}
-                        maxDisplay={5}
-                        onRate={handleRate}
-                        onAcknowledge={handleAcknowledge}
-                        onDismiss={handleDismiss}
-                      />
+                      {topInsight && (
+                        <HeroInsightCard
+                          insight={topInsight}
+                          audience="player"
+                          onAction={handleInsightAction}
+                        />
+                      )}
+
+                      {secondaryFiltered.length > 0 && (
+                        <div className="space-y-3">
+                          <h3 className="text-sm font-medium text-warm-500 px-1">
+                            {topInsight ? 'More for you' : 'Your insights'}
+                          </h3>
+                          {secondaryFiltered.map((insight) => (
+                            <InsightCard
+                              key={insight.id}
+                              insight={insight}
+                              density="default"
+                              audience="player"
+                              onAction={handleInsightAction}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {!topInsight && secondaryFiltered.length === 0 && (
+                        <EmptyInsightsState />
+                      )}
                     </div>
 
                     {/* Right Column — Focus Areas, Prediction */}
@@ -389,4 +458,34 @@ export function PlayerCoachHelmDashboard({
       </div>
     </div>
   );
+}
+
+/**
+ * Toast copy keyed by InsightAction. Extracted so the handler stays flat.
+ */
+function getToastCopyForAction(
+  action: Exclude<InsightAction, 'open_details' | 'view_drill' | 'create_focus_area'>,
+): { title: string; description: string } {
+  switch (action) {
+    case 'rate_helpful':
+      return {
+        title: 'Thanks for the feedback',
+        description: 'CoachHelm will show you more like this.',
+      };
+    case 'rate_not_helpful':
+      return {
+        title: "Got it — we'll tune your insights",
+        description: 'CoachHelm will show fewer insights like this.',
+      };
+    case 'acknowledged':
+      return {
+        title: 'Acknowledged',
+        description: "We'll mark this insight as seen.",
+      };
+    case 'dismissed':
+      return {
+        title: 'Insight dismissed',
+        description: 'Removed from your active insights.',
+      };
+  }
 }

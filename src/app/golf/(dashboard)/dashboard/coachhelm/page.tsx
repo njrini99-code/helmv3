@@ -4,6 +4,10 @@ import { GlassCard } from '@/components/ui/glass-card';
 import { IconInfo, IconSparkles } from '@/components/icons';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import {
+  getTopInsightForPlayer,
+  getInsightsForPlayer,
+} from '@/app/golf/actions/insight-delivery';
 import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
@@ -125,13 +129,21 @@ export default async function PlayerCoachHelmPage() {
     return redirect('/golf/player');
   }
 
-  // Fetch CoachHelm dashboard data and shot analytics in parallel
+  // Fetch CoachHelm dashboard data, shot analytics, and the new evidence-backed
+  // insight feed (top + secondary) in parallel. The insight-delivery fetchers
+  // are the canonical source for the hero-card layout; `getPlayerCoachHelmDashboard`
+  // still provides focus areas, prediction, and recent-round metadata.
   let dashboardResult: Awaited<ReturnType<typeof getPlayerCoachHelmDashboard>>;
   let analyticsResult: Awaited<ReturnType<typeof getPlayerShotAnalytics>>;
+  let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>> = null;
+  let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>> = [];
   try {
-    [dashboardResult, analyticsResult] = await Promise.all([
+    [dashboardResult, analyticsResult, topInsight, secondaryInsights] = await Promise.all([
       getPlayerCoachHelmDashboard(player.id),
       getPlayerShotAnalytics(player.id, 30),
+      getTopInsightForPlayer(player.id),
+      // Pull a small buffer — the client dedupes the hero id and displays up to 5.
+      getInsightsForPlayer(player.id, { limit: 6 }),
     ]);
   } catch (err) {
     return <ErrorState error={err instanceof Error ? err.message : 'Failed to load dashboard data'} />;
@@ -180,6 +192,8 @@ export default async function PlayerCoachHelmPage() {
           profileData={profileData}
           trendData={trendData}
           shotData={shotData}
+          topInsight={topInsight}
+          secondaryInsights={secondaryInsights}
         />
       </AnimatedItem>
     </AnimatedPage>
