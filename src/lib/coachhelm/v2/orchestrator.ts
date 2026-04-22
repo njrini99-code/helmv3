@@ -260,7 +260,8 @@ class CoachHelmIntelligence {
       shotPatterns,
       stats,
       lieAnalysis,
-      shotStateAnalysis ?? undefined
+      shotStateAnalysis ?? undefined,
+      playerBaseline
     ));
 
     // === Score and filter insights ===
@@ -363,6 +364,8 @@ class CoachHelmIntelligence {
       stats,
       lieAnalysis,
       shotStateAnalysis
+      // No per-player baseline available here (round-review path); stats
+      // insights will fall back to the static benchmark table.
     ));
     const roundSpecificInsights = await this.buildRoundSpecificInsights(roundId);
     const prioritizedInsights = this.mergeRoundSpecificInsights(
@@ -711,7 +714,8 @@ class CoachHelmIntelligence {
     shotPatterns?: ShotPatternAnalysis,
     stats?: GolfStats,
     lieAnalysis?: LieMissAnalysis,
-    shotStateAnalysis?: ShotStateAnalysis
+    shotStateAnalysis?: ShotStateAnalysis,
+    playerBaseline?: import('./stats/baselines').PlayerBaseline,
   ): Promise<ComposedInsight[]> {
     const insights: ComposedInsight[] = [];
 
@@ -725,7 +729,7 @@ class CoachHelmIntelligence {
 
     // Stats-based insights (highest priority - directly tied to stroke savings)
     if (stats && stats.roundsPlayed >= 3) {
-      const statsInsights = await this.generateStatsInsights(playerId, stats);
+      const statsInsights = await this.generateStatsInsights(playerId, stats, playerBaseline);
       insights.push(...statsInsights);
     }
 
@@ -1542,9 +1546,15 @@ class CoachHelmIntelligence {
    */
   private async generateStatsInsights(
     playerId: string,
-    stats: GolfStats
+    stats: GolfStats,
+    playerBaseline?: import('./stats/baselines').PlayerBaseline,
   ): Promise<ComposedInsight[]> {
     const generator = new StatsInsightGenerator(playerId);
+    if (playerBaseline) {
+      // Task B12: prefer the per-player EWMA baseline when available so
+      // insight bodies read "above your average" rather than "below D2 avg".
+      generator.setPlayerBaseline(playerBaseline);
+    }
     const statsInsights = await generator.generateInsights(stats);
 
     // Convert stats insights to composed insights format

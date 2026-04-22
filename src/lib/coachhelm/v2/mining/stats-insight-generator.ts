@@ -14,7 +14,51 @@
  */
 
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
+import type { PlayerBaseline, BaselineMetric } from '../stats/baselines';
 import type { MinedPattern, PatternType, PatternTrend } from '../types';
+
+/** Minimum sample size for a per-player baseline to override the static benchmark. */
+const MIN_BASELINE_SAMPLE_SIZE = 5;
+
+/**
+ * Compare a single metric's current value against the best available
+ * reference — the per-player EWMA baseline when it has enough sample
+ * size, otherwise the static D2/D3 benchmark.
+ *
+ * Task B12: prior code unconditionally compared against the static
+ * benchmark table even when a strong per-player baseline existed, so
+ * insights said "below D2 avg" when the player was actually above
+ * their own moving average.
+ */
+export function compareAgainstBaseline(args: {
+  currentValue: number;
+  baseline?: Pick<BaselineMetric, 'ewma' | 'stdDev' | 'sampleSize'>;
+  staticBenchmark: number;
+}): {
+  comparedTo: 'player_baseline' | 'static_benchmark';
+  referenceValue: number;
+  direction: 'above' | 'below' | 'at';
+  deviation: number;
+} {
+  const hasGoodBaseline =
+    args.baseline !== undefined && args.baseline.sampleSize >= MIN_BASELINE_SAMPLE_SIZE;
+
+  const reference = hasGoodBaseline ? (args.baseline as BaselineMetric).ewma : args.staticBenchmark;
+  const epsilon = hasGoodBaseline
+    ? Math.max(0.01, (args.baseline as BaselineMetric).stdDev / 4)
+    : 0.001;
+
+  let direction: 'above' | 'below' | 'at' = 'at';
+  if (args.currentValue > reference + epsilon) direction = 'above';
+  else if (args.currentValue < reference - epsilon) direction = 'below';
+
+  return {
+    comparedTo: hasGoodBaseline ? 'player_baseline' : 'static_benchmark',
+    referenceValue: reference,
+    direction,
+    deviation: args.currentValue - reference,
+  };
+}
 
 // TODO: Replace with dynamic baselines from stats/baselines.ts
 // These are D2/D3 college golf averages used as fallback when player baselines aren't available
@@ -162,6 +206,7 @@ export class StatsInsightGenerator {
   private playerId: string;
   private historicalStats?: HistoricalStats;
   private teamStats?: TeamStatsAggregate;
+  private playerBaseline?: PlayerBaseline;
   private timeScope: 'all_time' | 'season' | 'last_30_days' | 'last_7_days' = 'all_time';
 
   constructor(playerId: string) {
@@ -180,6 +225,23 @@ export class StatsInsightGenerator {
    */
   setTeamStats(teamStats: TeamStatsAggregate): void {
     this.teamStats = teamStats;
+  }
+
+  /**
+   * Set per-player baseline (EWMA moving averages from round history).
+   *
+   * Task B12: when present with ≥ MIN_BASELINE_SAMPLE_SIZE rounds, this
+   * baseline is preferred over the static D2/D3 benchmark table — so
+   * insights reflect the player's own recent form rather than a static
+   * peer group.
+   */
+  setPlayerBaseline(baseline: PlayerBaseline): void {
+    this.playerBaseline = baseline;
+  }
+
+  /** Expose the baseline for the helper; used via test harness. */
+  getPlayerBaseline(): PlayerBaseline | undefined {
+    return this.playerBaseline;
   }
 
   /**
