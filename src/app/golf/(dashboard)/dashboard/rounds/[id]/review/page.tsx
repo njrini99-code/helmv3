@@ -25,6 +25,7 @@ import {
   shareRoundReviewWithCoach,
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
+import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import {
   CompletionCard,
   GoalImpactCard,
@@ -228,6 +229,22 @@ export default function RoundReviewPage() {
       generateReview();
     }
   }, [loadingRound, loadingStoredReview, round, storedReview, generatingReview, generateReview, autoGenerateAttempted]);
+
+  // Mark the review as viewed the first time this page loads a stored review
+  // for the current session. `markReviewAsViewed` is itself idempotent (it
+  // short-circuits when patterns_detected.player_viewed_at is already set),
+  // so this is safe to invoke on every mount — but we also keep a local flag
+  // to avoid duplicate round-trips when the effect's deps change.
+  const [viewedMarked, setViewedMarked] = useState(false);
+  useEffect(() => {
+    if (!storedReview?.id) return;
+    if (viewedMarked) return;
+    setViewedMarked(true);
+    void markReviewAsViewed(storedReview.id).catch(() => {
+      // Errors are already logged server-side via logServerError; swallow
+      // here so we never disrupt the player's view of the review.
+    });
+  }, [storedReview?.id, viewedMarked]);
 
   // Handle share with coach
   const handleShare = async () => {
