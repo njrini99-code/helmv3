@@ -76,6 +76,8 @@ function buildDefaultRecorder(playerId: string, rating: RatingInput['rating']): 
       // Adapt the flat, snake_case event payload to the legacy
       // `UserInteraction` shape expected by `learnFromInteraction`.
       await learner.learnFromInteraction({
+        entityId: playerId,
+        entityType: 'player',
         interactionType: ratingToLegacyInteractionType[rating],
         targetType: event.target_type,
         targetId: event.target_id,

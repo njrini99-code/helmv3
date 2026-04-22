@@ -125,7 +125,9 @@ describe('rateInsightAsPlayer', () => {
 
     expect(result).toEqual({ success: true });
     expect(upsertSpy).toHaveBeenCalledTimes(1);
-    expect(upsertSpy.mock.calls[0][0]).toMatchObject({
+    const firstCall = upsertSpy.mock.calls[0];
+    expect(firstCall).toBeDefined();
+    expect(firstCall![0]).toMatchObject({
       insight_id: VALID_UUID,
       player_id: 'p1',
       rating: 'helpful',

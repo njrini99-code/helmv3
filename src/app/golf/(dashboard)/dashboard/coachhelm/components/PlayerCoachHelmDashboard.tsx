@@ -6,6 +6,8 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { useToast } from '@/components/ui/toast';
+import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import {
   IconSparkles,
   IconChartRadar,
@@ -100,6 +102,7 @@ export function PlayerCoachHelmDashboard({
   shotData,
 }: PlayerCoachHelmDashboardProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [dashboardData, setDashboardData] = useState<PlayerCoachHelmDashboardData>(initialData);
   const [shotAnalytics, setShotAnalytics] = useState<PlayerShotAnalytics | null>(initialShotAnalytics ?? null);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,6 +146,71 @@ export function PlayerCoachHelmDashboard({
       setRefreshing(false);
     }
   }, [playerId, router]);
+
+  /**
+   * Shared submit helper for the AIInsightsPanel feedback buttons. The panel
+   * only supplies an insightId when the insight has a persisted row — server
+   * action validates the UUID, so we trust it and surface a toast per result.
+   */
+  const submitFeedback = useCallback(
+    async (
+      args:
+        | { kind: 'rate'; rating: 'helpful' | 'not_helpful'; insightId: string }
+        | { kind: 'acknowledged' | 'dismissed'; insightId: string },
+      successCopy: { title: string; description: string }
+    ) => {
+      try {
+        const rating =
+          args.kind === 'rate' ? args.rating : args.kind;
+        await rateInsightAsPlayer({ insightId: args.insightId, rating });
+        addToast({ type: 'success', ...successCopy });
+        router.refresh();
+      } catch (err) {
+        addToast({
+          type: 'error',
+          title: 'Could not save feedback',
+          description: err instanceof Error ? err.message : 'Please try again in a moment.',
+        });
+      }
+    },
+    [addToast, router]
+  );
+
+  const handleRate = useCallback(
+    async (rating: 'helpful' | 'not_helpful', insightId: string) => {
+      await submitFeedback(
+        { kind: 'rate', rating, insightId },
+        {
+          title: rating === 'helpful' ? 'Thanks for the feedback' : 'Got it — we’ll tune your insights',
+          description:
+            rating === 'helpful'
+              ? 'CoachHelm will show you more like this.'
+              : 'CoachHelm will show fewer insights like this.',
+        }
+      );
+    },
+    [submitFeedback]
+  );
+
+  const handleAcknowledge = useCallback(
+    async (insightId: string) => {
+      await submitFeedback(
+        { kind: 'acknowledged', insightId },
+        { title: 'Acknowledged', description: 'We’ll mark this insight as seen.' }
+      );
+    },
+    [submitFeedback]
+  );
+
+  const handleDismiss = useCallback(
+    async (insightId: string) => {
+      await submitFeedback(
+        { kind: 'dismissed', insightId },
+        { title: 'Insight dismissed', description: 'Removed from your active insights.' }
+      );
+    },
+    [submitFeedback]
+  );
 
   // Check if we have meaningful data
   const hasData = dashboardData.insights.length > 0 ||
@@ -237,6 +305,9 @@ export function PlayerCoachHelmDashboard({
                       <AIInsightsPanel
                         insights={dashboardData.insights}
                         maxDisplay={5}
+                        onRate={handleRate}
+                        onAcknowledge={handleAcknowledge}
+                        onDismiss={handleDismiss}
                       />
                     </div>
 
