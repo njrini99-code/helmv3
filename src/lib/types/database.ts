@@ -6856,6 +6856,60 @@ export type Database = {
           },
         ]
       }
+      golf_global_patterns: {
+        Row: {
+          average_impact: number
+          conditions: Json
+          confidence: number
+          contributing_players: string[]
+          created_at: string
+          id: string
+          instance_count: number
+          outcomes: Json
+          pattern_type: string
+          player_count: number
+          prevalence: number
+          signature: string
+          updated_at: string
+          varied_by_handicap: Json
+          varied_by_tier: Json
+        }
+        Insert: {
+          average_impact?: number
+          conditions?: Json
+          confidence?: number
+          contributing_players?: string[]
+          created_at?: string
+          id?: string
+          instance_count?: number
+          outcomes?: Json
+          pattern_type: string
+          player_count?: number
+          prevalence?: number
+          signature: string
+          updated_at?: string
+          varied_by_handicap?: Json
+          varied_by_tier?: Json
+        }
+        Update: {
+          average_impact?: number
+          conditions?: Json
+          confidence?: number
+          contributing_players?: string[]
+          created_at?: string
+          id?: string
+          instance_count?: number
+          outcomes?: Json
+          pattern_type?: string
+          player_count?: number
+          prevalence?: number
+          signature?: string
+          updated_at?: string
+          varied_by_handicap?: Json
+          varied_by_tier?: Json
+        }
+        Relationships: []
+      }
       golf_holes: {
         Row: {
           created_at: string | null
@@ -7081,6 +7135,48 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_insight_player_feedback: {
+        Row: {
+          created_at: string
+          id: string
+          insight_id: string
+          note: string | null
+          player_id: string
+          rating: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          insight_id: string
+          note?: string | null
+          player_id: string
+          rating: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          insight_id?: string
+          note?: string | null
+          player_id?: string
+          rating?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_player_feedback_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_player_feedback_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
@@ -10362,6 +10458,7 @@ export type Database = {
       }
     }
     Functions: {
+      __admin_rollup_b_gate: { Args: never; Returns: undefined }
       calculate_round_strokes_gained: {
         Args: { p_round_id: string }
         Returns: {
@@ -10372,8 +10469,50 @@ export type Database = {
           sg_total: number
         }[]
       }
+      get_admin_analytics_rollup: {
+        Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
+        Returns: Json
+      }
+      get_admin_baseball_rollup: { Args: { p_ago30d?: string }; Returns: Json }
+      get_admin_coachhelm_rollup: {
+        Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
+        Returns: Json
+      }
       get_admin_dashboard_rollup: { Args: never; Returns: Json }
+      get_admin_errors_rollup: {
+        Args: { p_ago24h?: string; p_ago7d?: string }
+        Returns: Json
+      }
       get_admin_event_summary: { Args: { p_days_back?: number }; Returns: Json }
+      get_admin_feature_adoption_rollup: {
+        Args: { p_ago30d: string }
+        Returns: Json
+      }
+      get_admin_rounds_rollup: {
+        Args: {
+          p_ago12w: string
+          p_ago14d: string
+          p_ago24h: string
+          p_ago30d: string
+          p_ago60d: string
+          p_ago7d: string
+          p_today: string
+        }
+        Returns: Json
+      }
+      get_admin_teams_scoring_rollup: {
+        Args: { p_ago7d?: string }
+        Returns: Json
+      }
+      get_admin_users_rollup: {
+        Args: {
+          p_ago12w: string
+          p_ago14d: string
+          p_ago30d: string
+          p_ago7d: string
+        }
+        Returns: Json
+      }
       get_api_performance_summary: {
         Args: { days_back?: number }
         Returns: {
@@ -10742,6 +10881,14 @@ export type Database = {
       }
       user_is_teammate_of_golf_player: {
         Args: { check_player_id: string }
+        Returns: boolean
+      }
+      verify_coach_owns_player: {
+        Args: { p_player_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      verify_coach_owns_team: {
+        Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
       }
     }

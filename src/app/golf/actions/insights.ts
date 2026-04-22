@@ -41,6 +41,7 @@ import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 // ============================================================================
 // TYPES
@@ -530,9 +531,19 @@ export async function getTopInsightsByStrokeImpact(
 
 /**
  * Verifies that the current user has access to a specific player's data.
+ *
+ * Thin wrapper over `@/lib/auth/verify-player-access` that preserves this
+ * file's legacy return shape (`authorized`, `userId`, `coachId`, `teamId`,
+ * `error`) so the six call sites below don't need to change.
+ *
  * Access is granted if:
- * 1. The user IS the player (player accessing their own data)
- * 2. The user is a coach whose team includes this player
+ *   1. The user IS the player (self-access), OR
+ *   2. The user is a coach staffing ANY team the player belongs to
+ *      (multi-team-safe via the shared `verifyPlayerAccess` helper).
+ *
+ * The old duplicated body used `.limit(1)` on the coach's org teams, which
+ * silently denied multi-team coaches. The shared helper uses an RPC that
+ * joins `golf_team_coach_staff` correctly.
  */
 async function verifyPlayerAccess(
   playerId: string
@@ -544,57 +555,45 @@ async function verifyPlayerAccess(
     return { authorized: false, error: 'Not authenticated' };
   }
 
-  // Check if user is the player themselves
-  const { data: playerRecord } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('id', playerId)
-    .eq('user_id', user.id)
-    .maybeSingle();
+  const access = await sharedVerifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { authorized: false, error: 'Not authorized to access this player' };
+  }
 
-  if (playerRecord) {
-    // Look up team via membership
+  // Preserve the legacy return shape by supplementing coachId / teamId.
+  if (access.reason === 'self') {
     const { data: membership } = await supabase
       .from('golf_team_members')
       .select('team_id')
-      .eq('player_id', playerRecord.id)
+      .eq('player_id', playerId)
       .eq('status', 'active')
       .limit(1)
       .maybeSingle();
     return { authorized: true, userId: user.id, teamId: membership?.team_id ?? undefined };
   }
 
-  // Check if user is a coach with access to this player via organization -> team -> membership
+  // Coach branch — look up coach id + team id. Prefer a team the coach staffs
+  // that the player is an active member of (multi-team-safe).
   const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, organization_id')
+    .select('id')
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (coach?.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
+  let teamId: string | undefined;
+  if (coach?.id) {
+    const { data: staffedTeam } = await supabase
+      .from('golf_team_coach_staff')
+      .select('team_id, golf_team_members!inner(player_id, status)')
+      .eq('coach_id', coach.id)
+      .eq('golf_team_members.player_id', playerId)
+      .eq('golf_team_members.status', 'active')
       .limit(1)
       .maybeSingle();
-
-    if (team) {
-      const { data: teamMember } = await supabase
-        .from('golf_team_members')
-        .select('id')
-        .eq('team_id', team.id)
-        .eq('player_id', playerId)
-        .eq('status', 'active')
-        .maybeSingle();
-
-      if (teamMember) {
-        return { authorized: true, userId: user.id, coachId: coach.id, teamId: team.id };
-      }
-    }
+    teamId = staffedTeam?.team_id ?? undefined;
   }
 
-  return { authorized: false, error: 'Not authorized to access this player' };
+  return { authorized: true, userId: user.id, coachId: coach?.id, teamId };
 }
 
 /**

@@ -3,5 +3,19 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/cron/coachhelm-validation",
+      "schedule": "15 * * * *"
+    },
+    {
+      "path": "/api/cron/coachhelm-calibration",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/coachhelm-safety-net",
+      "schedule": "*/30 * * * *"
+    }
+  ]
 }
