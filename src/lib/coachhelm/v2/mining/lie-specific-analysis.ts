@@ -473,7 +473,16 @@ function normalizeLie(lie: string | null): LieType {
 /**
  * Normalizes miss direction to canonical form
  */
-function normalizeMissDirection(dir: string | null): MissDirection {
+/**
+ * Normalize free-text miss direction (from shot logs) into the
+ * canonical MissDirection union.
+ *
+ * Fixes LIVE-15: prior code had `lower === 'l'` for BOTH 'left' and 'long'.
+ * The second branch was unreachable, so every 'long' (including 'long'
+ * itself — which matches line 490 only after 'lng' was compressed) could
+ * collide with 'l' on earlier inputs, silently misclassifying long misses.
+ */
+export function normalizeMissDirection(dir: string | null): MissDirection {
   if (!dir) return 'none';
   const lower = dir.toLowerCase().replace(/[^a-z]/g, '');
 
@@ -483,11 +492,11 @@ function normalizeMissDirection(dir: string | null): MissDirection {
   if (lower.includes('long') && lower.includes('left')) return 'long_left';
   if (lower.includes('long') && lower.includes('right')) return 'long_right';
 
-  // Handle simple directions
+  // Handle simple directions — 'l' is LEFT only (was duplicated on 'long' too)
   if (lower === 'left' || lower === 'l') return 'left';
   if (lower === 'right' || lower === 'r') return 'right';
   if (lower === 'short' || lower === 's') return 'short';
-  if (lower === 'long' || lower === 'l') return 'long';
+  if (lower === 'long' || lower === 'lng') return 'long';
 
   return 'none';
 }
