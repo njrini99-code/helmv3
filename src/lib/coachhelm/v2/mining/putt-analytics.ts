@@ -333,21 +333,7 @@ export async function generatePuttDistanceInsights(
     return;
   }
 
-  if (rows.length === 0) {
-    await logServerError('putt-analytics.distance.no_rows', {
-      action: 'generatePuttDistanceInsights',
-      featureArea: 'coachhelm.mining',
-      playerId,
-      metadata: { window_days: DISTANCE_WINDOW_DAYS },
-    });
-    return;
-  }
-  await logServerError('putt-analytics.distance.fetched_rows', {
-    action: 'generatePuttDistanceInsights',
-    featureArea: 'coachhelm.mining',
-    playerId,
-    metadata: { row_count: rows.length, with_distance: rows.filter(r => r.distance_feet != null).length },
-  });
+  if (rows.length === 0) return;
 
   const windowStart = isoDateDaysAgo(DISTANCE_WINDOW_DAYS);
   const windowEnd = todayIsoDate();
