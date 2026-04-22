@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
-import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
@@ -30,7 +29,6 @@ import { PullToRefresh } from '@/components/golf/PullToRefresh';
 type FilterLevel = AlertLevel | 'all';
 
 export default function AlertsPage() {
-  const router = useRouter();
   const golfUser = useGolfUser();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
@@ -43,19 +41,30 @@ export default function AlertsPage() {
   const coachId = golfUser.coachId || null;
   const teamId = golfUser.teamId || null;
 
-  // Fetch alerts (coach/team IDs come from context)
+  // Fetch alerts (coach/team IDs come from context).
+  //
+  // Task C15: wait for coachId + teamId to hydrate from context before
+  // firing. The previous effect ran with `[showAcknowledged]` only and
+  // referenced stale closure values of coachId/teamId, silently
+  // redirecting to /golf/dashboard on every cold load while the context
+  // was still hydrating.
   useEffect(() => {
-    async function loadData() {
-      if (!coachId) {
-        router.push('/golf/dashboard');
-        return;
-      }
+    // Guard: if context hasn't hydrated yet, show a loading state
+    // rather than redirecting. Context is fetched async in
+    // useGolfUser(); coachId starts null and fills in a tick later.
+    if (!coachId || !teamId) {
+      return;
+    }
 
+    let cancelled = false;
+    async function loadData() {
       try {
-        const result = await getCoachAlerts(coachId, teamId || '', {
+        const result = await getCoachAlerts(coachId!, teamId!, {
           includeAcknowledged: showAcknowledged,
           limit: 100,
         });
+
+        if (cancelled) return;
 
         if (result.success && result.alerts) {
           setAlerts(result.alerts);
@@ -63,15 +72,21 @@ export default function AlertsPage() {
           setError(result.error || 'Failed to load alerts.');
         }
       } catch {
-        setError('Something went wrong loading alerts. Please refresh.');
+        if (!cancelled) {
+          setError('Something went wrong loading alerts. Please refresh.');
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     }
 
-    loadData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAcknowledged]);
+    void loadData();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId, teamId, showAcknowledged]);
 
   const handleDismiss = async (alertId: string) => {
     const alertToRemove = alerts.find(a => a.id === alertId);

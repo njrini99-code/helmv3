@@ -243,6 +243,8 @@ export async function dismissAlert(
 
     revalidatePath('/golf/dashboard');
     revalidatePath('/golf/dashboard/alerts');
+    revalidatePath('/golf/dashboard/intelligence');
+    revalidatePath('/golf/dashboard/insights');
     return { success: true };
   } catch (error) {
     await logServerError(`dismissAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -285,6 +287,7 @@ export async function acknowledgeAlert(
       .from('golf_coach_insights')
       .update({
         acknowledged_at: new Date().toISOString(),
+        status: 'acknowledged',
       })
       .eq('id', alertId);
 
@@ -298,6 +301,9 @@ export async function acknowledgeAlert(
     }
 
     revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/alerts');
+    revalidatePath('/golf/dashboard/intelligence');
+    revalidatePath('/golf/dashboard/insights');
     return { success: true };
   } catch (error) {
     await logServerError(`acknowledgeAlert failed: ${error instanceof Error ? error.message : String(error)}`, {
