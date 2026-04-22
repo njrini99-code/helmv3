@@ -35,54 +35,79 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  // Pull validations with the parent prediction's confidence + metric
-  // (prediction_type). `golf_prediction_validations` has no metric column of
-  // its own so we join via the FK.
-  const { data: rows, error } = await supabase
+  // golf_prediction_validations has no metric/confidence columns of its own,
+  // so fetch validations and parent predictions separately and zip in memory.
+  // (An FK now links the two tables; doing two queries keeps the type system
+  // honest while still allowing a future migration to push this into a view.)
+  const { data: validations, error: vErr } = await supabase
     .from('golf_prediction_validations')
-    .select(
-      'within_interval, predicted_value, actual_value, golf_predictions!inner(confidence, metric)',
-    )
+    .select('prediction_id, within_interval')
     .gte('validated_at', sinceIso)
+    .not('prediction_id', 'is', null)
     .limit(BATCH_LIMIT);
 
-  if (error) {
+  if (vErr) {
     await logServerError(
-      `cron.calibration.fetch failed: ${error.message}`,
+      `cron.calibration.fetchValidations failed: ${vErr.message}`,
       {
         action: 'cron.coachhelm.calibration.fetch',
         featureArea: 'coachhelm',
-        extra: { code: error.code },
+        extra: { code: vErr.code },
       },
       'error',
     );
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: vErr.message },
       { status: 500 },
     );
   }
 
-  type Row = {
-    within_interval: boolean | null;
-    golf_predictions:
-      | { confidence: number | null; metric: string | null }
-      | Array<{ confidence: number | null; metric: string | null }>
-      | null;
-  };
+  const predictionIds = Array.from(
+    new Set((validations ?? []).map((v) => v.prediction_id).filter((id): id is string => !!id)),
+  );
 
-  const normalized = ((rows ?? []) as Row[])
-    .map((r) => {
-      const pred = Array.isArray(r.golf_predictions) ? r.golf_predictions[0] : r.golf_predictions;
-      const confidence = pred?.confidence;
-      const metric = pred?.metric;
-      if (confidence === null || confidence === undefined || !metric) return null;
+  let predictionsById = new Map<string, { confidence: number; metric: string }>();
+  if (predictionIds.length > 0) {
+    const { data: predictions, error: pErr } = await supabase
+      .from('golf_predictions')
+      .select('id, confidence, metric')
+      .in('id', predictionIds);
+
+    if (pErr) {
+      await logServerError(
+        `cron.calibration.fetchPredictions failed: ${pErr.message}`,
+        {
+          action: 'cron.coachhelm.calibration.fetch',
+          featureArea: 'coachhelm',
+          extra: { code: pErr.code, predictionIdsCount: predictionIds.length },
+        },
+        'error',
+      );
+      return NextResponse.json(
+        { success: false, error: pErr.message },
+        { status: 500 },
+      );
+    }
+
+    predictionsById = new Map(
+      (predictions ?? [])
+        .filter((p) => p.confidence !== null && p.metric !== null)
+        .map((p) => [p.id, { confidence: Number(p.confidence), metric: p.metric }]),
+    );
+  }
+
+  const normalized = (validations ?? [])
+    .map((v) => {
+      if (!v.prediction_id) return null;
+      const pred = predictionsById.get(v.prediction_id);
+      if (!pred) return null;
       return {
-        prediction_type: metric,
-        confidence: Number(confidence),
-        within_interval: r.within_interval === true,
+        prediction_type: pred.metric,
+        confidence: pred.confidence,
+        within_interval: v.within_interval === true,
       };
     })
-    .filter((v): v is { prediction_type: string; confidence: number; within_interval: boolean } => v !== null);
+    .filter((x): x is { prediction_type: string; confidence: number; within_interval: boolean } => x !== null);
 
   const bucketRows = computeBucketRows(normalized);
 

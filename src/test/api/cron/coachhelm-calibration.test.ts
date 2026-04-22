@@ -14,33 +14,44 @@ import { createAdminClient } from '@/lib/supabase/admin';
 
 const createAdminMock = vi.mocked(createAdminClient);
 
-type Row = {
-  within_interval: boolean | null;
-  golf_predictions: { confidence: number | null; metric: string | null };
-};
+type Validation = { prediction_id: string | null; within_interval: boolean | null };
+type Prediction = { id: string; confidence: number | null; metric: string | null };
 
-function mockSupabase(
-  rows: Row[] | null,
-  fetchError: string | null = null,
-  upsertError: string | null = null,
-  upsertSpy?: ReturnType<typeof vi.fn>,
-) {
-  const selectBuilder = {
+function buildSupabase(opts: {
+  validations: Validation[] | null;
+  validationsError?: string | null;
+  predictions?: Prediction[];
+  predictionsError?: string | null;
+  upsertError?: string | null;
+  upsertSpy?: ReturnType<typeof vi.fn>;
+}) {
+  const validationsBuilder = {
     select: vi.fn().mockReturnThis(),
     gte: vi.fn().mockReturnThis(),
+    not: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({
-      data: rows,
-      error: fetchError ? { message: fetchError, code: 'XX' } : null,
+      data: opts.validations,
+      error: opts.validationsError ? { message: opts.validationsError, code: 'VV' } : null,
+    }),
+  };
+  const predictionsBuilder = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn().mockResolvedValue({
+      data: opts.predictions ?? [],
+      error: opts.predictionsError ? { message: opts.predictionsError, code: 'PP' } : null,
     }),
   };
   const upsertBuilder = {
-    upsert: upsertSpy ?? vi.fn().mockResolvedValue({
-      error: upsertError ? { message: upsertError, code: 'YY' } : null,
-    }),
+    upsert:
+      opts.upsertSpy ??
+      vi.fn().mockResolvedValue({
+        error: opts.upsertError ? { message: opts.upsertError, code: 'UU' } : null,
+      }),
   };
   return {
     from: vi.fn((table: string) => {
-      if (table === 'golf_prediction_validations') return selectBuilder;
+      if (table === 'golf_prediction_validations') return validationsBuilder;
+      if (table === 'golf_predictions') return predictionsBuilder;
       if (table === 'golf_confidence_calibration') return upsertBuilder;
       throw new Error(`Unexpected table: ${table}`);
     }),
@@ -72,7 +83,7 @@ describe('GET /api/cron/coachhelm-calibration', () => {
   });
 
   it('returns 200 with zero buckets when there are no validations', async () => {
-    createAdminMock.mockReturnValueOnce(mockSupabase([]));
+    createAdminMock.mockReturnValueOnce(buildSupabase({ validations: [] }));
     const res = await GET(
       new Request('http://x/api/cron/coachhelm-calibration', {
         headers: { authorization: 'Bearer cs' },
@@ -84,27 +95,33 @@ describe('GET /api/cron/coachhelm-calibration', () => {
     expect(body.bucketsWritten).toBe(0);
   });
 
-  it('groups validations into buckets and upserts to golf_confidence_calibration', async () => {
-    const rows: Row[] = [
-      // scoreToPar, confidence 0.85 bucket=0.8, within=true
-      { within_interval: true, golf_predictions: { confidence: 0.85, metric: 'scoreToPar' } },
-      // scoreToPar, confidence 0.82 bucket=0.8, within=false
-      { within_interval: false, golf_predictions: { confidence: 0.82, metric: 'scoreToPar' } },
-      // putts, confidence 0.55 bucket=0.4, within=true
-      { within_interval: true, golf_predictions: { confidence: 0.55, metric: 'putts' } },
+  it('joins validations to predictions, buckets, and upserts', async () => {
+    const validations: Validation[] = [
+      { prediction_id: 'p1', within_interval: true },
+      { prediction_id: 'p2', within_interval: false },
+      { prediction_id: 'p3', within_interval: true },
+    ];
+    const predictions: Prediction[] = [
+      { id: 'p1', confidence: 0.85, metric: 'scoreToPar' }, // bucket 0.8
+      { id: 'p2', confidence: 0.82, metric: 'scoreToPar' }, // bucket 0.8
+      { id: 'p3', confidence: 0.55, metric: 'putts' }, // bucket 0.4
     ];
     const upsertSpy = vi.fn().mockResolvedValue({ error: null });
-    createAdminMock.mockReturnValueOnce(mockSupabase(rows, null, null, upsertSpy));
+
+    createAdminMock.mockReturnValueOnce(
+      buildSupabase({ validations, predictions, upsertSpy }),
+    );
 
     const res = await GET(
       new Request('http://x/api/cron/coachhelm-calibration', {
         headers: { authorization: 'Bearer cs' },
       }) as unknown as import('next/server').NextRequest,
     );
+
     expect(res.status).toBe(200);
     const body = (await res.json()) as { bucketsWritten: number; totalValidations: number };
     expect(body.totalValidations).toBe(3);
-    expect(body.bucketsWritten).toBe(2); // one per (metric, bucket) key
+    expect(body.bucketsWritten).toBe(2);
 
     expect(upsertSpy).toHaveBeenCalledTimes(1);
     const [payload, opts] = upsertSpy.mock.calls[0] as [
@@ -112,6 +129,7 @@ describe('GET /api/cron/coachhelm-calibration', () => {
       { onConflict: string },
     ];
     expect(opts.onConflict).toBe('bucket,prediction_type');
+
     const scoreBucket = payload.find((p) => p.prediction_type === 'scoreToPar');
     expect(scoreBucket).toBeDefined();
     expect(scoreBucket?.bucket).toBe(0.8);
@@ -125,8 +143,25 @@ describe('GET /api/cron/coachhelm-calibration', () => {
     expect(puttsBucket?.actual_accuracy).toBe(1);
   });
 
-  it('returns 500 when the fetch query errors', async () => {
-    createAdminMock.mockReturnValueOnce(mockSupabase(null, 'db down'));
+  it('returns 500 when the validations query errors', async () => {
+    createAdminMock.mockReturnValueOnce(
+      buildSupabase({ validations: null, validationsError: 'db down' }),
+    );
+    const res = await GET(
+      new Request('http://x/api/cron/coachhelm-calibration', {
+        headers: { authorization: 'Bearer cs' },
+      }) as unknown as import('next/server').NextRequest,
+    );
+    expect(res.status).toBe(500);
+  });
+
+  it('returns 500 when the predictions follow-up query errors', async () => {
+    createAdminMock.mockReturnValueOnce(
+      buildSupabase({
+        validations: [{ prediction_id: 'p1', within_interval: true }],
+        predictionsError: 'preds down',
+      }),
+    );
     const res = await GET(
       new Request('http://x/api/cron/coachhelm-calibration', {
         headers: { authorization: 'Bearer cs' },
@@ -136,10 +171,13 @@ describe('GET /api/cron/coachhelm-calibration', () => {
   });
 
   it('returns 500 when the upsert errors', async () => {
-    const rows: Row[] = [
-      { within_interval: true, golf_predictions: { confidence: 0.9, metric: 'scoreToPar' } },
-    ];
-    createAdminMock.mockReturnValueOnce(mockSupabase(rows, null, 'upsert bad'));
+    createAdminMock.mockReturnValueOnce(
+      buildSupabase({
+        validations: [{ prediction_id: 'p1', within_interval: true }],
+        predictions: [{ id: 'p1', confidence: 0.9, metric: 'scoreToPar' }],
+        upsertError: 'upsert bad',
+      }),
+    );
     const res = await GET(
       new Request('http://x/api/cron/coachhelm-calibration', {
         headers: { authorization: 'Bearer cs' },
