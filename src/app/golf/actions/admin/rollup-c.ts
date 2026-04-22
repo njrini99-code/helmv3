@@ -212,7 +212,17 @@ export async function fetchAdminRollupC(
     p_ago30d: ago30dIso,
     p_ago12w: ago12w.toISOString(),
   });
-  if (error) throw error instanceof Error ? error : new Error(String(error));
+  if (error) {
+    if (error instanceof Error) throw error;
+    const e = error as Record<string, unknown>;
+    const parts = [
+      e.code ? `code=${e.code}` : null,
+      e.message ? `msg=${e.message}` : null,
+      e.details ? `details=${e.details}` : null,
+      e.hint ? `hint=${e.hint}` : null,
+    ].filter(Boolean);
+    throw new Error(`get_admin_analytics_rollup RPC failed: ${parts.length ? parts.join(' ') : JSON.stringify(error)}`);
+  }
   if (!data) throw new Error('Empty analytics rollup response');
 
   // ---------------------------------------------------------------------------

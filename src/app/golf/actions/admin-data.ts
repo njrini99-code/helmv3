@@ -2110,7 +2110,10 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       const msg = e.message;
       const sev = e.severity ?? 'error';
       const created = e.created_at ?? new Date().toISOString();
-      const day = new Date(created).toISOString().slice(0, 10);
+      const createdDate = new Date(created);
+      const day = Number.isNaN(createdDate.getTime())
+        ? new Date().toISOString().slice(0, 10)
+        : createdDate.toISOString().slice(0, 10);
       const existing = errorGroups.get(msg);
       if (existing) {
         existing.count++;
@@ -2144,10 +2147,13 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     };
   })();
 
-  const errorsByDay = (errorSummary?.daily_rate ?? []).map((d) => ({
-    date: new Date(d.day).toISOString().slice(0, 10),
-    count: d.count,
-  }));
+  // Defensive: some source rows carry null/malformed `day` values. Skip them.
+  const errorsByDay = (errorSummary?.daily_rate ?? []).flatMap((d) => {
+    if (!d?.day) return [];
+    const t = new Date(d.day);
+    if (Number.isNaN(t.getTime())) return [];
+    return [{ date: t.toISOString().slice(0, 10), count: d.count }];
+  });
 
   // --- Admin events (unresolved key tracking) ---
   const rawAdminErrorEvents = rollupB.adminEvents.errorOnlyRaw;

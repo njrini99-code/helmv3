@@ -236,11 +236,26 @@ type RpcInvoker = <T>(fn: string, args?: Record<string, unknown>) => Promise<{
   error: unknown;
 }>;
 
+function describeRpcError(err: unknown): string {
+  if (!err) return 'unknown error';
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    const parts = [
+      e.code ? `code=${e.code}` : null,
+      e.message ? `msg=${e.message}` : null,
+      e.details ? `details=${e.details}` : null,
+      e.hint ? `hint=${e.hint}` : null,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(' ');
+  }
+  try { return JSON.stringify(err); } catch { return String(err); }
+}
+
 function unwrap<T>(label: string, res: { data: T | null; error: unknown }): T {
   if (res.error) {
-    throw res.error instanceof Error
-      ? res.error
-      : new Error(`${label} RPC failed: ${String(res.error)}`);
+    if (res.error instanceof Error) throw res.error;
+    throw new Error(`${label} RPC failed: ${describeRpcError(res.error)}`);
   }
   if (res.data === null || res.data === undefined) {
     throw new Error(`${label} RPC returned empty payload`);

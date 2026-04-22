@@ -516,21 +516,33 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
     }),
   ]);
 
+  const describe = (err: unknown): string => {
+    if (!err) return 'unknown';
+    if (err instanceof Error) return err.message;
+    if (typeof err === 'object') {
+      const e = err as Record<string, unknown>;
+      const parts = [
+        e.code ? `code=${e.code}` : null,
+        e.message ? `msg=${e.message}` : null,
+        e.details ? `details=${e.details}` : null,
+        e.hint ? `hint=${e.hint}` : null,
+      ].filter(Boolean);
+      if (parts.length) return parts.join(' ');
+    }
+    try { return JSON.stringify(err); } catch { return String(err); }
+  };
   // --- Transport errors must surface — these are NOT degradation scenarios. ---
   if (baseballRes.error) {
-    throw baseballRes.error instanceof Error
-      ? baseballRes.error
-      : new Error(`get_admin_baseball_rollup failed: ${String(baseballRes.error)}`);
+    if (baseballRes.error instanceof Error) throw baseballRes.error;
+    throw new Error(`get_admin_baseball_rollup failed: ${describe(baseballRes.error)}`);
   }
   if (errorsRes.error) {
-    throw errorsRes.error instanceof Error
-      ? errorsRes.error
-      : new Error(`get_admin_errors_rollup failed: ${String(errorsRes.error)}`);
+    if (errorsRes.error instanceof Error) throw errorsRes.error;
+    throw new Error(`get_admin_errors_rollup failed: ${describe(errorsRes.error)}`);
   }
   if (teamsRes.error) {
-    throw teamsRes.error instanceof Error
-      ? teamsRes.error
-      : new Error(`get_admin_teams_scoring_rollup failed: ${String(teamsRes.error)}`);
+    if (teamsRes.error instanceof Error) throw teamsRes.error;
+    throw new Error(`get_admin_teams_scoring_rollup failed: ${describe(teamsRes.error)}`);
   }
 
   const baseballRaw = baseballRes.data;
