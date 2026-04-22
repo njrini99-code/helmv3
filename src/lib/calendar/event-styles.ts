@@ -132,13 +132,6 @@ export function getEventTypeConfig(type: EventType): EventTypeConfig {
 }
 
 /**
- * Check if event type should show text (false for classes/blocked time)
- */
-function shouldShowEventText(type: EventType): boolean {
-  return eventTypeConfigs[type]?.showText ?? true;
-}
-
-/**
  * Format time for display (e.g., "9:00 AM")
  */
 export function formatTime(timeString: string): string {
@@ -200,19 +193,6 @@ export function isToday(dateString: string): boolean {
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
   );
-}
-
-/**
- * Get hour from date string or time string (0-23)
- */
-function getHour(timeString: string): number {
-  // Handle time-only strings (HH:MM:SS or HH:MM)
-  if (timeString && !timeString.includes('T') && !timeString.includes(' ')) {
-    const parts = timeString.split(':').map(Number);
-    return parts[0] ?? 0;
-  }
-  // Handle full datetime strings
-  return new Date(timeString).getHours();
 }
 
 /**

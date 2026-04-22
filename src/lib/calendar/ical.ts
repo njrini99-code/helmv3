@@ -238,51 +238,6 @@ function escapeText(text: string): string {
 // ============================================================================
 
 /**
- * Generate iCal feed for team events
- *
- * @param teamName - Name of the team for calendar title
- * @param events - Array of calendar events
- * @param timezone - IANA timezone string (e.g., 'America/New_York')
- *                   Defaults to DEFAULT_TIMEZONE if not provided
- */
-function generateTeamCalendar(
-  teamName: string,
-  events: ICalEvent[],
-  timezone?: string
-): string {
-  return generateICalendar({
-    name: `${teamName} - Team Calendar`,
-    description: `Team calendar for ${teamName}`,
-    timezone: getValidTimezone(timezone),
-    events,
-    productId: 'TEAM',
-    refreshInterval: 60, // Refresh every hour
-  });
-}
-
-/**
- * Generate iCal feed for player's personal calendar
- *
- * @param playerName - Name of the player for calendar title
- * @param events - Array of calendar events
- * @param timezone - IANA timezone string (defaults to DEFAULT_TIMEZONE)
- */
-function generatePlayerCalendar(
-  playerName: string,
-  events: ICalEvent[],
-  timezone?: string
-): string {
-  return generateICalendar({
-    name: `${playerName} - Golf Schedule`,
-    description: `Personal golf schedule for ${playerName}`,
-    timezone: getValidTimezone(timezone),
-    events,
-    productId: 'PLAYER',
-    refreshInterval: 60,
-  });
-}
-
-/**
  * Generate iCal feed for coach's calendar
  *
  * @param coachName - Name of the coach for calendar title

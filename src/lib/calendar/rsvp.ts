@@ -62,10 +62,6 @@ type EventWithCreator = GolfEvent & {
   creator: Pick<GolfCoach, 'user_id'> | null;
 };
 
-type ReminderAttendance = Pick<GolfEventAttendance, 'player_id'> & {
-  player: Pick<GolfPlayer, 'user_id' | 'first_name'> | Array<Pick<GolfPlayer, 'user_id' | 'first_name'>> | null;
-};
-
 type EventDateInput = Pick<GolfEvent, 'start_time'>;
 type MaybeArray<T> = T | T[] | null | undefined;
 
@@ -273,66 +269,6 @@ export async function notifyEventUpdate(
   }
 }
 
-/**
- * Cancel an event and notify all attendees
- */
-async function cancelEventAndNotify(
-  eventId: string,
-  supabase: SupabaseClient,
-  reason?: string
-): Promise<void> {
-  // Get event details
-  const { data: event } = await supabase
-    .from('golf_events')
-    .select('*')
-    .eq('id', eventId)
-    .single();
-
-  if (!event) throw new Error('Event not found');
-
-  // Get all attendees
-  const { data: attendances } = await supabase
-    .from('golf_event_attendance')
-    .select('player:golf_players(user_id)')
-    .eq('event_id', eventId);
-
-  if (attendances && attendances.length > 0) {
-    const attendanceRows = (attendances || []) as unknown as AttendanceWithUser[];
-    const userIds = attendanceRows
-      .map(attendance => firstOrNull(attendance.player)?.user_id)
-      .filter((userId): userId is string => Boolean(userId));
-
-    if (userIds.length > 0) {
-      // Create cancellation notifications
-      const notifications = userIds.map(userId => ({
-        user_id: userId,
-        event_id: eventId,
-        notification_type: 'event_cancelled',
-        title: `Event cancelled: ${event.title}`,
-        message: reason || `${formatEventDate(event)} has been cancelled`,
-        action_url: `/golf/dashboard/calendar`,
-      }));
-
-      // Use admin client to bypass RLS — inserting notifications for other users
-      const adminClient = createAdminClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: notifError } = await (adminClient as any)
-        .from('golf_calendar_notifications')
-        .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
-
-      if (notifError) {
-        console.error('[cancelEventAndNotify] Failed to insert notifications:', notifError.message);
-      }
-    }
-  }
-
-  // Delete the event (cascade will remove attendances)
-  await supabase
-    .from('golf_events')
-    .delete()
-    .eq('id', eventId);
-}
-
 // ============================================================================
 // RSVP RESPONSES
 // ============================================================================
@@ -403,19 +339,6 @@ export async function updateRSVP(
   }
 }
 
-/**
- * Batch update RSVPs for multiple players
- * Useful for "accept all" or "decline all" scenarios
- */
-async function batchUpdateRSVPs(
-  updates: Array<{ eventId: string; playerId: string; status: RSVPStatus }>,
-  supabase: SupabaseClient
-): Promise<void> {
-  for (const update of updates) {
-    await updateRSVP(update.eventId, update.playerId, update.status, supabase);
-  }
-}
-
 // ============================================================================
 // PLAYER INVITATIONS
 // ============================================================================
@@ -465,115 +388,6 @@ export async function getPlayerPendingInvitations(
   return invitations;
 }
 
-/**
- * Get all upcoming events for a player (any status)
- * Includes events they've RSVP'd to
- */
-async function getPlayerUpcomingEvents(
-  playerId: string,
-  supabase: SupabaseClient
-): Promise<EventInvitation[]> {
-  const { data: attendances } = await supabase
-    .from('golf_event_attendance')
-    .select(`
-      status,
-      rsvp_at,
-      event:golf_events(*)
-    `)
-    .eq('player_id', playerId)
-    .gte('event(start_time)', new Date().toISOString())
-    .order('event(start_time)', { ascending: true });
-
-  if (!attendances) return [];
-
-  const attendanceRows = (attendances || []) as unknown as AttendanceWithEvent[];
-  const invitations: EventInvitation[] = [];
-  for (const attendance of attendanceRows) {
-    const event = firstOrNull(attendance.event);
-    if (!event) continue;
-    invitations.push({
-      eventId: event.id,
-      eventTitle: event.title,
-      eventType: event.event_type,
-      startDate: event.start_time, // Using start_time as date
-      startTime: event.start_time,
-      endDate: event.end_time,
-      endTime: event.end_time,
-      location: event.location,
-      description: event.description,
-      requiresRsvp: event.requires_rsvp ?? false,
-      rsvpDeadline: event.rsvp_deadline ?? null,
-      createdBy: event.created_by,
-      status: (attendance.status ?? 'pending') as RSVPStatus,
-    });
-  }
-  return invitations;
-}
-
-// ============================================================================
-// REMINDERS
-// ============================================================================
-
-/**
- * Send RSVP reminder to players who haven't responded
- * Typically called by a scheduled job before the deadline
- */
-async function sendRSVPReminders(
-  eventId: string,
-  supabase: SupabaseClient
-): Promise<number> {
-  // Get event details
-  const { data: event } = await supabase
-    .from('golf_events')
-    .select('*')
-    .eq('id', eventId)
-    .single();
-
-  if (!event) return 0;
-
-  // Get pending attendances
-  const { data: pendingAttendances } = await supabase
-    .from('golf_event_attendance')
-    .select(`
-      player_id,
-      player:golf_players(user_id, first_name)
-    `)
-    .eq('event_id', eventId)
-    .eq('status', 'pending');
-
-  if (!pendingAttendances || pendingAttendances.length === 0) return 0;
-
-  // Create reminder notifications
-  const attendanceRows = (pendingAttendances || []) as unknown as ReminderAttendance[];
-  const notifications = attendanceRows.flatMap(attendance => {
-    const userId = firstOrNull(attendance.player)?.user_id;
-    if (!userId) return [];
-    return [{
-      user_id: userId,
-      event_id: eventId,
-      notification_type: 'rsvp_reminder',
-      title: `RSVP reminder: ${event.title}`,
-      message: `Please respond to "${event.title}" by ${formatEventDate(event)}`,
-      action_url: `/golf/dashboard/calendar?event=${eventId}`,
-    }];
-  });
-
-  if (notifications.length > 0) {
-    // Use admin client to bypass RLS — inserting notifications for other users
-    const adminClient = createAdminClient();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: notifError } = await (adminClient as any)
-      .from('golf_calendar_notifications')
-      .upsert(notifications, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
-
-    if (notifError) {
-      console.error('[sendRSVPReminders] Failed to insert notifications:', notifError.message);
-    }
-  }
-
-  return notifications.length;
-}
-
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -599,64 +413,3 @@ function formatEventDate(event: EventDateInput): string {
   return `${dateStr} at ${timeStr}`;
 }
 
-/**
- * Check if RSVP deadline has passed
- */
-function isRSVPDeadlinePassed(rsvpDeadline: string | null): boolean {
-  if (!rsvpDeadline) return false;
-  return new Date(rsvpDeadline) < new Date();
-}
-
-/**
- * Get RSVP status color for UI
- */
-function getRSVPStatusColor(status: RSVPStatus): {
-  bg: string;
-  text: string;
-  border: string;
-} {
-  switch (status) {
-    case 'accepted':
-      return {
-        bg: 'bg-emerald-100',
-        text: 'text-emerald-700',
-        border: 'border-emerald-500',
-      };
-    case 'declined':
-      return {
-        bg: 'bg-red-100',
-        text: 'text-red-700',
-        border: 'border-red-500',
-      };
-    case 'tentative':
-      return {
-        bg: 'bg-amber-100',
-        text: 'text-amber-700',
-        border: 'border-amber-500',
-      };
-    case 'pending':
-    default:
-      return {
-        bg: 'bg-slate-100',
-        text: 'text-slate-600',
-        border: 'border-slate-300',
-      };
-  }
-}
-
-/**
- * Get RSVP status label
- */
-function getRSVPStatusLabel(status: RSVPStatus): string {
-  switch (status) {
-    case 'accepted':
-      return 'Going';
-    case 'declined':
-      return "Can't Go";
-    case 'tentative':
-      return 'Maybe';
-    case 'pending':
-    default:
-      return 'Pending';
-  }
-}

@@ -25,12 +25,6 @@ export interface BusyPeriod {
   ownerType?: 'coach' | 'player';
 }
 
-interface AvailabilityResult {
-  userId: string;
-  busyPeriods: BusyPeriod[];
-  freePeriods: Array<{ start: Date; end: Date }>;
-}
-
 export interface TimeSlot {
   start: Date;
   end: Date;
@@ -444,15 +438,3 @@ export function getEndOfWeek(date: Date): Date {
   return result;
 }
 
-/**
- * Format a date range for display
- */
-function formatDateRange(start: Date, end: Date): string {
-  const sameDay = start.toDateString() === end.toDateString();
-
-  if (sameDay) {
-    return `${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  }
-
-  return `${start.toLocaleDateString()} ${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleDateString()} ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-}

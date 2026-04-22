@@ -12,7 +12,6 @@ import {
   periodsOverlap,
   getStartOfWeek,
   getEndOfWeek,
-  BusyPeriod,
   TimeSlot,
 } from './availability';
 
@@ -167,83 +166,6 @@ export async function checkEventConflicts(
   };
 }
 
-/**
- * Quick check if a specific user has a conflict at a proposed time
- * Useful for real-time validation in forms
- */
-async function checkUserConflict(
-  userId: string,
-  proposedStart: Date,
-  proposedEnd: Date,
-  supabase: SupabaseClient,
-  excludeEventId?: string
-): Promise<BusyPeriod | null> {
-  const busyPeriods = await getUserBusyPeriods(
-    userId,
-    proposedStart,
-    proposedEnd,
-    supabase
-  );
-
-  const relevantPeriods = busyPeriods.filter(p => p.eventId !== excludeEventId);
-
-  for (const period of relevantPeriods) {
-    if (periodsOverlap({ start: proposedStart, end: proposedEnd }, period)) {
-      return period;
-    }
-  }
-
-  return null;
-}
-
-/**
- * Batch check conflicts for multiple potential attendees
- * Returns a map of playerId -> conflict status
- */
-async function batchCheckConflicts(
-  proposedStart: Date,
-  proposedEnd: Date,
-  playerIds: string[],
-  supabase: SupabaseClient,
-  excludeEventId?: string
-): Promise<Map<string, BusyPeriod | null>> {
-  const results = new Map<string, BusyPeriod | null>();
-
-  // Get player user IDs
-  const { data: players } = await supabase
-    .from('golf_players')
-    .select('id, user_id')
-    .in('id', playerIds);
-
-  if (!players) return results;
-
-  // Check each player in parallel
-  const checks = await Promise.all(
-    players.map(async player => {
-      if (!player.user_id) {
-        return { playerId: player.id, conflict: null };
-      }
-
-      const conflict = await checkUserConflict(
-        player.user_id,
-        proposedStart,
-        proposedEnd,
-        supabase,
-        excludeEventId
-      );
-
-      return { playerId: player.id, conflict };
-    })
-  );
-
-  // Build result map
-  for (const { playerId, conflict } of checks) {
-    results.set(playerId, conflict);
-  }
-
-  return results;
-}
-
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
@@ -256,14 +178,6 @@ function isSameTimeSlot(a: TimeSlot, b: TimeSlot): boolean {
     a.start.getTime() === b.start.getTime() &&
     a.end.getTime() === b.end.getTime()
   );
-}
-
-/**
- * Format conflict message for display
- */
-function formatConflictMessage(conflict: ConflictResult['conflicts'][0]): string {
-  const eventType = conflict.conflictingEvent.type === 'class' ? 'class' : 'event';
-  return `${conflict.userName} has a ${eventType} (${conflict.conflictingEvent.title}) at this time`;
 }
 
 /**
@@ -284,29 +198,3 @@ export function formatSuggestedTime(slot: TimeSlot): string {
   return `${slot.start.toLocaleDateString()} ${slot.start.toLocaleTimeString()} - ${slot.end.toLocaleDateString()} ${slot.end.toLocaleTimeString()}`;
 }
 
-/**
- * Get conflict severity level based on number of conflicts
- */
-function getConflictSeverity(
-  conflictCount: number,
-  totalAttendees: number
-): 'none' | 'low' | 'medium' | 'high' {
-  if (conflictCount === 0) return 'none';
-
-  const percentage = (conflictCount / totalAttendees) * 100;
-
-  if (percentage >= 75) return 'high';
-  if (percentage >= 50) return 'medium';
-  return 'low';
-}
-
-/**
- * Group conflicts by type (event vs class)
- */
-function groupConflictsByType(conflicts: ConflictResult['conflicts']) {
-  return {
-    events: conflicts.filter(c => c.conflictingEvent.type === 'event'),
-    classes: conflicts.filter(c => c.conflictingEvent.type === 'class'),
-    blocked: conflicts.filter(c => c.conflictingEvent.type === 'blocked'),
-  };
-}
