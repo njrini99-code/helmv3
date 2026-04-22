@@ -63,7 +63,7 @@ describe('logServerError → Sentry', () => {
     await logServerException(err, { action: 'boom.action' });
 
     expect(captureException).toHaveBeenCalledOnce();
-    expect(captureException.mock.calls[0][0]).toBe(err);
+    expect(captureException.mock.calls[0]?.[0]).toBe(err);
   });
 
   it('does not throw when Sentry.withScope throws (graceful degrade)', async () => {

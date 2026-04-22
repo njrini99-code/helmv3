@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
 import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
 import { fetchAdminRollupC, type RollupC } from './admin/rollup-c';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
