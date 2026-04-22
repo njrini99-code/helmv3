@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useTransition } from 'react';
+import { useState, useCallback, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlayerHub } from './PlayerHub';
 import { completeTask } from '@/app/golf/actions/tasks';
@@ -59,9 +59,11 @@ interface PlayerHubWrapperProps {
   events: EventInvite[];
   announcements: GolfAnnouncementMeta[];
   playerName: string;
+  /** Pre-rendered CoachHelm signal card slot. Pass `null` or omit to hide. */
+  signalCard?: ReactNode;
 }
 
-export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEvents, announcements, playerName }: PlayerHubWrapperProps) {
+export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEvents, announcements, playerName, signalCard }: PlayerHubWrapperProps) {
   const router = useRouter();
   const [tasks, setTasks] = useState(initialTasks);
   const [events, setEvents] = useState(initialEvents);
@@ -117,6 +119,7 @@ export function PlayerHubWrapper({ trips, tasks: initialTasks, events: initialEv
       playerName={playerName}
       onCompleteTask={handleCompleteTask}
       onRSVP={handleRSVP}
+      signalCard={signalCard}
     />
   );
 }

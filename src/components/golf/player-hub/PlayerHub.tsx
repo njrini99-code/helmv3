@@ -85,6 +85,9 @@ interface PlayerHubProps {
   playerName: string;
   onCompleteTask: (taskId: string) => Promise<void>;
   onRSVP: (eventId: string, status: 'accepted' | 'declined' | 'tentative') => Promise<void>;
+  /** Pre-rendered CoachHelm signal card. Rendered as-is at the top of the
+   *  overview tab; pass `null`/omit to hide. */
+  signalCard?: React.ReactNode;
 }
 
 // ============================================================================
@@ -658,7 +661,7 @@ function OverviewSection({
 // Main Component
 // ============================================================================
 
-export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP }: PlayerHubProps) {
+export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP, signalCard }: PlayerHubProps) {
   const badges = useNotificationBadges();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
@@ -733,6 +736,11 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
             <div
               className="space-y-8"
             >
+              {/* CoachHelm signal card — one high-impact insight for today.
+                  Slotted at the top of overview so every Hub visit becomes
+                  engine-aware. Renders nothing when no insight is available. */}
+              {signalCard}
+
               {/* Urgent alert */}
               {overdueTasks.length > 0 && (
                 <m.div

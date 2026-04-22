@@ -3,7 +3,9 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerHubWrapper } from '@/components/golf/player-hub/PlayerHubWrapper';
+import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSignalCard';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
+import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
 
 export const metadata: Metadata = {
   title: 'My Hub | Helm Golf',
@@ -65,7 +67,7 @@ export default async function PlayerHubPage() {
   // Fetch all hub data in parallel
   // Use raw SQL for tasks + completions since generated types may be outdated
   const eventSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-  const [tripsResult, tasksRaw, eventsResult, announcementsResult] = await Promise.all([
+  const [tripsResult, tasksRaw, eventsResult, announcementsResult, topInsight] = await Promise.all([
     // Travel itineraries for the team
     supabase
       .from('golf_travel_itineraries')
@@ -91,6 +93,11 @@ export default async function PlayerHubPage() {
 
     // Recent announcements for player hub
     getPlayerHubAnnouncements(teamId, player.id),
+
+    // Top evidence-backed insight for the Hub signal card. Returns null when
+    // the player has no surfaceable insight — the card renders nothing in
+    // that case, so the Hub stays clean.
+    getTopInsightForPlayer(player.id),
   ]);
 
   // Transform trips
@@ -189,6 +196,7 @@ export default async function PlayerHubPage() {
       events={events}
       announcements={announcements}
       playerName={playerName}
+      signalCard={<HubInsightSignalCard insight={topInsight} />}
     />
   );
 }
