@@ -1,5 +1,14 @@
 'use client';
 
+/**
+ * @deprecated Legacy AlertCard — replaced by the unified `InsightCard`
+ * primitive under Wave 1A of the Insight Delivery phase. All coach-facing
+ * consumers migrated (see `CoachAlertCenter`, `/dashboard/alerts`). This
+ * file is retained only because `src/app/golf/actions/alerts.ts` (owned by
+ * a different wave) still imports the `CoachAlert` type for its return
+ * shape. Do not use `AlertCard` in new code — use
+ * `@/components/golf/coachhelm/insight-card` instead.
+ */
 import { useState } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { cn } from '@/lib/utils';

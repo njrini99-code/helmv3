@@ -1,19 +1,44 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+/**
+ * CoachAlertCenter — migrated under Wave 1A of the Insight Delivery phase.
+ *
+ * Rendering model (new):
+ *   - Hero card at the top: the top-ranked urgent/high insight at
+ *     `density='hero'` (morning brief affordance).
+ *   - Compact rows below: remaining urgent/high insights at `density='compact'`.
+ *
+ * Data source: `getInsightsForCoach(coachId, { priorities: ['urgent','high'] })`
+ * — evidence-backed rows only. No more legacy `AlertCard`.
+ */
+import { useState, useTransition, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconBell, IconChevronRight, IconSparkles, IconRefresh } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
-import { AlertCard, type CoachAlert } from './AlertCard';
-import { getCoachAlerts, dismissAlert, acknowledgeAlert, generateAlerts } from '@/app/golf/actions/alerts';
+import {
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import {
+  getInsightsForCoach,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
+import {
+  acknowledgeInsight,
+  dismissInsight,
+} from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import { generateAlerts } from '@/app/golf/actions/alerts';
 
 interface CoachAlertCenterProps {
   coachId: string;
   teamId: string;
-  initialAlerts?: CoachAlert[];
+  /** Optional pre-fetched alerts (server-rendered). */
+  initialAlerts?: EvidenceInsight[];
+  /** Max compact rows shown under the hero (excluding hero). */
   maxVisible?: number;
-  compact?: boolean;
 }
 
 export function CoachAlertCenter({
@@ -21,122 +46,111 @@ export function CoachAlertCenter({
   teamId,
   initialAlerts = [],
   maxVisible = 5,
-  compact = false,
 }: CoachAlertCenterProps) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [alerts, setAlerts] = useState<CoachAlert[]>(initialAlerts);
+  const [alerts, setAlerts] = useState<EvidenceInsight[]>(initialAlerts);
   const [error, setError] = useState<string | null>(null);
+  const [, startActionTransition] = useTransition();
 
-  // Fetch alerts on mount
+  // Initial fetch.
   useEffect(() => {
-    if (initialAlerts.length === 0) {
-      startTransition(async () => {
-        try {
-          const result = await getCoachAlerts(coachId, teamId);
-          if (result.success && result.alerts) {
-            setAlerts(result.alerts);
-          } else {
-            setError(result.error || 'Failed to load alerts');
-          }
-        } catch (err) {
-          console.error('[CoachHelm] Error loading alerts:', err);
+    if (initialAlerts.length > 0) return;
+    let cancelled = false;
+    startTransition(async () => {
+      try {
+        const rows = await getInsightsForCoach(coachId, {
+          priorities: ['urgent', 'high'],
+          limit: 20,
+        });
+        if (!cancelled) setAlerts(rows);
+      } catch {
+        if (!cancelled) {
           setError('Could not connect to load alerts. Try refreshing.');
         }
-      });
-    }
-  }, [coachId, teamId, initialAlerts.length]);
-
-  const handleDismiss = async (alertId: string) => {
-    // Capture the alert before removing so we can restore on failure
-    const alertToRemove = alerts.find(a => a.id === alertId);
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
-    setError(null);
-
-    try {
-      const result = await dismissAlert(alertId);
-      if (!result.success) {
-        // Restore the alert on failure
-        if (alertToRemove) {
-          setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
-            (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-          ));
-        }
-        setError('Failed to dismiss alert. It has been restored.');
       }
-    } catch (err) {
-      console.error('[CoachHelm] Error dismissing alert:', err);
-      // Restore on unexpected error
-      if (alertToRemove) {
-        setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
-          (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-        ));
-      }
-      setError('Network error — alert has been restored.');
-    }
-  };
-
-  const handleAcknowledge = async (alertId: string) => {
-    // Capture previous state for rollback
-    const previousAlert = alerts.find(a => a.id === alertId);
-    const previousAcknowledgedAt = previousAlert?.acknowledgedAt ?? null;
-
-    setAlerts(prev => prev.map(a =>
-      a.id === alertId ? { ...a, acknowledgedAt: new Date().toISOString() } : a
-    ));
-    setError(null);
-
-    try {
-      const result = await acknowledgeAlert(alertId);
-      if (!result.success) {
-        // Revert the optimistic update
-        setAlerts(prev => prev.map(a =>
-          a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
-        ));
-        setError('Failed to acknowledge alert.');
-      }
-    } catch (err) {
-      console.error('[CoachHelm] Error acknowledging alert:', err);
-      // Revert on unexpected error
-      setAlerts(prev => prev.map(a =>
-        a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
-      ));
-      setError('Network error — acknowledgment reverted.');
-    }
-  };
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId, initialAlerts.length]);
 
   const handleRefresh = () => {
     startTransition(async () => {
       setError(null);
-      const result = await generateAlerts(coachId, teamId);
-      if (result.success && result.alerts) {
-        setAlerts(result.alerts);
-      } else {
-        setError(result.error || 'Failed to generate alerts');
+      try {
+        // `generateAlerts` refreshes the server-side alert set; we then
+        // re-read evidence-backed rows from the single source of truth.
+        await generateAlerts(coachId, teamId);
+        const rows = await getInsightsForCoach(coachId, {
+          priorities: ['urgent', 'high'],
+          limit: 20,
+        });
+        setAlerts(rows);
+      } catch {
+        setError('Failed to refresh alerts.');
       }
     });
   };
 
-  // Count by severity
-  const criticalCount = alerts.filter(a => a.level === 'critical').length;
-  const warningCount = alerts.filter(a => a.level === 'warning').length;
+  const handleAction = useCallback(
+    (action: InsightAction, insightId: string) => {
+      const prev = alerts;
+      startActionTransition(async () => {
+        try {
+          if (action === 'acknowledged') {
+            setAlerts((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await acknowledgeInsight(insightId);
+            if (!res.success) setAlerts(prev);
+          } else if (action === 'dismissed') {
+            setAlerts((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await dismissInsight(insightId);
+            if (!res.success) setAlerts(prev);
+          } else if (action === 'create_focus_area') {
+            const target = alerts.find((r) => r.id === insightId);
+            if (!target) return;
+            const res = await createFocusAreaFromInsight({
+              insight_id: target.id,
+              player_id: target.player_id,
+              coach_id: coachId,
+              title: target.title,
+              description: target.content ?? '',
+              insight_type: (target.category as string | undefined) ?? 'general',
+            });
+            if (res.success) router.push('/golf/dashboard/development');
+          }
+        } catch {
+          setAlerts(prev);
+        }
+      });
+    },
+    [alerts, coachId, router],
+  );
+
+  const criticalCount = alerts.filter((a) => a.priority === 'urgent').length;
+  const warningCount = alerts.filter((a) => a.priority === 'high').length;
   const totalNeedAttention = criticalCount + warningCount;
 
-  const visibleAlerts = alerts.slice(0, maxVisible);
-  const hiddenCount = alerts.length - maxVisible;
+  // Hero is the top ranked row; rest render compact.
+  const [heroInsight, ...rest] = alerts;
+  const compactRows = rest.slice(0, maxVisible);
+  const hiddenCount = Math.max(0, rest.length - maxVisible);
 
   return (
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={cn(
-            'relative p-2 rounded-xl',
-            criticalCount > 0
-              ? 'bg-gradient-to-br from-red-500 to-rose-600'
-              : warningCount > 0
-                ? 'bg-gradient-to-br from-amber-500 to-orange-500'
-                : 'bg-gradient-to-br from-warm-400 to-warm-500'
-          )}>
+          <div
+            className={cn(
+              'relative p-2 rounded-xl',
+              criticalCount > 0
+                ? 'bg-gradient-to-br from-red-500 to-rose-600'
+                : warningCount > 0
+                  ? 'bg-gradient-to-br from-amber-500 to-orange-500'
+                  : 'bg-gradient-to-br from-warm-400 to-warm-500',
+            )}
+          >
             <IconBell size={18} className="text-white" aria-hidden="true" />
             {totalNeedAttention > 0 && (
               <motion.span
@@ -145,7 +159,7 @@ export function CoachAlertCenter({
                 className={cn(
                   'absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center',
                   'text-xs font-bold text-white rounded-full',
-                  criticalCount > 0 ? 'bg-red-600' : 'bg-amber-600'
+                  criticalCount > 0 ? 'bg-red-600' : 'bg-amber-600',
                 )}
                 role="status"
               >
@@ -161,8 +175,7 @@ export function CoachAlertCenter({
             <p className="text-xs text-warm-500">
               {totalNeedAttention > 0
                 ? `${totalNeedAttention} need${totalNeedAttention === 1 ? 's' : ''} attention`
-                : 'All clear'
-              }
+                : 'All clear'}
             </p>
           </div>
         </div>
@@ -176,7 +189,7 @@ export function CoachAlertCenter({
               'flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-lg transition-all',
               isPending
                 ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
+                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm',
             )}
           >
             {isPending ? (
@@ -209,7 +222,7 @@ export function CoachAlertCenter({
         </div>
       </div>
 
-      {/* Error State */}
+      {/* Error Banner */}
       {error && (
         <motion.div
           initial={{ opacity: 0, height: 0 }}
@@ -222,19 +235,26 @@ export function CoachAlertCenter({
         </motion.div>
       )}
 
-      {/* Alerts List */}
+      {/* Alerts Stack */}
       <GlassCard className="p-3" glow={criticalCount > 0 ? 'green' : 'subtle'}>
-        {/* popLayout removed — simple fade on dismiss, no layout measurement needed */}
         <AnimatePresence>
-          {visibleAlerts.length > 0 ? (
-            <div className="space-y-2">
-              {visibleAlerts.map((alert) => (
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                  compact={compact}
-                  onDismiss={() => handleDismiss(alert.id)}
-                  onAcknowledge={() => handleAcknowledge(alert.id)}
+          {heroInsight ? (
+            <div className="space-y-3" data-testid="coach-alert-stack">
+              <InsightCard
+                insight={heroInsight}
+                density="hero"
+                audience="coach"
+                showActions
+                onAction={handleAction}
+              />
+
+              {compactRows.map((insight) => (
+                <InsightCard
+                  key={insight.id}
+                  insight={insight}
+                  density="compact"
+                  audience="coach"
+                  onClick={(id) => router.push(`/golf/dashboard/alerts#${id}`)}
                 />
               ))}
 
@@ -246,10 +266,12 @@ export function CoachAlertCenter({
                   className={cn(
                     'flex items-center justify-center gap-2 py-3 rounded-xl',
                     'text-sm font-medium text-warm-500 hover:text-warm-700',
-                    'bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors'
+                    'bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors',
                   )}
                 >
-                  <span>+{hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}</span>
+                  <span>
+                    +{hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}
+                  </span>
                   <IconChevronRight size={16} />
                 </motion.a>
               )}
@@ -270,15 +292,15 @@ function EmptyAlertState() {
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-8 text-center"
     >
-      <div className={cn(
-        'w-12 h-12 rounded-full flex items-center justify-center mb-3',
-        'bg-gradient-to-br from-primary-100 to-primary-100'
-      )}>
+      <div
+        className={cn(
+          'w-12 h-12 rounded-full flex items-center justify-center mb-3',
+          'bg-gradient-to-br from-primary-100 to-primary-100',
+        )}
+      >
         <IconBell size={24} className="text-primary-600" />
       </div>
-      <h4 className="text-sm font-semibold text-warm-700 mb-1">
-        All Clear!
-      </h4>
+      <h4 className="text-sm font-semibold text-warm-700 mb-1">All Clear!</h4>
       <p className="text-xs text-warm-400 max-w-[200px]">
         No alerts right now. Your players are on track.
       </p>

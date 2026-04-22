@@ -1,84 +1,104 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+/**
+ * /dashboard/alerts — migrated under Wave 1A of the Insight Delivery phase.
+ *
+ * Reads evidence-backed rows via `getInsightsForCoach`, renders the top row
+ * as a hero card and the remainder in compact density through the unified
+ * `InsightCard` primitive.
+ *
+ * Filter tabs still expose the familiar severity language (critical / warning
+ * / info / suggestion) but map to `priority` under the hood.
+ */
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   IconBell,
-  IconCheck,
   IconX,
   IconRefresh,
   IconSparkles,
 } from '@/components/icons';
 
 import { useGolfUser } from '@/contexts/golf-user-context';
-import { AlertCard, type CoachAlert, type AlertLevel } from '@/components/golf/coachhelm/alerts';
 import {
-  getCoachAlerts,
-  dismissAlert,
-  acknowledgeAlert,
-  dismissAllAlerts,
-  acknowledgeAllAlerts,
-  generateAlerts,
-} from '@/app/golf/actions/alerts';
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import {
+  getInsightsForCoach,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
+import {
+  acknowledgeInsight,
+  dismissInsight,
+} from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import { generateAlerts } from '@/app/golf/actions/alerts';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
 
-type FilterLevel = AlertLevel | 'all';
+/** UX-level filter names carried over from the legacy AlertCard surface. */
+type FilterLevel = 'all' | 'critical' | 'warning' | 'info' | 'suggestion';
+
+/** UX level ⇄ insight priority mapping. The legacy AlertCard spoke in
+ *  severity; the unified primitive speaks in priority. Keep the labels for
+ *  coach familiarity but translate before querying. */
+const LEVEL_PRIORITY: Record<Exclude<FilterLevel, 'all'>, EvidenceInsight['priority']> = {
+  critical: 'urgent',
+  warning: 'high',
+  info: 'medium',
+  suggestion: 'low',
+};
+
+function insightLevel(insight: EvidenceInsight): Exclude<FilterLevel, 'all'> {
+  switch (insight.priority) {
+    case 'urgent':
+      return 'critical';
+    case 'high':
+      return 'warning';
+    case 'medium':
+      return 'info';
+    case 'low':
+      return 'suggestion';
+    default:
+      return 'info';
+  }
+}
 
 export default function AlertsPage() {
+  const router = useRouter();
   const golfUser = useGolfUser();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(true);
-  const [alerts, setAlerts] = useState<CoachAlert[]>([]);
+  const [alerts, setAlerts] = useState<EvidenceInsight[]>([]);
   const [filterLevel, setFilterLevel] = useState<FilterLevel>('all');
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [, startActionTransition] = useTransition();
 
-  // Use IDs from context
   const coachId = golfUser.coachId || null;
   const teamId = golfUser.teamId || null;
 
-  // Fetch alerts (coach/team IDs come from context).
-  //
-  // Task C15: wait for coachId + teamId to hydrate from context before
-  // firing. The previous effect ran with `[showAcknowledged]` only and
-  // referenced stale closure values of coachId/teamId, silently
-  // redirecting to /golf/dashboard on every cold load while the context
-  // was still hydrating.
+  // Fetch alerts (evidence-backed rows only).
   useEffect(() => {
-    // Guard: if context hasn't hydrated yet, show a loading state
-    // rather than redirecting. Context is fetched async in
-    // useGolfUser(); coachId starts null and fills in a tick later.
-    if (!coachId || !teamId) {
-      return;
-    }
+    if (!coachId) return;
 
     let cancelled = false;
     async function loadData() {
       try {
-        const result = await getCoachAlerts(coachId!, teamId!, {
-          includeAcknowledged: showAcknowledged,
-          limit: 100,
-        });
-
+        const rows = await getInsightsForCoach(coachId!, { limit: 100 });
         if (cancelled) return;
-
-        if (result.success && result.alerts) {
-          setAlerts(result.alerts);
-        } else {
-          setError(result.error || 'Failed to load alerts.');
-        }
+        setAlerts(rows);
       } catch {
         if (!cancelled) {
           setError('Something went wrong loading alerts. Please refresh.');
         }
       } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     }
 
@@ -86,151 +106,110 @@ export default function AlertsPage() {
     return () => {
       cancelled = true;
     };
-  }, [coachId, teamId, showAcknowledged]);
+  }, [coachId]);
 
-  const handleDismiss = async (alertId: string) => {
-    const alertToRemove = alerts.find(a => a.id === alertId);
-    setAlerts(prev => prev.filter(a => a.id !== alertId));
-    setError(null);
-
-    try {
-      const result = await dismissAlert(alertId);
-      if (!result.success) {
-        if (alertToRemove) {
-          setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
-            (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-          ));
-        }
-        setError('Failed to dismiss alert. It has been restored.');
-      }
-    } catch {
-      if (alertToRemove) {
-        setAlerts(prev => [...prev, alertToRemove].sort((a, b) =>
-          (b.createdAt ?? '').localeCompare(a.createdAt ?? '')
-        ));
-      }
-      setError('Network error — alert has been restored.');
-    }
-  };
-
-  const handleAcknowledge = async (alertId: string) => {
-    const previousAlert = alerts.find(a => a.id === alertId);
-    const previousAcknowledgedAt = previousAlert?.acknowledgedAt ?? null;
-
-    setAlerts(prev => prev.map(a =>
-      a.id === alertId ? { ...a, acknowledgedAt: new Date().toISOString() } : a
-    ));
-    setError(null);
-
-    try {
-      const result = await acknowledgeAlert(alertId);
-      if (!result.success) {
-        setAlerts(prev => prev.map(a =>
-          a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
-        ));
-        setError('Failed to acknowledge alert.');
-      }
-    } catch {
-      setAlerts(prev => prev.map(a =>
-        a.id === alertId ? { ...a, acknowledgedAt: previousAcknowledgedAt } : a
-      ));
-      setError('Network error — acknowledgment reverted.');
-    }
-  };
-
-  const handleDismissAll = async () => {
+  const reload = useCallback(async () => {
     if (!coachId) return;
-    const previousAlerts = [...alerts];
-    startTransition(async () => {
+    try {
+      const rows = await getInsightsForCoach(coachId, { limit: 100 });
+      setAlerts(rows);
       setError(null);
-      try {
-        const result = await dismissAllAlerts(coachId, {
-          level: filterLevel !== 'all' ? filterLevel : undefined,
-        });
-        if (result.success) {
-          setAlerts(prev => prev.filter(a =>
-            filterLevel === 'all' ? false : a.level !== filterLevel
-          ));
-        } else {
-          setError(result.error || 'Failed to dismiss all alerts.');
-        }
-      } catch {
-        setAlerts(previousAlerts);
-        setError('Network error — dismiss all failed.');
-      }
-    });
-  };
+    } catch {
+      setError('Something went wrong refreshing alerts.');
+    }
+  }, [coachId]);
 
-  const handleAcknowledgeAll = async () => {
-    if (!coachId) return;
-    const previousAlerts = [...alerts];
-    startTransition(async () => {
-      setError(null);
-      try {
-        const result = await acknowledgeAllAlerts(coachId);
-        if (result.success) {
-          setAlerts(prev => prev.map(a => ({
-            ...a,
-            acknowledgedAt: a.acknowledgedAt || new Date().toISOString(),
-          })));
-        } else {
-          setError(result.error || 'Failed to acknowledge all alerts.');
+  const handleAction = useCallback(
+    (action: InsightAction, insightId: string) => {
+      const prev = alerts;
+      startActionTransition(async () => {
+        try {
+          if (action === 'acknowledged') {
+            setAlerts((rows) =>
+              rows.map((r) =>
+                r.id === insightId
+                  ? { ...r, acknowledged_at: new Date().toISOString(), status: 'acknowledged' }
+                  : r,
+              ),
+            );
+            const res = await acknowledgeInsight(insightId);
+            if (!res.success) {
+              setAlerts(prev);
+              setError('Failed to acknowledge alert.');
+            }
+          } else if (action === 'dismissed') {
+            setAlerts((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await dismissInsight(insightId);
+            if (!res.success) {
+              setAlerts(prev);
+              setError('Failed to dismiss alert. It has been restored.');
+            }
+          } else if (action === 'create_focus_area') {
+            const target = alerts.find((r) => r.id === insightId);
+            if (!target || !coachId) return;
+            const res = await createFocusAreaFromInsight({
+              insight_id: target.id,
+              player_id: target.player_id,
+              coach_id: coachId,
+              title: target.title,
+              description: target.content ?? '',
+              insight_type: (target.category as string | undefined) ?? 'general',
+            });
+            if (res.success) router.push('/golf/dashboard/development');
+          }
+        } catch {
+          setAlerts(prev);
+          setError('Network error — no changes saved.');
         }
-      } catch {
-        setAlerts(previousAlerts);
-        setError('Network error — acknowledge all failed.');
-      }
-    });
-  };
+      });
+    },
+    [alerts, coachId, router],
+  );
 
   const handleRefresh = () => {
     if (!coachId || !teamId) return;
     startTransition(async () => {
       setError(null);
-      const result = await generateAlerts(coachId, teamId);
-      if (result.success && result.alerts) {
-        setAlerts(result.alerts);
-      } else {
-        setError(result.error || 'Failed to scan team');
+      try {
+        // `generateAlerts` rebuilds the alert candidates on the server; we
+        // then re-read the canonical evidence-backed rows.
+        await generateAlerts(coachId, teamId);
+        await reload();
+      } catch {
+        setError('Failed to scan team');
       }
     });
   };
 
   const handlePullToRefresh = async () => {
-    if (!coachId) return;
-    try {
-      const result = await getCoachAlerts(coachId, teamId || '', {
-        includeAcknowledged: showAcknowledged,
-        limit: 100,
-      });
-      if (result.success && result.alerts) {
-        setAlerts(result.alerts);
-        setError(null);
-      } else {
-        setError(result.error || 'Failed to refresh alerts.');
+    await reload();
+  };
+
+  // Apply client-side filters: level + acknowledged.
+  const filteredAlerts = useMemo(() => {
+    return alerts.filter((a) => {
+      if (filterLevel !== 'all') {
+        if (a.priority !== LEVEL_PRIORITY[filterLevel]) return false;
       }
-    } catch {
-      setError('Something went wrong refreshing alerts.');
-    }
-  };
+      if (!showAcknowledged && a.acknowledged_at) return false;
+      return true;
+    });
+  }, [alerts, filterLevel, showAcknowledged]);
 
-  // Filter alerts
-  const filteredAlerts = alerts.filter(alert => {
-    if (filterLevel !== 'all' && alert.level !== filterLevel) return false;
-    if (!showAcknowledged && alert.acknowledgedAt) return false;
-    return true;
-  });
+  // Count by level (only unacknowledged).
+  const countByLevel = useMemo(() => {
+    return {
+      critical: alerts.filter((a) => insightLevel(a) === 'critical' && !a.acknowledged_at).length,
+      warning: alerts.filter((a) => insightLevel(a) === 'warning' && !a.acknowledged_at).length,
+      info: alerts.filter((a) => insightLevel(a) === 'info' && !a.acknowledged_at).length,
+      suggestion: alerts.filter((a) => insightLevel(a) === 'suggestion' && !a.acknowledged_at).length,
+    };
+  }, [alerts]);
 
-  // Count by level
-  const countByLevel = {
-    critical: alerts.filter(a => a.level === 'critical' && !a.acknowledgedAt).length,
-    warning: alerts.filter(a => a.level === 'warning' && !a.acknowledgedAt).length,
-    info: alerts.filter(a => a.level === 'info' && !a.acknowledgedAt).length,
-    suggestion: alerts.filter(a => a.level === 'suggestion' && !a.acknowledgedAt).length,
-  };
   const visibleAlertCount = showAcknowledged
     ? alerts.length
-    : alerts.filter(a => !a.acknowledgedAt).length;
+    : alerts.filter((a) => !a.acknowledged_at).length;
+
   const filterTabs: { id: FilterLevel; label: string; count?: number }[] = [
     { id: 'all', label: 'All', count: visibleAlertCount },
     { id: 'critical', label: 'Critical', count: countByLevel.critical },
@@ -238,6 +217,8 @@ export default function AlertsPage() {
     { id: 'info', label: 'Info', count: countByLevel.info },
     { id: 'suggestion', label: 'Suggestions', count: countByLevel.suggestion },
   ];
+
+  const [heroInsight, ...rest] = filteredAlerts;
 
   if (isLoading) {
     return (
@@ -283,7 +264,6 @@ export default function AlertsPage() {
       initial="hidden"
       animate="visible"
     >
-      {/* Header */}
       <LargeTitleHeader
         title="Player Alerts"
         subtitle="AI-generated insights about players who need attention"
@@ -295,7 +275,7 @@ export default function AlertsPage() {
             'flex items-center gap-2 px-3 sm:px-4 py-2.5 min-h-[44px] rounded-xl font-medium transition-all active:scale-95',
             isPending
               ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
-              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md'
+              : 'bg-primary-600 text-white hover:bg-primary-700 shadow-md',
           )}
         >
           {isPending ? (
@@ -318,96 +298,81 @@ export default function AlertsPage() {
         </button>
       </LargeTitleHeader>
 
-      {/* Main Content */}
       <PullToRefresh onRefresh={handlePullToRefresh}>
-      <m.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Error Banner */}
-        <AnimatePresence>
-          {error && (
-            <m.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-              className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 flex items-center justify-between"
-            >
-              <span>{error}</span>
-              <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
-                <IconX size={18} />
-              </button>
-            </m.div>
-          )}
-        </AnimatePresence>
-
-        {/* Filters & Actions */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          {/* Level Filters */}
-          <div className="min-w-0 flex-1">
-            <GolfTabBar
-              tabs={filterTabs}
-              value={filterLevel}
-              onChange={setFilterLevel}
-              ariaLabel="Alert levels"
-              compact
-              scrollable
-            />
-          </div>
-
-          {/* Bulk Actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-warm-500 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={showAcknowledged}
-                onChange={(e) => setShowAcknowledged(e.target.checked)}
-                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
-              />
-              Show acknowledged
-            </label>
-
-            {filteredAlerts.length > 0 && (
-              <>
-                <button
-                  onClick={handleAcknowledgeAll}
-                  disabled={isPending}
-                  className="flex items-center gap-1 text-sm font-medium text-warm-500 hover:text-warm-700 px-3 py-2.5 min-h-[44px] rounded-lg hover:bg-white/50 active:bg-warm-100 transition-colors"
-                >
-                  <IconCheck size={14} />
-                  Acknowledge All
+        <m.div variants={itemVariants} className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+          <AnimatePresence>
+            {error && (
+              <m.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 flex items-center justify-between"
+              >
+                <span>{error}</span>
+                <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+                  <IconX size={18} />
                 </button>
-                <button
-                  onClick={handleDismissAll}
-                  disabled={isPending}
-                  className="flex items-center gap-1 text-sm font-medium text-red-500 hover:text-red-700 px-3 py-2.5 min-h-[44px] rounded-lg hover:bg-red-50 active:bg-red-100 transition-colors"
-                >
-                  <IconX size={14} />
-                  Dismiss All
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Alerts List */}
-        <div className="glass-premium rounded-2xl p-4">
-          <AnimatePresence mode="popLayout">
-            {filteredAlerts.length > 0 ? (
-              <div className="space-y-3">
-                {filteredAlerts.map((alert) => (
-                  <AlertCard
-                    key={alert.id}
-                    alert={alert}
-                    onDismiss={() => handleDismiss(alert.id)}
-                    onAcknowledge={() => handleAcknowledge(alert.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <EmptyAlertsState filter={filterLevel} />
+              </m.div>
             )}
           </AnimatePresence>
-        </div>
-      </m.div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="min-w-0 flex-1">
+              <GolfTabBar
+                tabs={filterTabs}
+                value={filterLevel}
+                onChange={setFilterLevel}
+                ariaLabel="Alert levels"
+                compact
+                scrollable
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm text-warm-500 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showAcknowledged}
+                  onChange={(e) => setShowAcknowledged(e.target.checked)}
+                  className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
+                />
+                Show acknowledged
+              </label>
+            </div>
+          </div>
+
+          {/* Alerts Stack */}
+          <div className="glass-premium rounded-2xl p-4">
+            <AnimatePresence mode="popLayout">
+              {filteredAlerts.length > 0 ? (
+                <div className="space-y-3" data-testid="coach-alert-stack">
+                  {heroInsight && (
+                    <InsightCard
+                      insight={heroInsight}
+                      density="hero"
+                      audience="coach"
+                      showActions
+                      onAction={handleAction}
+                    />
+                  )}
+
+                  {rest.map((insight) => (
+                    <InsightCard
+                      key={insight.id}
+                      insight={insight}
+                      density="compact"
+                      audience="coach"
+                      onClick={(id) => router.push(`/golf/dashboard/players/${insight.player_id}#${id}`)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <EmptyAlertsState filter={filterLevel} />
+              )}
+            </AnimatePresence>
+          </div>
+        </m.div>
       </PullToRefresh>
     </m.div>
   );
@@ -420,10 +385,12 @@ function EmptyAlertsState({ filter }: { filter: FilterLevel }) {
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-16 text-center"
     >
-      <div className={cn(
-        'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-        'bg-gradient-to-br from-primary-50 to-primary-100'
-      )}>
+      <div
+        className={cn(
+          'w-16 h-16 rounded-full flex items-center justify-center mb-4',
+          'bg-gradient-to-br from-primary-50 to-primary-100',
+        )}
+      >
         <IconBell size={32} className="text-primary-600" />
       </div>
       <h3 className="text-lg font-semibold text-warm-700 mb-2">
