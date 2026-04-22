@@ -163,7 +163,25 @@ class CoachHelmIntelligence {
       depth = 'standard',
     } = options;
 
-    // Extract features
+    // Tier-1 evidence-backed insights (Groups A + B + C — Insight Quality phase).
+    // These read directly from raw tables and don't depend on the legacy
+    // feature extraction. Run them first so they fire even when the legacy
+    // pipeline can't produce features for a player. Persisted via
+    // `upsertInsight` with dedup/lifecycle. Errors are logged inside the
+    // generators — we never let them break analyzePlayer.
+    await Promise.allSettled([
+      generatePuttDistanceInsights(playerId),
+      generatePuttMissBiasInsights(playerId),
+      generateApproachMissInsights(playerId),
+      generateScramblingInsights(playerId),
+      generateTeeStrategyInsights(playerId),
+      generateParTypeInsights(playerId),
+      generateWorstHolesInsights(playerId),
+      generateWarmupHoleInsight(playerId),
+      generatePressureGapInsight(playerId),
+    ]);
+
+    // Extract features for the legacy pipeline
     const features = await extractAllFeatures(playerId);
     if (!features) {
       return null;
@@ -199,22 +217,6 @@ class CoachHelmIntelligence {
       const miner = new PatternMiner(playerId);
       patterns = await miner.minePatterns();
     }
-
-    // Tier-1 evidence-backed insights (Groups A + B + C — Insight Quality phase).
-    // Persisted via `upsertInsight` with dedup/lifecycle, so we fire-and-forget
-    // in parallel alongside the legacy mining pipeline. Errors are logged
-    // inside the generators; we never let them break analyzePlayer.
-    await Promise.allSettled([
-      generatePuttDistanceInsights(playerId),
-      generatePuttMissBiasInsights(playerId),
-      generateApproachMissInsights(playerId),
-      generateScramblingInsights(playerId),
-      generateTeeStrategyInsights(playerId),
-      generateParTypeInsights(playerId),
-      generateWorstHolesInsights(playerId),
-      generateWarmupHoleInsight(playerId),
-      generatePressureGapInsight(playerId),
-    ]);
 
     // Mine shot-level patterns
     let shotPatterns: ShotPatternAnalysis | undefined;
