@@ -2,8 +2,10 @@
  * Rate Limiting Utilities
  *
  * Three-tier strategy:
- * 1. If UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN are set → use Upstash
- *    (correct across serverless instances, survives deploys).
+ * 1. If KV_REST_API_URL + KV_REST_API_TOKEN are set (Vercel Upstash KV
+ *    integration) → use Upstash across serverless instances, surviving deploys.
+ *    Also honors the legacy UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN
+ *    names for non-Vercel-integration setups.
  * 2. Else if Supabase admin client is configured → use DB-backed limiter
  *    (supabase-rate-limit.ts) which works across instances but costs a round-trip.
  * 3. Else → in-memory Map (dev only, per-instance, NOT safe for prod).
@@ -46,8 +48,9 @@ async function getUpstashLimiter(
 ): Promise<Ratelimit | null> {
   if (_upstashReady === false) return null;
 
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Prefer Vercel Upstash KV integration names; fall back to legacy Upstash names.
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
     _upstashReady = false;
     return null;
@@ -202,8 +205,8 @@ export async function checkRateLimit(
 export async function resetRateLimit(identifier: string): Promise<void> {
   rateLimitStore.delete(identifier);
   // If Upstash is configured, also drop the counter prefix.
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return;
   try {
     if (!_upstashClient) {

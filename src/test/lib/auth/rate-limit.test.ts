@@ -16,6 +16,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 describe('rate-limit (in-memory fallback)', () => {
   beforeEach(() => {
+    delete process.env.KV_REST_API_URL;
+    delete process.env.KV_REST_API_TOKEN;
     delete process.env.UPSTASH_REDIS_REST_URL;
     delete process.env.UPSTASH_REDIS_REST_TOKEN;
   });
