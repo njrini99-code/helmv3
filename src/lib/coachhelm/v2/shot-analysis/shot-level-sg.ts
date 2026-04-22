@@ -114,6 +114,26 @@ function lookupBaseline(baseline: SGBaseline, lie: string, distance: number): nu
 // ---------------------------------------------------------------------------
 
 /**
+ * Detect whether a shot is holed based on unambiguous signals.
+ *
+ * Task B15: prior \`calculateShotSG\` inferred "holed" solely from
+ * \`distanceAfter === 0\`, which collided with null/undefined distances
+ * (coerced to 0 in some code paths) and with tap-in shots logged with
+ * distanceAfter=0 but not actually holed. Null/undefined distanceAfter
+ * returns false (unknown state, not holed); explicit signals are
+ * \`result === 'hole'\` or \`lieAfter === 'hole'\`.
+ */
+export function detectHoled(args: {
+  distanceAfter?: number | null;
+  lieAfter?: string | null;
+  result?: string | null;
+}): boolean {
+  if (args.result === 'hole') return true;
+  if (args.lieAfter === 'hole') return true;
+  return false;
+}
+
+/**
  * Calculate strokes gained for a single shot.
  *
  * SG = baseline_strokes_from_start - (1 + baseline_strokes_from_end)
@@ -125,11 +145,12 @@ export function calculateShotSG(
   distanceAfter: number,
   lieAfter: string,
   baseline: SGBaseline,
+  result?: string | null,
 ): number {
   const baselineStart = lookupBaseline(baseline, lieBefore, distanceBefore);
 
-  // If the ball went in the hole, end baseline is 0
-  const isHoled = distanceAfter === 0;
+  // Unambiguous holed signals only (B15).
+  const isHoled = detectHoled({ distanceAfter, lieAfter, result });
   const baselineEnd = isHoled ? 0 : lookupBaseline(baseline, lieAfter, distanceAfter);
 
   return baselineStart - (1 + baselineEnd);
