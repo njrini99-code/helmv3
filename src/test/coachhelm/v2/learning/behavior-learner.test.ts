@@ -16,7 +16,7 @@ describe('BehaviorLearner.recordInteraction', () => {
     });
 
     expect(supabaseMock.from).toHaveBeenCalledWith('golf_learned_behavior');
-    const payload = insertSpy.mock.calls[0][0] as Record<string, unknown>;
+    const payload = insertSpy.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.entity_type).toBe('coach');
     expect(payload.entity_id).toBe('00000000-0000-0000-0000-000000000001');
     expect(payload.interaction_type).toBe('insight_acknowledged');
@@ -140,7 +140,7 @@ describe('BehaviorLearner legacy API preserved', () => {
     });
 
     expect(insertSpy).toHaveBeenCalledTimes(1);
-    const payload = insertSpy.mock.calls[0][0] as Record<string, unknown>;
+    const payload = insertSpy.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.interaction_type).toBe('click');
     expect(payload.target_type).toBe('insight');
     expect((payload.metadata as Record<string, unknown>).target_id).toBe('target-uuid');

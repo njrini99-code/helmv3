@@ -31,8 +31,8 @@ describe('CrossLearner.saveGlobalPatterns', () => {
     ).saveGlobalPatterns(patterns, supabaseMock);
 
     expect(supabaseMock.from).toHaveBeenCalledWith('golf_global_patterns');
-    const rows = upsertSpy.mock.calls[0][0] as Array<Record<string, unknown>>;
-    const payload = rows[0];
+    const rows = upsertSpy.mock.calls[0]![0] as Array<Record<string, unknown>>;
+    const payload = rows[0]!;
     expect(payload.signature).toBe('sig-1');
     expect(payload).not.toHaveProperty('outcome');
     expect(payload).toHaveProperty('outcomes');
@@ -82,7 +82,7 @@ describe('CrossLearner.saveGlobalPatterns', () => {
     ).saveGlobalPatterns(patterns, supabaseMock);
 
     expect(upsertSpy).toHaveBeenCalledTimes(1);
-    const rows = upsertSpy.mock.calls[0][0] as unknown[];
+    const rows = upsertSpy.mock.calls[0]![0] as unknown[];
     expect(rows).toHaveLength(2);
   });
 });

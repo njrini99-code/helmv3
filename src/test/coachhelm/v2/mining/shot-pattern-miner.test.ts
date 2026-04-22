@@ -11,10 +11,7 @@ describe('computeActionability', () => {
     expect(
       computeActionability([
         {
-          direction: 'left',
           frequency: tendency.frequency,
-          avgDistance: 0,
-          consistency: 0,
         },
       ]),
     ).toBe(expected);

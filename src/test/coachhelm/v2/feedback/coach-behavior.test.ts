@@ -20,7 +20,7 @@ describe('recordAction', () => {
     ).rejects.toThrow(/simulated/);
 
     expect(supabaseMock.from).toHaveBeenCalledWith('golf_coach_behavior_log');
-    const payload = insertSpy.mock.calls[0][0] as Record<string, unknown>;
+    const payload = insertSpy.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload).not.toHaveProperty('timestamp');
     expect(Object.keys(payload).sort()).toEqual([
       'action_type',
