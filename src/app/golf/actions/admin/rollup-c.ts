@@ -19,7 +19,7 @@
 //   what the RPC payload already contains.
 // ============================================================================
 
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 import type { AdminDashboardData } from '../admin-data';
 
 // ----------------------------------------------------------------------------
@@ -185,7 +185,8 @@ function activityStatus(
 export async function fetchAdminRollupC(
   allRoundsMinimal: AllRoundsMinimal[],
 ): Promise<RollupC> {
-  const admin = createAdminClient();
+  // Use the request-scoped client so auth.uid() is the invoking admin.
+  const admin = await createClient();
 
   const now = new Date();
   const today = new Date();

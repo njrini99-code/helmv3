@@ -15,7 +15,7 @@
  * `cachedAdminDashboardData` flow.
  */
 
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 
 // ---------------------------------------------------------------------------
 // Types mirroring the JSONB payloads returned by each RPC.
@@ -255,11 +255,11 @@ function unwrap<T>(label: string, res: { data: T | null; error: unknown }): T {
  * bodies also enforce an admin-role check, so this is defence-in-depth.
  */
 export async function fetchAdminRollupA(): Promise<RollupA> {
-  const admin = createAdminClient();
-  // Explicit .bind(admin) guarantees the method's `this` context survives
-  // bundler transforms. Cast is TypeScript-only (these 4 RPCs aren't in the
-  // generated Database schema yet).
-  const rpc = admin.rpc.bind(admin) as unknown as RpcInvoker;
+  // Use the request-scoped client so auth.uid() is the invoking admin.
+  // The RPC bodies check `SELECT 1 FROM users WHERE id = auth.uid()` which
+  // returns NULL when called with the service_role JWT.
+  const supabase = await createClient();
+  const rpc = supabase.rpc.bind(supabase) as unknown as RpcInvoker;
 
   const today = startOfTodayIso();
   const ago24h = daysAgoIso(1);
