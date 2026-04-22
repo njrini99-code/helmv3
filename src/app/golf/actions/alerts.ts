@@ -9,6 +9,9 @@ import { revalidatePath } from 'next/cache';
 import { coachHelmIntelligence } from '@/lib/coachhelm/v2';
 import type { CoachAlert } from '@/components/golf/coachhelm/alerts/AlertCard';
 import { logServerError } from '@/lib/server-error-logger';
+import type { Database } from '@/lib/types/database';
+
+type CoachInsightInsert = Database['public']['Tables']['golf_coach_insights']['Insert'];
 
 // ============================================================================
 // GET COACH ALERTS
@@ -393,17 +396,7 @@ export async function generateAlerts(
     const results = await Promise.all(analysisPromises);
 
     // Generate alerts from analysis results
-    const newAlerts: Array<{
-      coach_id: string;
-      player_id: string;
-      team_id: string;
-      insight_type: string;
-      title: string;
-      content: string;
-      priority: string;
-      status: string;
-      metadata: Record<string, unknown>;
-    }> = [];
+    const newAlerts: CoachInsightInsert[] = [];
 
     for (const result of results) {
       if (!result.success || !result.analysis) continue;
@@ -490,9 +483,11 @@ export async function generateAlerts(
 
     // Insert new alerts
     if (newAlerts.length > 0) {
-      // Cast needed: golf_coach_insights insert shape includes fields not in generated types
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insertError } = await (supabase as any)
+      // `newAlerts` already matches the `golf_coach_insights` Insert type
+      // (coach_id, player_id, team_id, insight_type, title, content, priority,
+      // status, metadata). Types regen after Phase 1 put this row shape in
+      // `src/lib/types/database.ts`, so the cast is no longer needed.
+      const { error: insertError } = await supabase
         .from('golf_coach_insights')
         .insert(newAlerts);
 
