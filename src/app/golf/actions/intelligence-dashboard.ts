@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
 
 // ============================================================================
 // TYPES
@@ -73,15 +74,19 @@ export interface IntelligenceDashboardData {
   pagination?: PaginationMeta;
 }
 
-// Type for golf_patterns_v2 table (not in generated types yet)
+// Subset of golf_patterns_v2 columns read by this file.
+// NOTE: live schema has NO `pattern_name` or top-level `description`; the
+// human-readable description lives in `metadata.description` (jsonb). There
+// is also NO `team_id` column — team scope is derived via golf_team_members.
 interface PatternV2Record {
   id: string;
   conditions: unknown;
   confidence: number | null;
   occurrence_count: number | null;
   pattern_type: string | null;
-  pattern_name: string | null;
-  description: string | null;
+  metadata: unknown;
+  player_id: string | null;
+  stroke_impact: number | null;
 }
 
 // ============================================================================
@@ -106,6 +111,10 @@ function mapStatusToLifecycleState(status: string | null): InsightLifecycleState
 
 /**
  * Verifies that the current user is a coach with access to a specific team.
+ *
+ * Thin wrapper over the shared `verifyTeamAccess` RPC helper. The old local
+ * implementation matched any coach in the same organization_id as the team,
+ * which over-granted access when orgs had multiple teams (LIVE-7/LIVE-25).
  */
 async function verifyTeamAccess(
   teamId: string
@@ -117,34 +126,19 @@ async function verifyTeamAccess(
     return { authorized: false, error: 'Not authenticated' };
   }
 
-  // Note: golf_coaches doesn't have team_id - we look it up via organization_id
-  const { data: coachData } = await supabase
+  const access = await sharedVerifyTeamAccess(teamId, user.id, supabase);
+  if (!access.allowed) {
+    return { authorized: false, error: 'Not authorized to access this team' };
+  }
+
+  // Look up coachId for callers that still need it.
+  const { data: coach } = await supabase
     .from('golf_coaches')
-    .select('id, organization_id')
+    .select('id')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
 
-  const coach = coachData as { id: string; organization_id: string | null } | null;
-
-  if (!coach) {
-    return { authorized: false, error: 'Not a coach' };
-  }
-
-  // Look up team via organization_id
-  if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .eq('id', teamId)
-      .maybeSingle();
-
-    if (team) {
-      return { authorized: true, coachId: coach.id };
-    }
-  }
-
-  return { authorized: false, error: 'Not authorized to access this team' };
+  return { authorized: true, coachId: coach?.id };
 }
 
 /**
@@ -358,17 +352,33 @@ export async function getTeamInsightsSummary(
       (a, b) => b.urgentInsights - a.urgentInsights || b.activeInsights - a.activeInsights
     );
 
-    // Fetch correlation discoveries (stored patterns)
-    // Note: golf_patterns_v2 not in generated types yet, using type assertion
-    const { data: patternsDataRaw } = await supabase
-      .from('golf_patterns_v2' as 'golf_coach_insights') // Type workaround
-      .select('id, conditions, confidence, occurrence_count, pattern_type, pattern_name, description')
+    // Fetch correlation discoveries (stored patterns).
+    //
+    // LIVE SCHEMA NOTES (LIVE-8):
+    //   - golf_patterns_v2 does NOT have a team_id column; it's player-scoped.
+    //   - The only text columns are pattern_type, pattern descriptor is in
+    //     `metadata.description` (jsonb).
+    //   - `pattern_name` doesn't exist.
+    // Derive team membership by first looking up the active player IDs on this team.
+    const { data: teamPlayerRows } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
       .eq('team_id', teamId)
-      .eq('is_active', true)
-      .order('confidence', { ascending: false })
-      .limit(10);
+      .eq('status', 'active');
 
-    const patternsData = patternsDataRaw as PatternV2Record[] | null;
+    const teamPlayerIds = (teamPlayerRows ?? [])
+      .map((row) => row.player_id)
+      .filter((id): id is string => !!id);
+
+    const { data: patternsData } = teamPlayerIds.length > 0
+      ? await supabase
+          .from('golf_patterns_v2')
+          .select('id, conditions, confidence, occurrence_count, pattern_type, metadata, player_id, stroke_impact')
+          .in('player_id', teamPlayerIds)
+          .eq('is_active', true)
+          .order('confidence', { ascending: false })
+          .limit(10)
+      : { data: [] as PatternV2Record[] };
 
     const correlations: CorrelationDiscovery[] = [];
 
@@ -388,13 +398,16 @@ export async function getTeamInsightsSummary(
           }
         }
 
+        const metadataObj = (pattern.metadata as Record<string, unknown> | null) ?? null;
+        const metadataDescription = (metadataObj?.description as string | undefined) ?? undefined;
+
         correlations.push({
           id: pattern.id,
-          title: pattern.pattern_name || pattern.pattern_type || 'Pattern Discovered',
-          description: pattern.description || 'A correlation was found between golf metrics.',
+          title: pattern.pattern_type || 'Pattern Discovered',
+          description: metadataDescription || 'A correlation was found between golf metrics.',
           metrics,
           correlation: pattern.confidence || 0.5,
-          strokeImpact: 0.3,
+          strokeImpact: pattern.stroke_impact ?? 0.3,
           playerCount: pattern.occurrence_count || 1,
         });
       }
@@ -475,11 +488,19 @@ export async function generateTeamCorrelations(
 
     const supabase = await createClient();
 
-    // Get team players with their stats
-    const { data: players } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name')
-      .eq('team_id', teamId);
+    // Get team players via golf_team_members (golf_players has NO team_id column).
+    const { data: memberRows } = await supabase
+      .from('golf_team_members')
+      .select('player_id, golf_players!inner(id, first_name, last_name)')
+      .eq('team_id', teamId)
+      .eq('status', 'active');
+
+    const players = (memberRows ?? [])
+      .map((row) => row.golf_players)
+      .filter(
+        (p): p is { id: string; first_name: string; last_name: string } =>
+          p !== null && typeof p === 'object' && 'id' in p,
+      );
 
     if (!players || players.length === 0) {
       return { success: true, correlations: [] };
