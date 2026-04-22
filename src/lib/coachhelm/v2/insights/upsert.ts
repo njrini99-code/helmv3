@@ -31,6 +31,7 @@ import type {
   InsightMovement,
 } from './types';
 import { calcConfidence } from './types';
+import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 
 const DEDUP_WINDOW_DAYS = 30;
 const MOVEMENT_THRESHOLD = 0.05; // 5%
@@ -193,6 +194,27 @@ async function updateExisting(
   if (error) {
     throw new Error(`upsertInsight.update failed: ${error.message}`);
   }
+
+  // Wave 1B — post-write push hook. `shouldMature` is the only promotion we
+  // can observe from this code path (detected → matured). Resolution
+  // transitions happen via the lifecycle cron, not upsertInsight. Never let a
+  // push failure break the upsert.
+  const nextLifecycleState: InsightLifecycleState =
+    shouldMature ? 'matured' : (existing.lifecycle_state ?? 'detected');
+  try {
+    await notifyInsightLanded({
+      player_id: input.player_id,
+      insight_id: existing.id,
+      category: input.category,
+      title: input.title,
+      evidence,
+      lifecycle_state: nextLifecycleState,
+      was_lifecycle_promotion: shouldMature,
+    });
+  } catch {
+    // notifyInsightLanded never throws, but belt-and-braces here.
+  }
+
   return existing.id;
 }
 
