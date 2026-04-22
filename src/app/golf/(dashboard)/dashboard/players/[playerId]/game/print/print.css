@@ -1,0 +1,105 @@
+/*
+ * Print-only CSS for the Player Game Fingerprint scouting report.
+ *
+ * Goal: produce a clean B&W-friendly PDF via the browser's native print
+ * dialog. We deliberately avoid gradients, backdrop blurs, and glass
+ * effects — those render as either flat grey or noise in print.
+ *
+ * Target: US Letter portrait. The max-width in print.tsx caps at 680px so
+ * each section band fits comfortably on a single page row.
+ */
+
+/* Screen preview — give the print route a plain white look on-screen
+   too so the coach sees roughly what will come out of the printer. */
+.print-shell {
+  background: #ffffff;
+  color: #1c1917;
+  min-height: 100vh;
+}
+
+@page {
+  size: letter portrait;
+  margin: 0.6in;
+}
+
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Hide all non-print chrome — nav sidebars, toolbars, the loading
+     feedback in the print launcher. */
+  .non-print,
+  button,
+  nav,
+  [role='navigation'],
+  [data-testid='fingerprint-print-button'] {
+    display: none !important;
+  }
+
+  /* Kill every form of glass / gradient / backdrop-blur. */
+  .glass-card,
+  .glass-premium,
+  .backdrop-blur-xl,
+  .backdrop-blur-sm,
+  .backdrop-blur,
+  [class*='bg-white/'],
+  [class*='bg-gradient'] {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+  }
+
+  /* Insight cards should not be split across pages. Same for section
+     bands — coaches read one category at a time. */
+  [data-testid^='section-band-'],
+  [data-testid='fingerprint-hero'],
+  [data-testid^='insight-card-'] {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Force simple tone accents instead of colored glassy pills. */
+  [data-tone='good'] {
+    border-left: 3px solid #000000 !important;
+  }
+  [data-tone='bad'] {
+    border-left: 3px solid #000000 !important;
+    background: repeating-linear-gradient(
+      45deg,
+      #f4f4f4,
+      #f4f4f4 4px,
+      #ffffff 4px,
+      #ffffff 8px
+    ) !important;
+  }
+  [data-tone='neutral'] {
+    border-left: 3px solid #666666 !important;
+  }
+
+  /* Chart containers — still render, but capped in height so one doesn't
+     eat a full page. */
+  [data-testid='trend-chart-container'] {
+    height: 180px !important;
+  }
+
+  /* Page footer — absolute-positioned via the wrapper in print.tsx.
+     @page doesn't let us inject text, so we render it in the DOM and
+     position it off the normal flow so each page picks it up via the
+     running header/footer is not widely supported; we fall back to a
+     single-page footer at the bottom of the document. */
+  .print-footer {
+    position: running(printFooter);
+    font-size: 10px;
+    color: #666666;
+  }
+
+  .print-header-block {
+    border-bottom: 1px solid #cccccc;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+}
