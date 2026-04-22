@@ -1,58 +1,125 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { InsightCard } from './InsightCard';
+/**
+ * InsightsFeed (coach) — migrated to the unified `InsightCard` primitive under
+ * Wave 1A of the Insight Delivery phase. Fetches evidence-backed rows via
+ * `getInsightsForCoach` and renders each with `audience='coach'`.
+ *
+ * Legacy behavior replaced:
+ *   - Legacy InsightCard (coach) — deleted.
+ *   - Legacy "Create Focus Area" inline button — now driven through the
+ *     primitive's coach action set via `onAction('create_focus_area', ...)`.
+ *
+ * Contract: docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md
+ */
+import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import {
+  getInsightsForCoach,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSparkles, IconRefresh } from '@/components/icons';
-import { getActiveInsights, generateTeamInsights } from '@/app/golf/actions/insights';
-import type { InsightWithPlayer } from '@/lib/coachhelm/insight-types';
+import {
+  acknowledgeInsight,
+  dismissInsight,
+  generateTeamInsights,
+} from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 
 interface InsightsFeedProps {
+  coachId: string;
   limit?: number;
   showGenerateButton?: boolean;
-  coachId?: string;
 }
 
-export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: InsightsFeedProps) {
-  const [insights, setInsights] = useState<InsightWithPlayer[]>([]);
+export function InsightsFeed({
+  coachId,
+  limit = 5,
+  showGenerateButton = true,
+}: InsightsFeedProps) {
+  const router = useRouter();
+  const [insights, setInsights] = useState<EvidenceInsight[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [, startActionTransition] = useTransition();
 
   const loadInsights = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    const result = await getActiveInsights(limit);
-
-    if (result.success) {
-      setInsights(result.insights as InsightWithPlayer[]);
-    } else {
-      setError(result.error || 'Failed to load insights');
+    try {
+      const rows = await getInsightsForCoach(coachId, { limit });
+      setInsights(rows);
+    } catch {
+      setError('Failed to load insights');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-  }, [limit]);
+  }, [coachId, limit]);
 
   useEffect(() => {
-    loadInsights();
+    void loadInsights();
   }, [loadInsights]);
 
   const handleGenerate = async () => {
     setGenerating(true);
     setError(null);
-
-    const result = await generateTeamInsights();
-
-    if (result.success) {
-      // Reload insights after generation
+    try {
+      const result = await generateTeamInsights();
+      if (!result.success) {
+        setError(result.error || 'Failed to generate insights');
+      }
+    } catch {
+      setError('Failed to generate insights');
+    } finally {
+      setGenerating(false);
       await loadInsights();
-    } else {
-      setError(result.error || 'Failed to generate insights');
     }
-
-    setGenerating(false);
   };
+
+  const handleCoachAction = useCallback(
+    (action: InsightAction, insightId: string) => {
+      // Optimistic remove: drop the row immediately for acknowledge/dismiss/
+      // create_focus_area, then fire the server action. Fall back to the list
+      // refresh if the server call fails.
+      const prev = insights;
+      startActionTransition(async () => {
+        try {
+          if (action === 'acknowledged') {
+            setInsights((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await acknowledgeInsight(insightId);
+            if (!res.success) setInsights(prev);
+          } else if (action === 'dismissed') {
+            setInsights((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await dismissInsight(insightId);
+            if (!res.success) setInsights(prev);
+          } else if (action === 'create_focus_area') {
+            const target = insights.find((i) => i.id === insightId);
+            if (!target) return;
+            const res = await createFocusAreaFromInsight({
+              insight_id: target.id,
+              player_id: target.player_id,
+              coach_id: coachId,
+              title: target.title,
+              description: target.content ?? '',
+              insight_type: (target.category as string | undefined) ?? 'general',
+            });
+            if (res.success) {
+              router.push('/golf/dashboard/development');
+            }
+          }
+        } catch {
+          setInsights(prev);
+        }
+      });
+    },
+    [coachId, insights, router],
+  );
 
   if (loading) {
     return (
@@ -109,7 +176,6 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
 
   return (
     <div className="space-y-4">
-      {/* Header with Generate Button */}
       {showGenerateButton && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-warm-500">
@@ -126,14 +192,15 @@ export function InsightsFeed({ limit = 5, showGenerateButton = true, coachId }: 
         </div>
       )}
 
-      {/* Insights List */}
       <div className="space-y-3">
         {insights.map((insight) => (
           <InsightCard
             key={insight.id}
             insight={insight}
-            coachId={coachId}
-            onUpdate={loadInsights}
+            density="default"
+            audience="coach"
+            showActions
+            onAction={handleCoachAction}
           />
         ))}
       </div>

@@ -1,27 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+/**
+ * InsightListView — coach surface for `/dashboard/insights`. Migrated under
+ * Wave 1A of the Insight Delivery phase: the per-row renderer is now the
+ * unified `InsightCard` primitive (audience='coach', density='default').
+ *
+ * Selection, sorting, and pagination stay the same — only the row visual
+ * changed. The selection checkbox is rendered beside the primitive rather
+ * than inside it to avoid touching the primitive's API surface.
+ */
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
-import { Avatar } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconChevronDown,
   IconChevronUp,
   IconCheck,
-  IconX,
   IconSparkles,
   IconChevronLeft,
   IconChevronRight,
 } from '@/components/icons';
 import {
-  getInsightConfig,
-  getPriorityColor,
-  formatInsightAge,
-  type InsightWithPlayer,
-} from '@/lib/coachhelm/insight-types';
-import { acknowledgeInsight, dismissInsight, resolveInsight } from '@/app/golf/actions/insights';
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 // ============================================================================
 // TYPES
@@ -31,7 +35,7 @@ type SortBy = 'priority' | 'created_at' | 'player_name';
 type SortOrder = 'asc' | 'desc';
 
 interface InsightListViewProps {
-  insights: InsightWithPlayer[];
+  insights: EvidenceInsight[];
   selectedIds: Set<string>;
   onSelectionChange: (ids: Set<string>) => void;
   sortBy: SortBy;
@@ -42,9 +46,8 @@ interface InsightListViewProps {
   totalCount: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  onRefresh: () => void;
+  onAction: (action: InsightAction, insightId: string) => void;
   isLoading?: boolean;
-  coachId?: string;
 }
 
 // ============================================================================
@@ -86,44 +89,19 @@ function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: Sort
 }
 
 // ============================================================================
-// INSIGHT ROW COMPONENT
+// INSIGHT ROW — thin wrapper that pairs the selection checkbox with the
+// unified InsightCard primitive. The primitive owns expansion, drills,
+// evidence, and action rendering; this row only contributes selection state.
 // ============================================================================
 
 interface InsightRowProps {
-  insight: InsightWithPlayer;
+  insight: EvidenceInsight;
   isSelected: boolean;
   onToggleSelect: () => void;
-  onRefresh: () => void;
-  coachId?: string;
+  onAction: (action: InsightAction, insightId: string) => void;
 }
 
-function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightRowProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const config = getInsightConfig(insight.insight_type);
-  const priorityColor = getPriorityColor(insight.priority);
-
-  const handleAction = async (action: 'acknowledge' | 'dismiss' | 'resolve') => {
-    setIsLoading(true);
-    try {
-      switch (action) {
-        case 'acknowledge':
-          await acknowledgeInsight(insight.id);
-          break;
-        case 'dismiss':
-          await dismissInsight(insight.id);
-          break;
-        case 'resolve':
-          await resolveInsight(insight.id);
-          break;
-      }
-      onRefresh();
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRowProps) {
   return (
     <motion.div
       layout
@@ -131,191 +109,39 @@ function InsightRow({ insight, isSelected, onToggleSelect, onRefresh }: InsightR
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(
-        'glass-standard rounded-xl overflow-clip transition-all duration-200',
-        isSelected
-          ? 'border-primary-500 ring-2 ring-primary-500/20'
-          : 'border-warm-200 hover:border-warm-300'
+        'relative transition-all duration-200',
+        isSelected && 'ring-2 ring-primary-500/30 rounded-2xl',
       )}
     >
-      {/* Row Header (always visible) */}
-      <div className="flex items-center gap-3 p-4">
-        {/* Checkbox */}
-        <div className="flex-shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleSelect();
-            }}
-            className={cn(
-              'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
-              isSelected
-                ? 'bg-primary-500 border-primary-500 text-white'
-                : 'border-warm-300 hover:border-warm-400'
-            )}
-          >
-            {isSelected && <IconCheck size={12} />}
-          </button>
-        </div>
-
-        {/* Icon & Priority */}
-        <div className="relative flex-shrink-0">
-          <div
-            className={cn(
-              'w-10 h-10 rounded-xl flex items-center justify-center text-lg',
-              priorityColor === 'red' && 'bg-red-100',
-              priorityColor === 'orange' && 'bg-orange-100',
-              priorityColor === 'yellow' && 'bg-yellow-100',
-              priorityColor === 'blue' && 'bg-blue-100'
-            )}
-          >
-            {config.icon}
-          </div>
-          {insight.priority === 'urgent' && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-          )}
-        </div>
-
-        {/* Content */}
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex items-start justify-between gap-2 mb-0.5">
-            <h4 className="font-medium text-warm-900 text-sm truncate">
-              {insight.title}
-            </h4>
-            <span className="text-xs text-warm-400 flex-shrink-0">
-              {formatInsightAge(insight.created_at)}
-            </span>
-          </div>
-          <p className="text-sm text-warm-600 line-clamp-1">{insight.description}</p>
-        </div>
-
-        {/* Player Avatar */}
-        {insight.player && (
-          <div className="flex-shrink-0 hidden sm:block">
-            <Avatar
-              src={insight.player.avatar_url}
-              name={`${insight.player.first_name} ${insight.player.last_name}`}
-              size="sm"
-            />
-          </div>
+      {/* Selection checkbox overlay — positioned absolute so it doesn't
+          interfere with the primitive's internal layout. */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect();
+        }}
+        aria-label={isSelected ? 'Deselect insight' : 'Select insight'}
+        className={cn(
+          'absolute top-3 left-3 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
+          isSelected
+            ? 'bg-primary-500 border-primary-500 text-white'
+            : 'bg-white/80 border-warm-300 hover:border-warm-400',
         )}
+      >
+        {isSelected && <IconCheck size={12} />}
+      </button>
 
-        {/* Expand Button */}
-        <button
-          type="button"
-          onClick={() => setIsExpanded(!isExpanded)}
-          aria-label={isExpanded ? 'Collapse insight' : 'Expand insight'}
-          className="flex-shrink-0 p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
-        >
-          {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-        </button>
+      {/* Slight left inset to leave room for the checkbox. */}
+      <div className="pl-8">
+        <InsightCard
+          insight={insight}
+          density="default"
+          audience="coach"
+          showActions
+          onAction={onAction}
+        />
       </div>
-
-      {/* Expanded Content */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
-            style={{ overflow: 'hidden' }}
-          >
-            <div className="px-4 pb-4 space-y-3 border-t border-warm-100">
-              {/* Player Info (visible on mobile) */}
-              {insight.player && (
-                <div className="flex items-center gap-2 pt-3 sm:hidden">
-                  <Avatar
-                    src={insight.player.avatar_url}
-                    name={`${insight.player.first_name} ${insight.player.last_name}`}
-                    size="xs"
-                  />
-                  <span className="text-xs text-warm-500">
-                    {insight.player.first_name} {insight.player.last_name}
-                  </span>
-                </div>
-              )}
-
-              {/* Full Description */}
-              <div className="pt-3 sm:pt-3">
-                <p className="text-sm text-warm-700 leading-relaxed">
-                  {insight.description}
-                </p>
-              </div>
-
-              {/* Recommendation */}
-              {insight.recommendation && (
-                <div className="bg-primary-50 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <IconSparkles size={16} className="text-primary-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-xs font-medium text-primary-900 mb-1">Recommendation</p>
-                      <p className="text-sm text-primary-800 leading-relaxed">
-                        {insight.recommendation}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Status Badge */}
-              <div className="flex items-center gap-2 text-xs">
-                <span
-                  className={cn(
-                    'px-2 py-0.5 rounded-full font-medium',
-                    insight.status === 'active' && 'bg-primary-100 text-primary-700',
-                    insight.status === 'acknowledged' && 'bg-blue-100 text-blue-700',
-                    insight.status === 'resolved' && 'bg-warm-100 text-warm-700',
-                    insight.status === 'dismissed' && 'bg-warm-100 text-warm-500'
-                  )}
-                >
-                  {insight.status.charAt(0).toUpperCase() + insight.status.slice(1)}
-                </span>
-                {insight.metadata?.v2_engine && (
-                  <span className="px-2 py-0.5 bg-purple-100 text-purple-600 rounded-full font-medium">
-                    AI Powered
-                  </span>
-                )}
-              </div>
-
-              {/* Quick Actions */}
-              {insight.status === 'active' && (
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => handleAction('resolve')}
-                    disabled={isLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
-                  >
-                    <IconCheck size={16} />
-                    Resolve
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAction('acknowledge')}
-                    disabled={isLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-warm-100 text-warm-700 text-sm font-medium rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
-                  >
-                    Acknowledge
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleAction('dismiss')}
-                    disabled={isLoading}
-                    className="px-3 py-2 bg-warm-100 text-warm-500 rounded-lg hover:bg-warm-200 disabled:opacity-50 transition-colors"
-                    title="Dismiss"
-                  >
-                    <IconX size={16} />
-                  </button>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 }
@@ -358,7 +184,6 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
           <IconChevronLeft size={18} />
         </button>
 
-        {/* Page Numbers */}
         <div className="flex items-center gap-1">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
             let pageNum: number;
@@ -424,9 +249,8 @@ export function InsightListView({
   totalCount,
   totalPages,
   onPageChange,
-  onRefresh,
+  onAction,
   isLoading,
-  coachId,
 }: InsightListViewProps) {
   const handleToggleSelect = (id: string) => {
     const newSelection = new Set(selectedIds);
@@ -440,10 +264,8 @@ export function InsightListView({
 
   const handleSortClick = (key: SortBy) => {
     if (sortBy === key) {
-      // Toggle order
       onSortChange(key, sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
-      // New sort key, default to desc
       onSortChange(key, 'desc');
     }
   };
@@ -468,7 +290,6 @@ export function InsightListView({
     );
   }
 
-  // Empty state
   if (insights.length === 0) {
     return (
       <GlassCard hover={false}>
@@ -515,19 +336,19 @@ export function InsightListView({
         </div>
       </div>
 
-      {/* Insight List — popLayout removed for mobile perf; layout animations
-          were causing O(N) re-measure on every pagination/filter change. */}
-      <div className="p-4 space-y-3">
-        {insights.map((insight) => (
-          <InsightRow
-            key={insight.id}
-            insight={insight}
-            isSelected={selectedIds.has(insight.id)}
-            onToggleSelect={() => handleToggleSelect(insight.id)}
-            onRefresh={onRefresh}
-            coachId={coachId}
-          />
-        ))}
+      {/* Insight List */}
+      <div className="p-4 space-y-3" data-testid="insight-list">
+        <AnimatePresence initial={false}>
+          {insights.map((insight) => (
+            <InsightRow
+              key={insight.id}
+              insight={insight}
+              isSelected={selectedIds.has(insight.id)}
+              onToggleSelect={() => handleToggleSelect(insight.id)}
+              onAction={onAction}
+            />
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Pagination */}

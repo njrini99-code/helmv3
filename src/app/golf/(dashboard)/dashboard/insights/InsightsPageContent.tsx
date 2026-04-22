@@ -1,6 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+/**
+ * InsightsPageContent — rewired under Wave 1A of the Insight Delivery phase.
+ *
+ * Data flow (new):
+ *   getInsightsForCoach(coachId, { priorities?, categories?, player_id? })
+ *     → client-side filter by query/dateRange/status
+ *     → client-side paginate
+ *     → render through `InsightListView` (which uses the unified primitive).
+ *
+ * Evidence-backed rows only (Rule 8 of the contract). The previous
+ * `searchInsights` action pulled legacy rows that had no `evidence` JSONB —
+ * those are filtered out by `getInsightsForCoach` at the source.
+ */
+import { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -19,8 +32,12 @@ import { InsightFiltersPanel, type InsightFilters } from '@/components/golf/coac
 import { InsightListView } from '@/components/golf/coachhelm/insights/InsightListView';
 import { InsightBulkActions } from '@/components/golf/coachhelm/insights/InsightBulkActions';
 import { InsightExportModal } from '@/components/golf/coachhelm/insights/InsightExportModal';
+import type { InsightAction } from '@/components/golf/coachhelm/insight-card';
 import {
-  searchInsights,
+  getInsightsForCoach,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
+import {
   bulkDismissInsights,
   bulkAcknowledgeInsights,
   bulkResolveInsights,
@@ -28,8 +45,17 @@ import {
   type FilterOptions,
   type InsightsStats,
 } from '@/app/golf/actions/insight-management';
-import { generateTeamInsights } from '@/app/golf/actions/insights';
-import type { InsightWithPlayer, InsightType, InsightPriority, InsightStatus } from '@/lib/coachhelm/insight-types';
+import {
+  generateTeamInsights,
+  acknowledgeInsight,
+  dismissInsight,
+} from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import type {
+  InsightType,
+  InsightPriority,
+  InsightStatus,
+} from '@/lib/coachhelm/insight-types';
 
 // ============================================================================
 // TYPES
@@ -57,7 +83,7 @@ type SortBy = 'priority' | 'created_at' | 'player_name';
 type SortOrder = 'asc' | 'desc';
 
 // ============================================================================
-// HELPER FUNCTIONS
+// HELPERS
 // ============================================================================
 
 function parseSearchParams(params: InsightsPageContentProps['initialSearchParams']): {
@@ -108,6 +134,85 @@ function buildSearchParams(
   return params;
 }
 
+/** Priority-ranked sort for evidence insights. Higher priority and newer
+ *  rows float up; lower priority sinks. */
+const PRIORITY_WEIGHT: Record<EvidenceInsight['priority'], number> = {
+  urgent: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
+
+function applyClientFilters(
+  rows: EvidenceInsight[],
+  query: string,
+  filters: InsightFilters,
+): EvidenceInsight[] {
+  return rows.filter((row) => {
+    // Text search on title/content.
+    if (query && query.trim()) {
+      const needle = query.trim().toLowerCase();
+      const haystack = `${row.title} ${row.content}`.toLowerCase();
+      if (!haystack.includes(needle)) return false;
+    }
+
+    // Status filter (live column: status).
+    if (filters.status && row.status !== filters.status) return false;
+
+    // Date range filter — anchor on created_at.
+    if (filters.dateRange) {
+      const now = Date.now();
+      let minTs: number | null = null;
+      let maxTs: number | null = null;
+      if (filters.dateRange === 'last_7_days') {
+        minTs = now - 7 * 24 * 60 * 60 * 1000;
+      } else if (filters.dateRange === 'last_30_days') {
+        minTs = now - 30 * 24 * 60 * 60 * 1000;
+      } else if (filters.dateRange === 'last_90_days') {
+        minTs = now - 90 * 24 * 60 * 60 * 1000;
+      } else if (filters.dateRange === 'custom') {
+        if (filters.startDate) minTs = new Date(filters.startDate).getTime();
+        if (filters.endDate) {
+          const end = new Date(filters.endDate);
+          end.setHours(23, 59, 59, 999);
+          maxTs = end.getTime();
+        }
+      }
+
+      const createdTs = new Date(row.created_at).getTime();
+      if (minTs != null && createdTs < minTs) return false;
+      if (maxTs != null && createdTs > maxTs) return false;
+    }
+
+    return true;
+  });
+}
+
+function applySort(
+  rows: EvidenceInsight[],
+  sortBy: SortBy,
+  sortOrder: SortOrder,
+): EvidenceInsight[] {
+  const dir = sortOrder === 'asc' ? 1 : -1;
+  const sorted = [...rows];
+  if (sortBy === 'priority') {
+    sorted.sort((a, b) => {
+      const pa = PRIORITY_WEIGHT[a.priority] ?? 0;
+      const pb = PRIORITY_WEIGHT[b.priority] ?? 0;
+      if (pa !== pb) return (pa - pb) * dir;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  } else if (sortBy === 'player_name') {
+    sorted.sort((a, b) => (a.player_id || '').localeCompare(b.player_id || '') * dir);
+  } else {
+    sorted.sort(
+      (a, b) =>
+        (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir,
+    );
+  }
+  return sorted;
+}
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -118,11 +223,8 @@ export function InsightsPageContent({
   filterOptions,
 }: InsightsPageContentProps) {
   const router = useRouter();
-
-  // Parse initial state from URL
   const initialState = parseSearchParams(initialSearchParams);
 
-  // State
   const [query, setQuery] = useState(initialState.query);
   const [filters, setFilters] = useState<InsightFilters>(initialState.filters);
   const [page, setPage] = useState(initialState.page);
@@ -130,9 +232,7 @@ export function InsightsPageContent({
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialState.sortOrder);
   const [pageSize] = useState(20);
 
-  const [insights, setInsights] = useState<InsightWithPlayer[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [allInsights, setAllInsights] = useState<EvidenceInsight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -141,45 +241,45 @@ export function InsightsPageContent({
   const [showExportModal, setShowExportModal] = useState(false);
 
   const [stats, setStats] = useState<InsightsStats | null>(null);
+  const [, startActionTransition] = useTransition();
 
-  // Update URL when search state changes
-  const updateUrl = useCallback((
-    newQuery: string,
-    newFilters: InsightFilters,
-    newPage: number,
-    newSortBy: SortBy,
-    newSortOrder: SortOrder
-  ) => {
-    const params = buildSearchParams(newQuery, newFilters, newPage, newSortBy, newSortOrder);
-    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
-    router.replace(newUrl, { scroll: false });
-  }, [router]);
+  // Update URL on state change.
+  const updateUrl = useCallback(
+    (
+      newQuery: string,
+      newFilters: InsightFilters,
+      newPage: number,
+      newSortBy: SortBy,
+      newSortOrder: SortOrder,
+    ) => {
+      const params = buildSearchParams(newQuery, newFilters, newPage, newSortBy, newSortOrder);
+      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+      router.replace(newUrl, { scroll: false });
+    },
+    [router],
+  );
 
-  // Fetch insights
-  const fetchInsights = useCallback(async (showLoading = true) => {
-    if (showLoading) setIsLoading(true);
+  // Server-side: fetch evidence-backed rows. Server handles category + player
+  // + priority narrowing; text + dateRange + status live client-side.
+  const fetchInsights = useCallback(
+    async (showLoading = true) => {
+      if (showLoading) setIsLoading(true);
+      try {
+        const rows = await getInsightsForCoach(coachId, {
+          limit: 100,
+          player_id: filters.playerId,
+          priorities: filters.priority ? [filters.priority] : undefined,
+          categories: filters.insightType ? [filters.insightType] : undefined,
+        });
+        setAllInsights(rows);
+      } finally {
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [coachId, filters.playerId, filters.priority, filters.insightType],
+  );
 
-    const result = await searchInsights({
-      coachId,
-      query: query || undefined,
-      filters,
-      page,
-      pageSize,
-      sortBy,
-      sortOrder,
-    });
-
-    if (result.success) {
-      setInsights(result.insights);
-      setTotalCount(result.totalCount);
-      setTotalPages(result.totalPages);
-    }
-
-    setIsLoading(false);
-    setIsRefreshing(false);
-  }, [coachId, query, filters, page, pageSize, sortBy, sortOrder]);
-
-  // Fetch stats
   const fetchStats = useCallback(async () => {
     const result = await getInsightsStats(coachId);
     if (result.success && result.stats) {
@@ -187,13 +287,26 @@ export function InsightsPageContent({
     }
   }, [coachId]);
 
-  // Initial fetch
   useEffect(() => {
-    fetchInsights();
-    fetchStats();
+    void fetchInsights();
+    void fetchStats();
   }, [fetchInsights, fetchStats]);
 
-  // Handle search change
+  // Client-side filter + sort + paginate.
+  const { pageInsights, totalCount, totalPages } = useMemo(() => {
+    const filtered = applyClientFilters(allInsights, query, filters);
+    const sorted = applySort(filtered, sortBy, sortOrder);
+    const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const safePage = Math.min(page, pages);
+    const startIdx = (safePage - 1) * pageSize;
+    const pageRows = sorted.slice(startIdx, startIdx + pageSize);
+    return {
+      pageInsights: pageRows,
+      totalCount: sorted.length,
+      totalPages: pages,
+    };
+  }, [allInsights, query, filters, sortBy, sortOrder, page, pageSize]);
+
   const handleSearchChange = (newQuery: string) => {
     setQuery(newQuery);
     setPage(1);
@@ -201,7 +314,6 @@ export function InsightsPageContent({
     updateUrl(newQuery, filters, 1, sortBy, sortOrder);
   };
 
-  // Handle filter change
   const handleFiltersChange = (newFilters: InsightFilters) => {
     setFilters(newFilters);
     setPage(1);
@@ -209,7 +321,6 @@ export function InsightsPageContent({
     updateUrl(query, newFilters, 1, sortBy, sortOrder);
   };
 
-  // Handle sort change
   const handleSortChange = (newSortBy: SortBy, newSortOrder: SortOrder) => {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
@@ -217,21 +328,18 @@ export function InsightsPageContent({
     updateUrl(query, filters, 1, newSortBy, newSortOrder);
   };
 
-  // Handle page change
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     setSelectedIds(new Set());
     updateUrl(query, filters, newPage, sortBy, sortOrder);
   };
 
-  // Handle refresh
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchInsights(false);
     await fetchStats();
   };
 
-  // Handle generate new insights
   const handleGenerateInsights = async () => {
     setIsGenerating(true);
     await generateTeamInsights();
@@ -240,7 +348,6 @@ export function InsightsPageContent({
     setIsGenerating(false);
   };
 
-  // Bulk actions
   const handleBulkDismiss = async () => {
     await bulkDismissInsights(Array.from(selectedIds));
     setSelectedIds(new Set());
@@ -262,16 +369,54 @@ export function InsightsPageContent({
     await fetchStats();
   };
 
-  // Selection helpers
   const handleSelectAll = () => {
-    setSelectedIds(new Set(insights.map((i) => i.id)));
+    setSelectedIds(new Set(pageInsights.map((i) => i.id)));
   };
 
   const handleDeselectAll = () => {
     setSelectedIds(new Set());
   };
 
-  const isAllSelected = insights.length > 0 && selectedIds.size === insights.length;
+  const isAllSelected = pageInsights.length > 0 && selectedIds.size === pageInsights.length;
+
+  // Per-row actions from the unified primitive.
+  const handleCoachAction = useCallback(
+    (action: InsightAction, insightId: string) => {
+      const prev = allInsights;
+      startActionTransition(async () => {
+        try {
+          if (action === 'acknowledged') {
+            setAllInsights((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await acknowledgeInsight(insightId);
+            if (!res.success) setAllInsights(prev);
+            else await fetchStats();
+          } else if (action === 'dismissed') {
+            setAllInsights((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await dismissInsight(insightId);
+            if (!res.success) setAllInsights(prev);
+            else await fetchStats();
+          } else if (action === 'create_focus_area') {
+            const target = allInsights.find((i) => i.id === insightId);
+            if (!target) return;
+            const res = await createFocusAreaFromInsight({
+              insight_id: target.id,
+              player_id: target.player_id,
+              coach_id: coachId,
+              title: target.title,
+              description: target.content ?? '',
+              insight_type: (target.category as string | undefined) ?? 'general',
+            });
+            if (res.success) {
+              router.push('/golf/dashboard/development');
+            }
+          }
+        } catch {
+          setAllInsights(prev);
+        }
+      });
+    },
+    [allInsights, coachId, fetchStats, router],
+  );
 
   return (
     <div className="relative">
@@ -280,7 +425,6 @@ export function InsightsPageContent({
         title="AI Insights"
         subtitle="Manage and act on coaching insights"
       >
-        {/* Generate Button */}
         <Button
           variant="secondary"
           onClick={handleGenerateInsights}
@@ -292,7 +436,6 @@ export function InsightsPageContent({
           <span className="sm:hidden">{isGenerating ? '...' : 'New'}</span>
         </Button>
 
-        {/* Refresh Button */}
         <button
           onClick={handleRefresh}
           disabled={isRefreshing || isGenerating}
@@ -306,7 +449,6 @@ export function InsightsPageContent({
           <IconRefresh size={18} />
         </button>
 
-        {/* Settings Link */}
         <a
           href="/golf/dashboard/settings/coaching-intelligence"
           className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center"
@@ -361,7 +503,6 @@ export function InsightsPageContent({
           className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-white/60 backdrop-blur-xl -mx-4 md:-mx-6 px-4 md:px-6 py-4 mb-6 lg:top-[89px]"
         >
           <div className="space-y-4">
-            {/* Search Bar */}
             <InsightSearchBar
               value={query}
               onChange={handleSearchChange}
@@ -369,7 +510,6 @@ export function InsightsPageContent({
               className="max-w-md"
             />
 
-            {/* Filters */}
             <InsightFiltersPanel
               filters={filters}
               onFiltersChange={handleFiltersChange}
@@ -386,7 +526,7 @@ export function InsightsPageContent({
           transition={{ delay: 0.2 }}
         >
           <InsightListView
-            insights={insights}
+            insights={pageInsights}
             selectedIds={selectedIds}
             onSelectionChange={setSelectedIds}
             sortBy={sortBy}
@@ -397,9 +537,8 @@ export function InsightsPageContent({
             totalCount={totalCount}
             totalPages={totalPages}
             onPageChange={handlePageChange}
-            onRefresh={handleRefresh}
+            onAction={handleCoachAction}
             isLoading={isLoading}
-            coachId={coachId}
           />
         </m.div>
       </div>
@@ -407,7 +546,7 @@ export function InsightsPageContent({
       {/* Bulk Actions Bar */}
       <InsightBulkActions
         selectedCount={selectedIds.size}
-        totalCount={insights.length}
+        totalCount={pageInsights.length}
         onSelectAll={handleSelectAll}
         onDeselectAll={handleDeselectAll}
         onBulkDismiss={handleBulkDismiss}
