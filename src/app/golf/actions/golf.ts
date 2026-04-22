@@ -1626,6 +1626,12 @@ export async function submitGolfRoundComprehensive(
       revalidatePath('/golf/dashboard');
       revalidatePath('/golf/dashboard/rounds');
       revalidatePath('/golf/dashboard/stats');
+      // Engine-driven screens. LIVE-22: these paths were missing, so players
+      // had to hard-reload CoachHelm / My Development to see post-round
+      // insights, qualifier progress, or focus-area shifts.
+      revalidatePath('/golf/dashboard/coachhelm');
+      revalidatePath('/golf/dashboard/my-development');
+      revalidatePath('/golf/dashboard/my-qualifiers');
       updateTag(CACHE_TAGS.DASHBOARD);
       updateTag(CACHE_TAGS.ROUNDS);
       updateTag(CACHE_TAGS.STATS);
