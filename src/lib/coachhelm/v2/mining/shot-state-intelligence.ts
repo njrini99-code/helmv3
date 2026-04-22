@@ -10,7 +10,9 @@
  * - lie penalties by identical yardage windows
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 type CanonicalShotType = 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty';
 type ShotRole =
@@ -363,14 +365,23 @@ function contextLabelFromKey(key: string): string {
 
 export class ShotStateIntelligence {
   private playerId: string;
+  private supabase: SupabaseClient | null = null;
 
   constructor(playerId: string) {
     this.playerId = playerId;
   }
 
+  private getClient(): SupabaseClient {
+    if (!this.supabase) {
+      this.supabase = createAdminClient() as unknown as SupabaseClient;
+    }
+    return this.supabase;
+  }
+
   async analyze(): Promise<ShotStateAnalysis | null> {
     const states = await this.loadShotStates();
-    const playerStates = states.filter((state) => state.playerId === this.playerId && state.shotType !== 'putting');
+    // Post-filter on shot type only — the query is already scoped to this player.
+    const playerStates = states.filter((state) => state.shotType !== 'putting');
 
     const playerRounds = new Set(playerStates.map((state) => state.roundId)).size;
     if (playerStates.length < 20 || playerRounds < 3) {
@@ -379,7 +390,9 @@ export class ShotStateIntelligence {
 
     const globalContexts = this.aggregateByContext(states.filter((state) => state.shotType !== 'putting'));
     const playerContexts = this.aggregateByContext(playerStates);
-    const globalMissSectors = this.aggregateByMissSector(states.filter((state) => state.playerId === this.playerId && state.shotType !== 'putting'));
+    const globalMissSectors = this.aggregateByMissSector(
+      states.filter((state) => state.shotType !== 'putting'),
+    );
 
     const insights = [
       ...this.generateStateLeakInsights(playerContexts, globalContexts, playerRounds),
@@ -412,14 +425,28 @@ export class ShotStateIntelligence {
   }
 
   private async loadShotStates(): Promise<EnrichedShotState[]> {
-    const supabase = createAdminClient();
+    const supabase = this.getClient();
 
+    // LIVE-18: scope to this player only. Prior code queried every round
+    // platform-wide and post-filtered in memory, which both leaked other
+    // tenants' round ids into the reduce pipeline and scaled poorly.
     const { data: rounds, error: roundsError } = await supabase
       .from('golf_rounds')
       .select('id, player_id')
-      .eq('status', 'completed');
+      .eq('player_id', this.playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(50);
 
-    if (roundsError || !rounds || rounds.length === 0) {
+    if (roundsError) {
+      await logServerError('shot-state-intelligence.loadShotStates failed', {
+        action: 'shot-state-intelligence.loadShotStates',
+        featureArea: 'coachhelm.mining',
+        metadata: { playerId: this.playerId, dbError: roundsError as unknown },
+      });
+      return [];
+    }
+    if (!rounds || rounds.length === 0) {
       return [];
     }
 
@@ -494,7 +521,7 @@ export class ShotStateIntelligence {
   }
 
   private async fetchShots(roundIds: string[]): Promise<RawShotRow[]> {
-    const supabase = createAdminClient();
+    const supabase = this.getClient();
     const shots: RawShotRow[] = [];
 
     for (let i = 0; i < roundIds.length; i += 100) {
@@ -514,7 +541,7 @@ export class ShotStateIntelligence {
   }
 
   private async fetchHoles(roundIds: string[]): Promise<HoleRow[]> {
-    const supabase = createAdminClient();
+    const supabase = this.getClient();
     const holes: HoleRow[] = [];
 
     for (let i = 0; i < roundIds.length; i += 100) {
