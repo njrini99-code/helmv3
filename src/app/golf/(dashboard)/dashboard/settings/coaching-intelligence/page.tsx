@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useCoachPhilosophy } from '@/hooks/coachhelm/useCoachPhilosophy';
 import {
@@ -15,6 +15,49 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconCheck } from '@/components/icons';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
+
+// camelCase -> snake_case column mapping that mirrors the one in
+// useCoachPhilosophy, kept here so we can hit the server action directly
+// for the revalidatePath side-effect without going through the hook.
+const CAMEL_TO_DB: Record<string, string> = {
+    priorityBallStriking: 'priority_ball_striking',
+    priorityShortGame: 'priority_short_game',
+    priorityPutting: 'priority_putting',
+    priorityCourseManagement: 'priority_course_management',
+    priorityMentalGame: 'priority_mental_game',
+    alertSensitivity: 'alert_sensitivity',
+    declineThreshold: 'decline_threshold',
+    pressureGapThreshold: 'pressure_gap_threshold',
+    bubbleZoneRange: 'bubble_zone_range',
+    weightHistorical: 'weight_historical',
+    weightRecentForm: 'weight_recent_form',
+    weightTournament: 'weight_tournament',
+    weightQualifying: 'weight_qualifying',
+    weightSubjective: 'weight_subjective',
+    alertScoringDecline: 'alert_scoring_decline',
+    alertStatRegression: 'alert_stat_regression',
+    alertTournamentPressure: 'alert_tournament_pressure',
+    alertPlateau: 'alert_plateau',
+    alertBubblePlayer: 'alert_bubble_player',
+    alertSurgePlayer: 'alert_surge_player',
+    alertStreaks: 'alert_streaks',
+    alertRecurringWeakness: 'alert_recurring_weakness',
+    alertClosingHoles: 'alert_closing_holes',
+    alertPar3Issues: 'alert_par_3_issues',
+    showStrokesGained: 'show_strokes_gained',
+    showAdvancedStats: 'show_advanced_stats',
+    insightVerbosity: 'insight_verbosity',
+};
+
+function camelPatchToDb(patch: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(patch)) {
+        const dbKey = CAMEL_TO_DB[key];
+        if (dbKey) out[dbKey] = value;
+    }
+    return out;
+}
 
 type PriorityValues = Pick<
     CoachPhilosophy,
@@ -52,31 +95,74 @@ export default function CoachingIntelligenceSettingsPage() {
 
     const { philosophy, loading, saving, save } = useCoachPhilosophy(coachId);
 
-    // Auto-save debouncing could go here, but for settings specific explicit actions or immediate updates are fine.
-    // We'll update the local cache immediately via the hook's optimistic update pattern (implied by just calling save)
+    // Track whether we've successfully saved at least once so the "Saved"
+    // pill doesn't appear on first render (when the user hasn't actually
+    // done anything yet). Otherwise the pill misrepresents unsaved state.
+    const [hasEverSaved, setHasEverSaved] = useState(false);
+
+    // Debounce sliders + toggles so rapid changes don't hammer the DB.
+    // Server action call afterwards ensures revalidatePath fires even when
+    // the hook's direct-supabase save would otherwise not trigger it.
+    const debounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+    useEffect(() => {
+        const timers = debounceTimersRef.current;
+        return () => {
+            timers.forEach((t) => clearTimeout(t));
+            timers.clear();
+        };
+    }, []);
+
+    const flushSave = useCallback(
+        async (patch: Partial<CoachPhilosophy>) => {
+            const ok = await save(patch);
+            if (ok && coachId) {
+                // Propagate the change + revalidate downstream screens.
+                // Best-effort — if this fails we still saved via `save`.
+                void saveCoachingPhilosophy(coachId, camelPatchToDb(patch));
+                setHasEverSaved(true);
+            }
+        },
+        [save, coachId],
+    );
+
+    const debouncedSave = useCallback(
+        (bucket: string, patch: Partial<CoachPhilosophy>, delayMs = 600) => {
+            const timers = debounceTimersRef.current;
+            const existing = timers.get(bucket);
+            if (existing) clearTimeout(existing);
+            const t = setTimeout(() => {
+                void flushSave(patch);
+                timers.delete(bucket);
+            }, delayMs);
+            timers.set(bucket, t);
+        },
+        [flushSave],
+    );
 
     const handlePriorityChange = (newValues: PriorityValues) => {
-        save(newValues);
+        // Priority ordering is a low-frequency drag; save immediately.
+        void flushSave(newValues);
     };
 
     const handleSensitivityChange = (newValue: CoachPhilosophy['alertSensitivity']) => {
-        save({ alertSensitivity: newValue });
+        void flushSave({ alertSensitivity: newValue });
     };
 
     const handleThresholdChange = (key: ThresholdKey, value: number) => {
-        save({ [key]: value } as Partial<CoachPhilosophy>);
+        debouncedSave(`threshold:${key}`, { [key]: value } as Partial<CoachPhilosophy>);
     };
 
     const handleAlertToggle = (key: keyof CoachPhilosophy, checked: boolean) => {
-        save({ [key]: checked } as Partial<CoachPhilosophy>);
+        // Toggles fire once on click — no debounce needed.
+        void flushSave({ [key]: checked } as Partial<CoachPhilosophy>);
     };
 
     const handleWeightChange = (newValues: WeightValues) => {
-        save(newValues);
+        debouncedSave('weights', newValues);
     };
 
     const handleDisplayChange = (key: DisplayKey, value: boolean | CoachPhilosophy['insightVerbosity']) => {
-        save({ [key]: value } as Partial<CoachPhilosophy>);
+        void flushSave({ [key]: value } as Partial<CoachPhilosophy>);
     };
 
     if (loading || !philosophy) {
@@ -119,12 +205,12 @@ export default function CoachingIntelligenceSettingsPage() {
                 >
                     {saving ? (
                         <span className="text-xs text-warm-400">Saving...</span>
-                    ) : (
+                    ) : hasEverSaved ? (
                         <span className="flex items-center gap-1.5 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-1 rounded-full">
                             <IconCheck size={12} />
                             Saved
                         </span>
-                    )}
+                    ) : null}
                 </MobileNavHeader>
             </AnimatedItem>
 
