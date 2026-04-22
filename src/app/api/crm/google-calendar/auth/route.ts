@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Google OAuth Configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -58,7 +59,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ authUrl });
   } catch (error) {
-    console.error('Google auth error:', error);
+    await logServerError(`Google auth error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
     return NextResponse.json(
       { error: 'Failed to initiate Google authentication' },
       { status: 500 }
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const error = await tokenResponse.text();
-      console.error('Token exchange error:', error);
+      await logServerError(`Token exchange error: ${error}`, { action: 'google_calendar_auth.POST' });
       return NextResponse.json({ error: 'Failed to exchange authorization code' }, { status: 400 });
     }
 
@@ -140,13 +141,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (dbError) {
-      console.error('Database error storing tokens:', dbError);
+      await logServerError(`Database error storing tokens: ${dbError instanceof Error ? dbError.message : String(dbError)}`, { action: 'route.POST' });
       return NextResponse.json({ error: 'Failed to store credentials' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Google auth callback error:', error);
+    await logServerError(`Google auth callback error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Failed to complete authentication' },
       { status: 500 }
@@ -187,13 +188,13 @@ export async function DELETE(_request: NextRequest) {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error deleting tokens:', error);
+      await logServerError(`Error deleting tokens: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.DELETE' });
       return NextResponse.json({ error: 'Failed to disconnect' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Google disconnect error:', error);
+    await logServerError(`Google disconnect error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.DELETE' });
     return NextResponse.json(
       { error: 'Failed to disconnect Google Calendar' },
       { status: 500 }

@@ -14,6 +14,7 @@ import { MessageSchemas } from '@/lib/validation/action-schemas';
 import { notifyNewMessage } from '@/lib/notifications';
 import { sendPushNotification } from '@/lib/notifications/push';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 type Sport = 'baseball' | 'golf';
 
@@ -103,19 +104,24 @@ export async function sendMessage({
       .single();
 
     if (messageError) {
-      console.error('[Security] Message insert failed:', {
-        userId: user.id,
-        conversationId: validatedData.conversation_id,
-        error: messageError.message,
-        code: messageError.code,
-        details: messageError.details,
-        hint: messageError.hint
+      await logServerError(`[Security] Message insert failed: ${messageError.message}`, {
+        action: 'messages.sendMessage',
+        metadata: {
+          userId: user.id,
+          conversationId: validatedData.conversation_id,
+          code: messageError.code,
+          details: messageError.details,
+          hint: messageError.hint,
+        },
       });
       throw new Error(`Failed to send message: ${messageError.message}`);
     }
 
     if (!insertedMessage) {
-      console.error('[Security] Message insert succeeded but no data returned:', { userId: user.id, conversationId: validatedData.conversation_id });
+      await logServerError('[Security] Message insert succeeded but no data returned', {
+        action: 'messages.sendMessage',
+        metadata: { userId: user.id, conversationId: validatedData.conversation_id },
+      });
       throw new Error('Failed to send message: No data returned');
     }
 
@@ -232,7 +238,7 @@ export async function createConversation({
   // Golf conversations require team_id
   if (sport === 'golf') {
     if (!teamId) {
-      console.error('[createConversation] Missing teamId for golf conversation');
+      await logServerError('[createConversation] Missing teamId for golf conversation', { action: 'messages.createConversation' });
       throw new Error('Team ID is required for golf conversations');
     }
     insertData.team_id = teamId;
@@ -245,14 +251,16 @@ export async function createConversation({
     .single() as { data: { id: string } | null; error: SupabaseError | null };
 
   if (convError || !newConversation) {
-    console.error('[createConversation] Conversation create error:', {
-      error: convError?.message,
-      code: convError?.code,
-      details: convError?.details,
-      hint: convError?.hint,
-      userId: user.id,
-      participantUserIds,
-      insertData,
+    await logServerError(`[createConversation] Conversation create error: ${convError?.message ?? 'unknown'}`, {
+      action: 'messages.createConversation',
+      metadata: {
+        code: convError?.code,
+        details: convError?.details,
+        hint: convError?.hint,
+        userId: user.id,
+        participantUserIds,
+        insertData,
+      },
     });
     throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
   }
@@ -272,12 +280,14 @@ export async function createConversation({
     .insert(participantInserts);
 
   if (participantsError) {
-    console.error('[createConversation] Participants insert error:', {
-      error: participantsError.message,
-      code: (participantsError as any).code,
-      details: (participantsError as any).details,
-      conversationId,
-      userId: user.id,
+    await logServerError(`[createConversation] Participants insert error: ${participantsError.message}`, {
+      action: 'messages.createConversation',
+      metadata: {
+        code: (participantsError as any).code,
+        details: (participantsError as any).details,
+        conversationId,
+        userId: user.id,
+      },
     });
     await supabase.from(conversationsTable as any).delete().eq('id', conversationId);
     throw new Error(`Failed to add participants: ${participantsError.message}`);
@@ -318,7 +328,7 @@ export async function markMessagesAsRead({
     .eq('user_id', user.id);
 
   if (participantError) {
-    console.error('[Messages] Failed to update last_read_at:', participantError);
+    await logServerError(`[Messages] Failed to update last_read_at: ${participantError instanceof Error ? participantError.message : String(participantError)}`, { action: 'messages.markMessagesAsRead' });
     throw new Error('Failed to mark messages as read');
   }
 
@@ -331,7 +341,7 @@ export async function markMessagesAsRead({
     .neq('sender_id', user.id);
 
   if (messagesError) {
-    console.error('[Messages] Failed to mark messages as read:', messagesError);
+    await logServerError(`[Messages] Failed to mark messages as read: ${messagesError instanceof Error ? messagesError.message : String(messagesError)}`, { action: 'messages.markMessagesAsRead' });
     throw new Error('Failed to mark messages as read');
   }
 
@@ -435,7 +445,7 @@ export async function sendGolfMessage(conversationId: string, content: string) {
       }
     } catch (notifErr) {
       // Never block message delivery on notification failure
-      console.error('[sendGolfMessage] Notification error (non-fatal):', notifErr);
+      await logServerError(`[sendGolfMessage] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'messages.sendGolfMessage' });
     }
   }
 
@@ -560,7 +570,7 @@ export async function createGolfTeamBroadcast({
       .single();
 
     if (convError || !newConversation) {
-      console.error('[Broadcast] Conversation create error:', convError);
+      await logServerError(`[Broadcast] Conversation create error: ${convError instanceof Error ? convError.message : String(convError)}`, { action: 'messages.createGolfTeamBroadcast' });
       throw new Error(`Failed to create broadcast: ${convError?.message || 'Unknown error'}`);
     }
 
@@ -581,7 +591,7 @@ export async function createGolfTeamBroadcast({
       .insert(participantInserts);
 
     if (participantsError) {
-      console.error('[Broadcast] Failed to add participants:', participantsError);
+      await logServerError(`[Broadcast] Failed to add participants: ${participantsError instanceof Error ? participantsError.message : String(participantsError)}`, { action: 'messages.createGolfTeamBroadcast' });
       throw new Error(`Failed to add participants: ${participantsError.message}`);
     }
 
@@ -767,7 +777,7 @@ export async function updateMessage({
       .eq('sender_id', user.id); // Extra safety check
 
     if (updateError) {
-      console.error('[Messages] Failed to update message:', updateError);
+      await logServerError(`[Messages] Failed to update message: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'messages.updateMessage' });
       throw new Error('Failed to update message');
     }
 
@@ -842,7 +852,7 @@ export async function deleteMessage({
       .eq('sender_id', user.id); // Extra safety check
 
     if (deleteError) {
-      console.error('[Messages] Failed to delete message:', deleteError);
+      await logServerError(`[Messages] Failed to delete message: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'messages.deleteMessage' });
       throw new Error('Failed to delete message');
     }
 
@@ -884,7 +894,7 @@ export async function getGolfPlayerUserId(playerId: string): Promise<string | nu
     .single();
 
   if (error || !player) {
-    console.error('[getGolfPlayerUserId] Error:', error);
+    await logServerError(`[getGolfPlayerUserId] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'messages.getGolfPlayerUserId' });
     return null;
   }
 

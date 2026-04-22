@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // CORS
@@ -198,7 +199,7 @@ export async function POST(request: NextRequest) {
       .single();
     
     if (error) {
-      console.error('[log-event] Database error:', error);
+      await logServerError(`[log-event] Database error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
       return NextResponse.json(
         { error: 'Failed to log event' },
         { status: 500 }
@@ -207,7 +208,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ success: true, id: data?.id });
   } catch (err) {
-    console.error('[log-event] Unexpected error:', err);
+    await logServerError(`[log-event] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

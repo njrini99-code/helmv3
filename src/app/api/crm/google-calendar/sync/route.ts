@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -35,7 +36,8 @@ async function refreshAccessToken(supabase: Awaited<ReturnType<typeof createClie
     });
 
     if (!response.ok) {
-      console.error('Token refresh failed:', await response.text());
+      const errorText = await response.text();
+      await logServerError(`Token refresh failed: ${errorText}`, { action: 'google_calendar_sync.refreshAccessToken' });
       return null;
     }
 
@@ -54,7 +56,7 @@ async function refreshAccessToken(supabase: Awaited<ReturnType<typeof createClie
 
     return tokens.access_token;
   } catch (error) {
-    console.error('Token refresh error:', error);
+    await logServerError(`Token refresh error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.refreshAccessToken' });
     return null;
   }
 }
@@ -202,14 +204,14 @@ export async function POST(request: NextRequest) {
         googleEventId = created.id;
       } else {
         const error = await response.text();
-        console.error('Google Calendar API error:', error);
+        await logServerError(`Google Calendar API error: ${error}`, { action: 'google_calendar_sync.POST' });
         return NextResponse.json({ error: 'Failed to create event in Google Calendar' }, { status: 500 });
       }
     }
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Google Calendar API error:', error);
+      await logServerError(`Google Calendar API error: ${error}`, { action: 'google_calendar_sync.POST' });
 
       // Update sync status to error
       await supabase
@@ -240,7 +242,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Sync error:', error);
+    await logServerError(`Sync error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Failed to sync event' },
       { status: 500 }
@@ -371,7 +373,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(results);
 
   } catch (error) {
-    console.error('Batch sync error:', error);
+    await logServerError(`Batch sync error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
     return NextResponse.json(
       { error: 'Failed to sync events' },
       { status: 500 }

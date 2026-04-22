@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       isV2: true
     });
   } catch (error) {
-    console.error('Generate review error:', error);
+    await logServerError(`Generate review error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
 
     await logServerError(`Generate review route failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'generateRoundReviewApi',

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 /**
  * Server action to handle demo request submissions from the landing page.
@@ -28,7 +29,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
     });
 
     if (error) {
-      console.error('Failed to save demo request:', error);
+      await logServerError(`Failed to save demo request: ${error instanceof Error ? error.message : String(error)}`, { action: 'demo_request.submitDemoRequest' });
       return { success: false, error: 'Something went wrong. Please try again.' };
     }
 
@@ -56,7 +57,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
 
     return { success: true };
   } catch (error) {
-    console.error('Failed to save demo request:', error);
+    await logServerError(`Failed to save demo request: ${error instanceof Error ? error.message : String(error)}`, { action: 'demo_request.submitDemoRequest' });
     return { success: false, error: 'Something went wrong. Please try again.' };
   }
 }

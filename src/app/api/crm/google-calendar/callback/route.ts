@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -66,7 +67,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (!tokenResponse.ok) {
-      console.error('Token exchange failed:', await tokenResponse.text());
+      const errorText = await tokenResponse.text();
+      await logServerError(`Token exchange failed: ${errorText}`, { action: 'google_calendar_callback.GET' });
       redirectUrl.searchParams.set('gcal_error', 'token_exchange_failed');
       return NextResponse.redirect(redirectUrl);
     }
@@ -88,7 +90,7 @@ export async function GET(request: NextRequest) {
         calendarName = calendar.summary || 'Primary Calendar';
       }
     } catch (e) {
-      console.error('Failed to fetch calendar info:', e);
+      await logServerError(`Failed to fetch calendar info: ${e instanceof Error ? e.message : String(e)}`, { action: 'route.GET' });
     }
 
     // Store tokens
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
       });
 
     if (dbError) {
-      console.error('Database error:', dbError);
+      await logServerError(`Database error: ${dbError instanceof Error ? dbError.message : String(dbError)}`, { action: 'route.GET' });
       redirectUrl.searchParams.set('gcal_error', 'database_error');
       return NextResponse.redirect(redirectUrl);
     }
@@ -120,7 +122,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl);
 
   } catch (error) {
-    console.error('Callback error:', error);
+    await logServerError(`Callback error: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.GET' });
     redirectUrl.searchParams.set('gcal_error', 'unknown_error');
     return NextResponse.redirect(redirectUrl);
   }

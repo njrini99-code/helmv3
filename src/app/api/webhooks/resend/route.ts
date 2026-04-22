@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Resend event types we track
 const TRACKED_EVENTS = new Set([
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
   const webhookSecret = process.env.RESEND_WEBHOOK_SECRET;
 
   if (!webhookSecret) {
-    console.error('[Resend Webhook] RESEND_WEBHOOK_SECRET not configured');
+    await logServerError('[Resend Webhook] RESEND_WEBHOOK_SECRET not configured', { action: 'route.POST' });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 
@@ -52,7 +53,7 @@ export async function POST(request: Request) {
       'svix-signature': svixSignature,
     }) as ResendWebhookPayload;
   } catch (err) {
-    console.error('[Resend Webhook] Signature verification failed:', err);
+    await logServerError(`[Resend Webhook] Signature verification failed: ${err instanceof Error ? err.message : String(err)}`, { action: 'route.POST' });
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
   }
 
@@ -96,7 +97,7 @@ export async function POST(request: Request) {
       );
 
     if (error) {
-      console.error('[Resend Webhook] Failed to store event:', error);
+      await logServerError(`[Resend Webhook] Failed to store event: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
     }
 
     // ── Coach-level side effects based on event type ──
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (err) {
-    console.error('[Resend Webhook] Processing error:', err);
+    await logServerError(`[Resend Webhook] Processing error: ${err instanceof Error ? err.message : String(err)}`, { action: 'route.POST' });
     // Still return 200 to prevent retry storms
   }
 
