@@ -7,7 +7,9 @@
  * - Transfer learning between players
  */
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 import type { MinedPattern } from '../types';
 
 // Database row type for patterns (table created via migration)
@@ -36,6 +38,23 @@ interface GlobalPatternRow {
   confidence: number;
 }
 
+// Insert-shape for `golf_global_patterns` (live-DB verified; types regen pending)
+interface GlobalPatternInsertRow {
+  signature: string;
+  pattern_type: string;
+  conditions: unknown;
+  outcomes: unknown;
+  prevalence: number;
+  average_impact: number;
+  confidence: number;
+  instance_count: number;
+  player_count: number;
+  varied_by_tier: Record<string, number>;
+  varied_by_handicap: Record<string, number>;
+  contributing_players: string[];
+  updated_at: string;
+}
+
 interface PlayerProfile {
   playerId: string;
   scoringAvg: number;
@@ -57,6 +76,7 @@ interface GlobalPattern {
   playerCount: number;
   variedByTier: Record<string, number>;
   variedByHandicap: Record<string, number>;
+  contributingPlayers: string[];
 }
 
 /**
@@ -162,13 +182,14 @@ export class CrossLearner {
         playerCount: uniquePlayers.size,
         variedByTier: await this.calculateVariationByTier(group),
         variedByHandicap: await this.calculateVariationByHandicap(group),
+        contributingPlayers: Array.from(uniquePlayers),
       };
 
       globalPatterns.push(globalPattern);
     }
 
     // Save to database
-    await this.saveGlobalPatterns(globalPatterns);
+    await this.saveGlobalPatterns(globalPatterns, supabase);
 
     return globalPatterns;
   }
@@ -544,33 +565,64 @@ export class CrossLearner {
   }
 
   /**
-   * Saves global patterns to database
+   * Saves global patterns to database.
+   *
+   * Writes one row per pattern to `golf_global_patterns` matching the live
+   * schema (plural `outcomes`, `contributing_players` array, snake_case).
+   * A single bulk `upsert` is used so the DB does one round-trip for N rows.
+   *
+   * Note: `golf_global_patterns` is not yet present in the generated
+   * `Database` types (Team A migration was applied via execute_sql; type regen
+   * is pending). The typed call is bridged via `GlobalPatternInsertRow` +
+   * a narrow `@ts-expect-error` so no `(supabase as any)` cast is introduced.
    */
-  private async saveGlobalPatterns(patterns: GlobalPattern[]): Promise<void> {
-    const supabase = await createClient();
+  private async saveGlobalPatterns(
+    patterns: GlobalPattern[],
+    injected?: SupabaseClient
+  ): Promise<void> {
+    if (patterns.length === 0) return;
+    const supabase = injected ?? (await createClient());
 
-    // Type assertion for new table not in generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const globalPatternsTable = supabase.from('golf_global_patterns' as any) as any;
+    const rows: GlobalPatternInsertRow[] = patterns.map((p) => ({
+      signature: p.signature,
+      pattern_type: p.patternType,
+      conditions: p.conditions,
+      // DB column is plural `outcomes`; prior code wrote singular `outcome` and silently dropped the value
+      outcomes: p.outcome,
+      prevalence: p.prevalence,
+      average_impact: p.averageImpact,
+      confidence: p.confidence,
+      instance_count: p.instanceCount,
+      player_count: p.playerCount,
+      varied_by_tier: p.variedByTier ?? {},
+      varied_by_handicap: p.variedByHandicap ?? {},
+      contributing_players: p.contributingPlayers ?? [],
+      updated_at: new Date().toISOString(),
+    }));
 
-    for (const pattern of patterns) {
-      await globalPatternsTable.upsert(
-        {
-          signature: pattern.signature,
-          pattern_type: pattern.patternType,
-          conditions: pattern.conditions,
-          outcome: pattern.outcome,
-          prevalence: pattern.prevalence,
-          average_impact: pattern.averageImpact,
-          confidence: pattern.confidence,
-          instance_count: pattern.instanceCount,
-          player_count: pattern.playerCount,
-          varied_by_tier: pattern.variedByTier,
-          varied_by_handicap: pattern.variedByHandicap,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'signature' }
-      );
+    // Bridge: `golf_global_patterns` is live in DB but not yet in generated types.
+    // Narrow the client to `unknown` then to a typed table accessor — avoids a
+    // `(supabase as any)` cast while still compiling cleanly until types regen lands.
+    const fromFn = (supabase as unknown as {
+      from: (table: string) => {
+        upsert: (
+          rows: GlobalPatternInsertRow[],
+          opts: { onConflict: string }
+        ) => Promise<{ error: { message: string } | null }>;
+      };
+    }).from;
+
+    const { error } = await fromFn
+      .call(supabase, 'golf_global_patterns')
+      .upsert(rows, { onConflict: 'signature' });
+
+    if (error) {
+      await logServerError('cross-learner.saveGlobalPatterns failed', {
+        action: 'cross-learner.saveGlobalPatterns',
+        featureArea: 'coachhelm.learning',
+        source: 'background_job',
+        metadata: { count: rows.length, dbError: error as unknown },
+      });
     }
   }
 
