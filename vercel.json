@@ -16,6 +16,10 @@
     {
       "path": "/api/cron/coachhelm-safety-net",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/coachhelm-insight-lifecycle",
+      "schedule": "0 2 * * *"
     }
   ]
 }
