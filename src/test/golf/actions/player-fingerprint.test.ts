@@ -52,10 +52,8 @@ vi.mock('@/app/golf/actions/insight-delivery', () => ({
     ),
 }));
 
-import {
-  getPlayerFingerprint,
-  FINGERPRINT_SECTION_ORDER,
-} from '@/app/golf/actions/player-fingerprint';
+import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
 
 // ---------------------------------------------------------------------------
 // Fixture builders

@@ -13,7 +13,7 @@ import Script from 'next/script';
 import { notFound, redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { getPlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
-import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint';
+import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
 import { cn } from '@/lib/utils';
 import { MetricPill } from '../sections/FingerprintHero';
 import './print.css';

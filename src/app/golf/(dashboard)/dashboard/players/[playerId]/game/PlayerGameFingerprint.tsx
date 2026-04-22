@@ -23,7 +23,7 @@ import { useCallback, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { InsightAction } from '@/components/golf/coachhelm/insight-card';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
-import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint';
+import { FINGERPRINT_SECTION_ORDER } from '@/app/golf/actions/player-fingerprint-types';
 import {
   acknowledgeInsight,
   dismissInsight,

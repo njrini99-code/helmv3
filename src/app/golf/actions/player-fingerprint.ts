@@ -63,15 +63,10 @@ const SECTION_CATEGORIES: Record<FingerprintSectionKey, string[]> = {
   pressure: ['pressure'],
 };
 
-/** Stable section order — the UI renders in this order; tests assert it. */
-export const FINGERPRINT_SECTION_ORDER: readonly FingerprintSectionKey[] = [
-  'tee',
-  'approach',
-  'short_game',
-  'putting',
-  'scoring',
-  'pressure',
-] as const;
+// `FINGERPRINT_SECTION_ORDER` lives in `./player-fingerprint-types.ts` —
+// `'use server'` files can only export async functions, and the const array
+// is a runtime value the build collector rejects here. Consumers import it
+// from the types module directly.
 
 export interface FingerprintMetric {
   label: string;
