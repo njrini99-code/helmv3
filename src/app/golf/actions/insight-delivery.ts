@@ -87,6 +87,9 @@ export interface GetInsightsForCoachOptions {
   limit?: number;
   categories?: string[];
   player_id?: string;
+  /** Narrows to the supplied priority levels. Used by the alerts surface
+   *  which only cares about urgent/high rows. */
+  priorities?: Array<'low' | 'medium' | 'high' | 'urgent'>;
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +341,10 @@ export async function getInsightsForCoach(
 
   if (opts.categories && opts.categories.length > 0) {
     query = query.in('category', opts.categories);
+  }
+
+  if (opts.priorities && opts.priorities.length > 0) {
+    query = query.in('priority', opts.priorities);
   }
 
   const { data, error } = await query;
