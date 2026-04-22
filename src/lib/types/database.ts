@@ -6018,13 +6018,18 @@ export type Database = {
           action_date: string | null
           action_taken: boolean | null
           action_type: string | null
+          addressed_at: string | null
+          archived_at: string | null
+          category: string | null
           coach_id: string | null
           content: string | null
           created_at: string | null
           dismissed: boolean | null
           dismissed_at: string | null
+          evidence: Json | null
           id: string
           insight_type: string
+          lifecycle_state: string | null
           metadata: Json | null
           outcome_measured_at: string | null
           outcome_metric_after: number | null
@@ -6035,6 +6040,7 @@ export type Database = {
           player_id: string | null
           priority: string | null
           resolved_at: string | null
+          signature: string | null
           source_id: string | null
           source_type: string | null
           status: string | null
@@ -6047,13 +6053,18 @@ export type Database = {
           action_date?: string | null
           action_taken?: boolean | null
           action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
           coach_id?: string | null
           content?: string | null
           created_at?: string | null
           dismissed?: boolean | null
           dismissed_at?: string | null
+          evidence?: Json | null
           id?: string
           insight_type: string
+          lifecycle_state?: string | null
           metadata?: Json | null
           outcome_measured_at?: string | null
           outcome_metric_after?: number | null
@@ -6064,6 +6075,7 @@ export type Database = {
           player_id?: string | null
           priority?: string | null
           resolved_at?: string | null
+          signature?: string | null
           source_id?: string | null
           source_type?: string | null
           status?: string | null
@@ -6076,13 +6088,18 @@ export type Database = {
           action_date?: string | null
           action_taken?: boolean | null
           action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
           coach_id?: string | null
           content?: string | null
           created_at?: string | null
           dismissed?: boolean | null
           dismissed_at?: string | null
+          evidence?: Json | null
           id?: string
           insight_type?: string
+          lifecycle_state?: string | null
           metadata?: Json | null
           outcome_measured_at?: string | null
           outcome_metric_after?: number | null
@@ -6093,6 +6110,7 @@ export type Database = {
           player_id?: string | null
           priority?: string | null
           resolved_at?: string | null
+          signature?: string | null
           source_id?: string | null
           source_type?: string | null
           status?: string | null
@@ -6695,6 +6713,45 @@ export type Database = {
           },
         ]
       }
+      golf_drills: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string
+          difficulty: string
+          duration_min: number
+          id: string
+          slug: string
+          tags: string[]
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description: string
+          difficulty: string
+          duration_min: number
+          id?: string
+          slug: string
+          tags?: string[]
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string
+          difficulty?: string
+          duration_min?: number
+          id?: string
+          slug?: string
+          tags?: string[]
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       golf_event_attendance: {
         Row: {
           checked_in: boolean | null
@@ -6965,6 +7022,39 @@ export type Database = {
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "golf_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_insight_drill_attachments: {
+        Row: {
+          drill_id: string
+          insight_id: string
+          rank: number
+        }
+        Insert: {
+          drill_id: string
+          insight_id: string
+          rank?: number
+        }
+        Update: {
+          drill_id?: string
+          insight_id?: string
+          rank?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_drill_attachments_drill_id_fkey"
+            columns: ["drill_id"]
+            isOneToOne: false
+            referencedRelation: "golf_drills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_drill_attachments_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
             referencedColumns: ["id"]
           },
         ]
