@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
@@ -13,14 +13,30 @@ import {
   IconWarning,
   IconInfo,
   IconTrophy,
+  IconHelp,
 } from '@/components/icons';
 import type { ComposedInsight, InsightTone } from '@/lib/coachhelm/v2/types';
 
-interface AIInsightsPanelProps {
+/**
+ * ComposedInsight does not currently carry a DB id (insights are composed
+ * in-memory by the engine). When the feedback loop needs to target a
+ * persisted `golf_coach_insights` row, upstream code tags the insight with
+ * an `id`. We read it opportunistically — if an id isn't present we skip
+ * the feedback handler so the UI doesn't fire a no-op server action.
+ */
+type InsightWithMaybeId = ComposedInsight & { id?: string };
+
+export type InsightRating = 'helpful' | 'not_helpful';
+
+export interface AIInsightsPanelProps {
   insights: ComposedInsight[];
   maxDisplay?: number;
-  onDismiss?: (index: number) => void;
-  onAcknowledge?: (index: number) => void;
+  /** Fired when the player reacts to the insight with a qualitative rating. */
+  onRate?: (rating: InsightRating, insightId: string) => Promise<void> | void;
+  /** Fired when the player marks an insight as acknowledged ("Got It"). */
+  onAcknowledge?: (insightId: string) => Promise<void> | void;
+  /** Fired when the player dismisses the insight. */
+  onDismiss?: (insightId: string) => Promise<void> | void;
 }
 
 const toneConfig: Record<InsightTone, {
@@ -67,21 +83,38 @@ const toneConfig: Record<InsightTone, {
   },
 };
 
+interface InsightCardProps {
+  insight: InsightWithMaybeId;
+  index: number;
+  onRate?: AIInsightsPanelProps['onRate'];
+  onAcknowledge?: AIInsightsPanelProps['onAcknowledge'];
+  onDismiss?: AIInsightsPanelProps['onDismiss'];
+}
+
 function InsightCard({
   insight,
   index,
-  onDismiss,
+  onRate,
   onAcknowledge,
-}: {
-  insight: ComposedInsight;
-  index: number;
-  onDismiss?: (index: number) => void;
-  onAcknowledge?: (index: number) => void;
-}) {
+  onDismiss,
+}: InsightCardProps) {
   const [expanded, setExpanded] = useState(false);
+  // React 19 `useTransition` — gives each button a lightweight pending state
+  // while the server action resolves. Individual ref per action so we can
+  // disable buttons selectively.
+  const [ratingPending, startRating] = useTransition();
+  const [ackPending, startAck] = useTransition();
+  const [dismissPending, startDismiss] = useTransition();
+
   const config = toneConfig[insight.tone] || toneConfig.neutral;
   const Icon = config.icon;
   const confidencePercent = Math.round(Number(insight.confidence ?? 0) * 100);
+
+  // Only render the feedback row when at least one handler is supplied AND we
+  // have an id to target — without an id we'd fire a meaningless call.
+  const hasHandler = Boolean(onRate || onAcknowledge || onDismiss);
+  const insightId = insight.id;
+  const showActions = hasHandler && !!insightId;
 
   return (
     <m.div
@@ -212,15 +245,41 @@ function InsightCard({
               )}
 
               {/* Actions */}
-              {(onAcknowledge || onDismiss) && (
-                <div className="flex items-center gap-2 pt-2">
-                  {onAcknowledge && (
+              {showActions && insightId && (
+                <div className="flex items-center gap-2 pt-2 flex-wrap">
+                  {onRate && (
                     <button
+                      type="button"
+                      disabled={ratingPending}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onAcknowledge(index);
+                        startRating(() => {
+                          void Promise.resolve(onRate('helpful', insightId));
+                        });
                       }}
-                      className="flex items-center gap-2 text-xs font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors"
+                      className={cn(
+                        'flex items-center gap-2 text-xs font-medium text-primary-700 hover:text-primary-800 px-3 py-1.5 rounded-lg bg-primary-100 hover:bg-primary-200 transition-colors',
+                        ratingPending && 'opacity-60 pointer-events-none'
+                      )}
+                    >
+                      <IconHelp size={14} />
+                      Helpful
+                    </button>
+                  )}
+                  {onAcknowledge && (
+                    <button
+                      type="button"
+                      disabled={ackPending}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startAck(() => {
+                          void Promise.resolve(onAcknowledge(insightId));
+                        });
+                      }}
+                      className={cn(
+                        'flex items-center gap-2 text-xs font-medium text-primary-600 hover:text-primary-700 px-3 py-1.5 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors',
+                        ackPending && 'opacity-60 pointer-events-none'
+                      )}
                     >
                       <IconCheck size={14} />
                       Got It
@@ -228,11 +287,18 @@ function InsightCard({
                   )}
                   {onDismiss && (
                     <button
+                      type="button"
+                      disabled={dismissPending}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDismiss(index);
+                        startDismiss(() => {
+                          void Promise.resolve(onDismiss(insightId));
+                        });
                       }}
-                      className="flex items-center gap-2 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors"
+                      className={cn(
+                        'flex items-center gap-2 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors',
+                        dismissPending && 'opacity-60 pointer-events-none'
+                      )}
                     >
                       <IconX size={14} />
                       Dismiss
@@ -251,8 +317,9 @@ function InsightCard({
 export function AIInsightsPanel({
   insights,
   maxDisplay = 5,
-  onDismiss,
+  onRate,
   onAcknowledge,
+  onDismiss,
 }: AIInsightsPanelProps) {
   const [showAll, setShowAll] = useState(false);
   const displayInsights = showAll ? insights : insights.slice(0, maxDisplay);
@@ -304,15 +371,15 @@ export function AIInsightsPanel({
 
       {/* Insights list */}
       <div className="space-y-3">
-        {/* popLayout removed — list just fades items in/out, no layout measurement needed */}
         <AnimatePresence>
           {displayInsights.map((insight, index) => (
             <InsightCard
-              key={`${insight.headline}-${index}`}
-              insight={insight}
+              key={`${(insight as InsightWithMaybeId).id ?? insight.headline}-${index}`}
+              insight={insight as InsightWithMaybeId}
               index={index}
-              onDismiss={onDismiss}
+              onRate={onRate}
               onAcknowledge={onAcknowledge}
+              onDismiss={onDismiss}
             />
           ))}
         </AnimatePresence>
