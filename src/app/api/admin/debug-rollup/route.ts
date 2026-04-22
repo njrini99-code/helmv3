@@ -96,10 +96,23 @@ export async function GET() {
   const aValue = await fetchAdminRollupA();
   const rC = await step('fetchAdminRollupC', () => fetchAdminRollupC(aValue.allRoundsMinimal));
   results.push(rC);
+  if (!rC.ok) {
+    return NextResponse.json(
+      { ok: false, totalMs: Date.now() - tStart, results },
+      { status: 500 },
+    );
+  }
+
+  // Exercise the full getAdminDashboardData path — this is what /golf/admin
+  // actually calls. If this throws, the bug is in assembly or the
+  // kept-calls block (platformHealth / shot telemetry).
+  const { getAdminDashboardData } = await import('@/app/golf/actions/admin-data');
+  const rFull = await step('getAdminDashboardData (full)', () => getAdminDashboardData());
+  results.push(rFull);
 
   return NextResponse.json(
     {
-      ok: rC.ok,
+      ok: rFull.ok,
       totalMs: Date.now() - tStart,
       results,
       note: 'if all three slices succeed but /golf/admin still fails, the bug is in assembleAdminDashboardData',

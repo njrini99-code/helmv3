@@ -1479,15 +1479,22 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   const responseTime = Math.round(performance.now() - startTime);
 
-  return assembleAdminDashboardData({
-    rollupA,
-    rollupB,
-    rollupC,
-    vercelAnalytics,
-    platformHealth,
-    dataQualityRaw,
-    responseTime,
-  });
+  try {
+    return assembleAdminDashboardData({
+      rollupA,
+      rollupB,
+      rollupC,
+      vercelAnalytics,
+      platformHealth,
+      dataQualityRaw,
+      responseTime,
+    });
+  } catch (e) {
+    const err = e as Error;
+    console.error('[admin-data] assembleAdminDashboardData threw:', err?.message);
+    console.error('[admin-data] assembleAdminDashboardData stack:', err?.stack);
+    throw new Error(`assembleAdminDashboardData failed: ${err?.message ?? String(e)}`);
+  }
 }
 
 // ============================================
