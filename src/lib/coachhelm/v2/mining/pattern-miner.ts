@@ -10,6 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 import type {
   MinedPattern,
   PatternCondition,
@@ -622,47 +623,83 @@ export class PatternMiner {
   }
 
   /**
-   * Saves patterns to database
+   * Map a MinedPattern to the `golf_patterns_v2` insert-row shape.
+   *
+   * Task B13 adds:
+   *   - severity          (row column, default 'medium')
+   *   - lifecycle_state   (row column, default 'detected' on first write)
+   *   - source_round_ids  (text[] column, empty array when unknown)
+   */
+  private toRow(pattern: MinedPattern): Record<string, unknown> {
+    return {
+      id: pattern.id,
+      player_id: pattern.playerId,
+      pattern_type: pattern.patternType,
+      conditions: pattern.conditions,
+      outcome: pattern.outcome,
+      support: pattern.support,
+      confidence: pattern.confidence,
+      lift: pattern.lift,
+      conviction: pattern.conviction,
+      stroke_impact: pattern.strokeImpact,
+      actionability: pattern.actionability,
+      sample_size: pattern.sampleSize,
+      first_detected: pattern.firstDetected,
+      last_occurrence: pattern.lastOccurrence,
+      occurrence_count: pattern.occurrenceCount,
+      trend: pattern.trend,
+      is_active: pattern.isActive,
+      severity: pattern.severity ?? 'medium',
+      lifecycle_state: pattern.lifecycleState ?? 'detected',
+      source_round_ids: pattern.sourceRoundIds ?? [],
+      metadata: {
+        description: pattern.description,
+        recommendation: pattern.recommendation,
+      },
+    };
+  }
+
+  /**
+   * Saves patterns to database.
+   *
+   * Task B14 — partial-success persistence: the prior loop threw on the
+   * first failure and aborted the rest. Switch to \`Promise.allSettled\`
+   * so the engine writes every pattern it can; failures are captured via
+   * \`logServerError\` so the admin dashboard still surfaces the issue.
    */
   private async savePatterns(patterns: MinedPattern[]): Promise<void> {
     if (patterns.length === 0) return;
 
     const supabase = createAdminClient();
 
-    // Type assertion for new table not in generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const table = supabase.from('golf_patterns_v2' as any) as any;
+    const fromFn = (supabase as unknown as {
+      from: (t: string) => {
+        upsert: (
+          row: Record<string, unknown>,
+          opts: { onConflict: string },
+        ) => Promise<{ error: { message: string } | null }>;
+      };
+    }).from;
 
-    for (const pattern of patterns) {
-      const { error } = await table.upsert(
-        {
-          id: pattern.id,
-          player_id: pattern.playerId,
-          pattern_type: pattern.patternType,
-          conditions: pattern.conditions,
-          outcome: pattern.outcome,
-          support: pattern.support,
-          confidence: pattern.confidence,
-          lift: pattern.lift,
-          conviction: pattern.conviction,
-          stroke_impact: pattern.strokeImpact,
-          actionability: pattern.actionability,
-          sample_size: pattern.sampleSize,
-          first_detected: pattern.firstDetected,
-          last_occurrence: pattern.lastOccurrence,
-          occurrence_count: pattern.occurrenceCount,
-          trend: pattern.trend,
-          is_active: pattern.isActive,
-          metadata: {
-            description: pattern.description,
-            recommendation: pattern.recommendation,
-          },
-        },
-        { onConflict: 'id' }
-      );
+    const results = await Promise.allSettled(
+      patterns.map((p) =>
+        fromFn.call(supabase, 'golf_patterns_v2').upsert(this.toRow(p), { onConflict: 'id' }),
+      ),
+    );
 
-      if (error) {
-        throw new Error(`Failed to save CoachHelm pattern: ${error.message}`);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        await logServerError('pattern-miner.savePatterns rejected', {
+          action: 'pattern-miner.savePatterns',
+          featureArea: 'coachhelm.mining',
+          metadata: { reason: String(result.reason) },
+        });
+      } else if (result.value.error) {
+        await logServerError('pattern-miner.savePatterns db error', {
+          action: 'pattern-miner.savePatterns',
+          featureArea: 'coachhelm.mining',
+          metadata: { dbError: result.value.error as unknown },
+        });
       }
     }
   }

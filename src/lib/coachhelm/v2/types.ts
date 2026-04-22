@@ -81,6 +81,11 @@ export interface MinedPattern {
   // Human-readable
   description?: string;
   recommendation?: string;
+
+  // Lifecycle / severity metadata (Task B13). Persisted to golf_patterns_v2.
+  severity?: 'low' | 'medium' | 'high' | 'critical';
+  lifecycleState?: 'detected' | 'validated' | 'acknowledged' | 'dismissed' | 'resolved';
+  sourceRoundIds?: string[];
 }
 
 // ============================================================================
