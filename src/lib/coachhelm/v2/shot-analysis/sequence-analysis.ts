@@ -69,8 +69,11 @@ export function calculateResilienceScore(sgValues: number[]): number {
 
   const afterBadSG: number[] = [];
   for (let i = 1; i < sgValues.length; i++) {
-    if (classifySG(sgValues[i - 1]) === 'bad') {
-      afterBadSG.push(sgValues[i]);
+    const prev = sgValues[i - 1];
+    const curr = sgValues[i];
+    if (prev === undefined || curr === undefined) continue;
+    if (classifySG(prev) === 'bad') {
+      afterBadSG.push(curr);
     }
   }
 
@@ -113,11 +116,16 @@ export function analyzeSequenceEffects(
   let totalBadShots = 0;
 
   for (let i = 1; i < sgValues.length; i++) {
-    // Only consider sequential shots within the same round
-    if (shots[i].roundId !== shots[i - 1].roundId) continue;
-
-    const prevQuality = classifySG(sgValues[i - 1]);
+    const currShot = shots[i];
+    const prevShot = shots[i - 1];
+    const prevSG = sgValues[i - 1];
     const currSG = sgValues[i];
+    if (!currShot || !prevShot || prevSG === undefined || currSG === undefined) continue;
+
+    // Only consider sequential shots within the same round
+    if (currShot.roundId !== prevShot.roundId) continue;
+
+    const prevQuality = classifySG(prevSG);
     const currQuality = classifySG(currSG);
 
     switch (prevQuality) {
@@ -172,40 +180,47 @@ export function detectCompoundingPatterns(
   let streakLength = 0;
 
   for (let i = 0; i < sgValues.length; i++) {
-    const isBad = sgValues[i] < threshold;
+    const currSG = sgValues[i];
+    const currShot = shots[i];
+    if (currSG === undefined || !currShot) continue;
+
+    const isBad = currSG < threshold;
 
     // Break streak if different round
-    const sameRound =
-      i === 0 || shots[i].roundId === shots[i - 1].roundId;
+    const prevShot = i > 0 ? shots[i - 1] : undefined;
+    const prevSG = i > 0 ? sgValues[i - 1] : undefined;
+    const sameRound = i === 0 || (prevShot !== undefined && currShot.roundId === prevShot.roundId);
+    const prevIsBad = prevSG !== undefined && prevSG < threshold;
 
-    if (isBad && sameRound && (streakStart !== -1 || i === 0 || sgValues[i - 1] < threshold)) {
+    if (isBad && sameRound && (streakStart !== -1 || i === 0 || prevIsBad)) {
       if (streakStart === -1) {
         // Start of a new potential streak — look back to find the actual start
-        streakStart = i > 0 && sgValues[i - 1] < threshold ? i - 1 : i;
-        streakSGLost = i > 0 && sgValues[i - 1] < threshold
-          ? sgValues[i - 1] + sgValues[i]
-          : sgValues[i];
-        streakLength = i > 0 && sgValues[i - 1] < threshold ? 2 : 1;
+        streakStart = i > 0 && prevIsBad ? i - 1 : i;
+        streakSGLost = i > 0 && prevIsBad && prevSG !== undefined
+          ? prevSG + currSG
+          : currSG;
+        streakLength = i > 0 && prevIsBad ? 2 : 1;
       } else {
         streakLength++;
-        streakSGLost += sgValues[i];
+        streakSGLost += currSG;
       }
     } else {
       // End of streak — record if long enough
       if (streakLength >= 3) {
-        const triggerIdx = streakStart;
-        const triggerShot = shots[triggerIdx];
-        const triggerDesc =
-          `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
-          `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
-          (triggerShot.club ? ` (${triggerShot.club})` : '');
+        const triggerShot = shots[streakStart];
+        if (triggerShot) {
+          const triggerDesc =
+            `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
+            `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
+            (triggerShot.club ? ` (${triggerShot.club})` : '');
 
-        patterns.push({
-          startHole: triggerShot.holeNumber,
-          length: streakLength,
-          totalSGLost: streakSGLost,
-          triggerShot: triggerDesc,
-        });
+          patterns.push({
+            startHole: triggerShot.holeNumber,
+            length: streakLength,
+            totalSGLost: streakSGLost,
+            triggerShot: triggerDesc,
+          });
+        }
       }
       streakStart = -1;
       streakSGLost = 0;
@@ -216,17 +231,19 @@ export function detectCompoundingPatterns(
   // Handle streak that extends to end of data
   if (streakLength >= 3) {
     const triggerShot = shots[streakStart];
-    const triggerDesc =
-      `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
-      `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
-      (triggerShot.club ? ` (${triggerShot.club})` : '');
+    if (triggerShot) {
+      const triggerDesc =
+        `Hole ${triggerShot.holeNumber}, shot ${triggerShot.shotNumber}: ` +
+        `${triggerShot.lieBefore} at ${triggerShot.distanceBefore}y` +
+        (triggerShot.club ? ` (${triggerShot.club})` : '');
 
-    patterns.push({
-      startHole: triggerShot.holeNumber,
-      length: streakLength,
-      totalSGLost: streakSGLost,
-      triggerShot: triggerDesc,
-    });
+      patterns.push({
+        startHole: triggerShot.holeNumber,
+        length: streakLength,
+        totalSGLost: streakSGLost,
+        triggerShot: triggerDesc,
+      });
+    }
   }
 
   // Sort by total SG lost (most damaging first)
