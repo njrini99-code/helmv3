@@ -1,0 +1,283 @@
+/**
+ * EvidencePanel — presents the canonical `InsightEvidence` JSONB attached to
+ * an insight. Ships in two densities:
+ *
+ *  - `compact` (default card view): a single row of pills with the four most
+ *    load-bearing facts — your number, comparison, sample/window, strokes
+ *    impact. Tiny, tabular-nums, sits directly under the insight title.
+ *  - expanded (user tapped "show details"): a 2-column key/value grid that
+ *    enumerates every evidence field plus a confidence progress bar.
+ *
+ * Renders nothing when `evidence` is null/undefined so legacy pre-phase
+ * insight rows don't break the UI.
+ *
+ * Design contract:
+ * docs/superpowers/plans/2026-04-22-insight-quality/00-design-contract.md
+ */
+import { cn } from '@/lib/utils';
+import type {
+  InsightEvidence,
+  InsightUnit,
+} from '@/lib/coachhelm/v2/insights/types';
+
+export interface EvidencePanelProps {
+  /** The full InsightEvidence JSON blob from golf_coach_insights.evidence. */
+  evidence: InsightEvidence | null | undefined;
+  /** When true render the single-row summary; when false render the full grid. */
+  compact?: boolean;
+  /** Optional test-id hook so integrators can target the wrapper in e2e specs. */
+  'data-testid'?: string;
+}
+
+const SHORT_MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+/**
+ * Formats an evidence value given its unit. Prefers the pre-formatted
+ * `your_value_display` string when present (generators render it once with
+ * the right rounding/sign rules, so UI code shouldn't second-guess them).
+ */
+export function formatValue(
+  value: number,
+  unit: InsightUnit,
+  display?: string,
+): string {
+  if (display && display.trim().length > 0) return display;
+  switch (unit) {
+    case 'percent': {
+      // your_value for `percent` is a 0..1 fraction; scale for display.
+      const pct = Math.abs(value) <= 1 ? value * 100 : value;
+      return `${Math.round(pct)}%`;
+    }
+    case 'strokes': {
+      const sign = value > 0 ? '+' : '';
+      return `${sign}${value.toFixed(1)}`;
+    }
+    case 'yards':
+      return `${Math.round(value)} yd`;
+    case 'feet':
+      return `${Math.round(value)} ft`;
+    case 'count':
+      return `${Math.round(value)}`;
+    default:
+      return String(value);
+  }
+}
+
+/**
+ * "30 days (Mar 23 - Apr 22)". Falls back to plain day-count if the dates
+ * don't parse — generators should send ISO but we stay defensive.
+ */
+export function formatWindow(
+  start: string,
+  end: string,
+  days: number,
+): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return `${days} days`;
+  }
+  const fmt = (d: Date) => `${SHORT_MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
+  return `${days} days (${fmt(startDate)} – ${fmt(endDate)})`;
+}
+
+/** green ≥ 0.7, amber 0.4..0.7, gray < 0.4 */
+export function confidenceColor(c: number): {
+  bar: string;
+  text: string;
+  bg: string;
+} {
+  if (c >= 0.7) return { bar: 'bg-primary-500', text: 'text-primary-700', bg: 'bg-primary-100' };
+  if (c >= 0.4) return { bar: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-100' };
+  return { bar: 'bg-warm-400', text: 'text-warm-600', bg: 'bg-warm-100' };
+}
+
+const METHOD_LABELS: Record<InsightEvidence['strokes_impact_method'], string> = {
+  sg_baseline: 'Strokes-gained baseline',
+  historical_correlation: 'Historical correlation',
+  peer_delta: 'Peer delta',
+  rough_estimate: 'Rough estimate',
+};
+
+const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
+  d1_avg: 'D1 average',
+  d2_avg: 'D2 average',
+  d3_avg: 'D3 average',
+  naia_avg: 'NAIA average',
+  juco_avg: 'JUCO average',
+  your_baseline: 'Your baseline',
+  team_avg: 'Team average',
+  peer_percentile: 'Peer percentile',
+  pga_baseline: 'PGA baseline',
+  absolute_target: 'Target',
+};
+
+/**
+ * "47 putts" / "24 rounds" — unit-aware sample wording. Count is the default
+ * because most generators report counts; putts/rounds/shots get pulled from
+ * the metric label when we can parse it, otherwise we fall back to "obs".
+ */
+function formatSample(sample: number, metric: string): string {
+  const noun = sample === 1 ? 'observation' : 'observations';
+  // Quick pattern: look for the last underscore-free word in metric to derive
+  // a noun (e.g. putt_make_rate_6_10ft -> "putts").
+  if (/putt/i.test(metric)) return `${sample} putt${sample === 1 ? '' : 's'}`;
+  if (/approach/i.test(metric)) return `${sample} approach${sample === 1 ? '' : 'es'}`;
+  if (/tee|drive/i.test(metric)) return `${sample} tee shot${sample === 1 ? '' : 's'}`;
+  if (/round/i.test(metric)) return `${sample} round${sample === 1 ? '' : 's'}`;
+  if (/scramble|scrambl/i.test(metric)) return `${sample} attempt${sample === 1 ? '' : 's'}`;
+  return `${sample} ${noun}`;
+}
+
+export function EvidencePanel({
+  evidence,
+  compact = true,
+  'data-testid': testId,
+}: EvidencePanelProps) {
+  // Defensive: an insight minted before this phase will have no evidence
+  // JSON. Render nothing rather than a half-populated panel.
+  if (!evidence) return null;
+
+  const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
+  const colors = confidenceColor(evidence.confidence);
+
+  if (compact) {
+    return (
+      <div
+        data-testid={testId ?? 'evidence-panel-compact'}
+        className={cn(
+          'flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-xs text-warm-700 tabular-nums',
+        )}
+      >
+        <span
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/70 border border-white/40 font-medium"
+          data-testid="evidence-your-value"
+        >
+          <span aria-hidden>🎯</span>
+          <span>
+            {formatValue(evidence.your_value, evidence.unit, evidence.your_value_display)}
+            {' vs '}
+            {formatValue(evidence.comparison_value, evidence.unit)}{' '}
+            <span className="text-warm-500">
+              {SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label}
+            </span>
+          </span>
+        </span>
+        <span className="text-warm-500" data-testid="evidence-sample">
+          {formatSample(evidence.sample_n, evidence.metric)} in {evidence.window_days} days
+        </span>
+        {evidence.strokes_impact !== 0 && (
+          <span className="text-warm-600" data-testid="evidence-impact">
+            ~{Math.abs(evidence.strokes_impact).toFixed(1)} strokes/round
+          </span>
+        )}
+        <span
+          className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
+          data-testid="evidence-confidence"
+        >
+          {confPct}% confidence
+        </span>
+      </div>
+    );
+  }
+
+  // Expanded mode — 2-column key/value grid.
+  const rows: Array<{ label: string; value: React.ReactNode; testId: string }> = [
+    {
+      label: 'Your number',
+      value: (
+        <span className="font-semibold text-warm-900">
+          {formatValue(evidence.your_value, evidence.unit, evidence.your_value_display)}
+        </span>
+      ),
+      testId: 'evidence-row-your',
+    },
+    {
+      label: 'Comparison',
+      value: (
+        <span>
+          <span className="font-semibold text-warm-900">
+            {formatValue(evidence.comparison_value, evidence.unit)}
+          </span>{' '}
+          <span className="text-warm-500">
+            ({SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label})
+          </span>
+        </span>
+      ),
+      testId: 'evidence-row-comparison',
+    },
+    {
+      label: 'Sample',
+      value: <span>{formatSample(evidence.sample_n, evidence.metric)}</span>,
+      testId: 'evidence-row-sample',
+    },
+    {
+      label: 'Window',
+      value: (
+        <span>{formatWindow(evidence.window_start, evidence.window_end, evidence.window_days)}</span>
+      ),
+      testId: 'evidence-row-window',
+    },
+    {
+      label: 'Strokes impact',
+      value: (
+        <span>
+          ~{Math.abs(evidence.strokes_impact).toFixed(1)}{' '}
+          <span className="text-warm-500">strokes/round</span>
+        </span>
+      ),
+      testId: 'evidence-row-impact',
+    },
+    {
+      label: 'Method',
+      value: (
+        <span className="text-warm-700">
+          {METHOD_LABELS[evidence.strokes_impact_method] ?? evidence.strokes_impact_method}
+        </span>
+      ),
+      testId: 'evidence-row-method',
+    },
+  ];
+
+  return (
+    <div
+      data-testid={testId ?? 'evidence-panel-expanded'}
+      className={cn(
+        'mt-3 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4',
+      )}
+    >
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-warm-500">
+        {evidence.metric_label}
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm text-warm-800">
+        {rows.map((r) => (
+          <div key={r.testId} className="contents" data-testid={r.testId}>
+            <dt className="text-warm-500">{r.label}</dt>
+            <dd className="tabular-nums">{r.value}</dd>
+          </div>
+        ))}
+        <div className="contents" data-testid="evidence-row-confidence">
+          <dt className="text-warm-500">Confidence</dt>
+          <dd className="flex items-center gap-2 tabular-nums">
+            <span className={cn('font-semibold', colors.text)}>{confPct}%</span>
+            <div
+              role="progressbar"
+              aria-valuenow={confPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              className="relative flex-1 h-1.5 rounded-full bg-warm-100 overflow-hidden max-w-[160px]"
+            >
+              <div
+                className={cn('absolute inset-y-0 left-0', colors.bar)}
+                style={{ width: `${confPct}%` }}
+              />
+            </div>
+          </dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
