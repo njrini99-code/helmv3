@@ -104,14 +104,17 @@ export async function markCelebrationShown(
   }
 
   const shownAt = new Date().toISOString();
-  const nextMetadata: Record<string, unknown> = {
+  const nextMetadata = {
     ...existingMetadata,
     celebration_shown_at: shownAt,
   };
 
+  // Cast: Supabase's generated `Json` type doesn't accept `Record<string, unknown>`
+  // directly because `unknown` is wider than `Json`. The shape we write is
+  // serializable JSON (strings, numbers, plain objects), so this cast is sound.
   const { error: updateError } = await supabase
     .from('golf_coach_insights')
-    .update({ metadata: nextMetadata })
+    .update({ metadata: nextMetadata as never })
     .eq('id', insightId);
 
   if (updateError) {
