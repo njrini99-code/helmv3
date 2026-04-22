@@ -8342,7 +8342,15 @@ export type Database = {
           validated_at?: string | null
           within_interval?: boolean | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_prediction_validations_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "golf_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       golf_predictions: {
         Row: {
