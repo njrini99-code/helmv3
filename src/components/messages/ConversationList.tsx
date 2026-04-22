@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { IconPlus, IconMail } from '@/components/icons';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 
-interface ConversationListProps {
+export interface ConversationListProps {
   conversations: ConversationWithMeta[];
   selectedId: string | null;
   currentUserId: string;

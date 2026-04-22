@@ -26,10 +26,9 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig = {
   reactStrictMode: true, // Enable to catch potential issues
 
-  // Skip TypeScript checking during build (checks hang on this codebase)
-  // Types are validated by IDE/editor and Turbopack dev server
+  // Type errors block the build. Keep this honest.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   turbopack: {

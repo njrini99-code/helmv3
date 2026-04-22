@@ -30,7 +30,7 @@ function MessageStatus({ read, isOwn }: { read?: boolean | null; isOwn: boolean 
   );
 }
 
-interface ChatWindowProps {
+export interface ChatWindowProps {
   messages: Message[];
   participant?: ParticipantDetails | null;
   currentUserId: string;
