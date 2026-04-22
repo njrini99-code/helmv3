@@ -287,7 +287,9 @@ export interface TeamOverviewResult {
  * Aggregates team-level composite rating, category breakdown, and shot analysis.
  * Returns data suitable for the TeamCompositeCard and TeamShotOverview components.
  */
-export async function getTeamOverview(): Promise<TeamOverviewResult> {
+export async function getTeamOverview(
+  teamIdArg?: string,
+): Promise<TeamOverviewResult> {
   try {
     // 1. Auth check — verify user is a coach
     const session = await getGolfSessionProfile();
@@ -302,16 +304,23 @@ export async function getTeamOverview(): Promise<TeamOverviewResult> {
       return { success: false, error: 'No organization found for this coach' };
     }
 
-    // 2. Get team via organization_id
-    const { data: team, error: teamError } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', orgId)
-      .limit(1)
-      .single();
+    // 2. Resolve team id. Caller may pass it (e.g. intelligence page) so we
+    //    skip the redundant org→team lookup. Otherwise look it up here.
+    let team: { id: string } | null = null;
+    if (teamIdArg) {
+      team = { id: teamIdArg };
+    } else {
+      const { data: teamRow, error: teamError } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', orgId)
+        .limit(1)
+        .single();
 
-    if (teamError || !team) {
-      return { success: false, error: 'Team not found' };
+      if (teamError || !teamRow) {
+        return { success: false, error: 'Team not found' };
+      }
+      team = teamRow;
     }
 
     // 3. Get active players via golf_team_members
@@ -540,7 +549,9 @@ export async function getTeamOverview(): Promise<TeamOverviewResult> {
 // MAIN ACTION — getTeamCategoryInsights
 // ============================================================================
 
-export async function getTeamCategoryInsights(): Promise<TeamCategoryInsightsResult> {
+export async function getTeamCategoryInsights(
+  teamIdArg?: string,
+): Promise<TeamCategoryInsightsResult> {
   try {
     // 1. Auth check — verify user is a coach
     const session = await getGolfSessionProfile();
@@ -555,16 +566,23 @@ export async function getTeamCategoryInsights(): Promise<TeamCategoryInsightsRes
       return { success: false, error: 'No organization found for this coach' };
     }
 
-    // 2. Get team via organization_id
-    const { data: team, error: teamError } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', orgId)
-      .limit(1)
-      .single();
+    // 2. Resolve team id. Caller may pass it (e.g. intelligence page) so we
+    //    skip the redundant org→team lookup. Otherwise look it up here.
+    let team: { id: string } | null = null;
+    if (teamIdArg) {
+      team = { id: teamIdArg };
+    } else {
+      const { data: teamRow, error: teamError } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', orgId)
+        .limit(1)
+        .single();
 
-    if (teamError || !team) {
-      return { success: false, error: 'Team not found' };
+      if (teamError || !teamRow) {
+        return { success: false, error: 'Team not found' };
+      }
+      team = teamRow;
     }
 
     // 3. Get active players via golf_team_members

@@ -31,14 +31,9 @@ export default async function IntelligenceDashboardPage() {
 
   const supabase = await createClient();
 
-  // Look up team_id via organization_id. This lookup is used by
-  // IntelligenceCommandCenter below. getTeamOverview and
-  // getTeamCategoryInsights currently perform their own internal team
-  // lookup (they share the same session), so there is some duplicate work
-  // at the DB. Those action signatures are owned by a neighbouring module
-  // (team-category-insights.ts) and are tracked for follow-up — once they
-  // accept an explicit teamId, pass `teamId` here and they'll become
-  // single-lookup calls.
+  // Single org→team lookup shared by IntelligenceCommandCenter,
+  // getTeamOverview, and getTeamCategoryInsights. Both action calls now
+  // accept a teamId argument so they skip their internal redundant lookup.
   let teamId: string | null = null;
   if (coach.organization_id) {
     const { data: team } = await supabase
@@ -53,10 +48,11 @@ export default async function IntelligenceDashboardPage() {
     redirect('/golf/dashboard');
   }
 
-  // Fetch team overview and categorized insights in parallel.
+  // Fetch team overview and categorized insights in parallel using the
+  // already-resolved teamId (no duplicate lookups).
   const [overviewResult, result] = await Promise.all([
-    getTeamOverview(),
-    getTeamCategoryInsights(),
+    getTeamOverview(teamId),
+    getTeamCategoryInsights(teamId),
   ]);
 
   return (
