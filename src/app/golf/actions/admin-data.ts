@@ -3,9 +3,6 @@
 import { revalidatePath, unstable_cache } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
-import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
-import { fetchAdminRollupC, type RollupC } from './admin/rollup-c';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
@@ -68,10 +65,11 @@ const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
 const cachedAdminDashboardData = unstable_cache(
   async (): Promise<AdminDashboardRollup> => {
     const admin = createAdminClient();
-    const rpc = admin.rpc.bind(admin) as unknown as (
+    const { data, error } = await (admin.rpc as unknown as (
       fn: 'get_admin_dashboard_rollup',
-    ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>;
-    const { data, error } = await rpc('get_admin_dashboard_rollup');
+    ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>)(
+      'get_admin_dashboard_rollup',
+    );
     if (error) throw error instanceof Error ? error : new Error(String(error));
     if (!data) throw new Error('Empty rollup response');
     return data;
@@ -1062,6 +1060,22 @@ interface AdminEventIncidentRecord {
   created_at: string;
 }
 
+/** Lightweight version without JSONB metadata — used for display-only event lists */
+interface AdminEventDisplayRecord {
+  id: string;
+  event_type: string;
+  severity: string;
+  title: string;
+  message: string | null;
+  user_id: string | null;
+  user_email: string | null;
+  url: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
+
 function buildAdminEventIncidentKey(event: Pick<AdminEventIncidentRecord, 'title' | 'message' | 'metadata' | 'url'>): string {
   const metadata = asObject(event.metadata);
   const context = buildDashboardErrorContext(event.metadata);
@@ -1326,10 +1340,52 @@ function daysAgo(days: number): string {
   return d.toISOString();
 }
 
+function weeksAgoMonday(weeksBack: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - d.getDay() + 1 - weeksBack * 7);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
 function todayStart(): string {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d.toISOString();
+}
+
+function groupByWeek(dates: string[]): { week: string; count: number }[] {
+  const weeks: Record<string, number> = {};
+  for (const dateStr of dates) {
+    const d = new Date(dateStr);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setDate(diff);
+    const key = monday.toISOString().slice(0, 10);
+    weeks[key] = (weeks[key] || 0) + 1;
+  }
+  return Object.entries(weeks)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([week, count]) => ({ week, count }));
+}
+
+function groupByDay(dates: string[], lastNDays: number): { date: string; count: number }[] {
+  const days: Record<string, number> = {};
+  // Initialize all days with 0
+  for (let i = lastNDays - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const dateStr of dates) {
+    const key = new Date(dateStr).toISOString().slice(0, 10);
+    if (key in days) {
+      days[key] = (days[key] || 0) + 1;
+    }
+  }
+  return Object.entries(days)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, count]) => ({ date, count }));
 }
 
 // ============================================
@@ -1389,185 +1445,335 @@ function buildFunnelSteps(stages: { step: string; count: number }[]): BIFunnelSt
     };
   });
 }
+
 // ============================================
 // MAIN DATA FETCHER
 // ============================================
 
 /**
- * Aggregates the full `AdminDashboardData` shape consumed by the admin
- * dashboard UI. Behind the scenes this delegates to three parallel rollup
- * RPCs (`fetchAdminRollupA/B/C`) plus kept calls for Vercel analytics and
- * `get_platform_health_stats`. Replaces ~93 ad-hoc queries with ~10
- * Supabase round-trips.
+ * @deprecated Fires ~95 Supabase round-trips per call. New code should
+ *   prefer `getAdminDashboardRollup()` (single JSONB RPC, tag-cached).
+ *   This function is retained during the rollout so existing tabs that
+ *   still expect the fully-nested `AdminDashboardData` shape keep working.
+ *   Target removal: wave 3 of the perf remediation.
  */
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const startTime = performance.now();
-
-  // 1. Auth gate — MUST live outside the cache (reads cookies).
   const supabase = await createClient();
+
+  // Auth check
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: userRow } = await supabase
+  const { data: userData } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
-  if ((userRow?.role as string) !== 'admin') throw new Error('Forbidden');
 
-  // 2. Kick off Slice A + Slice B in parallel — Slice C needs Slice A's
-  //    `allRoundsMinimal` so it runs in the next wave.
-  // TEMP DEBUG: wrap each rollup in a labeled try/catch so the production
-  // Server Components error handler surfaces which slice actually threw.
-  let rollupA: RollupA;
-  let rollupB: RollupB;
-  try {
-    [rollupA, rollupB] = await Promise.all([
-      fetchAdminRollupA().catch((e) => {
-        console.error('[admin-data] fetchAdminRollupA threw:', e?.message, e?.stack);
-        throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
-      }),
-      fetchAdminRollupB().catch((e) => {
-        console.error('[admin-data] fetchAdminRollupB threw:', e?.message, e?.stack);
-        throw new Error(`rollupB failed: ${e?.message ?? String(e)}`);
-      }),
-    ]);
-  } catch (e) {
-    console.error('[admin-data] outer A+B Promise.all threw:', e);
-    throw e;
-  }
+  if ((userData?.role as string) !== 'admin') throw new Error('Forbidden');
 
-  // 3. Slice C + kept calls (Vercel HTTP + platform health RPC + one-off
-  //    shot-quality counts) run in parallel. `dataQuality` is not owned by
-  //    any slice — we issue a single grouped query.
-  const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
-    fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      console.error('[admin-data] fetchAdminRollupC threw:', e?.message, e?.stack);
-      throw new Error(`rollupC failed: ${e?.message ?? String(e)}`);
-    }),
-    fetchVercelAnalytics(),
-    (async (): Promise<PlatformHealthStatsResult | null> => {
-      try {
-        const admin = createAdminClient();
-        const rpc = admin.rpc.bind(admin) as unknown as (
-          fn: 'get_platform_health_stats',
-        ) => Promise<{ data: PlatformHealthStatsResult | null; error: unknown }>;
-        const res = await rpc('get_platform_health_stats');
-        return res.data ?? null;
-      } catch {
-        return null;
-      }
-    })(),
-    // Shot telemetry quality — 4 `count(head)` calls that are not covered by
-    // any rollup slice. Single Promise.all keeps this under one network wave.
-    (async () => {
-      const admin = createAdminClient();
-      const [totalShotsRes, withDistanceRes, withLieRes, withClubRes] = await Promise.all([
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_type', 'is', null),
-      ]);
-      return {
-        totalShots: totalShotsRes.count ?? 0,
-        shotsWithDistance: withDistanceRes.count ?? 0,
-        shotsWithLie: withLieRes.count ?? 0,
-        shotsWithClub: withClubRes.count ?? 0,
-      };
-    })(),
-  ]);
+  // Use admin client (service role) for all data queries — bypasses RLS
+  const adminDb = createAdminClient();
 
-  const responseTime = Math.round(performance.now() - startTime);
-
-  return assembleAdminDashboardData({
-    rollupA,
-    rollupB,
-    rollupC,
-    vercelAnalytics,
-    platformHealth,
-    dataQualityRaw,
-    responseTime,
-  });
-}
-
-// ============================================
-// ASSEMBLY — shape rollups into AdminDashboardData
-// ============================================
-
-interface AssemblyInput {
-  rollupA: RollupA;
-  rollupB: RollupB;
-  rollupC: RollupC;
-  vercelAnalytics: { visitors24h: number; visitors7d: number; visitors30d: number } | null;
-  platformHealth: PlatformHealthStatsResult | null;
-  dataQualityRaw: {
-    totalShots: number;
-    shotsWithDistance: number;
-    shotsWithLie: number;
-    shotsWithClub: number;
-  };
-  responseTime: number;
-}
-
-function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
-  const { rollupA, rollupB, rollupC, vercelAnalytics, platformHealth, dataQualityRaw, responseTime } = parts;
-
-  const now = Date.now();
   const ago24h = daysAgo(1);
   const ago7d = daysAgo(7);
   const ago14d = daysAgo(14);
   const ago30d = daysAgo(30);
+  const ago12w = weeksAgoMonday(12);
   const today = todayStart();
 
-  // --- Basic scalars from rollups ---
-  const rounds = rollupA.rounds;
-  const users = rollupA.users;
-  const featureAdoption = rollupA.featureAdoption;
-  const coachhelm = rollupA.coachhelm;
+  // ============================================
+  // BATCH 1: Core counts & health (parallel)
+  // ============================================
+  const [
+    // Health
+    activeUsers24hRes,
+    activeUsers7dRes,
+    activeUsers30dRes,
+    roundsThisWeekRes,
+    reviewsThisWeekRes,
+    insightsThisWeekRes,
+    roundsTodayRes,
+    lastRoundRes,
+    lastInsightRes,
+    // Users
+    coachesRes,
+    playersRes,
+    adminsRes,
+    coachOnboardedRes,
+    playerOnboardedRes,
+    activeTeamsRes,
+    recentSignupsRes,
+    newUsersThisWeekRes,
+    newUsersLastWeekRes,
+    playersByOnboardingRes,
+    // Usage
+    allRoundsRes,
+    totalShotsRes,
+    totalRoundsAllRes,
+    completedRoundsRes,
+    verifiedRoundsRes,
+    qualifiersCountRes,
+    eventsCountRes,
+    tasksCountRes,
+    announcementsCountRes,
+    messagesCountRes,
+    documentsCountRes,
+    travelCountRes,
+    // Feature adoption 30d
+    qualifiers30dRes,
+    events30dRes,
+    tasks30dRes,
+    announcements30dRes,
+    messages30dRes,
+    documents30dRes,
+    travel30dRes,
+    // CoachHelm
+    modelPerfRes,
+    insightEffRes,
+    totalPatternsRes,
+    totalPredictionsRes,
+    totalReviewsRes,
+    insightGenLogRes,
+    coachPhilosophyRes,
+    // CoachHelm 30d
+    reviews30dRes,
+    patterns30dRes,
+    predictions30dRes,
+    insightGenLog30dRes,
+    // Activity
+    latestSignupsRes,
+    latestRoundsRes,
+    latestInsightsRes,
+    // Engagement
+    dailyActiveRes,
+    weeklyRetentionPlayerRes,
+    playersWithNoRoundsRes,
+    coachesUsingInsightsRes,
+    attendanceSummaryRes,
+    // Growth / Demographics
+    playerStatusRes,
+    playerYearRes,
+    roundsLastWeekRes,
+    teamsThisMonthRes,
+    playersActive30dRes,
+    playersActive30_60dRes,
+    cohortWeek4Res,
+    cohortWeek3Res,
+    cohortWeek2Res,
+    cohortWeek1Res,
+    // New metrics
+    shotsWithGpsRes,
+    shotsWithLieTypeRes,
+    shotsWithClubRes,
+    reviewedRoundsRes,
+    insightPlayerRoundsRes,
+  ] = await Promise.all([
+    // --- Health (active users = distinct players with rounds) ---
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago24h),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago7d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', today),
+    adminDb.from('golf_rounds').select('created_at').order('created_at', { ascending: false }).limit(1),
+    adminDb.from('golf_insight_generation_log').select('created_at').order('created_at', { ascending: false }).limit(1),
 
-  const totalCoaches = users.totalCoaches;
-  const totalPlayers = users.totalPlayers;
-  const coachOnboarded = users.coachesOnboarded;
-  const playerOnboarded = users.playersOnboarded;
-  const totalRoundsCount = rounds.totalRounds;
-  const totalShotsCount = dataQualityRaw.totalShots;
-  const completedRoundsCount = rounds.completedRounds;
-  const verifiedRoundsCount = rounds.verifiedRounds;
+    // --- Users ---
+    adminDb.from('golf_coaches').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_players').select('id', { count: 'exact', head: true }),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).filter('role', 'eq', 'admin'),
+    adminDb.from('golf_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('golf_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('golf_team_members').select('team_id').eq('status', 'active'),
+    adminDb.from('users').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    adminDb.from('users').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
+    adminDb.from('golf_players').select('onboarding_completed'),
 
-  // --- Signups by week + day (from Slice A) ---
-  const signupsByWeek = users.signupsByWeek;
-  const signupsByDayResult = users.signupsByDay30d;
+    // --- Usage ---
+    adminDb.from('golf_rounds').select('round_type, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).not('total_score', 'is', null),
+    adminDb.from('golf_qualifiers').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_events').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_tasks').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_documents').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }),
+    // --- Feature adoption 30d counts ---
+    adminDb.from('golf_qualifiers').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_events').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_tasks').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_documents').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_travel_itineraries').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
 
-  // --- Rounds by type / week ---
-  const roundsByTypeArr = Object.entries(rounds.roundsByType).map(([type, count]) => ({ type, count }));
-  const roundsByWeek = rounds.roundsByWeek;
+    // --- CoachHelm ---
+    adminDb.from('golf_prediction_model_performance').select('model_type, accuracy_rate, calibration_score, predictions_made').order('period_end', { ascending: false }).limit(10),
+    adminDb.from('golf_insight_effectiveness').select('insight_type, action_rate, improvement_rate, effectiveness_score').order('period_end', { ascending: false }).limit(10),
+    adminDb.from('golf_patterns_v2').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_predictions').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_coach_philosophy').select('id', { count: 'exact', head: true }),
+    // --- CoachHelm 30d counts ---
+    adminDb.from('golf_round_reviews').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_patterns_v2').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_predictions').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_insight_generation_log').select('insights_generated, created_at').gte('created_at', ago30d),
 
-  // --- Players by onboarding / status / year ---
+    // --- Activity ---
+    adminDb.from('users').select('id, email, role, created_at').order('created_at', { ascending: false }).limit(10),
+    adminDb.from('golf_rounds').select('id, total_score, score_to_par, round_type, course_name, created_at, golf_players(first_name, last_name)').order('created_at', { ascending: false }).limit(10),
+    adminDb.from('golf_insight_generation_log').select('id, insight_type, insights_generated, created_at').order('created_at', { ascending: false }).limit(10),
+
+    // --- Engagement ---
+    adminDb.from('golf_rounds').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago7d),
+    adminDb.from('golf_players').select('id'),
+    adminDb.from('golf_coach_insights').select('coach_id').gte('created_at', ago30d),
+    adminDb.from('golf_attendance_summary').select('attendance_percentage'),
+    // --- Growth / Demographics ---
+    adminDb.from('golf_team_members').select('status, golf_players(graduation_year)').not('status', 'is', null),
+    adminDb.from('golf_players').select('graduation_year'),
+    adminDb.from('golf_rounds').select('id', { count: 'exact', head: true }).gte('created_at', ago14d).lt('created_at', ago7d),
+    adminDb.from('golf_teams').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', ago30d),
+    adminDb.from('golf_rounds').select('player_id').gte('created_at', daysAgo(60)).lt('created_at', ago30d),
+    // Cohort retention: players who signed up in each of last 4 weeks
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(28)).lte('created_at', daysAgo(21)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(21)).lte('created_at', daysAgo(14)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(14)).lte('created_at', daysAgo(7)),
+    adminDb.from('users').select('id, created_at').gte('created_at', daysAgo(7)),
+    // Shot data quality
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
+    adminDb.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_type', 'is', null),
+    // Unique reviewed rounds
+    adminDb.from('golf_round_reviews').select('round_id'),
+    // Rounds with insights
+    adminDb.from('golf_insight_generation_log').select('player_id').not('player_id', 'is', null),
+  ]);
+
+  // ============================================
+  // BATCH 2: Team & scoring intelligence (parallel)
+  // ============================================
+  const [
+    teamsDataRes,
+    teamMembersRes,
+    teamRoundsRes,
+    playerStatsRes,
+    playerTeamMapRes,
+    scoringDistRes,
+    bestRoundsRes,
+    insightsWeeklyRes,
+    reviewsWeeklyRes,
+    errorsRes,
+    userToPlayerMapRes,
+    platformHealthStatsRes,
+    statsCacheLastUpdatedRes,
+    coachOrgRes,
+  ] = await Promise.all([
+    // Teams with org
+    adminDb.from('golf_teams').select('id, name, organization_id, organizations(name)'),
+    // Team membership counts
+    adminDb.from('golf_team_members').select('team_id, player_id, golf_players(first_name, last_name)').eq('status', 'active'),
+    // Rounds per team this week
+    adminDb.from('golf_rounds').select('player_id, team_id').gte('created_at', ago7d),
+    // Player stats cache for platform averages and top performers
+    adminDb.from('golf_player_stats_cache').select('player_id, scoring_average, driving_accuracy_percentage, gir_percentage, putts_per_round, rounds_played, golf_players(first_name, last_name)').not('scoring_average', 'is', null).order('scoring_average', { ascending: true }).limit(50),
+    // Player-to-team mapping for team name resolution
+    adminDb.from('golf_team_members').select('player_id, golf_teams(id, name)').eq('status', 'active'),
+    // Scoring distribution
+    adminDb.from('golf_rounds').select('total_score').not('total_score', 'is', null).eq('status', 'completed'),
+    // Best recent rounds
+    adminDb.from('golf_rounds').select('total_score, score_to_par, course_name, round_date, golf_players(first_name, last_name)').not('total_score', 'is', null).eq('status', 'completed').order('score_to_par', { ascending: true }).limit(5),
+    // CoachHelm weekly
+    adminDb.from('golf_insight_generation_log').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    adminDb.from('golf_round_reviews').select('created_at').gte('created_at', ago12w).order('created_at', { ascending: true }),
+    // System errors
+    adminDb.from('golf_insight_generation_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('insights_generated', 0),
+    // User ID to Player ID mapping (for cohort retention)
+    adminDb.from('golf_players').select('id, user_id'),
+    // Real platform health stats from auth sessions + DB metrics
+    (async () => {
+      try {
+        return await adminDb.rpc('get_platform_health_stats' as never) as unknown as { data: PlatformHealthStatsResult | null; error: unknown };
+      } catch {
+        return { data: null, error: null } as { data: PlatformHealthStatsResult | null; error: unknown };
+      }
+    })(),
+    // Cache freshness check for golf_player_stats_cache
+    adminDb.from('golf_player_stats_cache').select('updated_at').order('updated_at', { ascending: false }).limit(1),
+    // Coach org mapping (for team coach counts)
+    adminDb.from('golf_coaches').select('organization_id'),
+  ]);
+
+  // ============================================
+  // PROCESS DATA
+  // ============================================
+
+  // --- Stats cache freshness ---
+  const statsCacheLastUpdated: string | null =
+    (statsCacheLastUpdatedRes.data as { updated_at: string }[] | null)?.[0]?.updated_at ?? null;
+
+  // --- Signups by week ---
+  const signupsByWeek = groupByWeek(
+    (recentSignupsRes.data ?? []).map((u) => u.created_at).filter(Boolean) as string[]
+  );
+
+  // --- Rounds processing ---
+  const roundsData = allRoundsRes.data ?? [];
+  const roundsByType: Record<string, number> = {};
+  const roundDates: string[] = [];
+  for (const r of roundsData) {
+    const t = r.round_type || 'unknown';
+    roundsByType[t] = (roundsByType[t] || 0) + 1;
+    if (r.created_at) roundDates.push(r.created_at);
+  }
+  const roundsByWeek = groupByWeek(roundDates);
+
+  // --- Active teams ---
+  const teamIds = new Set((activeTeamsRes.data ?? []).map((m) => m.team_id));
+
+  // --- Usage stats ---
+  const totalRoundsCount = totalRoundsAllRes.count ?? 0;
+  const totalShotsCount = totalShotsRes.count ?? 0;
+  const completedRoundsCount = completedRoundsRes.count ?? 0;
+  const verifiedRoundsCount = verifiedRoundsRes.count ?? 0;
+  const totalCoaches = coachesRes.count ?? 0;
+  const totalPlayers = playersRes.count ?? 0;
+  const coachOnboarded = coachOnboardedRes.count ?? 0;
+  const playerOnboarded = playerOnboardedRes.count ?? 0;
+
+  // --- Players by onboarding ---
+  const playerOnboardingData = playersByOnboardingRes.data ?? [];
+  const onboarded = playerOnboardingData.filter((p) => p.onboarding_completed).length;
+  const notOnboarded = playerOnboardingData.length - onboarded;
   const playersByOnboarding = [
-    { status: 'Onboarded', count: users.playersOnboarded },
-    { status: 'Pending', count: users.playersPending },
+    { status: 'Onboarded', count: onboarded },
+    { status: 'Pending', count: notOnboarded },
   ].filter((s) => s.count > 0);
 
-  const statusCounts: Record<string, number> = {};
-  for (const p of users.playersByStatus) {
-    const s = p.status || 'unknown';
-    statusCounts[s] = (statusCounts[s] || 0) + 1;
-  }
-  const playersByStatus = Object.entries(statusCounts)
-    .map(([status, count]) => ({ status, count }))
-    .filter((s) => s.count > 0);
+  // --- CoachHelm weekly ---
+  const insightsByWeek = groupByWeek(
+    (insightsWeeklyRes.data ?? []).map((r) => r.created_at).filter(Boolean) as string[]
+  );
+  const reviewsByWeek = groupByWeek(
+    (reviewsWeeklyRes.data ?? []).map((r) => r.created_at).filter(Boolean) as string[]
+  );
 
-  const playersByYear = Object.entries(users.playersByYear)
-    .map(([year, count]) => ({ year, count }))
-    .filter((y) => y.count > 0);
-
-  // --- CoachHelm series ---
-  const insightsByWeek = coachhelm.insightsByWeek;
-  const reviewsByWeek = coachhelm.reviewsByWeek;
-  const totalInsightsGenerated = coachhelm.insightGenLog12w.reduce((s, r) => s + (r.insights_generated ?? 0), 0);
-  const avgInsightsPerGeneration = coachhelm.insightGenLog12w.length > 0
-    ? totalInsightsGenerated / coachhelm.insightGenLog12w.length
-    : 0;
+  // --- CoachHelm stats ---
+  const insightGenRows = insightGenLogRes.data ?? [];
+  const totalInsightsGenerated = insightGenRows.reduce((s, r) => s + (r.insights_generated ?? 0), 0);
+  const avgInsightsPerGeneration = insightGenRows.length > 0 ? totalInsightsGenerated / insightGenRows.length : 0;
 
   // --- Scoring distribution ---
   const scoreBuckets: Record<string, number> = {
@@ -1578,7 +1784,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     '85-89': 0,
     '90+': 0,
   };
-  for (const s of rounds.scoringDistribution) {
+  for (const r of (scoringDistRes.data ?? [])) {
+    const s = r.total_score as number;
     if (s < 70) scoreBuckets['Under 70'] = (scoreBuckets['Under 70'] ?? 0) + 1;
     else if (s < 75) scoreBuckets['70-74'] = (scoreBuckets['70-74'] ?? 0) + 1;
     else if (s < 80) scoreBuckets['75-79'] = (scoreBuckets['75-79'] ?? 0) + 1;
@@ -1588,178 +1795,206 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   }
   const scoringDistribution = Object.entries(scoreBuckets).map(([bucket, count]) => ({ bucket, count }));
 
-  // --- Platform averages (Slice B) ---
-  const platformAvgs = rollupB.scoring.platformAverages;
+  // --- Platform averages from player stats cache ---
+  const statsRows = playerStatsRes.data ?? [];
+  const validScoring = statsRows.filter((r) => r.scoring_average != null);
+  const platformScoringAvg = validScoring.length > 0
+    ? validScoring.reduce((s, r) => s + Number(r.scoring_average), 0) / validScoring.length
+    : null;
+  const validFwy = statsRows.filter((r) => r.driving_accuracy_percentage != null);
+  const platformFairwayPct = validFwy.length > 0
+    ? validFwy.reduce((s, r) => s + Number(r.driving_accuracy_percentage), 0) / validFwy.length
+    : null;
+  const validGir = statsRows.filter((r) => r.gir_percentage != null);
+  const platformGirPct = validGir.length > 0
+    ? validGir.reduce((s, r) => s + Number(r.gir_percentage), 0) / validGir.length
+    : null;
+  const validPutts = statsRows.filter((r) => r.putts_per_round != null);
+  const platformPuttsPerRound = validPutts.length > 0
+    ? validPutts.reduce((s, r) => s + Number(r.putts_per_round), 0) / validPutts.length
+    : null;
 
-  // --- Player → team lookup maps (Slice B teams + Slice A playerMap) ---
+  // --- Player-to-team name map ---
+  const playerTeamNameMap = new Map<string, string>();
+  for (const m of (playerTeamMapRes.data ?? [])) {
+    const team = m.golf_teams as { id: string; name: string } | null;
+    if (team) {
+      playerTeamNameMap.set(m.player_id, team.name);
+    }
+  }
+
+  // --- Top performers ---
+  const topPerformers = validScoring.slice(0, 10).map((r) => {
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
+    return {
+      name: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
+      teamName: playerTeamNameMap.get(r.player_id) ?? null,
+      scoringAvg: Number(r.scoring_average),
+      roundsPlayed: (r.rounds_played as number | null) ?? 0,
+    };
+  });
+
+  // --- Best recent rounds ---
+  const recentBestRounds = (bestRoundsRes.data ?? []).map((r) => {
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
+    return {
+      playerName: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
+      courseName: r.course_name,
+      score: r.total_score as number,
+      toPar: r.score_to_par as number,
+      date: r.round_date,
+    };
+  });
+
+  // --- Team intelligence ---
   const teamsMap = new Map<string, { name: string; orgName: string | null }>();
-  for (const t of rollupB.teams.teams) {
-    teamsMap.set(t.id, { name: t.name, orgName: t.org_name });
+  for (const t of (teamsDataRes.data ?? [])) {
+    const org = t.organizations as { name: string } | null;
+    teamsMap.set(t.id, { name: t.name, orgName: org?.name ?? null });
   }
 
-  const playerToTeamId = new Map<string, string>();
-  const playerTeamName = new Map<string, string>();
-  for (const row of rollupB.teams.playerTeamMap) {
-    playerToTeamId.set(row.player_id, row.team_id);
-    playerTeamName.set(row.player_id, row.team_name);
-  }
-
-  // Team → player IDs
+  // Count players per team
   const teamPlayerCounts: Record<string, number> = {};
-  const teamIdToPlayerIds = new Map<string, string[]>();
-  for (const m of rollupB.teams.teamMembers) {
+  for (const m of (teamMembersRes.data ?? [])) {
     teamPlayerCounts[m.team_id] = (teamPlayerCounts[m.team_id] || 0) + 1;
-    const list = teamIdToPlayerIds.get(m.team_id) ?? [];
-    list.push(m.player_id);
-    teamIdToPlayerIds.set(m.team_id, list);
   }
 
-  // Coach org → count
+  // Count coaches per team (coaches are linked via organization, not directly via team_id)
+  const teamCoachCounts: Record<string, number> = {};
   const orgCoachCounts: Record<string, number> = {};
-  for (const c of rollupB.teams.coachOrgs) {
+  for (const c of (coachOrgRes.data ?? [])) {
     if (c.organization_id) {
       orgCoachCounts[c.organization_id] = (orgCoachCounts[c.organization_id] || 0) + 1;
     }
   }
-  const teamCoachCounts: Record<string, number> = {};
-  for (const t of rollupB.teams.teams) {
+  // Map org counts to teams
+  for (const t of (teamsDataRes.data ?? [])) {
     if (t.organization_id && orgCoachCounts[t.organization_id]) {
       teamCoachCounts[t.id] = orgCoachCounts[t.organization_id] ?? 0;
     }
   }
 
-  // Rounds per team this week (from Slice B)
+  // Rounds per team this week (rounds have team_id directly)
   const teamRoundCounts: Record<string, number> = {};
-  for (const r of rollupB.teams.teamRoundsWeek) {
+  for (const r of (teamRoundsRes.data ?? [])) {
     if (r.team_id) {
       teamRoundCounts[r.team_id] = (teamRoundCounts[r.team_id] || 0) + 1;
     }
   }
 
-  // --- Top performers + team averages ---
-  const statsRows = rollupB.teams.playerStatsTop50;
-  const validScoring = statsRows.filter((r) => r.scoring_average != null);
+  // Build player_id -> team_id map from team members
+  const playerToTeamId = new Map<string, string>();
+  for (const m of (playerTeamMapRes.data ?? [])) {
+    const team = m.golf_teams as { id: string; name: string } | null;
+    if (team) {
+      playerToTeamId.set(m.player_id, team.id);
+    }
+  }
 
-  const topPerformers = validScoring.slice(0, 10).map((r) => ({
-    name: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || 'Unknown',
-    teamName: playerTeamName.get(r.player_id) ?? null,
-    scoringAvg: Number(r.scoring_average),
-    roundsPlayed: r.rounds_played ?? 0,
-  }));
-
+  // Avg score per team from stats cache
   const teamAvgScores: Record<string, number[]> = {};
   const teamTopPlayer: Record<string, { name: string; avg: number }> = {};
   for (const r of statsRows) {
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
     const teamId = playerToTeamId.get(r.player_id);
     if (teamId && r.scoring_average != null) {
-      const avg = Number(r.scoring_average);
       if (!teamAvgScores[teamId]) teamAvgScores[teamId] = [];
-      teamAvgScores[teamId]!.push(avg);
-      const current = teamTopPlayer[teamId];
-      if (!current || avg < current.avg) {
+      teamAvgScores[teamId]!.push(Number(r.scoring_average));
+      // Track top player per team (lowest scoring avg)
+      if (!teamTopPlayer[teamId] || Number(r.scoring_average) < teamTopPlayer[teamId]!.avg) {
         teamTopPlayer[teamId] = {
-          name: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || 'Unknown',
-          avg,
+          name: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
+          avg: Number(r.scoring_average),
         };
       }
     }
   }
 
-  const teams: AdminDashboardData['teams'] = Array.from(teamsMap.entries())
-    .map(([id, t]) => {
-      const scores = teamAvgScores[id] ?? [];
-      return {
-        id,
-        name: t.name,
-        orgName: t.orgName,
-        playerCount: teamPlayerCounts[id] || 0,
-        coachCount: teamCoachCounts[id] || 0,
-        roundsThisWeek: teamRoundCounts[id] || 0,
-        avgScore: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null,
-        topPlayer: teamTopPlayer[id] || null,
-      };
-    })
-    .sort((a, b) => b.playerCount - a.playerCount);
+  const teams = Array.from(teamsMap.entries()).map(([id, t]) => {
+    const scores = teamAvgScores[id] ?? [];
+    return {
+      id,
+      name: t.name,
+      orgName: t.orgName,
+      playerCount: teamPlayerCounts[id] || 0,
+      coachCount: teamCoachCounts[id] || 0,
+      roundsThisWeek: teamRoundCounts[id] || 0,
+      avgScore: scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null,
+      topPlayer: teamTopPlayer[id] || null,
+    };
+  }).sort((a, b) => b.playerCount - a.playerCount);
 
-  // --- Recent best rounds (Slice B raw → formatted) ---
-  const recentBestRounds = rollupB.teams.recentBestRounds.map((r) => ({
-    playerName: `${r.first_name ?? ''} ${r.last_name ?? ''}`.trim() || 'Unknown',
-    courseName: r.course_name,
-    score: r.total_score ?? 0,
-    toPar: r.score_to_par ?? 0,
-    date: r.round_date,
-  }));
+  // --- Engagement ---
+  const dailyActiveDates = (dailyActiveRes.data ?? []).map((r) => r.created_at).filter(Boolean) as string[];
+  const dailyActiveUsers = groupByDay(dailyActiveDates, 30);
 
-  // --- Engagement + weekly retention (from Slice A sets) ---
-  const playersThisWeekSet = new Set(rounds.playersThisWeek);
-  const playersActive30dSet = new Set(rounds.playerSetActive30d);
-  const playersActive30_60dSet = new Set(rounds.playerSetActive30_60d);
-  const weeklyRetentionDenom = playersActive30dSet.size || 1;
-  const weeklyRetention = (playersThisWeekSet.size / weeklyRetentionDenom) * 100;
+  // Weekly retention: players who submitted rounds this week vs last week
+  const playersThisWeek = new Set((weeklyRetentionPlayerRes.data ?? []).map((r) => r.player_id));
+  const activePlayers = (playersWithNoRoundsRes.data ?? []).map((r) => r.id);
+  const playersWithNoRounds = activePlayers.filter((id) => !playersThisWeek.has(id)).length;
+
   const avgRoundsPerPlayer = totalPlayers > 0 ? totalRoundsCount / totalPlayers : 0;
+  // Weekly retention: players active this week out of players active in last 30d
+  const playersActiveLast30d = new Set((activeUsers30dRes.data ?? []).map(r => r.player_id));
+  const activeDenominator = playersActiveLast30d.size || 1;
+  const weeklyRetention = (playersThisWeek.size / activeDenominator) * 100;
 
-  // Active players (all players table size — denominator for "players with no rounds")
-  const playerIdsAll = new Set(users.playerMap.map((p) => p.id));
-  const playersWithNoRounds = [...playerIdsAll].filter((id) => !playersThisWeekSet.has(id)).length;
-
-  // Daily active users (from rollupA.rounds.roundsByDay30d — unique players per day)
-  const dailyActiveMap = new Map<string, Set<string>>();
-  for (const r of rounds.roundsByDay30d) {
-    const set = dailyActiveMap.get(r.date) ?? new Set<string>();
-    if (r.player_id) set.add(r.player_id);
-    dailyActiveMap.set(r.date, set);
-  }
-  // Ensure every day in the last 30d is present
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    if (!dailyActiveMap.has(key)) dailyActiveMap.set(key, new Set());
-  }
-  const dailyActiveUsers = [...dailyActiveMap.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, set]) => ({ date, count: set.size }));
-  // `visitsByDay` uses the same source (unique players with any round per day)
-  const visitsByDayResult = dailyActiveUsers;
-
-  // CoachHelm: coaches who used insights (from insightsFailed7d / insightGenLog30dCount is global).
-  // Admin-data's prior logic unique-by coach_id from insights in last 30d — closest we have is
-  // `coachhelm.insightsByWeek` which counts generations. We approximate using coach count
-  // derived from coachIntelligence slice.
-  const coachesUsingInsightsCount = rollupC.coachIntelligence.filter((c) => c.insightsViewed > 0).length;
-
-  // Event attendance (Slice B)
-  const attendanceValues = rollupB.teams.attendancePercentages;
-  const eventAttendanceRate = attendanceValues.length > 0
-    ? attendanceValues.reduce((s, v) => s + Number(v), 0) / attendanceValues.length
+  const coachIdsUsingInsights = new Set((coachesUsingInsightsRes.data ?? []).map((r) => r.coach_id));
+  const attendanceSummaries = attendanceSummaryRes.data ?? [];
+  const eventAttendanceRate = attendanceSummaries.length > 0
+    ? attendanceSummaries.reduce((s, r) => s + Number(r.attendance_percentage ?? 0), 0) / attendanceSummaries.length
     : null;
 
-  // --- Onboarding rate (composite) ---
+  // --- Onboarding rate (needed for growth calculations below) ---
   const avgOnboarding = (coachOnboarded + playerOnboarded) / Math.max(totalCoaches + totalPlayers, 1) * 100;
 
+  // --- Player demographics ---
+  const playerStatusData = (playerStatusRes.data ?? []) as { status: string; golf_players: { graduation_year: number | null } | null }[];
+  const statusCounts: Record<string, number> = {};
+  for (const p of playerStatusData) {
+    const s = p.status || 'unknown';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+  const playersByStatus = Object.entries(statusCounts).map(([status, count]) => ({ status, count })).filter(s => s.count > 0);
+
+  const playerYearData = (playerYearRes.data ?? []) as { graduation_year: number | null }[];
+  const yearCounts: Record<string, number> = {};
+  for (const p of playerYearData) {
+    const y = p.graduation_year ? String(p.graduation_year) : 'unknown';
+    yearCounts[y] = (yearCounts[y] || 0) + 1;
+  }
+  const playersByYear = Object.entries(yearCounts).map(([year, count]) => ({ year, count })).filter(y => y.count > 0);
+
   // --- Growth metrics ---
-  const userGrowthRate = users.newUsersLastWeek > 0
-    ? Math.round(((users.newUsersThisWeek - users.newUsersLastWeek) / users.newUsersLastWeek) * 100)
-    : users.newUsersThisWeek > 0 ? 100 : 0;
-  const roundGrowthRate = rounds.roundsLastWeek > 0
-    ? Math.round(((rounds.roundsThisWeek - rounds.roundsLastWeek) / rounds.roundsLastWeek) * 100)
-    : rounds.roundsThisWeek > 0 ? 100 : 0;
+  const roundsLastWeekCount = roundsLastWeekRes.count ?? 0;
+  const roundsThisWeekCount = roundsThisWeekRes.count ?? 0;
+  const userGrowthRate = (newUsersLastWeekRes.count ?? 0) > 0
+    ? Math.round((((newUsersThisWeekRes.count ?? 0) - (newUsersLastWeekRes.count ?? 0)) / (newUsersLastWeekRes.count ?? 1)) * 100)
+    : (newUsersThisWeekRes.count ?? 0) > 0 ? 100 : 0;
+  const roundGrowthRate = roundsLastWeekCount > 0
+    ? Math.round(((roundsThisWeekCount - roundsLastWeekCount) / roundsLastWeekCount) * 100)
+    : roundsThisWeekCount > 0 ? 100 : 0;
 
-  // Churn (players active 30-60d ago but not in last 30d)
-  const churnedPlayers30d = [...playersActive30_60dSet].filter((id) => !playersActive30dSet.has(id)).length;
-
-  // Retention cohorts from Slice A cohortWeeks + last-7d active player set
-  const playerRoundsThisWeekSet = playersThisWeekSet;
+  // Build user_id -> player_id mapping for cohort retention
   const userIdToPlayerId = new Map<string, string>();
-  for (const p of users.playerMap) {
+  for (const p of (userToPlayerMapRes.data ?? [])) {
     if (p.user_id) userIdToPlayerId.set(p.user_id, p.id);
   }
-  const cohortKeys: (keyof typeof users.cohortWeeks)[] = ['w4', 'w3', 'w2', 'w1'];
-  const retentionCohorts = cohortKeys.map((key, i) => {
-    const cohortUsers = users.cohortWeeks[key] ?? [];
-    const retained = cohortUsers.filter((userId) => {
-      const pid = userIdToPlayerId.get(userId);
-      return pid && playerRoundsThisWeekSet.has(pid);
+
+  // Churned players: active 30-60d ago but NOT in last 30d
+  const playersActive30d = new Set((playersActive30dRes.data ?? []).map(r => r.player_id));
+  const playersActive30_60d = new Set((playersActive30_60dRes.data ?? []).map(r => r.player_id));
+  const churnedPlayers30d = [...playersActive30_60d].filter(id => !playersActive30d.has(id)).length;
+
+  // Cohort retention: for each week's signups, how many submitted a round?
+  // Map user IDs to player IDs since golf_rounds.player_id = golf_players.id, not users.id
+  const allPlayerRounds7d = new Set((weeklyRetentionPlayerRes.data ?? []).map(r => r.player_id));
+  const cohortWeeks = [cohortWeek4Res, cohortWeek3Res, cohortWeek2Res, cohortWeek1Res];
+  const retentionCohorts = cohortWeeks.map((cohortRes, i) => {
+    const cohortUsers = (cohortRes.data ?? []).map(u => u.id);
+    const retained = cohortUsers.filter(userId => {
+      const playerId = userIdToPlayerId.get(userId);
+      return playerId && allPlayerRounds7d.has(playerId);
     }).length;
     return {
       week: i + 1,
@@ -1769,28 +2004,27 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     };
   });
 
-  const activePlayerCount = playersActive30dSet.size || 1;
-  const avgRoundsPerActivePlayer = Math.round((rounds.roundsThisWeek * 4 / activePlayerCount) * 10) / 10;
+  // Active players for per-active metrics
+  const activePlayerCount = playersActive30d.size || 1;
+  const avgRoundsPerActivePlayer = Math.round((roundsThisWeekCount * 4 / activePlayerCount) * 10) / 10;
 
   // Top feature by adoption
   const featureAdoptionList = [
-    { feature: 'Qualifiers', count: featureAdoption.qualifiers.total },
-    { feature: 'Events', count: featureAdoption.events.total },
-    { feature: 'Tasks', count: featureAdoption.tasks.total },
-    { feature: 'Announcements', count: featureAdoption.announcements.total },
-    { feature: 'Messages', count: featureAdoption.messages.total },
-    { feature: 'Documents', count: featureAdoption.documents.total },
-    { feature: 'Travel', count: featureAdoption.travel.total },
+    { feature: 'Qualifiers', count: qualifiersCountRes.count ?? 0 },
+    { feature: 'Events', count: eventsCountRes.count ?? 0 },
+    { feature: 'Tasks', count: tasksCountRes.count ?? 0 },
+    { feature: 'Announcements', count: announcementsCountRes.count ?? 0 },
+    { feature: 'Messages', count: messagesCountRes.count ?? 0 },
+    { feature: 'Documents', count: documentsCountRes.count ?? 0 },
+    { feature: 'Travel', count: travelCountRes.count ?? 0 },
   ];
   const topFeatureByAdoption = featureAdoptionList.sort((a, b) => b.count - a.count)[0]?.feature ?? 'None';
 
-  // NPS proxy: coaches with both philosophy AND insights
-  const philosophyCount = coachhelm.coachPhilosophyCount;
-  const npsProxy = totalCoaches > 0
-    ? Math.round((Math.min(philosophyCount, coachesUsingInsightsCount) / totalCoaches) * 100)
-    : 0;
+  // NPS Proxy: coaches who have BOTH philosophy set AND used insights
+  const philosophyCount = coachPhilosophyRes.count ?? 0;
+  const npsProxy = totalCoaches > 0 ? Math.round((Math.min(philosophyCount, coachIdsUsingInsights.size) / totalCoaches) * 100) : 0;
 
-  // Platform health score (0-100)
+  // Platform Health Score (0-100)
   const healthScores = [
     Math.min(avgOnboarding, 100),
     Math.min(weeklyRetention * 2, 100),
@@ -1799,51 +2033,46 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   ];
   const platformHealthScore = Math.round(healthScores.reduce((s, v) => s + v, 0) / healthScores.length);
 
-  // Recent rounds (from Slice A)
-  const recentRounds = rounds.recentRounds.map((r) => ({
-    id: r.id,
-    player_name: r.golf_players
-      ? `${r.golf_players.first_name ?? ''} ${r.golf_players.last_name ?? ''}`.trim() || 'Unknown'
-      : 'Unknown',
-    course_name: r.course_name,
-    total_score: r.total_score,
-    total_to_par: r.score_to_par,
-    round_type: r.round_type,
-    created_at: r.created_at,
-  }));
+  // --- Format recent rounds ---
+  const recentRounds = (latestRoundsRes.data ?? []).map((r) => {
+    const player = r.golf_players as { first_name: string; last_name: string } | null;
+    return {
+      id: r.id,
+      player_name: player ? `${player.first_name} ${player.last_name}` : 'Unknown',
+      course_name: r.course_name,
+      total_score: r.total_score,
+      total_to_par: r.score_to_par,
+      round_type: r.round_type,
+      created_at: r.created_at,
+    };
+  });
 
-  // --- User auth details (proxy from usersForDirectory.last_seen) ---
-  const userLastActive = new Map<string, string>();
-  for (const u of users.usersForDirectory) {
-    if (u.last_seen) userLastActive.set(u.id, u.last_seen);
-  }
-  const userAuthDetails = users.usersForDirectory.map((u) => ({
-    userId: u.id,
-    lastSignInAt: u.last_seen,
-    lastSeen: u.last_seen,
-  }));
-
-  // --- Platform health stats ---
-  const phs = platformHealth;
+  // --- Platform health stats from auth sessions + DB ---
+  const phs = (platformHealthStatsRes.data ?? null) as PlatformHealthStatsResult | null;
   const realActiveUsers1h = phs?.active_users_1h ?? 0;
   const realActiveUsers24h = phs?.active_users_24h ?? 0;
   const realActiveUsers7d = phs?.active_users_7d ?? 0;
   const realActiveUsers30d = phs?.active_users_30d ?? 0;
 
   // --- Diagnostics ---
-  const lastRoundTimestamp = rounds.lastRoundAt;
-  const lastInsightTimestamp = coachhelm.lastInsightAt;
-  const systemErrors = coachhelm.insightsFailed7d;
+  // Measure cumulative server-side fetch time (all batches so far)
+  const responseTime = Math.round(performance.now() - startTime);
+  const lastRoundTimestamp = (lastRoundRes.data?.[0]?.created_at as string) ?? null;
+  const lastInsightTimestamp = (lastInsightRes.data?.[0]?.created_at as string) ?? null;
+  const systemErrors = errorsRes.count ?? 0;
+
   const diagnostics: AdminDashboardData['health']['diagnostics'] = [];
 
+  // Auth / session health
   diagnostics.push({
     label: 'Auth Sessions',
     status: (phs?.active_sessions ?? 0) > 0 ? 'healthy' : 'warning',
     detail: `${phs?.active_sessions ?? 0} active sessions · ${realActiveUsers1h} online now`,
   });
 
+  // Data freshness check
   if (lastRoundTimestamp) {
-    const hoursSinceRound = (now - new Date(lastRoundTimestamp).getTime()) / 3600000;
+    const hoursSinceRound = (Date.now() - new Date(lastRoundTimestamp).getTime()) / 3600000;
     diagnostics.push({
       label: 'Round Submissions',
       status: hoursSinceRound < 24 ? 'healthy' : hoursSinceRound < 72 ? 'warning' : 'critical',
@@ -1853,24 +2082,28 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     diagnostics.push({ label: 'Round Submissions', status: 'critical', detail: 'No rounds ever submitted' });
   }
 
+  // AI health
   diagnostics.push({
     label: 'CoachHelm AI',
     status: systemErrors === 0 ? 'healthy' : systemErrors < 5 ? 'warning' : 'critical',
     detail: systemErrors === 0 ? 'All systems operational' : `${systemErrors} failed generations (7d)`,
   });
 
+  // Onboarding health
   diagnostics.push({
     label: 'Onboarding',
     status: avgOnboarding > 70 ? 'healthy' : avgOnboarding > 40 ? 'warning' : 'critical',
     detail: `${Math.round(avgOnboarding)}% completion rate`,
   });
 
+  // Engagement health
   diagnostics.push({
     label: 'Player Engagement',
     status: weeklyRetention > 30 ? 'healthy' : weeklyRetention > 10 ? 'warning' : 'critical',
     detail: `${Math.round(weeklyRetention)}% weekly active rate`,
   });
 
+  // Database health
   const dbSizeMB = Math.round((phs?.db_size_bytes ?? 0) / 1048576);
   const totalConns = (phs?.active_connections ?? 0) + (phs?.idle_connections ?? 0);
   diagnostics.push({
@@ -1879,81 +2112,138 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     detail: `${dbSizeMB} MB · ${totalConns} connections`,
   });
 
+  // responseTime now reflects the real server-side query duration (all batches).
+
   const dataFreshness: AdminDashboardData['health']['dataFreshness'] = lastRoundTimestamp
-    ? (now - new Date(lastRoundTimestamp).getTime()) < 86400000 ? 'live' : 'stale'
+    ? (Date.now() - new Date(lastRoundTimestamp).getTime()) < 86400000 ? 'live' : 'stale'
     : 'error';
 
-  // --- Player maps (from Slice A) ---
-  const playersById = new Map<string, (typeof users.playerMap)[number]>();
-  for (const p of users.playerMap) playersById.set(p.id, p);
-  const userIdToPlayerDetail = new Map<string, (typeof users.playerMap)[number]>();
-  for (const p of users.playerMap) {
-    if (p.user_id) userIdToPlayerDetail.set(p.user_id, p);
+  // ============================================
+  // BATCH 3: User directory, team rosters, daily charts
+  // ============================================
+  const [
+    allUsersRes,
+    allPlayersDetailRes,
+    allCoachesDetailRes,
+    playerRoundCountsRes,
+    playerLastRoundsRes,
+    signupsDaily30dRes,
+    visitsDaily30dRes,
+    userLastActiveRes,
+    aiCoachPhilosophyRes,
+  ] = await Promise.all([
+    // All users for directory
+    adminDb.from('users').select('id, email, role, created_at, last_seen').order('created_at', { ascending: false }),
+    // All players with user_id, names, onboarding, grad year
+    adminDb.from('golf_players').select('id, user_id, first_name, last_name, graduation_year, onboarding_completed'),
+    // All coaches with user_id, names, org
+    adminDb.from('golf_coaches').select('id, user_id, full_name, email, organization_id, onboarding_completed'),
+    // Round counts per player
+    adminDb.from('golf_rounds').select('player_id'),
+    // Latest round date per player (get all rounds, process in JS)
+    adminDb.from('golf_rounds').select('player_id, created_at').order('created_at', { ascending: false }),
+    // Signups by day (last 30d)
+    adminDb.from('users').select('created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    // Active users by day (last 30d, based on round submissions)
+    adminDb.from('golf_rounds').select('player_id, created_at').gte('created_at', ago30d).order('created_at', { ascending: true }),
+    // User auth details (last_sign_in_at from auth.users via RPC)
+    adminDb.rpc('get_users_with_auth' as never) as unknown as { data: { id: string; last_sign_in_at: string | null; last_seen: string | null }[] | null; error: unknown },
+    // Coach philosophy IDs (for CoachHelm ROI comparison)
+    adminDb.from('golf_coach_philosophy').select('coach_id'),
+  ]);
+
+  // --- Build player maps ---
+  const allPlayersMap = new Map<string, { id: string; userId: string | null; firstName: string; lastName: string; gradYear: number | null; onboardingCompleted: boolean }>();
+  for (const p of (allPlayersDetailRes.data ?? [])) {
+    allPlayersMap.set(p.id, {
+      id: p.id,
+      userId: p.user_id,
+      firstName: p.first_name ?? '',
+      lastName: p.last_name ?? '',
+      gradYear: p.graduation_year,
+      onboardingCompleted: p.onboarding_completed ?? false,
+    });
   }
 
-  // --- Coach maps (from Slice A, split full_name) ---
-  interface CoachDetail {
-    id: string;
-    userId: string | null;
-    firstName: string;
-    lastName: string;
-    email: string | null;
-    orgId: string | null;
-    onboardingCompleted: boolean;
+  // Build userId -> player map
+  const userIdToPlayerDetail = new Map<string, typeof allPlayersMap extends Map<string, infer V> ? V : never>();
+  for (const [, p] of allPlayersMap) {
+    if (p.userId) userIdToPlayerDetail.set(p.userId, p);
   }
-  const coachesById = new Map<string, CoachDetail>();
-  const userIdToCoachDetail = new Map<string, CoachDetail>();
-  for (const c of users.coachMap) {
+
+  // --- Build coach maps ---
+  const allCoachesMap = new Map<string, { id: string; userId: string | null; firstName: string; lastName: string; orgId: string | null; onboardingCompleted: boolean }>();
+  for (const c of (allCoachesDetailRes.data ?? [])) {
     const nameParts = (c.full_name ?? '').split(' ');
-    const firstName = nameParts[0] ?? '';
-    const lastName = nameParts.slice(1).join(' ') ?? '';
-    const detail: CoachDetail = {
+    const coachFirstName = nameParts[0] ?? '';
+    const coachLastName = nameParts.slice(1).join(' ') ?? '';
+    allCoachesMap.set(c.id, {
       id: c.id,
       userId: c.user_id,
-      firstName,
-      lastName,
-      email: c.email,
+      firstName: coachFirstName,
+      lastName: coachLastName,
       orgId: c.organization_id,
       onboardingCompleted: c.onboarding_completed ?? false,
-    };
-    coachesById.set(c.id, detail);
-    if (c.user_id) userIdToCoachDetail.set(c.user_id, detail);
+    });
+  }
+  const userIdToCoachDetail = new Map<string, typeof allCoachesMap extends Map<string, infer V> ? V : never>();
+  for (const [, c] of allCoachesMap) {
+    if (c.userId) userIdToCoachDetail.set(c.userId, c);
   }
 
-  // --- Round counts + last round per player (from Slice A rounds rollup) ---
+  // --- Round counts + last round per player ---
   const playerRoundCounts = new Map<string, number>();
-  for (const [pid, n] of Object.entries(rounds.playerRoundCounts)) {
-    playerRoundCounts.set(pid, n);
+  for (const r of (playerRoundCountsRes.data ?? [])) {
+    playerRoundCounts.set(r.player_id, (playerRoundCounts.get(r.player_id) ?? 0) + 1);
   }
   const playerLastRound = new Map<string, string>();
-  for (const [pid, ts] of Object.entries(rounds.playerLastRound)) {
-    playerLastRound.set(pid, ts);
+  for (const r of (playerLastRoundsRes.data ?? [])) {
+    if (r.created_at && !playerLastRound.has(r.player_id)) {
+      playerLastRound.set(r.player_id, r.created_at);
+    }
   }
 
-  // --- Player → team info (with names) ---
+  // --- User auth details map (last_sign_in_at + last_seen from RPC) ---
+  const userAuthDetailsMap = new Map<string, { lastSignInAt: string | null; lastSeen: string | null }>();
+  for (const row of (userLastActiveRes.data ?? [])) {
+    userAuthDetailsMap.set(row.id, {
+      lastSignInAt: row.last_sign_in_at ?? null,
+      lastSeen: row.last_seen ?? null,
+    });
+  }
+  // Build last-active map for user directory (prefer last_seen, fallback to last_sign_in)
+  const userLastActive = new Map<string, string>();
+  for (const [uid, details] of userAuthDetailsMap) {
+    const ts = details.lastSeen ?? details.lastSignInAt;
+    if (ts) userLastActive.set(uid, ts);
+  }
+
+  // --- Player to team map (already have teamMembersRes from batch 2) ---
   const playerToTeamInfo = new Map<string, { teamId: string; teamName: string }>();
-  for (const [pid, tid] of playerToTeamId) {
-    const team = teamsMap.get(tid);
-    if (team) playerToTeamInfo.set(pid, { teamId: tid, teamName: team.name });
+  for (const m of (teamMembersRes.data ?? [])) {
+    // teamMembersRes has team_id + player_id
+    const teamInfo = teamsMap.get(m.team_id);
+    if (teamInfo) {
+      playerToTeamInfo.set(m.player_id, { teamId: m.team_id, teamName: teamInfo.name });
+    }
   }
 
-  // --- Email map (for audit / error / admin-event enrichment) ---
-  const errorEmailMap = new Map<string, string>();
-  for (const u of users.usersForDirectory) errorEmailMap.set(u.id, u.email);
-
-  // --- User directory ---
-  const userDirectory = users.usersForDirectory.map((u) => {
+  // --- Build user directory ---
+  const userDirectory = (allUsersRes.data ?? []).map((u) => {
     const player = userIdToPlayerDetail.get(u.id);
     const coach = userIdToCoachDetail.get(u.id);
     const playerId = player?.id;
     const teamInfo = playerId ? playerToTeamInfo.get(playerId) : null;
+    // For coaches, find their team via org
     let coachTeamName: string | null = null;
     let coachTeamId: string | null = null;
     if (coach?.orgId) {
-      for (const t of rollupB.teams.teams) {
-        if (t.organization_id === coach.orgId) {
-          coachTeamName = t.name;
-          coachTeamId = t.id;
+      for (const [tId, tInfo] of teamsMap) {
+        // Match by checking teamsDataRes for org match
+        const teamData = (teamsDataRes.data ?? []).find(t => t.id === tId && t.organization_id === coach.orgId);
+        if (teamData) {
+          coachTeamName = tInfo.name;
+          coachTeamId = tId;
           break;
         }
       }
@@ -1964,153 +2254,334 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       email: u.email,
       role: u.role,
       createdAt: u.created_at,
-      firstName: player?.first_name ?? coach?.firstName ?? null,
-      lastName: player?.last_name ?? coach?.lastName ?? null,
+      firstName: player?.firstName ?? coach?.firstName ?? null,
+      lastName: player?.lastName ?? coach?.lastName ?? null,
       teamName: teamInfo?.teamName ?? coachTeamName ?? null,
       teamId: teamInfo?.teamId ?? coachTeamId ?? null,
       lastRoundDate: playerId ? (playerLastRound.get(playerId) ?? null) : null,
       lastActiveAt: userLastActive.get(u.id) ?? null,
       totalRounds: playerId ? (playerRoundCounts.get(playerId) ?? 0) : 0,
-      onboardingCompleted: player?.onboarding_completed ?? coach?.onboardingCompleted ?? false,
+      onboardingCompleted: player?.onboardingCompleted ?? coach?.onboardingCompleted ?? false,
     };
   });
 
-  // --- Org → coaches map (for teamRosters) ---
+  // --- Build team rosters ---
+  // Build org -> coaches map
   const orgCoaches = new Map<string, { id: string; firstName: string; lastName: string; email: string }[]>();
-  for (const c of coachesById.values()) {
+  for (const [, c] of allCoachesMap) {
     if (c.orgId) {
       const list = orgCoaches.get(c.orgId) ?? [];
+      // Find email from users
+      const userEntry = (allUsersRes.data ?? []).find(u => u.id === c.userId);
       list.push({
         id: c.id,
         firstName: c.firstName,
         lastName: c.lastName,
-        email: c.email ?? '',
+        email: userEntry?.email ?? '',
       });
       orgCoaches.set(c.orgId, list);
     }
   }
 
-  // --- Team rosters ---
-  const teamRosters = rollupB.teams.teams.map((t) => {
-    const teamMembersForTeam = rollupB.teams.teamMembers.filter((m) => m.team_id === t.id);
-    const tPlayers = teamMembersForTeam
-      .map((m) => {
-        const p = playersById.get(m.player_id);
-        const email = p?.user_id
-          ? (users.usersForDirectory.find((u) => u.id === p.user_id)?.email ?? null)
-          : null;
-        const statsEntry = statsRows.find((s) => s.player_id === m.player_id);
-        return {
-          id: m.player_id,
-          firstName: p?.first_name ?? '',
-          lastName: p?.last_name ?? '',
-          email,
-          gradYear: p?.graduation_year ?? null,
-          lastRoundDate: playerLastRound.get(m.player_id) ?? null,
-          totalRounds: playerRoundCounts.get(m.player_id) ?? 0,
-          scoringAvg: statsEntry?.scoring_average != null ? Number(statsEntry.scoring_average) : null,
-          onboardingCompleted: p?.onboarding_completed ?? false,
-        };
-      })
-      .sort((a, b) => (a.scoringAvg ?? 999) - (b.scoringAvg ?? 999));
+  const teamRosters = (teamsDataRes.data ?? []).map((t) => {
+    const org = t.organizations as { name: string } | null;
+    // Get players on this team
+    const teamMembers = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const players = teamMembers.map((m) => {
+      const p = allPlayersMap.get(m.player_id);
+      const userEntry = p?.userId ? (allUsersRes.data ?? []).find(u => u.id === p.userId) : null;
+      const statsEntry = statsRows.find(s => s.player_id === m.player_id);
+      return {
+        id: m.player_id,
+        firstName: p?.firstName ?? '',
+        lastName: p?.lastName ?? '',
+        email: userEntry?.email ?? null,
+        gradYear: p?.gradYear ?? null,
+        lastRoundDate: playerLastRound.get(m.player_id) ?? null,
+        totalRounds: playerRoundCounts.get(m.player_id) ?? 0,
+        scoringAvg: statsEntry?.scoring_average != null ? Number(statsEntry.scoring_average) : null,
+        onboardingCompleted: p?.onboardingCompleted ?? false,
+      };
+    }).sort((a, b) => (a.scoringAvg ?? 999) - (b.scoringAvg ?? 999));
 
+    // Get coaches for this team's org
     const coaches = t.organization_id ? (orgCoaches.get(t.organization_id) ?? []) : [];
 
     return {
       id: t.id,
       name: t.name,
-      orgName: t.org_name,
+      orgName: org?.name ?? null,
       coaches,
-      players: tPlayers,
+      players,
     };
   }).sort((a, b) => b.players.length - a.players.length);
 
+  // --- Daily signups (last 30d) ---
+  const signupDailyDates = (signupsDaily30dRes.data ?? []).map(u => u.created_at).filter(Boolean) as string[];
+  const signupsByDayResult = groupByDay(signupDailyDates, 30);
+
+  // --- Daily visits (last 30d, unique players per day) ---
+  const visitsByDayMap: Record<string, Set<string>> = {};
+  // Initialize all days
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    visitsByDayMap[d.toISOString().slice(0, 10)] = new Set();
+  }
+  for (const r of (visitsDaily30dRes.data ?? [])) {
+    if (r.created_at) {
+      const key = new Date(r.created_at).toISOString().slice(0, 10);
+      if (key in visitsByDayMap) {
+        visitsByDayMap[key]!.add(r.player_id);
+      }
+    }
+  }
+  const visitsByDayResult = Object.entries(visitsByDayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, players]) => ({ date, count: players.size }));
+
   // --- Funnel ---
-  const uniqueReviewedRounds = new Set(coachhelm.reviewedRoundIds).size;
-  const uniqueInsightPlayers = new Set(coachhelm.insightPlayerRows.map((r) => r.player_id).filter(Boolean)).size;
+  const uniqueReviewedRounds = new Set((reviewedRoundsRes.data ?? []).map(r => r.round_id)).size;
+  const uniqueInsightPlayers = new Set((insightPlayerRoundsRes.data ?? []).map(r => r.player_id)).size;
   const funnel = {
     roundsStarted: totalRoundsCount,
     roundsCompleted: completedRoundsCount,
     roundsWithScore: verifiedRoundsCount,
     roundsReviewed: uniqueReviewedRounds,
-    roundsWithInsights: uniqueInsightPlayers,
+    roundsWithInsights: uniqueInsightPlayers, // players who had insights generated
   };
 
   // --- Data Quality ---
+  const shotsWithDistance = shotsWithGpsRes.count ?? 0;
+  const shotsWithLie = shotsWithLieTypeRes.count ?? 0;
+  const shotsWithClub = shotsWithClubRes.count ?? 0;
   const dataQuality = {
     totalShots: totalShotsCount,
-    shotsWithDistance: dataQualityRaw.shotsWithDistance,
-    shotsWithLie: dataQualityRaw.shotsWithLie,
-    shotsWithClub: dataQualityRaw.shotsWithClub,
-    distancePercentage: totalShotsCount > 0 ? Math.round((dataQualityRaw.shotsWithDistance / totalShotsCount) * 100) : 0,
-    liePercentage: totalShotsCount > 0 ? Math.round((dataQualityRaw.shotsWithLie / totalShotsCount) * 100) : 0,
-    clubPercentage: totalShotsCount > 0 ? Math.round((dataQualityRaw.shotsWithClub / totalShotsCount) * 100) : 0,
+    shotsWithDistance,
+    shotsWithLie,
+    shotsWithClub,
+    distancePercentage: totalShotsCount > 0 ? Math.round((shotsWithDistance / totalShotsCount) * 100) : 0,
+    liePercentage: totalShotsCount > 0 ? Math.round((shotsWithLie / totalShotsCount) * 100) : 0,
+    clubPercentage: totalShotsCount > 0 ? Math.round((shotsWithClub / totalShotsCount) * 100) : 0,
   };
 
-  // --- CoachHelm ROI (AI team avg vs non-AI team avg, from statsRows + teams + philosophy) ---
-  const philosophyCoachIdSet = new Set<string>();
-  // Slice A coachhelm doesn't expose philosophy coach IDs; use Slice C's philosophy-linked set
-  // via coachIntelligence.philosophyConfigured flag.
-  for (const ci of rollupC.coachIntelligence) {
-    if (ci.philosophyConfigured) philosophyCoachIdSet.add(ci.id);
+  // --- User Journey ---
+  const allPlayerIds = new Set((playerRoundCountsRes.data ?? []).map(r => r.player_id));
+  const userJourney = {
+    totalSignups: (allUsersRes.data ?? []).length,
+    completedOnboarding: onboarded + coachOnboarded,
+    submittedFirstRound: allPlayerIds.size,
+    activeThisWeek: playersThisWeek.size,
+  };
+
+  // --- Stickiness ---
+  const dauCount = new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size;
+  const wauCount = playersThisWeek.size;
+  const mauCount = playersActiveLast30d.size;
+  const stickiness = {
+    dauMauRatio: mauCount > 0 ? Math.round((dauCount / mauCount) * 100) : 0,
+    dau: dauCount,
+    wau: wauCount,
+    mau: mauCount,
+  };
+
+  // --- Player Engagement Segments ---
+  // High = 3+ rounds in last 7 days, Medium = 1-2 rounds in last 7d, Low = active in 30d but not 7d, Dormant = no rounds in 30d
+  const playerRoundsThisWeek = new Map<string, number>();
+  for (const r of (weeklyRetentionPlayerRes.data ?? [])) {
+    playerRoundsThisWeek.set(r.player_id, (playerRoundsThisWeek.get(r.player_id) ?? 0) + 1);
   }
-  const aiOrgIds = new Set<string>();
-  const nonAiOrgIds = new Set<string>();
-  for (const c of coachesById.values()) {
-    if (!c.orgId) continue;
-    if (philosophyCoachIdSet.has(c.id)) aiOrgIds.add(c.orgId);
-    else nonAiOrgIds.add(c.orgId);
+  let highEngagement = 0;
+  let mediumEngagement = 0;
+  let lowEngagement = 0;
+  let dormant = 0;
+  for (const [, p] of allPlayersMap) {
+    const weeklyRounds = playerRoundsThisWeek.get(p.id) ?? 0;
+    const isActive30d = playersActive30d.has(p.id);
+    if (weeklyRounds >= 3) highEngagement++;
+    else if (weeklyRounds >= 1) mediumEngagement++;
+    else if (isActive30d) lowEngagement++;
+    else dormant++;
   }
-  const aiTeamIds = new Set<string>();
-  const nonAiTeamIds = new Set<string>();
-  for (const t of rollupB.teams.teams) {
-    if (!t.organization_id) continue;
-    if (aiOrgIds.has(t.organization_id)) aiTeamIds.add(t.id);
-    else if (nonAiOrgIds.has(t.organization_id)) nonAiTeamIds.add(t.id);
-  }
-  const aiPlayerScores: number[] = [];
-  const nonAiPlayerScores: number[] = [];
-  for (const r of statsRows) {
-    if (r.scoring_average == null) continue;
-    const tid = playerToTeamId.get(r.player_id);
-    if (tid && aiTeamIds.has(tid)) aiPlayerScores.push(Number(r.scoring_average));
-    else if (tid && nonAiTeamIds.has(tid)) nonAiPlayerScores.push(Number(r.scoring_average));
-  }
-  const avgScoreAI = aiPlayerScores.length > 0
-    ? aiPlayerScores.reduce((a, b) => a + b, 0) / aiPlayerScores.length
-    : null;
-  const avgScoreNonAI = nonAiPlayerScores.length > 0
-    ? nonAiPlayerScores.reduce((a, b) => a + b, 0) / nonAiPlayerScores.length
-    : null;
-  const aiCoachCount = philosophyCount;
+  const playerEngagement = {
+    highEngagement,
+    mediumEngagement,
+    lowEngagement,
+    dormant,
+    segments: [
+      { label: 'High (3+/wk)', count: highEngagement, color: '#16A34A' },
+      { label: 'Medium (1-2/wk)', count: mediumEngagement, color: '#2563EB' },
+      { label: 'Low (monthly)', count: lowEngagement, color: '#F59E0B' },
+      { label: 'Dormant', count: dormant, color: '#9CA3AF' },
+    ],
+  };
+
+  // --- CoachHelm ROI ---
+  // Find coaches who have set up philosophy
+  // Use orgCoachCounts and teamsMap to determine which teams have AI coaches
+  // Simpler approach: philosophy count vs total coaches, use team-level avg scores
+  const aiCoachCount = coachPhilosophyRes.count ?? 0;
   const nonAiCoachCount = Math.max(totalCoaches - aiCoachCount, 0);
-  const coachhelmRoi = {
-    coachesUsingAI: aiCoachCount,
-    coachesNotUsingAI: nonAiCoachCount,
-    avgScoreAICoachPlayers: avgScoreAI != null ? Math.round(avgScoreAI * 10) / 10 : null,
-    avgScoreNonAICoachPlayers: avgScoreNonAI != null ? Math.round(avgScoreNonAI * 10) / 10 : null,
-    scoreDifference: avgScoreAI != null && avgScoreNonAI != null
-      ? Math.round((avgScoreNonAI - avgScoreAI) * 10) / 10
-      : null,
-  };
 
   // ============================================
-  // ERROR LOGS — incident narrative + summary
+  // BATCH 4: Error logs, audit log, login security, baseball (parallel)
   // ============================================
-  const rawErrorLogs = rollupB.errors.recentErrorLogs;
-  const errorSummaryRaw = rollupB.errors.errorSummary;
-  const errorSummaryDegraded = rollupB.errors.errorSummaryDegraded;
+  const [
+    errorLogsRecentRes,
+    errorLogs7dCountRes,
+    errorLogsCriticalRes,
+    errorSummaryRes,
+    auditLogRecentRes,
+    auditLog7dCountRes,
+    loginAttemptsRes,
+    lockedAccountsRes,
+    // Baseball
+    bbPlayersRes,
+    bbCoachesRes,
+    bbWatchlistRes,
+    bbVideos30dRes,
+    bbEngagement30dRes,
+    bbMessages30dRes,
+    bbConversations30dRes,
+    bbPlayersOnboardedRes,
+    bbCoachesOnboardedRes,
+    bbTeamsRes,
+    bbEventsRes,
+    bbCampsRes,
+    bbRecruitingActivatedRes,
+    // New: Demo requests, notifications, golf communication, strokes gained
+    demoRequestsAllRes,
+    demoRequestsPendingRes,
+    demoRequestsRecentRes,
+    golfAnnouncementsAllRes,
+    golfAnnouncementAcksRes,
+    golfMessagesAllRes,
+    golfConversationsAllRes,
+    strokesGainedRes,
+    totalPlatformUsersRes,
+    // Admin events (new real-time event tracking)
+    adminEventsRecentRes,
+    adminEventsSummaryRes,
+    adminEventsUnresolvedCriticalRes,
+    adminEventsErrorOnlyRes,
+  ] = await Promise.all([
+    // Error logs: recent entries (limit 500 — incident grouping needs broader window)
+    adminDb.from('error_logs').select('id, message, severity, stack, url, user_id, context, created_at').order('created_at', { ascending: false }).limit(500),
+    // Error logs: 7d count
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    // Error logs: critical 7d
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago7d).eq('severity', 'critical'),
+    // Error summary from RPC (wrapped for resilience)
+    (async () => {
+      try {
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_error_summary', { days_back: 7 });
+        return result as unknown as { data: { by_severity: { severity: string; count: number }[]; top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[]; daily_rate: { day: string; count: number }[]; total_count: number; critical_count: number } | null; error: unknown };
+      } catch {
+        return { data: null, error: null };
+      }
+    })(),
+    // Audit log: recent entries via RPC (wrapped for resilience)
+    (async () => {
+      try {
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, number>) => PromiseLike<{ data: unknown }>)('get_audit_log_recent', { limit_count: 50 });
+        return result as unknown as { data: { id: string; user_id: string | null; user_email: string | null; action: string; table_name: string | null; record_id: string | null; old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null; created_at: string }[] | null; error: unknown };
+      } catch {
+        return { data: null, error: null };
+      }
+    })(),
+    // Audit log: 7d count
+    adminDb.from('audit_log').select('id', { count: 'exact', head: true }).gte('created_at', ago7d),
+    // Login attempts
+    adminDb.from('login_attempts').select('email, failed_attempts, last_attempt, locked_until').order('last_attempt', { ascending: false }).limit(20),
+    // Locked accounts
+    adminDb.from('login_attempts').select('id', { count: 'exact', head: true }).gte('locked_until', new Date().toISOString()),
+    // Baseball data
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_coaches').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_watchlists').select('pipeline_stage'),
+    adminDb.from('baseball_videos').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_player_engagement_events').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_messages').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_conversations').select('id', { count: 'exact', head: true }).gte('created_at', ago30d),
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('baseball_coaches').select('id', { count: 'exact', head: true }).eq('onboarding_completed', true),
+    adminDb.from('baseball_teams').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_events').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_camps').select('id', { count: 'exact', head: true }),
+    adminDb.from('baseball_players').select('id', { count: 'exact', head: true }).eq('recruiting_activated', true),
+    // Demo requests
+    adminDb.from('demo_requests').select('id', { count: 'exact', head: true }),
+    adminDb.from('demo_requests').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    adminDb.from('demo_requests').select('name, email, organization, interest_type, status, created_at').order('created_at', { ascending: false }).limit(10),
+    // Golf communication
+    adminDb.from('golf_announcements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_announcement_acknowledgements').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_messages').select('id', { count: 'exact', head: true }),
+    adminDb.from('golf_conversations').select('id', { count: 'exact', head: true }),
+    // Strokes gained from stats cache
+    adminDb.from('golf_player_stats_cache').select('strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting').not('strokes_gained_total', 'is', null),
+    // Total platform users (source of truth)
+    adminDb.from('users').select('id', { count: 'exact', head: true }),
+    // Admin events: recent entries for display (no metadata — saves bandwidth on JSONB column)
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').order('created_at', { ascending: false }).limit(500),
+    // Admin events: summary via RPC (wrapped in try-catch for resilience)
+    (async () => {
+      try {
+        const result = await (adminDb.rpc as unknown as (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>)('get_admin_event_summary', { p_days_back: 7 });
+        return result as unknown as { data: { total_events: number; error_count: number; critical_count: number; unresolved_count: number; events_by_type: Record<string, number>; events_by_severity: Record<string, number>; events_by_day: { date: string; count: number }[] } | null; error: unknown };
+      } catch {
+        // RPC function may not exist yet, return empty result
+        return { data: null, error: null };
+      }
+    })(),
+    // Admin events: unresolved critical
+    adminDb.from('admin_events').select('id, event_type, title, message, created_at').eq('resolved', false).in('severity', ['critical', 'error']).order('created_at', { ascending: false }).limit(20),
+    // Admin events: error-type only with metadata (for incident key building — much smaller result set)
+    adminDb.from('admin_events').select('id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at').eq('event_type', 'error').order('created_at', { ascending: false }).limit(500),
+  ]);
 
-  // Fallback computed from raw logs when RPC returned null
+  // --- Process error logs ---
+  const errorEmailMap = new Map<string, string>();
+  for (const u of (allUsersRes.data ?? [])) {
+    errorEmailMap.set(u.id, u.email);
+  }
+
+  const errorSummaryRaw = (errorSummaryRes.data ?? null) as {
+    by_severity: { severity: string; count: number }[];
+    top_errors: { message: string; severity: string; occurrences: number; first_seen: string; last_seen: string; affected_users: number }[];
+    daily_rate: { day: string; count: number }[];
+    total_count: number;
+    critical_count: number;
+  } | null;
+
+  const rawErrorLogs = (errorLogsRecentRes.data ?? []) as {
+    id: string;
+    message: string;
+    severity: string | null;
+    stack: string | null;
+    url: string | null;
+    user_id: string | null;
+    context: Record<string, unknown> | null;
+    created_at: string | null;
+  }[];
+
+  // Track whether RPC fallback was used
+  const errorSummaryDegraded = errorSummaryRaw === null;
+
+  // Fallback: calculate error summary from raw error logs if RPC failed
   const errorSummary = errorSummaryRaw ?? (() => {
+    // Group errors by message for top_errors
     const errorGroups = new Map<string, { message: string; severity: string; count: number; firstSeen: string; lastSeen: string; userIds: Set<string | null> }>();
     const severityCounts = new Map<string, number>();
     const dailyCounts = new Map<string, number>();
+    
     for (const e of rawErrorLogs) {
       const msg = e.message;
       const sev = e.severity ?? 'error';
       const created = e.created_at ?? new Date().toISOString();
       const day = new Date(created).toISOString().slice(0, 10);
+      
+      // Group by message
       const existing = errorGroups.get(msg);
       if (existing) {
         existing.count++;
@@ -2120,15 +2591,20 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       } else {
         errorGroups.set(msg, { message: msg, severity: sev, count: 1, firstSeen: created, lastSeen: created, userIds: new Set(e.user_id ? [e.user_id] : []) });
       }
+      
+      // Count by severity
       severityCounts.set(sev, (severityCounts.get(sev) ?? 0) + 1);
+      
+      // Count by day
       dailyCounts.set(day, (dailyCounts.get(day) ?? 0) + 1);
     }
+    
     return {
       by_severity: Array.from(severityCounts.entries()).map(([severity, count]) => ({ severity, count })),
       top_errors: Array.from(errorGroups.values())
         .sort((a, b) => b.count - a.count)
         .slice(0, 20)
-        .map((e) => ({
+        .map(e => ({
           message: e.message,
           severity: e.severity,
           occurrences: e.count,
@@ -2149,25 +2625,98 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     count: d.count,
   }));
 
-  // --- Admin events (unresolved key tracking) ---
-  const rawAdminErrorEvents = rollupB.adminEvents.errorOnlyRaw;
-  const adminEventSummary = rollupB.adminEvents.summary;
-  const adminEventSummaryDegraded = rollupB.adminEvents.adminEventSummaryDegraded;
+  // --- Process audit log ---
+  const auditLogData = ((auditLogRecentRes.data ?? []) as {
+    id: string; user_id: string | null; user_email: string | null; action: string;
+    table_name: string | null; record_id: string | null;
+    old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null;
+    created_at: string;
+  }[]).map((a) => ({
+    id: a.id,
+    userId: a.user_id,
+    userEmail: a.user_email ?? (a.user_id ? (errorEmailMap.get(a.user_id) ?? null) : null),
+    action: a.action,
+    tableName: a.table_name,
+    recordId: a.record_id,
+    oldData: a.old_data,
+    newData: a.new_data,
+    createdAt: a.created_at,
+  }));
+
+  // --- Process login security ---
+  const loginAttempts = (loginAttemptsRes.data ?? []).map((l) => ({
+    email: l.email,
+    failedAttempts: l.failed_attempts ?? 0,
+    lastAttempt: l.last_attempt,
+    lockedUntil: l.locked_until,
+  }));
+  const failedLogins7d = loginAttempts.reduce((s, l) => s + l.failedAttempts, 0);
+
+  // --- Process admin events ---
+  const rawAdminEvents = (adminEventsRecentRes.data ?? []) as AdminEventDisplayRecord[];
+
+  const adminEventSummaryRaw = (adminEventsSummaryRes.data ?? null) as {
+    total_events: number;
+    error_count: number;
+    critical_count: number;
+    unresolved_count: number;
+    events_by_type: Record<string, number>;
+    events_by_severity: Record<string, number>;
+    events_by_day: { date: string; count: number }[];
+  } | null;
+
+  // Track whether RPC fallback was used
+  const adminEventSummaryDegraded = adminEventSummaryRaw === null;
+
+  // Fallback: calculate admin event summary from raw events if RPC failed
+  const adminEventSummary = adminEventSummaryRaw ?? (() => {
+    const eventsByType: Record<string, number> = {};
+    const eventsBySeverity: Record<string, number> = {};
+    const eventsByDay = new Map<string, number>();
+    let errorCount = 0;
+    let criticalCount = 0;
+    let unresolvedCount = 0;
+    
+    for (const e of rawAdminEvents) {
+      eventsByType[e.event_type] = (eventsByType[e.event_type] ?? 0) + 1;
+      eventsBySeverity[e.severity] = (eventsBySeverity[e.severity] ?? 0) + 1;
+      const day = new Date(e.created_at).toISOString().slice(0, 10);
+      eventsByDay.set(day, (eventsByDay.get(day) ?? 0) + 1);
+      if (e.severity === 'error') errorCount++;
+      if (e.severity === 'critical') criticalCount++;
+      if (!e.resolved) unresolvedCount++;
+    }
+    
+    return {
+      total_events: rawAdminEvents.length,
+      error_count: errorCount,
+      critical_count: criticalCount,
+      unresolved_count: unresolvedCount,
+      events_by_type: eventsByType,
+      events_by_severity: eventsBySeverity,
+      events_by_day: Array.from(eventsByDay.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, count]) => ({ date, count })),
+    };
+  })();
+
+  // Use the error-only query result (with metadata) for incident key building
+  const rawAdminErrorEvents = (adminEventsErrorOnlyRes.data ?? []) as AdminEventIncidentRecord[];
+
+  // Track the latest unresolved event timestamp per incident key (not just presence)
   const latestUnresolvedEventTs = new Map<string, number>();
   const resolvedIncidentMeta = new Map<string, AdminEventIncidentResolution>();
   for (const event of rawAdminErrorEvents) {
-    const incidentKey = buildAdminEventIncidentKey({
-      title: event.title,
-      message: event.message,
-      metadata: event.metadata,
-      url: event.url,
-    });
+    const incidentKey = buildAdminEventIncidentKey(event);
     if (!event.resolved) {
       const eventTs = new Date(event.created_at).getTime();
       const currentMax = latestUnresolvedEventTs.get(incidentKey) ?? -1;
-      if (eventTs > currentMax) latestUnresolvedEventTs.set(incidentKey, eventTs);
+      if (eventTs > currentMax) {
+        latestUnresolvedEventTs.set(incidentKey, eventTs);
+      }
       continue;
     }
+
     const existing = resolvedIncidentMeta.get(incidentKey);
     const nextResolvedAt = event.resolved_at ?? event.created_at;
     const existingResolvedAt = existing?.resolvedAt ?? '';
@@ -2182,7 +2731,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const recentIncidentThreshold = new Date(ago24h).getTime();
   const incidentGroups = new Map<string, {
     key: string;
-    latestRow: (typeof rawErrorLogs)[number];
+    latestRow: typeof rawErrorLogs[number];
     latestContext: DashboardErrorContext;
     message: string;
     severity: 'critical' | 'error' | 'warning' | 'info';
@@ -2227,12 +2776,14 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     if (entry.stack) existing.stack = entry.stack;
     existing.latestContext = mergeDashboardErrorContext(existing.latestContext, context);
     if (createdAt < existing.firstSeen) existing.firstSeen = createdAt;
+
     if (createdAt >= existing.lastSeen) {
       existing.lastSeen = createdAt;
       existing.latestRow = entry;
       existing.latestContext = mergeDashboardErrorContext(context, existing.latestContext);
       existing.message = message;
     }
+
     if ((DASHBOARD_SEVERITY_ORDER[severity] ?? 99) < (DASHBOARD_SEVERITY_ORDER[existing.severity] ?? 99)) {
       existing.severity = severity;
     }
@@ -2264,6 +2815,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       const lastSeenTs = new Date(group.lastSeen).getTime();
       const resolution = resolvedIncidentMeta.get(group.key);
       const resolvedAtTs = resolution?.resolvedAt ? new Date(resolution.resolvedAt).getTime() : -1;
+      // 5-second tolerance for cross-table timestamp differences
       const RESOLVE_TOLERANCE_MS = 5_000;
       const latestUnresolvedTs = latestUnresolvedEventTs.get(group.key) ?? -1;
       const hasPostResolutionEvents = resolution
@@ -2275,9 +2827,9 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
           ? 'open'
           : latestUnresolvedTs > -1
             ? 'open'
-            : lastSeenTs >= recentIncidentThreshold
-              ? 'active'
-              : 'historical';
+          : lastSeenTs >= recentIncidentThreshold
+            ? 'active'
+            : 'historical';
 
       const incident: DashboardErrorIncident = {
         id: group.key,
@@ -2314,16 +2866,20 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
         resolvedBy: resolution?.resolvedBy ? (errorEmailMap.get(resolution.resolvedBy) ?? resolution.resolvedBy) : null,
         copySummary: '',
       };
+
       incident.copySummary = buildIncidentCopySummary(incident);
       return incident;
     })
     .sort((a, b) => {
       const statusDiff = (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
       if (statusDiff !== 0) return statusDiff;
+
       const severityDiff = (DASHBOARD_SEVERITY_ORDER[a.severity] ?? 99) - (DASHBOARD_SEVERITY_ORDER[b.severity] ?? 99);
       if (severityDiff !== 0) return severityDiff;
+
       const lastSeenDiff = new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime();
       if (lastSeenDiff !== 0) return lastSeenDiff;
+
       return b.occurrences - a.occurrences;
     });
 
@@ -2350,7 +2906,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   });
 
   const dataQualityScore = Math.round(
-    (dataQuality.distancePercentage + dataQuality.liePercentage + dataQuality.clubPercentage) / 3,
+    (dataQuality.distancePercentage + dataQuality.liePercentage + dataQuality.clubPercentage) / 3
   );
   diagnostics.unshift({
     label: 'Incident Queue',
@@ -2372,20 +2928,19 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   });
   diagnostics.push({
     label: 'Stats Integrity',
-    status: recentErrors.some((inc) => inc.featureArea === 'Stats Cache' && inc.status === 'open')
+    status: recentErrors.some((incident) => incident.featureArea === 'Stats Cache' && incident.status === 'open')
       ? 'critical'
-      : recentErrors.some((inc) => inc.featureArea === 'Stats Cache' && inc.status === 'active')
+      : recentErrors.some((incident) => incident.featureArea === 'Stats Cache' && incident.status === 'active')
         ? 'warning'
         : 'healthy',
-    detail: recentErrors.some((inc) => inc.featureArea === 'Stats Cache' && inc.status === 'open')
+    detail: recentErrors.some((incident) => incident.featureArea === 'Stats Cache' && incident.status === 'open')
       ? 'Open cache/stats incidents detected'
-      : recentErrors.some((inc) => inc.featureArea === 'Stats Cache' && inc.status === 'active')
+      : recentErrors.some((incident) => incident.featureArea === 'Stats Cache' && incident.status === 'active')
         ? 'Recent cache repair failures detected'
         : 'No live cache/stats incidents',
   });
 
-  // --- Recent admin events (with email enrichment) ---
-  const recentAdminEvents = rollupB.adminEvents.recentRaw.map((e) => ({
+  const recentAdminEvents = rawAdminEvents.map((e) => ({
     id: e.id,
     eventType: e.event_type,
     severity: e.severity,
@@ -2394,11 +2949,17 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     userId: e.user_id,
     userEmail: e.user_email ?? (e.user_id ? (errorEmailMap.get(e.user_id) ?? null) : null),
     url: e.url,
-    resolved: e.resolved ?? false,
+    resolved: e.resolved,
     createdAt: e.created_at,
   }));
 
-  const unresolvedCriticalEvents = rollupB.adminEvents.unresolvedCritical.map((e) => ({
+  const unresolvedCriticalEvents = ((adminEventsUnresolvedCriticalRes.data ?? []) as {
+    id: string;
+    event_type: string;
+    title: string;
+    message: string | null;
+    created_at: string;
+  }[]).map((e) => ({
     id: e.id,
     eventType: e.event_type,
     title: e.title,
@@ -2433,27 +2994,23 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       : `${unresolvedServerIncidents.length} unresolved server incident${unresolvedServerIncidents.length > 1 ? 's' : ''}`,
   });
 
-  // --- Audit log (enrich emails) ---
-  const auditLogData = rollupB.auditLog.recentRaw.map((a) => ({
-    id: a.id,
-    userId: a.user_id,
-    userEmail: a.user_email ?? (a.user_id ? (errorEmailMap.get(a.user_id) ?? null) : null),
-    action: a.action,
-    tableName: a.table_name,
-    recordId: a.record_id,
-    oldData: a.old_data,
-    newData: a.new_data,
-    createdAt: a.created_at,
-  }));
+  // --- Process baseball data ---
+  const watchlistStages: Record<string, number> = {};
+  for (const w of (bbWatchlistRes.data ?? [])) {
+    const stage = (w.pipeline_stage as string) || 'unknown';
+    watchlistStages[stage] = (watchlistStages[stage] || 0) + 1;
+  }
+  const commitments = watchlistStages['committed'] ?? 0;
 
-  // --- Needs attention (derived) ---
+  // --- Build needs-attention items ---
   const needsAttention: AdminDashboardData['needsAttention'] = [];
 
-  const stuckInOnboarding = users.usersForDirectory.filter((u) => {
+  // Players stuck in onboarding > 7 days
+  const stuckInOnboarding = (allUsersRes.data ?? []).filter((u) => {
     if (!u.created_at) return false;
-    const daysSinceSignup = (now - new Date(u.created_at).getTime()) / 86400000;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
     const player = userIdToPlayerDetail.get(u.id);
-    return daysSinceSignup > 7 && player && !player.onboarding_completed;
+    return daysSinceSignup > 7 && player && !player.onboardingCompleted;
   });
   if (stuckInOnboarding.length > 0) {
     needsAttention.push({
@@ -2464,11 +3021,12 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const inactiveCoaches = users.usersForDirectory.filter((u) => {
+  // Coaches inactive > 14 days
+  const inactiveCoaches = (allUsersRes.data ?? []).filter((u) => {
     if (u.role !== 'coach') return false;
     const lastActive = userLastActive.get(u.id);
     if (!lastActive) return true;
-    return (now - new Date(lastActive).getTime()) / 86400000 > 14;
+    return (Date.now() - new Date(lastActive).getTime()) / 86400000 > 14;
   });
   if (inactiveCoaches.length > 0) {
     needsAttention.push({
@@ -2479,7 +3037,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const criticalCount = rollupB.errors.criticalErrors7d;
+  // Critical errors — only alert on UNRESOLVED critical incidents
+  const criticalCount = errorLogsCriticalRes.count ?? 0;
   const unresolvedCriticalCount = incidentCounts.openCritical;
   if (unresolvedCriticalCount > 0) {
     needsAttention.push({
@@ -2499,7 +3058,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const totalErrors7d = rollupB.errors.totalErrors7d;
+  // Error count > 10 — only warn if there are unresolved incidents
+  const totalErrors7d = errorLogs7dCountRes.count ?? 0;
   const hasUnresolvedIncidents = incidentCounts.open > 0 || incidentCounts.active > 0;
   if (totalErrors7d > 10 && unresolvedCriticalCount === 0 && hasUnresolvedIncidents) {
     needsAttention.push({
@@ -2510,7 +3070,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const lockedAccountCount = rollupB.loginSecurity.lockedAccounts;
+  // Locked accounts
+  const lockedAccountCount = lockedAccountsRes.count ?? 0;
   if (lockedAccountCount > 0) {
     needsAttention.push({
       label: `${lockedAccountCount} locked account${lockedAccountCount > 1 ? 's' : ''}`,
@@ -2520,9 +3081,10 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const stuckCoachesOnboarding = users.usersForDirectory.filter((u) => {
+  // Coaches stuck in onboarding > 7 days
+  const stuckCoachesOnboarding = (allUsersRes.data ?? []).filter((u) => {
     if (!u.created_at) return false;
-    const daysSinceSignup = (now - new Date(u.created_at).getTime()) / 86400000;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
     const coach = userIdToCoachDetail.get(u.id);
     return daysSinceSignup > 7 && coach && !coach.onboardingCompleted;
   });
@@ -2535,7 +3097,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
-  const pendingDemoCount = rollupB.demoRequests.pending;
+  // Pending demo requests
+  const pendingDemoCount = demoRequestsPendingRes.count ?? 0;
   if (pendingDemoCount > 0) {
     needsAttention.push({
       label: `${pendingDemoCount} pending demo request${pendingDemoCount > 1 ? 's' : ''}`,
@@ -2545,9 +3108,861 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     });
   }
 
+  // Positive signals (new users, all-clear) are intentionally omitted from alerts.
+  // The overview KPI cards already surface growth data; alerts should only show
+  // items that require action.
+
+  // --- Process strokes gained averages ---
+  const sgRows = strokesGainedRes.data ?? [];
+  const sgTotal = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_total ?? 0), 0) / sgRows.length : null;
+  const sgTee = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_tee ?? 0), 0) / sgRows.length : null;
+  const sgApproach = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_approach ?? 0), 0) / sgRows.length : null;
+  const sgAroundGreen = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_around_green ?? 0), 0) / sgRows.length : null;
+  const sgPutting = sgRows.length > 0 ? sgRows.reduce((s, r) => s + Number(r.strokes_gained_putting ?? 0), 0) / sgRows.length : null;
+
+  // --- Process golf communication metrics ---
+  const totalAnnouncementsCount = golfAnnouncementsAllRes.count ?? 0;
+  const totalAckCount = golfAnnouncementAcksRes.count ?? 0;
+  // Ack rate: approximate by total acknowledgements / (announcements * avg team size)
+  // Simple approximation: if we have announcements and acks, ackRate = acks / announcements
+  const announcementAckRate = totalAnnouncementsCount > 0 ? Math.round((totalAckCount / totalAnnouncementsCount) * 10) / 10 : null;
+
+  // --- Process demo requests ---
+  const demoRequestsRecent = (demoRequestsRecentRes.data ?? []).map((d) => ({
+    name: (d.name as string) ?? '',
+    email: (d.email as string) ?? '',
+    organization: (d.organization as string | null) ?? null,
+    interestType: (d.interest_type as string | null) ?? null,
+    status: (d.status as string) ?? 'pending',
+    createdAt: (d.created_at as string) ?? new Date().toISOString(),
+  }));
+
+  // --- CoachHelm ROI: proper AI vs non-AI comparison ---
+  // Get coaches who HAVE philosophy set (AI-using coaches)
+  const aiCoachIds = new Set((aiCoachPhilosophyRes.data ?? []).map(c => c.coach_id));
+
+  // Map coach_id -> org_id to find which teams use AI
+  const aiOrgIds = new Set<string>();
+  const nonAiOrgIds = new Set<string>();
+  for (const c of (coachOrgRes.data ?? [])) {
+    if (c.organization_id) {
+      // Check if this coach has philosophy
+      const coachEntry = [...allCoachesMap.values()].find(cm => cm.orgId === c.organization_id);
+      if (coachEntry && aiCoachIds.has(coachEntry.id)) {
+        aiOrgIds.add(c.organization_id);
+      } else if (coachEntry) {
+        nonAiOrgIds.add(c.organization_id);
+      }
+    }
+  }
+
+  // Get team IDs for AI vs non-AI orgs
+  const aiTeamIds = new Set<string>();
+  const nonAiTeamIds = new Set<string>();
+  for (const t of (teamsDataRes.data ?? [])) {
+    if (t.organization_id && aiOrgIds.has(t.organization_id)) aiTeamIds.add(t.id);
+    else if (t.organization_id && nonAiOrgIds.has(t.organization_id)) nonAiTeamIds.add(t.id);
+  }
+
+  // Get avg scores for players on AI teams vs non-AI teams
+  const aiPlayerScores: number[] = [];
+  const nonAiPlayerScores: number[] = [];
+  for (const r of statsRows) {
+    if (r.scoring_average == null) continue;
+    const tid = playerToTeamId.get(r.player_id);
+    if (tid && aiTeamIds.has(tid)) aiPlayerScores.push(Number(r.scoring_average));
+    else if (tid && nonAiTeamIds.has(tid)) nonAiPlayerScores.push(Number(r.scoring_average));
+  }
+
+  const avgScoreAI = aiPlayerScores.length > 0 ? aiPlayerScores.reduce((a, b) => a + b, 0) / aiPlayerScores.length : null;
+  const avgScoreNonAI = nonAiPlayerScores.length > 0 ? nonAiPlayerScores.reduce((a, b) => a + b, 0) / nonAiPlayerScores.length : null;
+
+  const updatedCoachhelmRoi = {
+    coachesUsingAI: aiCoachCount,
+    coachesNotUsingAI: nonAiCoachCount,
+    avgScoreAICoachPlayers: avgScoreAI ? Math.round(avgScoreAI * 10) / 10 : null,
+    avgScoreNonAICoachPlayers: avgScoreNonAI ? Math.round(avgScoreNonAI * 10) / 10 : null,
+    scoreDifference: avgScoreAI != null && avgScoreNonAI != null ? Math.round((avgScoreNonAI - avgScoreAI) * 10) / 10 : null,
+  };
+
+  // --- Build user auth details for UI ---
+  const userAuthDetails = Array.from(userAuthDetailsMap.entries()).map(([uid, d]) => ({
+    userId: uid,
+    lastSignInAt: d.lastSignInAt,
+    lastSeen: d.lastSeen,
+  }));
+
   // ============================================
-  // ERROR DETECTION — extend RollupC with byType/byRoute/byUser/UX from raw logs
+  // BATCH 5: Enhanced analytics — new components
   // ============================================
+  type AnalyticsEvent = { event_type: string; page_path: string | null; feature_name: string | null; session_id: string | null; user_id: string | null; created_at: string; duration_ms: number | null };
+  type CoachInsightRow = { coach_id: string; created_at: string };
+  type CoachReviewRow = { published_by: string | null; round_id: string; created_at: string; golf_rounds: { player_id: string; created_at: string } | null };
+
+  type PlayerInsightRow = { player_id: string; insights_generated: number | null };
+  type TeamSeasonRow = { id: string; season: string | null };
+  type AdminEventErrorRow = { id: string; event_type: string; severity: string; resolved: boolean; created_at: string };
+
+  const [
+    analyticsEventsRes,
+    coachInsightsViewedRes,
+    coachRoundReviewsRes,
+    roundsWithDatesRes,
+    // NEW: for userActivity + errorDetection
+    playerInsightsPerPlayerRes,
+    teamSeasonsRes,
+    errors24hCountRes,
+    adminEventsErrorsRes,
+  ] = await Promise.all([
+    // Session heatmap: analytics events (last 7d) — table not in generated types
+    adminDb.from('admin_analytics_events' as never).select('event_type, page_path, feature_name, session_id, user_id, created_at, duration_ms').gte('created_at', ago7d) as unknown as { data: AnalyticsEvent[] | null; error: unknown },
+    // Coach intelligence: insights viewed per coach
+    adminDb.from('golf_coach_insights').select('coach_id, created_at') as unknown as { data: CoachInsightRow[] | null; error: unknown },
+    // Coach intelligence: round reviews per coach (with timing)
+    adminDb.from('golf_round_reviews').select('published_by, round_id, created_at, golf_rounds(player_id, created_at)') as unknown as { data: CoachReviewRow[] | null; error: unknown },
+    // For cohort retention + benchmarks: all rounds with player + date
+    adminDb.from('golf_rounds').select('player_id, created_at, team_id').order('created_at', { ascending: false }),
+    // NEW: Insights per player (for userActivity team member detail)
+    adminDb.from('golf_insight_generation_log').select('player_id, insights_generated').not('player_id', 'is', null) as unknown as { data: PlayerInsightRow[] | null; error: unknown },
+    // NEW: Team seasons
+    adminDb.from('golf_teams').select('id, season') as unknown as { data: TeamSeasonRow[] | null; error: unknown },
+    // NEW: Error count in last 24h
+    adminDb.from('error_logs').select('id', { count: 'exact', head: true }).gte('created_at', ago24h),
+    // NEW: Admin events with error/critical severity (for error detection)
+    adminDb.from('admin_events').select('id, event_type, severity, resolved, created_at').in('severity', ['error', 'critical']) as unknown as { data: AdminEventErrorRow[] | null; error: unknown },
+  ]);
+
+  // --- SESSION HEATMAP ---
+  const analyticsEvents = analyticsEventsRes.data ?? [];
+  const pageViewMap = new Map<string, { viewCount: number; users: Set<string> }>();
+  const featureUseMap = new Map<string, { useCount: number; users: Set<string> }>();
+  const sessionPagesMap = new Map<string, number>();
+  const sessionDurations = new Map<string, { min: number; max: number }>();
+
+  for (const ev of analyticsEvents) {
+    if (ev.event_type === 'page_view' && ev.page_path) {
+      const entry = pageViewMap.get(ev.page_path) ?? { viewCount: 0, users: new Set<string>() };
+      entry.viewCount++;
+      if (ev.user_id) entry.users.add(ev.user_id);
+      pageViewMap.set(ev.page_path, entry);
+      // Session pages count
+      if (ev.session_id) {
+        sessionPagesMap.set(ev.session_id, (sessionPagesMap.get(ev.session_id) ?? 0) + 1);
+      }
+    }
+    if (ev.event_type === 'feature_use' && ev.feature_name) {
+      const entry = featureUseMap.get(ev.feature_name) ?? { useCount: 0, users: new Set<string>() };
+      entry.useCount++;
+      if (ev.user_id) entry.users.add(ev.user_id);
+      featureUseMap.set(ev.feature_name, entry);
+    }
+    // Track session duration
+    if (ev.session_id && ev.created_at) {
+      const ts = new Date(ev.created_at).getTime();
+      const dur = sessionDurations.get(ev.session_id);
+      if (!dur) sessionDurations.set(ev.session_id, { min: ts, max: ts });
+      else {
+        dur.min = Math.min(dur.min, ts);
+        dur.max = Math.max(dur.max, ts);
+      }
+    }
+  }
+
+  const pageViews = [...pageViewMap.entries()]
+    .map(([pagePath, d]) => ({ pagePath, viewCount: d.viewCount, uniqueUsers: d.users.size }))
+    .sort((a, b) => b.viewCount - a.viewCount)
+    .slice(0, 20);
+
+  const featureUsage = [...featureUseMap.entries()]
+    .map(([featureName, d]) => ({ featureName, useCount: d.useCount, uniqueUsers: d.users.size }))
+    .sort((a, b) => b.useCount - a.useCount)
+    .slice(0, 20);
+
+  const totalSessions7d = sessionPagesMap.size;
+  const totalPageViews7d = analyticsEvents.filter(e => e.event_type === 'page_view').length;
+  const avgPagesPerSession = totalSessions7d > 0 ? totalPageViews7d / totalSessions7d : 0;
+  const sessionDurValues = [...sessionDurations.values()].map(d => (d.max - d.min) / 60000).filter(d => d > 0);
+  const avgSessionDurationMin = sessionDurValues.length > 0 ? sessionDurValues.reduce((a, b) => a + b, 0) / sessionDurValues.length : 0;
+
+  // Dead features: tracked features with < 5% of max usage
+  const maxFeatureUsers = Math.max(...[...featureUseMap.values()].map(f => f.users.size), 1);
+  const deadFeatures = [...featureUseMap.entries()]
+    .filter(([, d]) => d.users.size / maxFeatureUsers < 0.05)
+    .map(([name]) => name);
+
+  const sessionHeatmap: AdminDashboardData['sessionHeatmap'] = {
+    pageViews,
+    featureUsage,
+    sessionStats: {
+      avgPagesPerSession: Math.round(avgPagesPerSession * 10) / 10,
+      avgSessionDurationMin: Math.round(avgSessionDurationMin * 10) / 10,
+      totalSessions7d,
+      totalPageViews7d,
+    },
+    deadFeatures,
+  };
+
+  // --- COHORT RETENTION MATRIX ---
+  // Build 8-week cohorts: for each signup week, track % active at week 0..8
+  const allRoundsForCohort = roundsWithDatesRes.data ?? [];
+  const playerRoundWeeks = new Map<string, Set<string>>(); // player_id -> Set of week keys
+  for (const r of allRoundsForCohort) {
+    if (!r.created_at || !r.player_id) continue;
+    const d = new Date(r.created_at);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(d);
+    monday.setDate(diff);
+    const weekKey = monday.toISOString().slice(0, 10);
+    const set = playerRoundWeeks.get(r.player_id) ?? new Set();
+    set.add(weekKey);
+    playerRoundWeeks.set(r.player_id, set);
+  }
+
+  const cohortMatrix: AdminDashboardData['cohortMatrix'] = [];
+  for (let weeksBack = 8; weeksBack >= 1; weeksBack--) {
+    const cohortStart = new Date();
+    cohortStart.setDate(cohortStart.getDate() - cohortStart.getDay() + 1 - weeksBack * 7);
+    cohortStart.setHours(0, 0, 0, 0);
+    const cohortEnd = new Date(cohortStart);
+    cohortEnd.setDate(cohortEnd.getDate() + 7);
+    const cohortWeek = cohortStart.toISOString().slice(0, 10);
+
+    // Find users who signed up in this week
+    const cohortUsers = (allUsersRes.data ?? []).filter(u => {
+      if (!u.created_at) return false;
+      const ts = new Date(u.created_at);
+      return ts >= cohortStart && ts < cohortEnd;
+    });
+    const cohortPlayerIds = cohortUsers.map(u => userIdToPlayerId.get(u.id)).filter(Boolean) as string[];
+    const cohortSize = cohortUsers.length;
+    if (cohortSize === 0) continue;
+
+    const retentionByWeek: number[] = [];
+    for (let weekOffset = 0; weekOffset <= 8; weekOffset++) {
+      const targetWeekStart = new Date(cohortStart);
+      targetWeekStart.setDate(targetWeekStart.getDate() + weekOffset * 7);
+      if (targetWeekStart > new Date()) break; // future week
+
+      const targetWeekKey = targetWeekStart.toISOString().slice(0, 10);
+      const activeInWeek = cohortPlayerIds.filter(pid => {
+        const weeks = playerRoundWeeks.get(pid);
+        return weeks?.has(targetWeekKey);
+      }).length;
+      retentionByWeek.push(cohortSize > 0 ? Math.round((activeInWeek / cohortSize) * 100) : 0);
+    }
+
+    cohortMatrix.push({ cohortWeek, cohortSize, retentionByWeek });
+  }
+
+  // --- COACH INTELLIGENCE ---
+  const coachInsightsViewed = coachInsightsViewedRes.data ?? [];
+  const coachInsightCounts = new Map<string, number>();
+  const coachLastInsightAt = new Map<string, string>();
+  for (const ci of coachInsightsViewed) {
+    if (!ci.coach_id) continue;
+    coachInsightCounts.set(ci.coach_id, (coachInsightCounts.get(ci.coach_id) ?? 0) + 1);
+    const existing = coachLastInsightAt.get(ci.coach_id);
+    if (!existing || (ci.created_at && ci.created_at > existing)) {
+      coachLastInsightAt.set(ci.coach_id, ci.created_at);
+    }
+  }
+
+  const coachReviewsData = coachRoundReviewsRes.data ?? [];
+  const coachReviewCounts = new Map<string, number>();
+  const coachResponseTimes = new Map<string, number[]>();
+  for (const cr of coachReviewsData) {
+    if (!cr.published_by) continue;
+    coachReviewCounts.set(cr.published_by, (coachReviewCounts.get(cr.published_by) ?? 0) + 1);
+    // Calculate response time: review created_at - round created_at
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.created_at && cr.created_at) {
+      const diffHours = (new Date(cr.created_at).getTime() - new Date(round.created_at).getTime()) / 3600000;
+      if (diffHours >= 0 && diffHours < 720) { // cap at 30 days
+        const times = coachResponseTimes.get(cr.published_by) ?? [];
+        times.push(diffHours);
+        coachResponseTimes.set(cr.published_by, times);
+      }
+    }
+  }
+
+  // Build coach -> total player rounds map
+  const coachPlayerRoundsMap = new Map<string, number>();
+  for (const [, c] of allCoachesMap) {
+    if (!c.orgId) continue;
+    // Find teams for this coach's org
+    for (const t of (teamsDataRes.data ?? [])) {
+      if (t.organization_id === c.orgId) {
+        // Count rounds from players on this team
+        const teamPlayerIds = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id).map(m => m.player_id);
+        let totalPlayerRounds = 0;
+        for (const pid of teamPlayerIds) {
+          totalPlayerRounds += playerRoundCounts.get(pid) ?? 0;
+        }
+        coachPlayerRoundsMap.set(c.id, (coachPlayerRoundsMap.get(c.id) ?? 0) + totalPlayerRounds);
+      }
+    }
+  }
+
+  const coachIntelligence: AdminDashboardData['coachIntelligence'] = [];
+  for (const [, c] of allCoachesMap) {
+    const reviewed = coachReviewCounts.get(c.id) ?? 0;
+    const totalPlayerRounds = coachPlayerRoundsMap.get(c.id) ?? 0;
+    const responseTimes = coachResponseTimes.get(c.id);
+    const avgRespTime = responseTimes && responseTimes.length > 0
+      ? Math.round((responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length) * 10) / 10
+      : null;
+
+    // Find team name for this coach
+    let coachTeam: string | null = null;
+    if (c.orgId) {
+      for (const t of (teamsDataRes.data ?? [])) {
+        if (t.organization_id === c.orgId) {
+          const info = teamsMap.get(t.id);
+          if (info) coachTeam = info.name;
+          break;
+        }
+      }
+    }
+
+    // Player count for this coach's teams
+    let coachPlayerCount = 0;
+    if (c.orgId) {
+      for (const t of (teamsDataRes.data ?? [])) {
+        if (t.organization_id === c.orgId) {
+          coachPlayerCount += teamPlayerCounts[t.id] ?? 0;
+        }
+      }
+    }
+
+    const lastActive = c.userId ? userLastActive.get(c.userId) ?? null : null;
+    const hasPhilosophy = aiCoachIds.has(c.id);
+
+    coachIntelligence.push({
+      id: c.id,
+      name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
+      teamName: coachTeam,
+      totalPlayers: coachPlayerCount,
+      roundsReviewed: reviewed,
+      totalPlayerRounds,
+      reviewRate: totalPlayerRounds > 0 ? Math.round((reviewed / totalPlayerRounds) * 1000) / 10 : 0,
+      avgResponseTimeHours: avgRespTime,
+      insightsViewed: coachInsightCounts.get(c.id) ?? 0,
+      lastActiveAt: lastActive,
+      philosophyConfigured: hasPhilosophy,
+    });
+  }
+
+  // --- PLAYER DROP-OFF FUNNEL ---
+  const totalSignupCount = (allUsersRes.data ?? []).length;
+  const completedOnboardingCount = onboarded + coachOnboarded;
+  const submittedFirstRoundCount = allPlayerIds.size;
+  const activeThisWeekCount = playersThisWeek.size;
+  const receivedInsightsCount = uniqueInsightPlayers;
+
+  const funnelStages = [
+    { stage: 'Signed Up', count: totalSignupCount },
+    { stage: 'Completed Onboarding', count: completedOnboardingCount },
+    { stage: 'Submitted First Round', count: submittedFirstRoundCount },
+    { stage: 'Active This Week', count: activeThisWeekCount },
+    { stage: 'Received Insights', count: receivedInsightsCount },
+  ];
+
+  const playerFunnelStages = funnelStages.map((item, idx) => {
+    const prevCount = idx === 0 ? item.count : funnelStages[idx - 1]!.count;
+    const dropoff = prevCount - item.count;
+    return {
+      stage: item.stage,
+      count: item.count,
+      percentage: totalSignupCount > 0 ? Math.round((item.count / totalSignupCount) * 100) : 0,
+      dropoffFromPrevious: Math.max(dropoff, 0),
+      dropoffPct: prevCount > 0 ? Math.round((dropoff / prevCount) * 100) : 0,
+    };
+  });
+
+  // Stuck users: users at each stage who haven't progressed
+  const stuckUsers: AdminDashboardData['playerFunnel']['stuckUsers'] = [];
+
+  // Stuck at "Signed Up" (never completed onboarding)
+  const stuckAtSignup = (allUsersRes.data ?? [])
+    .filter(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      const c = userIdToCoachDetail.get(u.id);
+      return (p && !p.onboardingCompleted) || (c && !c.onboardingCompleted);
+    })
+    .slice(0, 20)
+    .map(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      const c = userIdToCoachDetail.get(u.id);
+      return {
+        id: u.id,
+        name: p ? `${p.firstName} ${p.lastName}`.trim() : c ? `${c.firstName} ${c.lastName}`.trim() : u.email.split('@')[0] ?? '',
+        email: u.email,
+        daysSinceSignup: u.created_at ? Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000) : 0,
+        lastActiveAt: userLastActive.get(u.id) ?? null,
+      };
+    });
+  if (stuckAtSignup.length > 0) stuckUsers.push({ stage: 'Signed Up', users: stuckAtSignup });
+
+  // Stuck at "Completed Onboarding" (onboarded but never submitted a round)
+  const stuckAtOnboarding = (allUsersRes.data ?? [])
+    .filter(u => {
+      const p = userIdToPlayerDetail.get(u.id);
+      return p && p.onboardingCompleted && !allPlayerIds.has(p.id);
+    })
+    .slice(0, 20)
+    .map(u => {
+      const p = userIdToPlayerDetail.get(u.id)!;
+      return {
+        id: u.id,
+        name: `${p.firstName} ${p.lastName}`.trim(),
+        email: u.email,
+        daysSinceSignup: u.created_at ? Math.floor((Date.now() - new Date(u.created_at).getTime()) / 86400000) : 0,
+        lastActiveAt: userLastActive.get(u.id) ?? null,
+      };
+    });
+  if (stuckAtOnboarding.length > 0) stuckUsers.push({ stage: 'Completed Onboarding', users: stuckAtOnboarding });
+
+  const playerFunnel: AdminDashboardData['playerFunnel'] = {
+    funnel: playerFunnelStages,
+    stuckUsers,
+  };
+
+  // --- INFRA HEALTH ---
+  // API performance: responseTime is the real server-side fetch duration (ms)
+  const infraHealth: AdminDashboardData['infraHealth'] = {
+    apiPerf: [], // Would need server-side instrumentation
+    clientErrors: (errorSummary?.top_errors ?? []).slice(0, 10).map(e => ({
+      message: e.message,
+      occurrences: e.occurrences,
+      lastSeen: e.last_seen ? new Date(e.last_seen).toLocaleDateString() : 'Unknown',
+      affectedPages: [], // Would need page context in error logs
+    })),
+    dbHealth: {
+      activeConnections: phs?.active_connections ?? 0,
+      idleConnections: phs?.idle_connections ?? 0,
+      dbSizeBytes: phs?.db_size_bytes ?? 0,
+      largestTables: (phs?.largest_tables ?? []).map(t => ({
+        tableName: t.table_name,
+        sizeBytes: t.size_bytes,
+        rowCount: t.row_count,
+      })),
+    },
+    totals: {
+      totalApiCalls7d: totalPageViews7d,
+      avgResponseMs: responseTime,
+      p95ResponseMs: Math.round(responseTime * 1.5),
+      errorRate: totalErrors7d > 0 && totalPageViews7d > 0 ? Math.round((totalErrors7d / totalPageViews7d) * 10000) / 100 : 0,
+      totalClientErrors7d: totalErrors7d,
+    },
+  };
+
+  // --- DATA FRESHNESS ALERTS ---
+  // Churn risk: players with rounds who haven't submitted in 7+ days
+  const churnRiskPlayers: AdminDashboardData['freshnessAlerts']['churnRiskPlayers'] = [];
+  for (const [pid, lastRound] of playerLastRound) {
+    const daysSince = Math.floor((Date.now() - new Date(lastRound).getTime()) / 86400000);
+    if (daysSince >= 7) {
+      const player = allPlayersMap.get(pid);
+      if (!player) continue;
+      churnRiskPlayers.push({
+        id: pid,
+        name: `${player.firstName} ${player.lastName}`.trim(),
+        teamName: playerTeamNameMap.get(pid) ?? null,
+        daysSinceLastRound: daysSince,
+        totalRounds: playerRoundCounts.get(pid) ?? 0,
+        lastRoundDate: lastRound,
+      });
+    }
+  }
+  churnRiskPlayers.sort((a, b) => b.daysSinceLastRound - a.daysSinceLastRound);
+
+  // Inactive teams: teams where no member has logged in for 7+ days
+  const inactiveTeamsResult: AdminDashboardData['freshnessAlerts']['inactiveTeams'] = [];
+  for (const [teamId, teamInfo] of teamsMap) {
+    const members = (teamMembersRes.data ?? []).filter(m => m.team_id === teamId);
+    let latestActivity: Date | null = null;
+    for (const m of members) {
+      const player = allPlayersMap.get(m.player_id);
+      if (player?.userId) {
+        const lastAct = userLastActive.get(player.userId);
+        if (lastAct) {
+          const d = new Date(lastAct);
+          if (!latestActivity || d > latestActivity) latestActivity = d;
+        }
+      }
+    }
+    const daysSince = latestActivity ? Math.floor((Date.now() - latestActivity.getTime()) / 86400000) : 999;
+    if (daysSince >= 7) {
+      inactiveTeamsResult.push({
+        id: teamId,
+        name: teamInfo.name,
+        playerCount: teamPlayerCounts[teamId] ?? 0,
+        daysSinceAnyLogin: daysSince,
+        lastActivityDate: latestActivity?.toISOString() ?? null,
+      });
+    }
+  }
+  inactiveTeamsResult.sort((a, b) => b.daysSinceAnyLogin - a.daysSinceAnyLogin);
+
+  // Disengaged coaches: coaches who haven't checked insights in 7+ days
+  const disengagedCoaches: AdminDashboardData['freshnessAlerts']['disengagedCoaches'] = [];
+  for (const [, c] of allCoachesMap) {
+    const lastCheck = coachLastInsightAt.get(c.id);
+    const daysSince = lastCheck ? Math.floor((Date.now() - new Date(lastCheck).getTime()) / 86400000) : 999;
+    if (daysSince >= 7) {
+      let coachTeamName: string | null = null;
+      if (c.orgId) {
+        for (const t of (teamsDataRes.data ?? [])) {
+          if (t.organization_id === c.orgId) {
+            coachTeamName = teamsMap.get(t.id)?.name ?? null;
+            break;
+          }
+        }
+      }
+      disengagedCoaches.push({
+        id: c.id,
+        name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
+        teamName: coachTeamName,
+        daysSinceInsightCheck: daysSince,
+        totalInsightsAvailable: coachInsightCounts.get(c.id) ?? 0,
+        lastInsightCheckDate: lastCheck ?? null,
+      });
+    }
+  }
+  disengagedCoaches.sort((a, b) => b.daysSinceInsightCheck - a.daysSinceInsightCheck);
+
+  const freshnessAlerts: AdminDashboardData['freshnessAlerts'] = {
+    churnRiskPlayers: churnRiskPlayers.slice(0, 50),
+    inactiveTeams: inactiveTeamsResult,
+    disengagedCoaches,
+  };
+
+  // --- COMPARATIVE BENCHMARKS ---
+  // Team comparisons: use existing teams data + stats cache
+  const teamComparisons: AdminDashboardData['benchmarks']['teamComparisons'] = teams.map(t => {
+    const scores = teamAvgScores[t.id] ?? [];
+    // Get per-stat averages from stats cache for this team's players
+    const teamPlayerIds = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id).map(m => m.player_id);
+    const teamStats = statsRows.filter(s => teamPlayerIds.includes(s.player_id));
+    const fwPcts = teamStats.map(s => s.driving_accuracy_percentage).filter(v => v != null).map(Number);
+    const girPcts = teamStats.map(s => s.gir_percentage).filter(v => v != null).map(Number);
+    const puttsPer = teamStats.map(s => s.putts_per_round).filter(v => v != null).map(Number);
+
+    // Rounds this month
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
+    const roundsThisMonth = allRoundsForCohort.filter(r =>
+      r.team_id === t.id && r.created_at && new Date(r.created_at) >= monthAgo
+    ).length;
+
+    return {
+      id: t.id,
+      name: t.name,
+      playerCount: t.playerCount,
+      avgScore: scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null,
+      avgFairwayPct: fwPcts.length > 0 ? Math.round((fwPcts.reduce((a, b) => a + b, 0) / fwPcts.length) * 10) / 10 : null,
+      avgGirPct: girPcts.length > 0 ? Math.round((girPcts.reduce((a, b) => a + b, 0) / girPcts.length) * 10) / 10 : null,
+      avgPuttsPerRound: puttsPer.length > 0 ? Math.round((puttsPer.reduce((a, b) => a + b, 0) / puttsPer.length) * 10) / 10 : null,
+      roundsThisMonth,
+      improvementTrend: null, // Would need historical scoring to compute
+    };
+  });
+
+  // Player trends: most improved players (compare recent avg vs older avg)
+  const playerTrends: AdminDashboardData['benchmarks']['playerTrends'] = [];
+  // Group rounds by player and month for scoring history
+  // Player monthly scoring tracking (reserved for future use with per-round scores)
+  void allRoundsForCohort;
+
+  // Use stats cache for current avg, compute "previous" from older rounds
+  for (const stat of statsRows.slice(0, 30)) {
+    const player = stat.golf_players as { first_name: string; last_name: string } | null;
+    if (!player || stat.scoring_average == null) continue;
+    const currentAvg = Number(stat.scoring_average);
+    playerTrends.push({
+      id: stat.player_id,
+      name: `${player.first_name} ${player.last_name}`,
+      teamName: playerTeamNameMap.get(stat.player_id) ?? null,
+      scoringHistory: [],
+      currentAvg,
+      previousAvg: null,
+      improvement: null,
+    });
+  }
+
+  // AI correlation
+  const aiCorrelation: AdminDashboardData['benchmarks']['aiCorrelation'] = {
+    playersWithAI: aiPlayerScores.length,
+    playersWithoutAI: nonAiPlayerScores.length,
+    avgScoreWithAI: avgScoreAI ? Math.round(avgScoreAI * 10) / 10 : null,
+    avgScoreWithoutAI: avgScoreNonAI ? Math.round(avgScoreNonAI * 10) / 10 : null,
+    avgImprovementWithAI: null,
+    avgImprovementWithoutAI: null,
+  };
+
+  const benchmarks: AdminDashboardData['benchmarks'] = {
+    teamComparisons,
+    playerTrends,
+    aiCorrelation,
+  };
+
+  // ============================================
+  // PROCESS: User Activity with Team Grouping
+  // ============================================
+
+  // Build player insights count (per player, from generation log)
+  const playerInsightCounts = new Map<string, number>();
+  for (const row of (playerInsightsPerPlayerRes.data ?? [])) {
+    if (row.player_id) {
+      playerInsightCounts.set(
+        row.player_id,
+        (playerInsightCounts.get(row.player_id) ?? 0) + (row.insights_generated ?? 1)
+      );
+    }
+  }
+
+  // Build player review counts (per player, derived from round reviews)
+  const playerReviewCounts = new Map<string, number>();
+  for (const cr of coachReviewsData) {
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.player_id) {
+      playerReviewCounts.set(round.player_id, (playerReviewCounts.get(round.player_id) ?? 0) + 1);
+    }
+  }
+
+  // Build team seasons map
+  const teamSeasonMap = new Map<string, string>();
+  for (const t of (teamSeasonsRes.data ?? [])) {
+    teamSeasonMap.set(t.id, t.season ?? '');
+  }
+
+  // Activity status helper
+  const getActivityStatus = (lastSeenTs: string | null): 'active_today' | 'active_week' | 'active_month' | 'inactive' | 'never' => {
+    if (!lastSeenTs) return 'never';
+    if (lastSeenTs >= today) return 'active_today';
+    if (lastSeenTs >= ago7d) return 'active_week';
+    if (lastSeenTs >= ago30d) return 'active_month';
+    return 'inactive';
+  };
+
+  // Days since timestamp helper
+  const computeDaysSince = (ts: string | null): number | null => {
+    if (!ts) return null;
+    return Math.floor((Date.now() - new Date(ts).getTime()) / 86400000);
+  };
+
+  // Track which users are assigned to a team
+  const usersOnTeams = new Set<string>();
+
+  // Build team-grouped user activity
+  const userActivityTeams: AdminDashboardData['userActivity']['teams'] = [];
+
+  for (const [teamId, teamInfo] of teamsMap) {
+    const season = teamSeasonMap.get(teamId) ?? '';
+    const teamMembersList = (teamMembersRes.data ?? []).filter(m => m.team_id === teamId);
+
+    // Find coaches for this team via organization
+    const teamDataEntry = (teamsDataRes.data ?? []).find(t => t.id === teamId);
+    const teamOrgId = teamDataEntry?.organization_id;
+    const teamCoachesList = teamOrgId ? (orgCoaches.get(teamOrgId) ?? []) : [];
+
+    const members: AdminDashboardData['userActivity']['teams'][0]['members'] = [];
+
+    // Add player members
+    for (const m of teamMembersList) {
+      const player = allPlayersMap.get(m.player_id);
+      if (!player?.userId) continue;
+      const userId = player.userId;
+
+      const userRecord = (allUsersRes.data ?? []).find(u => u.id === userId);
+      if (!userRecord) continue;
+
+      const lastSeenTs = userLastActive.get(userId) ?? null;
+      const statEntry = statsRows.find(s => s.player_id === m.player_id);
+      usersOnTeams.add(userId);
+
+      members.push({
+        id: userId,
+        email: userRecord.email,
+        name: `${player.firstName} ${player.lastName}`.trim() || null,
+        role: userRecord.role ?? 'player',
+        created_at: userRecord.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+        roundsEntered: playerRoundCounts.get(m.player_id) ?? 0,
+        lastRoundDate: playerLastRound.get(m.player_id) ?? null,
+        avgScore: statEntry?.scoring_average != null ? Math.round(Number(statEntry.scoring_average) * 10) / 10 : null,
+        insightsReceived: playerInsightCounts.get(m.player_id) ?? 0,
+        roundReviews: playerReviewCounts.get(m.player_id) ?? 0,
+        onboardingCompleted: player.onboardingCompleted,
+      });
+    }
+
+    // Add coach members
+    for (const coach of teamCoachesList) {
+      const coachDetail = [...allCoachesMap.values()].find(c => c.id === coach.id);
+      const userId = coachDetail?.userId;
+      if (!userId) continue;
+
+      // Skip if already added (e.g. duplicate org mapping)
+      if (usersOnTeams.has(userId)) continue;
+
+      const userRecord = (allUsersRes.data ?? []).find(u => u.id === userId);
+      if (!userRecord) continue;
+
+      const lastSeenTs = userLastActive.get(userId) ?? null;
+      usersOnTeams.add(userId);
+
+      members.push({
+        id: userId,
+        email: userRecord.email,
+        name: `${coach.firstName} ${coach.lastName}`.trim() || null,
+        role: 'coach',
+        created_at: userRecord.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+        roundsEntered: 0,
+        lastRoundDate: null,
+        avgScore: null,
+        insightsReceived: 0,
+        roundReviews: 0,
+        onboardingCompleted: coachDetail?.onboardingCompleted ?? false,
+      });
+    }
+
+    // Compute team-level stats
+    const activeMemberCount = members.filter(m =>
+      m.activityStatus === 'active_today' || m.activityStatus === 'active_week'
+    ).length;
+    const playerMembersOnly = members.filter(m => m.role !== 'coach');
+    const totalTeamRounds = playerMembersOnly.reduce((sum, m) => sum + m.roundsEntered, 0);
+    const avgRoundsPerPlayerForTeam = playerMembersOnly.length > 0 ? totalTeamRounds / playerMembersOnly.length : 0;
+
+    // Last team activity = most recent last_seen among all members
+    const memberLastSeens = members.map(m => m.last_seen).filter((s): s is string => s !== null);
+    const lastTeamAct = memberLastSeens.length > 0
+      ? memberLastSeens.sort().reverse()[0]!
+      : null;
+
+    // Health: >50% active in 7d = healthy, >25% = warning, else critical
+    const activePctForTeam = members.length > 0 ? activeMemberCount / members.length : 0;
+    const teamHealthStatus: 'healthy' | 'warning' | 'critical' =
+      activePctForTeam > 0.5 ? 'healthy' : activePctForTeam > 0.25 ? 'warning' : 'critical';
+
+    // Sort members: coaches first, then by activity (most active first)
+    const activityOrder: Record<string, number> = { active_today: 0, active_week: 1, active_month: 2, inactive: 3, never: 4 };
+    members.sort((a, b) => {
+      if (a.role === 'coach' && b.role !== 'coach') return -1;
+      if (a.role !== 'coach' && b.role === 'coach') return 1;
+      return (activityOrder[a.activityStatus] ?? 5) - (activityOrder[b.activityStatus] ?? 5);
+    });
+
+    userActivityTeams.push({
+      teamId,
+      teamName: teamInfo.name,
+      season,
+      memberCount: members.length,
+      activeCount: activeMemberCount,
+      avgRoundsPerPlayer: Math.round(avgRoundsPerPlayerForTeam * 10) / 10,
+      lastTeamActivity: lastTeamAct,
+      healthStatus: teamHealthStatus,
+      members,
+    });
+  }
+
+  // Sort teams by member count descending
+  userActivityTeams.sort((a, b) => b.memberCount - a.memberCount);
+
+  // Unassigned users (not on any team)
+  const unassignedUsers: AdminDashboardData['userActivity']['unassigned'] = (allUsersRes.data ?? [])
+    .filter(u => !usersOnTeams.has(u.id))
+    .map(u => {
+      const lastSeenTs = userLastActive.get(u.id) ?? null;
+      const player = userIdToPlayerDetail.get(u.id);
+      const coach = userIdToCoachDetail.get(u.id);
+      const userName = player
+        ? `${player.firstName} ${player.lastName}`.trim() || null
+        : coach
+          ? `${coach.firstName} ${coach.lastName}`.trim() || null
+          : null;
+      return {
+        id: u.id,
+        email: u.email,
+        name: userName,
+        role: u.role ?? 'unknown',
+        created_at: u.created_at ?? '',
+        last_seen: lastSeenTs,
+        daysSinceLastSeen: computeDaysSince(lastSeenTs),
+        activityStatus: getActivityStatus(lastSeenTs),
+        onboardingCompleted: player?.onboardingCompleted ?? coach?.onboardingCompleted ?? false,
+      };
+    })
+    .sort((a, b) => {
+      // Sort by most recently active first
+      if (a.last_seen && b.last_seen) return b.last_seen.localeCompare(a.last_seen);
+      if (a.last_seen) return -1;
+      if (b.last_seen) return 1;
+      return 0;
+    });
+
+  // Summary stats across all users
+  const allUsersList = allUsersRes.data ?? [];
+  const summaryNeverLoggedIn = allUsersList.filter(u => !userLastActive.has(u.id)).length;
+  const summaryActiveToday = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls >= today;
+  }).length;
+  const summaryActiveWeek = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls >= ago7d;
+  }).length;
+  const summaryInactive14d = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls < ago14d;
+  }).length;
+  // Churn risk: had activity (last_seen exists) but nothing in 14+ days
+  const summaryChurnRisk = allUsersList.filter(u => {
+    const ls = userLastActive.get(u.id);
+    return ls != null && ls < ago14d;
+  }).length;
+
+  // Players stuck in onboarding > 7 days (for summary stat)
+  const summaryStuckInOnboarding = allUsersList.filter(u => {
+    if (!u.created_at) return false;
+    const daysSinceSignup = (Date.now() - new Date(u.created_at).getTime()) / 86400000;
+    const player = userIdToPlayerDetail.get(u.id);
+    const coach = userIdToCoachDetail.get(u.id);
+    return daysSinceSignup > 7 && ((player && !player.onboardingCompleted) || (coach && !coach.onboardingCompleted));
+  }).length;
+
+  const userActivityData: AdminDashboardData['userActivity'] = {
+    teams: userActivityTeams,
+    unassigned: unassignedUsers,
+    summary: {
+      totalUsers: allUsersList.length,
+      neverLoggedIn: summaryNeverLoggedIn,
+      activeToday: summaryActiveToday,
+      activeThisWeek: summaryActiveWeek,
+      inactivePlus14d: summaryInactive14d,
+      churnRisk: summaryChurnRisk,
+      stuckInOnboarding: summaryStuckInOnboarding,
+    },
+  };
+
+  // ============================================
+  // PROCESS: Error Detection & Classification
+  // ============================================
+
+  const errors24hCount = errors24hCountRes.count ?? 0;
+
+  // Unresolved error-severity events from admin_events
+  const adminErrorEventsData = (adminEventsErrorsRes.data ?? []) as AdminEventErrorRow[];
+  const unresolvedErrorCount = adminErrorEventsData.filter(e => !e.resolved).length;
+
+  // Group errors by type (normalized message)
   const errorTypeGroups = new Map<string, { count: number; lastOccurred: string }>();
   for (const e of rawErrorLogs) {
     const msg = (e.message ?? 'Unknown error').substring(0, 120);
@@ -2564,6 +3979,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     .map(([type, d]) => ({ type, count: d.count, lastOccurred: d.lastOccurred }))
     .sort((a, b) => b.count - a.count);
 
+  // Group errors by route (extracted from url field)
   const errorRouteGroups = new Map<string, number>();
   for (const e of rawErrorLogs) {
     if (e.url) {
@@ -2581,6 +3997,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     .map(([route, count]) => ({ route, count }))
     .sort((a, b) => b.count - a.count);
 
+  // Group errors by user
   const errorUserGroups = new Map<string, number>();
   for (const e of rawErrorLogs) {
     const key = e.user_id ?? '__anonymous__';
@@ -2594,6 +4011,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     }))
     .sort((a, b) => b.count - a.count);
 
+  // Classify user experience issues by error message pattern
   let uxChunkLoadErrors = 0;
   let uxFrameworkWarnings = 0;
   let uxServerErrors = 0;
@@ -2601,14 +4019,23 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   for (const e of rawErrorLogs) {
     const msg = (e.message ?? '').toLowerCase();
     const sev = (e.severity ?? '').toLowerCase();
-    if (msg.includes('chunk') || msg.includes('chunkloaderror') || msg.includes('loading chunk')) uxChunkLoadErrors++;
-    else if (msg.includes('lazymotion') || msg.includes('framer') || sev === 'warning') uxFrameworkWarnings++;
-    else if (msg.includes('500') || msg.includes('server error') || msg.includes('internal server')) uxServerErrors++;
-    else if (msg.includes('auth') || msg.includes('login') || msg.includes('unauthorized') || msg.includes('forbidden')) uxAuthErrors++;
+    if (msg.includes('chunk') || msg.includes('chunkloaderror') || msg.includes('loading chunk')) {
+      uxChunkLoadErrors++;
+    } else if (msg.includes('lazymotion') || msg.includes('framer') || sev === 'warning') {
+      uxFrameworkWarnings++;
+    } else if (msg.includes('500') || msg.includes('server error') || msg.includes('internal server')) {
+      uxServerErrors++;
+    } else if (msg.includes('auth') || msg.includes('login') || msg.includes('unauthorized') || msg.includes('forbidden')) {
+      uxAuthErrors++;
+    }
   }
 
+  const lastErrorTimestamp = rawErrorLogs.length > 0 ? (rawErrorLogs[0]?.created_at ?? null) : null;
+
   const errorDetectionData: AdminDashboardData['errorDetection'] = {
-    ...rollupC.errorDetection,
+    errors24h: errors24hCount,
+    errors7d: totalErrors7d,
+    unresolvedErrors: unresolvedErrorCount,
     errorsByType: detectedErrorsByType,
     errorsByRoute: detectedErrorsByRoute,
     errorsByUser: detectedErrorsByUser,
@@ -2618,67 +4045,62 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       serverErrors: uxServerErrors,
       authErrors: uxAuthErrors,
     },
-  };
-
-  // --- Infra health: merge rollupC shell with DB stats + client errors summary ---
-  const infraHealth: AdminDashboardData['infraHealth'] = {
-    apiPerf: rollupC.infraHealth.apiPerf,
-    clientErrors: (errorSummary?.top_errors ?? []).slice(0, 10).map((e) => ({
-      message: e.message,
-      occurrences: e.occurrences,
-      lastSeen: e.last_seen ? new Date(e.last_seen).toLocaleDateString() : 'Unknown',
-      affectedPages: [],
-    })),
-    dbHealth: {
-      activeConnections: phs?.active_connections ?? 0,
-      idleConnections: phs?.idle_connections ?? 0,
-      dbSizeBytes: phs?.db_size_bytes ?? 0,
-      largestTables: (phs?.largest_tables ?? []).map((t) => ({
-        tableName: t.table_name,
-        sizeBytes: t.size_bytes,
-        rowCount: t.row_count,
-      })),
-    },
-    totals: {
-      totalApiCalls7d: rollupC.infraHealth.totals.totalApiCalls7d,
-      avgResponseMs: responseTime,
-      p95ResponseMs: Math.round(responseTime * 1.5),
-      errorRate: totalErrors7d > 0 && rollupC.infraHealth.totals.totalApiCalls7d > 0
-        ? Math.round((totalErrors7d / rollupC.infraHealth.totals.totalApiCalls7d) * 10000) / 100
-        : 0,
-      totalClientErrors7d: totalErrors7d,
-    },
+    lastErrorAt: lastErrorTimestamp,
+    allClear: totalErrors7d === 0 && unresolvedErrorCount === 0,
   };
 
   // ============================================
-  // BI DASHBOARD
+  // BI DASHBOARD COMPUTATION
   // ============================================
 
-  // --- BI Growth ---
+  // --- BI: Fetch Vercel analytics in parallel with computation ---
+  const vercelPromise = fetchVercelAnalytics();
+
+  // --- BI Growth: Signups by day (reuse signupsByDayResult) & by week (reuse signupsByWeek) ---
+  const biSignupsByDay = signupsByDayResult;
+  const biSignupsByWeek = signupsByWeek;
+
+  // Activated = onboarding_completed
   const biActivatedPlayers = playerOnboarded;
   const biActivatedCoaches = coachOnboarded;
-  const biPlayerActivationRate = totalPlayers > 0
-    ? Math.round((biActivatedPlayers / totalPlayers) * 1000) / 10 : 0;
-  const biCoachActivationRate = totalCoaches > 0
-    ? Math.round((biActivatedCoaches / totalCoaches) * 1000) / 10 : 0;
+  const biPlayerActivationRate = totalPlayers > 0 ? Math.round((biActivatedPlayers / totalPlayers) * 1000) / 10 : 0;
+  const biCoachActivationRate = totalCoaches > 0 ? Math.round((biActivatedCoaches / totalCoaches) * 1000) / 10 : 0;
   const totalUsersForActivation = totalPlayers + totalCoaches;
   const biOverallActivationRate = totalUsersForActivation > 0
     ? Math.round(((biActivatedPlayers + biActivatedCoaches) / totalUsersForActivation) * 1000) / 10
     : 0;
 
-  // Median TTFV (days from signup to first round) — use allRoundsMinimal for first-round dates
-  const playerFirstRound = new Map<string, string>();
-  for (const r of rollupA.allRoundsMinimal) {
-    if (!r.player_id || !r.created_at) continue;
-    const existing = playerFirstRound.get(r.player_id);
-    if (!existing || r.created_at < existing) playerFirstRound.set(r.player_id, r.created_at);
-  }
+  // Median time-to-first-value (TTFV): days from signup to first round
+  // Uses allUsersRes, userIdToPlayerId, playerLastRound
   const ttfvDays: number[] = [];
-  for (const u of users.usersForDirectory) {
+  for (const u of (allUsersRes.data ?? [])) {
     if (!u.created_at) continue;
-    const pid = userIdToPlayerId.get(u.id);
-    if (!pid) continue;
-    const firstRound = playerFirstRound.get(pid);
+    const playerId = userIdToPlayerId.get(u.id);
+    if (!playerId) continue;
+    // Find earliest round date — playerLastRoundsRes was sorted desc, playerLastRound stores first-seen (latest)
+    // We need the earliest round. Use playerRoundCountsRes which has all rounds' player_id,
+    // but we don't have dates per player easily. Use allRoundsForCohort which has all rounds with dates.
+    // For efficiency, build a map of first round date per player if not already available.
+    // Since we iterate all users, let's build it lazily here.
+    const signupTs = new Date(u.created_at).getTime();
+    // We'll compute from playerFirstRound map built below
+    void signupTs; // placeholder
+  }
+  // Build first round date per player from allRoundsForCohort (already sorted desc)
+  const playerFirstRound = new Map<string, string>();
+  // Iterate in reverse order (oldest first) since allRoundsForCohort is sorted desc
+  for (let i = allRoundsForCohort.length - 1; i >= 0; i--) {
+    const r = allRoundsForCohort[i]!;
+    if (r.player_id && r.created_at) {
+      playerFirstRound.set(r.player_id, r.created_at);
+    }
+  }
+  // Now compute TTFV
+  for (const u of (allUsersRes.data ?? [])) {
+    if (!u.created_at) continue;
+    const playerId = userIdToPlayerId.get(u.id);
+    if (!playerId) continue;
+    const firstRound = playerFirstRound.get(playerId);
     if (!firstRound) continue;
     const days = (new Date(firstRound).getTime() - new Date(u.created_at).getTime()) / 86400000;
     if (days >= 0 && days < 365) ttfvDays.push(days);
@@ -2688,12 +4110,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     ? Math.round(ttfvDays[Math.floor(ttfvDays.length / 2)]! * 10) / 10
     : null;
 
-  const totalSignupCount = users.usersForDirectory.length;
-  const completedOnboardingCount = biActivatedPlayers + biActivatedCoaches;
-  const submittedFirstRoundCount = rollupC.userJourney.submittedFirstRound;
-  const activeThisWeekCount = rollupC.userJourney.activeThisWeek;
-  const receivedInsightsCount = uniqueInsightPlayers;
-
+  // Activation funnel
   const biActivationFunnel = buildFunnelSteps([
     { step: 'Signed Up', count: totalSignupCount },
     { step: 'Completed Onboarding', count: completedOnboardingCount },
@@ -2702,28 +4119,37 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     { step: 'Received AI Insights', count: receivedInsightsCount },
   ]);
 
-  // --- BI Retention (D1/D7/D30) ---
+  // WoW growth rates (reuse existing)
+  const biUserGrowthRateWoW = userGrowthRate;
+  const biRoundGrowthRateWoW = roundGrowthRate;
+
+  // --- BI Retention ---
+  // D1/D7/D30 retention: users who signed up N days ago and were active after day N
+  // D1: users who signed up 1-2 days ago, active after day 1
   const computeDayRetention = (daysBack: number, windowDays: number = 1) => {
     const windowStart = new Date();
     windowStart.setDate(windowStart.getDate() - daysBack - windowDays);
     const windowEnd = new Date();
     windowEnd.setDate(windowEnd.getDate() - daysBack);
-    const cohortUsers = users.usersForDirectory.filter((u) => {
+    const cohortUsers = (allUsersRes.data ?? []).filter(u => {
       if (!u.created_at) return false;
       const ts = new Date(u.created_at);
       return ts >= windowStart && ts < windowEnd;
     });
     const total = cohortUsers.length;
     if (total === 0) return { retained: 0, total: 0, rate: 0 };
+    // Check if any of these users were active after their signup + daysBack period
     let retained = 0;
     for (const u of cohortUsers) {
       const playerId = userIdToPlayerId.get(u.id);
+      // Check login-based retention via userLastActive
       const lastActive = userLastActive.get(u.id);
       const signupDate = new Date(u.created_at!);
       const retentionDate = new Date(signupDate);
       retentionDate.setDate(retentionDate.getDate() + daysBack);
-      const wasActiveAfterDay = (lastActive && new Date(lastActive) >= retentionDate)
-        || (playerId && playerLastRound.has(playerId) && new Date(playerLastRound.get(playerId)!) >= retentionDate);
+
+      const wasActiveAfterDay = (lastActive && new Date(lastActive) >= retentionDate) ||
+        (playerId && playerLastRound.has(playerId) && new Date(playerLastRound.get(playerId)!) >= retentionDate);
       if (wasActiveAfterDay) retained++;
     }
     return { retained, total, rate: total > 0 ? Math.round((retained / total) * 1000) / 10 : 0 };
@@ -2733,17 +4159,19 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const biD7 = computeDayRetention(7, 7);
   const biD30 = computeDayRetention(30, 14);
 
-  const biDauRounds = rollupC.stickiness.dau;
-  const biWauRounds = rollupC.stickiness.wau;
-  const biMauRounds = rollupC.stickiness.mau;
+  // DAU/WAU/MAU for rounds (reuse existing stickiness)
+  const biDauRounds = dauCount;
+  const biWauRounds = wauCount;
+  const biMauRounds = mauCount;
 
+  // DAU/WAU/MAU for logins (from userLastActive)
+  const nowTs = new Date();
   const ago24hTs = new Date(ago24h);
   const ago7dTs = new Date(ago7d);
   const ago30dTs = new Date(ago30d);
   let biDauLogins = 0;
   let biWauLogins = 0;
   let biMauLogins = 0;
-  const nowTs = new Date();
   for (const [, lastSeen] of userLastActive) {
     const ts = new Date(lastSeen);
     if (ts >= ago24hTs && ts <= nowTs) biDauLogins++;
@@ -2754,8 +4182,9 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const biStickinessRounds = biMauRounds > 0 ? Math.round((biDauRounds / biMauRounds) * 1000) / 10 : 0;
   const biStickinessLogins = biMauLogins > 0 ? Math.round((biDauLogins / biMauLogins) * 1000) / 10 : 0;
 
+  // Coach weekly retention: coaches active this week / coaches active last 30d
   const coachUserIds = new Set<string>();
-  for (const c of coachesById.values()) {
+  for (const [, c] of allCoachesMap) {
     if (c.userId) coachUserIds.add(c.userId);
   }
   let coachesActiveLast30d = 0;
@@ -2770,55 +4199,68 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const biCoachWeeklyRetention = coachesActiveLast30d > 0
     ? Math.round((coachesActiveThisWeek / coachesActiveLast30d) * 1000) / 10
     : 0;
+
+  // Player weekly retention (reuse existing weeklyRetention, already computed)
   const biPlayerWeeklyRetention = Math.round(weeklyRetention * 10) / 10;
 
   // --- BI Usage ---
-  const roundsLast30d = rollupA.allRoundsMinimal.filter((r) => r.created_at && new Date(r.created_at) >= ago30dTs);
-  const insightsGenerated30d = coachhelm.insightGenLog30dCount;
+  // Feature adoption with all-time and last-30d counts + categories
+  // Reuse existing count queries and add 30d versions
+  // For 30d, filter from roundsData (allRoundsRes) and analyticsEvents
+  const roundsLast30d = roundsData.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
+  const eventsCreatedLast30d = allRoundsForCohort.filter(r => r.created_at && new Date(r.created_at) >= ago30dTs);
+
+  // Use direct DB counts for last 30d instead of unreliable analytics events
+  const insightsGenerated30d = (insightGenLog30dRes.data ?? []).reduce((sum, r) => sum + (r.insights_generated ?? 0), 0);
 
   const biFeatureAdoption: BIDashboardData['usage']['featureAdoption'] = [
     { feature: 'Rounds', allTime: totalRoundsCount, last30d: roundsLast30d.length, category: 'core' },
-    { feature: 'Qualifiers', allTime: featureAdoption.qualifiers.total, last30d: featureAdoption.qualifiers.last30d, category: 'competition' },
-    { feature: 'Events', allTime: featureAdoption.events.total, last30d: featureAdoption.events.last30d, category: 'team' },
-    { feature: 'Tasks', allTime: featureAdoption.tasks.total, last30d: featureAdoption.tasks.last30d, category: 'team' },
-    { feature: 'Announcements', allTime: featureAdoption.announcements.total, last30d: featureAdoption.announcements.last30d, category: 'communication' },
-    { feature: 'Messages', allTime: featureAdoption.messages.total, last30d: featureAdoption.messages.last30d, category: 'communication' },
-    { feature: 'Documents', allTime: featureAdoption.documents.total, last30d: featureAdoption.documents.last30d, category: 'team' },
-    { feature: 'Travel', allTime: featureAdoption.travel.total, last30d: featureAdoption.travel.last30d, category: 'team' },
-    { feature: 'Round Reviews', allTime: coachhelm.totalReviewsAllTime, last30d: coachhelm.reviews30d, category: 'ai' },
+    { feature: 'Qualifiers', allTime: qualifiersCountRes.count ?? 0, last30d: qualifiers30dRes.count ?? 0, category: 'competition' },
+    { feature: 'Events', allTime: eventsCountRes.count ?? 0, last30d: events30dRes.count ?? 0, category: 'team' },
+    { feature: 'Tasks', allTime: tasksCountRes.count ?? 0, last30d: tasks30dRes.count ?? 0, category: 'team' },
+    { feature: 'Announcements', allTime: announcementsCountRes.count ?? 0, last30d: announcements30dRes.count ?? 0, category: 'communication' },
+    { feature: 'Messages', allTime: messagesCountRes.count ?? 0, last30d: messages30dRes.count ?? 0, category: 'communication' },
+    { feature: 'Documents', allTime: documentsCountRes.count ?? 0, last30d: documents30dRes.count ?? 0, category: 'team' },
+    { feature: 'Travel', allTime: travelCountRes.count ?? 0, last30d: travel30dRes.count ?? 0, category: 'team' },
+    { feature: 'Round Reviews', allTime: totalReviewsRes.count ?? 0, last30d: reviews30dRes.count ?? 0, category: 'ai' },
     { feature: 'AI Insights', allTime: totalInsightsGenerated, last30d: insightsGenerated30d, category: 'ai' },
-    { feature: 'Patterns', allTime: coachhelm.totalPatterns, last30d: coachhelm.patterns30d, category: 'ai' },
-    { feature: 'Predictions', allTime: coachhelm.totalPredictions, last30d: coachhelm.predictions30d, category: 'ai' },
+    { feature: 'Patterns', allTime: totalPatternsRes.count ?? 0, last30d: patterns30dRes.count ?? 0, category: 'ai' },
+    { feature: 'Predictions', allTime: totalPredictionsRes.count ?? 0, last30d: predictions30dRes.count ?? 0, category: 'ai' },
   ];
 
-  const maxAllTimeUsage = Math.max(...biFeatureAdoption.map((f) => f.allTime), 1);
+  // Dead features: features with < 5% of max all-time usage
+  const maxAllTimeUsage = Math.max(...biFeatureAdoption.map(f => f.allTime), 1);
   const biDeadFeatures = biFeatureAdoption
-    .filter((f) => f.allTime / maxAllTimeUsage < 0.05 && f.allTime > 0)
-    .map((f) => f.feature);
-  for (const df of rollupC.sessionHeatmap.deadFeatures) {
+    .filter(f => f.allTime / maxAllTimeUsage < 0.05 && f.allTime > 0)
+    .map(f => f.feature);
+  // Also include sessionHeatmap dead features
+  for (const df of deadFeatures) {
     if (!biDeadFeatures.includes(df)) biDeadFeatures.push(df);
   }
 
-  // Feature-retention correlation
-  const playerIdsWithInsights = new Set(coachhelm.insightPlayerRows.map((r) => r.player_id).filter(Boolean));
+  // Feature-retention correlation: for each feature, compare retention of users who used it vs not
+  // Approximate: players who used a feature (have rounds, reviews, etc.) vs those who didn't
   const playerIdsWithReviews = new Set<string>();
-  for (const rid of coachhelm.reviewedRoundIds) void rid; // we don't have player_id per review here
-  // Rollup doesn't expose round→player for reviews directly; approximate via playersThisWeek (recent activity)
-  for (const pid of rollupA.rounds.playersThisWeek) playerIdsWithReviews.add(pid);
+  for (const cr of coachReviewsData) {
+    const round = cr.golf_rounds as { player_id: string; created_at: string } | null;
+    if (round?.player_id) playerIdsWithReviews.add(round.player_id);
+  }
+  const playerIdsWithInsights = new Set((insightPlayerRoundsRes.data ?? []).map(r => r.player_id).filter((id): id is string => id != null));
 
   const computeRetentionForGroup = (playerIds: Set<string>): number => {
     if (playerIds.size === 0) return 0;
     let activeCount = 0;
     for (const pid of playerIds) {
-      if (playersActive30dSet.has(pid)) activeCount++;
+      if (playersActive30d.has(pid)) activeCount++;
     }
     return Math.round((activeCount / playerIds.size) * 1000) / 10;
   };
-  const allPlayerIdsSet = new Set(playerIdsAll);
-  const playerIdsWithRounds = new Set(Object.keys(rounds.playerRoundCounts));
-  const playerIdsWithoutRounds = new Set([...allPlayerIdsSet].filter((id) => !playerIdsWithRounds.has(id)));
-  const playerIdsWithoutInsights = new Set([...allPlayerIdsSet].filter((id) => !playerIdsWithInsights.has(id)));
-  const playerIdsWithoutReviews = new Set([...allPlayerIdsSet].filter((id) => !playerIdsWithReviews.has(id)));
+
+  const allPlayerIdsSet = new Set(allPlayersMap.keys());
+  const playerIdsWithoutReviews = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithReviews.has(id)));
+  const playerIdsWithoutInsights = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithInsights.has(id)));
+  const playerIdsWithRounds = allPlayerIds; // already a Set of player IDs with rounds
+  const playerIdsWithoutRounds = new Set([...allPlayerIdsSet].filter(id => !playerIdsWithRounds.has(id)));
 
   const retRounds = computeRetentionForGroup(playerIdsWithRounds);
   const retNoRounds = computeRetentionForGroup(playerIdsWithoutRounds);
@@ -2833,9 +4275,10 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     { feature: 'Received AI Insights', retentionWith: retInsights, retentionWithout: retNoInsights, lift: retNoInsights > 0 ? Math.round((retInsights / retNoInsights - 1) * 1000) / 10 : 0 },
   ];
 
-  // Object creation by week — from allRoundsMinimal
+  // Object creation by week: rounds, events, messages
+  // Rounds by week already computed. Build events and messages by week.
   const roundWeekMap = new Map<string, number>();
-  for (const r of rollupA.allRoundsMinimal) {
+  for (const r of roundsData) {
     if (!r.created_at) continue;
     const d = new Date(r.created_at);
     const day = d.getDay();
@@ -2845,40 +4288,59 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     const key = monday.toISOString().slice(0, 10);
     roundWeekMap.set(key, (roundWeekMap.get(key) ?? 0) + 1);
   }
-  const biObjectCreationByWeek = [...roundWeekMap.keys()].sort().map((week) => ({
+
+  // Collect all unique week keys from rounds for the object creation chart
+  const allWeekKeys = new Set<string>();
+  for (const [k] of roundWeekMap) allWeekKeys.add(k);
+  // We don't have event/message creation dates broken out, so use 0 as default
+  const biObjectCreationByWeek = [...allWeekKeys].sort().map(week => ({
     week,
     rounds: roundWeekMap.get(week) ?? 0,
-    events: 0,
-    messages: 0,
+    events: 0, // would need golf_events with created_at filtered per week
+    messages: 0, // would need golf_messages with created_at filtered per week
   }));
 
   // --- BI Funnel ---
-  const playerSignups = users.usersForDirectory.filter((u) => userIdToPlayerDetail.has(u.id)).length;
-  const playersJoinedTeam = [...playersById.values()].filter((p) => playerToTeamInfo.has(p.id)).length;
-  const playersSubmittedRound = submittedFirstRoundCount;
+  // Player onboarding funnel
+  const playerSignups = (allUsersRes.data ?? []).filter(u => {
+    const p = userIdToPlayerDetail.get(u.id);
+    return !!p;
+  }).length;
+  const playerOnboardingComplete = biActivatedPlayers;
+  const playersJoinedTeam = [...allPlayersMap.values()].filter(p => {
+    const teamInfo = playerToTeamInfo.get(p.id);
+    return !!teamInfo;
+  }).length;
+  const playersSubmittedRound = allPlayerIds.size;
   const playersReceivedInsight = uniqueInsightPlayers;
 
   const biPlayerOnboarding = buildFunnelSteps([
     { step: 'Signed Up', count: playerSignups },
-    { step: 'Completed Onboarding', count: biActivatedPlayers },
+    { step: 'Completed Onboarding', count: playerOnboardingComplete },
     { step: 'Joined Team', count: playersJoinedTeam },
     { step: 'Submitted Round', count: playersSubmittedRound },
     { step: 'Received AI Insight', count: playersReceivedInsight },
   ]);
 
-  const coachSignups = users.usersForDirectory.filter((u) => userIdToCoachDetail.has(u.id)).length;
-  const coachesWithPhilosophy = philosophyCoachIdSet.size;
-  const coachesReviewedRound = rollupC.coachIntelligence.filter((c) => c.roundsReviewed > 0).length;
-  const coachesViewedInsights = rollupC.coachIntelligence.filter((c) => c.insightsViewed > 0).length;
+  // Coach onboarding funnel
+  const coachSignups = (allUsersRes.data ?? []).filter(u => {
+    const c = userIdToCoachDetail.get(u.id);
+    return !!c;
+  }).length;
+  const coachOnboardingComplete = biActivatedCoaches;
+  const coachesWithPhilosophy = aiCoachIds.size;
+  const coachesReviewedRound = coachReviewCounts.size;
+  const coachesViewedInsights = coachInsightCounts.size;
 
   const biCoachOnboarding = buildFunnelSteps([
     { step: 'Signed Up', count: coachSignups },
-    { step: 'Completed Onboarding', count: biActivatedCoaches },
+    { step: 'Completed Onboarding', count: coachOnboardingComplete },
     { step: 'Set Philosophy', count: coachesWithPhilosophy },
     { step: 'Reviewed a Round', count: coachesReviewedRound },
     { step: 'Viewed Insights', count: coachesViewedInsights },
   ]);
 
+  // Biggest dropoff
   const findBiggestDropoff = (steps: BIFunnelStep[]): { from: string; to: string; dropoff: number; pct: number } | null => {
     if (steps.length < 2) return null;
     let maxDropoff = -1;
@@ -2900,7 +4362,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const biBiggestPlayerDropoff = findBiggestDropoff(biPlayerOnboarding);
   const biBiggestCoachDropoff = findBiggestDropoff(biCoachOnboarding);
 
-  // Errors by feature area
+  // Errors by feature area: classify errors by URL/message into feature areas
   const areaErrorData = new Map<string, { count: number; critical: number; recentErrors: { message: string; severity: string; created_at: string; url: string }[] }>();
   for (const e of rawErrorLogs) {
     let area = 'Other';
@@ -2935,21 +4397,31 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     .sort((a, b) => b.count - a.count);
 
   // --- BI Health ---
-  const monthAgoForBI = ago30dTs;
-  const biTeamHealthScores: BITeamHealth[] = teams.map((t) => {
-    const teamPlayerIdsForTeam = teamIdToPlayerIds.get(t.id) ?? [];
-    const activeCount = teamPlayerIdsForTeam.filter((pid) => playersActive30dSet.has(pid)).length;
+  // Team health scores
+  const monthAgoForBI = new Date();
+  monthAgoForBI.setDate(monthAgoForBI.getDate() - 30);
+
+  const biTeamHealthScores: BITeamHealth[] = teams.map(t => {
+    const teamMembers = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const teamPlayerIds = teamMembers.map(m => m.player_id);
+    const activeCount = teamPlayerIds.filter(pid => playersActive30d.has(pid)).length;
     const playerCount = t.playerCount;
-    const roundsMonth = rollupA.allRoundsMinimal.filter(
-      (r) => r.team_id === t.id && r.created_at && new Date(r.created_at) >= monthAgoForBI,
+
+    // Rounds this month
+    const roundsMonth = allRoundsForCohort.filter(r =>
+      r.team_id === t.id && r.created_at && new Date(r.created_at) >= monthAgoForBI
     ).length;
+
+    // Score: weighted composite (0-100)
     const activePct = playerCount > 0 ? activeCount / playerCount : 0;
-    const roundsScore = Math.min(roundsMonth / Math.max(playerCount, 1) * 20, 40);
-    const activeScore = activePct * 40;
-    const sizeScore = Math.min(playerCount * 2, 20);
+    const roundsScore = Math.min(roundsMonth / Math.max(playerCount, 1) * 20, 40); // up to 40 pts
+    const activeScore = activePct * 40; // up to 40 pts
+    const sizeScore = Math.min(playerCount * 2, 20); // up to 20 pts
     const score = Math.round(roundsScore + activeScore + sizeScore);
+
     const grade: BITeamHealth['grade'] = score >= 80 ? 'A' : score >= 60 ? 'B' : score >= 40 ? 'C' : score >= 20 ? 'D' : 'F';
     const riskLevel: BITeamHealth['riskLevel'] = score >= 50 ? 'healthy' : score >= 25 ? 'at_risk' : 'critical';
+
     return {
       teamId: t.id,
       teamName: t.name,
@@ -2961,67 +4433,71 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       roundsThisMonth: roundsMonth,
       riskLevel,
     };
-  }).sort((a, b) => a.score - b.score);
+  }).sort((a, b) => a.score - b.score); // worst first
 
-  // Power users — rounds in last 30d
+  // Power users: top 10% by activity (rounds in last 30d)
   const playerRoundsLast30d = new Map<string, number>();
-  for (const r of rollupA.allRoundsMinimal) {
-    if (!r.player_id || !r.created_at) continue;
-    if (new Date(r.created_at) < monthAgoForBI) continue;
-    playerRoundsLast30d.set(r.player_id, (playerRoundsLast30d.get(r.player_id) ?? 0) + 1);
+  for (const r of eventsCreatedLast30d) {
+    if (r.player_id) {
+      playerRoundsLast30d.set(r.player_id, (playerRoundsLast30d.get(r.player_id) ?? 0) + 1);
+    }
   }
   const sortedByActivity = [...playerRoundsLast30d.entries()].sort((a, b) => b[1] - a[1]);
   const powerUserThreshold = Math.max(Math.ceil(sortedByActivity.length * 0.1), 1);
   const powerUserIds = sortedByActivity.slice(0, powerUserThreshold).map(([id]) => id);
   const biPowerUsers = {
     count: powerUserIds.length,
-    pct: playerIdsAll.size > 0 ? Math.round((powerUserIds.length / playerIdsAll.size) * 1000) / 10 : 0,
-    ids: powerUserIds.slice(0, 50),
+    pct: allPlayersMap.size > 0 ? Math.round((powerUserIds.length / allPlayersMap.size) * 1000) / 10 : 0,
+    ids: powerUserIds.slice(0, 50), // cap at 50 IDs
   };
 
   // At-risk accounts
   const biAtRiskAccounts: BIAtRiskAccount[] = [];
+
+  // At-risk players: had rounds but inactive 7+ days
   for (const [pid, lastRound] of playerLastRound) {
-    const daysSinceGone = Math.floor((now - new Date(lastRound).getTime()) / 86400000);
-    if (daysSinceGone < 7) continue;
-    const player = playersById.get(pid);
+    const daysSince = Math.floor((Date.now() - new Date(lastRound).getTime()) / 86400000);
+    if (daysSince < 7) continue;
+    const player = allPlayersMap.get(pid);
     if (!player) continue;
     const signals: string[] = [];
-    if (daysSinceGone >= 30) signals.push('No round in 30+ days');
-    else if (daysSinceGone >= 14) signals.push('No round in 14+ days');
+    if (daysSince >= 30) signals.push('No round in 30+ days');
+    else if (daysSince >= 14) signals.push('No round in 14+ days');
     else signals.push('No round in 7+ days');
     const totalRnds = playerRoundCounts.get(pid) ?? 0;
     if (totalRnds <= 1) signals.push('Only 1 round ever');
-    if (!player.onboarding_completed) signals.push('Onboarding incomplete');
-    const riskScore = Math.min(daysSinceGone * 2 + (totalRnds <= 1 ? 20 : 0), 100);
+    if (!player.onboardingCompleted) signals.push('Onboarding incomplete');
+    const riskScore = Math.min(daysSince * 2 + (totalRnds <= 1 ? 20 : 0), 100);
     if (riskScore >= 30) {
       biAtRiskAccounts.push({
         type: 'player',
         id: pid,
-        name: `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Unknown',
-        teamName: playerTeamName.get(pid) ?? null,
+        name: `${player.firstName} ${player.lastName}`.trim() || 'Unknown',
+        teamName: playerTeamNameMap.get(pid) ?? null,
         riskScore,
         riskSignals: signals,
-        daysSinceLastActive: daysSinceGone,
+        daysSinceLastActive: daysSince,
       });
     }
   }
-  for (const c of coachesById.values()) {
+
+  // At-risk coaches: no login in 14+ days
+  for (const [, c] of allCoachesMap) {
     if (!c.userId) continue;
     const lastActive = userLastActive.get(c.userId);
-    const daysSinceGone = lastActive ? Math.floor((now - new Date(lastActive).getTime()) / 86400000) : 999;
-    if (daysSinceGone < 14) continue;
+    const daysSince = lastActive ? Math.floor((Date.now() - new Date(lastActive).getTime()) / 86400000) : 999;
+    if (daysSince < 14) continue;
     const signals: string[] = [];
-    if (daysSinceGone >= 30) signals.push('No login in 30+ days');
+    if (daysSince >= 30) signals.push('No login in 30+ days');
     else signals.push('No login in 14+ days');
     if (!c.onboardingCompleted) signals.push('Onboarding incomplete');
-    const insightCount = rollupC.coachIntelligence.find((ci) => ci.id === c.id)?.insightsViewed ?? 0;
+    const insightCount = coachInsightCounts.get(c.id) ?? 0;
     if (insightCount === 0) signals.push('Never viewed insights');
     let coachTeamName: string | null = null;
     if (c.orgId) {
-      for (const t of rollupB.teams.teams) {
+      for (const t of (teamsDataRes.data ?? [])) {
         if (t.organization_id === c.orgId) {
-          coachTeamName = t.name;
+          coachTeamName = teamsMap.get(t.id)?.name ?? null;
           break;
         }
       }
@@ -3031,11 +4507,13 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       id: c.id,
       name: `${c.firstName} ${c.lastName}`.trim() || 'Unknown',
       teamName: coachTeamName,
-      riskScore: Math.min(daysSinceGone * 2, 100),
+      riskScore: Math.min(daysSince * 2, 100),
       riskSignals: signals,
-      daysSinceLastActive: daysSinceGone,
+      daysSinceLastActive: daysSince,
     });
   }
+
+  // At-risk teams
   for (const t of biTeamHealthScores) {
     if (t.riskLevel !== 'critical') continue;
     biAtRiskAccounts.push({
@@ -3048,43 +4526,55 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
         t.activePlayerCount === 0 ? 'No active players' : `Only ${t.activePlayerCount} active players`,
         t.roundsThisMonth === 0 ? 'No rounds this month' : `Only ${t.roundsThisMonth} rounds this month`,
       ],
-      daysSinceLastActive: 0,
+      daysSinceLastActive: 0, // would need team-level last activity tracking
     });
   }
+
   biAtRiskAccounts.sort((a, b) => b.riskScore - a.riskScore);
 
-  // Conversion proxies
-  const biConversionProxies: BIConversionProxy[] = teams.map((t) => {
-    const teamPlayerIdsForTeam = teamIdToPlayerIds.get(t.id) ?? [];
-    const activeCount = teamPlayerIdsForTeam.filter((pid) => playersActive30dSet.has(pid)).length;
-    const activePct = teamPlayerIdsForTeam.length > 0 ? activeCount / teamPlayerIdsForTeam.length : 0;
+  // Conversion proxies (team-level conversion readiness scores)
+  const biConversionProxies: BIConversionProxy[] = teams.map(t => {
+    const teamMembersList = (teamMembersRes.data ?? []).filter(m => m.team_id === t.id);
+    const playerIds = teamMembersList.map(m => m.player_id);
+    const activeCount = playerIds.filter(pid => playersActive30d.has(pid)).length;
+    const activePct = playerIds.length > 0 ? activeCount / playerIds.length : 0;
+
+    // Rounds per week: approximate from this week's count
     const roundsPerWeek = t.roundsThisWeek;
-    const teamData = rollupB.teams.teams.find((tt) => tt.id === t.id);
-    const hasAI = teamData?.organization_id ? aiOrgIds.has(teamData.organization_id) : false;
-    const teamCreationDates = teamPlayerIdsForTeam
-      .map((pid) => {
-        const p = playersById.get(pid);
-        if (!p?.user_id) return null;
-        const u = users.usersForDirectory.find((usr) => usr.id === p.user_id);
+
+    // AI adoption: team's org has a coach with philosophy
+    const teamDataEntry = (teamsDataRes.data ?? []).find(td => td.id === t.id);
+    const hasAI = teamDataEntry?.organization_id ? aiOrgIds.has(teamDataEntry.organization_id) : false;
+
+    // Tenure: days since team was created (approximate from earliest member signup)
+    const teamCreationDates = playerIds
+      .map(pid => {
+        const p = allPlayersMap.get(pid);
+        if (!p?.userId) return null;
+        const u = (allUsersRes.data ?? []).find(usr => usr.id === p.userId);
         return u?.created_at ? new Date(u.created_at).getTime() : null;
       })
       .filter((d): d is number => d !== null);
-    const earliestSignup = teamCreationDates.length > 0 ? Math.min(...teamCreationDates) : now;
-    const tenureDays = Math.floor((now - earliestSignup) / 86400000);
-    const sizeScore = Math.min(teamPlayerIdsForTeam.length * 5, 25);
+    const earliestSignup = teamCreationDates.length > 0 ? Math.min(...teamCreationDates) : Date.now();
+    const tenureDays = Math.floor((Date.now() - earliestSignup) / 86400000);
+
+    // Composite score (0-100)
+    const sizeScore = Math.min(playerIds.length * 5, 25);
     const activeScore = activePct * 25;
     const roundScore = Math.min(roundsPerWeek * 5, 25);
     const aiScore = hasAI ? 15 : 0;
     const tenureScore = Math.min(tenureDays / 10, 10);
     const score = Math.round(sizeScore + activeScore + roundScore + aiScore + tenureScore);
+
     const tier: BIConversionProxy['tier'] = score >= 60 ? 'high' : score >= 30 ? 'medium' : 'low';
+
     return {
       teamId: t.id,
       teamName: t.name,
       score,
       tier,
       signals: {
-        playerCount: teamPlayerIdsForTeam.length,
+        playerCount: playerIds.length,
         activePlayerPct: Math.round(activePct * 1000) / 10,
         roundsPerWeek,
         aiAdoption: hasAI,
@@ -3093,10 +4583,14 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     };
   }).sort((a, b) => b.score - a.score);
 
+  // Await Vercel analytics
+  const biVercel = await vercelPromise;
+
+  // --- Assemble BI data ---
   const biData: BIDashboardData = {
     growth: {
-      signupsByDay: signupsByDayResult,
-      signupsByWeek,
+      signupsByDay: biSignupsByDay,
+      signupsByWeek: biSignupsByWeek,
       activatedPlayers: biActivatedPlayers,
       activatedCoaches: biActivatedCoaches,
       playerActivationRate: biPlayerActivationRate,
@@ -3104,14 +4598,14 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       overallActivationRate: biOverallActivationRate,
       medianTTFVDays: biMedianTTFVDays,
       activationFunnel: biActivationFunnel,
-      userGrowthRateWoW: userGrowthRate,
-      roundGrowthRateWoW: roundGrowthRate,
+      userGrowthRateWoW: biUserGrowthRateWoW,
+      roundGrowthRateWoW: biRoundGrowthRateWoW,
     },
     retention: {
       d1: biD1,
       d7: biD7,
       d30: biD30,
-      cohortMatrix: rollupC.cohortMatrix,
+      cohortMatrix,
       dauRounds: biDauRounds,
       wauRounds: biWauRounds,
       mauRounds: biMauRounds,
@@ -3142,28 +4636,25 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       atRiskAccounts: biAtRiskAccounts.slice(0, 100),
       conversionProxies: biConversionProxies,
     },
-    vercel: vercelAnalytics,
+    vercel: biVercel,
   };
-
-  // Use ago14d in a way that silences unused-var warnings (kept for future windowing).
-  void ago14d;
-  void today;
 
   return {
     health: {
-      activeUsers24h: rounds.activeUsers24h,
-      activeUsers7d: rounds.activeUsers7d,
-      activeUsers30d: rounds.activeUsers30d,
-      roundsThisWeek: rounds.roundsThisWeek,
-      roundReviewsThisWeek: coachhelm.reviewsThisWeek,
-      insightsThisWeek: coachhelm.insightsThisWeek,
+      activeUsers24h: new Set((activeUsers24hRes.data ?? []).map(r => r.player_id)).size,
+      activeUsers7d: new Set((activeUsers7dRes.data ?? []).map(r => r.player_id)).size,
+      activeUsers30d: new Set((activeUsers30dRes.data ?? []).map(r => r.player_id)).size,
+      roundsThisWeek: roundsThisWeekRes.count ?? 0,
+      roundReviewsThisWeek: reviewsThisWeekRes.count ?? 0,
+      insightsThisWeek: insightsThisWeekRes.count ?? 0,
       systemErrors7d: systemErrors,
       avgResponseTimeMs: responseTime,
       dataFreshness,
       lastRoundSubmitted: lastRoundTimestamp,
       lastInsightGenerated: lastInsightTimestamp,
-      roundsToday: rounds.roundsToday,
+      roundsToday: roundsTodayRes.count ?? 0,
       diagnostics,
+      // Real platform health from auth sessions + DB
       realActiveUsers1h,
       realActiveUsers24h,
       realActiveUsers7d,
@@ -3181,13 +4672,13 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     users: {
       totalCoaches,
       totalPlayers,
-      totalAdmins: users.totalAdmins,
+      totalAdmins: adminsRes.count ?? 0,
       coachOnboardingRate: totalCoaches > 0 ? Math.round((coachOnboarded / totalCoaches) * 100) : 0,
       playerOnboardingRate: totalPlayers > 0 ? Math.round((playerOnboarded / totalPlayers) * 100) : 0,
-      activeTeams: users.activeTeamCount,
+      activeTeams: teamIds.size,
       signupsByWeek,
-      newUsersThisWeek: users.newUsersThisWeek,
-      newUsersLastWeek: users.newUsersLastWeek,
+      newUsersThisWeek: newUsersThisWeekRes.count ?? 0,
+      newUsersLastWeek: newUsersLastWeekRes.count ?? 0,
       playersByOnboarding,
       playersByStatus,
       playersByYear,
@@ -3195,7 +4686,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     growth: {
       userGrowthRate,
       roundGrowthRate,
-      teamGrowthThisMonth: 0,
+      teamGrowthThisMonth: teamsThisMonthRes.count ?? 0,
       churnedPlayers30d,
       retentionCohorts,
       avgRoundsPerActivePlayer,
@@ -3204,19 +4695,19 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       platformHealthScore,
     },
     usage: {
-      roundsByType: roundsByTypeArr,
+      roundsByType: Object.entries(roundsByType).map(([type, count]) => ({ type, count })),
       roundsByWeek,
       totalShots: totalShotsCount,
       totalRounds: totalRoundsCount,
       avgShotsPerRound: totalRoundsCount > 0 ? Math.round(totalShotsCount / totalRoundsCount) : 0,
       featureAdoption: [
-        { feature: 'Qualifiers', count: featureAdoption.qualifiers.total },
-        { feature: 'Events', count: featureAdoption.events.total },
-        { feature: 'Tasks', count: featureAdoption.tasks.total },
-        { feature: 'Announcements', count: featureAdoption.announcements.total },
-        { feature: 'Messages', count: featureAdoption.messages.total },
-        { feature: 'Documents', count: featureAdoption.documents.total },
-        { feature: 'Travel', count: featureAdoption.travel.total },
+        { feature: 'Qualifiers', count: qualifiersCountRes.count ?? 0 },
+        { feature: 'Events', count: eventsCountRes.count ?? 0 },
+        { feature: 'Tasks', count: tasksCountRes.count ?? 0 },
+        { feature: 'Announcements', count: announcementsCountRes.count ?? 0 },
+        { feature: 'Messages', count: messagesCountRes.count ?? 0 },
+        { feature: 'Documents', count: documentsCountRes.count ?? 0 },
+        { feature: 'Travel', count: travelCountRes.count ?? 0 },
       ],
       roundsCompletionRate: totalRoundsCount > 0 ? Math.round((completedRoundsCount / totalRoundsCount) * 100) : 0,
       verifiedRoundsRate: totalRoundsCount > 0 ? Math.round((verifiedRoundsCount / totalRoundsCount) * 100) : 0,
@@ -3224,30 +4715,30 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     coachhelm: {
       insightsByWeek,
       reviewsByWeek,
-      modelPerformance: coachhelm.modelPerformance.map((m) => ({
+      modelPerformance: (modelPerfRes.data ?? []).map((m) => ({
         model_type: m.model_type,
         accuracy_rate: m.accuracy_rate,
         calibration_score: m.calibration_score,
         predictions_made: m.predictions_made,
       })),
-      insightEffectiveness: coachhelm.insightEffectiveness.map((e) => ({
+      insightEffectiveness: (insightEffRes.data ?? []).map((e) => ({
         insight_type: e.insight_type,
         action_rate: e.action_rate,
         improvement_rate: e.improvement_rate,
         effectiveness_score: e.effectiveness_score,
       })),
-      totalPatternsDetected: coachhelm.totalPatterns,
-      totalPredictionsMade: coachhelm.totalPredictions,
-      totalReviewsAllTime: coachhelm.totalReviewsAllTime,
+      totalPatternsDetected: totalPatternsRes.count ?? 0,
+      totalPredictionsMade: totalPredictionsRes.count ?? 0,
+      totalReviewsAllTime: totalReviewsRes.count ?? 0,
       avgInsightsPerGeneration: Math.round(avgInsightsPerGeneration * 10) / 10,
-      coachPhilosophyAdoption: totalCoaches > 0 ? Math.round((philosophyCount / totalCoaches) * 100) : 0,
+      coachPhilosophyAdoption: totalCoaches > 0 ? Math.round(((coachPhilosophyRes.count ?? 0) / totalCoaches) * 100) : 0,
     },
     teams,
     scoring: {
-      platformScoringAvg: platformAvgs.platformScoringAvg != null ? Math.round(platformAvgs.platformScoringAvg * 10) / 10 : null,
-      platformFairwayPct: platformAvgs.platformFairwayPct != null ? Math.round(platformAvgs.platformFairwayPct * 10) / 10 : null,
-      platformGirPct: platformAvgs.platformGirPct != null ? Math.round(platformAvgs.platformGirPct * 10) / 10 : null,
-      platformPuttsPerRound: platformAvgs.platformPuttsPerRound != null ? Math.round(platformAvgs.platformPuttsPerRound * 10) / 10 : null,
+      platformScoringAvg: platformScoringAvg ? Math.round(platformScoringAvg * 10) / 10 : null,
+      platformFairwayPct: platformFairwayPct ? Math.round(platformFairwayPct * 10) / 10 : null,
+      platformGirPct: platformGirPct ? Math.round(platformGirPct * 10) / 10 : null,
+      platformPuttsPerRound: platformPuttsPerRound ? Math.round(platformPuttsPerRound * 10) / 10 : null,
       topPerformers,
       scoringDistribution,
       recentBestRounds,
@@ -3257,18 +4748,18 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       weeklyRetention: Math.round(weeklyRetention * 10) / 10,
       avgRoundsPerPlayer: Math.round(avgRoundsPerPlayer * 10) / 10,
       playersWithNoRounds,
-      coachesUsingInsights: coachesUsingInsightsCount,
-      eventAttendanceRate: eventAttendanceRate != null ? Math.round(eventAttendanceRate * 10) / 10 : null,
+      coachesUsingInsights: coachIdsUsingInsights.size,
+      eventAttendanceRate: eventAttendanceRate ? Math.round(eventAttendanceRate * 10) / 10 : null,
     },
     activity: {
-      recentSignups: users.latestSignups.map((u) => ({
+      recentSignups: (latestSignupsRes.data ?? []).map((u) => ({
         id: u.id,
         email: u.email,
         role: u.role,
         created_at: u.created_at,
       })),
       recentRounds,
-      recentInsights: coachhelm.latestInsights.map((i) => ({
+      recentInsights: (latestInsightsRes.data ?? []).map((i) => ({
         id: i.id,
         insight_type: i.insight_type,
         insights_generated: i.insights_generated,
@@ -3300,10 +4791,10 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     visitsByDay: visitsByDayResult,
     funnel,
     dataQuality,
-    userJourney: rollupC.userJourney,
-    stickiness: rollupC.stickiness,
-    playerEngagement: rollupC.playerEngagement,
-    coachhelmRoi,
+    userJourney,
+    stickiness,
+    playerEngagement,
+    coachhelmRoi: updatedCoachhelmRoi,
     errorLogs: {
       totalErrors7d,
       criticalErrors7d: criticalCount,
@@ -3323,30 +4814,69 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       adminEventSummaryDegraded,
     },
     auditLog: {
-      totalEvents7d: rollupB.auditLog.totalEvents7d,
+      totalEvents7d: auditLog7dCountRes.count ?? 0,
       recentEvents: auditLogData,
     },
-    loginSecurity: rollupB.loginSecurity,
-    baseball: rollupB.baseball,
-    totalPlatformUsers: users.totalPlatformUsers,
-    demoRequests: rollupB.demoRequests,
-    golfCommunication: rollupB.golfCommunication,
-    strokesGained: rollupB.strokesGained,
-    statsCacheLastUpdated: rollupB.teams.statsCacheLastUpdated,
+    loginSecurity: {
+      failedLogins7d,
+      lockedAccounts: lockedAccountCount,
+      recentAttempts: loginAttempts,
+    },
+    baseball: {
+      totalPlayers: bbPlayersRes.count ?? 0,
+      totalCoaches: bbCoachesRes.count ?? 0,
+      watchlistStages,
+      recruitingActivePlayers: Object.values(watchlistStages).reduce((s, v) => s + v, 0),
+      commitments,
+      videos30d: bbVideos30dRes.count ?? 0,
+      engagementEvents30d: bbEngagement30dRes.count ?? 0,
+      messages30d: bbMessages30dRes.count ?? 0,
+      conversations30d: bbConversations30dRes.count ?? 0,
+      playersOnboarded: bbPlayersOnboardedRes.count ?? 0,
+      coachesOnboarded: bbCoachesOnboardedRes.count ?? 0,
+      totalTeams: bbTeamsRes.count ?? 0,
+      totalEvents: bbEventsRes.count ?? 0,
+      totalCamps: bbCampsRes.count ?? 0,
+      recruitingActivatedPlayers: bbRecruitingActivatedRes.count ?? 0,
+    },
+    totalPlatformUsers: totalPlatformUsersRes.count ?? 0,
+    demoRequests: {
+      total: demoRequestsAllRes.count ?? 0,
+      pending: pendingDemoCount,
+      contacted: (demoRequestsAllRes.count ?? 0) - pendingDemoCount,
+      recentRequests: demoRequestsRecent,
+    },
+    golfCommunication: {
+      totalAnnouncements: totalAnnouncementsCount,
+      announcementAckRate,
+      totalGolfMessages: golfMessagesAllRes.count ?? 0,
+      totalConversations: golfConversationsAllRes.count ?? 0,
+    },
+    strokesGained: {
+      sgTotal: sgTotal != null ? Math.round(sgTotal * 100) / 100 : null,
+      sgTee: sgTee != null ? Math.round(sgTee * 100) / 100 : null,
+      sgApproach: sgApproach != null ? Math.round(sgApproach * 100) / 100 : null,
+      sgAroundGreen: sgAroundGreen != null ? Math.round(sgAroundGreen * 100) / 100 : null,
+      sgPutting: sgPutting != null ? Math.round(sgPutting * 100) / 100 : null,
+    },
+    statsCacheLastUpdated,
     needsAttention,
     userAuthDetails,
-    cohortMatrix: rollupC.cohortMatrix,
-    coachIntelligence: rollupC.coachIntelligence,
-    playerFunnel: rollupC.playerFunnel,
-    sessionHeatmap: rollupC.sessionHeatmap,
+    // Enhanced analytics
+    cohortMatrix,
+    coachIntelligence,
+    playerFunnel,
+    sessionHeatmap,
     infraHealth,
-    freshnessAlerts: rollupC.freshnessAlerts,
-    benchmarks: rollupC.benchmarks,
+    freshnessAlerts,
+    benchmarks,
+    // Admin events (real-time event tracking)
     adminEvents: adminEventsData,
-    userActivity: rollupC.userActivity,
+    // Enhanced user activity with team grouping
+    userActivity: userActivityData,
+    // Error detection and classification
     errorDetection: errorDetectionData,
+    // BI Dashboard
     bi: biData,
-    errorSummaryDegraded,
-    adminEventSummaryDegraded,
   };
 }
