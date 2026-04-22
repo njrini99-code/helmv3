@@ -1,0 +1,365 @@
+
+> helmv3@1.0.0 typecheck
+> tsc --noEmit
+
+src/app/baseball/actions/auth.ts(313,7): error TS2339: Property 'message' does not exist on type '{ email: string; error: string; ip: string; }'.
+src/app/baseball/actions/auth.ts(428,7): error TS2339: Property 'message' does not exist on type '{ email: string; error: string; ip: string; }'.
+src/app/baseball/actions/documents.ts(57,3): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+src/app/baseball/actions/onboarding.ts(296,189): error TS2339: Property 'message' does not exist on type '{ email: string; error: string; ip: string; }'.
+src/app/baseball/actions/watchlist.ts(188,200): error TS2339: Property 'message' does not exist on type '{ watchlistId: string; coachId: string; error: string; }'.
+src/app/baseball/actions/watchlist.ts(270,209): error TS2339: Property 'message' does not exist on type '{ watchlistId: string; coachId: string; error: string; }'.
+src/app/baseball/actions/watchlist.ts(315,205): error TS2339: Property 'message' does not exist on type '{ watchlistId: string; coachId: string; error: string; }'.
+src/app/golf/actions/admin-data.ts(1428,9): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+src/app/golf/actions/admin-data.ts(1432,9): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+src/app/golf/actions/admin-data.ts(1446,7): error TS1308: 'await' expressions are only allowed within async functions and at the top levels of modules.
+src/app/golf/actions/admin-data.ts(1495,76): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/actions/admin-data.ts(1496,76): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/actions/admin-tracer-data.ts(726,64): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/actions/stats-data.ts(49,49): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/actions/stats-data.ts(963,205): error TS2339: Property 'message' does not exist on type 'never'.
+src/app/golf/actions/stats-data.ts(1212,176): error TS2339: Property 'message' does not exist on type 'never'.
+src/app/golf/actions/stats-data.ts(2127,187): error TS2339: Property 'message' does not exist on type 'never'.
+src/app/golf/actions/task-reminders.ts(483,83): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/actions/task-reminders.ts(614,98): error TS2358: The left-hand side of an 'instanceof' expression must be of type 'any', an object type or a type parameter.
+src/app/golf/admin/crm/components/PipelineView.tsx(63,3): error TS6133: 'priorityConfig' is declared but its value is never read.
+src/components/baseball/command-center/analytics/GameVsPracticeComparison.tsx(336,10): error TS6133: 'GameVsPracticeComparison' is declared but its value is never read.
+src/components/baseball/command-center/analytics/GameVsPracticeComparison.tsx(646,10): error TS6133: 'GameVsPracticeComparisonSkeleton' is declared but its value is never read.
+src/components/baseball/command-center/analytics/GameVsPracticePanel.tsx(256,10): error TS6133: 'GameVsPracticePanel' is declared but its value is never read.
+src/components/baseball/command-center/analytics/PlayerPerformanceGrid.tsx(118,10): error TS6133: 'PlayerPerformanceGrid' is declared but its value is never read.
+src/components/baseball/command-center/analytics/PressureGapIndicator.tsx(56,10): error TS6133: 'getGapCategory' is declared but its value is never read.
+src/components/baseball/command-center/analytics/TeamBattingOverview.tsx(107,10): error TS6133: 'TeamBattingOverview' is declared but its value is never read.
+src/components/baseball/command-center/analytics/TrendAnalysisPanel.tsx(45,10): error TS6133: 'TrendAnalysisPanel' is declared but its value is never read.
+src/components/baseball/player-stats/PlayerStatsClient.tsx(37,10): error TS6133: 'PlayerStatsClient' is declared but its value is never read.
+src/components/baseball/recruiting-philosophy/MatchScoreBadge.tsx(19,10): error TS6133: 'MatchScoreBadge' is declared but its value is never read.
+src/components/baseball/recruiting-philosophy/MatchScoreBadge.tsx(152,10): error TS6133: 'MatchScoreInline' is declared but its value is never read.
+src/components/baseball/recruiting-philosophy/MatchScoreBadge.tsx(183,10): error TS6133: 'MatchScoreRing' is declared but its value is never read.
+src/components/errors/RouteErrorBoundary.tsx(298,10): error TS6133: 'CompactRouteErrorBoundary' is declared but its value is never read.
+src/components/golf/announcements/AcknowledgementTracker.tsx(4,21): error TS6133: 'IconClock' is declared but its value is never read.
+src/components/golf/calendar/CalendarDayViewSwipeable.tsx(15,50): error TS6133: 'useEffect' is declared but its value is never read.
+src/components/golf/calendar/MobileEventCard.tsx(23,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/golf/calendar/MobileEventCard.tsx(26,10): error TS6133: 'getEventTypeConfig' is declared but its value is never read.
+src/components/golf/calendar/MobileEventCard.tsx(28,1): error TS6133: 'EventType' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/AlertBadge.tsx(21,10): error TS6133: 'AlertBadge' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/AlertBadge.tsx(146,10): error TS6133: 'NavAlertBadge' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/AlertBadge.tsx(187,10): error TS6133: 'useAlertCounts' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/AlertCard.tsx(12,3): error TS6133: 'IconTrendingDown' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/AlertCard.tsx(13,3): error TS6133: 'IconTrendingUp' is declared but its value is never read.
+src/components/golf/coachhelm/alerts/CoachAlertCenter.tsx(19,10): error TS6133: 'CoachAlertCenter' is declared but its value is never read.
+src/components/golf/coachhelm/insights/InsightsFeed.tsx(16,10): error TS6133: 'InsightsFeed' is declared but its value is never read.
+src/components/golf/coachhelm/player/TrendDashboard.tsx(165,69): error TS18048: 'meta' is possibly 'undefined'.
+src/components/golf/coachhelm/player/TrendDashboard.tsx(166,57): error TS18048: 'meta' is possibly 'undefined'.
+src/components/golf/dashboard/performance-radar.tsx(116,46): error TS6133: 'i' is declared but its value is never read.
+src/components/golf/dashboard/premium-components.tsx(125,7): error TS6133: 'PremiumStatCard' is declared but its value is never read.
+src/components/golf/dashboard/premium-components.tsx(229,7): error TS6133: 'QuickActionCard' is declared but its value is never read.
+src/components/golf/GolfSkeletons.tsx(115,10): error TS6133: 'StatsCardSkeleton' is declared but its value is never read.
+src/components/golf/GolfSkeletons.tsx(224,10): error TS6133: 'CalendarEventSkeleton' is declared but its value is never read.
+src/components/golf/GolfSkeletons.tsx(608,10): error TS6133: 'ShotStatsTabSkeleton' is declared but its value is never read.
+src/components/golf/GolfSkeletons.tsx(1072,10): error TS6133: 'SkeletonGrid' is declared but its value is never read.
+src/components/golf/layout/AnimatedPage.tsx(94,10): error TS6133: 'AnimatedList' is declared but its value is never read.
+src/components/golf/PageTransition.tsx(10,10): error TS6133: 'PageTransition' is declared but its value is never read.
+src/components/golf/PageTransition.tsx(29,10): error TS6133: 'StaggeredList' is declared but its value is never read.
+src/components/golf/PageTransition.tsx(60,10): error TS6133: 'FadeInCard' is declared but its value is never read.
+src/components/golf/PlayerQuickCard.tsx(23,10): error TS6133: 'PlayerQuickCard' is declared but its value is never read.
+src/components/golf/RecentActivityFeed.tsx(28,10): error TS6133: 'RecentActivityFeed' is declared but its value is never read.
+src/components/golf/stats/sections/DispersionStats.tsx(354,33): error TS18048: 'band' is possibly 'undefined'.
+src/components/golf/tasks/ReminderBadge.tsx(14,10): error TS6133: 'ReminderBadge' is declared but its value is never read.
+src/components/layout/sidebar.tsx(8,10): error TS6133: 'ModeToggle' is declared but its value is never read.
+src/components/layout/sidebar.tsx(11,3): error TS6133: 'IconSearch' is declared but its value is never read.
+src/components/layout/sidebar.tsx(14,3): error TS6133: 'IconChart' is declared but its value is never read.
+src/components/layout/sidebar.tsx(22,3): error TS6133: 'IconTarget' is declared but its value is never read.
+src/components/layout/sidebar.tsx(23,3): error TS6133: 'IconStar' is declared but its value is never read.
+src/components/layout/sidebar.tsx(37,3): error TS6133: 'IconBookmark' is declared but its value is never read.
+src/components/layout/sidebar.tsx(199,9): error TS6133: 'showModeToggle' is declared but its value is never read.
+src/components/layout/sidebar.tsx(204,9): error TS6133: 'currentMode' is declared but its value is never read.
+src/components/layout/sidebar.tsx(247,9): error TS6133: 'handleModeChange' is declared but its value is never read.
+src/components/products/baseball-mockups/DevPlanMockup.tsx(9,10): error TS6133: 'DevPlanMockup' is declared but its value is never read.
+src/hooks/coachhelm/useRoundReviewV2.ts(82,6): error TS6196: 'UseRoundReviewV2Result' is declared but never used.
+src/hooks/golf/use-auto-save-round.ts(181,37): error TS2367: This comparison appears to be unintentional because the types '"holes" | "setup" | "submitting"' and '"review"' have no overlap.
+src/hooks/golf/use-auto-save-round.ts(190,18): error TS2339: Property 'putts' does not exist on type 'RoundHole'.
+src/hooks/golf/use-auto-save-round.ts(191,15): error TS2339: Property 'shots' does not exist on type 'RoundHole'.
+src/hooks/golf/use-auto-save-round.ts(192,15): error TS2339: Property 'shots' does not exist on type 'RoundHole'.
+src/hooks/golf/use-auto-save-round.ts(192,26): error TS7006: Parameter 's' implicitly has an 'any' type.
+src/hooks/golf/use-auto-save-round.ts(194,33): error TS2339: Property 'length' does not exist on type 'Record<number, ShotRecord[]>'.
+src/hooks/golf/use-auto-save-round.ts(229,67): error TS2339: Property 'putts' does not exist on type 'RoundHole'.
+src/hooks/golf/use-auto-save-round.ts(229,83): error TS2339: Property 'shots' does not exist on type 'RoundHole'.
+src/hooks/golf/use-offline-sync.ts(32,8): error TS6133: 'OfflineRound' is declared but its value is never read.
+src/hooks/use-journey.ts(243,16): error TS6133: 'updateInterestNotes' is declared but its value is never read.
+src/hooks/use-mobile-detection.ts(114,10): error TS6133: 'useIsMobile' is declared but its value is never read.
+src/hooks/use-presence.ts(58,10): error TS6133: 'isUserOnline' is declared but its value is never read.
+src/hooks/use-route-protection.ts(71,10): error TS6133: 'useTeamRouteProtection' is declared but its value is never read.
+src/hooks/useAdminAlerts.ts(172,10): error TS6133: 'useAdminAlertsWithToast' is declared but its value is never read.
+src/hooks/useAdminAlerts.ts(218,10): error TS6133: 'getAlertDescription' is declared but its value is never read.
+src/hooks/useAdminAlerts.ts(246,10): error TS6133: 'getSeverityClasses' is declared but its value is never read.
+src/hooks/useRSVP.ts(234,10): error TS6133: 'usePendingInvitations' is declared but its value is never read.
+src/lib/admin-logger-client.ts(148,16): error TS6133: 'logCriticalClientError' is declared but its value is never read.
+src/lib/admin-logger-client.ts(165,16): error TS6133: 'logClientFeatureUse' is declared but its value is never read.
+src/lib/admin-logger-client.ts(292,16): error TS6133: 'logReactError' is declared but its value is never read.
+src/lib/admin-logger.ts(126,16): error TS6133: 'logCriticalError' is declared but its value is never read.
+src/lib/admin-logger.ts(223,16): error TS6133: 'logFeatureUse' is declared but its value is never read.
+src/lib/admin-logger.ts(242,16): error TS6133: 'logOnboardingMilestone' is declared but its value is never read.
+src/lib/admin-logger.ts(277,16): error TS6133: 'logSystemEvent' is declared but its value is never read.
+src/lib/admin-logger.ts(298,10): error TS6133: 'withAdminLogging' is declared but its value is never read.
+src/lib/auth/ownership.ts(60,16): error TS6133: 'requirePlayer' is declared but its value is never read.
+src/lib/auth/ownership.ts(133,16): error TS6133: 'verifyOrganizationAdmin' is declared but its value is never read.
+src/lib/auth/ownership.ts(208,16): error TS6133: 'verifyTeamInvitationForCurrentUser' is declared but its value is never read.
+src/lib/auth/password-validation.ts(149,10): error TS6133: 'getPasswordStrengthColor' is declared but its value is never read.
+src/lib/auth/password-validation.ts(167,10): error TS6133: 'getPasswordStrengthText' is declared but its value is never read.
+src/lib/auth/password-validation.ts(185,10): error TS6133: 'getPasswordStrengthPercentage' is declared but its value is never read.
+src/lib/auth/rate-limit.ts(142,10): error TS6133: 'getRateLimitStatus' is declared but its value is never read.
+src/lib/auth/session-activity.ts(174,10): error TS6133: 'formatSessionTimeRemaining' is declared but its value is never read.
+src/lib/auth/session-activity.ts(196,10): error TS6133: 'validateSessionTimeout' is declared but its value is never read.
+src/lib/auth/session.ts(173,16): error TS6133: 'requireGolfCoachSession' is declared but its value is never read.
+src/lib/auth/session.ts(185,16): error TS6133: 'requireGolfPlayerSession' is declared but its value is never read.
+src/lib/auth/session.ts(211,16): error TS6133: 'requireCoachSession' is declared but its value is never read.
+src/lib/auth/session.ts(225,16): error TS6133: 'requirePlayerSession' is declared but its value is never read.
+src/lib/cache/index.ts(208,7): error TS6133: 'invalidateBaseball' is declared but its value is never read.
+src/lib/calendar/availability.ts(28,11): error TS6196: 'AvailabilityResult' is declared but never used.
+src/lib/calendar/availability.ts(450,10): error TS6133: 'formatDateRange' is declared but its value is never read.
+src/lib/calendar/conflicts.ts(203,16): error TS6133: 'batchCheckConflicts' is declared but its value is never read.
+src/lib/calendar/conflicts.ts(264,10): error TS6133: 'formatConflictMessage' is declared but its value is never read.
+src/lib/calendar/conflicts.ts(290,10): error TS6133: 'getConflictSeverity' is declared but its value is never read.
+src/lib/calendar/conflicts.ts(306,10): error TS6133: 'groupConflictsByType' is declared but its value is never read.
+src/lib/calendar/event-styles.ts(137,10): error TS6133: 'shouldShowEventText' is declared but its value is never read.
+src/lib/calendar/event-styles.ts(208,10): error TS6133: 'getHour' is declared but its value is never read.
+src/lib/calendar/ical.ts(248,10): error TS6133: 'generateTeamCalendar' is declared but its value is never read.
+src/lib/calendar/ical.ts(270,10): error TS6133: 'generatePlayerCalendar' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(18,10): error TS6133: 'getCellDensityClass' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(33,10): error TS6133: 'getEventDensity' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(43,11): error TS6196: 'EventStyleConfig' is declared but never used.
+src/lib/calendar/premium-utils.ts(107,10): error TS6133: 'calculateRSVPStats' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(129,10): error TS6133: 'getRSVPColor' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(152,10): error TS6133: 'getHeatLevel' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(178,10): error TS6133: 'isPreDawn' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(232,10): error TS6133: 'getTodayClasses' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(240,10): error TS6133: 'getDateLabel' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(255,10): error TS6133: 'getUrgencyLevel' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(264,10): error TS6133: 'getUrgencyClasses' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(288,10): error TS6133: 'calculateAttendanceStats' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(308,10): error TS6133: 'getAttendanceColor' is declared but its value is never read.
+src/lib/calendar/premium-utils.ts(322,10): error TS6133: 'isCurrentWeek' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(52,10): error TS6133: 'toRRULE' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(146,10): error TS6133: 'describeRecurrence' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(185,10): error TS6133: 'getNextOccurrence' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(216,10): error TS6133: 'expandRecurringEvent' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(415,10): error TS6133: 'getWeekdayCode' is declared but its value is never read.
+src/lib/calendar/recurrence.ts(431,10): error TS6133: 'getDayNumber' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(279,16): error TS6133: 'cancelEventAndNotify' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(410,16): error TS6133: 'batchUpdateRSVPs' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(472,16): error TS6133: 'getPlayerUpcomingEvents' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(521,16): error TS6133: 'sendRSVPReminders' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(605,10): error TS6133: 'isRSVPDeadlinePassed' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(613,10): error TS6133: 'getRSVPStatusColor' is declared but its value is never read.
+src/lib/calendar/rsvp.ts(650,10): error TS6133: 'getRSVPStatusLabel' is declared but its value is never read.
+src/lib/calendar/timezone.ts(99,10): error TS6133: 'fromTimezone' is declared but its value is never read.
+src/lib/calendar/timezone.ts(110,10): error TS6133: 'parseInTimezone' is declared but its value is never read.
+src/lib/calendar/timezone.ts(127,10): error TS6133: 'formatInTz' is declared but its value is never read.
+src/lib/calendar/timezone.ts(138,10): error TS6133: 'nowInTimezone' is declared but its value is never read.
+src/lib/calendar/timezone.ts(152,10): error TS6133: 'formatDateTimeWithTz' is declared but its value is never read.
+src/lib/calendar/timezone.ts(165,10): error TS6133: 'formatTimeWithTz' is declared but its value is never read.
+src/lib/calendar/timezone.ts(178,10): error TS6133: 'formatICalDateTime' is declared but its value is never read.
+src/lib/calendar/timezone.ts(188,10): error TS6133: 'formatICalDateTimeUTC' is declared but its value is never read.
+src/lib/calendar/timezone.ts(210,10): error TS6133: 'getTimezoneInfo' is declared but its value is never read.
+src/lib/calendar/timezone.ts(251,10): error TS6133: 'getTimezoneLabel' is declared but its value is never read.
+src/lib/calendar/timezone.ts(264,10): error TS6133: 'startOfDayInTimezone' is declared but its value is never read.
+src/lib/calendar/timezone.ts(276,10): error TS6133: 'endOfDayInTimezone' is declared but its value is never read.
+src/lib/calendar/timezone.ts(289,10): error TS6133: 'isSameDayInTimezone' is declared but its value is never read.
+src/lib/coachhelm/insight-types.ts(80,11): error TS6196: 'InsightGenerationLog' is declared but never used.
+src/lib/coachhelm/insight-types.ts(94,11): error TS6196: 'PlayerPerformanceSnapshot' is declared but never used.
+src/lib/coachhelm/insight-types.ts(122,11): error TS6196: 'FocusAreaWithPlayer' is declared but never used.
+src/lib/coachhelm/insight-types.ts(135,11): error TS6196: 'ScoringDeclineMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(143,11): error TS6196: 'StatRegressionMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(151,11): error TS6196: 'TournamentPressureMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(159,11): error TS6196: 'BubblePlayerMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(167,11): error TS6196: 'SurgePlayerMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(174,11): error TS6196: 'StreakMetadata' is declared but never used.
+src/lib/coachhelm/insight-types.ts(375,10): error TS6133: 'getPriorityLabel' is declared but its value is never read.
+src/lib/coachhelm/v2/feedback/coach-behavior.ts(74,12): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/coachhelm/v2/mining/correlation-discovery.ts(860,16): error TS6133: 'discoverMetricCorrelations' is declared but its value is never read.
+src/lib/coachhelm/v2/mining/correlation-engine.ts(31,11): error TS6196: 'MetricRelationship' is declared but never used.
+src/lib/coachhelm/v2/mining/correlation-engine.ts(141,7): error TS6196: 'CorrelationEngine' is declared but never used.
+src/lib/coachhelm/v2/mining/pressure-analysis.ts(192,16): error TS6133: 'analyzePressurePerformance' is declared but its value is never read.
+src/lib/coachhelm/v2/mining/resilience-analysis.ts(838,16): error TS6133: 'analyzeTeamResilience' is declared but its value is never read.
+src/lib/coachhelm/v2/orchestrator.ts(92,11): error TS6133: 'outcomeValidator' is declared but its value is never read.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(72,20): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(73,23): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(117,9): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(117,30): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(119,36): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(121,36): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(125,25): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(131,26): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(134,29): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(175,19): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(179,18): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(179,39): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(181,65): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(184,32): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(185,9): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(185,33): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(186,13): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(186,31): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(188,33): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(191,25): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(199,19): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(199,51): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(200,14): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(200,42): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(201,12): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(201,36): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(204,22): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(220,15): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(220,47): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(221,10): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(221,38): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(222,8): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(222,32): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/sequence-analysis.ts(225,18): error TS18048: 'triggerShot' is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(67,3): error TS2322: Type '{ readonly min: 0; readonly max: 25; readonly label: "0-25"; } | { readonly min: 25; readonly max: 50; readonly label: "25-50"; } | { readonly min: 50; readonly max: 75; readonly label: "50-75"; } | ... 8 more ... | undefined' is not assignable to type '{ readonly min: 0; readonly max: 25; readonly label: "0-25"; } | { readonly min: 25; readonly max: 50; readonly label: "25-50"; } | { readonly min: 50; readonly max: 75; readonly label: "50-75"; } | ... 7 more ... | { ...; }'.
+  Type 'undefined' is not assignable to type '{ readonly min: 0; readonly max: 25; readonly label: "0-25"; } | { readonly min: 25; readonly max: 50; readonly label: "25-50"; } | { readonly min: 50; readonly max: 75; readonly label: "50-75"; } | ... 7 more ... | { ...; }'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(100,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(106,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(280,50): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(280,55): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/shot-analysis/shot-level-sg.ts(291,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(239,28): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(246,24): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(247,10): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(247,39): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(275,13): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/anomaly-detector.ts(276,18): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/baselines.ts(51,20): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/baselines.ts(51,46): error TS18048: 'ewma' is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/baselines.ts(53,3): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/baselines.ts(162,13): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/baselines.ts(163,18): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/z-score.ts(101,46): error TS2345: Argument of type 'number[] | undefined' is not assignable to parameter of type 'number[]'.
+  Type 'undefined' is not assignable to type 'number[]'.
+src/lib/coachhelm/v2/stats/z-score.ts(109,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/z-score.ts(109,25): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/z-score.ts(147,24): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/z-score.ts(153,22): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/z-score.ts(182,54): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/stats/z-score.ts(192,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/z-score.ts(193,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/z-score.ts(194,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/z-score.ts(195,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/stats/z-score.ts(196,5): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/trends/multi-window.ts(65,24): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/trends/multi-window.ts(75,13): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/multi-window.ts(76,18): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/multi-window.ts(96,15): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/multi-window.ts(97,15): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/multi-window.ts(268,19): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(81,23): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(92,26): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(101,7): error TS2322: Type '(number | undefined)[]' is not assignable to type 'number[]'.
+  Type 'number | undefined' is not assignable to type 'number'.
+    Type 'undefined' is not assignable to type 'number'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(147,15): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(148,15): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(149,15): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(150,16): error TS2532: Object is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(245,37): error TS18048: 'primary' is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(245,61): error TS18048: 'primary' is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(246,7): error TS18048: 'secondary' is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(247,52): error TS18048: 'secondary' is possibly 'undefined'.
+src/lib/coachhelm/v2/trends/streak-detector.ts(247,78): error TS18048: 'secondary' is possibly 'undefined'.
+src/lib/datadog/index.ts(88,16): error TS6133: 'setDatadogUser' is declared but its value is never read.
+src/lib/datadog/index.ts(94,16): error TS6133: 'clearDatadogUser' is declared but its value is never read.
+src/lib/datadog/index.ts(100,16): error TS6133: 'trackAction' is declared but its value is never read.
+src/lib/datadog/index.ts(106,16): error TS6133: 'trackError' is declared but its value is never read.
+src/lib/datadog/index.ts(112,16): error TS6133: 'logInfo' is declared but its value is never read.
+src/lib/datadog/index.ts(117,16): error TS6133: 'logWarn' is declared but its value is never read.
+src/lib/datadog/index.ts(122,16): error TS6133: 'logError' is declared but its value is never read.
+src/lib/error-logging.ts(157,10): error TS6133: 'logCriticalError' is declared but its value is never read.
+src/lib/error-logging.ts(170,10): error TS6133: 'logWarning' is declared but its value is never read.
+src/lib/error-logging.ts(237,16): error TS6133: 'getCurrentUserContext' is declared but its value is never read.
+src/lib/error-logging.ts(258,16): error TS6133: 'withErrorLogging' is declared but its value is never read.
+src/lib/error-logging.ts(277,10): error TS6133: 'logPerformanceMetric' is declared but its value is never read.
+src/lib/error-monitoring.ts(203,7): error TS6133: 'logException' is declared but its value is never read.
+src/lib/error-monitoring.ts(205,7): error TS6133: 'logWarning' is declared but its value is never read.
+src/lib/error-monitoring.ts(206,7): error TS6133: 'setUser' is declared but its value is never read.
+src/lib/error-monitoring.ts(207,7): error TS6133: 'clearUser' is declared but its value is never read.
+src/lib/golf/sg-benchmarks.ts(336,10): error TS6133: 'getDefaultBenchmarkForDivision' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(17,16): error TS6196: 'DbGolfRound' is declared but never used.
+src/lib/golf/strokes-gained.ts(124,10): error TS6133: 'applyDistanceAfterFallback' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(160,10): error TS6133: 'convertDbHole' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(477,10): error TS6133: 'calculateStrokesGainedBreakdown' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(646,10): error TS6133: 'aggregateStrokesGained' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(696,10): error TS6133: 'compareToBaseline' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(732,10): error TS6133: 'identifyStrengthsWeaknesses' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(1353,10): error TS6133: 'getStrokesGainedColor' is declared but its value is never read.
+src/lib/golf/strokes-gained.ts(1364,10): error TS6133: 'getStrokesGainedBgColor' is declared but its value is never read.
+src/lib/lazy-components.tsx(29,7): error TS6133: 'LazyVideoShowcase' is declared but its value is never read.
+src/lib/lazy-components.tsx(63,7): error TS6133: 'LazyUSAMap' is declared but its value is never read.
+src/lib/lazy-components.tsx(74,10): error TS6133: 'createLazyComponent' is declared but its value is never read.
+src/lib/lazy-components.tsx(91,10): error TS6133: 'preloadComponent' is declared but its value is never read.
+src/lib/middleware/rate-limit.ts(45,10): error TS6133: 'addRateLimitHeaders' is declared but its value is never read.
+src/lib/notifications/email.ts(74,16): error TS6133: 'updateUserNotificationPreferences' is declared but its value is never read.
+src/lib/notifications/index.ts(175,16): error TS6133: 'notifyEventRSVPReminder' is declared but its value is never read.
+src/lib/notifications/types.ts(51,11): error TS6196: 'NotificationPayload' is declared but never used.
+src/lib/offline/indexed-db.ts(66,7): error TS6133: 'SYNC_RETRY_DELAY_MS' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(134,10): error TS6133: 'closeDatabase' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(370,16): error TS6133: 'getOfflineRound' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(391,16): error TS6133: 'getOfflineRoundsForPlayer' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(517,16): error TS6133: 'getNextSyncItems' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(589,16): error TS6133: 'clearAllOfflineData' is declared but its value is never read.
+src/lib/offline/indexed-db.ts(623,16): error TS6133: 'getStorageEstimate' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(258,10): error TS6133: 'closeShotDatabase' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(273,16): error TS6133: 'saveOfflineShot' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(333,16): error TS6133: 'getOfflineShotsForRound' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(361,16): error TS6133: 'getOfflineShotsForHole' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(459,16): error TS6133: 'deleteOfflineShot' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(479,16): error TS6133: 'saveOfflineHole' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(537,16): error TS6133: 'getOfflineHolesForRound' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(637,16): error TS6133: 'saveOfflineRound' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(695,16): error TS6133: 'getOfflineRound' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(711,16): error TS6133: 'getOfflineRoundsForPlayer' is declared but its value is never read.
+src/lib/offline/shot-storage.ts(809,16): error TS6133: 'deleteOfflineRound' is declared but its value is never read.
+src/lib/offline/sync-engine.ts(1024,10): error TS6133: 'resetSyncEngine' is declared but its value is never read.
+src/lib/recruiting/match-calculator.ts(282,10): error TS6133: 'sortByMatchScore' is declared but its value is never read.
+src/lib/recruiting/match-calculator.ts(347,10): error TS6133: 'batchCalculateMatchScores' is declared but its value is never read.
+src/lib/recruiting/stages.ts(52,10): error TS6133: 'getStageInfo' is declared but its value is never read.
+src/lib/recruiting/stages.ts(66,10): error TS6133: 'getPreviousStage' is declared but its value is never read.
+src/lib/storage/attachments.ts(124,10): error TS6133: 'getFileSizeLimit' is declared but its value is never read.
+src/lib/storage/attachments.ts(131,10): error TS6133: 'getFileSizeLimitsDescription' is declared but its value is never read.
+src/lib/storage/attachments.ts(212,10): error TS6133: 'createPreviewUrl' is declared but its value is never read.
+src/lib/storage/attachments.ts(219,10): error TS6133: 'revokePreviewUrl' is declared but its value is never read.
+src/lib/storage/attachments.ts(326,16): error TS6133: 'deleteAttachment' is declared but its value is never read.
+src/lib/storage/attachments.ts(342,16): error TS6133: 'getSignedUrl' is declared but its value is never read.
+src/lib/storage/attachments.ts(362,10): error TS6133: 'getFileIcon' is declared but its value is never read.
+src/lib/storage/attachments.ts(403,10): error TS6133: 'isDocument' is declared but its value is never read.
+src/lib/storage/attachments.ts(410,10): error TS6133: 'isPreviewable' is declared but its value is never read.
+src/lib/storage/attachments.ts(418,10): error TS6133: 'isMedia' is declared but its value is never read.
+src/lib/types/calendar.ts(68,11): error TS6196: 'CalendarPreferences' is declared but never used.
+src/lib/types/calendar.ts(122,11): error TS6196: 'DayEvent' is declared but never used.
+src/lib/types/calendar.ts(141,11): error TS6196: 'CalendarSync' is declared but never used.
+src/lib/types/calendar.ts(151,11): error TS6196: 'EventFormData' is declared but never used.
+src/lib/utils/schedule-parser.ts(909,10): error TS6133: 'getDayName' is declared but its value is never read.
+src/lib/utils/schedule-parser.ts(917,10): error TS6133: 'dayToNumber' is declared but its value is never read.
+src/lib/video/clipper.ts(32,10): error TS6133: 'parseTime' is declared but its value is never read.
+src/test/lib/server-error-logger.test.ts(66,12): error TS2532: Object is possibly 'undefined'.
