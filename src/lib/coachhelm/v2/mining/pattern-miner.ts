@@ -26,6 +26,30 @@ const THRESHOLDS = {
   minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
 
+/**
+ * Safely compute conviction = (1 - support) * confidence / (1 - confidence).
+ *
+ * LIVE-16 root cause: the raw formula divides by zero when confidence == 1,
+ * and produces NaN when either input is NaN/non-finite. Those NaNs then
+ * flowed into the NLG layer and were only masked downstream by
+ * `sanitizeText`. This helper returns:
+ *   - a finite number for confidence < 1
+ *   - Infinity for the "pure rule" case (confidence == 1, support < 1)
+ *   - null when the rule is trivial (confidence == support == 1) or any
+ *     input is non-finite — callers substitute a sentinel (e.g. 10) when
+ *     persisting.
+ */
+export function computeConvictionSafe(
+  confidence: number,
+  support: number,
+): number | null {
+  if (!Number.isFinite(confidence) || !Number.isFinite(support)) return null;
+  if (confidence >= 1) {
+    return support >= 1 ? null : Infinity;
+  }
+  return ((1 - support) * confidence) / (1 - confidence);
+}
+
 function normalizeRoundType(roundType?: string | null): string | null {
   if (!roundType) return roundType ?? null;
   return roundType === 'qualifying' ? 'qualifier' : roundType;
@@ -459,11 +483,9 @@ export class PatternMiner {
     strokeImpact: number,
     sampleSize: number
   ): MinedPattern {
-    // Calculate conviction
-    const conviction =
-      confidence < 1
-        ? ((1 - support) * confidence) / (1 - confidence)
-        : Infinity;
+    // Calculate conviction (NaN-safe; null sentinel substituted as 10)
+    const rawConviction = computeConvictionSafe(confidence, support);
+    const conviction = rawConviction === null ? 10 : rawConviction;
 
     // Calculate actionability
     const actionability = this.calculateActionability(conditions, strokeImpact);

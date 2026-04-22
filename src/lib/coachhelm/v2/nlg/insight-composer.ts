@@ -18,7 +18,16 @@ import type {
   ExtractedFeatures,
 } from '../types';
 
-/** Strip NaN artifacts from generated text */
+/**
+ * Strip NaN artifacts from generated text.
+ *
+ * DEFENSIVE BELT-AND-BRACES: the root cause of NaN values flowing into
+ * NLG was `pattern-miner.createPattern` computing
+ * `(1-support)*confidence / (1-confidence)` with non-finite inputs (LIVE-16).
+ * That is now fixed upstream via `computeConvictionSafe` — but we keep
+ * this sanitizer in place to guard against any other numeric-propagation
+ * regressions slipping through.
+ */
 function sanitizeText(text: string): string {
   return text
     .replace(/This occurs in NaN% of rounds with NaN% reliability\.?\s*/gi, '')
