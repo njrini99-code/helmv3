@@ -349,7 +349,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
             <div className="text-xs text-warm-500">
               {band ? formatPercentage(band.percentage) : '0%'}
             </div>
-            {band?.avgRemainingDistance !== null && (
+            {band && band.avgRemainingDistance !== null && (
               <div className="mt-2 text-[11px] text-warm-500">
                 {formatDistance(band.avgRemainingDistance)} avg leave
               </div>

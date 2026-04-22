@@ -98,7 +98,7 @@ export function normalizePlayerMetrics(
   // Calculate z-scores for each metric
   const metricZScores: Record<string, { mean: number; stdDev: number; zScores: number[] }> = {};
   for (const metric of metrics) {
-    metricZScores[metric] = calculateZScores(metricValues[metric]);
+    metricZScores[metric] = calculateZScores(metricValues[metric] ?? []);
   }
 
   const tooFewPlayers = players.length < 3;
@@ -106,7 +106,7 @@ export function normalizePlayerMetrics(
   return players.map((player, idx) => {
     const zScores: Record<string, number> = {};
     for (const metric of metrics) {
-      zScores[metric] = metricZScores[metric].zScores[idx];
+      zScores[metric] = metricZScores[metric]?.zScores[idx] ?? 0;
     }
 
     const composite = tooFewPlayers ? null : computeCompositeRating(zScores);
@@ -143,14 +143,17 @@ export function computeCompositeRating(
   if (weights) {
     for (const key of keys) {
       const w = weights[key];
-      if (w !== undefined) {
-        weightedSum += zScores[key] * w;
+      const z = zScores[key];
+      if (w !== undefined && z !== undefined) {
+        weightedSum += z * w;
         totalWeight += w;
       }
     }
   } else {
     for (const key of keys) {
-      weightedSum += zScores[key];
+      const z = zScores[key];
+      if (z === undefined) continue;
+      weightedSum += z;
       totalWeight += 1;
     }
   }
@@ -179,7 +182,7 @@ export function computeCategoryRatings(
     if (available.length === 0) {
       categoryScores[category] = 50;
     } else {
-      const avg = available.reduce((sum, m) => sum + zScores[m], 0) / available.length;
+      const avg = available.reduce((sum, m) => sum + (zScores[m] ?? 0), 0) / available.length;
       categoryScores[category] = Math.max(0, Math.min(100, 50 + avg * 10));
     }
   }
@@ -189,11 +192,11 @@ export function computeCategoryRatings(
   const overall = cats.reduce((sum, v) => sum + v, 0) / cats.length;
 
   return {
-    teeGame: categoryScores['teeGame'],
-    approach: categoryScores['approach'],
-    shortGame: categoryScores['shortGame'],
-    putting: categoryScores['putting'],
-    scoring: categoryScores['scoring'],
+    teeGame: categoryScores['teeGame'] ?? 50,
+    approach: categoryScores['approach'] ?? 50,
+    shortGame: categoryScores['shortGame'] ?? 50,
+    putting: categoryScores['putting'] ?? 50,
+    scoring: categoryScores['scoring'] ?? 50,
     overall: Math.max(0, Math.min(100, overall)),
   };
 }

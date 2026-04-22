@@ -78,7 +78,9 @@ export function detectStreaks(
   }
 
   for (let i = 0; i < values.length; i++) {
-    const deviation = values[i] - baseline;
+    const value = values[i];
+    if (value === undefined) continue;
+    const deviation = value - baseline;
     let thisType: 'hot' | 'cold' | null = null;
 
     if (deviation > threshold) {
@@ -89,7 +91,7 @@ export function detectStreaks(
 
     if (thisType === currentType && thisType !== null) {
       // Continue current streak
-      currentRounds.push(values[i]);
+      currentRounds.push(value);
       currentMagnitude += deviation;
     } else {
       // End previous streak (if any)
@@ -98,7 +100,7 @@ export function detectStreaks(
       // Start new potential streak
       currentType = thisType;
       startIndex = i;
-      currentRounds = thisType !== null ? [values[i]] : [];
+      currentRounds = thisType !== null ? [value] : [];
       currentMagnitude = thisType !== null ? deviation : 0;
     }
   }
@@ -144,10 +146,12 @@ export function analyzeStreakComposition(
   let avgPutt = 0;
 
   for (let i = 0; i < n; i++) {
-    avgOtt += sgBreakdown[i].sgOtt;
-    avgApp += sgBreakdown[i].sgApp;
-    avgArg += sgBreakdown[i].sgArg;
-    avgPutt += sgBreakdown[i].sgPutt;
+    const breakdown = sgBreakdown[i];
+    if (!breakdown) continue;
+    avgOtt += breakdown.sgOtt;
+    avgApp += breakdown.sgApp;
+    avgArg += breakdown.sgArg;
+    avgPutt += breakdown.sgPutt;
   }
 
   avgOtt /= n;
@@ -239,6 +243,9 @@ function composeExplanation(
 
   const primary = categories[0];
   const secondary = categories[1];
+  if (!primary || !secondary) {
+    return 'Insufficient category data to describe composition.';
+  }
 
   const pctStr = (v: number): string => `${Math.round(v * 100)}%`;
 

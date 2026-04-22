@@ -236,15 +236,17 @@ export function detectSlopeChange(
  */
 function percentileValue(sorted: number[], p: number): number {
   if (sorted.length === 0) return 0;
-  if (sorted.length === 1) return sorted[0];
+  if (sorted.length === 1) return sorted[0] ?? 0;
 
   const idx = (p / 100) * (sorted.length - 1);
   const lower = Math.floor(idx);
   const upper = Math.ceil(idx);
   const frac = idx - lower;
 
-  if (lower === upper) return sorted[lower];
-  return sorted[lower] * (1 - frac) + sorted[upper] * frac;
+  const lowerVal = sorted[lower] ?? 0;
+  const upperVal = sorted[upper] ?? 0;
+  if (lower === upper) return lowerVal;
+  return lowerVal * (1 - frac) + upperVal * frac;
 }
 
 /**
@@ -271,9 +273,11 @@ function linearRegressionSlope(values: number[]): number {
   let sumX2 = 0;
 
   for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v === undefined) continue;
     sumX += i;
-    sumY += values[i];
-    sumXY += i * values[i];
+    sumY += v;
+    sumXY += i * v;
     sumX2 += i * i;
   }
 

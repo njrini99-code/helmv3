@@ -64,7 +64,9 @@ function getBucket(distance: number): (typeof DISTANCE_BUCKETS)[number] {
   for (const bucket of DISTANCE_BUCKETS) {
     if (distance >= bucket.min && distance < bucket.max) return bucket;
   }
-  return DISTANCE_BUCKETS[DISTANCE_BUCKETS.length - 1];
+  // Fallback: last bucket (250+) — DISTANCE_BUCKETS is non-empty so this is safe.
+  const last = DISTANCE_BUCKETS[DISTANCE_BUCKETS.length - 1];
+  return last ?? DISTANCE_BUCKETS[0]!;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,14 +98,16 @@ function baselineKey(lie: string, distance: number): string {
 
 function lookupBaseline(baseline: SGBaseline, lie: string, distance: number): number {
   const key = baselineKey(lie, distance);
-  if (key in baseline.strokesToHole) {
-    return baseline.strokesToHole[key];
+  const primary = baseline.strokesToHole[key];
+  if (primary !== undefined) {
+    return primary;
   }
   // Fallback: try just the distance bucket with a generic lie
   const bucket = getBucket(distance);
   const fallbackKey = `fairway_${bucket.label}`;
-  if (fallbackKey in baseline.strokesToHole) {
-    return baseline.strokesToHole[fallbackKey];
+  const fallback = baseline.strokesToHole[fallbackKey];
+  if (fallback !== undefined) {
+    return fallback;
   }
   // Last resort: rough estimate based on distance
   return 1.0 + distance / 100;
@@ -293,12 +297,14 @@ export function analyzeShotsByContext(
   groups.forEach((group, key) => {
     const [lie, ...rangeParts] = key.split('_');
     const distanceRange = rangeParts.join('_');
+    const firstShot = group.shots[0];
+    if (!lie || !firstShot) return;
 
     const shotCount = group.sgValues.length;
     const avgSG = group.sgValues.reduce((a, b) => a + b, 0) / shotCount;
 
     // Baseline average strokes from this state
-    const baselineAvg = lookupBaseline(baseline, lie, group.shots[0].distanceBefore);
+    const baselineAvg = lookupBaseline(baseline, lie, firstShot.distanceBefore);
 
     // Player actual average strokes from this state
     // playerAvg = baselineAvg - avgSG (because SG = baseline - actual cost)

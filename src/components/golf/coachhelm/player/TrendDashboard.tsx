@@ -152,6 +152,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             const config = directionConfig[window.direction];
             const DirectionIcon = config.icon;
             const meta = windowLabels[window.name];
+            if (!meta) return null;
 
             return (
               <m.div

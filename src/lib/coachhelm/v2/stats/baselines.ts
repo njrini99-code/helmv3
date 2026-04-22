@@ -46,9 +46,11 @@ export interface BaselineComparison {
 export function calculateEWMA(values: number[], alpha: number = 0.15): number {
   if (values.length === 0) return 0;
 
-  let ewma = values[0];
+  let ewma = values[0] ?? 0;
   for (let i = 1; i < values.length; i++) {
-    ewma = alpha * values[i] + (1 - alpha) * ewma;
+    const v = values[i];
+    if (v === undefined) continue;
+    ewma = alpha * v + (1 - alpha) * ewma;
   }
   return ewma;
 }
@@ -158,9 +160,11 @@ function linearRegressionSlope(values: number[]): number {
   let sumX2 = 0;
 
   for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v === undefined) continue;
     sumX += i;
-    sumY += values[i];
-    sumXY += i * values[i];
+    sumY += v;
+    sumXY += i * v;
     sumX2 += i * i;
   }
 

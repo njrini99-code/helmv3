@@ -73,7 +73,7 @@ export function derivePreferences(actions: CoachAction[]): CoachPreferences {
   // Preferred metrics
   const metricFilters = countBy(
     actions.filter((a) => a.actionType === 'filter_metric' && a.metadata?.metric),
-    (a) => a.metadata!.metric
+    (a) => a.metadata?.metric ?? ''
   );
   const preferredMetrics = topN(metricFilters, 5);
 

@@ -62,7 +62,7 @@ export function linearRegression(values: number[]): {
     return { slope: 0, intercept: 0, rSquared: 0 };
   }
   if (n === 1) {
-    return { slope: 0, intercept: values[0], rSquared: 1 };
+    return { slope: 0, intercept: values[0] ?? 0, rSquared: 1 };
   }
 
   let sumX = 0;
@@ -71,9 +71,11 @@ export function linearRegression(values: number[]): {
   let sumX2 = 0;
 
   for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v === undefined) continue;
     sumX += i;
-    sumY += values[i];
-    sumXY += i * values[i];
+    sumY += v;
+    sumXY += i * v;
     sumX2 += i * i;
   }
 
@@ -92,9 +94,11 @@ export function linearRegression(values: number[]): {
   let ssRes = 0;
   let ssTot = 0;
   for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v === undefined) continue;
     const predicted = intercept + slope * i;
-    ssRes += (values[i] - predicted) ** 2;
-    ssTot += (values[i] - meanY) ** 2;
+    ssRes += (v - predicted) ** 2;
+    ssTot += (v - meanY) ** 2;
   }
 
   const rSquared = ssTot === 0 ? 0 : 1 - ssRes / ssTot;
@@ -265,7 +269,7 @@ function determineSignal(
 
   switch (alignment) {
     case 'all_agree': {
-      const dir = windows[0].direction;
+      const dir = windows[0]?.direction;
       if (dir === 'improving') return 'strong_improving';
       if (dir === 'declining') return 'strong_declining';
       return 'stable';
