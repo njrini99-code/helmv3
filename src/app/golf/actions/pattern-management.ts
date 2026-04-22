@@ -15,6 +15,34 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { MinedPattern, PatternTrend } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+// ============================================================================
+// OWNERSHIP HELPER
+// ============================================================================
+
+/**
+ * Verify the current user is a coach staffing a team this pattern's player
+ * belongs to. Used by every pattern-mutation action — without it, any
+ * authenticated coach could mutate any player's patterns by guessing an id.
+ */
+async function verifyPatternAccess(
+  patternId: string,
+  userId: string,
+  supabase: SupabaseClient,
+): Promise<{ allowed: boolean; playerId?: string }> {
+  const { data: pattern } = await supabase
+    .from('golf_patterns_v2')
+    .select('player_id')
+    .eq('id', patternId)
+    .maybeSingle();
+
+  if (!pattern?.player_id) return { allowed: false };
+
+  const access = await verifyPlayerAccess(pattern.player_id, userId, supabase);
+  return { allowed: access.allowed, playerId: pattern.player_id };
+}
 
 // ============================================================================
 // TYPES
@@ -344,6 +372,11 @@ export async function validatePattern(
       return { success: false, error: 'Not authenticated' };
     }
 
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id')
@@ -354,8 +387,7 @@ export async function validatePattern(
       return { success: false, error: 'Coach not found' };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: validation.isAccurate ? 'confirmed' : 'dismissed',
@@ -421,8 +453,12 @@ export async function dismissPattern(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const { error } = await patternsTable
       .update({
@@ -466,8 +502,17 @@ export async function markPatternAddressed(
   const supabase = await createClient();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: 'addressed',
@@ -515,8 +560,17 @@ export async function resolvePattern(
   const supabase = await createClient();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: 'resolved',
@@ -558,6 +612,20 @@ export async function resolvePattern(
 // CREATE FOCUS AREA FROM PATTERN
 // ============================================================================
 
+/**
+ * Maps a pattern_type to a golf_player_focus_areas.area_type enum value.
+ * Best-effort — unknown patterns fall back to 'general'.
+ */
+function derivePatternAreaType(patternType: string | null | undefined, field?: string | null): string {
+  const haystack = `${patternType ?? ''} ${field ?? ''}`.toLowerCase();
+  if (haystack.includes('putt')) return 'putting';
+  if (haystack.includes('gir') || haystack.includes('approach')) return 'approach';
+  if (haystack.includes('drive') || haystack.includes('fairway')) return 'driving';
+  if (haystack.includes('chip') || haystack.includes('short')) return 'short_game';
+  if (haystack.includes('mental') || haystack.includes('pressure')) return 'mental';
+  return 'general';
+}
+
 async function createFocusAreaFromPatternInternal(
   patternId: string,
   coachId: string
@@ -565,9 +633,7 @@ async function createFocusAreaFromPatternInternal(
   const supabase = await createClient();
 
   try {
-    // Get the pattern
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const { data: pattern, error: patternError } = await patternsTable
       .select('*')
@@ -580,36 +646,38 @@ async function createFocusAreaFromPatternInternal(
 
     const typedPattern = pattern as PatternDbRow;
 
-    // Determine category from pattern conditions
+    // Determine area_type (enum) from the pattern type + first condition field.
     const conditions = typedPattern.conditions as Array<{ field?: string; label?: string }> | undefined;
     const condition = conditions?.[0];
-    let category = 'general';
+    const areaType = derivePatternAreaType(typedPattern.pattern_type, condition?.field);
 
-    if (condition?.field) {
-      const fieldLower = condition.field.toLowerCase();
-      if (fieldLower.includes('putt')) category = 'putting';
-      else if (fieldLower.includes('gir') || fieldLower.includes('approach')) category = 'approach';
-      else if (fieldLower.includes('drive') || fieldLower.includes('fairway')) category = 'driving';
-      else if (fieldLower.includes('chip') || fieldLower.includes('short')) category = 'short_game';
-      else if (fieldLower.includes('mental') || fieldLower.includes('pressure')) category = 'mental';
-    }
+    // Create focus area. Live schema columns (LIVE-8):
+    //   area_type, player_id, coach_id, title, description, priority,
+    //   status, from_insight_id, from_review_id, target_metric, target_value,
+    //   current_value, notes, progress_notes (jsonb), review_context, team_id,
+    //   started_at, completed_at, created_at, updated_at
+    // NOT present: category, source, source_id, created_by, target_improvement.
+    const focusAreasTable = supabase.from('golf_player_focus_areas');
 
-    // Create focus area
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const focusAreasTable = supabase.from('golf_player_focus_areas' as any) as any;
+    const meta = (typedPattern.metadata as Record<string, unknown> | null) ?? null;
+    const metaDescription = typeof meta?.description === 'string' ? meta.description : null;
+    const metaRecommendation = typeof meta?.recommendation === 'string' ? meta.recommendation : null;
 
     const { data: focusArea, error: insertError } = await focusAreasTable
       .insert({
         player_id: typedPattern.player_id,
-        category,
-        title: typedPattern.metadata?.description || 'Pattern-Based Focus Area',
-        description: typedPattern.metadata?.recommendation || 'Work on this area based on detected pattern.',
+        coach_id: coachId,
+        area_type: areaType,
+        title: metaDescription || 'Pattern-Based Focus Area',
+        description: metaRecommendation || 'Work on this area based on detected pattern.',
         priority: typedPattern.stroke_impact >= 1.5 ? 1 : typedPattern.stroke_impact >= 1 ? 2 : 3,
         status: 'active',
-        source: 'pattern',
-        source_id: patternId,
-        created_by: coachId,
-        target_improvement: `Reduce ${Math.abs(typedPattern.stroke_impact).toFixed(1)} strokes`,
+        // Thread pattern context into the notes / progress_notes jsonb so
+        // the UI can show the source without a schema extension.
+        progress_notes: {
+          source_pattern_id: patternId,
+          target_improvement: `Reduce ${Math.abs(typedPattern.stroke_impact).toFixed(1)} strokes`,
+        },
       })
       .select('id')
       .single();
@@ -646,6 +714,11 @@ export async function createFocusAreaFromPattern(
       return { success: false, error: 'Not authenticated' };
     }
 
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id')
@@ -661,6 +734,8 @@ export async function createFocusAreaFromPattern(
     if (result.success) {
       revalidatePath('/golf/dashboard/patterns');
       revalidatePath(`/golf/dashboard/roster/${playerId}`);
+      revalidatePath('/golf/dashboard/development');
+      revalidatePath('/golf/dashboard/my-development');
     }
 
     return result;
@@ -685,8 +760,17 @@ export async function updatePatternNotes(
   const supabase = await createClient();
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
+    if (!ownership.allowed) {
+      return { success: false, error: 'Forbidden' };
+    }
+
+    const patternsTable = supabase.from('golf_patterns_v2');
 
     const { error } = await patternsTable
       .update({
