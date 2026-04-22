@@ -138,15 +138,6 @@ let dbInstance: IDBDatabase | null = null;
 let dbInitPromise: Promise<IDBDatabase> | null = null;
 
 /**
- * Generate a unique offline ID
- */
-function generateOfflineId(): string {
-  const timestamp = Date.now().toString(36);
-  const randomPart = Math.random().toString(36).substring(2, 11);
-  return `off_${timestamp}_${randomPart}`;
-}
-
-/**
  * Open or create the IndexedDB database with all stores
  */
 async function openShotDatabase(): Promise<IDBDatabase> {
@@ -252,47 +243,9 @@ async function openShotDatabase(): Promise<IDBDatabase> {
   return dbInitPromise;
 }
 
-/**
- * Close the database connection
- */
-function closeShotDatabase(): void {
-  if (dbInstance) {
-    dbInstance.close();
-    dbInstance = null;
-    dbInitPromise = null;
-  }
-}
-
 // ============================================================================
 // SHOT OPERATIONS
 // ============================================================================
-
-/**
- * Save a shot to offline storage
- */
-async function saveOfflineShot(
-  shotData: Omit<OfflineShot, keyof OfflineMetadata> & { round_offline_id: string }
-): Promise<OfflineShot> {
-  const db = await openShotDatabase();
-
-  const offlineShot: OfflineShot = {
-    ...shotData,
-    _offline_id: generateOfflineId(),
-    _sync_status: 'pending',
-    _created_offline: new Date().toISOString(),
-    _retry_count: 0,
-  };
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHOTS_STORE, 'readwrite');
-    const store = transaction.objectStore(SHOTS_STORE);
-
-    const request = store.add(offlineShot);
-
-    request.onsuccess = () => resolve(offlineShot);
-    request.onerror = () => reject(new Error('Failed to save offline shot'));
-  });
-}
 
 /**
  * Update an existing offline shot
@@ -324,56 +277,6 @@ export async function updateOfflineShot(
     };
 
     getRequest.onerror = () => reject(new Error('Failed to get shot'));
-  });
-}
-
-/**
- * Get all offline shots for a round
- */
-async function getOfflineShotsForRound(roundOfflineId: string): Promise<OfflineShot[]> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHOTS_STORE, 'readonly');
-    const store = transaction.objectStore(SHOTS_STORE);
-    const index = store.index('round_offline_id');
-    const request = index.getAll(roundOfflineId);
-
-    request.onsuccess = () => {
-      const shots = request.result as OfflineShot[];
-      // Sort by hole number, then shot number
-      shots.sort((a, b) => {
-        const holeA = a.hole_offline_id || '';
-        const holeB = b.hole_offline_id || '';
-        if (holeA !== holeB) return holeA.localeCompare(holeB);
-        return (a.shot_number || 0) - (b.shot_number || 0);
-      });
-      resolve(shots);
-    };
-
-    request.onerror = () => reject(new Error('Failed to get offline shots'));
-  });
-}
-
-/**
- * Get all offline shots for a hole
- */
-async function getOfflineShotsForHole(holeOfflineId: string): Promise<OfflineShot[]> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHOTS_STORE, 'readonly');
-    const store = transaction.objectStore(SHOTS_STORE);
-    const index = store.index('hole_offline_id');
-    const request = index.getAll(holeOfflineId);
-
-    request.onsuccess = () => {
-      const shots = request.result as OfflineShot[];
-      shots.sort((a, b) => (a.shot_number || 0) - (b.shot_number || 0));
-      resolve(shots);
-    };
-
-    request.onerror = () => reject(new Error('Failed to get offline shots for hole'));
   });
 }
 
@@ -453,51 +356,9 @@ export async function markShotFailed(offlineId: string, errorMessage: string): P
   });
 }
 
-/**
- * Delete an offline shot
- */
-async function deleteOfflineShot(offlineId: string): Promise<void> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SHOTS_STORE, 'readwrite');
-    const store = transaction.objectStore(SHOTS_STORE);
-    const request = store.delete(offlineId);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(new Error('Failed to delete offline shot'));
-  });
-}
-
 // ============================================================================
 // HOLE OPERATIONS
 // ============================================================================
-
-/**
- * Save a hole to offline storage
- */
-async function saveOfflineHole(
-  holeData: Omit<OfflineHole, keyof OfflineMetadata> & { round_offline_id: string }
-): Promise<OfflineHole> {
-  const db = await openShotDatabase();
-
-  const offlineHole: OfflineHole = {
-    ...holeData,
-    _offline_id: generateOfflineId(),
-    _sync_status: 'pending',
-    _created_offline: new Date().toISOString(),
-    _retry_count: 0,
-  };
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(HOLES_STORE, 'readwrite');
-    const store = transaction.objectStore(HOLES_STORE);
-    const request = store.add(offlineHole);
-
-    request.onsuccess = () => resolve(offlineHole);
-    request.onerror = () => reject(new Error('Failed to save offline hole'));
-  });
-}
 
 /**
  * Update an existing offline hole
@@ -528,28 +389,6 @@ export async function updateOfflineHole(
     };
 
     getRequest.onerror = () => reject(new Error('Failed to get hole'));
-  });
-}
-
-/**
- * Get all offline holes for a round
- */
-async function getOfflineHolesForRound(roundOfflineId: string): Promise<OfflineHole[]> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(HOLES_STORE, 'readonly');
-    const store = transaction.objectStore(HOLES_STORE);
-    const index = store.index('round_offline_id');
-    const request = index.getAll(roundOfflineId);
-
-    request.onsuccess = () => {
-      const holes = request.result as OfflineHole[];
-      holes.sort((a, b) => (a.hole_number || 0) - (b.hole_number || 0));
-      resolve(holes);
-    };
-
-    request.onerror = () => reject(new Error('Failed to get offline holes'));
   });
 }
 
@@ -632,32 +471,6 @@ export async function markHoleFailed(offlineId: string, errorMessage: string): P
 // ============================================================================
 
 /**
- * Save a round to offline storage
- */
-async function saveOfflineRound(
-  roundData: Omit<OfflineRound, keyof OfflineMetadata>
-): Promise<OfflineRound> {
-  const db = await openShotDatabase();
-
-  const offlineRound: OfflineRound = {
-    ...roundData,
-    _offline_id: generateOfflineId(),
-    _sync_status: 'pending',
-    _created_offline: new Date().toISOString(),
-    _retry_count: 0,
-  };
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readwrite');
-    const store = transaction.objectStore(ROUNDS_STORE);
-    const request = store.add(offlineRound);
-
-    request.onsuccess = () => resolve(offlineRound);
-    request.onerror = () => reject(new Error('Failed to save offline round'));
-  });
-}
-
-/**
  * Update an existing offline round
  */
 export async function updateOfflineRound(
@@ -686,46 +499,6 @@ export async function updateOfflineRound(
     };
 
     getRequest.onerror = () => reject(new Error('Failed to get round'));
-  });
-}
-
-/**
- * Get an offline round by ID
- */
-async function getOfflineRound(offlineId: string): Promise<OfflineRound | null> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
-    const store = transaction.objectStore(ROUNDS_STORE);
-    const request = store.get(offlineId);
-
-    request.onsuccess = () => resolve(request.result || null);
-    request.onerror = () => reject(new Error('Failed to get offline round'));
-  });
-}
-
-/**
- * Get all offline rounds for a player
- */
-async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
-    const store = transaction.objectStore(ROUNDS_STORE);
-    const index = store.index('player_id');
-    const request = index.getAll(playerId);
-
-    request.onsuccess = () => {
-      const rounds = request.result as OfflineRound[];
-      rounds.sort((a, b) =>
-        new Date(b._created_offline).getTime() - new Date(a._created_offline).getTime()
-      );
-      resolve(rounds);
-    };
-
-    request.onerror = () => reject(new Error('Failed to get offline rounds'));
   });
 }
 
@@ -800,61 +573,6 @@ export async function markRoundFailed(offlineId: string, errorMessage: string): 
 
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(new Error('Failed to mark round as failed'));
-  });
-}
-
-/**
- * Delete an offline round and all its holes and shots
- */
-async function deleteOfflineRound(offlineId: string): Promise<void> {
-  const db = await openShotDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([ROUNDS_STORE, HOLES_STORE, SHOTS_STORE], 'readwrite');
-    const roundsStore = transaction.objectStore(ROUNDS_STORE);
-    const holesStore = transaction.objectStore(HOLES_STORE);
-    const shotsStore = transaction.objectStore(SHOTS_STORE);
-
-    // Delete the round
-    roundsStore.delete(offlineId);
-
-    // Delete all holes for this round
-    const holesIndex = holesStore.index('round_offline_id');
-    const holesRequest = holesIndex.openCursor(offlineId);
-
-    holesRequest.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-      if (cursor) {
-        // Delete shots for this hole
-        const holeOfflineId = cursor.value._offline_id;
-        const shotsIndex = shotsStore.index('hole_offline_id');
-        shotsIndex.openCursor(holeOfflineId).onsuccess = (e) => {
-          const shotCursor = (e.target as IDBRequest<IDBCursorWithValue>).result;
-          if (shotCursor) {
-            shotCursor.delete();
-            shotCursor.continue();
-          }
-        };
-
-        cursor.delete();
-        cursor.continue();
-      }
-    };
-
-    // Also delete any shots that only reference the round (not hole)
-    const shotsRoundIndex = shotsStore.index('round_offline_id');
-    const shotsRoundRequest = shotsRoundIndex.openCursor(offlineId);
-
-    shotsRoundRequest.onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-      if (cursor) {
-        cursor.delete();
-        cursor.continue();
-      }
-    };
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(new Error('Failed to delete offline round'));
   });
 }
 

@@ -1018,14 +1018,4 @@ export function getSyncEngine(config?: Partial<SyncEngineConfig>): SyncEngine {
   return syncEngineInstance;
 }
 
-/**
- * Reset the sync engine (useful for testing)
- */
-function resetSyncEngine(): void {
-  if (syncEngineInstance) {
-    syncEngineInstance.destroy();
-    syncEngineInstance = null;
-  }
-}
-
 // SyncEngine class and types are already exported above

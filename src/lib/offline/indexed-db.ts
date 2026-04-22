@@ -63,7 +63,6 @@ const SYNC_QUEUE_STORE = 'sync_queue';
 
 // Cleanup thresholds
 const MAX_SYNC_ATTEMPTS = 5;
-const SYNC_RETRY_DELAY_MS = 5000; // 5 seconds between retries
 const DATA_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 // ============================================================================
@@ -128,15 +127,6 @@ export async function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-/**
- * Close the database connection
- */
-function closeDatabase(): void {
-  if (dbInstance) {
-    dbInstance.close();
-    dbInstance = null;
-  }
-}
 
 // ============================================================================
 // SHOT OPERATIONS
@@ -365,51 +355,6 @@ export async function saveOfflineRound(round: Omit<OfflineRound, 'id' | 'timesta
 }
 
 /**
- * Get an offline round by ID
- */
-async function getOfflineRound(roundId: string): Promise<OfflineRound | null> {
-  const db = await openDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
-    const store = transaction.objectStore(ROUNDS_STORE);
-    const request = store.get(roundId);
-
-    request.onsuccess = () => {
-      resolve(request.result || null);
-    };
-
-    request.onerror = () => {
-      reject(new Error('Failed to get offline round'));
-    };
-  });
-}
-
-/**
- * Get all offline rounds for a player
- */
-async function getOfflineRoundsForPlayer(playerId: string): Promise<OfflineRound[]> {
-  const db = await openDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ROUNDS_STORE, 'readonly');
-    const store = transaction.objectStore(ROUNDS_STORE);
-    const index = store.index('playerId');
-    const request = index.getAll(playerId);
-
-    request.onsuccess = () => {
-      const rounds = request.result as OfflineRound[];
-      rounds.sort((a, b) => b.timestamp - a.timestamp); // Newest first
-      resolve(rounds);
-    };
-
-    request.onerror = () => {
-      reject(new Error('Failed to get offline rounds'));
-    };
-  });
-}
-
-/**
  * Get all pending rounds (not yet synced)
  */
 export async function getPendingRounds(): Promise<OfflineRound[]> {
@@ -512,34 +457,6 @@ export async function deleteOfflineRound(roundId: string): Promise<void> {
 // ============================================================================
 
 /**
- * Get next items to sync from the queue (ordered by priority and creation time)
- */
-async function getNextSyncItems(limit: number = 10): Promise<SyncQueueItem[]> {
-  const db = await openDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SYNC_QUEUE_STORE, 'readonly');
-    const store = transaction.objectStore(SYNC_QUEUE_STORE);
-    const index = store.index('priority');
-    const request = index.getAll();
-
-    request.onsuccess = () => {
-      const items = request.result as SyncQueueItem[];
-      // Sort by priority, then by creation time
-      items.sort((a, b) => {
-        if (a.priority !== b.priority) return a.priority - b.priority;
-        return a.createdAt - b.createdAt;
-      });
-      resolve(items.slice(0, limit));
-    };
-
-    request.onerror = () => {
-      reject(new Error('Failed to get sync queue items'));
-    };
-  });
-}
-
-/**
  * Remove an item from the sync queue
  */
 export async function removeSyncQueueItem(itemId: string): Promise<void> {
@@ -584,24 +501,6 @@ export async function getPendingSyncCount(): Promise<{ shots: number; rounds: nu
 // ============================================================================
 
 /**
- * Clear all offline data
- */
-async function clearAllOfflineData(): Promise<void> {
-  const db = await openDatabase();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([SHOTS_STORE, ROUNDS_STORE, SYNC_QUEUE_STORE], 'readwrite');
-
-    transaction.objectStore(SHOTS_STORE).clear();
-    transaction.objectStore(ROUNDS_STORE).clear();
-    transaction.objectStore(SYNC_QUEUE_STORE).clear();
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(new Error('Failed to clear offline data'));
-  });
-}
-
-/**
  * Check if IndexedDB is available and working
  */
 export async function isIndexedDBAvailable(): Promise<boolean> {
@@ -614,25 +513,6 @@ export async function isIndexedDBAvailable(): Promise<boolean> {
     return true;
   } catch {
     return false;
-  }
-}
-
-/**
- * Get storage usage estimate (if available)
- */
-async function getStorageEstimate(): Promise<{ usage: number; quota: number } | null> {
-  if (typeof navigator === 'undefined' || !navigator.storage?.estimate) {
-    return null;
-  }
-
-  try {
-    const estimate = await navigator.storage.estimate();
-    return {
-      usage: estimate.usage || 0,
-      quota: estimate.quota || 0,
-    };
-  } catch {
-    return null;
   }
 }
 

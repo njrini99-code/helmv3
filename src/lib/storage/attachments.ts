@@ -119,20 +119,6 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
 }
 
 /**
- * Get the file size limit for a given file type
- */
-function getFileSizeLimit(fileType: AttachmentFileType): number {
-  return FILE_SIZE_LIMITS[fileType] || MAX_FILE_SIZE;
-}
-
-/**
- * Get human-readable file type limits description
- */
-function getFileSizeLimitsDescription(): string {
-  return `Images: ${formatFileSize(FILE_SIZE_LIMITS.image ?? 0)}, Videos: ${formatFileSize(FILE_SIZE_LIMITS.video ?? 0)}, Documents: ${formatFileSize(FILE_SIZE_LIMITS.document ?? 0)}, Audio: ${formatFileSize(FILE_SIZE_LIMITS.audio ?? 0)}`;
-}
-
-/**
  * Get file type category from mime type
  */
 function getFileType(mimeType: string): AttachmentFileType {
@@ -204,20 +190,6 @@ function getVideoMetadata(
     };
     video.src = URL.createObjectURL(file);
   });
-}
-
-/**
- * Create a preview URL for a file
- */
-function createPreviewUrl(file: File): string {
-  return URL.createObjectURL(file);
-}
-
-/**
- * Revoke a preview URL to free memory
- */
-function revokePreviewUrl(url: string): void {
-  URL.revokeObjectURL(url);
 }
 
 /**
@@ -321,62 +293,6 @@ export async function uploadAttachment(
 }
 
 /**
- * Delete an attachment from storage
- */
-async function deleteAttachment(storagePath: string): Promise<{ success: boolean; error?: string }> {
-  const supabase = createClient();
-
-  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
-
-  if (error) {
-    console.error('[Attachments] Delete error:', error);
-    return { success: false, error: error.message };
-  }
-
-  return { success: true };
-}
-
-/**
- * Get a fresh signed URL for an attachment
- */
-async function getSignedUrl(
-  storagePath: string,
-  expiresIn: number = 3600
-): Promise<{ url?: string; error?: string }> {
-  const supabase = createClient();
-
-  const { data, error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .createSignedUrl(storagePath, expiresIn);
-
-  if (error || !data) {
-    return { error: error?.message || 'Failed to get URL' };
-  }
-
-  return { url: data.signedUrl };
-}
-
-/**
- * Get file icon based on mime type
- */
-function getFileIcon(mimeType: string): string {
-  const type = getFileType(mimeType);
-  switch (type) {
-    case 'image':
-      return 'image';
-    case 'video':
-      return 'video';
-    case 'document':
-      if (mimeType.includes('pdf')) return 'pdf';
-      if (mimeType.includes('word')) return 'doc';
-      if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'xls';
-      return 'document';
-    default:
-      return 'file';
-  }
-}
-
-/**
  * Check if a file is an image
  */
 export function isImage(mimeType: string): boolean {
@@ -395,29 +311,6 @@ export function isVideo(mimeType: string): boolean {
  */
 export function isAudio(mimeType: string): boolean {
   return getFileType(mimeType) === 'audio';
-}
-
-/**
- * Check if a file is a document
- */
-function isDocument(mimeType: string): boolean {
-  return getFileType(mimeType) === 'document';
-}
-
-/**
- * Check if a file is previewable (image or video)
- */
-function isPreviewable(mimeType: string): boolean {
-  const type = getFileType(mimeType);
-  return type === 'image' || type === 'video';
-}
-
-/**
- * Check if a file is a media type (image, video, or audio)
- */
-function isMedia(mimeType: string): boolean {
-  const type = getFileType(mimeType);
-  return type === 'image' || type === 'video' || type === 'audio';
 }
 
 /**
