@@ -20,6 +20,7 @@ import { notifyTeamAnnouncement } from '@/lib/notifications';
 import { sendBulkPushNotification } from '@/lib/notifications/push';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -254,7 +255,7 @@ export async function createEnrichedAnnouncement(input: {
       }
     } catch (notifErr) {
       // Never block announcement creation on notification failure
-      console.error('[createAnnouncement] Notification error (non-fatal):', notifErr);
+      await logServerError(`[createAnnouncement] Notification error (non-fatal): ${notifErr instanceof Error ? notifErr.message : String(notifErr)}`, { action: 'announcements.createEnrichedAnnouncement' });
     }
 
     revalidatePath('/golf/dashboard/announcements');

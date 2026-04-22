@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
 // TYPES
@@ -722,7 +723,7 @@ export async function getTracerData(): Promise<TracerData> {
     console.warn('[Tracer] golf_players query failed:', allPlayersResult.error.message);
   }
   if (allRoundsResult.error) {
-    console.error('[Tracer] golf_rounds query failed:', allRoundsResult.error.message);
+    await logServerError(`[Tracer] golf_rounds query failed: ${allRoundsResult.error.message}`, { action: 'admin_tracer_data.getTracerData' });
     throw new Error(`Tracer: golf_rounds query failed — ${allRoundsResult.error.message}`);
   }
   if (statsAccuracyResult.error) {

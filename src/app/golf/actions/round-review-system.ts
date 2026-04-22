@@ -14,6 +14,7 @@ import { revalidatePath } from 'next/cache';
 import { coachHelmIntelligence, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2';
 import type { ComposedInsight, InsightEvidenceMetric, IntelligentRoundReview } from '@/lib/coachhelm/v2';
 import type { Json } from '@/lib/types/database';
+import { logServerError } from '@/lib/server-error-logger';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1405,7 +1406,7 @@ export async function generateAndStoreRoundReview(
           }
         }
       } catch (error) {
-        console.error('[RoundReview] CoachHelm V2 enhancement failed:', error);
+        await logServerError(`[RoundReview] CoachHelm V2 enhancement failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'round_review_system.generateAndStoreRoundReview' });
       }
     }
 

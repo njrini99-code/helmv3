@@ -8,6 +8,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { PatternCondition, InsightTone } from '@/lib/coachhelm/v2/types';
+import { logServerError } from '@/lib/server-error-logger';
 
 interface EvidenceMetadata {
   patternId?: string;
@@ -137,7 +138,7 @@ export async function getInsightEvidenceSources(
     const { data: rounds, error } = await query;
 
     if (error) {
-      console.error('Error fetching evidence rounds:', error);
+      await logServerError(`Error fetching evidence rounds: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getInsightEvidenceSources' });
       return {
         success: false,
         error: 'Failed to fetch evidence data',
@@ -149,7 +150,7 @@ export async function getInsightEvidenceSources(
       rounds: (rounds || []) as EvidenceRound[],
     };
   } catch (error) {
-    console.error('Unexpected error in getInsightEvidenceSources:', error);
+    await logServerError(`Unexpected error in getInsightEvidenceSources: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getInsightEvidenceSources' });
     return {
       success: false,
       error: 'An unexpected error occurred',
@@ -214,7 +215,7 @@ export async function getPatternMatchingRounds(
       patternConditions: pattern.conditions,
     });
   } catch (error) {
-    console.error('Error in getPatternMatchingRounds:', error);
+    await logServerError(`Error in getPatternMatchingRounds: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getPatternMatchingRounds' });
     return {
       success: false,
       error: 'An unexpected error occurred',
@@ -258,7 +259,7 @@ export async function getTrendEvidenceRounds(
       .order('round_date', { ascending: true });
 
     if (error) {
-      console.error('Error fetching trend evidence:', error);
+      await logServerError(`Error fetching trend evidence: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getTrendEvidenceRounds' });
       return {
         success: false,
         error: 'Failed to fetch trend data',
@@ -270,7 +271,7 @@ export async function getTrendEvidenceRounds(
       rounds: (rounds || []) as EvidenceRound[],
     };
   } catch (error) {
-    console.error('Unexpected error in getTrendEvidenceRounds:', error);
+    await logServerError(`Unexpected error in getTrendEvidenceRounds: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getTrendEvidenceRounds' });
     return {
       success: false,
       error: 'An unexpected error occurred',
@@ -353,7 +354,7 @@ export async function getComparisonRounds(
       practiceRounds: (practiceRounds || []) as EvidenceRound[],
     };
   } catch (error) {
-    console.error('Unexpected error in getComparisonRounds:', error);
+    await logServerError(`Unexpected error in getComparisonRounds: ${error instanceof Error ? error.message : String(error)}`, { action: 'insight_evidence.getComparisonRounds' });
     return {
       success: false,
       error: 'An unexpected error occurred',

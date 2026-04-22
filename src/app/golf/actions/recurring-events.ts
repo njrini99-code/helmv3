@@ -29,6 +29,7 @@ function formatTimezoneOffset(offsetMinutes: number): string {
 }
 import { fromRRULE, type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { parseISO, format, addDays, addWeeks, addMonths, isBefore } from 'date-fns';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -208,14 +209,14 @@ export async function createRecurringEvent(
       .select('id');
 
     if (eventError) {
-      console.error('[createRecurringEvent Error]', eventError);
+      await logServerError(`[createRecurringEvent Error]: ${eventError instanceof Error ? eventError.message : String(eventError)}`, { action: 'recurring_events.createRecurringEvent' });
       return { success: false, error: 'Failed to create recurring event. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { eventId: createdEvents?.[0]?.id || '' } };
   } catch (error) {
-    console.error('[createRecurringEvent Error]', error);
+    await logServerError(`[createRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -289,7 +290,7 @@ export async function editRecurringEvent(
           .eq('id', input.eventId);
 
         if (updateError) {
-          console.error('[editRecurringEvent Error]', updateError);
+          await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
         }
         break;
@@ -306,7 +307,7 @@ export async function editRecurringEvent(
           .gte('start_time', input.originalStartDate);
 
         if (updateError) {
-          console.error('[editRecurringEvent Error]', updateError);
+          await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to update future event occurrences. Please try again.' };
         }
         break;
@@ -322,7 +323,7 @@ export async function editRecurringEvent(
           .eq('event_type', targetEvent.event_type);
 
         if (updateError) {
-          console.error('[editRecurringEvent Error]', updateError);
+          await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to update all event occurrences. Please try again.' };
         }
         break;
@@ -332,7 +333,7 @@ export async function editRecurringEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('[editRecurringEvent Error]', error);
+    await logServerError(`[editRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.editRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -390,7 +391,7 @@ export async function deleteRecurringEvent(
           .eq('id', eventId);
 
         if (deleteError) {
-          console.error('[deleteRecurringEvent Error]', deleteError);
+          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
         }
         break;
@@ -407,7 +408,7 @@ export async function deleteRecurringEvent(
           .gte('start_time', originalStartDate);
 
         if (deleteError) {
-          console.error('[deleteRecurringEvent Error]', deleteError);
+          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
         }
         break;
@@ -423,7 +424,7 @@ export async function deleteRecurringEvent(
           .eq('event_type', targetEvent.event_type);
 
         if (deleteError) {
-          console.error('[deleteRecurringEvent Error]', deleteError);
+          await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event series. Please try again.' };
         }
         break;
@@ -433,7 +434,7 @@ export async function deleteRecurringEvent(
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('[deleteRecurringEvent Error]', error);
+    await logServerError(`[deleteRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteRecurringEvent' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -477,7 +478,7 @@ export async function getExpandedEvents(
     const { data: events, error: eventsError } = await query.order('start_time', { ascending: true });
 
     if (eventsError) {
-      console.error('[getExpandedEvents Error]', eventsError);
+      await logServerError(`[getExpandedEvents Error]: ${eventsError instanceof Error ? eventsError.message : String(eventsError)}`, { action: 'recurring_events.getExpandedEvents' });
       return { success: false, error: 'Failed to fetch events. Please try again.' };
     }
 
@@ -500,7 +501,7 @@ export async function getExpandedEvents(
 
     return { success: true, data: expandedEvents };
   } catch (error) {
-    console.error('[getExpandedEvents Error]', error);
+    await logServerError(`[getExpandedEvents Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.getExpandedEvents' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -586,14 +587,14 @@ export async function createAcademicExclusion(input: {
       .select('id');
 
     if (insertError) {
-      console.error('[createAcademicExclusion Error]', insertError);
+      await logServerError(`[createAcademicExclusion Error]: ${insertError instanceof Error ? insertError.message : String(insertError)}`, { action: 'recurring_events.createAcademicExclusion' });
       return { success: false, error: 'Failed to create academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true, data: { id: result?.[0]?.id || '' } };
   } catch (error) {
-    console.error('[createAcademicExclusion Error]', error);
+    await logServerError(`[createAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }
@@ -613,14 +614,14 @@ export async function deleteAcademicExclusion(id: string): Promise<ActionResult>
       .eq('id', id);
 
     if (deleteError) {
-      console.error('[deleteAcademicExclusion Error]', deleteError);
+      await logServerError(`[deleteAcademicExclusion Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteAcademicExclusion' });
       return { success: false, error: 'Failed to delete academic exclusion. Please try again.' };
     }
 
     revalidatePath('/golf/dashboard/calendar');
     return { success: true };
   } catch (error) {
-    console.error('[deleteAcademicExclusion Error]', error);
+    await logServerError(`[deleteAcademicExclusion Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.deleteAcademicExclusion' });
     return formatSafeErrorResponse(error);
   }
 }

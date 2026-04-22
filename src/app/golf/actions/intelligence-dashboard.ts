@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -265,7 +266,7 @@ export async function getTeamInsightsSummary(
       .range(offset, offset + limit - 1);
 
     if (insightsError) {
-      console.error('Failed to fetch insights:', insightsError);
+      await logServerError(`Failed to fetch insights: ${insightsError instanceof Error ? insightsError.message : String(insightsError)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
       return { success: false, error: 'Failed to fetch insights' };
     }
 
@@ -453,7 +454,7 @@ export async function getTeamInsightsSummary(
       },
     };
   } catch (error) {
-    console.error('Error in getTeamInsightsSummary:', error);
+    await logServerError(`Error in getTeamInsightsSummary: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.getTeamInsightsSummary' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -512,7 +513,7 @@ export async function generateTeamCorrelations(
 
     return { success: true, correlations };
   } catch (error) {
-    console.error('Error in generateTeamCorrelations:', error);
+    await logServerError(`Error in generateTeamCorrelations: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.generateTeamCorrelations' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -546,13 +547,13 @@ export async function dismissInsight(
       .eq('id', insightId);
 
     if (error) {
-      console.error('Failed to dismiss insight:', error);
+      await logServerError(`Failed to dismiss insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
       return { success: false, error: 'Failed to dismiss insight' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Error in dismissInsight:', error);
+    await logServerError(`Error in dismissInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
     return { success: false, error: 'Internal server error' };
   }
 }
@@ -583,13 +584,13 @@ export async function acknowledgeInsight(
       .eq('id', insightId);
 
     if (error) {
-      console.error('Failed to acknowledge insight:', error);
+      await logServerError(`Failed to acknowledge insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
       return { success: false, error: 'Failed to acknowledge insight' };
     }
 
     return { success: true };
   } catch (error) {
-    console.error('Error in acknowledgeInsight:', error);
+    await logServerError(`Error in acknowledgeInsight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
     return { success: false, error: 'Internal server error' };
   }
 }

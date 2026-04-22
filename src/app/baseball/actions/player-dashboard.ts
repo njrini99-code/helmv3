@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -256,7 +257,7 @@ export async function getPlayerRecruitingSnapshot(playerId: string): Promise<
       },
     };
   } catch (error) {
-    console.error('[getPlayerRecruitingSnapshot] Error:', error);
+    await logServerError(`[getPlayerRecruitingSnapshot] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_dashboard.getPlayerRecruitingSnapshot' });
     return { success: false, error: 'Failed to fetch recruiting snapshot' };
   }
 }
@@ -456,7 +457,7 @@ export async function getJucoPlayerDashboardData(): Promise<
 
     return { success: true, data };
   } catch (error) {
-    console.error('[getJucoPlayerDashboardData] Error:', error);
+    await logServerError(`[getJucoPlayerDashboardData] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'player_dashboard.getJucoPlayerDashboardData' });
     return { success: false, error: 'Failed to fetch dashboard data' };
   }
 }

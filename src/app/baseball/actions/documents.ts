@@ -248,7 +248,7 @@ export async function createBaseballDocument(data: {
       });
 
     if (versionError) {
-      console.error('Failed to create version record:', versionError);
+      await logServerError(`Failed to create version record: ${versionError instanceof Error ? versionError.message : String(versionError)}`, { action: 'documents.createBaseballDocument' });
       // Don't fail the whole operation if version record fails
     }
 

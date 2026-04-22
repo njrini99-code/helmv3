@@ -16,6 +16,7 @@ import {
   formatLockoutMessage,
 } from '@/lib/auth/account-lockout';
 import { validatePassword } from '@/lib/auth/password-validation';
+import { logServerError } from '@/lib/server-error-logger';
 
 export type LoginResult = {
   success: boolean;
@@ -301,10 +302,9 @@ export async function signupAction(
   });
 
   if (error) {
-    console.error('[Auth] Signup error:', {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
+    await logServerError(`[Auth] Signup error: ${error.message}`, {
+      action: 'auth.signupAction',
+      metadata: { email: normalizedEmail, ip },
     });
 
     // Handle Supabase rate limiting with user-friendly message
@@ -408,10 +408,9 @@ export async function requestPasswordResetAction(
   });
 
   if (error) {
-    console.error('[Auth] Password reset error:', {
-      email: normalizedEmail,
-      error: error.message,
-      ip,
+    await logServerError(`[Auth] Password reset error: ${error.message}`, {
+      action: 'auth.requestPasswordResetAction',
+      metadata: { email: normalizedEmail, ip },
     });
 
     // Return generic message even on error to prevent email enumeration

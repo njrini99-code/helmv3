@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 
 /**
  * Attachment data from upload
@@ -66,7 +67,7 @@ export async function sendGolfMessageWithAttachments(
       .single();
 
     if (messageError || !message) {
-      console.error('[Attachments] Failed to insert message:', messageError);
+      await logServerError(`[Attachments] Failed to insert message: ${messageError instanceof Error ? messageError.message : String(messageError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
       return { success: false, error: 'Failed to send message' };
     }
 
@@ -89,7 +90,7 @@ export async function sendGolfMessageWithAttachments(
         .insert(attachmentInserts);
 
       if (attachmentError) {
-        console.error('[Attachments] Failed to insert attachments:', attachmentError);
+        await logServerError(`[Attachments] Failed to insert attachments: ${attachmentError instanceof Error ? attachmentError.message : String(attachmentError)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
         // Message was sent but attachments failed - log but don't fail completely
         // The message is already in the DB, we could try to clean up but that risks data loss
       }
@@ -103,7 +104,7 @@ export async function sendGolfMessageWithAttachments(
 
     return { success: true, messageId: message.id };
   } catch (err) {
-    console.error('[Attachments] Unexpected error:', err);
+    await logServerError(`[Attachments] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'message_attachments.sendGolfMessageWithAttachments' });
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
@@ -149,7 +150,7 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('[Attachments] Failed to get attachments:', error);
+      await logServerError(`[Attachments] Failed to get attachments: ${error instanceof Error ? error.message : String(error)}`, { action: 'message_attachments.getGolfMessageAttachments' });
       return { error: 'Failed to load attachments' };
     }
 
@@ -178,7 +179,7 @@ export async function getGolfMessageAttachments(messageId: string): Promise<{
 
     return { attachments: attachmentsWithUrls };
   } catch (err) {
-    console.error('[Attachments] Unexpected error:', err);
+    await logServerError(`[Attachments] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'message_attachments.getGolfMessageAttachments' });
     return { error: 'Failed to load attachments' };
   }
 }
@@ -224,7 +225,7 @@ export async function deleteGolfMessageAttachment(attachmentId: string): Promise
       .remove([attachment.storage_path]);
 
     if (storageError) {
-      console.error('[Attachments] Failed to delete from storage:', storageError);
+      await logServerError(`[Attachments] Failed to delete from storage: ${storageError instanceof Error ? storageError.message : String(storageError)}`, { action: 'message_attachments.deleteGolfMessageAttachment' });
       // Continue anyway - we should still remove the DB record
     }
 
@@ -235,13 +236,13 @@ export async function deleteGolfMessageAttachment(attachmentId: string): Promise
       .eq('id', attachmentId);
 
     if (deleteError) {
-      console.error('[Attachments] Failed to delete attachment record:', deleteError);
+      await logServerError(`[Attachments] Failed to delete attachment record: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'message_attachments.deleteGolfMessageAttachment' });
       return { success: false, error: 'Failed to delete attachment' };
     }
 
     return { success: true };
   } catch (err) {
-    console.error('[Attachments] Unexpected error:', err);
+    await logServerError(`[Attachments] Unexpected error: ${err instanceof Error ? err.message : String(err)}`, { action: 'message_attachments.deleteGolfMessageAttachment' });
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Unknown error',
@@ -283,7 +284,7 @@ export async function getSignedUrlsForAttachments(
 
     return urlMap;
   } catch (err) {
-    console.error('[Attachments] Failed to get signed URLs:', err);
+    await logServerError(`[Attachments] Failed to get signed URLs: ${err instanceof Error ? err.message : String(err)}`, { action: 'message_attachments.getSignedUrlsForAttachments' });
     return {};
   }
 }
