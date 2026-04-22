@@ -1,8 +1,21 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+/**
+ * Player Insight (coach view) — Wave 1A migration.
+ *
+ * The insights section now renders through the unified `InsightCard`
+ * primitive: top row as a hero card, the rest as default-density stack.
+ * Data source: `getInsightsForCoach(coachId, { player_id })` — evidence-
+ * backed rows only.
+ *
+ * All other sections (predictions / patterns / focus areas / recent rounds /
+ * category breakdown / trend summary) remain untouched — they're out of
+ * scope for Wave 1A.
+ */
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
@@ -13,16 +26,26 @@ import {
   IconTrendingUp,
   IconActivity,
   IconEye,
-  IconX,
-  IconCheck,
   IconPlus,
-  IconChevronDown,
-  IconChevronUp,
 } from '@/components/icons';
-import { acknowledgeInsight, dismissInsight } from '@/app/golf/actions/insights';
+import {
+  InsightCard,
+  type InsightAction,
+} from '@/components/golf/coachhelm/insight-card';
+import {
+  getInsightsForCoach,
+  type EvidenceInsight,
+} from '@/app/golf/actions/insight-delivery';
+import {
+  acknowledgeInsight,
+  dismissInsight,
+} from '@/app/golf/actions/insights';
+import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import { useGolfUser } from '@/contexts/golf-user-context';
 
 // ---------------------------------------------------------------------------
-// Types
+// Types (preserved from previous shape — the non-insight sections depend on
+// them verbatim).
 // ---------------------------------------------------------------------------
 
 interface PlayerProfile {
@@ -50,21 +73,20 @@ interface RoundRow {
 interface PatternRow {
   id: string;
   pattern_type: string | null;
-  /** Derived client-side from metadata; may be null. */
   name: string | null;
-  /** Derived from metadata.description; may be null. */
   description: string | null;
   severity: string | null;
   stroke_impact: number | null;
-  /** Live column name; was previously `lifecycle_stage`. */
   lifecycle_state: string | null;
-  /** Live column name; was previously `first_detected_at`. */
   first_detected: string | null;
   is_active: boolean | null;
   created_at: string;
   metadata: Record<string, unknown> | null;
 }
 
+/** Legacy insight row shape still threaded through `page.tsx`. Kept for type
+ *  compatibility but the client fetches the canonical `EvidenceInsight` rows
+ *  itself once mounted. */
 interface InsightRow {
   id: string;
   title: string | null;
@@ -88,7 +110,6 @@ interface FocusAreaRow {
 
 interface PredictionRow {
   id: string;
-  /** Live column. Use formatMetricLabel() to render a human title. */
   metric: string | null;
   predicted_value: number | null;
   confidence: number | null;
@@ -123,20 +144,20 @@ interface PlayerInsightClientProps {
   playerStatus: 'Improving' | 'Needs Attention' | 'Stable';
   rounds: RoundRow[];
   patterns: PatternRow[];
+  /** Legacy insight list, unused after migration — retained in the prop
+   *  signature to avoid churn on the server component. The client re-fetches
+   *  evidence-backed rows directly. */
   insights: InsightRow[];
   focusAreas: FocusAreaRow[];
   predictions: PredictionRow[];
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers (preserved)
 // ---------------------------------------------------------------------------
 
 function formatHandicap(handicap: number | null): string {
   if (handicap === null) return '--';
-  // In golf, a "plus" handicap means the player is better than scratch.
-  // Positive handicap values (e.g. 5.2) are normal handicaps — no prefix.
-  // Negative values (e.g. -2.0) are plus handicaps — display as "+2.0".
   if (handicap < 0) return `+${Math.abs(handicap).toFixed(1)}`;
   return handicap.toFixed(1);
 }
@@ -153,10 +174,6 @@ function formatRelativeDate(dateStr: string): string {
   return `${Math.floor(diffDays / 30)} months ago`;
 }
 
-/**
- * Produces a readable title from a `golf_predictions.metric` snake_case
- * identifier. Falls back to a title-cased version of the metric.
- */
 function formatMetricLabel(metric: string | null | undefined): string {
   if (!metric) return 'Prediction';
   const known: Record<string, string> = {
@@ -198,17 +215,6 @@ function severityDotColor(severity: string | null): string {
   }
 }
 
-function toneBadgeStyles(tone: string | null): string {
-  switch (tone) {
-    case 'positive': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    case 'encouraging': return 'bg-primary-50 text-primary-700 border-primary-200';
-    case 'cautionary': return 'bg-amber-50 text-amber-700 border-amber-200';
-    case 'critical': return 'bg-red-50 text-red-700 border-red-200';
-    case 'neutral': return 'bg-warm-50 text-warm-600 border-warm-200';
-    default: return 'bg-warm-50 text-warm-600 border-warm-200';
-  }
-}
-
 function statusBadgeStyles(status: string): string {
   switch (status) {
     case 'Improving': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -227,7 +233,7 @@ function focusAreaStatusBadge(status: string | null): string {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components
+// Sub-components (preserved)
 // ---------------------------------------------------------------------------
 
 function CompositeRatingCircle({ rating }: { rating: number }) {
@@ -283,46 +289,83 @@ export function PlayerInsightClient({
   playerStatus,
   rounds,
   patterns,
-  insights,
   focusAreas,
   predictions,
 }: PlayerInsightClientProps) {
-  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
-  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
-  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+  const golfUser = useGolfUser();
+  const coachId = golfUser.coachId ?? null;
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
 
-  const toggleInsight = (id: string) => {
-    setExpandedInsights((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const [insights, setInsights] = useState<EvidenceInsight[]>([]);
+  const [insightsLoading, setInsightsLoading] = useState(true);
+  const [, startActionTransition] = useTransition();
 
-  const handleAcknowledge = (insightId: string) => {
-    startTransition(async () => {
-      const result = await acknowledgeInsight(insightId);
-      if (result.success) {
-        setAcknowledgedIds((prev) => new Set(prev).add(insightId));
+  // Fetch evidence-backed insights for this player (coach-audience shape).
+  useEffect(() => {
+    if (!coachId) {
+      setInsightsLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await getInsightsForCoach(coachId, { player_id: player.id, limit: 8 });
+        if (!cancelled) setInsights(rows);
+      } finally {
+        if (!cancelled) setInsightsLoading(false);
       }
-    });
-  };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [coachId, player.id]);
 
-  const handleDismiss = (insightId: string) => {
-    startTransition(async () => {
-      const result = await dismissInsight(insightId);
-      if (result.success) {
-        setDismissedIds((prev) => new Set(prev).add(insightId));
-      }
-    });
-  };
+  const handleAction = useCallback(
+    (action: InsightAction, insightId: string) => {
+      const prev = insights;
+      startActionTransition(async () => {
+        try {
+          if (action === 'acknowledged') {
+            setInsights((rows) =>
+              rows.map((r) =>
+                r.id === insightId
+                  ? { ...r, acknowledged_at: new Date().toISOString(), status: 'acknowledged' }
+                  : r,
+              ),
+            );
+            const res = await acknowledgeInsight(insightId);
+            if (!res.success) setInsights(prev);
+          } else if (action === 'dismissed') {
+            setInsights((rows) => rows.filter((r) => r.id !== insightId));
+            const res = await dismissInsight(insightId);
+            if (!res.success) setInsights(prev);
+          } else if (action === 'create_focus_area') {
+            if (!coachId) return;
+            const target = insights.find((r) => r.id === insightId);
+            if (!target) return;
+            const res = await createFocusAreaFromInsight({
+              insight_id: target.id,
+              player_id: target.player_id,
+              coach_id: coachId,
+              title: target.title,
+              description: target.content ?? '',
+              insight_type: (target.category as string | undefined) ?? 'general',
+            });
+            if (res.success) router.push('/golf/dashboard/development');
+          }
+        } catch {
+          setInsights(prev);
+        }
+      });
+    },
+    [coachId, insights, router],
+  );
+
+  const [heroInsight, ...restInsights] = insights;
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">
-      {/* Header */}
       <AnimatedItem>
         <MobileNavHeader
           title={playerName || 'Player Insight'}
@@ -336,13 +379,12 @@ export function PlayerInsightClient({
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* ============================================================= */}
-            {/* LEFT COLUMN (5 cols on desktop) */}
+            {/* LEFT COLUMN */}
             {/* ============================================================= */}
             <div className="lg:col-span-5 space-y-6">
               {/* Player Header Card */}
               <div className="glass-premium rounded-2xl p-6">
                 <div className="flex items-start gap-4">
-                  {/* Avatar */}
                   <div className="relative flex-shrink-0">
                     {player.avatar_url ? (
                       <div className="w-14 h-14 rounded-2xl overflow-hidden ring-1 ring-warm-200 shadow-sm">
@@ -363,14 +405,13 @@ export function PlayerInsightClient({
                     )}
                   </div>
 
-                  {/* Name + Meta */}
                   <div className="flex-1 min-w-0">
                     <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
                       {playerName}
                     </h2>
                     <p className="text-sm text-warm-500 mt-0.5">
                       {player.graduation_year ? `Class ${player.graduation_year}` : 'No class year'}
-                      {' \u00B7 '}
+                      {' · '}
                       {formatHandicap(player.handicap)} Handicap
                     </p>
                     <div className="mt-2">
@@ -385,7 +426,6 @@ export function PlayerInsightClient({
                     </div>
                   </div>
 
-                  {/* Composite Rating Circle */}
                   <CompositeRatingCircle rating={compositeRating} />
                 </div>
               </div>
@@ -506,16 +546,24 @@ export function PlayerInsightClient({
             </div>
 
             {/* ============================================================= */}
-            {/* RIGHT COLUMN (7 cols on desktop) */}
+            {/* RIGHT COLUMN */}
             {/* ============================================================= */}
             <div className="lg:col-span-7 space-y-6">
-              {/* AI Insights Card */}
-              <div className="glass-premium rounded-2xl p-6">
+              {/* AI Insights — migrated to the unified primitive. */}
+              <div className="glass-premium rounded-2xl p-6" data-testid="player-insight-section">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-semibold text-warm-900">AI Insights</h3>
-                  <span className="text-xs text-warm-400 font-medium">{insights.length} insights</span>
+                  <span className="text-xs text-warm-400 font-medium">
+                    {insights.length} insight{insights.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
-                {insights.length === 0 ? (
+                {insightsLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-24 rounded-xl skeleton-shimmer" />
+                    ))}
+                  </div>
+                ) : insights.length === 0 ? (
                   <div className="text-center py-8">
                     <div className="w-12 h-12 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
                       <IconActivity size={24} className="text-warm-300" />
@@ -524,89 +572,30 @@ export function PlayerInsightClient({
                     <p className="text-xs text-warm-300 mt-1">Insights appear after analyzing round data</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-                    {insights.filter((i) => !dismissedIds.has(i.id)).map((insight) => {
-                      const isExpanded = expandedInsights.has(insight.id);
-                      const isAcknowledged = insight.acknowledged || acknowledgedIds.has(insight.id);
-                      return (
-                        <div key={insight.id} className="bg-warm-50/60 rounded-xl p-4 space-y-2">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span
-                                className={cn(
-                                  'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize flex-shrink-0',
-                                  toneBadgeStyles(insight.tone),
-                                )}
-                              >
-                                {insight.tone ?? 'neutral'}
-                              </span>
-                              <span className="text-sm font-medium text-warm-900 truncate">
-                                {insight.title ?? 'Insight'}
-                              </span>
-                            </div>
-                            {insight.confidence !== null && (
-                              <span className="text-xs text-warm-400 font-medium tabular-nums flex-shrink-0">
-                                {Math.round(insight.confidence * 100)}%
-                              </span>
-                            )}
-                          </div>
-
-                          {insight.content && (
-                            <div>
-                              <p className={cn('text-xs text-warm-500', !isExpanded && 'line-clamp-2')}>
-                                {insight.content}
-                              </p>
-                              {insight.content.length > 120 && (
-                                <button
-                                  onClick={() => toggleInsight(insight.id)}
-                                  className="flex items-center gap-1 text-[11px] text-primary-600 hover:text-primary-700 font-medium mt-1 transition-colors"
-                                >
-                                  {isExpanded ? (
-                                    <>Show less <IconChevronUp size={12} /></>
-                                  ) : (
-                                    <>Show more <IconChevronDown size={12} /></>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          <div className="flex items-center gap-2 pt-1">
-                            {!isAcknowledged && (
-                              <button
-                                onClick={() => handleAcknowledge(insight.id)}
-                                disabled={isPending}
-                                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors disabled:opacity-50"
-                              >
-                                <IconCheck size={12} />
-                                Acknowledge
-                              </button>
-                            )}
-                            {isAcknowledged && (
-                              <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                                <IconCheck size={12} />
-                                Acknowledged
-                              </span>
-                            )}
-                            <button
-                              onClick={() => handleDismiss(insight.id)}
-                              disabled={isPending}
-                              className="flex items-center gap-1 text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors disabled:opacity-50"
-                            >
-                              <IconX size={12} />
-                              Dismiss
-                            </button>
-                            <span className="text-warm-200">|</span>
-                            <Link
-                              href={`/golf/dashboard/development?player=${player.id}`}
-                              className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                            >
-                              Create Focus Area
-                            </Link>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    {heroInsight && (
+                      <InsightCard
+                        insight={heroInsight}
+                        density="hero"
+                        audience="coach"
+                        showActions
+                        onAction={handleAction}
+                      />
+                    )}
+                    {restInsights.length > 0 && (
+                      <div className="space-y-3">
+                        {restInsights.map((insight) => (
+                          <InsightCard
+                            key={insight.id}
+                            insight={insight}
+                            density="default"
+                            audience="coach"
+                            showActions
+                            onAction={handleAction}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -682,7 +671,7 @@ export function PlayerInsightClient({
                 )}
               </div>
 
-              {/* Predictions Card (if any) */}
+              {/* Predictions Card */}
               {predictions.length > 0 && (
                 <div className="glass-premium rounded-2xl p-6">
                   <h3 className="text-base font-semibold text-warm-900 mb-4">Predictions</h3>
@@ -745,7 +734,7 @@ export function PlayerInsightClient({
                             </p>
                             <p className="text-[11px] text-warm-400 mt-0.5">
                               {formatRelativeDate(round.round_date ?? round.created_at)}
-                              {round.holes_played && ` \u00B7 ${round.holes_played} holes`}
+                              {round.holes_played && ` · ${round.holes_played} holes`}
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
@@ -768,7 +757,7 @@ export function PlayerInsightClient({
             </div>
           </div>
 
-          {/* Quick Actions Bar — sticky on mobile, inline at bottom on desktop */}
+          {/* Quick Actions Bar */}
           <div className="fixed bottom-0 left-0 right-0 lg:static lg:mt-6 z-20">
             <div className="bg-white/90 backdrop-blur-xl border-t border-warm-200/60 lg:border lg:rounded-2xl lg:border-white/20 lg:bg-white/70 p-4 lg:p-5">
               <div className="max-w-7xl mx-auto flex items-center gap-3 overflow-x-auto">
