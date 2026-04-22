@@ -50,14 +50,19 @@ interface RoundRow {
 interface PatternRow {
   id: string;
   pattern_type: string | null;
+  /** Derived client-side from metadata; may be null. */
   name: string | null;
+  /** Derived from metadata.description; may be null. */
   description: string | null;
   severity: string | null;
   stroke_impact: number | null;
-  lifecycle_stage: string | null;
-  first_detected_at: string | null;
+  /** Live column name; was previously `lifecycle_stage`. */
+  lifecycle_state: string | null;
+  /** Live column name; was previously `first_detected_at`. */
+  first_detected: string | null;
   is_active: boolean | null;
   created_at: string;
+  metadata: Record<string, unknown> | null;
 }
 
 interface InsightRow {
@@ -83,11 +88,14 @@ interface FocusAreaRow {
 
 interface PredictionRow {
   id: string;
-  prediction_type: string | null;
-  title: string | null;
+  /** Live column. Use formatMetricLabel() to render a human title. */
+  metric: string | null;
   predicted_value: number | null;
   confidence: number | null;
-  timeframe: string | null;
+  trend: string | null;
+  due_date: string | null;
+  prediction_context: Record<string, unknown> | null;
+  related_round_id: string | null;
   created_at: string;
 }
 
@@ -143,6 +151,27 @@ function formatRelativeDate(dateStr: string): string {
   if (diffDays < 7) return `${diffDays} days ago`;
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
   return `${Math.floor(diffDays / 30)} months ago`;
+}
+
+/**
+ * Produces a readable title from a `golf_predictions.metric` snake_case
+ * identifier. Falls back to a title-cased version of the metric.
+ */
+function formatMetricLabel(metric: string | null | undefined): string {
+  if (!metric) return 'Prediction';
+  const known: Record<string, string> = {
+    scoring_average: 'Scoring Average',
+    stroke_differential: 'Stroke Differential',
+    gir_percentage: 'Greens in Regulation %',
+    driving_accuracy: 'Driving Accuracy',
+    putts_per_round: 'Putts Per Round',
+    scoring_decline: 'Scoring Decline',
+    tournament_performance: 'Tournament Performance',
+  };
+  return known[metric] ?? metric
+    .split('_')
+    .map((w) => (w.length ? w[0]!.toUpperCase() + w.slice(1) : w))
+    .join(' ');
 }
 
 function ratingColor(rating: number): string {
@@ -446,11 +475,11 @@ export function PlayerInsightClient({
                           <p className="text-xs text-warm-500 line-clamp-2">{pattern.description}</p>
                         )}
                         <div className="flex items-center gap-2 text-[11px] text-warm-400">
-                          <span className="capitalize">{pattern.lifecycle_stage ?? 'detected'}</span>
-                          {pattern.first_detected_at && (
+                          <span className="capitalize">{pattern.lifecycle_state ?? 'detected'}</span>
+                          {pattern.first_detected && (
                             <>
                               <span>&middot;</span>
-                              <span>Detected {formatRelativeDate(pattern.first_detected_at)}</span>
+                              <span>Detected {formatRelativeDate(pattern.first_detected)}</span>
                             </>
                           )}
                         </div>
@@ -661,9 +690,9 @@ export function PlayerInsightClient({
                     {predictions.map((pred) => (
                       <div key={pred.id} className="bg-warm-50/60 rounded-xl p-4 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-medium text-warm-900 truncate">{pred.title ?? pred.prediction_type ?? 'Prediction'}</p>
-                          {pred.timeframe && (
-                            <p className="text-[11px] text-warm-400 mt-0.5">{pred.timeframe}</p>
+                          <p className="text-sm font-medium text-warm-900 truncate">{formatMetricLabel(pred.metric)}</p>
+                          {pred.due_date && (
+                            <p className="text-[11px] text-warm-400 mt-0.5">Due {formatRelativeDate(pred.due_date)}</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">

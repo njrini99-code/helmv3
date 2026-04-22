@@ -42,23 +42,33 @@ interface RoundRow {
 interface PatternRow {
   id: string;
   pattern_type: string | null;
+  /**
+   * Derived client-side from metadata.description (the column `name`
+   * and top-level `description` do not exist in live schema).
+   */
   name: string | null;
   description: string | null;
   severity: string | null;
   stroke_impact: number | null;
-  lifecycle_stage: string | null;
-  first_detected_at: string | null;
+  /** Live column name is `lifecycle_state` (not `lifecycle_stage`). */
+  lifecycle_state: string | null;
+  /** Live column name is `first_detected` (not `first_detected_at`). */
+  first_detected: string | null;
   is_active: boolean | null;
   created_at: string;
+  metadata: Record<string, unknown> | null;
 }
 
 interface InsightRow {
   id: string;
   title: string | null;
   content: string | null;
+  /** Derived client-side — no dedicated `tone` column in live schema. */
   tone: string | null;
+  /** Derived client-side from metadata when present. */
   confidence: number | null;
   dismissed: boolean | null;
+  /** Live schema stores acknowledgement via `acknowledged_at` timestamp. */
   acknowledged: boolean | null;
   created_at: string;
 }
@@ -75,11 +85,18 @@ interface FocusAreaRow {
 
 interface PredictionRow {
   id: string;
-  prediction_type: string | null;
-  title: string | null;
+  /**
+   * Replaces the phantom `prediction_type` + `title` fields. `metric` is
+   * the live schema's descriptor; formatMetricLabel() turns it into a
+   * human-readable title client-side.
+   */
+  metric: string | null;
   predicted_value: number | null;
   confidence: number | null;
-  timeframe: string | null;
+  trend: string | null;
+  due_date: string | null;
+  prediction_context: Record<string, unknown> | null;
+  related_round_id: string | null;
   created_at: string;
 }
 
@@ -154,18 +171,20 @@ export default async function PlayerInsightPage({
       .order('round_date', { ascending: false })
       .limit(10),
 
-    // Active patterns
+    // Active patterns. Pin to columns that actually exist (LIVE-8).
     supabase
       .from('golf_patterns_v2')
-      .select('id, pattern_type, name, description, severity, stroke_impact, lifecycle_stage, first_detected_at, is_active, created_at')
+      .select('id, pattern_type, severity, stroke_impact, lifecycle_state, first_detected, is_active, created_at, metadata')
       .eq('player_id', playerId)
       .eq('is_active', true)
       .order('stroke_impact', { ascending: true }),
 
-    // Insights (not dismissed)
+    // Insights (not dismissed). `tone` + `acknowledged` columns don't
+    // exist on live schema — they're derived from metadata / acknowledged_at
+    // in the client component.
     supabase
       .from('golf_coach_insights')
-      .select('id, title, content, tone, confidence, dismissed, acknowledged, created_at')
+      .select('id, title, content, metadata, dismissed, acknowledged_at, created_at')
       .eq('player_id', playerId)
       .eq('dismissed', false)
       .order('created_at', { ascending: false })
@@ -178,10 +197,13 @@ export default async function PlayerInsightPage({
       .eq('player_id', playerId)
       .order('created_at', { ascending: false }),
 
-    // Predictions
+    // Predictions — live columns: metric, predicted_value, confidence,
+    // trend, due_date, prediction_context, related_round_id, created_at.
+    // `prediction_type`, `title`, `timeframe`, `predicted_score`,
+    // `prediction_date` DO NOT exist.
     supabase
       .from('golf_predictions')
-      .select('id, prediction_type, title, predicted_value, confidence, timeframe, created_at')
+      .select('id, metric, predicted_value, confidence, trend, due_date, prediction_context, related_round_id, created_at')
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
       .limit(5),
@@ -191,10 +213,62 @@ export default async function PlayerInsightPage({
   if (!player) notFound();
 
   const rounds = (roundsResult.data as RoundRow[] | null) ?? [];
-  const patterns = (patternsResult.data as PatternRow[] | null) ?? [];
-  const insights = (insightsResult.data as InsightRow[] | null) ?? [];
+
+  // Patterns: derive name/description from metadata since the live schema
+  // has neither column (LIVE-8).
+  const rawPatterns = (patternsResult.data as Array<Record<string, unknown>> | null) ?? [];
+  const patterns: PatternRow[] = rawPatterns.map((p) => {
+    const meta = (p.metadata as Record<string, unknown> | null) ?? null;
+    const metaDescription = typeof meta?.description === 'string' ? meta.description : null;
+    const metaName = typeof meta?.name === 'string' ? meta.name : null;
+    return {
+      id: p.id as string,
+      pattern_type: (p.pattern_type as string | null) ?? null,
+      name: metaName ?? (p.pattern_type as string | null) ?? null,
+      description: metaDescription,
+      severity: (p.severity as string | null) ?? null,
+      stroke_impact: (p.stroke_impact as number | null) ?? null,
+      lifecycle_state: (p.lifecycle_state as string | null) ?? null,
+      first_detected: (p.first_detected as string | null) ?? null,
+      is_active: (p.is_active as boolean | null) ?? null,
+      created_at: p.created_at as string,
+      metadata: meta,
+    };
+  });
+
+  // Insights: derive tone + acknowledged from live columns.
+  const rawInsights = (insightsResult.data as Array<Record<string, unknown>> | null) ?? [];
+  const insights: InsightRow[] = rawInsights.map((i) => {
+    const meta = (i.metadata as Record<string, unknown> | null) ?? null;
+    const tone = typeof meta?.tone === 'string' ? meta.tone : null;
+    const confidence = typeof meta?.confidence === 'number' ? meta.confidence : null;
+    return {
+      id: i.id as string,
+      title: (i.title as string | null) ?? null,
+      content: (i.content as string | null) ?? null,
+      tone,
+      confidence,
+      dismissed: (i.dismissed as boolean | null) ?? null,
+      acknowledged: i.acknowledged_at != null,
+      created_at: i.created_at as string,
+    };
+  });
+
   const focusAreas = (focusAreasResult.data as FocusAreaRow[] | null) ?? [];
-  const predictions = (predictionsResult.data as PredictionRow[] | null) ?? [];
+
+  // Predictions: derive a readable `title` from `metric` client-side.
+  const rawPredictions = (predictionsResult.data as Array<Record<string, unknown>> | null) ?? [];
+  const predictions: PredictionRow[] = rawPredictions.map((p) => ({
+    id: p.id as string,
+    metric: (p.metric as string | null) ?? null,
+    predicted_value: (p.predicted_value as number | null) ?? null,
+    confidence: (p.confidence as number | null) ?? null,
+    trend: (p.trend as string | null) ?? null,
+    due_date: (p.due_date as string | null) ?? null,
+    prediction_context: (p.prediction_context as Record<string, unknown> | null) ?? null,
+    related_round_id: (p.related_round_id as string | null) ?? null,
+    created_at: p.created_at as string,
+  }));
 
   // -----------------------------------------------------------------------
   // 3. Compute composite rating (simple heuristic) from available data
