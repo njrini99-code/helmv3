@@ -783,9 +783,12 @@ export async function saveCoachFeedback(
       return { success: false, error: 'Failed to save feedback' };
     }
 
-    // 5. Revalidate paths
-    revalidatePath('/golf/reviews');
-    revalidatePath(`/golf/reviews/${reviewId}`);
+    // 5. Revalidate paths. The review is read from the player-facing page
+    //    at /golf/dashboard/rounds/[id]/review — revalidate the dynamic
+    //    segment (not the non-existent /golf/reviews route) so the client
+    //    picks up the coach's feedback on next nav.
+    revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
+    revalidatePath('/golf/dashboard/rounds');
 
     return { success: true };
 
@@ -861,9 +864,10 @@ export async function shareReviewWithPlayer(
       return { success: false, error: 'Failed to share review' };
     }
 
-    // 4. Revalidate paths
-    revalidatePath('/golf/reviews');
-    revalidatePath(`/golf/reviews/${reviewId}`);
+    // 4. Revalidate paths. Same rationale as saveCoachFeedback — the
+    //    real player-facing review route is /golf/dashboard/rounds/[id]/review.
+    revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
+    revalidatePath('/golf/dashboard/rounds');
 
     return { success: true };
 
@@ -1235,7 +1239,14 @@ export async function addPlayerFeedback(
       return { success: false, error: 'Failed to save feedback' };
     }
 
-    revalidatePath(`/golf/reviews/${reviewId}`);
+    // Revalidate the actual player-facing pages impacted by a feedback save.
+    // /golf/reviews/* was a legacy route that was removed — revalidating it
+    // was a silent no-op. Also revalidate the CoachHelm + My Development
+    // screens so focus areas / insights driven by player feedback refresh.
+    revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath('/golf/dashboard/coachhelm');
+    revalidatePath('/golf/dashboard/my-development');
     return { success: true };
 
   } catch (error) {
@@ -1667,6 +1678,13 @@ export async function acknowledgeReview(
       });
       return { success: false, error: 'Failed to acknowledge review' };
     }
+
+    // Ack'ing a review can shift the CoachHelm feedback signal for the
+    // player — revalidate the screens that read from it.
+    revalidatePath('/golf/dashboard/rounds/[id]/review', 'page');
+    revalidatePath('/golf/dashboard/rounds');
+    revalidatePath('/golf/dashboard/coachhelm');
+    revalidatePath('/golf/dashboard/my-development');
 
     return { success: true };
   } catch (error) {
