@@ -252,7 +252,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       <nav
         aria-label={userRole === 'coach' ? 'Coach navigation' : 'Player navigation'}
         className={cn(
-          'flex-1 overflow-y-auto overflow-x-hidden py-4',
+          'flex-1 overflow-y-auto overflow-x-hidden py-4 scrollbar-hidden',
           'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
           isCollapsed ? 'px-2' : 'px-3'
         )}

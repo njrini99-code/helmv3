@@ -2496,3 +2496,16 @@ select:-webkit-autofill {
     animation: none !important;
   }
 }
+
+/* Hide scrollbar while keeping scroll functionality. Used on the dashboard
+ * sidebar so the nav scrolls when tall but doesn't paint a WebKit scrollbar
+ * track on the dark rail. */
+.scrollbar-hidden {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/legacy Edge */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
