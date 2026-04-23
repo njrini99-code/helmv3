@@ -255,7 +255,7 @@ export function GolfDashboardShell({
               <NotificationBadgeProvider>
                 <LazyMotion features={domAnimation}>
                   <AppearanceMotionConfig>
-                    <OfflineProvider showSyncStatus={false} showWarningBanner={true}>
+                    <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
                       <LastSeenUpdater />
                       <GolfDashboardContent userData={userData}>
                         {children}

@@ -19,6 +19,17 @@ interface FocusArea {
   recommendation: string;
 }
 
+// Area strings come from the DB in varied casings/snake_case — normalize for display.
+function formatAreaName(area: string): string {
+  if (!area) return '';
+  return area
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 interface FocusAreasGridProps {
   focusAreas: FocusArea[];
   onAreaClick?: (area: FocusArea) => void;
@@ -105,10 +116,10 @@ function FocusAreaCardContent({
         </div>
         <div className="flex-1 min-w-0">
           <h4 className={cn(
-            'font-semibold text-warm-900 text-sm truncate transition-colors',
+            'font-semibold text-warm-900 text-sm leading-tight line-clamp-2 transition-colors',
             interactive && 'group-hover:text-primary-600'
           )}>
-            {focusArea.area}
+            {formatAreaName(focusArea.area)}
           </h4>
           <span className={cn('text-xs font-medium', trendConfig.color)}>
             {trendConfig.label}
@@ -117,11 +128,11 @@ function FocusAreaCardContent({
       </div>
 
       {/* Strokes gained display */}
-      <div className="flex items-baseline gap-1 mb-3">
+      <div className="flex items-baseline gap-1 mb-3 flex-wrap">
         <span className={cn('text-2xl font-bold tabular-nums', strokesColor)}>
           {formatStrokesGained(focusArea.strokesGained)}
         </span>
-        <span className="text-xs text-warm-500">strokes/round</span>
+        <span className="text-xs text-warm-500 whitespace-nowrap">strokes/round</span>
       </div>
 
       {/* Visual bar for strokes */}
@@ -239,8 +250,8 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
         </div>
       </div>
 
-      {/* Grid of focus areas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {/* Grid of focus areas — 2-up at most so cards don't crush inside narrow columns */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {focusAreas.map((area, index) => (
           <FocusAreaCard
             key={area.area}
