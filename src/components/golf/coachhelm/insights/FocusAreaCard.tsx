@@ -2,9 +2,35 @@
 
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
-import { IconChevronRight } from '@/components/icons';
-import type { PlayerFocusArea } from '@/lib/coachhelm/insight-types';
+import {
+  IconChevronRight,
+  IconTarget,
+  IconCrosshair,
+  IconFlag,
+  IconCircleDot,
+  IconMap,
+  IconBrain,
+  IconTrophy,
+  IconWind,
+  IconDumbbell,
+  IconClipboardList,
+} from '@/components/icons';
+import type { ComponentType } from 'react';
+import type { PlayerFocusArea, FocusAreaIconName } from '@/lib/coachhelm/insight-types';
 import { getFocusAreaConfig } from '@/lib/coachhelm/insight-types';
+
+const FOCUS_AREA_ICON_MAP: Record<FocusAreaIconName, ComponentType<{ size?: number; className?: string }>> = {
+  crosshair: IconCrosshair,
+  flag: IconFlag,
+  'circle-dot': IconCircleDot,
+  map: IconMap,
+  brain: IconBrain,
+  trophy: IconTrophy,
+  target: IconTarget,
+  wind: IconWind,
+  dumbbell: IconDumbbell,
+  'clipboard-list': IconClipboardList,
+};
 
 interface FocusAreaCardProps {
   focusArea: PlayerFocusArea;
@@ -16,6 +42,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
   // so we don't crash on rows that only ship `area_type`.
   const areaKey = focusArea.category ?? (focusArea as unknown as { area_type?: string }).area_type;
   const config = getFocusAreaConfig(areaKey);
+  const AreaIcon = FOCUS_AREA_ICON_MAP[config.icon] ?? IconTarget;
 
   return (
     <GlassCard
@@ -42,7 +69,9 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         </div>
 
         {/* Icon */}
-        <div className="text-2xl flex-shrink-0">{config.icon}</div>
+        <div className="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
+          <AreaIcon size={18} />
+        </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">

@@ -206,11 +206,26 @@ export const INSIGHT_TYPE_CONFIGS: Record<InsightType, InsightTypeConfig> = {
 // FOCUS AREA CONFIGURATION
 // ============================================================================
 
+export type FocusAreaIconName =
+  | 'crosshair'
+  | 'flag'
+  | 'circle-dot'
+  | 'map'
+  | 'brain'
+  | 'trophy'
+  | 'target'
+  | 'wind'
+  | 'dumbbell'
+  | 'clipboard-list';
+
 export interface FocusAreaConfig {
   category: FocusAreaCategory;
   label: string;
   description: string;
-  icon: string;
+  // Icon name key — UI resolves to its own SVG icon component. Replaces the
+  // previous emoji-string approach so Focus Area cards use the project's
+  // line-icon system instead of system emoji glyphs.
+  icon: FocusAreaIconName;
   relatedStats: string[];
 }
 
@@ -219,42 +234,42 @@ const FOCUS_AREA_CONFIGS: Record<FocusAreaCategory, FocusAreaConfig> = {
     category: 'ball_striking',
     label: 'Ball Striking',
     description: 'Driving accuracy, iron play, greens in regulation',
-    icon: '🎯',
+    icon: 'crosshair',
     relatedStats: ['fairways_hit_pct', 'gir_pct', 'approach_proximity'],
   },
   short_game: {
     category: 'short_game',
     label: 'Short Game',
     description: 'Chipping, pitching, scrambling, sand saves',
-    icon: '⛳',
+    icon: 'flag',
     relatedStats: ['scrambling_pct', 'sand_save_pct', 'up_and_down_pct'],
   },
   putting: {
     category: 'putting',
     label: 'Putting',
     description: 'Putts per round, make percentage, 3-putt avoidance',
-    icon: '🏌️',
+    icon: 'circle-dot',
     relatedStats: ['putts_per_round', 'one_putt_pct', 'three_putt_pct'],
   },
   course_management: {
     category: 'course_management',
     label: 'Course Management',
     description: 'Decision making, penalty avoidance, smart play',
-    icon: '🗺️',
+    icon: 'map',
     relatedStats: ['penalty_strokes', 'bogey_avoidance', 'par_save_pct'],
   },
   mental_game: {
     category: 'mental_game',
     label: 'Mental Game',
     description: 'Focus, pressure handling, consistency',
-    icon: '🧠',
+    icon: 'brain',
     relatedStats: ['tournament_avg', 'closing_holes_avg', 'bounce_back_pct'],
   },
   tournament_performance: {
     category: 'tournament_performance',
     label: 'Tournament Performance',
     description: 'Competitive play, handling pressure situations',
-    icon: '🏆',
+    icon: 'trophy',
     relatedStats: ['tournament_avg', 'best_finish', 'top_10_finishes'],
   },
 };
@@ -271,7 +286,7 @@ const FOCUS_AREA_FALLBACK: FocusAreaConfig = {
   category: 'ball_striking',
   label: 'Focus Area',
   description: '',
-  icon: '🎯',
+  icon: 'target',
   relatedStats: [],
 };
 

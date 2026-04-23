@@ -301,29 +301,24 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         </m.div>
                         </DashboardErrorBoundary>
 
-                        {/* ROW 2: Schedule + Strokes Gained */}
-                        <DashboardErrorBoundary name="Schedule & Performance">
-                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                            <div className="lg:col-span-3 min-w-0">
-                                <TodayTimeline
-                                    events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
-                                    role="player"
-                                    timezone={enhancedData?.timezone}
-                                />
-                            </div>
-                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
-                                <PerformanceRadar
-                                    data={enhancedData?.strokesGained ?? EMPTY_STROKES_GAINED}
-                                />
-                                <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="player" />
-                            </div>
-                        </m.div>
-                        </DashboardErrorBoundary>
+                        {/* ROW 2 + 3: Schedule / Trend (left) + Strokes Gained / Tasks / Focus Areas (right)
+                            Combined into a single 2-column grid so each column
+                            fills naturally — avoids the dead vertical space that
+                            appeared when the shorter left column finished before
+                            the taller right column. */}
+                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6 items-start" variants={itemVariants}>
+                            {/* LEFT COLUMN */}
+                            <div className="lg:col-span-3 flex flex-col gap-4 md:gap-5 min-w-0">
+                                <DashboardErrorBoundary name="Schedule">
+                                    <TodayTimeline
+                                        events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
+                                        role="player"
+                                        timezone={enhancedData?.timezone}
+                                    />
+                                </DashboardErrorBoundary>
 
-                        {/* ROW 3: Trend + Focus Areas */}
-                        <DashboardErrorBoundary name="Scoring Trend">
-                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
-                            <div className="lg:col-span-3 min-w-0 w-full">
+                                <DashboardErrorBoundary name="Scoring Trend">
+                                <div className="w-full">
                                 {chartData.length >= 2 ? (
                                     <>
                                         <SectionHeader title="Scoring Trend" />
@@ -347,16 +342,29 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         </PremiumGlassCard>
                                     </>
                                 )}
+                                </div>
+                                </DashboardErrorBoundary>
                             </div>
-                            <div className="lg:col-span-2 min-w-0">
-                                <SectionHeader title="Focus Areas" icon={<IconTarget size={14} />} />
-                                <PremiumGlassCard glow>
-                                    <ShineEffect />
-                                    <PlayerFocusAreas playerId={player.id} />
-                                </PremiumGlassCard>
+
+                            {/* RIGHT COLUMN */}
+                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
+                                <DashboardErrorBoundary name="Performance">
+                                    <PerformanceRadar
+                                        data={enhancedData?.strokesGained ?? EMPTY_STROKES_GAINED}
+                                    />
+                                </DashboardErrorBoundary>
+                                <DashboardErrorBoundary name="Tasks">
+                                    <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="player" />
+                                </DashboardErrorBoundary>
+                                <DashboardErrorBoundary name="Focus Areas">
+                                    <SectionHeader title="Focus Areas" icon={<IconTarget size={14} />} />
+                                    <PremiumGlassCard glow>
+                                        <ShineEffect />
+                                        <PlayerFocusAreas playerId={player.id} />
+                                    </PremiumGlassCard>
+                                </DashboardErrorBoundary>
                             </div>
                         </m.div>
-                        </DashboardErrorBoundary>
 
                         {/* ROW 4: Recent Rounds (full width) */}
                         <DashboardErrorBoundary name="Recent Rounds">
