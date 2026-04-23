@@ -32,6 +32,7 @@ import {
     PerformanceRadar,
     QuickStatRow,
     DashboardErrorBoundary,
+    TodaysMissionCard,
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
@@ -343,6 +344,10 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     </>
                                 )}
                                 </div>
+                                </DashboardErrorBoundary>
+
+                                <DashboardErrorBoundary name="Today's Mission">
+                                    <TodaysMissionCard playerId={player.id} />
                                 </DashboardErrorBoundary>
                             </div>
 

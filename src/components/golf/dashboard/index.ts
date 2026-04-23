@@ -35,3 +35,4 @@ export { TeamPulseCard } from './team-pulse-card';
 export { PerformanceRadar } from './performance-radar';
 export { QuickStatRow } from './quick-stat-row';
 export { DashboardErrorBoundary } from './error-boundary';
+export { TodaysMissionCard } from './todays-mission-card';
