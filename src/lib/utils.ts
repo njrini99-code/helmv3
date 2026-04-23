@@ -12,6 +12,36 @@ export function formatNumber(num: number | null | undefined): string {
   return num.toLocaleString();
 }
 
+// ===== METRIC LABEL FORMATTING =====
+// Turn raw metric keys (scoreToPar, greens_in_regulation) into display labels.
+const METRIC_LABELS: Record<string, string> = {
+  scoreToPar: 'Score to Par',
+  score_to_par: 'Score to Par',
+  strokesGained: 'Strokes Gained',
+  strokes_gained: 'Strokes Gained',
+  puttsPerRound: 'Putts per Round',
+  putts_per_round: 'Putts per Round',
+  greensInRegulation: 'Greens in Regulation',
+  greens_in_regulation: 'Greens in Regulation',
+  fairwaysHit: 'Fairways Hit',
+  fairways_hit: 'Fairways Hit',
+  scramblingPct: 'Scrambling %',
+  scrambling_pct: 'Scrambling %',
+  driveDistance: 'Driving Distance',
+  drive_distance: 'Driving Distance',
+};
+export function formatMetricLabel(metric: string | null | undefined): string {
+  if (!metric) return '';
+  if (METRIC_LABELS[metric]) return METRIC_LABELS[metric];
+  return metric
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 // ===== PLURALIZATION =====
 export function pluralize(count: number, singular: string, plural?: string): string {
   if (count === 0) return `No ${plural || singular + 's'}`;

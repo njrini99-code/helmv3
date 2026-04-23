@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatMetricLabel } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import type { TrendData } from '@/app/golf/actions/shot-analytics';
 
@@ -119,7 +119,7 @@ export function TrendIndicator({
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
           >
             <div className="bg-warm-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
-              <div className="font-medium mb-1">{trend.metric}</div>
+              <div className="font-medium mb-1">{formatMetricLabel(trend.metric)}</div>
               <div className="flex items-center gap-2 text-warm-300">
                 <span>Now: {trend.currentValue}</span>
                 <span className="text-warm-500">|</span>
@@ -211,7 +211,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
           >
             <div className="flex items-center gap-2">
               <TrendIndicator trend={trend} size="xs" showValue={false} animated={false} />
-              <span className="text-sm text-warm-700">{trend.metric}</span>
+              <span className="text-sm text-warm-700">{formatMetricLabel(trend.metric)}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-warm-900 tabular-nums">

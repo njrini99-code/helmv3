@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatMetricLabel } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
   IconSparkles,
@@ -123,7 +123,7 @@ export function WhatIfPanel({
               <div className="flex items-center gap-2">
                 <IconTrendingUp size={16} className="text-primary-600" />
                 <span className="text-sm text-primary-800">
-                  If you improve <span className="font-semibold">{simResult.metric}</span>:
+                  If you improve <span className="font-semibold">{formatMetricLabel(simResult.metric)}</span>:
                 </span>
               </div>
               <div className="text-right">
@@ -157,7 +157,7 @@ export function WhatIfPanel({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-warm-900">
-                        {item.metric}
+                        {formatMetricLabel(item.metric)}
                       </span>
                       <span
                         className={cn(

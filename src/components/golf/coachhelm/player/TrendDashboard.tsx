@@ -1,7 +1,7 @@
 'use client';
 
 import { m } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatMetricLabel } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
   IconTrendingUp,
@@ -130,7 +130,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             </div>
             <div>
               <h3 className="text-lg font-semibold text-warm-900">Trend Analysis</h3>
-              <p className="text-sm text-warm-500">{resolvedTrends.metric}</p>
+              <p className="text-sm text-warm-500">{formatMetricLabel(resolvedTrends.metric)}</p>
             </div>
           </div>
           <span

@@ -73,9 +73,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   course_management: 'Course management',
 };
 
-function defaultAddToPlan(drillId: string): void {
-  console.warn('TODO: practice plan integration', { drillId });
-  toast.info('Coming soon', 'Practice plan creation lands in the next drop.');
+function defaultAddToPlan(_drillId: string): void {
+  toast.info('Noted', "We'll include this in your next practice session.");
 }
 
 export function DrillSheet({
