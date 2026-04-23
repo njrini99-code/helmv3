@@ -64,9 +64,9 @@ interface RoundRow {
   total_score: number | null;
   holes_played: number | null;
   course_name: string | null;
-  course_par: number | null;
-  fairways_hit: number | null;
-  greens_in_regulation: number | null;
+  score_to_par: number | null;
+  total_fairways_hit: number | null;
+  total_gir: number | null;
   total_putts: number | null;
 }
 
@@ -719,9 +719,7 @@ export function PlayerInsightClient({
                 ) : (
                   <div className="space-y-2">
                     {rounds.slice(0, 5).map((round) => {
-                      const diff = round.total_score && round.course_par
-                        ? round.total_score - round.course_par
-                        : null;
+                      const diff = round.score_to_par ?? null;
                       return (
                         <Link
                           key={round.id}

@@ -31,9 +31,9 @@ interface RoundRow {
   total_score: number | null;
   holes_played: number | null;
   course_name: string | null;
-  course_par: number | null;
-  fairways_hit: number | null;
-  greens_in_regulation: number | null;
+  score_to_par: number | null;
+  total_fairways_hit: number | null;
+  total_gir: number | null;
   total_putts: number | null;
   total_fairways: number | null;
   total_gir_possible: number | null;
@@ -165,19 +165,21 @@ export default async function PlayerInsightPage({
     // Recent rounds (last 10)
     supabase
       .from('golf_rounds')
-      .select('id, created_at, round_date, total_score, holes_played, course_name, course_par, fairways_hit, greens_in_regulation, total_putts, total_fairways, total_gir_possible')
+      .select('id, created_at, round_date, total_score, holes_played, course_name, score_to_par, total_fairways_hit, total_gir, total_putts, total_fairways, total_gir_possible')
       .eq('player_id', playerId)
       .not('total_score', 'is', null)
       .order('round_date', { ascending: false })
       .limit(10),
 
-    // Active patterns. Pin to columns that actually exist (LIVE-8).
+    // Active patterns — cap to the 8 most impactful to avoid rendering
+    // thousands of low-signal/contextual rows from historical mining.
     supabase
       .from('golf_patterns_v2')
       .select('id, pattern_type, severity, stroke_impact, lifecycle_state, first_detected, is_active, created_at, metadata')
       .eq('player_id', playerId)
       .eq('is_active', true)
-      .order('stroke_impact', { ascending: true }),
+      .order('stroke_impact', { ascending: true })
+      .limit(8),
 
     // Insights (not dismissed). `tone` + `acknowledged` columns don't
     // exist on live schema — they're derived from metadata / acknowledged_at
@@ -197,16 +199,15 @@ export default async function PlayerInsightPage({
       .eq('player_id', playerId)
       .order('created_at', { ascending: false }),
 
-    // Predictions — live columns: metric, predicted_value, confidence,
-    // trend, due_date, prediction_context, related_round_id, created_at.
-    // `prediction_type`, `title`, `timeframe`, `predicted_score`,
-    // `prediction_date` DO NOT exist.
+    // Predictions — fetch a wider window so we can dedupe to one row per
+    // metric (otherwise the seed engine produces many "Score To Par"
+    // duplicates that all render as identical cards).
     supabase
       .from('golf_predictions')
       .select('id, metric, predicted_value, confidence, trend, due_date, prediction_context, related_round_id, created_at')
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(40),
   ]);
 
   const player = (playerResult.data as PlayerProfile | null) ?? null;
@@ -256,19 +257,29 @@ export default async function PlayerInsightPage({
 
   const focusAreas = (focusAreasResult.data as FocusAreaRow[] | null) ?? [];
 
-  // Predictions: derive a readable `title` from `metric` client-side.
+  // Predictions: keep the most recent row per distinct metric — seed data
+  // generates many duplicates per metric that all render as identical cards.
   const rawPredictions = (predictionsResult.data as Array<Record<string, unknown>> | null) ?? [];
-  const predictions: PredictionRow[] = rawPredictions.map((p) => ({
-    id: p.id as string,
-    metric: (p.metric as string | null) ?? null,
-    predicted_value: (p.predicted_value as number | null) ?? null,
-    confidence: (p.confidence as number | null) ?? null,
-    trend: (p.trend as string | null) ?? null,
-    due_date: (p.due_date as string | null) ?? null,
-    prediction_context: (p.prediction_context as Record<string, unknown> | null) ?? null,
-    related_round_id: (p.related_round_id as string | null) ?? null,
-    created_at: p.created_at as string,
-  }));
+  const seenMetrics = new Set<string>();
+  const predictions: PredictionRow[] = [];
+  for (const p of rawPredictions) {
+    const metric = (p.metric as string | null) ?? null;
+    const key = metric ?? '__null__';
+    if (seenMetrics.has(key)) continue;
+    seenMetrics.add(key);
+    predictions.push({
+      id: p.id as string,
+      metric,
+      predicted_value: (p.predicted_value as number | null) ?? null,
+      confidence: (p.confidence as number | null) ?? null,
+      trend: (p.trend as string | null) ?? null,
+      due_date: (p.due_date as string | null) ?? null,
+      prediction_context: (p.prediction_context as Record<string, unknown> | null) ?? null,
+      related_round_id: (p.related_round_id as string | null) ?? null,
+      created_at: p.created_at as string,
+    });
+    if (predictions.length >= 5) break;
+  }
 
   // -----------------------------------------------------------------------
   // 3. Compute composite rating (simple heuristic) from available data
@@ -309,8 +320,8 @@ function computeCompositeRating(
   const recentRounds = rounds.slice(0, 5);
   let scoreComponent = 50;
   const scoringDiffs = recentRounds
-    .filter((r) => r.total_score && r.course_par)
-    .map((r) => (r.total_score! - r.course_par!) / (r.holes_played === 9 ? 0.5 : 1));
+    .filter((r) => r.score_to_par != null)
+    .map((r) => (r.score_to_par ?? 0) / (r.holes_played === 9 ? 0.5 : 1));
 
   if (scoringDiffs.length > 0) {
     const avgOverPar = scoringDiffs.reduce((a, b) => a + b, 0) / scoringDiffs.length;
@@ -346,19 +357,19 @@ function computeCategoryBreakdown(rounds: RoundRow[]): CategoryBreakdown {
   const recent = rounds.slice(0, 5);
 
   // Tee Game — fairways hit percentage (use actual total_fairways per round, fallback to 14)
-  const fairwayRounds = recent.filter((r) => r.fairways_hit !== null);
+  const fairwayRounds = recent.filter((r) => r.total_fairways_hit !== null);
   const teeGame = fairwayRounds.length > 0
     ? Math.round(
-        (fairwayRounds.reduce((s, r) => s + (r.fairways_hit ?? 0), 0) /
+        (fairwayRounds.reduce((s, r) => s + (r.total_fairways_hit ?? 0), 0) /
          fairwayRounds.reduce((s, r) => s + (r.total_fairways ?? 14), 0)) * 100
       )
     : 50;
 
   // Approach — GIR percentage (use actual total_gir_possible per round, fallback to 18)
-  const girRounds = recent.filter((r) => r.greens_in_regulation !== null);
+  const girRounds = recent.filter((r) => r.total_gir !== null);
   const approach = girRounds.length > 0
     ? Math.round(
-        (girRounds.reduce((s, r) => s + (r.greens_in_regulation ?? 0), 0) /
+        (girRounds.reduce((s, r) => s + (r.total_gir ?? 0), 0) /
          girRounds.reduce((s, r) => s + (r.total_gir_possible ?? 18), 0)) * 100
       )
     : 50;
@@ -376,12 +387,12 @@ function computeCategoryBreakdown(rounds: RoundRow[]): CategoryBreakdown {
   // Short game — estimated as the average of other categories (no direct data available)
   const shortGame = Math.round((teeGame + approach + putting) / 3);
 
-  // Scoring — based on total_score vs par
-  const scoringRounds = recent.filter((r) => r.total_score && r.course_par);
+  // Scoring — based on score_to_par
+  const scoringRounds = recent.filter((r) => r.score_to_par != null);
   const scoring = scoringRounds.length > 0
     ? Math.round(
         Math.max(0, Math.min(100,
-          80 - ((scoringRounds.reduce((s, r) => s + (r.total_score! - r.course_par!), 0) / scoringRounds.length) * 3),
+          80 - ((scoringRounds.reduce((s, r) => s + (r.score_to_par ?? 0), 0) / scoringRounds.length) * 3),
         )),
       )
     : 50;
@@ -412,10 +423,10 @@ function computeTrendSummary(rounds: RoundRow[]): TrendSummary {
     streakType: 'neutral',
   };
 
-  const scoredRounds = rounds.filter((r) => r.total_score && r.course_par);
+  const scoredRounds = rounds.filter((r) => r.score_to_par != null);
   if (scoredRounds.length < 2) return defaults;
 
-  const diffs = scoredRounds.map((r) => r.total_score! - r.course_par!);
+  const diffs = scoredRounds.map((r) => r.score_to_par ?? 0);
   const mid = Math.floor(diffs.length / 2);
   const recentAvg = diffs.slice(0, mid).reduce((a, b) => a + b, 0) / mid;
   const previousAvg = diffs.slice(mid).reduce((a, b) => a + b, 0) / (diffs.length - mid);
