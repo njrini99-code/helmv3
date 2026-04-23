@@ -7,8 +7,8 @@ import { Database } from '@/lib/types/database';
  */
 export function createClient() {
   return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!.trim(),
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!.trim(),
+    (process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.NEXT_PUBLIC_helm_sb_publishable_aHEqpaTaoTgNQKi4mYQCLw_VbpTN3eaSUPABASE_URL)?.trim() || 'https://placeholder.supabase.co',
+    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_helm_sb_publishable_aHEqpaTaoTgNQKi4mYQCLw_VbpTN3eaSUPABASE_ANON_KEY)?.trim() || 'placeholder-anon-key',
     {
       global: {
         fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
