@@ -267,8 +267,21 @@ export function getInsightConfig(type: InsightType): InsightTypeConfig {
   return INSIGHT_TYPE_CONFIGS[type];
 }
 
-export function getFocusAreaConfig(category: FocusAreaCategory): FocusAreaConfig {
-  return FOCUS_AREA_CONFIGS[category];
+const FOCUS_AREA_FALLBACK: FocusAreaConfig = {
+  category: 'ball_striking',
+  label: 'Focus Area',
+  description: '',
+  icon: '🎯',
+  relatedStats: [],
+};
+
+export function getFocusAreaConfig(category: FocusAreaCategory | string | null | undefined): FocusAreaConfig {
+  // Server data stores `area_type`, not `category`; some legacy rows also use
+  // values outside our hardcoded set. Fall back to a safe default icon/label
+  // so a missing or unknown key never crashes the render.
+  if (!category) return FOCUS_AREA_FALLBACK;
+  const cfg = (FOCUS_AREA_CONFIGS as Record<string, FocusAreaConfig>)[category];
+  return cfg ?? FOCUS_AREA_FALLBACK;
 }
 
 export function getPriorityColor(priority: InsightPriority): string {

@@ -12,7 +12,10 @@ interface FocusAreaCardProps {
 }
 
 export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
-  const config = getFocusAreaConfig(focusArea.category);
+  // DB rows use `area_type`; `category` was the client-side name. Accept both
+  // so we don't crash on rows that only ship `area_type`.
+  const areaKey = focusArea.category ?? (focusArea as unknown as { area_type?: string }).area_type;
+  const config = getFocusAreaConfig(areaKey);
 
   return (
     <GlassCard
