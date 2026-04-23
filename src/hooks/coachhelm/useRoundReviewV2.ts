@@ -374,6 +374,20 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
     return true;
   }, [review?.id]);
 
+  // Auto-generate once when a round has no cached review. Keeps the round
+  // detail page from sitting on an empty "Generate review" prompt — the
+  // review materializes on mount if the backing data exists.
+  const autoGenAttempted = useRef(false);
+  const needsGeneration = !loading && !review && !intelligentReview;
+  useEffect(() => {
+    if (!needsGeneration) return;
+    if (generating) return;
+    if (autoGenAttempted.current) return;
+    if (!roundId || !playerId) return;
+    autoGenAttempted.current = true;
+    void generate();
+  }, [needsGeneration, generating, roundId, playerId, generate]);
+
   return {
     review,
     ruleBasedContent,
@@ -387,7 +401,7 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
     error,
     generate,
     shareWithCoach,
-    needsGeneration: !loading && !review && !intelligentReview,
+    needsGeneration,
   };
 }
 
