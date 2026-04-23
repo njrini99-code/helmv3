@@ -20,10 +20,15 @@ interface FocusArea {
 }
 
 // Area strings come from the DB in varied casings/snake_case — normalize for display.
+// Keep hyphens within tokens so labels like "Mid-Long (160-190)" survive intact;
+// only snake_case underscores collapse to spaces.
 function formatAreaName(area: string): string {
   if (!area) return '';
+  // If the label already contains spaces or hyphens with proper casing, treat
+  // it as a human-formatted label and leave it alone (e.g. "Mid-Long (160-190) Shots").
+  if (/[A-Z]/.test(area) && /\s/.test(area)) return area;
   return area
-    .replace(/[_-]+/g, ' ')
+    .replace(/_+/g, ' ')
     .split(' ')
     .filter(Boolean)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())

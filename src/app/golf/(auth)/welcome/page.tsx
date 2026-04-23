@@ -4,9 +4,6 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { CourseScene } from '@/components/golf/scenes/CourseScene';
-import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
-import { useMediaQuery } from '@/hooks/use-media-query';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { getGreeting, getTimeOfDay, type TimeOfDay } from '@/lib/utils/time-of-day';
 import { extractFirstName, extractLastName } from '@/lib/utils/names';
@@ -38,7 +35,6 @@ function WelcomeContent() {
   const [leaving, setLeaving] = useState(false);
 
   const prefersReducedMotion = useReducedMotion() ?? false;
-  const isDesktop = useMediaQuery('(min-width: 768px)');
   const h1Ref = useRef<HTMLHeadingElement | null>(null);
 
   // Destination + armed flags travel via refs so navigation timers persist
@@ -79,7 +75,12 @@ function WelcomeContent() {
 
       if (coachFull) {
         const last = extractLastName(coachFull);
-        setDisplayName(last ? `Coach ${last}` : 'Coach');
+        // Avoid "Coach Coach" when the stored full_name is something like
+        // "Demo Coach" (the literal title is the last word).
+        const lastIsTitle = last && /^coach$/i.test(last);
+        const first = extractFirstName(coachFull);
+        const suffix = !last || lastIsTitle ? first : last;
+        setDisplayName(suffix ? `Coach ${suffix}` : 'Coach');
         setRole('coach');
       } else if (playerFirst) {
         setDisplayName(extractFirstName(playerFirst));
@@ -136,15 +137,11 @@ function WelcomeContent() {
         style={{
           height: '100svh',
           fontFamily: '"DM Sans", -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif',
+          // Plain warm-cream background — no scene illustration. Keeps the
+          // greeting animation the only focal point.
+          background: 'linear-gradient(180deg, #FFFEFA 0%, #FFF7E0 55%, #FDEAC0 100%)',
         }}
       >
-        {/*
-         * Scene swap: exactly one renders per viewport. Mobile/iOS keeps the
-         * portrait painterly scene; desktop gets the wide coastal landscape.
-         * We render the mobile scene on the SSR pass (matches iOS, our native
-         * target) and swap after hydration once `useMediaQuery` resolves.
-         */}
-        {isDesktop ? <CoastalScene idSuffix="welcome-coastal" /> : <CourseScene idSuffix="welcome" />}
 
         {/* Accessibility live-region — guarantees the greeting is announced */}
         <div
