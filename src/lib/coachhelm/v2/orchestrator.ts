@@ -1548,14 +1548,20 @@ class CoachHelmIntelligence {
   }
 
   /**
-   * Fetches comprehensive player stats for insight generation
-   * Uses the server action pattern to get detailed shot-level stats
+   * Fetches comprehensive player stats for insight generation.
+   *
+   * The engine runs from multiple non-interactive contexts (post-round
+   * fire-and-forget, safety-net cron, nightly roster-sweep cron) where
+   * no user session/cookies are available. We therefore use the admin-
+   * scoped variant which skips the user auth gate — the caller of
+   * `analyzePlayer` is already a trusted server-side caller that
+   * authorized the player by other means.
    */
   private async fetchPlayerStats(playerId: string): Promise<GolfStats | undefined> {
     try {
-      // Dynamic import to avoid client/server import issues
-      const { getDetailedStats } = await import('@/app/golf/actions/stats-data');
-      const stats = await getDetailedStats(playerId, 'overall');
+      // Dynamic import to avoid client/server import issues.
+      const { getDetailedStatsAsAdmin } = await import('@/app/golf/actions/stats-data');
+      const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
       return stats;
     } catch (error) {
       console.error('[CoachHelm] Error fetching player stats:', error);

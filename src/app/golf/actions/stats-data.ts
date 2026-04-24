@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import {
   calculateStatsFromShots,
   type GolfStats,
@@ -766,24 +767,22 @@ export async function getStatsSummary(
 // ============================================================================
 
 /**
- * Get detailed shot-level stats for comprehensive analysis
- * This is the expensive query - only call when user clicks a detailed tab
+ * Core query + shape logic shared by the user-scoped `getDetailedStats`
+ * (auth-gated, called by the Stats page client) and the trusted-server
+ * `getDetailedStatsAsAdmin` (called by the CoachHelm engine from contexts
+ * without a user session — post-round fire-and-forget, cron, etc).
+ *
+ * Both public wrappers handle auth/access verification differently; once
+ * they reach this helper the query shape is identical.
  */
-export async function getDetailedStats(
+async function queryDetailedStatsWithClient(
+  supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
   roundId?: string | 'overall',
-  filter?: StatsFilter
+  filter?: StatsFilter,
 ): Promise<GolfStats> {
-  try {
-  const { supabase, user } = await requireAuth();
-
-  if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
-    return calculateStatsFromShots([], [], []);
-  }
-
   const conditions = getFilterConditions(filter);
 
-  // Build query with filters
   let query = supabase
     .from('golf_rounds')
     .select(`
@@ -803,34 +802,21 @@ export async function getDetailedStats(
     .eq('player_id', playerId)
     .eq('status', 'completed');
 
-  // Apply filter conditions
-  if (conditions.startDate) {
-    query = query.gte('round_date', conditions.startDate);
-  }
-  if (conditions.endDate) {
-    query = query.lte('round_date', conditions.endDate);
-  }
+  if (conditions.startDate) query = query.gte('round_date', conditions.startDate);
+  if (conditions.endDate) query = query.lte('round_date', conditions.endDate);
   query = applyRoundTypeFilter(query, conditions.roundType);
-  if (conditions.courseName) {
-    query = query.eq('course_name', conditions.courseName);
-  }
-
+  if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
   query = query.order('round_date', { ascending: false });
 
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {
-    await logServerError(`[Stats] Rounds query error: ${roundsError instanceof Error ? roundsError.message : String(roundsError)}`, { action: 'stats_data.getDetailedStats' });
+    await logServerError(`[Stats] Rounds query error: ${describeError(roundsError)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
     return calculateStatsFromShots([], [], []);
   }
 
-  // Apply preset limits
   const roundsData = applyPresetLimit(fetchedRounds || [], filter);
+  if (roundsData.length === 0) return calculateStatsFromShots([], [], []);
 
-  if (roundsData.length === 0) {
-    return calculateStatsFromShots([], [], []);
-  }
-
-  // Determine which rounds to include
   const roundIds = roundId && roundId !== 'overall'
     ? [roundId]
     : roundsData.map(r => r.id);
@@ -874,14 +860,9 @@ export async function getDetailedStats(
         .order('shot_number'),
     ]);
 
-    if (holesError) {
-      throw holesError;
-    }
-    if (shotsError) {
-      throw shotsError;
-    }
+    if (holesError) throw holesError;
+    if (shotsError) throw shotsError;
 
-    // Transform data
     const filteredRoundsData = roundId && roundId !== 'overall'
       ? roundsData.filter(r => r.id === roundId)
       : roundsData;
@@ -905,9 +886,6 @@ export async function getDetailedStats(
       gir: h.gir ?? null,
     }));
 
-    // Map all shots - don't filter out shots with missing distances as they're still
-    // needed for GIR calculation (shots with result='green') and scoring.
-    // The calculator handles null distances gracefully.
     const shots: RawShot[] = (shotsData || []).map(s => {
       let shotDistance = s.shot_distance;
       if (shotDistance === null && s.distance_to_hole_before !== null && s.distance_to_hole_after !== null) {
@@ -957,11 +935,63 @@ export async function getDetailedStats(
 
     return serializeDetailedStats(calculateStatsFromShots(shots, holesInfo, roundsInfo));
   } catch (error) {
-    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.getDetailedStats' });
+    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
     return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
   }
+}
+
+/**
+ * Get detailed shot-level stats for comprehensive analysis
+ * This is the expensive query - only call when user clicks a detailed tab
+ */
+export async function getDetailedStats(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter
+): Promise<GolfStats> {
+  try {
+    const { supabase, user } = await requireAuth();
+
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return calculateStatsFromShots([], [], []);
+    }
+
+    return queryDetailedStatsWithClient(supabase, playerId, roundId, filter);
   } catch (outerError) {
     await logServerError(`[Stats] getDetailedStats failed: ${describeError(outerError)}`, { action: 'stats_data.getDetailedStats' });
+    return serializeDetailedStats(calculateStatsFromShots([], [], []));
+  }
+}
+
+/**
+ * Trusted-server variant of `getDetailedStats` for callers that don't have a
+ * user session on the request — specifically the CoachHelm engine's
+ * `fetchPlayerStats` when invoked from fire-and-forget post-round triggers,
+ * the safety-net cron, or the roster-sweep cron. Uses the service-role
+ * admin client and skips the auth/access check (both are enforced by the
+ * trusted caller that dispatched the engine run).
+ *
+ * DO NOT call this from client-reachable code — always prefer
+ * `getDetailedStats` when a user session exists.
+ */
+export async function getDetailedStatsAsAdmin(
+  playerId: string,
+  roundId?: string | 'overall',
+  filter?: StatsFilter,
+): Promise<GolfStats> {
+  try {
+    const admin = createAdminClient();
+    return await queryDetailedStatsWithClient(
+      admin as unknown as Awaited<ReturnType<typeof createClient>>,
+      playerId,
+      roundId,
+      filter,
+    );
+  } catch (outerError) {
+    await logServerError(
+      `[Stats] getDetailedStatsAsAdmin failed: ${describeError(outerError)}`,
+      { action: 'stats_data.getDetailedStatsAsAdmin' },
+    );
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
   }
 }
