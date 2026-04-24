@@ -72,6 +72,7 @@ export default async function IntelligenceDashboardPage() {
               composite={overviewResult.data.teamComposite}
               categories={overviewResult.data.teamCategories}
               playerCount={overviewResult.data.playerCount}
+              statsRowCount={overviewResult.data.statsRowCount}
             />
             <TeamShotOverview
               yardageCurve={overviewResult.data.teamShotAnalysis.yardageCurve}

@@ -82,21 +82,14 @@ export function ShotAnalyticsPanel({
 
   return (
     <div className={cn('space-y-4', className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl shadow-sm">
-            <IconChartRadar size={18} className="text-white" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-warm-800">
-              Shot Analytics
-            </h3>
-            <p className="text-xs text-warm-500">
-              {playerName || 'Player'} - Last {selectedPeriod} days
-            </p>
-          </div>
-        </div>
+      {/* Header — slim control strip. The "Shot Analytics" label lives on
+          the outer section tab, so we don't repeat it here; this row is
+          just period + refresh so it reads as sub-navigation, not a new
+          page title. */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-xs font-medium text-warm-500 uppercase tracking-wider">
+          {playerName ? `${playerName} · ` : ''}Last {selectedPeriod} days
+        </p>
 
         <div className="flex items-center gap-2">
           {/* Period selector */}

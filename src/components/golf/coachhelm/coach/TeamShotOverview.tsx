@@ -7,6 +7,11 @@ import {
   IconTarget,
   IconWarning,
 } from '@/components/icons';
+import {
+  formatShotContext,
+  formatLie,
+  formatDistanceRange,
+} from '@/lib/coachhelm/v2/shot-analysis/format';
 
 interface TeamShotOverviewProps {
   yardageCurve: Array<{
@@ -197,10 +202,14 @@ export function TeamShotOverview({
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-warm-800 truncate">
-                      {weakness.context}
+                      {formatShotContext({
+                        lie: weakness.lie,
+                        distanceRange: weakness.distanceRange,
+                        context: weakness.context,
+                      })}
                     </p>
                     <p className="text-xs text-warm-500">
-                      {weakness.lie} &middot; {weakness.distanceRange}
+                      {formatLie(weakness.lie)} &middot; {formatDistanceRange(weakness.distanceRange, weakness.lie)}
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-3">

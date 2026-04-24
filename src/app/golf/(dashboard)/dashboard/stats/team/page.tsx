@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { TeamStatsTable } from './team-stats-table';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -108,16 +109,22 @@ export default async function TeamStatsPage() {
     );
   }
 
-  // Fetch ALL rounds for ALL players in a single query (performance optimization)
+  // Fetch ALL rounds for ALL players in a single query (performance optimization).
+  // Run CoachHelm intelligence fetch in parallel — it reads already-persisted
+  // engine output and doesn't block the raw stats query.
   const allPlayerIds = players.map(p => p.id);
 
-  const { data: allRounds } = await supabase
-    .from('golf_rounds')
-    .select('id, player_id, total_score, round_date, holes_played')
-    .in('player_id', allPlayerIds)
-    .eq('status', 'completed')
-    .not('total_score', 'is', null)
-    .order('round_date', { ascending: false });
+  const [roundsResult, intelligenceResult] = await Promise.all([
+    supabase
+      .from('golf_rounds')
+      .select('id, player_id, total_score, round_date, holes_played')
+      .in('player_id', allPlayerIds)
+      .eq('status', 'completed')
+      .not('total_score', 'is', null)
+      .order('round_date', { ascending: false }),
+    getTeamStatsIntelligence(teamId),
+  ]);
+  const { data: allRounds } = roundsResult;
 
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map(r => r.id);
@@ -305,7 +312,23 @@ export default async function TeamStatsPage() {
       {/* Table */}
       <AnimatedItem>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24">
-        <TeamStatsTable players={playersWithStats} />
+        <TeamStatsTable
+          players={playersWithStats}
+          intelligenceByPlayer={intelligenceResult.success && intelligenceResult.data
+            ? Object.fromEntries(
+                intelligenceResult.data.players.map((p) => [
+                  p.playerId,
+                  {
+                    composite: p.composite,
+                    overall: p.categories?.overall ?? null,
+                    topInsightTitle: p.topInsight?.title ?? null,
+                    topInsightPriority: p.topInsight?.priority ?? null,
+                    insightCount: p.insightCount,
+                  },
+                ]),
+              )
+            : {}}
+        />
       </div>
       </AnimatedItem>
     </AnimatedPage>

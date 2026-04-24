@@ -28,6 +28,8 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { StatsIntelligenceStrip } from '@/components/golf/stats/StatsIntelligenceStrip';
+import { refreshPlayerAnalysisAsCoach } from '@/app/golf/actions/insights';
 import {
   IconChevronLeft,
   IconUser,
@@ -341,6 +343,11 @@ export default function StatsClient({
   const [courseBreakdown, setCourseBreakdown] = useState<CourseBreakdownResponse | null>(null);
   const [worstHoleData, setWorstHoleData] = useState<WorstHoleResponse | null>(null);
   const [trendData, setTrendData] = useState<TrendAnalysisResponse | null>(null);
+
+  // Bumped every time Refresh runs — the CoachHelm AI strip re-reads engine
+  // output (category ratings + evidence insights) off this key.
+  const [intelligenceRefreshKey, setIntelligenceRefreshKey] = useState(0);
+  const [intelligenceRefreshing, setIntelligenceRefreshing] = useState(false);
 
   // Cache for detailed stats
   const detailedStatsCache = useRef<Map<string, GolfStats>>(new Map());
@@ -783,7 +790,7 @@ export default function StatsClient({
     analyticsLoadedForRef.current = null;
   }
 
-  function handleRefresh() {
+  async function handleRefresh() {
     const playerId = resolvedPlayerId;
     if (!playerId) return;
 
@@ -807,6 +814,23 @@ export default function StatsClient({
       loadSprayChart(playerId, selectedRoundId, activeFilter);
     }
     loadPlayerAnalytics(playerId);
+
+    // If a coach is viewing a player, re-run the CoachHelm engine so the AI
+    // strip reflects the latest rounds instead of whatever was cached.
+    // Player-self refresh skips this — the engine runs automatically on
+    // round submit + nightly sweep; re-running on every Refresh click would
+    // be wasteful.
+    if (userRole === 'coach') {
+      setIntelligenceRefreshing(true);
+      try {
+        await refreshPlayerAnalysisAsCoach(playerId);
+      } catch {
+        // Swallow — the strip will just show stale data rather than erroring.
+      } finally {
+        setIntelligenceRefreshing(false);
+      }
+    }
+    setIntelligenceRefreshKey((n) => n + 1);
   }
 
   // ============================================================================
@@ -1026,12 +1050,15 @@ export default function StatsClient({
       >
         <button
           onClick={handleRefresh}
-          disabled={loadingDetailed}
+          disabled={loadingDetailed || intelligenceRefreshing}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-warm-200 bg-white/80 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
-          title="Refresh stats"
+          title={intelligenceRefreshing ? 'Running CoachHelm engine…' : 'Refresh stats'}
           aria-label="Refresh stats"
         >
-          <IconRefresh size={18} className={loadingDetailed ? 'animate-spin' : undefined} />
+          <IconRefresh
+            size={18}
+            className={loadingDetailed || intelligenceRefreshing ? 'animate-spin' : undefined}
+          />
         </button>
       </LargeTitleHeader>
 
@@ -1045,6 +1072,18 @@ export default function StatsClient({
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
         </button>
+      )}
+
+      {/* CoachHelm AI strip — engine-derived ratings + evidence insights,
+          rendered above raw stats so the "what matters" layer reads first. */}
+      {resolvedPlayerId && (
+        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+          <StatsIntelligenceStrip
+            playerId={resolvedPlayerId}
+            audience={userRole === 'coach' ? 'coach' : 'player'}
+            refreshKey={intelligenceRefreshKey}
+          />
+        </div>
       )}
 
       {/* Stats Display */}

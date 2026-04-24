@@ -32,6 +32,7 @@ import {
   InsightCard,
   type InsightAction,
 } from '@/components/golf/coachhelm/insight-card';
+import { PrescribedPracticePlanCard } from '@/components/golf/coachhelm/coach';
 import {
   getInsightsForCoach,
   type EvidenceInsight,
@@ -39,6 +40,7 @@ import {
 import {
   acknowledgeInsight,
   dismissInsight,
+  refreshPlayerAnalysisAsCoach,
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
@@ -300,26 +302,69 @@ export function PlayerInsightClient({
   const [insights, setInsights] = useState<EvidenceInsight[]>([]);
   const [insightsLoading, setInsightsLoading] = useState(true);
   const [, startActionTransition] = useTransition();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
-  // Fetch evidence-backed insights for this player (coach-audience shape).
-  useEffect(() => {
+  const loadInsights = useCallback(async () => {
     if (!coachId) {
       setInsightsLoading(false);
       return;
     }
+    setInsightsLoading(true);
+    try {
+      const rows = await getInsightsForCoach(coachId, { player_id: player.id, limit: 8 });
+      setInsights(rows);
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, [coachId, player.id]);
+
+  // Initial fetch of evidence-backed insights for this player (coach-audience shape).
+  useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const rows = await getInsightsForCoach(coachId, { player_id: player.id, limit: 8 });
-        if (!cancelled) setInsights(rows);
-      } finally {
-        if (!cancelled) setInsightsLoading(false);
-      }
+      if (cancelled) return;
+      await loadInsights();
     })();
     return () => {
       cancelled = true;
     };
-  }, [coachId, player.id]);
+  }, [loadInsights]);
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    setRefreshNotice(null);
+    try {
+      const res = await refreshPlayerAnalysisAsCoach(player.id);
+      if (res.success) {
+        await loadInsights();
+        router.refresh();
+        setRefreshNotice({
+          tone: 'success',
+          text:
+            typeof res.insightsCreated === 'number' && res.insightsCreated > 0
+              ? `Refreshed — ${res.insightsCreated} new insight${res.insightsCreated === 1 ? '' : 's'}`
+              : 'Refreshed — no new insights since last run',
+        });
+      } else {
+        setRefreshNotice({
+          tone: 'error',
+          text: res.error ?? 'Refresh failed',
+        });
+      }
+    } catch (err) {
+      setRefreshNotice({
+        tone: 'error',
+        text: err instanceof Error ? err.message : 'Refresh failed',
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isRefreshing, loadInsights, player.id, router]);
 
   const handleAction = useCallback(
     (action: InsightAction, insightId: string) => {
@@ -551,12 +596,43 @@ export function PlayerInsightClient({
             <div className="lg:col-span-7 space-y-6">
               {/* AI Insights — migrated to the unified primitive. */}
               <div className="glass-premium rounded-2xl p-6" data-testid="player-insight-section">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-semibold text-warm-900">AI Insights</h3>
-                  <span className="text-xs text-warm-400 font-medium">
-                    {insights.length} insight{insights.length !== 1 ? 's' : ''}
-                  </span>
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-base font-semibold text-warm-900">AI Insights</h3>
+                    <span className="text-xs text-warm-400 font-medium">
+                      {insights.length} insight{insights.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium',
+                      'border border-primary-200 bg-primary-50 text-primary-700',
+                      'hover:bg-primary-100 hover:border-primary-300 transition-colors',
+                      'disabled:opacity-60 disabled:cursor-not-allowed',
+                    )}
+                    data-testid="refresh-player-analysis"
+                    aria-label="Refresh AI analysis for this player"
+                  >
+                    <IconActivity size={14} className={isRefreshing ? 'animate-pulse' : ''} />
+                    {isRefreshing ? 'Analyzing…' : 'Refresh Analysis'}
+                  </button>
                 </div>
+                {refreshNotice && (
+                  <div
+                    className={cn(
+                      'mb-3 text-xs rounded-lg px-3 py-2 border',
+                      refreshNotice.tone === 'success'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-red-50 text-red-700 border-red-200',
+                    )}
+                    role="status"
+                  >
+                    {refreshNotice.text}
+                  </div>
+                )}
                 {insightsLoading ? (
                   <div className="space-y-3">
                     {[1, 2, 3].map((i) => (
@@ -569,7 +645,9 @@ export function PlayerInsightClient({
                       <IconActivity size={24} className="text-warm-300" />
                     </div>
                     <p className="text-sm text-warm-400">No insights generated yet</p>
-                    <p className="text-xs text-warm-300 mt-1">Insights appear after analyzing round data</p>
+                    <p className="text-xs text-warm-300 mt-1">
+                      Click <span className="font-medium">Refresh Analysis</span> above to run the engine for this player
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -599,6 +677,20 @@ export function PlayerInsightClient({
                   </div>
                 )}
               </div>
+
+              {/* Prescribed Practice Plan — synthesized from insights +
+                  patterns + category breakdown. Sits above Focus Areas so
+                  "the coach sees what to prescribe" flows naturally into
+                  "save it as a focus area". */}
+              <PrescribedPracticePlanCard
+                playerId={player.id}
+                coachId={coachId}
+                insights={insights}
+                patterns={patterns}
+                categoryBreakdown={categoryBreakdown}
+                focusAreas={focusAreas}
+                isRefreshing={isRefreshing}
+              />
 
               {/* Focus Areas Card */}
               <div className="glass-premium rounded-2xl p-6">

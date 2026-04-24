@@ -42,6 +42,7 @@ import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-gen
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 
 // ============================================================================
 // TYPES
@@ -3285,4 +3286,50 @@ export async function triggerPlayerInsightsAfterRound(
       error: error instanceof Error ? error.message : 'CoachHelm post-round trigger failed',
     };
   }
+}
+
+/**
+ * Coach-initiated manual refresh of a player's CoachHelm analysis.
+ * Called from the coach's player-detail page. Awaits the engine (unlike the
+ * fire-and-forget post-round trigger) so the UI can re-fetch immediately.
+ */
+export async function refreshPlayerAnalysisAsCoach(
+  playerId: string,
+): Promise<{ success: boolean; insightsCreated?: number; error?: string }> {
+  const session = await getGolfSessionProfile();
+  if (!session?.coach) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const orgId = session.coach.organization_id;
+  if (!orgId) return { success: false, error: 'Coach has no organization' };
+
+  const supabase = await createClient();
+
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id')
+    .eq('organization_id', orgId)
+    .maybeSingle();
+  if (!team?.id) return { success: false, error: 'Coach has no team' };
+
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('player_id')
+    .eq('team_id', team.id)
+    .eq('player_id', playerId)
+    .maybeSingle();
+  if (!membership) return { success: false, error: 'Player is not on your team' };
+
+  const result = await triggerPlayerInsightsAfterRound(playerId);
+
+  if (result.success) {
+    revalidatePath(`/golf/dashboard/players/${playerId}`);
+  }
+
+  return {
+    success: result.success,
+    insightsCreated: result.insights_created,
+    error: result.error,
+  };
 }

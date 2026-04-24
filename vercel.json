@@ -37,6 +37,10 @@
       "schedule": "0 2 * * *"
     },
     {
+      "path": "/api/cron/coachhelm-roster-sweep",
+      "schedule": "45 3 * * *"
+    },
+    {
       "path": "/api/cron/coach-morning-digest",
       "schedule": "30 6 * * *"
     }

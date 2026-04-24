@@ -103,6 +103,7 @@ export async function createFocusArea(
     current_value: data.current_value,
     target_value: data.target_value,
     started_at: new Date().toISOString(),
+    from_insight_id: data.from_insight_id ?? null,
   });
 
   if (error) {

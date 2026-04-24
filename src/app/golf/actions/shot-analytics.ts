@@ -631,8 +631,13 @@ export async function getPlayerShotAnalytics(
     // ========================================================================
 
     const insights: string[] = [];
-    let primaryWeakness = 'No significant weaknesses detected';
     let primaryStrength = 'No significant strengths detected';
+
+    // Candidate weaknesses — we pick the highest severity, not the first match,
+    // so short-game and sand-save issues aren't hidden behind an untriggered
+    // approach-miss check. Severity: 3 = critical, 2 = concerning, 1 = mild.
+    type WeaknessCandidate = { label: string; severity: number };
+    const weaknessCandidates: WeaknessCandidate[] = [];
 
     // Analyze miss patterns for insights
     const approachMissArray = Object.entries(approachStats.missBreakdown)
@@ -644,23 +649,63 @@ export async function getPlayerShotAnalytics(
       if (firstEntry && firstEntry[1] > 40) {
         const [missDir, pct] = firstEntry;
         insights.push(`Your approach shots miss ${missDir.replace('_', '-')} ${pct}% of the time. Consider adjusting your aim.`);
-        primaryWeakness = `Approach shots trending ${missDir.replace('_', '-')}`;
+        weaknessCandidates.push({
+          label: `Approach shots trending ${missDir.replace('_', '-')}`,
+          severity: pct > 55 ? 3 : 2,
+        });
       }
     }
 
     // Putting insights
     if (puttingStats.threePuttRate > 10) {
       insights.push(`Three-putt rate of ${puttingStats.threePuttRate}% is higher than target. Focus on lag putting.`);
-      if (primaryWeakness === 'No significant weaknesses detected') {
-        primaryWeakness = 'Three-putt rate needs improvement';
-      }
+      weaknessCandidates.push({
+        label: 'Three-putt rate needs improvement',
+        severity: puttingStats.threePuttRate > 15 ? 3 : 2,
+      });
     }
 
     // Driving insights
     if (teeStats.fairwayPct < 50) {
       const missType = teeStats.leftMissPct > teeStats.rightMissPct ? 'left' : 'right';
       insights.push(`Fairway percentage of ${teeStats.fairwayPct}% with ${missType} tendency. Work on consistency off the tee.`);
+      weaknessCandidates.push({
+        label: `Driving accuracy (${teeStats.fairwayPct}% fairways)`,
+        severity: teeStats.fairwayPct < 40 ? 3 : 2,
+      });
     }
+
+    // GIR — approach consistency
+    if (approachStats.girPct < 40) {
+      weaknessCandidates.push({
+        label: `Greens in regulation (${approachStats.girPct}%)`,
+        severity: 3,
+      });
+    }
+
+    // Up and down insights
+    if (aroundGreenStats.upAndDownPct < 40 && aroundGreenStats.totalShots > 5) {
+      insights.push(`Up-and-down rate of ${aroundGreenStats.upAndDownPct}% suggests short game needs work.`);
+      weaknessCandidates.push({
+        label: `Short-game up-and-down (${aroundGreenStats.upAndDownPct}%)`,
+        severity: aroundGreenStats.upAndDownPct < 20 ? 3 : 2,
+      });
+    }
+
+    // Sand save — dedicated check, was previously invisible to primaryWeakness
+    if (aroundGreenStats.sandSavePct < 30 && aroundGreenStats.totalShots > 3) {
+      insights.push(`Sand save rate of ${aroundGreenStats.sandSavePct}% — bunker play needs attention.`);
+      weaknessCandidates.push({
+        label: `Sand saves (${aroundGreenStats.sandSavePct}%)`,
+        severity: aroundGreenStats.sandSavePct < 15 ? 3 : 2,
+      });
+    }
+
+    // Pick the most severe candidate (ties: first-in wins — stats-ordered above
+    // so approach comes before putting/short-game naturally).
+    const primaryWeakness = weaknessCandidates.length > 0
+      ? weaknessCandidates.reduce((a, b) => (b.severity > a.severity ? b : a)).label
+      : 'No significant weaknesses detected';
 
     // Identify strength
     if (puttingStats.inside5ft.pct >= 90) {
@@ -671,11 +716,6 @@ export async function getPlayerShotAnalytics(
       primaryStrength = 'Consistent driving';
     } else if (aroundGreenStats.upAndDownPct >= 60) {
       primaryStrength = 'Solid scrambling';
-    }
-
-    // Up and down insights
-    if (aroundGreenStats.upAndDownPct < 40 && aroundGreenStats.totalShots > 5) {
-      insights.push(`Up-and-down rate of ${aroundGreenStats.upAndDownPct}% suggests short game needs work.`);
     }
 
     // Add generic insight if none generated

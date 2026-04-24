@@ -8,6 +8,11 @@ import {
   IconWarning,
   IconActivity,
 } from '@/components/icons';
+import {
+  formatShotContext,
+  formatLie,
+  formatDistanceRange,
+} from '@/lib/coachhelm/v2/shot-analysis/format';
 
 interface ShotAnalysisCardProps {
   // Typed props (used when data is pre-parsed)
@@ -200,22 +205,33 @@ export function ShotAnalysisCard({
           </div>
         )}
 
-        {/* Dead zones callout */}
-        {resolvedDeadZones && resolvedDeadZones.length > 0 && (
-          <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
-            <p className="text-xs font-semibold text-red-700 mb-1">Dead Zones</p>
-            <div className="flex flex-wrap gap-2">
-              {resolvedDeadZones.map((dz) => (
-                <span
-                  key={`${dz.rangeStart}-${dz.rangeEnd}`}
-                  className="inline-flex items-center gap-1 text-xs text-red-600 tabular-nums"
-                >
-                  {dz.rangeStart}-{dz.rangeEnd}y
-                  <span className="text-red-400">({Number(dz.deficit ?? 0).toFixed(2)} deficit)</span>
-                </span>
-              ))}
+        {/* Dead zones callout — always rendered when we have yardage data, so
+            a strong player sees a positive confirmation rather than the
+            section silently disappearing. */}
+        {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
+          resolvedDeadZones && resolvedDeadZones.length > 0 ? (
+            <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
+              <p className="text-xs font-semibold text-red-700 mb-1">Dead Zones</p>
+              <div className="flex flex-wrap gap-2">
+                {resolvedDeadZones.map((dz) => (
+                  <span
+                    key={`${dz.rangeStart}-${dz.rangeEnd}`}
+                    className="inline-flex items-center gap-1 text-xs text-red-600 tabular-nums"
+                  >
+                    {dz.rangeStart}-{dz.rangeEnd}y
+                    <span className="text-red-400">({Number(dz.deficit ?? 0).toFixed(2)} deficit)</span>
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60">
+              <p className="text-xs font-semibold text-emerald-700 mb-0.5">No dead zones</p>
+              <p className="text-xs text-emerald-600/80">
+                Yardage performance is consistent — no distance range is bleeding strokes.
+              </p>
+            </div>
+          )
         )}
 
         {/* Top weaknesses */}
@@ -233,10 +249,14 @@ export function ShotAnalysisCard({
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-warm-800 truncate">
-                      {weakness.context}
+                      {formatShotContext({
+                        lie: weakness.lie,
+                        distanceRange: weakness.distanceRange,
+                        context: weakness.context,
+                      })}
                     </p>
                     <p className="text-xs text-warm-500">
-                      {weakness.lie} &middot; {weakness.distanceRange}
+                      {formatLie(weakness.lie)} &middot; {formatDistanceRange(weakness.distanceRange, weakness.lie)}
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-3">

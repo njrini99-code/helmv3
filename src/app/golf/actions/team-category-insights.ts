@@ -275,6 +275,10 @@ export interface TeamOverviewResult {
       topWeaknesses: Array<{ context: string; lie: string; distanceRange: string; avgSG: number; shotCount: number }>;
     };
     playerCount: number;
+    /** How many players actually had a stats-cache row used to compute
+     *  teamComposite/teamCategories. Distinguishes "truly average team" from
+     *  "we have no stats yet" — the UI can only honestly claim the latter. */
+    statsRowCount: number;
   };
   error?: string;
 }
@@ -338,6 +342,7 @@ export async function getTeamOverview(
           teamCategories: { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 },
           teamShotAnalysis: { yardageCurve: [], deadZones: [], topWeaknesses: [] },
           playerCount: 0,
+          statsRowCount: 0,
         },
       };
     }
@@ -536,6 +541,7 @@ export async function getTeamOverview(
         teamCategories,
         teamShotAnalysis: { yardageCurve, deadZones, topWeaknesses },
         playerCount: playerIds.length,
+        statsRowCount: (statsData ?? []).length,
       },
     };
   } catch (err) {

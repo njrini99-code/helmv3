@@ -15,6 +15,9 @@ interface TeamCompositeCardProps {
     scoring: number;
   };
   playerCount: number;
+  /** Number of players whose stats rows actually fed composite/categories.
+   *  When 0, the 50/50/50 values are defaults (no data), not a real signal. */
+  statsRowCount?: number;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -57,12 +60,14 @@ export function TeamCompositeCard({
   composite,
   categories,
   playerCount,
+  statsRowCount,
 }: TeamCompositeCardProps) {
   const displayComposite = Math.max(0, Math.min(100, Number(composite)));
 
-  // Detect default/placeholder data: all categories at exactly 50 means z-score
-  // normalization had no meaningful spread (all players similar or no real data)
-  const allDefault = Object.values(categories).every(v => v === 50) && displayComposite === 50;
+  // Only claim "not enough data" when we honestly have none — i.e. no player
+  // stats rows fed the computation. A legitimately average team (all 50s) is
+  // real data, not a placeholder, and should render normally.
+  const noStatsAvailable = statsRowCount === 0;
 
   if (playerCount === 0) {
     return (
@@ -82,7 +87,7 @@ export function TeamCompositeCard({
     );
   }
 
-  if (allDefault) {
+  if (noStatsAvailable) {
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
@@ -153,8 +158,11 @@ export function TeamCompositeCard({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-5xl font-bold tabular-nums', getRatingColor(displayComposite))}>
+            <span className={cn('text-5xl font-bold tabular-nums leading-none', getRatingColor(displayComposite))}>
               {displayComposite}
+            </span>
+            <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-warm-400">
+              / 100
             </span>
           </div>
         </m.div>

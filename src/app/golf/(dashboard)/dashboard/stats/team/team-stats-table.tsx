@@ -26,7 +26,8 @@ type SortKey =
   | 'fairway_pct'
   | 'gir_pct'
   | 'putts_per_round'
-  | 'scoring_trend';
+  | 'scoring_trend'
+  | 'ai_rating';
 
 type SortDirection = 'asc' | 'desc';
 
@@ -35,11 +36,26 @@ interface SortConfig {
   direction: SortDirection;
 }
 
-interface TeamStatsTableProps {
-  players: TeamPlayerStats[];
+export interface PlayerIntelligenceSummary {
+  composite: number | null;
+  overall: number | null;
+  topInsightTitle: string | null;
+  topInsightPriority: 'low' | 'medium' | 'high' | 'urgent' | null;
+  insightCount: number;
 }
 
-export function TeamStatsTable({ players }: TeamStatsTableProps) {
+interface TeamStatsTableProps {
+  players: TeamPlayerStats[];
+  /** Engine-derived per-player summary, keyed by player_id. Shape lets the
+   *  table stay agnostic about whether CoachHelm ran — empty map just means
+   *  the AI column renders dashes. */
+  intelligenceByPlayer?: Record<string, PlayerIntelligenceSummary>;
+}
+
+export function TeamStatsTable({
+  players,
+  intelligenceByPlayer = {},
+}: TeamStatsTableProps) {
   const [holeFormat, setHoleFormat] = useState<HoleFormat>('all');
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'scoring_average',
@@ -112,6 +128,10 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
           aVal = a.scoring_trend;
           bVal = b.scoring_trend;
           break;
+        case 'ai_rating':
+          aVal = intelligenceByPlayer[a.id]?.composite ?? intelligenceByPlayer[a.id]?.overall ?? null;
+          bVal = intelligenceByPlayer[b.id]?.composite ?? intelligenceByPlayer[b.id]?.overall ?? null;
+          break;
         default:
           return 0;
       }
@@ -137,7 +157,7 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
     });
 
     return sorted;
-  }, [formattedPlayers, sortConfig]);
+  }, [formattedPlayers, sortConfig, intelligenceByPlayer]);
 
   const handleSort = (key: SortKey) => {
     setSortConfig(prev => ({
@@ -233,6 +253,16 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                 >
                   Avg
                   <SortIcon columnKey="scoring_average" />
+                </button>
+              </th>
+              <th className="text-center px-3 py-3">
+                <button
+                  onClick={() => handleSort('ai_rating')}
+                  className="flex items-center justify-center gap-1 text-xs font-semibold text-warm-500 uppercase tracking-wider hover:text-warm-700 transition-colors mx-auto"
+                  title="CoachHelm composite rating (engine-derived)"
+                >
+                  AI
+                  <SortIcon columnKey="ai_rating" />
                 </button>
               </th>
               <th className="text-center px-3 py-3">
@@ -339,6 +369,14 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
                   )}>
                     {formatScore(player.scoring_average)}
                   </span>
+                </td>
+
+                {/* CoachHelm AI rating */}
+                <td className="text-center px-3 py-3">
+                  <AiRatingCell
+                    playerId={player.id}
+                    summary={intelligenceByPlayer[player.id]}
+                  />
                 </td>
 
                 {/* Best Round */}
@@ -454,5 +492,61 @@ export function TeamStatsTable({ players }: TeamStatsTableProps) {
       `}</style>
     </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AI rating cell — links to the coach's player detail page where the
+// Prescribed Practice Plan + Refresh Analysis live. Renders a dash when the
+// engine hasn't run for this player yet (no stats cache or no insights).
+// ---------------------------------------------------------------------------
+
+function AiRatingCell({
+  playerId,
+  summary,
+}: {
+  playerId: string;
+  summary: PlayerIntelligenceSummary | undefined;
+}) {
+  const value = summary?.composite ?? summary?.overall ?? null;
+  if (value == null) {
+    return <span className="text-warm-400 text-xs">—</span>;
+  }
+  const rating = Math.round(value);
+  const color =
+    rating >= 80
+      ? 'text-emerald-600'
+      : rating >= 60
+        ? 'text-primary-600'
+        : rating >= 40
+          ? 'text-amber-500'
+          : 'text-red-500';
+  const priority = summary?.topInsightPriority ?? null;
+  const priorityDot =
+    priority === 'urgent'
+      ? 'bg-red-500'
+      : priority === 'high'
+        ? 'bg-amber-500'
+        : priority === 'medium'
+          ? 'bg-primary-400'
+          : priority === 'low'
+            ? 'bg-warm-300'
+            : null;
+
+  return (
+    <Link
+      href={`/golf/dashboard/players/${playerId}`}
+      className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+      title={summary?.topInsightTitle ?? 'Open player CoachHelm detail'}
+    >
+      <span className={cn('text-sm font-semibold tabular-nums', color)}>{rating}</span>
+      <span className="text-[10px] font-medium text-warm-400">/100</span>
+      {priorityDot && (
+        <span
+          className={cn('w-1.5 h-1.5 rounded-full', priorityDot)}
+          aria-label={`Top insight priority: ${priority}`}
+        />
+      )}
+    </Link>
   );
 }

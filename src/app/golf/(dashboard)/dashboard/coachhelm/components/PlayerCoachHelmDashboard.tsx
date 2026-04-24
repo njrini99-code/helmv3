@@ -104,29 +104,29 @@ function EmptyState() {
 }
 
 /**
- * Smaller, friendlier empty state shown when the rest of the dashboard has
- * data but no evidence-backed insights are available yet. Lives inline in
- * the insights column so the rest of the dashboard still renders.
+ * Inline note shown when the evidence-backed insight feed is empty but the
+ * rest of the dashboard (focus areas, prediction, trends) has data. Kept
+ * compact so it doesn't dominate the left column beside a populated right
+ * column.
  */
-function EmptyInsightsState() {
+function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
   return (
-    <GlassCard className="text-center py-10">
-      <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mx-auto mb-3">
-        <IconSparkles size={22} className="text-warm-400" />
+    <GlassCard className="py-5 px-5">
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0">
+          <IconSparkles size={18} className="text-warm-400" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-warm-900">
+            No evidence-backed insights yet
+          </p>
+          <p className="text-xs text-warm-500 mt-0.5">
+            {hasRounds
+              ? 'Evidence-backed insights surface once patterns hold across multiple rounds. Your focus areas and trends are live on the right.'
+              : 'Log a few rounds and CoachHelm will surface the patterns that move your scores.'}
+          </p>
+        </div>
       </div>
-      <h4 className="text-sm font-semibold text-warm-900 mb-1">
-        No insights yet
-      </h4>
-      <p className="text-xs text-warm-500 mb-4 max-w-xs mx-auto">
-        Log a few more rounds and CoachHelm will surface the patterns that move
-        your scores.
-      </p>
-      <a
-        href="/golf/dashboard/rounds/new"
-        className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-50 text-primary-700 text-xs font-medium rounded-lg hover:bg-primary-100 transition-colors"
-      >
-        Log a round
-      </a>
     </GlassCard>
   );
 }
@@ -376,7 +376,21 @@ export function PlayerCoachHelmDashboard({
                       )}
 
                       {!topInsight && secondaryFiltered.length === 0 && (
-                        <EmptyInsightsState />
+                        (() => {
+                          // Suppress the inline empty card entirely when the
+                          // right column is populated — focus areas + prediction
+                          // already anchor the view, and the big "No insights"
+                          // card just adds noise in that case.
+                          const rightColumnHasContent =
+                            dashboardData.focusAreas.length > 0 ||
+                            dashboardData.prediction !== null;
+                          if (rightColumnHasContent) return null;
+                          return (
+                            <EmptyInsightsState
+                              hasRounds={dashboardData.recentRounds.length > 0}
+                            />
+                          );
+                        })()
                       )}
                     </div>
 
@@ -392,15 +406,23 @@ export function PlayerCoachHelmDashboard({
                     </div>
                   </div>
 
-                  {/* Bottom Row — Tabbed: Shot Analysis | What If */}
-                  <GolfTabBar
-                    tabs={bottomTabs}
-                    value={activeBottomTab}
-                    onChange={setActiveBottomTab}
-                    ariaLabel="Analysis sections"
-                    compact
-                  />
-                  <div className="mt-4">
+                  {/* Bottom Row — Tabbed: Shot Analysis | What If.
+                      Labelled as "Deep dive" so it visually reads as a
+                      sub-section of AI Insights, not as competing primary
+                      navigation with the top section toggle. */}
+                  <div className="flex items-center justify-between gap-3 mb-3 mt-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">
+                      Deep dive
+                    </p>
+                    <GolfTabBar
+                      tabs={bottomTabs}
+                      value={activeBottomTab}
+                      onChange={setActiveBottomTab}
+                      ariaLabel="Analysis sections"
+                      compact
+                    />
+                  </div>
+                  <div>
                     <AnimatePresence mode="wait" initial={false}>
                       {activeBottomTab === 'shot-analysis' && (
                         <m.div

@@ -54,3 +54,11 @@ export type {
   ScoringOpportunity,
   ScrambleAnalysis,
 } from './scoring-opportunities';
+
+export {
+  formatLie,
+  formatDistanceRange,
+  formatShotContext,
+} from './format';
+
+export type { ShotLie } from './format';
