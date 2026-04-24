@@ -81,15 +81,13 @@ export default function CRMPage() {
   // Tab state lives in local React state. URL is kept in sync via
   // history.replaceState so deep links still work, but we don't pay the
   // cost of a router.replace() soft navigation on every tab click.
-  const [activeTab, setActiveTabState] = useState<TabId>(() => {
-    // Initial value is derived once from the URL. After that, local state
-    // is the source of truth.
-    if (typeof window !== 'undefined') {
-      const t = new URLSearchParams(window.location.search).get('tab') as TabId | null;
-      if (t && TABS.some((tab) => tab.id === t)) return t;
-    }
-    return 'dashboard';
-  });
+  //
+  // IMPORTANT: useState initializer must NOT read window.location — doing so
+  // produced SSR/CSR drift (React error #418) when the URL had `?tab=X`:
+  // server rendered 'dashboard', client initial render wanted X. The
+  // searchParams sync effect below runs on mount and promotes the URL tab
+  // post-hydration, so deep links still work.
+  const [activeTab, setActiveTabState] = useState<TabId>('dashboard');
 
   const [filters, setFilters] = useState<Filters>({
     status: 'all',

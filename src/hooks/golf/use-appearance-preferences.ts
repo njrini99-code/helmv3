@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useSyncExternalStore } from 'react';
 
 type DisplayDensity = 'comfortable' | 'compact';
 type DateFormat = 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD';
@@ -48,17 +48,37 @@ function readFromStorage(): AppearancePreferences {
   }
 }
 
-// Initialize cache on module load (client-side only)
-if (typeof window !== 'undefined') {
-  cachedPrefs = readFromStorage();
+// Initialization is deferred until the first hook mount (post-hydration).
+// Reading localStorage at module-load time means `cachedPrefs` diverges from
+// DEFAULTS before React's first client render completes, which produced a
+// hydration mismatch (React error #418) on any page that rendered a user's
+// custom date format — server HTML used DEFAULTS, client cache already had
+// the stored value, and `useSyncExternalStore`'s hydration safeguard was not
+// reliably catching the drift on every device/browser.
+//
+// Invariant now: cachedPrefs === DEFAULTS until the first `useAppearancePreferences`
+// mount effect runs. First render (both SSR and hydration) is guaranteed to
+// use DEFAULTS. After mount, `hydrateCache()` reads storage and fires
+// notifyListeners() so subscribers re-render with the real prefs.
+let storageListenerAttached = false;
 
-  // Listen for storage events from other tabs
-  window.addEventListener('storage', (e) => {
-    if (e.key === STORAGE_KEY) {
-      cachedPrefs = readFromStorage();
-      notifyListeners();
-    }
-  });
+function hydrateCacheOnce() {
+  if (typeof window === 'undefined') return;
+  const next = readFromStorage();
+  // Avoid a gratuitous notify if storage matched DEFAULTS anyway.
+  if (next !== cachedPrefs) {
+    cachedPrefs = next;
+    notifyListeners();
+  }
+  if (!storageListenerAttached) {
+    storageListenerAttached = true;
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) {
+        cachedPrefs = readFromStorage();
+        notifyListeners();
+      }
+    });
+  }
 }
 
 function subscribe(callback: () => void) {
@@ -78,6 +98,13 @@ function getServerSnapshot() {
 
 export function useAppearancePreferences() {
   const prefs = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  // Post-mount hydration: on the first hook use in a session, read localStorage
+  // and notify. Idempotent — subsequent mounts no-op the cache read unless
+  // storage changed (readFromStorage returns fresh data each call).
+  useEffect(() => {
+    hydrateCacheOnce();
+  }, []);
 
   const updatePreferences = useCallback((updates: Partial<AppearancePreferences>) => {
     const next = { ...cachedPrefs, ...updates };
