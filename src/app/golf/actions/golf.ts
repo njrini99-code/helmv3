@@ -315,7 +315,15 @@ const partialRoundSchema = z.object({
   courseId: z.string().uuid().optional().nullable(),
   roundType: z.enum(['practice', 'tournament', 'qualifier']),
   roundDate: z.string(),
-  currentHole: z.number().int().min(1).max(18).optional().nullable(),
+  // Coerce 0 to null — callers occasionally hit auto-save before the user
+  // has selected hole 1 (incident 10: "Too small: expected number to be >=1").
+  // Downstream code already treats null and 0 identically (see
+  // `data.currentHole || null` / `(data.currentHole || 1) - 1`), so
+  // collapsing the two here avoids a payload-level validation rejection.
+  currentHole: z.preprocess(
+    (v) => (v === 0 ? null : v),
+    z.number().int().min(1).max(18).optional().nullable(),
+  ),
   holesToPlay: z.union([z.literal(9), z.literal(18)]).optional().nullable(),
   qualifierId: z.string().uuid().optional().nullable(),
   qualifierRoundNumber: z.number().int().min(1).optional().nullable(),
