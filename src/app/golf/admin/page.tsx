@@ -914,6 +914,21 @@ function AdminDashboardContent() {
                   Some metrics are using approximate calculations (database functions unavailable)
                 </div>
               )}
+              {(data.rollupBDegraded || data.rollupCDegraded) && (
+                <div className="flex items-start gap-2 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/50 text-amber-700 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1" />
+                  <span>
+                    Running in degraded mode — one or more admin rollup queries
+                    timed out on the database.
+                    {data.rollupBDegraded && data.rollupCDegraded
+                      ? ' Team, error, and analytics sections may be empty.'
+                      : data.rollupBDegraded
+                        ? ' Team and error sections may be empty.'
+                        : ' Analytics widgets may be empty.'}
+                    {' '}Retry in a minute; if it persists, check the slow SQL functions.
+                  </span>
+                </div>
+              )}
               {activeTab === 'overview' && (
                 <OverviewTab
                   data={data}

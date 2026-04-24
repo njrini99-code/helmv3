@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
 import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
-import { fetchAdminRollupC, type RollupC } from './admin/rollup-c';
+import { fetchAdminRollupC, EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c';
 import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
@@ -684,6 +684,14 @@ export interface AdminDashboardData {
   // Degraded state flags (RPC functions unavailable)
   errorSummaryDegraded?: boolean;
   adminEventSummaryDegraded?: boolean;
+  /** A Slice-B sub-RPC timed out or errored — at least one of baseball /
+   *  errors / teams subtrees in rollupB is populated with empty defaults.
+   *  Read by the UI to show a "degraded mode" banner instead of crashing. */
+  rollupBDegraded?: boolean;
+  /** The single analytics RPC that powers Slice C timed out or errored. All
+   *  analytics widgets (coach intelligence, heatmap, funnel, etc.) will show
+   *  empty data with an explanatory banner. */
+  rollupCDegraded?: boolean;
   // Stats cache freshness
   statsCacheLastUpdated?: string | null;
 }
@@ -1418,8 +1426,9 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
 
   // 2. Kick off Slice A + Slice B in parallel — Slice C needs Slice A's
   //    `allRoundsMinimal` so it runs in the next wave.
-  // TEMP DEBUG: wrap each rollup in a labeled try/catch so the production
-  // Server Components error handler surfaces which slice actually threw.
+  //    Rollup A is REQUIRED (auth + roundsMinimal fuels rollupC). Rollup B
+  //    and C can degrade to safe empties without crashing the page —
+  //    Postgres statement_timeout on one of their RPCs is recoverable.
   let rollupA: RollupA;
   let rollupB: RollupB;
   try {
@@ -1428,23 +1437,31 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         void logServerError(`[admin-data] fetchAdminRollupA threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
         throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
       }),
-      fetchAdminRollupB().catch((e) => {
-        void logServerError(`[admin-data] fetchAdminRollupB threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
-        throw new Error(`rollupB failed: ${e?.message ?? String(e)}`);
-      }),
+      fetchAdminRollupB(),
     ]);
   } catch (e) {
-    void logServerError(`[admin-data] outer A+B Promise.all threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData' });
+    // Only rollupA failures reach here; rollupB gracefully degrades internally.
+    void logServerError(`[admin-data] rollupA failed: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData' });
     throw e;
   }
+
+  const rollupBDegraded =
+    rollupB.degradation.baseballRollupDegraded ||
+    rollupB.degradation.errorsRollupDegraded ||
+    rollupB.degradation.teamsRollupDegraded;
 
   // 3. Slice C + kept calls (Vercel HTTP + platform health RPC + one-off
   //    shot-quality counts) run in parallel. `dataQuality` is not owned by
   //    any slice — we issue a single grouped query.
+  let rollupCDegraded = false;
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
     fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
-      void logServerError(`[admin-data] fetchAdminRollupC threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
-      throw new Error(`rollupC failed: ${e?.message ?? String(e)}`);
+      void logServerError(
+        `[admin-data] fetchAdminRollupC threw: ${e instanceof Error ? e.message : String(e)}`,
+        { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } },
+      );
+      rollupCDegraded = true;
+      return EMPTY_ROLLUP_C;
     }),
     fetchVercelAnalytics(),
     (async (): Promise<PlatformHealthStatsResult | null> => {
@@ -1481,7 +1498,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const responseTime = Math.round(performance.now() - startTime);
 
   try {
-    return assembleAdminDashboardData({
+    const assembled = assembleAdminDashboardData({
       rollupA,
       rollupB,
       rollupC,
@@ -1490,6 +1507,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
       dataQualityRaw,
       responseTime,
     });
+    // Merge rollup-level degradation flags onto the public shape. Downstream
+    // components (error banner on admin/page.tsx) read these to signal
+    // partial-data mode without crashing.
+    return {
+      ...assembled,
+      rollupBDegraded,
+      rollupCDegraded,
+    };
   } catch (e) {
     const err = e as Error;
     await logServerError(`[admin-data] assembleAdminDashboardData threw: ${err?.message ?? String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: err?.stack } });

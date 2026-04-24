@@ -35,6 +35,47 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { logServerError } from '@/lib/server-error-logger';
+
+// ---------------------------------------------------------------------------
+// Empty-payload factories — used when an RPC times out or fails. Each matches
+// the shape of the corresponding `public.get_admin_*_rollup()` output so the
+// rest of fetchAdminRollupB can process it uniformly.
+// ---------------------------------------------------------------------------
+
+const EMPTY_BASEBALL_RAW: RollupBBaseballRaw = {
+  total_players: 0,
+  total_coaches: 0,
+  watchlist_stages: {},
+  recruiting_activated_players: 0,
+  videos_30d: 0,
+  engagement_events_30d: 0,
+  messages_30d: 0,
+  conversations_30d: 0,
+  players_onboarded: 0,
+  coaches_onboarded: 0,
+  total_teams: 0,
+  total_events: 0,
+  total_camps: 0,
+};
+
+/** Module-scope helper so callers outside fetchAdminRollupB can reuse the
+ *  same error-to-string logic when wrapping .catch() handlers upstream. */
+function describeRpcError(err: unknown): string {
+  if (!err) return 'unknown';
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'object') {
+    const e = err as Record<string, unknown>;
+    const parts = [
+      e.code ? `code=${e.code}` : null,
+      e.message ? `msg=${e.message}` : null,
+      e.details ? `details=${e.details}` : null,
+      e.hint ? `hint=${e.hint}` : null,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(' ');
+  }
+  try { return JSON.stringify(err); } catch { return String(err); }
+}
 
 // ---------------------------------------------------------------------------
 // C5 — Baseball
@@ -334,10 +375,26 @@ export interface RollupBTeamsScoring {
 // ---------------------------------------------------------------------------
 
 /**
+ * Per-RPC degradation flags. Set to `true` when the underlying RPC timed out,
+ * returned an error, or returned an empty payload — the corresponding subtree
+ * on the RollupB will be a safe empty default instead of real data. The
+ * orchestrator reads these to surface a banner, and callers should treat the
+ * flagged subtree as "unavailable" rather than "zero activity".
+ */
+export interface RollupBDegradation {
+  baseballRollupDegraded: boolean;
+  errorsRollupDegraded: boolean;
+  teamsRollupDegraded: boolean;
+}
+
+/**
  * Typed aggregate of the three C5/C6/C7 RPC payloads. The admin-data.ts
  * orchestrator consumes this and merges it into `AdminDashboardData`.
  */
 export interface RollupB {
+  /** Per-RPC degradation state. At least one flag may be true after a
+   *  Postgres statement_timeout or other transient failure. */
+  degradation: RollupBDegradation;
   /** Final shape matching `AdminDashboardData.baseball`. */
   baseball: RollupBBaseball;
 
@@ -505,7 +562,11 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
   const ago24h = daysAgoIso(1);
   const ago30d = daysAgoIso(30);
 
-  const [baseballRes, errorsRes, teamsRes] = await Promise.all([
+  // Each RPC runs in parallel but is independently resilient. A Postgres
+  // statement_timeout (code=57014) or empty payload on one RPC degrades just
+  // that subtree; the other two still populate. Caller (admin-data.ts) checks
+  // the `degradation` flags and shows a banner.
+  const [baseballSettled, errorsSettled, teamsSettled] = await Promise.allSettled([
     rpc<RollupBBaseballRaw>('get_admin_baseball_rollup', { p_ago30d: ago30d }),
     rpc<RawErrorsPayload>('get_admin_errors_rollup', {
       p_ago7d: ago7d,
@@ -516,42 +577,86 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
     }),
   ]);
 
-  const describe = (err: unknown): string => {
-    if (!err) return 'unknown';
-    if (err instanceof Error) return err.message;
-    if (typeof err === 'object') {
-      const e = err as Record<string, unknown>;
-      const parts = [
-        e.code ? `code=${e.code}` : null,
-        e.message ? `msg=${e.message}` : null,
-        e.details ? `details=${e.details}` : null,
-        e.hint ? `hint=${e.hint}` : null,
-      ].filter(Boolean);
-      if (parts.length) return parts.join(' ');
+  function resolveRpc<T>(
+    label: string,
+    settled: PromiseSettledResult<{ data: T | null; error: unknown }>,
+    empty: T,
+  ): { value: T; degraded: boolean } {
+    if (settled.status === 'rejected') {
+      void logServerError(
+        `[rollup-b] ${label} rejected: ${describeRpcError(settled.reason)}`,
+        { action: 'admin.fetchAdminRollupB', featureArea: 'admin' },
+      );
+      return { value: empty, degraded: true };
     }
-    try { return JSON.stringify(err); } catch { return String(err); }
+    const { data, error } = settled.value;
+    if (error) {
+      void logServerError(
+        `[rollup-b] ${label} errored: ${describeRpcError(error)}`,
+        { action: 'admin.fetchAdminRollupB', featureArea: 'admin' },
+      );
+      return { value: empty, degraded: true };
+    }
+    if (!data) {
+      void logServerError(
+        `[rollup-b] ${label} returned empty payload`,
+        { action: 'admin.fetchAdminRollupB', featureArea: 'admin' },
+      );
+      return { value: empty, degraded: true };
+    }
+    return { value: data, degraded: false };
+  }
+
+  const baseballRpc = resolveRpc<RollupBBaseballRaw>(
+    'get_admin_baseball_rollup',
+    baseballSettled,
+    EMPTY_BASEBALL_RAW,
+  );
+  const errorsRpc = resolveRpc<RawErrorsPayload>(
+    'get_admin_errors_rollup',
+    errorsSettled,
+    {
+      error_logs: { recent: [], total_7d: 0, critical_7d: 0, count_24h: 0 },
+      error_summary: null,
+      audit_log: { recent: [], total_7d: 0 },
+      login_security: { recent: [], locked_count: 0 },
+      admin_events: { recent: [], unresolved_critical: [], error_only: [], summary: null },
+    },
+  );
+  const teamsRpc = resolveRpc<RawTeamsScoringPayload>(
+    'get_admin_teams_scoring_rollup',
+    teamsSettled,
+    {
+      teams: [],
+      team_members: [],
+      team_rounds_week: [],
+      player_stats_top50: [],
+      player_team_map: [],
+      coach_orgs: [],
+      scoring_distribution: [],
+      recent_best_rounds: [],
+      strokes_gained: null,
+      stats_cache_last_updated: null,
+      demo_requests: { total: 0, pending: 0, recent: [] },
+      golf_communication: {
+        total_announcements: 0,
+        ack_count: 0,
+        total_messages: 0,
+        total_conversations: 0,
+      },
+      attendance_percentages: [],
+    },
+  );
+
+  const baseballRaw = baseballRpc.value;
+  const errorsRaw = errorsRpc.value;
+  const teamsRaw = teamsRpc.value;
+
+  const degradation: RollupBDegradation = {
+    baseballRollupDegraded: baseballRpc.degraded,
+    errorsRollupDegraded: errorsRpc.degraded,
+    teamsRollupDegraded: teamsRpc.degraded,
   };
-  // --- Transport errors must surface — these are NOT degradation scenarios. ---
-  if (baseballRes.error) {
-    if (baseballRes.error instanceof Error) throw baseballRes.error;
-    throw new Error(`get_admin_baseball_rollup failed: ${describe(baseballRes.error)}`);
-  }
-  if (errorsRes.error) {
-    if (errorsRes.error instanceof Error) throw errorsRes.error;
-    throw new Error(`get_admin_errors_rollup failed: ${describe(errorsRes.error)}`);
-  }
-  if (teamsRes.error) {
-    if (teamsRes.error instanceof Error) throw teamsRes.error;
-    throw new Error(`get_admin_teams_scoring_rollup failed: ${describe(teamsRes.error)}`);
-  }
-
-  const baseballRaw = baseballRes.data;
-  const errorsRaw = errorsRes.data;
-  const teamsRaw = teamsRes.data;
-
-  if (!baseballRaw) throw new Error('get_admin_baseball_rollup returned empty payload');
-  if (!errorsRaw) throw new Error('get_admin_errors_rollup returned empty payload');
-  if (!teamsRaw) throw new Error('get_admin_teams_scoring_rollup returned empty payload');
 
   // -------------------------------------------------------------------------
   // C5 — baseball (snake_case → camelCase + compute recruitingActivePlayers /
@@ -696,6 +801,7 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
   };
 
   return {
+    degradation,
     baseball,
     errors,
     adminEvents,
