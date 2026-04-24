@@ -36,6 +36,7 @@ import type {
   SprayChartOutcomeBucket,
 } from './stats-data-types';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 
 // ============================================================================
@@ -956,11 +957,11 @@ export async function getDetailedStats(
 
     return serializeDetailedStats(calculateStatsFromShots(shots, holesInfo, roundsInfo));
   } catch (error) {
-    await logServerError(`[Stats] Falling back to round-level stats: ${error instanceof Error ? error.message : String(error)}`, { action: 'stats_data.getDetailedStats' });
+    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.getDetailedStats' });
     return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
   }
   } catch (outerError) {
-    await logServerError(`[Stats] getDetailedStats failed: ${outerError instanceof Error ? outerError.message : String(outerError)}`, { action: 'stats_data.getDetailedStats' });
+    await logServerError(`[Stats] getDetailedStats failed: ${describeError(outerError)}`, { action: 'stats_data.getDetailedStats' });
     return serializeDetailedStats(calculateStatsFromShots([], [], []));
   }
 }

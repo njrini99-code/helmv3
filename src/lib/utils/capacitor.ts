@@ -1,5 +1,9 @@
 import { Capacitor } from '@capacitor/core';
-import { Keyboard } from '@capacitor/keyboard';
+// NOTE: `@capacitor/keyboard` is intentionally NOT statically imported.
+// Importing it on web triggers Capacitor's plugin-proxy registration and
+// surfaces "Keyboard plugin is not implemented on web" as an unhandled
+// rejection on every page load (400+ telemetry incidents). We dynamic-
+// import inside `initCapacitor` below so the module only loads on native.
 import { Browser } from '@capacitor/browser';
 import { Haptics, ImpactStyle, NotificationType as HapticNotificationType } from '@capacitor/haptics';
 import { StatusBar, Style as StatusBarStyle } from '@capacitor/status-bar';
@@ -22,6 +26,7 @@ export function isNativeApp(): boolean {
 export async function initCapacitor(): Promise<void> {
   if (!isNativeApp()) return;
   try {
+    const { Keyboard } = await import('@capacitor/keyboard');
     await Keyboard.setAccessoryBarVisible({ isVisible: false });
   } catch {
     // Keyboard plugin not available on this platform
