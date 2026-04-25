@@ -5,7 +5,8 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
 import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
-import { fetchAdminRollupC, EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c';
+import { fetchAdminRollupC } from './admin/rollup-c';
+import { EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c.shared';
 import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================
