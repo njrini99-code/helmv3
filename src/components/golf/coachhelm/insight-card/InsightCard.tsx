@@ -449,7 +449,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             <div className="text-right flex-shrink-0">
               <div
                 data-testid="hero-strokes-impact"
-                className="font-[family-name:var(--font-fraunces)] text-3xl md:text-4xl font-semibold text-warm-900 tabular-nums leading-none"
+                className="text-3xl md:text-4xl font-semibold text-warm-900 tabular-nums leading-none tracking-tight"
               >
                 ~{impact.toFixed(1)}
               </div>
@@ -462,7 +462,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           <div>
             <h2
               data-testid="hero-title"
-              className="font-[family-name:var(--font-fraunces)] text-[28px] md:text-[32px] leading-tight font-semibold text-warm-900"
+              className="text-[22px] md:text-[24px] leading-tight font-semibold text-warm-900 tracking-tight"
             >
               {title}
             </h2>
