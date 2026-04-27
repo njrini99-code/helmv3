@@ -23,6 +23,9 @@ interface SendEmailRequest {
   body?: string;
   logOnly?: boolean;
   templateId?: string;
+  /** plain (default) wraps body in greeting/signature shell.
+   *  html sends the body verbatim as the full email document. */
+  format?: 'plain' | 'html';
 }
 
 export async function POST(request: Request) {
@@ -50,7 +53,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { recipients, subject, body, logOnly, templateId } = (await request.json()) as SendEmailRequest;
+    const { recipients, subject, body, logOnly, templateId, format } = (await request.json()) as SendEmailRequest;
+    const isHtmlBody = format === 'html';
 
     if (!recipients?.length || !subject?.trim()) {
       return NextResponse.json({ error: 'Missing required fields: recipients, subject' }, { status: 400 });
@@ -215,7 +219,9 @@ export async function POST(request: Request) {
             from: 'Helm Sports Labs <admin@helmsportslabs.com>',
             to: [recipient.email],
             subject: personalizedSubject,
-            html: buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
+            html: isHtmlBody
+              ? personalizedBody
+              : buildEmailHtml(recipient.name, personalizedSubject, personalizedBody),
           }),
         });
 

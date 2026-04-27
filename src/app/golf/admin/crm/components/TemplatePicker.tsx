@@ -21,12 +21,17 @@ interface EmailTemplate {
   merge_tags: string[] | null;
   is_default: boolean;
   usage_count: number;
+  format: TemplateFormat;
 }
 
 type TemplateCategory = 'intro' | 'follow_up' | 'demo_invite' | 'proposal' | 'check_in' | 'general' | 'cold_outreach' | 'active_conversation' | 're_engage' | 'close' | 'post_close';
 
+/** plain = legacy paragraph text, wrapped in our greeting/signature shell.
+ *  html  = full HTML document — replaces the entire email shell on send + preview. */
+type TemplateFormat = 'plain' | 'html';
+
 interface TemplatePickerProps {
-  onSelect: (template: { subject: string; body: string; id: string }) => void;
+  onSelect: (template: { subject: string; body: string; id: string; format: TemplateFormat }) => void;
   coachData?: Record<string, string | undefined>;
 }
 
@@ -223,7 +228,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
       const supabase = createClient();
       const { data } = await supabase
         .from('crm_email_templates')
-        .select('id, name, subject, body, category, merge_tags, is_default, usage_count')
+        .select('id, name, subject, body, category, merge_tags, is_default, usage_count, format')
         .order('category')
         .order('usage_count', { ascending: false });
       setTemplates((data as EmailTemplate[] | null) ?? []);
@@ -249,10 +254,14 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
 
   const handleSelect = (template: EmailTemplate) => {
     setSelectedId(template.id);
+    // Default to 'plain' if the column hasn't been backfilled yet — keeps
+    // the picker tolerant of older rows in the wild.
+    const format: TemplateFormat = template.format === 'html' ? 'html' : 'plain';
     onSelect({
       id: template.id,
       subject: replaceMergeTags(template.subject, coachData),
       body: replaceMergeTags(template.body, coachData),
+      format,
     });
   };
 
@@ -342,12 +351,17 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                     <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
+                    {template.format === 'html' && (
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-warm-900 text-white">
+                        HTML
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-warm-500 truncate leading-relaxed">
                     {template.subject}
                   </p>
                   <p className="text-xs text-warm-400 line-clamp-2 mt-1 leading-relaxed">
-                    {template.body}
+                    {template.format === 'html' ? 'Full HTML email — replaces the standard greeting + signature shell.' : template.body}
                   </p>
                   <p className="text-[10px] text-warm-400 mt-2">
                     Used {template.usage_count ?? 0} times

@@ -53,6 +53,10 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   const [mode, setMode] = useState<SendMode>('helm');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
+  // Body format: 'plain' (default — wrapped in greeting/signature shell) or
+  // 'html' (full HTML document, replaces the entire email). Set by template
+  // selection; defaults back to 'plain' on Clear.
+  const [bodyFormat, setBodyFormat] = useState<'plain' | 'html'>('plain');
   const [sending, setSending] = useState(false);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [helmResult, setHelmResult] = useState<HelmSendResult | null>(null);
@@ -377,6 +381,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 subject: draft?.subject || subject.trim(),
                 body: draft?.body || body.trim(),
                 templateId: selectedTemplateId,
+                format: bodyFormat,
               }),
             });
 
@@ -428,6 +433,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
           subject: subject.trim(),
           body: body.trim(),
           templateId: selectedTemplateId,
+          format: bodyFormat,
         }),
       });
 
@@ -474,10 +480,11 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
   };
 
   // ── Handle template selection ──
-  const handleTemplateSelect = (template: { subject: string; body: string; id: string }) => {
+  const handleTemplateSelect = (template: { subject: string; body: string; id: string; format: 'plain' | 'html' }) => {
     setSubject(template.subject);
     setBody(template.body);
     setSelectedTemplateId(template.id);
+    setBodyFormat(template.format);
   };
 
   // Close on Escape
@@ -622,6 +629,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                           setSelectedTemplateId(null);
                           setSubject('');
                           setBody('');
+                          setBodyFormat('plain');
                         }}
                         className="ml-1 text-primary-400 hover:text-primary-600"
                       >
@@ -880,60 +888,92 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                 </div>
 
                 {/* Email Preview Card — clean style */}
-                <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
-                  <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
-                    {/* Greeting */}
-                    <div className="px-5 pt-5">
-                      {firstCoach ? (
-                        <p className="text-sm font-semibold text-warm-900">
-                          Coach {firstCoach.name.split(' ').length > 1 ? firstCoach.name.split(' ').slice(-1)[0] : firstCoach.name},
-                        </p>
-                      ) : (
+                {bodyFormat === 'html' ? (
+                  /* HTML mode: render the body verbatim in a sandboxed iframe.
+                     No greeting + signature wrapper — the template IS the email. */
+                  <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
+                    <div className="flex items-center justify-between px-1 pb-2">
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-warm-500">
+                        HTML Mockup
+                      </span>
+                      <span className="text-[10px] text-warm-400">
+                        Full HTML — sent as-is
+                      </span>
+                    </div>
+                    {body.trim() ? (
+                      <iframe
+                        title="HTML email preview"
+                        // Sandbox without allow-scripts: scripts in the template
+                        // are inert in preview, but layout/CSS/images render.
+                        sandbox=""
+                        srcDoc={mode === 'helm' ? replaceMergeTags(body) : body}
+                        className="w-full bg-white rounded-lg shadow-sm border-0"
+                        style={{ minHeight: 720, height: '70vh' }}
+                      />
+                    ) : (
+                      <div className="bg-white rounded-lg py-12 text-center">
                         <p className="text-sm text-warm-300 italic">
-                          Coach &#123;last_name&#125;,
+                          Paste HTML or pick an HTML template to preview...
                         </p>
-                      )}
-                    </div>
-
-                    {/* Body */}
-                    <div className="px-5 pt-3 pb-5">
-                      {body.trim() ? (
-                        <div className="text-sm text-warm-600 whitespace-pre-wrap leading-relaxed">
-                          {mode === 'helm' ? replaceMergeTags(body) : body}
-                        </div>
-                      ) : (
-                        <div className="py-8 text-center">
-                          <p className="text-sm text-warm-300 italic">
-                            Start typing to see a preview...
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-[#f5f5f4] rounded-xl border border-warm-200/60 shadow-sm overflow-hidden p-3">
+                    <div className="bg-white rounded-lg overflow-hidden shadow-sm" style={{ maxWidth: 600 }}>
+                      {/* Greeting */}
+                      <div className="px-5 pt-5">
+                        {firstCoach ? (
+                          <p className="text-sm font-semibold text-warm-900">
+                            Coach {firstCoach.name.split(' ').length > 1 ? firstCoach.name.split(' ').slice(-1)[0] : firstCoach.name},
                           </p>
-                        </div>
-                      )}
-                    </div>
+                        ) : (
+                          <p className="text-sm text-warm-300 italic">
+                            Coach &#123;last_name&#125;,
+                          </p>
+                        )}
+                      </div>
 
-                    {/* Signature */}
-                    <div className="px-5 pb-5">
-                      <div className="border-t border-warm-200 pt-4">
-                        <div className="flex items-start gap-3">
-                          <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-10 h-10 object-contain flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm text-warm-600">Best,</p>
-                            <p className="text-sm font-semibold text-warm-900 mt-1">Leah Potter & Nick Rini</p>
-                            <p className="text-xs text-warm-500">Co-Founders, Helm Sports Labs</p>
-                            <div className="flex items-center gap-3 mt-1">
-                              <a href="https://helmsportslabs.com" className="text-xs font-medium text-primary-600 no-underline hover:underline">
-                                helmsportslabs.com
-                              </a>
-                              <span className="text-warm-300">|</span>
-                              <a href="mailto:admin@helmsportslabs.com" className="text-xs text-warm-500 no-underline hover:underline">
-                                admin@helmsportslabs.com
-                              </a>
+                      {/* Body */}
+                      <div className="px-5 pt-3 pb-5">
+                        {body.trim() ? (
+                          <div className="text-sm text-warm-600 whitespace-pre-wrap leading-relaxed">
+                            {mode === 'helm' ? replaceMergeTags(body) : body}
+                          </div>
+                        ) : (
+                          <div className="py-8 text-center">
+                            <p className="text-sm text-warm-300 italic">
+                              Start typing to see a preview...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Signature */}
+                      <div className="px-5 pb-5">
+                        <div className="border-t border-warm-200 pt-4">
+                          <div className="flex items-start gap-3">
+                            <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" className="w-10 h-10 object-contain flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm text-warm-600">Best,</p>
+                              <p className="text-sm font-semibold text-warm-900 mt-1">Leah Potter & Nick Rini</p>
+                              <p className="text-xs text-warm-500">Co-Founders, Helm Sports Labs</p>
+                              <div className="flex items-center gap-3 mt-1">
+                                <a href="https://helmsportslabs.com" className="text-xs font-medium text-primary-600 no-underline hover:underline">
+                                  helmsportslabs.com
+                                </a>
+                                <span className="text-warm-300">|</span>
+                                <a href="mailto:admin@helmsportslabs.com" className="text-xs text-warm-500 no-underline hover:underline">
+                                  admin@helmsportslabs.com
+                                </a>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Preview info */}
                 {!firstCoach && (
