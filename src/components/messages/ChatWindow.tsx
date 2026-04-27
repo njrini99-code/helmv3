@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconSend, IconArrowLeft, IconCheck } from '@/components/icons';
@@ -151,7 +152,7 @@ export function ChatWindow({
                       : 'bg-warm-100 text-warm-900 rounded-bl-[6px]'
                   )}
                 >
-                  <p className="text-[15px] whitespace-pre-wrap break-words leading-snug">{message.content}</p>
+                  <p className="text-[15px] whitespace-pre-wrap break-words leading-snug">{decodeMessageContent(message.content)}</p>
                   <p className={cn(
                     'text-[11px] mt-1 flex items-center',
                     isOwn ? 'text-primary-100/90 justify-end' : 'text-warm-400'

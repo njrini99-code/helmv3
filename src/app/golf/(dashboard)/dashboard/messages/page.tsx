@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
@@ -227,7 +228,7 @@ export default function GolfMessagesPage() {
   // Handle starting edit mode
   const handleStartEdit = (messageId: string, currentContent: string) => {
     setEditingMessageId(messageId);
-    setEditContent(currentContent);
+    setEditContent(decodeMessageContent(currentContent));
     setDeleteConfirmId(null);
   };
 
@@ -658,7 +659,7 @@ export default function GolfMessagesPage() {
                               !isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-r-2xl rounded-l-lg' : 'rounded-l-2xl rounded-r-lg'),
                             )}>
                               <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                                {msg.content}
+                                {decodeMessageContent(msg.content)}
                               </p>
                               {/* Edited indicator - check if property exists on message */}
                               {'edited_at' in msg && (msg as MessageWithReadStatus & { edited_at?: string }).edited_at && (
@@ -1170,7 +1171,7 @@ function ConversationRow({
           'text-sm truncate',
           hasUnread ? 'text-warm-900' : 'text-warm-500'
         )}>
-          {conv.last_message?.content || 'No messages yet'}
+          {conv.last_message?.content ? decodeMessageContent(conv.last_message.content) : 'No messages yet'}
         </p>
       </div>
     </button>

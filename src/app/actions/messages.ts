@@ -8,7 +8,6 @@ import { revalidatePath } from 'next/cache';
 import {
   formatSafeErrorResponse,
   logSecurityEvent,
-  sanitizeHtml
 } from '@/lib/validation/server-action-validator';
 import { MessageSchemas } from '@/lib/validation/action-schemas';
 import { notifyNewMessage } from '@/lib/notifications';
@@ -61,8 +60,8 @@ export async function sendMessage({
       content
     });
 
-    // Sanitize content to prevent XSS
-    const sanitizedContent = sanitizeHtml(validatedData.content);
+    // React's text interpolation auto-escapes on render — store raw user text.
+    const sanitizedContent = validatedData.content;
 
     // Verify user is a participant in this conversation
     const participantsTable = sport === 'golf' ? 'golf_conversation_participants' : 'baseball_conversation_participants';
@@ -732,8 +731,8 @@ export async function updateMessage({
       throw new Error('Message content is too long');
     }
 
-    // Sanitize content to prevent XSS
-    const sanitizedContent = sanitizeHtml(content.trim());
+    // React's text interpolation auto-escapes on render — store raw user text.
+    const sanitizedContent = content.trim();
 
     const messagesTable = sport === 'golf' ? 'golf_messages' : 'baseball_messages';
 
