@@ -24,6 +24,8 @@ export interface AdminPresenceInfo {
   joined_at: string;
   /** Last activity timestamp */
   last_active: string;
+  /** Online-at timestamp updated each heartbeat (used to age out stale presences) */
+  online_at: string;
   /** Presence key (used for tracking) */
   presence_ref: string;
 }
@@ -65,61 +67,91 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentTab, setCurrentTab] = useState('command');
 
+  // Refs avoid forcing the connection effect to re-run when tab/user metadata
+  // changes. The previous implementation listed `currentTab` and the
+  // `updatePresence` callback as deps, which tore down and rebuilt the channel
+  // every time the admin clicked a tab — Supabase never had time to settle on
+  // a `SUBSCRIBED` state, so `presenceState` always came back empty and the
+  // sidebar showed `Active Sessions: 0` even with an admin online.
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const currentTabRef = useRef<string>('command');
+  const currentUserRef = useRef<User | null>(null);
+
   // Memoize to avoid thrashing a fresh client ref on every parent re-render.
   const [supabase] = useState(() => createClient());
 
   // Get current user on mount
   useEffect(() => {
+    let cancelled = false;
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      currentUserRef.current = user;
       setCurrentUser(user);
     };
-    getUser();
+    void getUser();
+    return () => {
+      cancelled = true;
+    };
   }, [supabase]);
 
-  // Extract admins from presence state
+  // Extract admins from presence state. Each admin id may have multiple
+  // presence entries if they have several tabs open — we de-dupe by id and
+  // keep the most recent `online_at` so the list reflects the latest tick.
   const extractAdmins = useCallback((state: RealtimePresenceState<AdminPresenceInfo>): AdminPresenceInfo[] => {
-    const admins: AdminPresenceInfo[] = [];
-    
+    const byId = new Map<string, AdminPresenceInfo>();
     Object.values(state).forEach((presences) => {
-      presences.forEach((presence: AdminPresenceInfo) => {
-        // Avoid duplicates by user ID
-        if (!admins.some(a => a.id === presence.id)) {
-          admins.push(presence);
+      presences.forEach((presence) => {
+        const existing = byId.get(presence.id);
+        if (!existing) {
+          byId.set(presence.id, presence);
+          return;
+        }
+        const newTs = Date.parse(presence.online_at ?? presence.last_active ?? '');
+        const oldTs = Date.parse(existing.online_at ?? existing.last_active ?? '');
+        if (Number.isFinite(newTs) && newTs > (Number.isFinite(oldTs) ? oldTs : 0)) {
+          byId.set(presence.id, presence);
         }
       });
     });
-
-    // Sort by join time
-    return admins.sort((a, b) => 
-      new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime()
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime(),
     );
   }, []);
 
-  // Update presence info
-  const updatePresence = useCallback((tab: string) => {
-    setCurrentTab(tab);
-    
-    if (!channelRef.current || !currentUser) return;
-
-    const presenceInfo: Partial<AdminPresenceInfo> = {
-      id: currentUser.id,
-      email: currentUser.email ?? null,
-      name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
-      avatar_url: currentUser.user_metadata?.avatar_url ?? null,
+  // Build the payload Supabase Realtime tracks for this client. `online_at`
+  // moves on every heartbeat so other clients can detect liveness even if
+  // the underlying realtime sync event hasn't refired.
+  const buildPresence = useCallback((tab: string): Partial<AdminPresenceInfo> => {
+    const user = currentUserRef.current;
+    if (!user) return {};
+    const now = new Date().toISOString();
+    return {
+      id: user.id,
+      email: user.email ?? null,
+      name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? null,
+      avatar_url: user.user_metadata?.avatar_url ?? null,
       currentTab: tab,
-      last_active: new Date().toISOString(),
+      last_active: now,
+      online_at: now,
     };
+  }, []);
 
-    channelRef.current.track(presenceInfo).catch((err) => {
+  // Update presence info — exposed to the consumer so AdminRealtimeProvider
+  // can push the new tab name on every tab change without resubscribing.
+  const updatePresence = useCallback((tab: string) => {
+    currentTabRef.current = tab;
+    if (!channelRef.current || !currentUserRef.current) return;
+    const payload = buildPresence(tab);
+    if (Object.keys(payload).length === 0) return;
+    channelRef.current.track(payload).catch((err) => {
       console.debug('[Presence] Failed to track:', err);
     });
-  }, [currentUser]);
+  }, [buildPresence]);
 
-  // Connect to presence channel
+  // Connect to presence channel. Deps deliberately exclude `currentTab` and
+  // `updatePresence` — the channel is opened once per user and reused.
   useEffect(() => {
     if (!currentUser) return;
 
@@ -138,29 +170,29 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
         setActiveAdmins(extractAdmins(state));
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        console.debug('[Presence] Joined:', newPresences);
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[Presence] Joined:', newPresences);
+        }
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
-        console.debug('[Presence] Left:', leftPresences);
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[Presence] Left:', leftPresences);
+        }
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           setIsConnected(true);
           setError(null);
 
-          // Track our own presence
+          // Track our own presence on initial subscribe. `joined_at` is set
+          // exactly once per session; subsequent heartbeats only update
+          // `online_at` / `last_active`.
           try {
-            const presenceInfo: Partial<AdminPresenceInfo> = {
-              id: currentUser.id,
-              email: currentUser.email ?? null,
-              name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
-              avatar_url: currentUser.user_metadata?.avatar_url ?? null,
-              currentTab: currentTab,
+            const payload: Partial<AdminPresenceInfo> = {
+              ...buildPresence(currentTabRef.current),
               joined_at: new Date().toISOString(),
-              last_active: new Date().toISOString(),
             };
-
-            await channel.track(presenceInfo);
+            await channel.track(payload);
           } catch (err) {
             console.error('Failed to track presence:', err);
           }
@@ -174,44 +206,51 @@ export function useAdminPresence(options: UseAdminPresenceOptions = {}): UseAdmi
 
     channelRef.current = channel;
 
-    // Handle visibility change — push a fresh presence update the moment
-    // the admin returns to the tab so they aren't stuck showing as "away".
+    // Push a fresh presence update the moment the admin returns to the tab
+    // so they aren't stuck showing as "away".
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && channelRef.current && currentUser) {
-        updatePresence(currentTab);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current).catch(() => {
-          // Ignore cleanup errors
+      if (document.visibilityState === 'visible' && channelRef.current) {
+        const payload = buildPresence(currentTabRef.current);
+        if (Object.keys(payload).length === 0) return;
+        channelRef.current.track(payload).catch(() => {
+          /* silent — heartbeat will retry */
         });
       }
     };
-  }, [currentUser, channelName, supabase, extractAdmins, currentTab, updatePresence]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Best-effort untrack on tab close so admins drop off the list quickly.
+    const handlePageHide = () => {
+      if (channelRef.current) {
+        channelRef.current.untrack().catch(() => undefined);
+      }
+    };
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+
+      const ch = channelRef.current;
+      channelRef.current = null;
+      if (ch) {
+        ch.untrack().catch(() => undefined);
+        supabase.removeChannel(ch).catch(() => undefined);
+      }
+    };
+  }, [currentUser, channelName, supabase, extractAdmins, buildPresence]);
 
   // Periodic sync to keep presence alive. Pauses when the tab is hidden so
-  // we aren't hammering the realtime channel for admins who left the dashboard
-  // open in a background tab.
+  // we aren't hammering the realtime channel for admins who left the
+  // dashboard open in a background tab.
   const heartbeat = useCallback(() => {
-    if (!channelRef.current || !currentUser) return;
-    const presenceInfo: Partial<AdminPresenceInfo> = {
-      id: currentUser.id,
-      email: currentUser.email ?? null,
-      name: currentUser.user_metadata?.full_name ?? currentUser.email?.split('@')[0] ?? null,
-      avatar_url: currentUser.user_metadata?.avatar_url ?? null,
-      currentTab,
-      last_active: new Date().toISOString(),
-    };
-    channelRef.current.track(presenceInfo).catch(() => {
-      // Silent fail - will retry on next interval
+    if (!channelRef.current || !currentUserRef.current) return;
+    const payload = buildPresence(currentTabRef.current);
+    if (Object.keys(payload).length === 0) return;
+    channelRef.current.track(payload).catch(() => {
+      // Silent fail — will retry on next interval
     });
-  }, [currentUser, currentTab]);
+  }, [buildPresence]);
   useVisibilityAwareInterval(heartbeat, currentUser ? syncInterval : null);
 
   return {
@@ -235,11 +274,11 @@ export function getAdminInitials(admin: AdminPresenceInfo): string {
     }
     return admin.name.slice(0, 2).toUpperCase();
   }
-  
+
   if (admin.email) {
     return admin.email.slice(0, 2).toUpperCase();
   }
-  
+
   return '??';
 }
 
@@ -257,12 +296,12 @@ export function getAdminColor(id: string): string {
     'bg-indigo-500',
     'bg-orange-500',
   ];
-  
+
   // Simple hash of ID to pick color
   let hash = 0;
   for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash);
   }
-  
+
   return colors[Math.abs(hash) % colors.length]!;
 }

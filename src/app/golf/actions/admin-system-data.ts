@@ -49,17 +49,41 @@ export interface SystemHealthCheck {
   detail: string;
 }
 
+export interface DbTopTable {
+  schema: string;
+  table: string;
+  sizeBytes: number;
+  rowEstimate: number;
+}
+
+export interface DbTelemetry {
+  connectionPoolActive: number;
+  connectionPoolIdle: number;
+  dbSizeBytes: number;
+  topTables: DbTopTable[];
+}
+
 export interface SystemTabData {
   apiPerformance: ApiRoutePerf[];
   errorTrend: ErrorRateEntry[];
   authMetrics: AuthMetricsEntry[];
   backgroundJobs: BackgroundJobEntry[];
   systemHealth: SystemHealthCheck[];
+  dbTelemetry: DbTelemetry;
 }
 
 // ============================================
 // HELPERS
 // ============================================
+
+function emptyDbTelemetry(): DbTelemetry {
+  return {
+    connectionPoolActive: 0,
+    connectionPoolIdle: 0,
+    dbSizeBytes: 0,
+    topTables: [],
+  };
+}
 
 function emptySystemTabData(): SystemTabData {
   return {
@@ -68,6 +92,38 @@ function emptySystemTabData(): SystemTabData {
     authMetrics: [],
     backgroundJobs: [],
     systemHealth: [],
+    dbTelemetry: emptyDbTelemetry(),
+  };
+}
+
+interface RawDbTopTable {
+  schema?: unknown;
+  table?: unknown;
+  size_bytes?: unknown;
+  row_estimate?: unknown;
+}
+
+interface RawDbTelemetry {
+  connection_pool_active?: unknown;
+  connection_pool_idle?: unknown;
+  db_size_bytes?: unknown;
+  top_tables?: unknown;
+}
+
+function parseDbTelemetry(raw: unknown): DbTelemetry {
+  if (!raw || typeof raw !== 'object') return emptyDbTelemetry();
+  const r = raw as RawDbTelemetry;
+  const topRaw = Array.isArray(r.top_tables) ? (r.top_tables as RawDbTopTable[]) : [];
+  return {
+    connectionPoolActive: Number(r.connection_pool_active ?? 0) || 0,
+    connectionPoolIdle: Number(r.connection_pool_idle ?? 0) || 0,
+    dbSizeBytes: Number(r.db_size_bytes ?? 0) || 0,
+    topTables: topRaw.map((t) => ({
+      schema: String(t.schema ?? ''),
+      table: String(t.table ?? ''),
+      sizeBytes: Number(t.size_bytes ?? 0) || 0,
+      rowEstimate: Number(t.row_estimate ?? 0) || 0,
+    })),
   };
 }
 
@@ -103,32 +159,88 @@ export async function getSystemTabData(): Promise<SystemTabData> {
   const ago7d = daysAgo(7);
 
   try {
+    // Each call wrapped in allSettled so a single RPC failure (e.g. timeout
+    // on hourly aggregates) degrades just that subtree instead of zeroing
+    // the whole tab. Pattern mirrors src/app/golf/actions/admin/rollup-b.ts
+    // L569-650.
     const [
-      apiPerfRes,
-      systemHealthRes,
-      errorTrendRes,
-      authMetricsRes,
-      backgroundJobsRes,
-    ] = await Promise.all([
+      apiPerfSettled,
+      systemHealthSettled,
+      errorTrendSettled,
+      authMetricsSettled,
+      backgroundJobsSettled,
+      dbTelemetrySettled,
+    ] = await Promise.allSettled([
       // RPC calls
-      adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown as { data: any[] | null; error: unknown },
-      adminDb.rpc('get_enhanced_system_health' as never) as unknown as { data: any[] | null; error: unknown },
+      (adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+      (adminDb.rpc('get_enhanced_system_health' as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
 
       // Direct table queries for hourly data
-      (adminDb.from('error_rate_hourly' as never) as any)
+      ((adminDb.from('error_rate_hourly' as never) as any)
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown as { data: any[] | null; error: unknown },
+        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
 
-      (adminDb.from('auth_metrics_hourly' as never) as any)
+      ((adminDb.from('auth_metrics_hourly' as never) as any)
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown as { data: any[] | null; error: unknown },
+        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
 
-      (adminDb.from('background_job_logs' as never) as any)
+      ((adminDb.from('background_job_logs' as never) as any)
         .select('*')
-        .order('started_at', { ascending: false }) as unknown as { data: any[] | null; error: unknown },
+        .order('started_at', { ascending: false }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+
+      // get_db_telemetry returns a single jsonb payload (not a rowset).
+      (adminDb.rpc('get_db_telemetry' as never) as unknown) as Promise<{ data: unknown; error: unknown }>,
     ]);
+
+    function unwrapList(
+      label: string,
+      settled: PromiseSettledResult<{ data: any[] | null; error: unknown }>,
+    ): any[] {
+      if (settled.status === 'rejected') {
+        void logServerError(
+          `[admin-system-data] ${label} rejected: ${settled.reason instanceof Error ? settled.reason.message : String(settled.reason)}`,
+          { action: 'admin_system_data.getSystemTabData' },
+        );
+        return [];
+      }
+      const { data, error } = settled.value;
+      if (error) {
+        void logServerError(
+          `[admin-system-data] ${label} errored: ${error instanceof Error ? error.message : String(error)}`,
+          { action: 'admin_system_data.getSystemTabData' },
+        );
+        return [];
+      }
+      return data ?? [];
+    }
+
+    const apiPerfRes = { data: unwrapList('get_api_performance_summary', apiPerfSettled) };
+    const systemHealthRes = { data: unwrapList('get_enhanced_system_health', systemHealthSettled) };
+    const errorTrendRes = { data: unwrapList('error_rate_hourly', errorTrendSettled) };
+    const authMetricsRes = { data: unwrapList('auth_metrics_hourly', authMetricsSettled) };
+    const backgroundJobsRes = { data: unwrapList('background_job_logs', backgroundJobsSettled) };
+
+    // DB telemetry — single jsonb row. Falls back to empty shape on failure
+    // so the System tab still renders the rest of the panel.
+    let dbTelemetry: DbTelemetry = emptyDbTelemetry();
+    if (dbTelemetrySettled.status === 'fulfilled') {
+      const { data, error } = dbTelemetrySettled.value;
+      if (error) {
+        void logServerError(
+          `[admin-system-data] get_db_telemetry errored: ${error instanceof Error ? error.message : String(error)}`,
+          { action: 'admin_system_data.getSystemTabData' },
+        );
+      } else {
+        dbTelemetry = parseDbTelemetry(data);
+      }
+    } else {
+      void logServerError(
+        `[admin-system-data] get_db_telemetry rejected: ${dbTelemetrySettled.reason instanceof Error ? dbTelemetrySettled.reason.message : String(dbTelemetrySettled.reason)}`,
+        { action: 'admin_system_data.getSystemTabData' },
+      );
+    }
 
     // Parse API performance
     const apiPerformance: ApiRoutePerf[] = (apiPerfRes.data ?? []).map(
@@ -228,6 +340,7 @@ export async function getSystemTabData(): Promise<SystemTabData> {
       authMetrics,
       backgroundJobs,
       systemHealth,
+      dbTelemetry,
     };
   } catch (error) {
     await logServerError(`[admin-system-data] Failed to fetch system tab data: ${error instanceof Error ? error.message : String(error)}`, { action: 'admin_system_data.getSystemTabData' });
