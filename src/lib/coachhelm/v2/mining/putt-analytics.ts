@@ -79,10 +79,15 @@ const BUCKET_PUTTS_PER_ROUND: Record<PuttBucketLabel, number> = {
 const DISTANCE_WINDOW_DAYS = 30;
 const MISS_BIAS_WINDOW_DAYS = 90;
 
-const MIN_BUCKET_ATTEMPTS = 5;
+// P2 (2026-04-27): tightened from 5 → 10 to suppress statistically meaningless
+// per-bucket make-rate insights (e.g. "15-20ft: 0% (N=5)"). Below 10 attempts
+// per bucket the variance on a Bernoulli proportion swamps any signal.
+const MIN_BUCKET_ATTEMPTS = 10;
 const MIN_GAP_FRACTION = 0.05;             // |make_pct - baseline| must be >= 5pt
 const MIN_CONFIDENCE = 0.4;                // contract floor
-const MISS_BIAS_MIN_TAGGED_MISSES = 15;
+// P2 (2026-04-27): tightened from 15 → 20. With <20 tagged misses a 60/40
+// split is well within noise for a Bernoulli sampling distribution.
+const MISS_BIAS_MIN_TAGGED_MISSES = 20;
 const MISS_BIAS_THRESHOLD = 0.6;           // 60% of misses to trigger
 const MISS_BIAS_NEUTRAL_TARGET = 0.5;      // 50% would be neutral
 
@@ -343,7 +348,17 @@ export async function generatePuttDistanceInsights(
   const buckets = aggregatePuttBuckets(rows);
 
   for (const agg of buckets) {
-    if (agg.attempts < MIN_BUCKET_ATTEMPTS) continue;
+    if (agg.attempts < MIN_BUCKET_ATTEMPTS) {
+      // P2: trace skipped emissions so the reason is visible in logs without
+      // having to re-run the generator with a debugger. Only log when the
+      // bucket has *some* sample (>=1) — empty buckets are uninteresting.
+      if (agg.attempts > 0) {
+        console.debug(
+          `[insight-skip] reason=insufficient_sample type=putt_make_rate_${agg.label} n=${agg.attempts} min=${MIN_BUCKET_ATTEMPTS}`,
+        );
+      }
+      continue;
+    }
 
     const baseline = D2_BASELINE[agg.label];
     const gap = baseline - agg.makePct;
@@ -546,7 +561,14 @@ export async function generatePuttMissBiasInsights(
 
   // Require a real sample of *tagged* misses — untagged misses can't tell us
   // direction. Data observation: roughly 1 in 5 misses are tagged today.
-  if (agg.totalTaggedMisses < MISS_BIAS_MIN_TAGGED_MISSES) return;
+  if (agg.totalTaggedMisses < MISS_BIAS_MIN_TAGGED_MISSES) {
+    if (agg.totalTaggedMisses > 0) {
+      console.debug(
+        `[insight-skip] reason=insufficient_sample type=putt_miss_bias n=${agg.totalTaggedMisses} min=${MISS_BIAS_MIN_TAGGED_MISSES}`,
+      );
+    }
+    return;
+  }
 
   const windowStart = isoDateDaysAgo(MISS_BIAS_WINDOW_DAYS);
   const windowEnd = todayIsoDate();
