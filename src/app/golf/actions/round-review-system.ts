@@ -126,13 +126,19 @@ export interface RoundReviewContent {
   keyStats: RoundReviewKeyStat[];
   recommendations: string[];
 
-  // Scoring distribution (hole numbers per category)
+  // Scoring distribution (hole numbers per category).
+  // The eagle/birdie/par/bogey/doublePlus buckets are mutually exclusive and
+  // cover every integer scoreToPar value (≤-2, -1, 0, 1, ≥2). `holesPlayed`
+  // is the denominator: number of holes that contributed a real score to
+  // the distribution. On incomplete rounds it can be < 18 — consumers should
+  // use `holesPlayed` (when present) rather than assuming 18.
   scoringDistribution: {
     eagles: number[];
     birdies: number[];
     pars: number[];
     bogeys: number[];
     doublePlus: number[];
+    holesPlayed?: number;
   };
 
   // Front 9 / Back 9 split
@@ -860,12 +866,23 @@ function generateReviewContent(
   const bestHoles = [...holes].sort((a, b) => a.scoreToPar - b.scoreToPar).filter(h => h.scoreToPar <= -1);
 
   // ===== SCORING DISTRIBUTION =====
+  // The five buckets below are mutually exclusive and exhaustive over every
+  // integer scoreToPar (≤-2, -1, 0, 1, ≥2), so any hole with a numeric
+  // scoreToPar lands in exactly one bucket. We additionally guard against
+  // non-finite values (NaN/null introduced by future data shapes) so the
+  // bucket totals always reconcile with `holesPlayed`.
+  //
+  // `holesPlayed` is the denominator (count of holes that contributed a real
+  // score). On incomplete or partially-edited rounds this may be < 18 — UIs
+  // should size segments against `holesPlayed` rather than a hard-coded 18.
+  const scoredHoles = holes.filter(h => Number.isFinite(h.scoreToPar));
   const scoringDistribution = {
-    eagles: eagleHoles.map(h => h.hole),
-    birdies: birdieHoles.map(h => h.hole),
-    pars: parHoles.map(h => h.hole),
-    bogeys: bogeyHoles.map(h => h.hole),
-    doublePlus: doublePlusHoles.map(h => h.hole),
+    eagles: scoredHoles.filter(h => h.scoreToPar <= -2).map(h => h.hole),
+    birdies: scoredHoles.filter(h => h.scoreToPar === -1).map(h => h.hole),
+    pars: scoredHoles.filter(h => h.scoreToPar === 0).map(h => h.hole),
+    bogeys: scoredHoles.filter(h => h.scoreToPar === 1).map(h => h.hole),
+    doublePlus: scoredHoles.filter(h => h.scoreToPar >= 2).map(h => h.hole),
+    holesPlayed: scoredHoles.length,
   };
 
   // ===== FRONT/BACK SPLIT =====
