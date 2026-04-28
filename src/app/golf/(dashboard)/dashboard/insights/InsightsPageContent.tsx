@@ -25,6 +25,7 @@ import {
   IconSettings,
   IconTrendingUp,
   IconCheck,
+  IconX,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { InsightSearchBar } from '@/components/golf/coachhelm/insights/InsightSearchBar';
@@ -75,12 +76,62 @@ interface InsightsPageContentProps {
     page?: string;
     sort?: string;
     order?: string;
+    lifecycle?: string;
+    categoryChips?: string;
   };
   filterOptions: FilterOptions | null;
 }
 
 type SortBy = 'priority' | 'created_at' | 'player_name';
 type SortOrder = 'asc' | 'desc';
+
+// ----------------------------------------------------------------------------
+// TRIAGE CHIP FILTERS — agent-12
+// ----------------------------------------------------------------------------
+// Two new client-side multi-select filters layered on top of the existing
+// `InsightFiltersPanel`. They surface the canonical taxonomy used by V2
+// evidence insights (lifecycle_state + category) which the legacy filter
+// panel doesn't expose.
+
+type LifecycleState = EvidenceInsight['lifecycle_state'];
+type Category = NonNullable<EvidenceInsight['category']>;
+
+const LIFECYCLE_OPTIONS: { value: LifecycleState; label: string }[] = [
+  { value: 'tentative', label: 'Tentative' },
+  { value: 'detected', label: 'Detected' },
+  { value: 'matured', label: 'Matured' },
+  { value: 'addressed', label: 'Addressed' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'archived', label: 'Archived' },
+];
+
+const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
+  { value: 'putting', label: 'Putting' },
+  { value: 'tee', label: 'Tee' },
+  { value: 'approach', label: 'Approach' },
+  { value: 'short_game', label: 'Short Game' },
+  { value: 'scoring', label: 'Scoring' },
+  { value: 'pressure', label: 'Pressure' },
+  { value: 'course_management', label: 'Course Mgmt' },
+];
+
+const LIFECYCLE_VALUES = new Set<string>(LIFECYCLE_OPTIONS.map((o) => o.value));
+const CATEGORY_VALUES = new Set<string>(CATEGORY_OPTIONS.map((o) => o.value));
+
+function parseSetParam<T extends string>(raw: string | undefined, allowed: Set<string>): Set<T> {
+  if (!raw) return new Set();
+  const parts = raw
+    .split(',')
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0 && allowed.has(p));
+  return new Set(parts as T[]);
+}
+
+function setsEqual<T>(a: Set<T>, b: Set<T>): boolean {
+  if (a.size !== b.size) return false;
+  for (const v of a) if (!b.has(v)) return false;
+  return true;
+}
 
 // ============================================================================
 // HELPERS
@@ -92,6 +143,8 @@ function parseSearchParams(params: InsightsPageContentProps['initialSearchParams
   page: number;
   sortBy: SortBy;
   sortOrder: SortOrder;
+  lifecycleSet: Set<LifecycleState>;
+  categorySet: Set<Category>;
 } {
   return {
     query: params.q || '',
@@ -107,6 +160,8 @@ function parseSearchParams(params: InsightsPageContentProps['initialSearchParams
     page: params.page ? parseInt(params.page, 10) : 1,
     sortBy: (params.sort as SortBy) || 'created_at',
     sortOrder: (params.order as SortOrder) || 'desc',
+    lifecycleSet: parseSetParam<LifecycleState>(params.lifecycle, LIFECYCLE_VALUES),
+    categorySet: parseSetParam<Category>(params.categoryChips, CATEGORY_VALUES),
   };
 }
 
@@ -115,7 +170,9 @@ function buildSearchParams(
   filters: InsightFilters,
   page: number,
   sortBy: SortBy,
-  sortOrder: SortOrder
+  sortOrder: SortOrder,
+  lifecycleSet: Set<LifecycleState>,
+  categorySet: Set<Category>,
 ): URLSearchParams {
   const params = new URLSearchParams();
 
@@ -130,6 +187,8 @@ function buildSearchParams(
   if (page > 1) params.set('page', page.toString());
   if (sortBy !== 'created_at') params.set('sort', sortBy);
   if (sortOrder !== 'desc') params.set('order', sortOrder);
+  if (lifecycleSet.size > 0) params.set('lifecycle', Array.from(lifecycleSet).join(','));
+  if (categorySet.size > 0) params.set('categoryChips', Array.from(categorySet).join(','));
 
   return params;
 }
@@ -232,6 +291,11 @@ export function InsightsPageContent({
   const [sortOrder, setSortOrder] = useState<SortOrder>(initialState.sortOrder);
   const [pageSize] = useState(20);
 
+  // Triage chip filters — multi-select. URL persisted via `lifecycle` and
+  // `categoryChips` query params.
+  const [lifecycleSet, setLifecycleSet] = useState<Set<LifecycleState>>(initialState.lifecycleSet);
+  const [categorySet, setCategorySet] = useState<Set<Category>>(initialState.categorySet);
+
   const [allInsights, setAllInsights] = useState<EvidenceInsight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -251,8 +315,18 @@ export function InsightsPageContent({
       newPage: number,
       newSortBy: SortBy,
       newSortOrder: SortOrder,
+      newLifecycleSet: Set<LifecycleState>,
+      newCategorySet: Set<Category>,
     ) => {
-      const params = buildSearchParams(newQuery, newFilters, newPage, newSortBy, newSortOrder);
+      const params = buildSearchParams(
+        newQuery,
+        newFilters,
+        newPage,
+        newSortBy,
+        newSortOrder,
+        newLifecycleSet,
+        newCategorySet,
+      );
       const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
       router.replace(newUrl, { scroll: false });
     },
@@ -292,10 +366,19 @@ export function InsightsPageContent({
     void fetchStats();
   }, [fetchInsights, fetchStats]);
 
-  // Client-side filter + sort + paginate.
+  // Client-side filter + sort + paginate. Triage chip filters AND together
+  // with the existing filter pipeline.
   const { pageInsights, totalCount, totalPages } = useMemo(() => {
     const filtered = applyClientFilters(allInsights, query, filters);
-    const sorted = applySort(filtered, sortBy, sortOrder);
+    const chipFiltered = filtered.filter((row) => {
+      if (lifecycleSet.size > 0 && !lifecycleSet.has(row.lifecycle_state)) return false;
+      if (categorySet.size > 0) {
+        if (!row.category) return false;
+        if (!categorySet.has(row.category)) return false;
+      }
+      return true;
+    });
+    const sorted = applySort(chipFiltered, sortBy, sortOrder);
     const pages = Math.max(1, Math.ceil(sorted.length / pageSize));
     const safePage = Math.min(page, pages);
     const startIdx = (safePage - 1) * pageSize;
@@ -305,33 +388,88 @@ export function InsightsPageContent({
       totalCount: sorted.length,
       totalPages: pages,
     };
-  }, [allInsights, query, filters, sortBy, sortOrder, page, pageSize]);
+  }, [allInsights, query, filters, sortBy, sortOrder, page, pageSize, lifecycleSet, categorySet]);
 
   const handleSearchChange = (newQuery: string) => {
     setQuery(newQuery);
     setPage(1);
     setSelectedIds(new Set());
-    updateUrl(newQuery, filters, 1, sortBy, sortOrder);
+    updateUrl(newQuery, filters, 1, sortBy, sortOrder, lifecycleSet, categorySet);
   };
 
   const handleFiltersChange = (newFilters: InsightFilters) => {
     setFilters(newFilters);
     setPage(1);
     setSelectedIds(new Set());
-    updateUrl(query, newFilters, 1, sortBy, sortOrder);
+    updateUrl(query, newFilters, 1, sortBy, sortOrder, lifecycleSet, categorySet);
   };
 
   const handleSortChange = (newSortBy: SortBy, newSortOrder: SortOrder) => {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     setPage(1);
-    updateUrl(query, filters, 1, newSortBy, newSortOrder);
+    updateUrl(query, filters, 1, newSortBy, newSortOrder, lifecycleSet, categorySet);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
     setSelectedIds(new Set());
-    updateUrl(query, filters, newPage, sortBy, sortOrder);
+    updateUrl(query, filters, newPage, sortBy, sortOrder, lifecycleSet, categorySet);
+  };
+
+  // Toggle a lifecycle chip. Resets pagination so triage doesn't land on an
+  // empty intermediate page.
+  const handleToggleLifecycle = (value: LifecycleState) => {
+    const next = new Set(lifecycleSet);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    if (setsEqual(next, lifecycleSet)) return;
+    setLifecycleSet(next);
+    setPage(1);
+    setSelectedIds(new Set());
+    updateUrl(query, filters, 1, sortBy, sortOrder, next, categorySet);
+  };
+
+  const handleToggleCategory = (value: Category) => {
+    const next = new Set(categorySet);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    if (setsEqual(next, categorySet)) return;
+    setCategorySet(next);
+    setPage(1);
+    setSelectedIds(new Set());
+    updateUrl(query, filters, 1, sortBy, sortOrder, lifecycleSet, next);
+  };
+
+  // Player dropdown change — drives `filters.playerId` (already plumbed end to
+  // end through the existing filter panel).
+  const handlePlayerSelect = (playerId: string | undefined) => {
+    if ((filters.playerId ?? undefined) === (playerId ?? undefined)) return;
+    const newFilters: InsightFilters = { ...filters };
+    if (playerId) newFilters.playerId = playerId;
+    else delete newFilters.playerId;
+    setFilters(newFilters);
+    setPage(1);
+    setSelectedIds(new Set());
+    updateUrl(query, newFilters, 1, sortBy, sortOrder, lifecycleSet, categorySet);
+  };
+
+  const triageActiveCount =
+    lifecycleSet.size +
+    categorySet.size +
+    (filters.playerId ? 1 : 0);
+
+  const handleClearTriage = () => {
+    const newFilters: InsightFilters = { ...filters };
+    delete newFilters.playerId;
+    const emptyLifecycle: Set<LifecycleState> = new Set();
+    const emptyCategory: Set<Category> = new Set();
+    setFilters(newFilters);
+    setLifecycleSet(emptyLifecycle);
+    setCategorySet(emptyCategory);
+    setPage(1);
+    setSelectedIds(new Set());
+    updateUrl(query, newFilters, 1, sortBy, sortOrder, emptyLifecycle, emptyCategory);
   };
 
   const handleRefresh = async () => {
@@ -516,6 +654,19 @@ export function InsightsPageContent({
               players={filterOptions?.players || []}
               defaultExpanded={false}
             />
+
+            {/* Triage chip strip — player + lifecycle + category */}
+            <TriageFilterStrip
+              players={filterOptions?.players || []}
+              selectedPlayerId={filters.playerId}
+              onSelectPlayer={handlePlayerSelect}
+              lifecycleSet={lifecycleSet}
+              onToggleLifecycle={handleToggleLifecycle}
+              categorySet={categorySet}
+              onToggleCategory={handleToggleCategory}
+              activeCount={triageActiveCount}
+              onClearAll={handleClearTriage}
+            />
           </div>
         </m.div>
 
@@ -525,21 +676,25 @@ export function InsightsPageContent({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <InsightListView
-            insights={pageInsights}
-            selectedIds={selectedIds}
-            onSelectionChange={setSelectedIds}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-            onSortChange={handleSortChange}
-            page={page}
-            pageSize={pageSize}
-            totalCount={totalCount}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            onAction={handleCoachAction}
-            isLoading={isLoading}
-          />
+          {!isLoading && triageActiveCount > 0 && totalCount === 0 ? (
+            <TriageEmptyState onClearAll={handleClearTriage} />
+          ) : (
+            <InsightListView
+              insights={pageInsights}
+              selectedIds={selectedIds}
+              onSelectionChange={setSelectedIds}
+              sortBy={sortBy}
+              sortOrder={sortOrder}
+              onSortChange={handleSortChange}
+              page={page}
+              pageSize={pageSize}
+              totalCount={totalCount}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onAction={handleCoachAction}
+              isLoading={isLoading}
+            />
+          )}
         </m.div>
       </div>
 
@@ -563,6 +718,204 @@ export function InsightsPageContent({
         selectedIds={Array.from(selectedIds)}
         onExportComplete={() => setSelectedIds(new Set())}
       />
+    </div>
+  );
+}
+
+// ============================================================================
+// TRIAGE FILTER STRIP — agent-12
+// ============================================================================
+// Horizontally-scrollable chip strip on mobile, wrapping flex on desktop.
+// Player select is rendered as a `<select>` (compact for any roster size).
+// Lifecycle + Category render as multi-select chips. An "X applied · Clear"
+// pill is shown when any of the three filters is active.
+
+interface TriageFilterStripProps {
+  players: Array<{ id: string; name: string }>;
+  selectedPlayerId: string | undefined;
+  onSelectPlayer: (playerId: string | undefined) => void;
+  lifecycleSet: Set<LifecycleState>;
+  onToggleLifecycle: (value: LifecycleState) => void;
+  categorySet: Set<Category>;
+  onToggleCategory: (value: Category) => void;
+  activeCount: number;
+  onClearAll: () => void;
+}
+
+function TriageFilterStrip({
+  players,
+  selectedPlayerId,
+  onSelectPlayer,
+  lifecycleSet,
+  onToggleLifecycle,
+  categorySet,
+  onToggleCategory,
+  activeCount,
+  onClearAll,
+}: TriageFilterStripProps) {
+  return (
+    <div className="space-y-3">
+      {/* Player select + clear pill */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2">
+          <span className="text-xs font-medium text-warm-600">Player</span>
+          <select
+            value={selectedPlayerId || ''}
+            onChange={(e) => onSelectPlayer(e.target.value || undefined)}
+            className={cn(
+              'min-h-[36px] px-3 py-1.5 text-sm',
+              'bg-white/80 backdrop-blur-sm border border-warm-200 rounded-lg',
+              'text-warm-900',
+              'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
+              'transition-colors duration-200',
+            )}
+          >
+            <option value="">All players</option>
+            {players.map((player) => (
+              <option key={player.id} value={player.id}>
+                {player.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={onClearAll}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full',
+              'text-xs font-medium',
+              'bg-primary-50 text-primary-700 border border-primary-200',
+              'hover:bg-primary-100 active:bg-primary-200 transition-colors',
+            )}
+            aria-label="Clear all triage filters"
+          >
+            <span>
+              {activeCount} filter{activeCount === 1 ? '' : 's'} applied
+            </span>
+            <span aria-hidden="true" className="text-primary-400">·</span>
+            <span className="inline-flex items-center gap-0.5">
+              <IconX size={12} />
+              Clear
+            </span>
+          </button>
+        )}
+      </div>
+
+      {/* Lifecycle chips */}
+      <ChipGroup
+        label="Lifecycle"
+        options={LIFECYCLE_OPTIONS}
+        selected={lifecycleSet}
+        onToggle={onToggleLifecycle}
+      />
+
+      {/* Category chips */}
+      <ChipGroup
+        label="Category"
+        options={CATEGORY_OPTIONS}
+        selected={categorySet}
+        onToggle={onToggleCategory}
+      />
+    </div>
+  );
+}
+
+// ============================================================================
+// CHIP GROUP — agent-12
+// ============================================================================
+
+interface ChipGroupProps<T extends string> {
+  label: string;
+  options: ReadonlyArray<{ value: T; label: string }>;
+  selected: Set<T>;
+  onToggle: (value: T) => void;
+}
+
+function ChipGroup<T extends string>({ label, options, selected, onToggle }: ChipGroupProps<T>) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="hidden sm:inline shrink-0 text-xs font-medium text-warm-600 mr-1">
+        {label}
+      </span>
+      <div
+        className={cn(
+          'flex items-center gap-2',
+          // Horizontally scrollable strip on mobile; wrap on desktop.
+          'overflow-x-auto sm:flex-wrap sm:overflow-visible',
+          '-mx-1 px-1 pb-1 sm:pb-0',
+        )}
+        role="group"
+        aria-label={`${label} filter chips`}
+      >
+        <span className="sm:hidden shrink-0 text-xs font-medium text-warm-600 pr-1">
+          {label}
+        </span>
+        {options.map((option) => {
+          const isSelected = selected.has(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onToggle(option.value)}
+              aria-pressed={isSelected}
+              className={cn(
+                'shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-full',
+                'text-xs font-medium border transition-colors',
+                'min-h-[32px]',
+                isSelected
+                  ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700 active:bg-primary-800'
+                  : 'bg-white/70 text-warm-700 border-warm-200 hover:bg-white hover:border-warm-300 active:bg-warm-50',
+              )}
+            >
+              {isSelected && <IconCheck size={12} />}
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// TRIAGE EMPTY STATE — agent-12
+// ============================================================================
+
+interface TriageEmptyStateProps {
+  onClearAll: () => void;
+}
+
+function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
+  return (
+    <div
+      className={cn(
+        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass',
+        'p-10 text-center',
+      )}
+    >
+      <div className="mx-auto w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-4">
+        <IconSparkles size={24} className="text-warm-500" />
+      </div>
+      <p className="text-sm font-medium text-warm-900 mb-1">
+        No insights match your filters
+      </p>
+      <p className="text-sm text-warm-500 mb-4">
+        Try adjusting the chip filters above to widen your triage view.
+      </p>
+      <button
+        type="button"
+        onClick={onClearAll}
+        className={cn(
+          'inline-flex items-center gap-1.5 px-4 py-2 rounded-full',
+          'text-sm font-medium',
+          'bg-primary-600 text-white border border-primary-600',
+          'hover:bg-primary-700 active:bg-primary-800 transition-colors',
+        )}
+      >
+        Clear all filters
+      </button>
     </div>
   );
 }

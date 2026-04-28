@@ -32,6 +32,10 @@ interface InsightsPageProps {
     page?: string;
     sort?: string;
     order?: string;
+    /** Comma-separated lifecycle states for the triage chip strip. */
+    lifecycle?: string;
+    /** Comma-separated canonical insight categories for the triage chip strip. */
+    categoryChips?: string;
   }>;
 }
 
