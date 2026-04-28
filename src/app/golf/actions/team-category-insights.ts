@@ -361,9 +361,24 @@ export async function getTeamOverview(
       return { success: false, error: 'Failed to load player stats' };
     }
 
-    // 5. Build team-level composite using z-score normalization
-    const { normalizePlayerMetrics } = await import('@/lib/coachhelm/v2/stats');
+    // 5. Build team-level composite using benchmark-relative grading.
+    //
+    // Z-score normalization within a single-team population is mathematically
+    // degenerate: per-metric z-scores have mean 0 across the population, so
+    // averaging them across the team always yields ~0 → composite = 50 + 0*10
+    // = 50. Same for every category. (This is what was producing the stuck
+    // 50/100 ring + flat 50 bars when Demo University Golf was the only team.)
+    //
+    // Instead we grade each metric against fixed D2/D3 benchmarks (mirrors
+    // the player-side fallback in coachhelm-data.ts:411-422) and aggregate by
+    // category using the same CATEGORY_METRICS groupings the z-score path
+    // uses, so the output shape stays identical for TeamCompositeCard.
+    const { computeCategoryRatings, computeCompositeRating } = await import(
+      '@/lib/coachhelm/v2/stats'
+    );
 
+    // Map: internal metric key → stats-cache column. Keys must match the
+    // CATEGORY_METRICS groupings in src/lib/coachhelm/v2/stats/z-score.ts.
     const metricsMap: Record<string, string> = {
       drivingDistance: 'driving_distance_average',
       fairwayPct: 'driving_accuracy_percentage',
@@ -378,45 +393,87 @@ export async function getTeamOverview(
       scoringAvg: 'scoring_average_vs_par',
     };
 
-    const metricKeys = Object.keys(metricsMap);
-    const playerMetrics = (statsData ?? []).map((row) => {
-      const metrics: Record<string, number> = {};
-      for (const [metricKey, dbCol] of Object.entries(metricsMap)) {
-        const val = Number((row as Record<string, unknown>)[dbCol] ?? 0);
-        // Invert "lower is better" metrics so higher z-score = better
-        if (['puttsPerRound', 'threePuttAvoidance', 'scoringAvg', 'proximityToHole'].includes(metricKey)) {
-          metrics[metricKey] = -val;
-        } else {
-          metrics[metricKey] = val;
-        }
-      }
-      return { playerId: row.player_id, metrics };
-    });
+    // D2/D3 benchmark anchors. mean → rating 50, good → rating 80, then
+    // linearly extrapolated and clamped to [0,100]. Mirrors the player
+    // fallback path in coachhelm-data.ts.
+    const benchmarks: Record<
+      string,
+      { mean: number; good: number; lowerIsBetter: boolean }
+    > = {
+      drivingDistance:    { mean: 265, good: 290, lowerIsBetter: false },
+      fairwayPct:         { mean: 55,  good: 70,  lowerIsBetter: false },
+      girPct:             { mean: 50,  good: 67,  lowerIsBetter: false },
+      sgApproach:         { mean: 0,   good: 1,   lowerIsBetter: false },
+      proximityToHole:    { mean: 38,  good: 30,  lowerIsBetter: true },
+      scramblePct:        { mean: 35,  good: 55,  lowerIsBetter: false },
+      sgAroundGreen:      { mean: 0,   good: 0.5, lowerIsBetter: false },
+      sgPutting:          { mean: 0,   good: 0.5, lowerIsBetter: false },
+      puttsPerRound:      { mean: 32,  good: 28,  lowerIsBetter: true },
+      threePuttAvoidance: { mean: 6,   good: 3,   lowerIsBetter: true },
+      scoringAvg:         { mean: 4,   good: 0,   lowerIsBetter: true },
+    };
 
     let teamComposite = 50;
-    let teamCategories = { teeGame: 50, approach: 50, shortGame: 50, putting: 50, scoring: 50 };
+    let teamCategories = {
+      teeGame: 50,
+      approach: 50,
+      shortGame: 50,
+      putting: 50,
+      scoring: 50,
+    };
 
-    if (playerMetrics.length > 0) {
-      const normalized = normalizePlayerMetrics(playerMetrics, metricKeys);
-      // Team average: average the composite and category ratings across all players
-      const composites = normalized.map((p) => p.composite ?? 50);
-      teamComposite = Math.round(composites.reduce((a, b) => a + b, 0) / composites.length);
-      teamComposite = Math.max(0, Math.min(100, teamComposite));
-
-      const catKeys = ['teeGame', 'approach', 'shortGame', 'putting', 'scoring'] as const;
-      const catAvgs: Record<string, number> = {};
-      for (const key of catKeys) {
-        const values = normalized.map((p) => p.categories[key]);
-        catAvgs[key] = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-        catAvgs[key] = Math.max(0, Math.min(100, catAvgs[key]));
+    const statsRows = statsData ?? [];
+    if (statsRows.length > 0) {
+      // Average each metric across the team. Skip a player's value for a
+      // metric only if it's null/NaN; treat 0 as a real value.
+      const teamMetricAvgs: Record<string, number> = {};
+      for (const [metricKey, dbCol] of Object.entries(metricsMap)) {
+        const vals: number[] = [];
+        for (const row of statsRows) {
+          const raw = (row as Record<string, unknown>)[dbCol];
+          if (raw == null) continue;
+          const num = Number(raw);
+          if (!Number.isFinite(num)) continue;
+          vals.push(num);
+        }
+        if (vals.length > 0) {
+          teamMetricAvgs[metricKey] =
+            vals.reduce((a, b) => a + b, 0) / vals.length;
+        }
       }
-      teamCategories = {
-        teeGame: catAvgs['teeGame'] ?? 50,
-        approach: catAvgs['approach'] ?? 50,
-        shortGame: catAvgs['shortGame'] ?? 50,
-        putting: catAvgs['putting'] ?? 50,
-        scoring: catAvgs['scoring'] ?? 50,
-      };
+
+      // Convert each team-average metric into a 0–100 rating against the
+      // benchmark, then back into a z-like score so we can reuse the existing
+      // computeCategoryRatings / computeCompositeRating helpers (rating R
+      // corresponds to z ≈ (R - 50) / 10 in their formula).
+      const benchZScores: Record<string, number> = {};
+      for (const [metricKey, val] of Object.entries(teamMetricAvgs)) {
+        const bench = benchmarks[metricKey];
+        if (!bench) continue;
+        const range = bench.good - bench.mean; // negative when lowerIsBetter
+        if (range === 0) {
+          benchZScores[metricKey] = 0;
+          continue;
+        }
+        const normalized = (val - bench.mean) / range; // 0 at mean, 1 at good
+        const rating = Math.max(0, Math.min(100, 50 + normalized * 30));
+        benchZScores[metricKey] = (rating - 50) / 10;
+      }
+
+      if (Object.keys(benchZScores).length > 0) {
+        const cats = computeCategoryRatings(benchZScores);
+        teamCategories = {
+          teeGame: Math.max(0, Math.min(100, Math.round(cats.teeGame))),
+          approach: Math.max(0, Math.min(100, Math.round(cats.approach))),
+          shortGame: Math.max(0, Math.min(100, Math.round(cats.shortGame))),
+          putting: Math.max(0, Math.min(100, Math.round(cats.putting))),
+          scoring: Math.max(0, Math.min(100, Math.round(cats.scoring))),
+        };
+        teamComposite = Math.max(
+          0,
+          Math.min(100, Math.round(computeCompositeRating(benchZScores))),
+        );
+      }
     }
 
     // 6. Aggregate shot data for yardage curve (last 90 days)

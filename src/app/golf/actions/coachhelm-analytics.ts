@@ -300,14 +300,21 @@ export async function getPredictionPerformance(
     const end = dateRange?.end || new Date();
     const start = dateRange?.start || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Query prediction model performance
+    // Query prediction model performance.
+    //
+    // The writer (prediction-performance-writer.ts) snapshots a rolling
+    // 30-day window: period_start = period_end - 30d. If we filter on
+    // `period_start >= now - 30d` AND the reader's 30-day window matches
+    // the writer's, even a one-day temporal drift between cron run-time
+    // and reader request-time filters every row out — this caused
+    // "Predictions: 0" with valid rows in the table. Filter on `period_end`
+    // instead: "rollups whose window ended within the last 30 days".
     const { data: performance, error } = await supabase
       .from('golf_prediction_model_performance')
       .select('*')
       .eq('team_id', teamId)
-      .gte('period_start', start.toISOString().split('T')[0])
-      .lte('period_end', end.toISOString().split('T')[0])
-      .order('period_start', { ascending: true });
+      .gte('period_end', start.toISOString().split('T')[0])
+      .order('period_end', { ascending: true });
 
     if (error) {
       await logServerError(`getPredictionPerformance query failed: ${error.message}`, {
@@ -323,9 +330,11 @@ export async function getPredictionPerformance(
       return await calculatePredictionPerformanceFromPredictions(teamId, start, end);
     }
 
-    // Build accuracy over time from performance records
+    // Build accuracy over time from performance records. Each row is a
+    // 30-day rolling-window snapshot keyed by `period_end` (the as-of date),
+    // so plot against period_end for a meaningful time-series trend.
     const accuracyOverTime: PredictionAccuracyPoint[] = performance.map((p: Record<string, unknown>) => ({
-      date: p.period_start as string,
+      date: (p.period_end as string) || (p.period_start as string),
       accuracyRate: (p.accuracy_rate as number) || 0,
       predictionsMade: (p.predictions_made as number) || 0,
       predictionsValidated: (p.predictions_validated as number) || 0,
