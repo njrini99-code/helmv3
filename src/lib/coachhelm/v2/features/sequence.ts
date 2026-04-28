@@ -8,7 +8,7 @@
  * - Problem holes and collapse patterns
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { SequenceFeatures } from '../types';
 
 interface HoleData {
@@ -32,7 +32,9 @@ function getScoreToPar(hole: HoleData): number {
 export async function extractSequenceFeatures(
   playerId: string
 ): Promise<SequenceFeatures | null> {
-  const supabase = await createClient();
+  // Admin client — analyzePlayer runs in cookie-less cron / fire-and-forget
+  // contexts where RLS would block every read. See V1/A2 audit notes.
+  const supabase = createAdminClient();
 
   // Get recent rounds with hole data
   const ninetyDaysAgo = new Date();

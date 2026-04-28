@@ -8,7 +8,7 @@
  * - Form momentum indicators
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { TemporalFeatures } from '../types';
 
 /**
@@ -20,7 +20,10 @@ import type { TemporalFeatures } from '../types';
 export async function extractTemporalFeatures(
   playerId: string
 ): Promise<TemporalFeatures | null> {
-  const supabase = await createClient();
+  // Use admin client — analyzePlayer is invoked from cron / fire-and-forget
+  // contexts with no user session, so RLS would block every round read and
+  // collapse temporal features to null. See V1/A2 audit notes from 2026-04-27.
+  const supabase = createAdminClient();
 
   // Get rounds from last 90 days for comprehensive analysis
   const ninetyDaysAgo = new Date();

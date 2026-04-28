@@ -8,7 +8,7 @@
  * - Competitive vs practice performance
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { ContextualFeatures, TemporalFeatures, SequenceFeatures } from '../types';
 
 function normalizeRoundType(roundType?: string | null): string | null {
@@ -29,7 +29,9 @@ export async function extractContextualFeatures(
   temporalFeatures?: TemporalFeatures | null,
   sequenceFeatures?: SequenceFeatures | null
 ): Promise<ContextualFeatures | null> {
-  const supabase = await createClient();
+  // Admin client — analyzePlayer runs in cookie-less cron / fire-and-forget
+  // contexts where RLS would block every read. See V1/A2 audit notes.
+  const supabase = createAdminClient();
 
   // Get rounds with event context
   const ninetyDaysAgo = new Date();
