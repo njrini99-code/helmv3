@@ -69,6 +69,10 @@ export interface EvidenceInsight {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   acknowledged_at: string | null;
   resolved_at: string | null;
+  /** Outcome bucket from the analytics rollup. Optional because rows that
+   *  haven't been measured yet (or pre-backfill rows) carry null/undefined. */
+  outcome_status?: 'improved' | 'no_change' | 'worsened' | null;
+  outcome_measured_at?: string | null;
   created_at: string;
   updated_at: string;
   player_feedback?: InsightPlayerFeedback | null;
@@ -126,6 +130,8 @@ type SelectedInsightColumns =
   | 'priority'
   | 'acknowledged_at'
   | 'resolved_at'
+  | 'outcome_status'
+  | 'outcome_measured_at'
   | 'created_at'
   | 'updated_at';
 
@@ -139,6 +145,7 @@ type RawInsightRowWithDrills = Pick<CoachInsightRow, SelectedInsightColumns> & {
 const INSIGHT_SELECT = `
   id, player_id, category, title, content, signature, evidence, metadata,
   lifecycle_state, status, priority, acknowledged_at, resolved_at,
+  outcome_status, outcome_measured_at,
   created_at, updated_at,
   drill_attachments:golf_insight_drill_attachments (
     rank,
