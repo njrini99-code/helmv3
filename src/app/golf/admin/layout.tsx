@@ -1,8 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AdminNativeGuard } from '@/components/golf/AdminNativeGuard';
-// Temp: remove AdminMotionProvider while diagnosing RSC render error.
-// import { AdminMotionProvider } from './_motion-provider';
+import { AdminMotionProvider } from './_motion-provider';
 
 export default async function AdminLayout({
   children,
@@ -28,10 +27,14 @@ export default async function AdminLayout({
 
   // Hide admin panel from the native iOS app — prevents Apple reviewers
   // from seeing the desktop-oriented CRM (avoids Guideline 4.2.2 risk).
+  // AdminMotionProvider wraps the subtree in <LazyMotion features={domAnimation}>.
+  // Without it, every `<m.*>` in admin renders as static DOM and animations
+  // silently no-op — that's why AnimatedNumber locked at "0" on the Tracer KPI
+  // tiles even when the underlying spring was updating to the real value.
   return (
-    <>
+    <AdminMotionProvider>
       <AdminNativeGuard />
       {children}
-    </>
+    </AdminMotionProvider>
   );
 }
