@@ -76,6 +76,97 @@ interface ToneConfig {
   pulse: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Outcome badge — surfaces the strokes-saved-per-round result once the
+// nightly outcome backfill writer has marked an insight as improved /
+// no_change / worsened. NOTE: `outcome_status` and `outcome_measured_at`
+// live on the `golf_coach_insights` row but are NOT yet projected by
+// `INSIGHT_SELECT` in `src/app/golf/actions/insight-delivery.ts`. The action
+// needs to add `outcome_status, outcome_measured_at` to the select clause
+// (and to `EvidenceInsight`) for this badge to light up. Until then the
+// helper short-circuits and the badge silently no-ops, which is the
+// expected default for the typical "no outcome yet" case anyway.
+type OutcomeStatus = 'improved' | 'no_change' | 'worsened';
+
+interface InsightOutcomeFields {
+  outcome_status?: OutcomeStatus | string | null;
+}
+
+function readOutcomeStatus(insight: EvidenceInsight): OutcomeStatus | null {
+  const status = (insight as EvidenceInsight & InsightOutcomeFields).outcome_status;
+  if (status === 'improved' || status === 'no_change' || status === 'worsened') {
+    return status;
+  }
+  return null;
+}
+
+interface OutcomeBadgeProps {
+  insight: EvidenceInsight;
+  className?: string;
+}
+
+function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
+  const status = readOutcomeStatus(insight);
+  if (!status) return null;
+
+  // The card already uses `evidence.strokes_impact` everywhere as the
+  // estimated stroke-per-round magnitude, so we reuse it here. (When the
+  // action eventually exposes a separate `stroke_impact` column we can
+  // prefer that — both represent the same quantity.)
+  const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
+  const hasMeaningfulImpact = Number.isFinite(impact) && impact > 0;
+
+  if (status === 'improved' && hasMeaningfulImpact) {
+    return (
+      <span
+        data-testid="insight-outcome-badge"
+        data-outcome="improved"
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
+          'bg-primary-100 text-primary-700 border border-primary-200/70',
+          'text-[10px] font-medium tabular-nums',
+          className,
+        )}
+      >
+        <svg
+          aria-hidden
+          viewBox="0 0 12 12"
+          width={10}
+          height={10}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 8l3-4 3 4" />
+        </svg>
+        Saved {impact.toFixed(1)} strokes/rd
+      </span>
+    );
+  }
+
+  if (status === 'worsened') {
+    return (
+      <span
+        data-testid="insight-outcome-badge"
+        data-outcome="worsened"
+        className={cn(
+          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
+          'bg-amber-50 text-amber-700 border border-amber-200/70',
+          'text-[10px] font-medium',
+          className,
+        )}
+      >
+        Outcome regressed
+      </span>
+    );
+  }
+
+  // status === 'no_change' is intentionally omitted — too noisy on the feed.
+  return null;
+}
+
 const TONE_CONFIG: Record<DerivedTone, ToneConfig> = {
   encouraging: {
     icon: IconTrophy,
@@ -335,6 +426,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
                     Resolved
                   </span>
                 )}
+                <OutcomeBadge insight={insight} />
               </div>
             </div>
 
@@ -467,7 +559,10 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             >
               {title}
             </h2>
-            <MovementPill insight={insight} className="mt-2" />
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <MovementPill insight={insight} />
+              <OutcomeBadge insight={insight} />
+            </div>
             <p className="mt-3 text-base text-warm-700 leading-relaxed">{content}</p>
           </div>
 
