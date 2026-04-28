@@ -687,13 +687,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "golf_insight_feedback_insight_id_fkey"
-            columns: ["insight_id"]
-            isOneToOne: false
-            referencedRelation: "golf_review_insights"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "golf_insight_feedback_review_id_fkey"
             columns: ["review_id"]
             isOneToOne: false
@@ -4862,6 +4855,7 @@ export type Database = {
           category: string
           created_at: string | null
           created_by: string | null
+          format: string
           id: string
           is_default: boolean | null
           merge_tags: string[] | null
@@ -4875,6 +4869,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           created_by?: string | null
+          format?: string
           id?: string
           is_default?: boolean | null
           merge_tags?: string[] | null
@@ -4888,6 +4883,7 @@ export type Database = {
           category?: string
           created_at?: string | null
           created_by?: string | null
+          format?: string
           id?: string
           is_default?: boolean | null
           merge_tags?: string[] | null
@@ -6160,6 +6156,7 @@ export type Database = {
           coaching_philosophy: string | null
           created_at: string | null
           decline_threshold: number | null
+          email_digest_enabled: boolean
           expectations: string | null
           id: string
           insight_verbosity: string
@@ -6195,6 +6192,7 @@ export type Database = {
           coaching_philosophy?: string | null
           created_at?: string | null
           decline_threshold?: number | null
+          email_digest_enabled?: boolean
           expectations?: string | null
           id?: string
           insight_verbosity?: string
@@ -6230,6 +6228,7 @@ export type Database = {
           coaching_philosophy?: string | null
           created_at?: string | null
           decline_threshold?: number | null
+          email_digest_enabled?: boolean
           expectations?: string | null
           id?: string
           insight_verbosity?: string
@@ -7136,48 +7135,6 @@ export type Database = {
           },
         ]
       }
-      golf_insight_feedback_scores: {
-        Row: {
-          accuracy_rate: number | null
-          helpfulness_rate: number | null
-          id: string
-          insight_type: string
-          team_id: string | null
-          threshold_adjustment: number | null
-          total_accurate: number | null
-          total_acted: number | null
-          total_dismissed: number | null
-          total_shown: number | null
-          updated_at: string | null
-        }
-        Insert: {
-          accuracy_rate?: number | null
-          helpfulness_rate?: number | null
-          id?: string
-          insight_type: string
-          team_id?: string | null
-          threshold_adjustment?: number | null
-          total_accurate?: number | null
-          total_acted?: number | null
-          total_dismissed?: number | null
-          total_shown?: number | null
-          updated_at?: string | null
-        }
-        Update: {
-          accuracy_rate?: number | null
-          helpfulness_rate?: number | null
-          id?: string
-          insight_type?: string
-          team_id?: string | null
-          threshold_adjustment?: number | null
-          total_accurate?: number | null
-          total_acted?: number | null
-          total_dismissed?: number | null
-          total_shown?: number | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       golf_insight_generation_log: {
         Row: {
           created_at: string | null
@@ -7935,13 +7892,6 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "golf_coaches"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_player_focus_areas_from_insight_id_fkey"
-            columns: ["from_insight_id"]
-            isOneToOne: false
-            referencedRelation: "golf_review_insights"
             referencedColumns: ["id"]
           },
           {
@@ -8751,116 +8701,6 @@ export type Database = {
             columns: ["review_id"]
             isOneToOne: false
             referencedRelation: "golf_round_reviews"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      golf_review_insights: {
-        Row: {
-          coach_accuracy: string | null
-          coach_accuracy_at: string | null
-          coach_notes: string | null
-          confidence: number | null
-          created_at: string | null
-          created_focus_area_id: string | null
-          description: string
-          display_order: number | null
-          evidence: Json | null
-          hole_numbers: number[] | null
-          id: string
-          insight_type: string
-          is_hidden: boolean | null
-          is_highlighted: boolean | null
-          metric_baseline: number | null
-          metric_comparison: string | null
-          metric_name: string | null
-          metric_value: number | null
-          player_id: string
-          review_id: string
-          round_id: string
-          severity: string | null
-          title: string
-          updated_at: string | null
-        }
-        Insert: {
-          coach_accuracy?: string | null
-          coach_accuracy_at?: string | null
-          coach_notes?: string | null
-          confidence?: number | null
-          created_at?: string | null
-          created_focus_area_id?: string | null
-          description: string
-          display_order?: number | null
-          evidence?: Json | null
-          hole_numbers?: number[] | null
-          id?: string
-          insight_type: string
-          is_hidden?: boolean | null
-          is_highlighted?: boolean | null
-          metric_baseline?: number | null
-          metric_comparison?: string | null
-          metric_name?: string | null
-          metric_value?: number | null
-          player_id: string
-          review_id: string
-          round_id: string
-          severity?: string | null
-          title: string
-          updated_at?: string | null
-        }
-        Update: {
-          coach_accuracy?: string | null
-          coach_accuracy_at?: string | null
-          coach_notes?: string | null
-          confidence?: number | null
-          created_at?: string | null
-          created_focus_area_id?: string | null
-          description?: string
-          display_order?: number | null
-          evidence?: Json | null
-          hole_numbers?: number[] | null
-          id?: string
-          insight_type?: string
-          is_hidden?: boolean | null
-          is_highlighted?: boolean | null
-          metric_baseline?: number | null
-          metric_comparison?: string | null
-          metric_name?: string | null
-          metric_value?: number | null
-          player_id?: string
-          review_id?: string
-          round_id?: string
-          severity?: string | null
-          title?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "golf_review_insights_created_focus_area_id_fkey"
-            columns: ["created_focus_area_id"]
-            isOneToOne: false
-            referencedRelation: "golf_player_focus_areas"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_review_insights_player_id_fkey"
-            columns: ["player_id"]
-            isOneToOne: false
-            referencedRelation: "golf_players"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_review_insights_review_id_fkey"
-            columns: ["review_id"]
-            isOneToOne: false
-            referencedRelation: "golf_round_reviews"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "golf_review_insights_round_id_fkey"
-            columns: ["round_id"]
-            isOneToOne: false
-            referencedRelation: "golf_rounds"
             referencedColumns: ["id"]
           },
         ]
