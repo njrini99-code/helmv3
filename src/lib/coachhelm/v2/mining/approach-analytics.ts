@@ -84,6 +84,15 @@ interface MissRow {
   lie_type: string | null;
   distance_from_green_yards: number | null;
   shot_distance: number | null;
+  /**
+   * P3 (2026-04-27): the bug-fix fields. `approach_distance_yds` is the
+   * approach's *starting* distance to the pin (the source of the bucket).
+   * `lie_before` lets us reject tee-shots / unspecified rows. `distance_after_yds`
+   * lets us reject malformed no-progress rows (OOB drops, topped shots).
+   */
+  approach_distance_yds: number | null;
+  lie_before: string | null;
+  distance_after_yds: number | null;
 }
 
 interface BucketStats {
@@ -178,6 +187,9 @@ interface JoinedRow {
   distance_from_green_yards: number | null;
   golf_shots: {
     shot_distance: number | null;
+    distance_to_hole_before: number | null;
+    distance_to_hole_after: number | null;
+    lie_before: string | null;
     golf_rounds: {
       player_id: string | null;
       round_date: string | null;
@@ -201,6 +213,9 @@ async function fetchApproachMisses(
       distance_from_green_yards,
       golf_shots!inner (
         shot_distance,
+        distance_to_hole_before,
+        distance_to_hole_after,
+        lie_before,
         golf_rounds!inner (
           player_id,
           round_date
@@ -226,6 +241,9 @@ async function fetchApproachMisses(
       lie_type: r.lie_type,
       distance_from_green_yards: r.distance_from_green_yards,
       shot_distance: r.golf_shots?.shot_distance ?? null,
+      approach_distance_yds: r.golf_shots?.distance_to_hole_before ?? null,
+      lie_before: r.golf_shots?.lie_before ?? null,
+      distance_after_yds: r.golf_shots?.distance_to_hole_after ?? null,
     }));
 }
 
@@ -270,11 +288,58 @@ export function horizontalAxis(
   return null;
 }
 
+/**
+ * P3 (2026-04-27): Lies that count as a real approach. Tee shots, putts,
+ * green-side chips and unknown lies are excluded — those are not approaches.
+ * `fringe` is included because a fairway-lie attempt that catches the fringe
+ * is still effectively an approach into the green.
+ */
+const APPROACH_LIES: ReadonlySet<string> = new Set([
+  'fairway',
+  'rough',
+  'sand',
+  'bunker',
+  'fringe',
+]);
+
+/**
+ * P3 (2026-04-27): Filter to genuine approach-shot misses before bucketing.
+ * The bug this fixes: `approach_miss_details` contains rows for tee shots on
+ * par-5s (e.g. a 265y drive on a 485y par 5), layups, and malformed rows
+ * where the ball didn't move. Bucketing those by traveled distance
+ * (`shot_distance`) put them in absurd buckets and inflated severity.
+ *
+ *   - lie_before must be a real approach lie (fairway/rough/sand/fringe);
+ *     teeing-ground rows and unspecified lies drop out.
+ *   - approach_distance_yds <= 250: anything farther isn't an approach.
+ *   - distance_after / distance_before < 0.5: the shot must make material
+ *     progress toward the green (filters topped shots, OOB drops, errors).
+ */
+function isRealApproach(row: MissRow): boolean {
+  const before = row.approach_distance_yds;
+  if (typeof before !== 'number' || !Number.isFinite(before) || before <= 0) {
+    return false;
+  }
+  if (before > 250) return false;
+
+  const lieBefore = (row.lie_before ?? '').toLowerCase();
+  if (!APPROACH_LIES.has(lieBefore)) return false;
+
+  const after = row.distance_after_yds;
+  if (typeof after === 'number' && Number.isFinite(after)) {
+    if (after >= before * 0.5) return false;
+  }
+
+  return true;
+}
+
 function bucketize(rows: MissRow[]): Partial<Record<DistanceBucket, BucketStats>> {
   const out: Partial<Record<DistanceBucket, BucketStats>> = {};
 
   for (const row of rows) {
-    const bucket = bucketFor(row.shot_distance);
+    if (!isRealApproach(row)) continue;
+
+    const bucket = bucketFor(row.approach_distance_yds);
     if (!bucket) continue;
 
     const lie = normalizeLie(row.lie_type);
@@ -307,7 +372,8 @@ function bucketize(rows: MissRow[]): Partial<Record<DistanceBucket, BucketStats>
     const distances = rows
       .filter(
         (r) =>
-          bucketFor(r.shot_distance) === bucket &&
+          isRealApproach(r) &&
+          bucketFor(r.approach_distance_yds) === bucket &&
           normalizeLie(r.lie_type) !== null &&
           typeof r.distance_from_green_yards === 'number',
       )

@@ -51,22 +51,45 @@ interface MissRowFixture {
   miss_direction: string | null;
   lie_type: string | null;
   distance_from_green_yards: number | null;
-  shot_distance: number | null;
+  /**
+   * Approach starting distance in yards — drives the bucket assignment via
+   * `golf_shots.distance_to_hole_before`. Named `distance` in the helper
+   * below to keep call sites short.
+   */
+  distance_to_hole_before: number | null;
+  /** Optional override; defaults derived from distance_to_hole_before. */
+  distance_to_hole_after?: number | null;
+  /** Optional override; defaults to 'fairway' so rows count as approaches. */
+  lie_before?: string | null;
+  shot_distance?: number | null;
 }
 
 function shapeRows(rows: MissRowFixture[]) {
-  return rows.map((r) => ({
-    miss_direction: r.miss_direction,
-    lie_type: r.lie_type,
-    distance_from_green_yards: r.distance_from_green_yards,
-    golf_shots: {
-      shot_distance: r.shot_distance,
-      golf_rounds: {
-        player_id: 'player-1',
-        round_date: '2026-04-01',
+  return rows.map((r) => {
+    const before = r.distance_to_hole_before;
+    // Default the post-shot distance to ~25% of the start so synthetic rows
+    // pass the no-progress filter (after >= before * 0.5 → reject).
+    const defaultAfter =
+      typeof before === 'number' && before > 0
+        ? Math.max(1, Math.round(before * 0.2))
+        : null;
+    return {
+      miss_direction: r.miss_direction,
+      lie_type: r.lie_type,
+      distance_from_green_yards: r.distance_from_green_yards,
+      golf_shots: {
+        shot_distance: r.shot_distance ?? before,
+        distance_to_hole_before: before,
+        distance_to_hole_after:
+          r.distance_to_hole_after ?? defaultAfter,
+        lie_before: r.lie_before ?? 'fairway',
+        golf_rounds: {
+          player_id: 'player-1',
+          round_date: '2026-04-01',
+        },
       },
-    },
-  }));
+    };
+  });
 }
 
 function makeClient(rows: MissRowFixture[]) {
@@ -91,8 +114,10 @@ function row(
   direction: string,
   dfg: number,
 ): MissRowFixture {
+  // `distance` represents the approach's starting distance (yards from pin).
+  // It is what now drives the bucket assignment.
   return {
-    shot_distance: distance,
+    distance_to_hole_before: distance,
     lie_type: lie,
     miss_direction: direction,
     distance_from_green_yards: dfg,
