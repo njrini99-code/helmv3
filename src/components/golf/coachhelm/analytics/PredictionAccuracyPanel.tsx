@@ -94,8 +94,16 @@ export function PredictionAccuracyPanel({
             color={data.summary.calibrationScore >= 0.8 ? 'green' : 'amber'}
           />
           <StatCard
+            // Show predictions made (activity), not validated (which stays 0
+            // until rounds with outcomes are scored). Label clarifies the
+            // denominator: "53 made · 0 validated" reads as honest pipeline,
+            // "Predictions: 0" reads like the model isn't running.
             label="Predictions"
-            value={data.summary.validatedPredictions.toString()}
+            value={
+              data.summary.totalPredictions > 0
+                ? `${data.summary.totalPredictions}`
+                : '0'
+            }
             icon={<IconTarget size={14} className="text-purple-500" />}
             color="slate"
           />
