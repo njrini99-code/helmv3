@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { normalizePlayerMetrics } from '@/lib/coachhelm/v2/stats';
 import { getInsightsForPlayer } from '@/app/golf/actions/insight-delivery';
@@ -211,10 +212,18 @@ export async function getPlayerStatsIntelligence(
 
     const supabase = await createClient();
 
+    // RLS on golf_player_stats_cache only lets a player read their OWN row.
+    // For z-score normalization we need the full team population (teammates'
+    // values) to produce non-degenerate variance — otherwise all categories
+    // collapse to 50. Use the admin client for the team-stats fetch only;
+    // we never return per-teammate values, only the requesting player's
+    // normalized z-scores + categories.
+    const admin = createAdminClient();
+
     const teamId = await resolveTeamForPlayer(supabase, playerId);
     let rosterIds: string[] = [playerId];
     if (teamId) {
-      const { data: members } = await supabase
+      const { data: members } = await admin
         .from('golf_team_members')
         .select('player_id')
         .eq('team_id', teamId)
@@ -225,7 +234,7 @@ export async function getPlayerStatsIntelligence(
       if (pulled.length > 0) rosterIds = pulled;
     }
 
-    const { data: statsRows } = await supabase
+    const { data: statsRows } = await admin
       .from('golf_player_stats_cache')
       .select(STATS_SELECT)
       .in('player_id', rosterIds);

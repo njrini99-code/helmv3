@@ -10,6 +10,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { coachHelmIntelligence, isCoachHelmEnabledForPlayer } from '@/lib/coachhelm/v2';
 import type { ComposedInsight, InsightEvidenceMetric, IntelligentRoundReview } from '@/lib/coachhelm/v2';
@@ -1541,7 +1542,14 @@ export async function getStatAverages(
 
     let teamAvg = undefined;
     if (teamId) {
-      const { data: teamMembers } = await supabase
+      // Player-scoped RLS on golf_rounds returns only own rounds, so the
+      // team comparison would always be sparse. We've already authorized
+      // the caller for this player via verifyReviewAccess above; the team
+      // aggregate output reveals no individual-round data, so the admin
+      // client is safe here.
+      const admin = createAdminClient();
+
+      const { data: teamMembers } = await admin
         .from('golf_team_members')
         .select('player_id')
         .eq('team_id', teamId)
@@ -1549,7 +1557,7 @@ export async function getStatAverages(
 
       if (teamMembers && teamMembers.length > 0) {
         const playerIds = teamMembers.map(m => m.player_id);
-        const { data: teamRounds } = await supabase
+        const { data: teamRounds } = await admin
           .from('golf_rounds')
           .select('total_score, score_to_par, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
           .in('player_id', playerIds)
