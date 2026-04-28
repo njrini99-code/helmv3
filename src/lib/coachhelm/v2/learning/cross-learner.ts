@@ -10,6 +10,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import type { Json } from '@/lib/types/database';
 import type { MinedPattern } from '../types';
 
 // Database row type for patterns (table created via migration)
@@ -38,19 +39,19 @@ interface GlobalPatternRow {
   confidence: number;
 }
 
-// Insert-shape for `golf_global_patterns` (live-DB verified; types regen pending)
+// Insert-shape for `golf_global_patterns` (matches Database['public']['Tables']['golf_global_patterns']['Insert']).
 interface GlobalPatternInsertRow {
   signature: string;
   pattern_type: string;
-  conditions: unknown;
-  outcomes: unknown;
+  conditions: Json;
+  outcomes: Json;
   prevalence: number;
   average_impact: number;
   confidence: number;
   instance_count: number;
   player_count: number;
-  varied_by_tier: Record<string, number>;
-  varied_by_handicap: Record<string, number>;
+  varied_by_tier: Json;
+  varied_by_handicap: Json;
   contributing_players: string[];
   updated_at: string;
 }
@@ -95,12 +96,9 @@ export class CrossLearner {
   async buildGlobalPatternLibrary(): Promise<GlobalPattern[]> {
     const supabase = await createClient();
 
-    // Type assertion for new table not in generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
-
     // Get all active patterns
-    let query = patternsTable
+    let query = supabase
+      .from('golf_patterns_v2')
       .select('*')
       .eq('is_active', true)
       .gte('confidence', 0.6);
@@ -267,14 +265,9 @@ export class CrossLearner {
   ): Promise<MinedPattern[]> {
     const supabase = await createClient();
 
-    // Type assertions for new tables not in generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const globalPatternsTable = supabase.from('golf_global_patterns' as any) as any;
-
     // Get patterns from source player
-    const { data: sourcePatterns } = await patternsTable
+    const { data: sourcePatterns } = await supabase
+      .from('golf_patterns_v2')
       .select('*')
       .eq('player_id', fromPlayerId)
       .eq('is_active', true)
@@ -283,7 +276,8 @@ export class CrossLearner {
     if (!sourcePatterns) return [];
 
     // Get existing patterns for target player
-    const { data: targetPatterns } = await patternsTable
+    const { data: targetPatterns } = await supabase
+      .from('golf_patterns_v2')
       .select('*')
       .eq('player_id', toPlayerId) as { data: PatternRow[] | null };
 
@@ -301,7 +295,8 @@ export class CrossLearner {
       if (targetSignatures.has(signature)) continue;
 
       // Check if pattern is globally prevalent
-      const { data: globalPattern } = await globalPatternsTable
+      const { data: globalPattern } = await supabase
+        .from('golf_global_patterns')
         .select('prevalence, confidence')
         .eq('signature', signature)
         .single() as { data: GlobalPatternRow | null };
@@ -334,12 +329,14 @@ export class CrossLearner {
 
     // Save transferred patterns
     for (const pattern of transferablePatterns) {
-      await patternsTable.insert({
+      await supabase.from('golf_patterns_v2').insert({
         id: pattern.id,
         player_id: pattern.playerId,
         pattern_type: pattern.patternType,
-        conditions: pattern.conditions,
-        outcome: pattern.outcome,
+        // PatternCondition[] / PatternOutcome are typed shapes; Json union has no
+        // overlap with non-index-signature objects, so a double-cast is required.
+        conditions: pattern.conditions as unknown as Json,
+        outcome: pattern.outcome as unknown as Json,
         support: pattern.support,
         confidence: pattern.confidence,
         lift: pattern.lift,
@@ -412,12 +409,9 @@ export class CrossLearner {
       squaredDiffs.reduce((a, b) => a + b, 0) / rounds.length
     );
 
-    // Type assertion for new table not in generated types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const patternsTable = supabase.from('golf_patterns_v2' as any) as any;
-
     // Get pattern signatures
-    const { data: patterns } = await patternsTable
+    const { data: patterns } = await supabase
+      .from('golf_patterns_v2')
       .select('pattern_type, conditions, stroke_impact')
       .eq('player_id', playerId)
       .eq('is_active', true) as { data: Array<{ pattern_type: string; conditions: unknown; stroke_impact: number }> | null };
@@ -570,11 +564,6 @@ export class CrossLearner {
    * Writes one row per pattern to `golf_global_patterns` matching the live
    * schema (plural `outcomes`, `contributing_players` array, snake_case).
    * A single bulk `upsert` is used so the DB does one round-trip for N rows.
-   *
-   * Note: `golf_global_patterns` is not yet present in the generated
-   * `Database` types (Team A migration was applied via execute_sql; type regen
-   * is pending). The typed call is bridged via `GlobalPatternInsertRow` +
-   * a narrow `@ts-expect-error` so no `(supabase as any)` cast is introduced.
    */
   private async saveGlobalPatterns(
     patterns: GlobalPattern[],
@@ -586,9 +575,10 @@ export class CrossLearner {
     const rows: GlobalPatternInsertRow[] = patterns.map((p) => ({
       signature: p.signature,
       pattern_type: p.patternType,
-      conditions: p.conditions,
+      // GlobalPattern.conditions is unknown[]; DB column is Json.
+      conditions: p.conditions as Json,
       // DB column is plural `outcomes`; prior code wrote singular `outcome` and silently dropped the value
-      outcomes: p.outcome,
+      outcomes: p.outcome as Json,
       prevalence: p.prevalence,
       average_impact: p.averageImpact,
       confidence: p.confidence,
@@ -600,20 +590,8 @@ export class CrossLearner {
       updated_at: new Date().toISOString(),
     }));
 
-    // Bridge: `golf_global_patterns` is live in DB but not yet in generated types.
-    // Narrow the client to `unknown` then to a typed table accessor — avoids a
-    // `(supabase as any)` cast while still compiling cleanly until types regen lands.
-    const fromFn = (supabase as unknown as {
-      from: (table: string) => {
-        upsert: (
-          rows: GlobalPatternInsertRow[],
-          opts: { onConflict: string }
-        ) => Promise<{ error: { message: string } | null }>;
-      };
-    }).from;
-
-    const { error } = await fromFn
-      .call(supabase, 'golf_global_patterns')
+    const { error } = await supabase
+      .from('golf_global_patterns')
       .upsert(rows, { onConflict: 'signature' });
 
     if (error) {
@@ -621,7 +599,7 @@ export class CrossLearner {
         action: 'cross-learner.saveGlobalPatterns',
         featureArea: 'coachhelm.learning',
         source: 'background_job',
-        metadata: { count: rows.length, dbError: error as unknown },
+        metadata: { count: rows.length, dbError: error },
       });
     }
   }
