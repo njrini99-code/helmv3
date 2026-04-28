@@ -1,6 +1,5 @@
 # Sub-projects that ship independently — exclude from Vercel build context.
 # Each has its own deploy pipeline (or none yet).
-helm-vid/
 helm-website-ui/
 helm-intelligence/
 next-shadcn-dashboard-starter/
