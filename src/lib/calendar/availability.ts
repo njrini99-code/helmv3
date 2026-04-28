@@ -95,33 +95,34 @@ export async function getUserBusyPeriods(
   const coach = coachResult.data;
   const isCoach = !!coach;
 
-  // Look up team_id via proper relationships (these tables don't have team_id directly)
-  let teamId: string | null = null;
+  // Resolve every team this user belongs to. Multi-team coaches and
+  // multi-team players both need cross-team conflict surfacing — a coach who
+  // runs two squads expects events on team B to count when scheduling on team
+  // A, and a dual-roster player can have busy time on either team.
+  let teamIds: string[] = [];
   if (coach?.organization_id) {
-    const { data: team } = await supabase
+    const { data: teams } = await supabase
       .from('golf_teams')
       .select('id')
-      .eq('organization_id', coach.organization_id)
-      .limit(1)
-      .maybeSingle();
-    teamId = team?.id ?? null;
+      .eq('organization_id', coach.organization_id);
+    teamIds = (teams ?? []).map((t) => t.id);
   } else if (player) {
-    const { data: membership } = await supabase
+    const { data: memberships } = await supabase
       .from('golf_team_members')
       .select('team_id')
       .eq('player_id', player.id)
-      .eq('status', 'active')
-      .limit(1)
-      .maybeSingle();
-    teamId = membership?.team_id ?? null;
+      .eq('status', 'active');
+    teamIds = (memberships ?? [])
+      .map((m) => m.team_id)
+      .filter((id): id is string => Boolean(id));
   }
 
   // 2. Fetch all busy periods in parallel (major performance improvement)
-  const teamEventsPromise = teamId
+  const teamEventsPromise = teamIds.length > 0
     ? supabase
         .from('golf_events')
         .select('id, title, start_time, end_time, created_by')
-        .eq('team_id', teamId)
+        .in('team_id', teamIds)
         .gte('start_time', dateMin)
         .lte('start_time', dateMax)
     : Promise.resolve({ data: [] as TeamEventRow[] });
