@@ -11,7 +11,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
 import type {
   ShotPattern,
   ShotPatternAnalysis,
@@ -132,10 +131,18 @@ export class ShotPatternMiner {
   }
 
   /**
-   * Loads shot data for the player
+   * Loads shot data for the player.
+   *
+   * LIVE-29: previously used the user-scoped `createClient()`. The miner runs
+   * from non-interactive contexts (post-round `keepalive` fetch, safety-net
+   * cron, nightly roster sweep) where there is no auth cookie, so RLS on
+   * `golf_rounds` / `golf_shots` returned an empty set and `golf_patterns_v2`
+   * stopped receiving rows after 2026-04-14. Switched to the admin client to
+   * mirror `getDetailedStatsAsAdmin` — the orchestrator's caller already
+   * authorized this player by other means before invoking analyzePlayer.
    */
   private async loadShots(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get all rounds for this player
     const { data: rounds } = await supabase
@@ -150,10 +157,12 @@ export class ShotPatternMiner {
 
     const roundIds = rounds.map((r) => r.id);
 
-    // Get all shots from those rounds
+    // Get all shots from those rounds. Project only the columns the miner
+    // actually consumes (was `select('*')`). Keep this list in sync with the
+    // `RawShot` interface above — under-projecting will silently drop fields.
     const { data: shots, error } = await supabase
       .from('golf_shots')
-      .select('*')
+      .select('id,round_id,hole_number,shot_number,shot_type,club_type,lie_before,distance_to_hole_before,distance_unit_before,distance_to_hole_after,distance_unit_after,miss_direction,shot_distance,result')
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
@@ -163,7 +172,7 @@ export class ShotPatternMiner {
       return;
     }
 
-    this.shots = shots as RawShot[];
+    this.shots = shots as unknown as RawShot[];
   }
 
   /**
@@ -656,7 +665,46 @@ export class ShotPatternMiner {
   }
 
   /**
-   * Saves patterns to database
+   * Derives a shot-level stroke-impact estimate from existing pattern
+   * fields. There is no per-shot strokes-gained ground truth here, so we
+   * synthesize a proxy from three signals already on `ShotPattern`:
+   *
+   *   - `distanceControlGap` (1 - distanceControlScore): how far the
+   *     player's average proximity is from the "ideal" proximity for this
+   *     distance range. 0 means perfect, 1 means very poor.
+   *   - `topMissFreq` (tendencies[0].frequency): how concentrated the
+   *     primary miss direction is. A 70% one-way miss is more actionable
+   *     than a 25% scatter.
+   *   - `confidence` (already scales 0.5 low-sample → 0.95 high-sample):
+   *     used as a multiplier so noisy small-sample patterns don't get
+   *     promoted purely because they look extreme.
+   *
+   * The 1.5 multiplier is calibrated against the round-level miner's
+   * |stroke_impact| range (its surviving patterns sit at 0.50–0.93). With
+   * this formula a pattern at distanceControlScore=0.2, topMissFreq=0.6,
+   * confidence=0.85 lands at -0.61 strokes — comparable magnitude. The
+   * sign is negative because miss-tendency patterns hurt the player; if
+   * a future positive-pattern type is added, flip the sign there.
+   *
+   * Patterns with magnitude below 0.1 are dropped at insert (matches
+   * `pattern-miner.ts`'s minStrokeImpact convention; lower than its 0.3
+   * because shot-level signals are noisier).
+   */
+  private computeShotStrokeImpact(pattern: ShotPattern): number {
+    const distanceControlGap = Math.max(0, Math.min(1, 1 - pattern.distanceControlScore));
+    const topMissFreq = Math.max(0, Math.min(1, pattern.tendencies[0]?.frequency ?? 0));
+    const confidence = Math.max(0, Math.min(1, pattern.confidence));
+    const magnitude = distanceControlGap * topMissFreq * 1.5 * confidence;
+    return -Math.round(magnitude * 100) / 100;
+  }
+
+  /**
+   * Saves patterns to database. Skips patterns whose derived stroke
+   * impact magnitude is below `MIN_STROKE_IMPACT` (0.1) — that is the
+   * mechanism that keeps `golf_patterns_v2` from silting up with the
+   * tens of thousands of weak-signal rows it accumulated before this
+   * gate (22,113 / 22,117 = 99.95% of rows were zero-impact prior to
+   * the 2026-04-27 cleanup).
    */
   private async savePatterns(patterns: ShotPattern[]): Promise<void> {
     if (patterns.length === 0) return;
@@ -667,9 +715,25 @@ export class ShotPatternMiner {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_patterns_v2' as any) as any;
 
-    for (const pattern of patterns) {
-      const { error } = await table.upsert(
-        {
+    /**
+     * Minimum |stroke_impact| required to persist a pattern. Lower than
+     * the round-level miner's 0.3 because shot-level signals are noisier
+     * and we want a permissive floor — but a hard 0 is never useful.
+     */
+    const MIN_STROKE_IMPACT = 0.1;
+
+    // Build all rows up front, then batch-upsert in one round-trip instead of
+    // O(N) sequential calls. `golf_patterns_v2` has no unique constraint on
+    // `(player_id, signature)` (verified in migrations 031/062/063 — only
+    // `id` is unique, and pattern.id is `crypto.randomUUID()` per run), so
+    // `onConflict: 'id'` is effectively an insert. Keeping it preserves
+    // idempotency if the same `pattern.id` is re-saved within a single call.
+    const rows = patterns
+      .map((pattern) => {
+        const strokeImpact = this.computeShotStrokeImpact(pattern);
+        if (Math.abs(strokeImpact) < MIN_STROKE_IMPACT) return null;
+
+        return {
           id: pattern.id,
           player_id: pattern.playerId,
           pattern_type: 'contextual',
@@ -698,7 +762,7 @@ export class ShotPatternMiner {
           confidence: pattern.confidence,
           lift: 1, // Not applicable for shot patterns
           conviction: 1,
-          stroke_impact: 0, // Calculated differently for shots
+          stroke_impact: strokeImpact,
           actionability: computeActionability(pattern.tendencies),
           sample_size: pattern.sampleSize,
           first_detected: pattern.createdAt,
@@ -716,13 +780,16 @@ export class ShotPatternMiner {
             insight: pattern.insight,
             recommendation: pattern.recommendation,
           },
-        },
-        { onConflict: 'id' }
-      );
+        };
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
 
-      if (error) {
-        throw new Error(`Failed to save CoachHelm shot pattern: ${error.message}`);
-      }
+    if (rows.length === 0) return;
+
+    const { error } = await table.upsert(rows, { onConflict: 'id' });
+
+    if (error) {
+      throw new Error(`Failed to save CoachHelm shot patterns: ${error.message}`);
     }
   }
 }
