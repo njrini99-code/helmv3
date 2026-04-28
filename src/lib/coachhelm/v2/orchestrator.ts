@@ -211,48 +211,53 @@ class CoachHelmIntelligence {
       }))
     );
 
-    // Mine patterns
-    let patterns: MinedPattern[] = [];
-    if (includePatterns) {
-      const miner = new PatternMiner(playerId);
-      patterns = await miner.minePatterns();
-    }
+    // === Parallelize independent mining/prediction steps ===
+    // All six only need `playerId` and don't consume each other's outputs, so
+    // run them concurrently via Promise.all. Roughly halves analyzePlayer's
+    // wall-clock for the heavy section (each step is its own DB round-trip).
+    const wantShotPatterns = includeShotPatterns || depth === 'deep';
+    const wantLieAnalysis = includeLieAnalysis || depth === 'deep';
 
-    // Mine shot-level patterns
-    let shotPatterns: ShotPatternAnalysis | undefined;
-    if (includeShotPatterns || depth === 'deep') {
-      const shotMiner = new ShotPatternMiner(playerId);
-      shotPatterns = (await shotMiner.analyzeShotPatterns()) ?? undefined;
-    }
+    const [
+      minedPatterns,
+      shotPatternsResult,
+      lieAnalysisResult,
+      shotStateResult,
+      causalResult,
+      predictionResult,
+    ] = await Promise.all([
+      includePatterns
+        ? new PatternMiner(playerId).minePatterns()
+        : Promise.resolve<MinedPattern[]>([]),
+      wantShotPatterns
+        ? new ShotPatternMiner(playerId).analyzeShotPatterns()
+        : Promise.resolve(null),
+      wantLieAnalysis
+        ? analyzeLieSpecificMissPatterns(playerId)
+        : Promise.resolve(null),
+      new ShotStateIntelligence(playerId).analyze(),
+      includeCausal
+        ? new CausalEngine(playerId).discoverCausalRelationships()
+        : Promise.resolve<CausalRelationship[]>([]),
+      includePredictions
+        ? new PerformancePredictor(playerId).predictPerformance()
+        : Promise.resolve(null),
+    ]);
 
-    // Lie-specific analysis (shot category & dispersion)
-    let lieAnalysis: LieMissAnalysis | undefined;
-    if (includeLieAnalysis || depth === 'deep') {
-      lieAnalysis = (await analyzeLieSpecificMissPatterns(playerId)) ?? undefined;
-    }
+    const patterns: MinedPattern[] = minedPatterns;
+    const shotPatterns: ShotPatternAnalysis | undefined = shotPatternsResult ?? undefined;
+    const lieAnalysis: LieMissAnalysis | undefined = lieAnalysisResult ?? undefined;
+    const shotStateAnalysis = shotStateResult;
+    const causalRelationships: CausalRelationship[] = causalResult;
 
-    // Shot-state intelligence (par/lie/yardage/miss sector engine)
-    const shotStateAnalysis = await new ShotStateIntelligence(playerId).analyze();
-
-    // Discover causal relationships
-    let causalRelationships: CausalRelationship[] = [];
-    if (includeCausal) {
-      const causalEngine = new CausalEngine(playerId);
-      causalRelationships = await causalEngine.discoverCausalRelationships();
-    }
-
-    // Generate predictions
+    // Calibrate prediction confidence sequentially after the parallel batch —
+    // it's a fast in-memory call but depends on the prediction's confidence.
     const predictions: PerformancePrediction[] = [];
-    if (includePredictions) {
-      const predictor = new PerformancePredictor(playerId);
-      const prediction = await predictor.predictPerformance();
-      if (prediction) {
-        // Calibrate confidence
-        prediction.calibratedConfidence = await this.confidenceCalibrator.calibrate(
-          prediction.confidence
-        );
-        predictions.push(prediction);
-      }
+    if (predictionResult) {
+      predictionResult.calibratedConfidence = await this.confidenceCalibrator.calibrate(
+        predictionResult.confidence,
+      );
+      predictions.push(predictionResult);
     }
 
     // Generate trajectory
