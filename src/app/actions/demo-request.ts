@@ -1,7 +1,19 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+
+async function captureRequestContext() {
+  const h = await headers();
+  return {
+    ip: h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? null,
+    userAgent: h.get('user-agent') ?? null,
+    referer: h.get('referer') ?? null,
+    country: h.get('x-vercel-ip-country') ?? null,
+    city: h.get('x-vercel-ip-city') ?? null,
+  };
+}
 
 /**
  * Server action to handle demo request submissions from the landing page.
@@ -17,6 +29,8 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
   if (!email || !email.includes('@')) {
     return { success: false, error: 'Please enter a valid email address' };
   }
+
+  const requestContext = await captureRequestContext();
 
   try {
     const supabase = await createClient();
@@ -42,7 +56,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
           errorCode: error.code,
           errorHint: error.hint,
           errorDetails: error.details,
-          metadata: { email },
+          metadata: { email, ...requestContext },
         },
       );
       return { success: false, error: 'Something went wrong. Please try again.' };
@@ -74,7 +88,7 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
   } catch (error) {
     await logServerError(
       `Failed to save demo request: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
-      { action: 'demo_request.submitDemoRequest', metadata: { email } },
+      { action: 'demo_request.submitDemoRequest', metadata: { email, ...requestContext } },
     );
     return { success: false, error: 'Something went wrong. Please try again.' };
   }

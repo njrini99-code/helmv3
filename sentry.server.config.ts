@@ -14,6 +14,11 @@ const isDev = process.env.NODE_ENV === 'development';
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
+  // Capture IP, headers, and cookies on server-side errors. We need this so
+  // anonymous landing-page submissions (e.g. demo requests) leave enough of
+  // a trail in Sentry to identify the visitor when something fails.
+  sendDefaultPii: true,
+
   integrations: [
     ...(!isDev && profilingIntegration ? [profilingIntegration] : []),
   ],
