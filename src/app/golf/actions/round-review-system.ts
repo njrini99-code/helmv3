@@ -600,7 +600,16 @@ function toCoachHelmInsight(insight: ComposedInsight): CoachHelmReviewInsight {
   };
 }
 
-function buildCoachHelmHighlight(review: IntelligentRoundReview): RoundReviewHighlight {
+function buildCoachHelmHighlight(review: IntelligentRoundReview): RoundReviewHighlight | null {
+  // Only surface the CoachHelm composed insight in HIGHLIGHTS when the tone is
+  // actually positive. A `cautionary`/`urgent` takeaway with body like
+  // "92% of your missed approaches are severe" is a weakness — putting it in
+  // Highlights reads like the engine is celebrating a problem.
+  const tone = review.composedReview.tone;
+  if (tone !== 'encouraging' && tone !== 'celebratory') {
+    return null;
+  }
+
   const impact = review.composedReview.strokeImpact != null
     ? ` Estimated impact: ${review.composedReview.strokeImpact.toFixed(1)} strokes.`
     : '';
@@ -613,24 +622,20 @@ function buildCoachHelmHighlight(review: IntelligentRoundReview): RoundReviewHig
 
 function buildCoachHelmImprovementAreas(review: IntelligentRoundReview): RoundReviewImprovementArea[] {
   const focusArea = review.focusAreas[0] ?? review.primaryTakeaway;
-  const practiceArea = review.focusAreas[1];
   const primaryRecommendation = review.practicePriority || review.composedReview.callToAction || review.composedReview.body;
 
-  const areas: RoundReviewImprovementArea[] = [
+  // Only emit the primary focus area. The original code also pushed
+  // `focusAreas[1]` with `composedReview.body` as its recommendation — but
+  // `body` describes the PRIMARY weakness, so the second card displayed a
+  // mismatched (e.g. "Driving" header with approach-miss body). Without a
+  // per-area recommendation in the IntelligentRoundReview shape, the second
+  // entry can't have honest content.
+  return [
     {
       area: focusArea,
       recommendation: primaryRecommendation,
     },
   ];
-
-  if (practiceArea && practiceArea !== focusArea) {
-    areas.push({
-      area: practiceArea,
-      recommendation: review.composedReview.body,
-    });
-  }
-
-  return areas;
 }
 
 function mergeCoachHelmReviewContent(
@@ -645,7 +650,7 @@ function mergeCoachHelmReviewContent(
     ...base,
     summary: base.summary,
     highlights: dedupeByKey(
-      [coachHelmHighlight, ...base.highlights],
+      coachHelmHighlight ? [coachHelmHighlight, ...base.highlights] : base.highlights,
       (item) => item.title,
       4
     ),
