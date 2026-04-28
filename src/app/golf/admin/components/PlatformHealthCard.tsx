@@ -1,14 +1,19 @@
 'use client';
 
+import { useState } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
-import { IconActivity, IconClock, IconUsers, IconGlobe } from '@/components/icons';
+import { IconActivity, IconClock, IconUsers, IconGlobe, IconInfo } from '@/components/icons';
 import { timeAgo, formatBytes } from './admin-utils';
+import { HealthScoreBreakdownModal } from './HealthScoreBreakdownModal';
 
 interface Props {
   health: AdminDashboardData['health'];
   infraHealth?: AdminDashboardData['infraHealth'];
   statsCacheLastUpdated?: string | null;
+  /** When provided, shows the breakdown modal trigger + headline score. */
+  healthScore?: number;
+  healthScoreBreakdown?: AdminDashboardData['growth']['platformHealthBreakdown'];
 }
 
 const statusColors = {
@@ -29,7 +34,15 @@ const statusGradients = {
   critical: 'bg-gradient-to-r from-red-50/80 to-red-50/30',
 };
 
-export function PlatformHealthCard({ health, infraHealth, statsCacheLastUpdated }: Props) {
+export function PlatformHealthCard({
+  health,
+  infraHealth,
+  statsCacheLastUpdated,
+  healthScore,
+  healthScoreBreakdown,
+}: Props) {
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
   const overallHealth = health.diagnostics.some((d) => d.status === 'critical')
     ? 'critical'
     : health.diagnostics.some((d) => d.status === 'warning')
@@ -38,6 +51,18 @@ export function PlatformHealthCard({ health, infraHealth, statsCacheLastUpdated 
 
   const freshnessLabel =
     health.dataFreshness === 'live' ? 'Live' : health.dataFreshness === 'stale' ? 'Stale' : 'No Data';
+
+  const canShowBreakdown =
+    typeof healthScore === 'number' && Array.isArray(healthScoreBreakdown) && healthScoreBreakdown.length > 0;
+
+  const scoreColor =
+    typeof healthScore === 'number'
+      ? healthScore >= 70
+        ? 'text-primary-600'
+        : healthScore >= 50
+          ? 'text-amber-600'
+          : 'text-red-600'
+      : 'text-warm-700';
 
   return (
     <div className="glass-standard rounded-2xl p-4 sm:p-5 md:p-6 transition-all duration-200 hover:bg-white/80 active:bg-white/90 hover:shadow-card-hover">
@@ -48,6 +73,22 @@ export function PlatformHealthCard({ health, infraHealth, statsCacheLastUpdated 
             <IconActivity size={18} />
           </div>
           <h3 className="text-base sm:text-lg font-semibold text-warm-900">Platform Health</h3>
+          {canShowBreakdown && (
+            <button
+              type="button"
+              onClick={() => setShowBreakdown(true)}
+              className={cn(
+                'ml-1 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold transition-colors',
+                'bg-warm-50 hover:bg-warm-100 border border-warm-200/60',
+                scoreColor,
+              )}
+              aria-label="View health score breakdown"
+              title="See how this score is calculated"
+            >
+              <span className="tabular-nums">{healthScore}/100</span>
+              <IconInfo size={12} className="text-warm-400" />
+            </button>
+          )}
         </div>
         <div className="relative flex items-center gap-1.5">
           <div className={cn('w-2 h-2 rounded-full', statusColors[overallHealth])}>
@@ -266,6 +307,16 @@ export function PlatformHealthCard({ health, infraHealth, statsCacheLastUpdated 
           </span>
         </div>
       </div>
+
+      {/* Breakdown modal — opens when the operator clicks the score chip in
+          the header. Lists each input's weight, value, and contribution. */}
+      {showBreakdown && canShowBreakdown && (
+        <HealthScoreBreakdownModal
+          score={healthScore}
+          breakdown={healthScoreBreakdown}
+          onClose={() => setShowBreakdown(false)}
+        />
+      )}
     </div>
   );
 }

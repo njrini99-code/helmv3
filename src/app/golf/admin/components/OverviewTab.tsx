@@ -152,7 +152,12 @@ export function OverviewTab({ data, rollup: _rollup, onNavigateTab }: Props) {
         </DeepDiveAccordion>
         <DeepDiveAccordion title="Platform Health" subtitle={healthSubtitle}>
           <Suspense fallback={<SectionSkeleton height={220} label="Loading platform health" />}>
-            <PlatformHealthCard health={data.health} infraHealth={data.infraHealth} />
+            <PlatformHealthCard
+              health={data.health}
+              infraHealth={data.infraHealth}
+              healthScore={data.growth.platformHealthScore}
+              healthScoreBreakdown={data.growth.platformHealthBreakdown}
+            />
           </Suspense>
         </DeepDiveAccordion>
       </div>

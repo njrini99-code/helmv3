@@ -7,6 +7,10 @@ import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { TeamHealthCards } from './TeamHealthCards';
 import { TeamUserDirectory } from './TeamUserDirectory';
 import { UserDetailPanel } from './UserDetailPanel';
+import { BulkEmailModal } from '@/app/golf/admin/crm/components/BulkEmailModal';
+
+/** Recipient shape consumed by BulkEmailModal.prefilledRecipients. */
+type ReengagePrefill = { email: string; name?: string | null; coach_id?: string | null };
 
 interface Props {
   data: AdminDashboardData;
@@ -36,9 +40,42 @@ export function PeopleTab({ data }: Props) {
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [selectedAtRiskIds, setSelectedAtRiskIds] = useState<Set<string>>(new Set());
+  // Re-engagement launcher state. When non-null, BulkEmailModal opens with
+  // these prefilled recipients (the inactive 14d+ users). The modal's
+  // prefilledRecipients flow synthesizes Coach objects internally so we can
+  // pass `coaches=[]` and let the prefills drive the entire send path.
+  const [reengageRecipients, setReengageRecipients] = useState<ReengagePrefill[] | null>(null);
 
   const { userActivity, userDirectory } = data;
   const { summary } = userActivity;
+
+  // Build the inactive-14d+ recipient list from the existing user directory.
+  // Source of truth for the "INACTIVE 14d+" KPI is `summary.inactivePlus14d`,
+  // which the Wave-1 audit confirmed maps to users with daysSinceLastSeen >= 14.
+  // We mirror that filter here and require an email so the send path actually
+  // has somewhere to send to.
+  const inactive14dRecipients = useMemo<ReengagePrefill[]>(() => {
+    const out: ReengagePrefill[] = [];
+    const seenEmails = new Set<string>();
+    const collect = (m: { email: string; name: string | null; daysSinceLastSeen: number | null }) => {
+      if (!m.email) return;
+      if (m.daysSinceLastSeen === null || m.daysSinceLastSeen < 14) return;
+      const key = m.email.toLowerCase();
+      if (seenEmails.has(key)) return;
+      seenEmails.add(key);
+      out.push({ email: m.email, name: m.name });
+    };
+    for (const team of userActivity.teams) {
+      for (const m of team.members) collect(m);
+    }
+    for (const u of userActivity.unassigned) collect(u);
+    return out;
+  }, [userActivity.teams, userActivity.unassigned]);
+
+  function handleLaunchReengagement() {
+    if (inactive14dRecipients.length === 0) return;
+    setReengageRecipients(inactive14dRecipients);
+  }
 
   const atRiskCount = useMemo(() => countAtRiskUsers(userActivity.teams, userActivity.unassigned), [userActivity.teams, userActivity.unassigned]);
 
@@ -379,8 +416,32 @@ export function PeopleTab({ data }: Props) {
           <SummaryCard label="Stuck Onboarding" value={summary.stuckInOnboarding} color={summary.stuckInOnboarding > 0 ? 'orange' : undefined} />
           {/* Churn Risk was a duplicate of Inactive 14d+ (rollup-c sets churnRisk = inactivePlus14d).
               Render a single, clearer card instead of stacking two identical 28s side-by-side. */}
-          <SummaryCard label="Inactive 14d+" value={summary.inactivePlus14d} color={summary.inactivePlus14d > 0 ? 'red' : undefined} />
+          <SummaryCard
+            label="Inactive 14d+"
+            value={summary.inactivePlus14d}
+            color={summary.inactivePlus14d > 0 ? 'red' : undefined}
+            action={
+              inactive14dRecipients.length > 0
+                ? {
+                    label: `Email these ${inactive14dRecipients.length}`,
+                    onClick: handleLaunchReengagement,
+                  }
+                : undefined
+            }
+          />
         </div>
+      )}
+
+      {/* Bulk Email launcher for Inactive 14d+. We pass `coaches=[]` because the
+          modal's prefilledRecipients flow replaces the selection entirely when
+          prefills are provided (synthesizes minimal Coach objects internally). */}
+      {reengageRecipients && (
+        <BulkEmailModal
+          coaches={[]}
+          prefilledRecipients={reengageRecipients}
+          onClose={() => setReengageRecipients(null)}
+          onSuccess={() => setReengageRecipients(null)}
+        />
       )}
 
       {/* Team User Directory */}
@@ -419,11 +480,25 @@ export function PeopleTab({ data }: Props) {
   );
 }
 
-function SummaryCard({ label, value, color, icon }: { label: string; value: number; color?: string; icon?: React.ReactNode }) {
+function SummaryCard({
+  label,
+  value,
+  color,
+  icon,
+  action,
+}: {
+  label: string;
+  value: number;
+  color?: string;
+  icon?: React.ReactNode;
+  /** Optional in-card action — currently used by "Inactive 14d+" to launch
+   *  the re-engagement BulkEmailModal pre-filled with those users. */
+  action?: { label: string; onClick: () => void };
+}) {
   return (
     <div className={cn(
       'p-3 rounded-xl glass-standard',
-      'text-center'
+      'text-center flex flex-col items-center justify-between gap-1.5'
     )}>
       <div className="flex items-center justify-center gap-1.5 mb-1">
         {icon}
@@ -437,6 +512,21 @@ function SummaryCard({ label, value, color, icon }: { label: string; value: numb
         )}>{value}</p>
       </div>
       <p className="text-micro text-warm-400 uppercase tracking-wider font-medium">{label}</p>
+      {action && (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className={cn(
+            'mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors',
+            color === 'red'
+              ? 'bg-red-600 text-white hover:bg-red-700'
+              : 'bg-primary-600 text-white hover:bg-primary-700',
+          )}
+        >
+          <IconMail size={11} />
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
