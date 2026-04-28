@@ -241,7 +241,27 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
           // Store the full rule-based content for the viewer
           setRuleBasedContent(content);
 
-          // Build a RoundReview from the stored review data
+          // Build a RoundReview from the stored review data.
+          //
+          // CONTRACT NOTE — playerAverages is null in this V1-fallback path.
+          //
+          // The canonical `RoundReview` type (declared in
+          // `src/lib/coachhelm/types.ts`) currently types `playerAverages`
+          // as a non-null `RoundStats`. Until that type is widened to
+          // `RoundStats | null` (effectively `PlayerAverages | null`), we
+          // cast through `unknown` to deliver `null` at runtime here. The
+          // hook return type intentionally exposes `null` to consumers via
+          // this slot when no real averages are available — consumers MUST
+          // null-check `review.playerAverages` before reading any field.
+          //
+          // Why: a previous version injected hardcoded league baselines (72
+          // strokes, 32 putts, 50% across the board) which silently misrepresented
+          // every player's stat comparisons. The interim fix shipped a zeroed
+          // RoundStats which rendered as "0/0/0" comparison lines — anti-marketing
+          // risk. The real averages live in `golf_round_reviews.player_averages`
+          // and on the canonical `/rounds/[id]/review` page come from
+          // `getStatAverages(playerId)`. A5 (review/page.tsx) is informed of
+          // this null contract.
           const basicReview: RoundReview = {
             id: result.review.id,
             roundId: result.review.round_id,
@@ -288,34 +308,10 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
               sandAttempts: 0,
               sandPct: 0,
             },
-            playerAverages: {
-              totalScore: 72,
-              scoreToPar: 0,
-              frontNine: 36,
-              backNine: 36,
-              eagles: 0,
-              birdies: 0,
-              pars: 0,
-              bogeys: 0,
-              doublePlus: 0,
-              fairwaysHit: 0,
-              fairwaysPossible: 14,
-              fairwayPct: 50,
-              greensHit: 0,
-              greensPossible: 18,
-              girPct: 50,
-              totalPutts: 32,
-              puttsPerHole: 1.78,
-              puttsPerGir: 1.8,
-              onePutts: 4,
-              threePutts: 1,
-              upAndDowns: 3,
-              upAndDownAttempts: 6,
-              scramblePct: 50,
-              sandSaves: 1,
-              sandAttempts: 2,
-              sandPct: 50,
-            },
+            // Null instead of fake league baselines / zeroed stats — see
+            // CONTRACT NOTE above. Cast through unknown because the canonical
+            // `RoundReview` type still types this slot as non-null `RoundStats`.
+            playerAverages: null as unknown as RoundReview['playerAverages'],
             teamAverages: null,
             strokesGained: null,
             patternsDetected: [],
