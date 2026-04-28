@@ -1,5 +1,6 @@
 'use client';
 
+import { lazy, Suspense } from 'react';
 import type {
   AdminDashboardData,
   AdminDashboardRollup,
@@ -11,9 +12,29 @@ import {
   RecentActivityFeed,
   DeepDiveAccordion,
 } from './overview';
-import { UserFunnelViz } from './UserFunnelViz';
-import { DailyCharts } from './DailyCharts';
-import { PlatformHealthCard } from './PlatformHealthCard';
+import { SectionSkeleton } from './SectionSkeleton';
+
+// Each deep-dive accordion body is lazy-loaded so its chunk only downloads
+// when the user expands the section. Wrapping each in its own <Suspense>
+// boundary means the three sections reveal independently — a slow chunk on
+// one (DailyCharts pulls Recharts, ~100KB gz) doesn't block the others, and
+// each shows its own SectionSkeleton in the meantime instead of one global
+// loader. Default chunk-name comments help debugging in the network panel.
+const UserFunnelViz = lazy(() =>
+  import(/* webpackChunkName: "admin-user-funnel" */ './UserFunnelViz').then(
+    (m) => ({ default: m.UserFunnelViz }),
+  ),
+);
+const DailyCharts = lazy(() =>
+  import(/* webpackChunkName: "admin-daily-charts" */ './DailyCharts').then(
+    (m) => ({ default: m.DailyCharts }),
+  ),
+);
+const PlatformHealthCard = lazy(() =>
+  import(/* webpackChunkName: "admin-platform-health" */ './PlatformHealthCard').then(
+    (m) => ({ default: m.PlatformHealthCard }),
+  ),
+);
 
 interface Props {
   data: AdminDashboardData;
@@ -116,16 +137,23 @@ export function OverviewTab({ data, rollup: _rollup, onNavigateTab }: Props) {
 
       <RecentActivityFeed activity={data.activity} />
 
-      {/* Deep Dives */}
+      {/* Deep Dives — each body is lazy-loaded and wrapped in its own
+          Suspense boundary so the accordions reveal independently. */}
       <div className="space-y-3">
         <DeepDiveAccordion title="User Funnel" subtitle={funnelConversion}>
-          <UserFunnelViz funnel={data.playerFunnel.funnel} />
+          <Suspense fallback={<SectionSkeleton height={180} label="Loading user funnel" />}>
+            <UserFunnelViz funnel={data.playerFunnel.funnel} />
+          </Suspense>
         </DeepDiveAccordion>
         <DeepDiveAccordion title="Daily Trends">
-          <DailyCharts signupsByDay={data.signupsByDay} visitsByDay={data.visitsByDay} />
+          <Suspense fallback={<SectionSkeleton height={260} label="Loading daily trends" />}>
+            <DailyCharts signupsByDay={data.signupsByDay} visitsByDay={data.visitsByDay} />
+          </Suspense>
         </DeepDiveAccordion>
         <DeepDiveAccordion title="Platform Health" subtitle={healthSubtitle}>
-          <PlatformHealthCard health={data.health} infraHealth={data.infraHealth} />
+          <Suspense fallback={<SectionSkeleton height={220} label="Loading platform health" />}>
+            <PlatformHealthCard health={data.health} infraHealth={data.infraHealth} />
+          </Suspense>
         </DeepDiveAccordion>
       </div>
     </div>
