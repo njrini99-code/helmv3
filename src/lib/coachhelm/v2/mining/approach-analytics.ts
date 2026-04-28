@@ -28,9 +28,24 @@ type Supabase = SupabaseClient<Database>;
 
 const WINDOW_DAYS = 60;
 const MIN_SAMPLES_PER_BUCKET = 8;
+/**
+ * P2 (2026-04-27): tighter thresholds for the two insights whose framing
+ * was misleading at small N. The dominant-lie insight stays at 8 (it's a
+ * categorical distribution, not a proportion). The other two are gated on
+ * insight-specific minimums below.
+ */
+const MIN_SAMPLES_FOR_SEVERITY = 15;
+const MIN_SAMPLES_FOR_DIRECTION = 12; // applies to directional misses, not total bucket
 const DOMINANT_LIE_THRESHOLD = 0.4;
 const DIRECTION_BIAS_THRESHOLD = 0.6;
 const SEVERITY_MULTIPLIER = 1.5;
+/**
+ * P2: cap the severity ratio shown in the title at 3.0x. Past data showed
+ * 5.9x ratios on N=15 misses — the headline framing implied catastrophe
+ * when the actual issue was sample-driven variance. The body still carries
+ * the absolute "47y from pin vs D2 8y" framing for full context.
+ */
+const SEVERITY_DISPLAY_CAP = 3.0;
 
 type DistanceBucket = '<150' | '150_175' | '175_200' | '200+';
 const BUCKET_ORDER: readonly DistanceBucket[] = [
@@ -410,6 +425,14 @@ async function emitSeverityInsight(
   windowEnd: string,
 ): Promise<void> {
   if (stats.avgDistanceFromGreen <= 0) return;
+  // P2: severity comparisons need at least 15 missed approaches in the
+  // bucket — a 5.9x ratio on N=8 is sample-driven variance, not signal.
+  if (stats.n < MIN_SAMPLES_FOR_SEVERITY) {
+    console.debug(
+      `[insight-skip] reason=insufficient_sample type=approach_severity_${stats.bucket} n=${stats.n} min=${MIN_SAMPLES_FOR_SEVERITY}`,
+    );
+    return;
+  }
   const baseline = BASELINE_SEVERITY_YDS[stats.bucket];
   const ratio = stats.avgDistanceFromGreen / baseline;
   if (ratio < SEVERITY_MULTIPLIER) return;
@@ -443,13 +466,20 @@ async function emitSeverityInsight(
   };
   evidence.confidence = calcConfidence(evidence);
 
-  const title = `${BUCKET_LABEL[stats.bucket]} misses are ${ratio.toFixed(1)}x worse than peers`;
+  // P2: prefer absolute framing in the title (avg yardage delta) over a
+  // hyperbolic ratio. When the ratio is genuinely large, cap the displayed
+  // multiplier at SEVERITY_DISPLAY_CAP so we don't headline "5.9x worse"
+  // — the body still carries the absolute numbers for proper context.
+  const yourAvgYds = Math.round(stats.avgDistanceFromGreen);
+  const title =
+    `${BUCKET_LABEL[stats.bucket]} misses leak ~${yourAvgYds}y from pin (D2 ~${baseline}y)`;
+  const cappedRatio = Math.min(ratio, SEVERITY_DISPLAY_CAP);
+  const ratioPrefix = ratio > SEVERITY_DISPLAY_CAP ? '>=' : '~';
   const content =
     `On your ${stats.n} missed greens from ${BUCKET_LABEL[stats.bucket]} in the ` +
-    `last ${WINDOW_DAYS} days, you finish an average of ${Math.round(
-      stats.avgDistanceFromGreen,
-    )} yards from the pin. D2 players average about ${baseline} yards on comparable ` +
-    `misses. Oversized misses turn makeable up-and-downs into bogey saves.`;
+    `last ${WINDOW_DAYS} days, you finish an average of ${yourAvgYds} ` +
+    `yards from the pin (${ratioPrefix}${cappedRatio.toFixed(1)}x the D2 average of ${baseline} yards). ` +
+    `Oversized misses turn makeable up-and-downs into bogey saves.`;
 
   const drillTags = ['approach', stats.bucket, 'proximity', 'distance_control'];
 
@@ -473,7 +503,17 @@ async function emitDirectionBiasInsight(
   windowEnd: string,
 ): Promise<void> {
   const directional = stats.leftCount + stats.rightCount;
-  if (directional < MIN_SAMPLES_PER_BUCKET) return;
+  // P2: 60/40 splits at low directional N are within Bernoulli sampling
+  // noise. Require 12 misses with miss_direction tagged before reporting
+  // a side bias.
+  if (directional < MIN_SAMPLES_FOR_DIRECTION) {
+    if (directional > 0) {
+      console.debug(
+        `[insight-skip] reason=insufficient_sample type=approach_direction_${stats.bucket} n=${directional} min=${MIN_SAMPLES_FOR_DIRECTION}`,
+      );
+    }
+    return;
+  }
 
   const leftPct = stats.leftCount / directional;
   const rightPct = stats.rightCount / directional;
