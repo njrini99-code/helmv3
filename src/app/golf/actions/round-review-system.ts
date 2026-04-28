@@ -1274,7 +1274,7 @@ export async function getRoundReview(roundId: string): Promise<{
       id: existingReview.id,
       player_id: existingReview.player_id,
       round_id: existingReview.round_id,
-      review_content: existingReview.round_stats as unknown as RoundReviewContent,
+      review_content: existingReview.round_stats,
       generated_at: existingReview.created_at ?? new Date().toISOString(),
       ai_model_version: existingReview.engine_version ?? 'v1.0',
       shared_with_coach: existingReview.shared_with_coach ?? false,
@@ -1324,7 +1324,9 @@ export async function generateAndStoreRoundReview(
       return { success: false, error: 'Round not found' };
     }
 
-    const roundData = round as unknown as RoundData;
+    // RoundData defines `status?: string`; the typed select returns `string | null`.
+    // The narrowing is safe but TS needs the bridge cast.
+    const roundData = round as RoundData;
     if (roundData.status !== 'completed') {
       return { success: false, error: 'Round must be completed before generating a review' };
     }
@@ -1345,8 +1347,12 @@ export async function generateAndStoreRoundReview(
       .eq('round_id', roundId)
       .order('hole_number', { ascending: true });
 
+    // Local ShotRow models distance fields as `string | null` to match the
+    // historical parseFloat() callers in this file; the DB returns them as
+    // `number | null`. parseFloat() accepts both, so the runtime is safe — the
+    // cast bridges the static-type mismatch only.
     const shotRows = (shots ?? []) as unknown as ShotRow[];
-    const holeParRows = (holeRows ?? []) as unknown as HoleParRow[];
+    const holeParRows = (holeRows ?? []) as HoleParRow[];
     // Build hole breakdowns if we have ANY data (shots or hole-level records)
     const hasData = shotRows.length > 0 || holeParRows.length > 0;
     const holeBreakdowns = hasData
@@ -1410,6 +1416,8 @@ export async function generateAndStoreRoundReview(
         {
           round_id: roundId,
           player_id: playerId,
+          // Json's index signature does not accept typed shapes with optional
+          // properties; double-cast through unknown is required by TS.
           round_stats: reviewContent as unknown as Json,
           summary: reviewContent.summary,
           primary_takeaway: coachHelmReview?.primaryTakeaway ?? null,
