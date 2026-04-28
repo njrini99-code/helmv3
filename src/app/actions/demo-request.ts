@@ -21,15 +21,30 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
   try {
     const supabase = await createClient();
 
-    // Save to demo_requests table
+    // Save to demo_requests table.
+    // interest_type CHECK allows: baseball_coach | baseball_player | golf_coach
+    //   | golf_player | organization | other → use 'other' for landing-page leads.
+    // status CHECK allows: pending | contacted | scheduled | completed | declined.
     const { error } = await supabase.from('demo_requests').insert({
       email,
-      interest_type: 'landing_page',
-      status: 'new',
+      interest_type: 'other',
+      status: 'pending',
+      notes: 'Submitted from landing page',
     });
 
     if (error) {
-      await logServerError(`Failed to save demo request: ${error instanceof Error ? error.message : String(error)}`, { action: 'demo_request.submitDemoRequest' });
+      // Supabase PostgrestError is a plain object — String(err) yields "[object Object]".
+      // Stringify the whole shape so code/details/hint actually reach the log.
+      await logServerError(
+        `Failed to save demo request: ${JSON.stringify(error)}`,
+        {
+          action: 'demo_request.submitDemoRequest',
+          errorCode: error.code,
+          errorHint: error.hint,
+          errorDetails: error.details,
+          metadata: { email },
+        },
+      );
       return { success: false, error: 'Something went wrong. Please try again.' };
     }
 
@@ -57,7 +72,10 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
 
     return { success: true };
   } catch (error) {
-    await logServerError(`Failed to save demo request: ${error instanceof Error ? error.message : String(error)}`, { action: 'demo_request.submitDemoRequest' });
+    await logServerError(
+      `Failed to save demo request: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+      { action: 'demo_request.submitDemoRequest', metadata: { email } },
+    );
     return { success: false, error: 'Something went wrong. Please try again.' };
   }
 }
