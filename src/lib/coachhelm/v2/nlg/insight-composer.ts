@@ -28,6 +28,14 @@ import type {
  * this sanitizer in place to guard against any other numeric-propagation
  * regressions slipping through.
  */
+/**
+ * Discriminated union of insight data shapes the composer accepts.
+ * Keeping the union (instead of widening to Record<string, unknown>) lets
+ * us cast directly to the typed shape inside `if (type === ...)` branches
+ * without an `as unknown as` bridge.
+ */
+type InsightData = MinedPattern | PerformancePrediction | Record<string, unknown>;
+
 function sanitizeText(text: string): string {
   return text
     .replace(/This occurs in NaN% of rounds with NaN% reliability\.?\s*/gi, '')
@@ -57,10 +65,12 @@ export class InsightComposer {
     },
     context: InsightContext
   ): ComposedInsight {
-    // Convert to internal format with explicit data typing
+    // Convert to internal format, preserving the discriminated union for data
+    // so downstream methods can cast to MinedPattern / PerformancePrediction
+    // directly inside `type === '...'` branches.
     const internalInsight = {
       type: insight.type,
-      data: insight.data as Record<string, unknown>,
+      data: insight.data as InsightData,
       reasoning: insight.reasoning,
       features: insight.features,
     };
@@ -96,14 +106,14 @@ export class InsightComposer {
   private determineTone(
     insight: {
       type: string;
-      data: Record<string, unknown>;
+      data: InsightData;
       features?: ExtractedFeatures;
     },
     context: InsightContext
   ): InsightTone {
     // Alert types
     if (insight.type === 'alert') {
-      const severity = insight.data.severity as string;
+      const severity = (insight.data as Record<string, unknown>).severity as string;
       if (severity === 'critical') return 'urgent';
       if (severity === 'warning') return 'cautionary';
     }
@@ -119,7 +129,7 @@ export class InsightComposer {
 
     // Pattern with negative impact
     if (insight.type === 'pattern') {
-      const pattern = insight.data as unknown as MinedPattern;
+      const pattern = insight.data as MinedPattern;
       if (pattern.strokeImpact > 1) {
         return 'cautionary';
       }
@@ -130,7 +140,7 @@ export class InsightComposer {
 
     // Prediction
     if (insight.type === 'prediction') {
-      const pred = insight.data as unknown as PerformancePrediction;
+      const pred = insight.data as PerformancePrediction;
       if (pred.predictedValue < 0) {
         return 'encouraging';
       }
@@ -145,7 +155,7 @@ export class InsightComposer {
    * generic templates so coaches can skim insights effectively.
    */
   private composeHeadline(
-    insight: { type: string; data: Record<string, unknown> },
+    insight: { type: string; data: InsightData },
     tone: InsightTone
   ): string {
     // Try to build a data-driven headline first
@@ -200,11 +210,11 @@ export class InsightComposer {
    * Returns null if data is insufficient for a specific headline.
    */
   private buildSpecificHeadline(
-    insight: { type: string; data: Record<string, unknown> },
+    insight: { type: string; data: InsightData },
     tone: InsightTone
   ): string | null {
     if (insight.type === 'pattern') {
-      const pattern = insight.data as unknown as MinedPattern;
+      const pattern = insight.data as MinedPattern;
       const condition = pattern.conditions?.[0];
       const impact = pattern.strokeImpact;
 
@@ -237,7 +247,7 @@ export class InsightComposer {
     }
 
     if (insight.type === 'prediction') {
-      const pred = insight.data as unknown as PerformancePrediction;
+      const pred = insight.data as PerformancePrediction;
       if (Number.isFinite(pred.predictedValue)) {
         const score = pred.predictedValue >= 0
           ? `+${pred.predictedValue.toFixed(1)}`
@@ -261,6 +271,7 @@ export class InsightComposer {
       }
     }
 
+
     return null;
   }
 
@@ -277,14 +288,14 @@ export class InsightComposer {
    * Composes body text based on verbosity
    */
   private composeBody(
-    insight: { type: string; data: Record<string, unknown>; reasoning?: ReasoningResult },
+    insight: { type: string; data: InsightData; reasoning?: ReasoningResult },
     verbosity: 'brief' | 'balanced' | 'detailed'
   ): string {
     const parts: string[] = [];
 
     // Main insight
     if (insight.type === 'pattern') {
-      const pattern = insight.data as unknown as MinedPattern;
+      const pattern = insight.data as MinedPattern;
 
       // Guard: only compose pattern text if pattern has valid data
       if (pattern.description && pattern.conditions && pattern.conditions.length > 0) {
@@ -314,7 +325,7 @@ export class InsightComposer {
     }
 
     if (insight.type === 'prediction') {
-      const pred = insight.data as unknown as PerformancePrediction;
+      const pred = insight.data as PerformancePrediction;
       const predictedValue = Number.isFinite(pred.predictedValue) ? pred.predictedValue : 0;
       const rangeLow = Number.isFinite(pred.predictedRangeLow) ? pred.predictedRangeLow : 0;
       const rangeHigh = Number.isFinite(pred.predictedRangeHigh) ? pred.predictedRangeHigh : 0;
@@ -346,11 +357,11 @@ export class InsightComposer {
    * Generates call to action
    */
   private generateCallToAction(
-    insight: { type: string; data: Record<string, unknown> },
+    insight: { type: string; data: InsightData },
     context: InsightContext
   ): string | undefined {
     if (insight.type === 'pattern') {
-      const pattern = insight.data as unknown as MinedPattern;
+      const pattern = insight.data as MinedPattern;
       if (pattern.recommendation) {
         return pattern.recommendation;
       }
@@ -368,7 +379,7 @@ export class InsightComposer {
     }
 
     if (insight.type === 'prediction') {
-      const pred = insight.data as unknown as PerformancePrediction;
+      const pred = insight.data as PerformancePrediction;
       const topFactors = (pred.keyFactors ?? [])
         .slice(0, 2)
         .map((factor) => factor.name.toLowerCase());
@@ -384,9 +395,10 @@ export class InsightComposer {
     }
 
     if (insight.type === 'alert') {
+      const data = insight.data as Record<string, unknown>;
       const recommendation =
-        (insight.data.recommendation as string | undefined)
-        ?? (insight.data.callToAction as string | undefined);
+        (data.recommendation as string | undefined)
+        ?? (data.callToAction as string | undefined);
       if (recommendation) {
         return recommendation;
       }
@@ -397,8 +409,9 @@ export class InsightComposer {
     }
 
     if (insight.type === 'causal') {
-      const cause = insight.data.cause as string | undefined;
-      const effect = insight.data.effect as string | undefined;
+      const data = insight.data as Record<string, unknown>;
+      const cause = data.cause as string | undefined;
+      const effect = data.effect as string | undefined;
       if (cause && effect) {
         return `Address ${cause} directly in practice because it is driving ${effect}.`;
       }
@@ -420,7 +433,7 @@ export class InsightComposer {
    */
   private extractConfidence(insight: {
     type: string;
-    data: Record<string, unknown>;
+    data: InsightData;
     reasoning?: ReasoningResult;
   }): number {
     let raw: number | undefined;
@@ -428,10 +441,10 @@ export class InsightComposer {
     if (insight.reasoning) {
       raw = insight.reasoning.calibratedConfidence;
     } else if (insight.type === 'pattern') {
-      const pattern = insight.data as unknown as MinedPattern;
+      const pattern = insight.data as MinedPattern;
       raw = pattern.confidence;
     } else if (insight.type === 'prediction') {
-      const pred = insight.data as unknown as PerformancePrediction;
+      const pred = insight.data as PerformancePrediction;
       raw = pred.calibratedConfidence;
     }
 
