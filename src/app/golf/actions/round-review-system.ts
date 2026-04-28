@@ -1386,35 +1386,28 @@ export async function generateAndStoreRoundReview(
       }
     }
 
-    const { data: existingReview } = await supabase
+    // Single upsert keyed by round_id. The `golf_round_reviews_round_id_unique`
+    // UNIQUE index on (round_id) means concurrent generations for the same
+    // round (e.g. user-triggered + auto-retry from useRoundReviewV2) collapse
+    // safely into one row. The previous select-then-update/insert pattern had
+    // a TOCTOU race window between the SELECT and the INSERT where two
+    // concurrent calls could both read "no existing" and then race the INSERT,
+    // with the loser hitting a UNIQUE-violation error path.
+    //
+    // Payload mirrors the prior INSERT path 1:1, plus the counter columns
+    // (highlights_count, areas_count, insights_count) and engine_version that
+    // tonight's counter-fix relies on. round_score / round_score_to_par stay
+    // populated so historical lookups by round outcome work.
+    const highlightsCount = Array.isArray(reviewContent.highlights) ? reviewContent.highlights.length : 0;
+    const areasCount = Array.isArray(reviewContent.areasForImprovement) ? reviewContent.areasForImprovement.length : 0;
+    const insightsCount = Array.isArray(reviewContent.deepInsights)
+      ? reviewContent.deepInsights.length
+      : Array.isArray(reviewContent.keyStats) ? reviewContent.keyStats.length : 0;
+
+    const { data: upserted, error: upsertError } = await supabase
       .from('golf_round_reviews')
-      .select('id')
-      .eq('round_id', roundId)
-      .maybeSingle();
-
-    let reviewId: string;
-
-    if (existingReview) {
-      const { error: updateError } = await supabase
-        .from('golf_round_reviews')
-        .update({
-          round_stats: reviewContent as unknown as Json,
-          summary: reviewContent.summary,
-          primary_takeaway: coachHelmReview?.primaryTakeaway ?? null,
-          next_practice_priority: coachHelmReview?.practicePriority ?? null,
-          highlights: reviewContent.highlights as unknown as Json,
-          areas_to_review: reviewContent.areasForImprovement as unknown as Json,
-          engine_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existingReview.id);
-
-      if (updateError) return { success: false, error: 'Failed to update review' };
-      reviewId = existingReview.id;
-    } else {
-      const { data: newReview, error: insertError } = await supabase
-        .from('golf_round_reviews')
-        .insert({
+      .upsert(
+        {
           round_id: roundId,
           player_id: playerId,
           round_stats: reviewContent as unknown as Json,
@@ -1423,16 +1416,21 @@ export async function generateAndStoreRoundReview(
           next_practice_priority: coachHelmReview?.practicePriority ?? null,
           highlights: reviewContent.highlights as unknown as Json,
           areas_to_review: reviewContent.areasForImprovement as unknown as Json,
+          highlights_count: highlightsCount,
+          areas_count: areasCount,
+          insights_count: insightsCount,
           round_score: roundData.total_score,
           round_score_to_par: roundData.score_to_par,
           engine_version: coachHelmEnhanced ? 'coachhelm-v2' : 'rule-based-v2',
-        })
-        .select('id')
-        .single();
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'round_id', ignoreDuplicates: false }
+      )
+      .select('id')
+      .single();
 
-      if (insertError || !newReview) return { success: false, error: 'Failed to create review' };
-      reviewId = newReview.id;
-    }
+    if (upsertError || !upserted) return { success: false, error: 'Failed to save review' };
+    const reviewId: string = upserted.id;
 
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${roundId}`);
