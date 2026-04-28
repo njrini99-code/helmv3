@@ -14,6 +14,8 @@ import {
   IconInfo,
   IconRefresh,
   IconSettings,
+  IconChevronDown,
+  IconChevronUp,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
@@ -104,17 +106,16 @@ function EmptyState() {
 }
 
 /**
- * Inline note shown when the evidence-backed insight feed is empty but the
- * rest of the dashboard (focus areas, prediction, trends) has data. Kept
- * compact so it doesn't dominate the left column beside a populated right
- * column.
+ * Compact inline note shown when the evidence-backed insight feed is empty
+ * but the rest of the dashboard has data. Kept low-weight so it doesn't fight
+ * the surrounding cards for attention.
  */
 function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
   return (
-    <GlassCard className="py-5 px-5">
+    <GlassCard variant="secondary" padding="sm" hover={false}>
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0">
-          <IconSparkles size={18} className="text-warm-400" />
+        <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0">
+          <IconSparkles size={16} className="text-warm-400" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-warm-900">
@@ -122,7 +123,7 @@ function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
           </p>
           <p className="text-xs text-warm-500 mt-0.5">
             {hasRounds
-              ? 'Evidence-backed insights surface once patterns hold across multiple rounds. Your focus areas and trends are live on the right.'
+              ? 'Insights appear once patterns hold across multiple rounds.'
               : 'Log a few rounds and CoachHelm will surface the patterns that move your scores.'}
           </p>
         </div>
@@ -249,16 +250,24 @@ export function PlayerCoachHelmDashboard({
 
   // Dedupe — the top insight is also in the `getInsightsForPlayer` result;
   // drop it from the secondary list so we don't render the same card twice.
-  // We also cap the visible list at 5 to match the prior density.
-  const secondaryFiltered = useMemo(
-    () =>
-      secondaryInsights
-        .filter((i) => !topInsight || i.id !== topInsight.id)
-        .slice(0, 5),
+  // Cap the visible list at 3 to keep the surface uncluttered; surplus is
+  // surfaced via a "View more" affordance below the feed.
+  const secondaryDeduped = useMemo(
+    () => secondaryInsights.filter((i) => !topInsight || i.id !== topInsight.id),
     [secondaryInsights, topInsight],
   );
+  const secondaryFiltered = useMemo(
+    () => secondaryDeduped.slice(0, 3),
+    [secondaryDeduped],
+  );
+  const hiddenInsightCount = Math.max(0, secondaryDeduped.length - secondaryFiltered.length);
 
   const hasAnyInsight = Boolean(topInsight) || secondaryFiltered.length > 0;
+
+  // Local UI state — "Deep dive" (Shot Analysis / What If) is collapsed by
+  // default so the spine of the dashboard (hero insight + focus areas) gets
+  // room to breathe. Players who want the heavier analysis expand on demand.
+  const [deepDiveOpen, setDeepDiveOpen] = useState(false);
 
   // Dashboard-level data presence check. We now treat evidence-backed insights
   // + the legacy focus-area / prediction shape as interchangeable signals that
@@ -326,7 +335,10 @@ export function PlayerCoachHelmDashboard({
               />
             </div>
 
-            {/* Insights Section */}
+            {/* Insights Section — reorganized into three tiers:
+                1. Spine (above-the-fold): Hero insight + Focus Areas
+                2. Secondary: Game strength, trends, supporting insights, prediction
+                3. Detail (collapsed): Shot analysis / What-if deep dive */}
             <AnimatePresence mode="wait" initial={false}>
               {activeSection === 'insights' && (
                 <m.div
@@ -335,128 +347,186 @@ export function PlayerCoachHelmDashboard({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
+                  className="space-y-6 md:space-y-8"
                 >
-                  {/* Top Row — Composite Rating + Trend Dashboard */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6 mb-6">
-                    <CompositeRatingCard
-                      profileData={profileData ?? undefined}
-                      playerState={dashboardData.playerState}
-                      playerName={dashboardData.playerName}
-                    />
-                    <TrendDashboard
-                      trendData={trendData ?? undefined}
-                      playerState={dashboardData.playerState}
-                    />
-                  </div>
-
-                  {/* Main Content — 2 columns */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6 mb-6">
-                    {/* Left Column — Hero insight + secondary feed */}
-                    <div className="lg:col-span-7 space-y-5 md:space-y-6 min-w-0">
-                      {topInsight && (
+                  {/* ───── Spine — Hero insight + Focus Areas ───── */}
+                  {/* On mobile this is the above-the-fold view: one hero
+                      insight, then the player's actionable focus areas. */}
+                  <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
+                    <div className="lg:col-span-7 min-w-0">
+                      {topInsight ? (
                         <HeroInsightCard
                           insight={topInsight}
                           audience="player"
                           onAction={handleInsightAction}
                         />
-                      )}
-
-                      {secondaryFiltered.length > 0 && (
-                        <div className="space-y-3">
-                          <h3 className="text-sm font-medium text-warm-500 px-1">
-                            {topInsight ? 'More for you' : 'Your insights'}
-                          </h3>
-                          {secondaryFiltered.map((insight) => (
-                            <InsightCard
-                              key={insight.id}
-                              insight={insight}
-                              density="default"
-                              audience="player"
-                              onAction={handleInsightAction}
-                            />
-                          ))}
-                        </div>
-                      )}
-
-                      {!topInsight && secondaryFiltered.length === 0 && (
-                        (() => {
-                          // Suppress the inline empty card entirely when the
-                          // right column is populated — focus areas + prediction
-                          // already anchor the view, and the big "No insights"
-                          // card just adds noise in that case.
-                          const rightColumnHasContent =
-                            dashboardData.focusAreas.length > 0 ||
-                            dashboardData.prediction !== null;
-                          if (rightColumnHasContent) return null;
-                          return (
-                            <EmptyInsightsState
-                              hasRounds={dashboardData.recentRounds.length > 0}
-                            />
-                          );
-                        })()
+                      ) : (
+                        <EmptyInsightsState
+                          hasRounds={dashboardData.recentRounds.length > 0}
+                        />
                       )}
                     </div>
-
-                    {/* Right Column — Focus Areas, Prediction */}
-                    <div className="lg:col-span-5 space-y-5 md:space-y-6 min-w-0">
+                    <div className="lg:col-span-5 min-w-0">
                       <section id="focus-areas" className="scroll-mt-24">
                         <FocusAreasGrid focusAreas={dashboardData.focusAreas} />
                       </section>
-                      <PerformancePrediction
-                        prediction={dashboardData.prediction}
+                    </div>
+                  </section>
+
+                  {/* ───── Secondary — Supporting insights | Prediction ─────
+                      Below the spine, a second tier surfaces the rest of the
+                      insight feed alongside the prediction card. Capped at 3
+                      insights with a "View all" affordance for surplus. */}
+                  {(secondaryFiltered.length > 0 || dashboardData.prediction !== null) && (
+                    <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 md:gap-6">
+                      <div className="lg:col-span-7 space-y-3 min-w-0">
+                        {secondaryFiltered.length > 0 && (
+                          <>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-500 px-1">
+                              {topInsight ? 'More for you' : 'Your insights'}
+                            </h3>
+                            {secondaryFiltered.map((insight) => (
+                              <InsightCard
+                                key={insight.id}
+                                insight={insight}
+                                density="compact"
+                                audience="player"
+                                onAction={handleInsightAction}
+                              />
+                            ))}
+                            {hiddenInsightCount > 0 && (
+                              <Link
+                                href="/golf/dashboard/my-development"
+                                className="inline-flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 px-1"
+                              >
+                                View {hiddenInsightCount} more insight{hiddenInsightCount === 1 ? '' : 's'}
+                                <span aria-hidden="true">→</span>
+                              </Link>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      <div className="lg:col-span-5 min-w-0">
+                        <PerformancePrediction
+                          prediction={dashboardData.prediction}
+                          playerState={dashboardData.playerState}
+                        />
+                      </div>
+                    </section>
+                  )}
+
+                  {/* ───── Tertiary — Game Strength + Trends ─────
+                      Lower visual priority than the insight feed: these are
+                      reference panels, not the primary signal of the day. */}
+                  <section>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-500 mb-3 px-1">
+                      Performance overview
+                    </h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
+                      <CompositeRatingCard
+                        profileData={profileData ?? undefined}
+                        playerState={dashboardData.playerState}
+                        playerName={dashboardData.playerName}
+                      />
+                      <TrendDashboard
+                        trendData={trendData ?? undefined}
                         playerState={dashboardData.playerState}
                       />
                     </div>
-                  </div>
+                  </section>
 
-                  {/* Bottom Row — Tabbed: Shot Analysis | What If.
-                      Labelled as "Deep dive" so it visually reads as a
-                      sub-section of AI Insights, not as competing primary
-                      navigation with the top section toggle. */}
-                  <div className="flex items-center justify-between gap-3 mb-3 mt-2">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">
-                      Deep dive
-                    </p>
-                    <GolfTabBar
-                      tabs={bottomTabs}
-                      value={activeBottomTab}
-                      onChange={setActiveBottomTab}
-                      ariaLabel="Analysis sections"
-                      compact
-                    />
-                  </div>
-                  <div>
-                    <AnimatePresence mode="wait" initial={false}>
-                      {activeBottomTab === 'shot-analysis' && (
-                        <m.div
-                          key="shot-analysis"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.15 }}
-                        >
-                          <ShotAnalysisCard
-                            shotData={shotData ?? undefined}
-                            playerId={playerId}
-                          />
-                        </m.div>
+                  {/* ───── Detail (collapsible) — Deep dive analysis ─────
+                      Hidden by default. Shot analysis + what-if are dense,
+                      heavy panels that distract from the spine when always
+                      open. Players opt in via the disclosure button. */}
+                  <section>
+                    <button
+                      type="button"
+                      onClick={() => setDeepDiveOpen((v) => !v)}
+                      aria-expanded={deepDiveOpen}
+                      aria-controls="coachhelm-deep-dive"
+                      className={cn(
+                        'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl',
+                        'bg-white/50 backdrop-blur-sm border border-white/30',
+                        'hover:bg-white/70 transition-colors text-left',
                       )}
-                      {activeBottomTab === 'what-if' && (
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                          <IconChartRadar size={16} className="text-primary-600" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-warm-900">
+                            Deep dive analysis
+                          </p>
+                          <p className="text-xs text-warm-500">
+                            Shot patterns and what-if scenarios
+                          </p>
+                        </div>
+                      </div>
+                      {deepDiveOpen ? (
+                        <IconChevronUp size={18} className="text-warm-500 flex-shrink-0" />
+                      ) : (
+                        <IconChevronDown size={18} className="text-warm-500 flex-shrink-0" />
+                      )}
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {deepDiveOpen && (
                         <m.div
-                          key="what-if"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.15 }}
+                          id="coachhelm-deep-dive"
+                          key="deep-dive"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
                         >
-                          <WhatIfPanel
-                            playerId={playerId}
-                            profileData={profileData ?? undefined}
-                          />
+                          <div className="pt-4 space-y-3">
+                            <div className="flex items-center justify-end">
+                              <GolfTabBar
+                                tabs={bottomTabs}
+                                value={activeBottomTab}
+                                onChange={setActiveBottomTab}
+                                ariaLabel="Analysis sections"
+                                compact
+                              />
+                            </div>
+                            <AnimatePresence mode="wait" initial={false}>
+                              {activeBottomTab === 'shot-analysis' && (
+                                <m.div
+                                  key="shot-analysis"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                >
+                                  <ShotAnalysisCard
+                                    shotData={shotData ?? undefined}
+                                    playerId={playerId}
+                                  />
+                                </m.div>
+                              )}
+                              {activeBottomTab === 'what-if' && (
+                                <m.div
+                                  key="what-if"
+                                  initial={{ opacity: 0 }}
+                                  animate={{ opacity: 1 }}
+                                  exit={{ opacity: 0 }}
+                                  transition={{ duration: 0.15 }}
+                                >
+                                  <WhatIfPanel
+                                    playerId={playerId}
+                                    profileData={profileData ?? undefined}
+                                  />
+                                </m.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         </m.div>
                       )}
                     </AnimatePresence>
-                  </div>
+                  </section>
                 </m.div>
               )}
 
