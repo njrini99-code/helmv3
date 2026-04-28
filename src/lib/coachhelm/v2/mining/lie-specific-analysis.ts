@@ -28,7 +28,7 @@
  * - "Around the green from rough: 23% danger zone rate (penalties/bunkers)"
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // ============================================================================
 // TYPES
@@ -594,7 +594,7 @@ class LieSpecificAnalyzer {
    * Loads shot data for the player
    */
   private async loadShots(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get all completed rounds for this player
     const { data: rounds } = await supabase

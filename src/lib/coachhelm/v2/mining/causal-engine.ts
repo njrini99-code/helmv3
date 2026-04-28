@@ -9,7 +9,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
 import type {
   CausalRelationship,
   CausalEvidence,
@@ -44,7 +43,7 @@ export class CausalEngine {
    * Discovers causal relationships for a player
    */
   async discoverCausalRelationships(): Promise<CausalRelationship[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Load rounds
     const { data: rounds, error } = await supabase

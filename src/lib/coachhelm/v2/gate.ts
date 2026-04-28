@@ -12,7 +12,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import type { CoachHelmSettings, CoachHelmStatus } from './types';
 
@@ -118,7 +118,7 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
+  const supabase = (supabaseOverride ?? (createAdminClient())) as SupabaseClient;
 
   // Get coach record with team via organization
   const { data: coach, error: coachError } = await supabase
@@ -223,7 +223,7 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
+  const supabase = (supabaseOverride ?? (createAdminClient())) as SupabaseClient;
 
   const { data: player, error: playerError } = await supabase
     .from('golf_players')

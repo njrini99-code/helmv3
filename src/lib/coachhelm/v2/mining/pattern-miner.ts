@@ -9,7 +9,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import type {
   MinedPattern,
@@ -84,7 +83,7 @@ export class PatternMiner {
    * Main entry point - mines all pattern types for a player
    */
   async minePatterns(): Promise<MinedPattern[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Load features (available for potential future use)
     await extractAllFeatures(this.playerId);

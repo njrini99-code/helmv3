@@ -12,7 +12,7 @@
  * correlations that span different data sources and contexts.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 
 // ============================================================================
 // TYPES
@@ -181,7 +181,7 @@ export class CorrelationDiscovery {
   // ============================================================================
 
   private async loadData(): Promise<void> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Load rounds with aggregated stats
     const { data: rounds } = await supabase

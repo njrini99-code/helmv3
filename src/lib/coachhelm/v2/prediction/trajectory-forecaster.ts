@@ -8,7 +8,7 @@
  * - Risk and opportunity identification
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type {
   TrajectoryForecast,
   TrajectoryPoint,
@@ -47,7 +47,7 @@ export class TrajectoryForecaster {
   async forecastTrajectory(
     horizonDays: number = 90
   ): Promise<TrajectoryForecast | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Load features
     this.features = await extractAllFeatures(this.playerId);

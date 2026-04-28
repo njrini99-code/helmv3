@@ -9,7 +9,6 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
-import { createClient } from '@/lib/supabase/server';
 import type {
   PerformancePrediction,
   PredictionFactor,
@@ -51,7 +50,7 @@ export class PerformancePredictor {
     targetDate: Date = new Date(),
     context?: Partial<PredictionContext>
   ): Promise<PerformancePrediction | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Load features and baseline
     this.features = await extractAllFeatures(this.playerId);

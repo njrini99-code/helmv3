@@ -8,7 +8,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import type { Json } from '@/lib/types/database';
 import type { MinedPattern } from '../types';
@@ -94,7 +94,7 @@ export class CrossLearner {
    * Builds or updates the global pattern library
    */
   async buildGlobalPatternLibrary(): Promise<GlobalPattern[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get all active patterns
     let query = supabase
@@ -199,7 +199,7 @@ export class CrossLearner {
     playerId: string,
     limit: number = 5
   ): Promise<Array<{ playerId: string; similarity: number; sharedPatterns: number }>> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Build profile for target player
     const targetProfile = await this.buildPlayerProfile(playerId);
@@ -263,7 +263,7 @@ export class CrossLearner {
     fromPlayerId: string,
     toPlayerId: string
   ): Promise<MinedPattern[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get patterns from source player
     const { data: sourcePatterns } = await supabase
@@ -385,7 +385,7 @@ export class CrossLearner {
   private async buildPlayerProfile(
     playerId: string
   ): Promise<PlayerProfile | null> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Get recent rounds
     const { data: rounds } = await supabase
@@ -506,7 +506,7 @@ export class CrossLearner {
   private async calculateVariationByTier(
     patterns: MinedPattern[]
   ): Promise<Record<string, number>> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const variedByTier: Record<string, number> = {};
 
     // Get player scoring averages
@@ -570,7 +570,7 @@ export class CrossLearner {
     injected?: SupabaseClient
   ): Promise<void> {
     if (patterns.length === 0) return;
-    const supabase = injected ?? (await createClient());
+    const supabase = injected ?? (createAdminClient());
 
     const rows: GlobalPatternInsertRow[] = patterns.map((p) => ({
       signature: p.signature,

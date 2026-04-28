@@ -26,7 +26,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import type {
   LearnedBehavior,
@@ -90,7 +90,7 @@ export class BehaviorLearner {
 
   private async getClient(): Promise<SupabaseClient> {
     if (!this.supabase) {
-      this.supabase = (await createClient()) as unknown as SupabaseClient;
+      this.supabase = (createAdminClient()) as unknown as SupabaseClient;
     }
     return this.supabase;
   }

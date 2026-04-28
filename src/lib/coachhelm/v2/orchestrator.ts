@@ -11,7 +11,7 @@
  * - NLG
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
 import { generatePuttDistanceInsights, generatePuttMissBiasInsights } from './mining/putt-analytics';
@@ -202,7 +202,7 @@ class CoachHelmIntelligence {
     }
 
     // === NEW: Fetch recent rounds for statistical foundation ===
-    const supabaseClient = await createClient();
+    const supabaseClient = createAdminClient();
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
     const { data: recentRounds } = await supabaseClient
@@ -496,7 +496,7 @@ class CoachHelmIntelligence {
     // this.confidenceCalibrator tracks calibration as predictions are scored via .update()
 
     // Query team players
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // LIVE-24: load coach philosophy once per run; prior code hard-coded
     // decline/pressure thresholds and ignored persisted per-coach settings.
@@ -964,7 +964,7 @@ class CoachHelmIntelligence {
   }
 
   private async buildRoundSpecificInsights(roundId: string): Promise<ComposedInsight[]> {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const [{ data: shots }, { data: holes }] = await Promise.all([
       supabase
