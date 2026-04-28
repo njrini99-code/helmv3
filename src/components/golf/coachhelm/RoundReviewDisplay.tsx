@@ -319,42 +319,67 @@ export function RoundReviewDisplay({
         </div>
       </GlassCard>
 
-      {/* Highlights Section */}
-      {review.highlights.length > 0 && (
-        <ExpandableSection
-          title="Highlights"
-          icon={<IconStar size={16} />}
-          badge={
-            <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full font-medium">
-              {review.highlights.length}
-            </span>
-          }
-        >
-          <div className="space-y-3">
-            {review.highlights.map((highlight, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex gap-3 p-3 rounded-lg bg-primary-50/50 border border-primary-100"
-              >
-                <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                  <IconCheck size={14} className="text-primary-600" />
-                </div>
-                <div>
-                  <div className="font-medium text-warm-900 text-sm">
-                    {highlight.title}
+      {/* Highlights Section — defensively filters out items that look like
+          weaknesses smuggled in by older stored reviews. The action-layer
+          fix gates on `tone`, but reviews stored before that fix can still
+          contain "Severe Misses" / "regression" headlines that were merged
+          into highlights pre-fix. */}
+      {(() => {
+        const filteredHighlights = review.highlights.filter((h) => {
+          const text = `${h.title ?? ''} ${h.description ?? ''}`.toLowerCase();
+          // Skip rows whose copy clearly describes a weakness — these
+          // belong in Areas for Improvement, not Highlights.
+          const weaknessTokens = ['severe miss', 'too many', 'weakness', 'regress', 'declin', 'poor ', 'worst'];
+          return !weaknessTokens.some((tok) => text.includes(tok));
+        });
+        if (filteredHighlights.length === 0) return null;
+        return (
+          <ExpandableSection
+            title="Highlights"
+            icon={<IconStar size={16} />}
+            badge={
+              <span className="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs rounded-full font-medium">
+                {filteredHighlights.length}
+              </span>
+            }
+          >
+            <div className="space-y-3">
+              {filteredHighlights.map((highlight, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex gap-3 p-3 rounded-lg bg-primary-50/50 border border-primary-100"
+                >
+                  <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                    <IconCheck size={14} className="text-primary-600" />
                   </div>
-                  <p className="text-sm text-warm-600 mt-0.5">
-                    {highlight.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </ExpandableSection>
-      )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-medium text-warm-900 text-sm">
+                        {highlight.title}
+                      </div>
+                      <span
+                        className={
+                          highlight.source === 'trend'
+                            ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
+                            : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
+                        }
+                      >
+                        {highlight.source === 'trend' ? '90-day trend' : 'This round'}
+                      </span>
+                    </div>
+                    <p className="text-sm text-warm-600 mt-0.5">
+                      {highlight.description}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </ExpandableSection>
+        );
+      })()}
 
       {/* Areas for Improvement Section */}
       {review.areasForImprovement.length > 0 && (
@@ -376,7 +401,18 @@ export function RoundReviewDisplay({
                 transition={{ delay: index * 0.1 }}
                 className="p-3 rounded-lg bg-amber-50/50 border border-amber-100"
               >
-                <div className="font-medium text-warm-900 text-sm">{area.area}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-warm-900 text-sm">{area.area}</div>
+                  <span
+                    className={
+                      area.source === 'trend'
+                        ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
+                        : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
+                    }
+                  >
+                    {area.source === 'trend' ? '90-day trend' : 'This round'}
+                  </span>
+                </div>
                 <p className="text-sm text-warm-600 mt-1">{area.recommendation}</p>
               </motion.div>
             ))}
