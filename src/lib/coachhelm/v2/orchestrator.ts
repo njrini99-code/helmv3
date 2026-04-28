@@ -558,6 +558,9 @@ class CoachHelmIntelligence {
             {
               type: 'pattern_detected',
               description: pattern.description || 'Alert pattern',
+              // ReasoningEngine.reason() requires Record<string, unknown>; the
+              // typed MinedPattern shape lacks the index signature, so a
+              // double-cast bridge is required here.
               data: pattern as unknown as Record<string, unknown>,
             },
             { features: analysis.features, patterns }
@@ -584,7 +587,7 @@ class CoachHelmIntelligence {
               {
                 type: 'alert',
                 data: {
-                  ...pattern as unknown as Record<string, unknown>,
+                  ...pattern,
                   severity: patternGate.severity === 'critical' ? 'critical' : 'warning',
                   playerId,
                 },
@@ -618,7 +621,7 @@ class CoachHelmIntelligence {
               {
                 type: 'alert',
                 data: {
-                  ...pred as unknown as Record<string, unknown>,
+                  ...pred,
                   severity: predGate.severity === 'critical' ? 'critical' : 'warning',
                   playerId,
                 },
@@ -799,6 +802,7 @@ class CoachHelmIntelligence {
         {
           type: 'pattern_detected',
           description: pattern.description || 'Pattern detected',
+          // See note above: reason() requires Record<string, unknown>.
           data: pattern as unknown as Record<string, unknown>,
         },
         { features, patterns, causalRelationships: causal }
@@ -812,7 +816,7 @@ class CoachHelmIntelligence {
         this.insightComposer.compose(
           {
             type: 'pattern',
-            data: pattern as unknown as Record<string, unknown>,
+            data: pattern,
             reasoning,
             features,
           },
@@ -852,6 +856,7 @@ class CoachHelmIntelligence {
         {
           type: 'performance_change',
           description: 'Performance forecast',
+          // See note above: reason() requires Record<string, unknown>.
           data: prediction as unknown as Record<string, unknown>,
         },
         { features, patterns }
@@ -865,7 +870,7 @@ class CoachHelmIntelligence {
         this.insightComposer.compose(
           {
             type: 'prediction',
-            data: prediction as unknown as Record<string, unknown>,
+            data: prediction,
             reasoning,
             features,
           },
