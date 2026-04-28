@@ -8,6 +8,7 @@
  * - Regression patterns (predictive correlations)
  */
 
+import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import type {
@@ -17,6 +18,47 @@ import type {
   PatternType,
 } from '../types';
 import { extractAllFeatures } from '../features';
+
+/**
+ * Build a stable signature for a pattern from its inputs. The signature is
+ * deterministic across runs for the same player + same conditions + same
+ * outcome metric, so re-running the miner produces the same ID and upserts
+ * (rather than inserts duplicates).
+ */
+function buildPatternSignature(
+  patternType: PatternType,
+  conditions: PatternCondition[],
+  outcome: PatternOutcome,
+): string {
+  const conditionPart = [...conditions]
+    .map((c) => `${c.field}:${c.operator}:${JSON.stringify(c.value)}`)
+    .sort()
+    .join('|');
+  return `${patternType}::${conditionPart}::${outcome.metric}:${outcome.direction}`;
+}
+
+/**
+ * Convert a SHA-256 hash of `(player_id, signature)` into a UUID-formatted
+ * string so the existing `id uuid` column can store it. This lets
+ * `.upsert(..., { onConflict: 'id' })` collapse duplicates from repeated runs
+ * of the miner instead of inserting fresh rows each time.
+ *
+ * Format: 8-4-4-4-12 hex digits drawn from the first 16 bytes of the hash.
+ * We set the version (4) and variant (10xx) bits per RFC 4122 so the value
+ * is a syntactically valid UUID.
+ */
+function deterministicPatternId(playerId: string, signature: string): string {
+  const hash = createHash('sha256').update(`${playerId}::${signature}`).digest();
+  // Take first 16 bytes for a UUID-shaped value.
+  const bytes = Buffer.from(hash.subarray(0, 16));
+  // Set version to 5 (name-based, SHA-1) — close enough semantically; the
+  // important thing is RFC 4122 conformance for Postgres uuid validation.
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50;
+  // Set variant to RFC 4122 (10xx).
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80;
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
 
 const THRESHOLDS = {
   minSupport: 0.08,      // 8% of rounds — loosened from 0.12 to surface patterns on ~28-round players
@@ -592,8 +634,15 @@ export class PatternMiner {
     // Calculate actionability
     const actionability = this.calculateActionability(conditions, strokeImpact);
 
+    // Deterministic ID — repeated runs for the same player + same conditions
+    // + same outcome metric collapse onto a single row via upsert(onConflict:
+    // 'id'), so we no longer accumulate duplicate pattern rows on every
+    // analyzePlayer invocation.
+    const signature = buildPatternSignature(type, conditions, outcome);
+    const id = deterministicPatternId(this.playerId, signature);
+
     return {
-      id: crypto.randomUUID(),
+      id,
       playerId: this.playerId,
       patternType: type,
       conditions,
