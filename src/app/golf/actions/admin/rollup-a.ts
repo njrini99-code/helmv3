@@ -246,10 +246,36 @@ function describeRpcError(err: unknown): string {
       e.message ? `msg=${e.message}` : null,
       e.details ? `details=${e.details}` : null,
       e.hint ? `hint=${e.hint}` : null,
+      // Some PostgREST errors come through as { error_description, statusText }
+      // when transport-level (network, 502, etc). Capture those too so we
+      // never fall through to the [object Object] String() coercion.
+      e.error ? `error=${typeof e.error === 'string' ? e.error : 'object'}` : null,
+      e.error_description ? `desc=${e.error_description}` : null,
+      e.statusText ? `statusText=${e.statusText}` : null,
+      e.status ? `status=${e.status}` : null,
+      e.name ? `name=${e.name}` : null,
     ].filter(Boolean);
     if (parts.length) return parts.join(' ');
   }
-  try { return JSON.stringify(err); } catch { return String(err); }
+  // Use a circular-safe replacer so we never hit the String(err) =
+  // "[object Object]" fallback — that's exactly the toxic log we're fixing.
+  try {
+    const seen = new WeakSet<object>();
+    return JSON.stringify(err, (_k, v) => {
+      if (typeof v === 'object' && v !== null) {
+        if (seen.has(v)) return '[circular]';
+        seen.add(v);
+      }
+      return v;
+    });
+  } catch {
+    // Last-resort: enumerate own keys so we at least get "{a, b, c}"
+    if (typeof err === 'object' && err) {
+      const keys = Object.keys(err as object).join(',');
+      return `unserializable error{keys:${keys}}`;
+    }
+    return String(err);
+  }
 }
 
 function unwrap<T>(label: string, res: { data: T | null; error: unknown }): T {

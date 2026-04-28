@@ -19,6 +19,7 @@ import {
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { LogProgressButton, MarkCompleteButton } from './LogProgressButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
@@ -272,6 +273,21 @@ export default async function MyDevelopmentPage() {
                                   })}
                                 </p>
                               )}
+
+                              {/* Player actions: log progress + mark complete */}
+                              <div className="flex flex-wrap items-center gap-2 mt-4">
+                                <LogProgressButton
+                                  focusAreaId={fa.id}
+                                  focusAreaTitle={fa.title || 'Focus area'}
+                                  targetMetric={fa.target_metric ?? null}
+                                  currentValue={fa.current_value ?? null}
+                                  targetValue={fa.target_value ?? null}
+                                />
+                                <MarkCompleteButton
+                                  focusAreaId={fa.id}
+                                  focusAreaTitle={fa.title || 'Focus area'}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -317,7 +333,7 @@ export default async function MyDevelopmentPage() {
                               <span className="text-xs font-medium text-primary-700">Complete</span>
                             </div>
                             {fa.completed_at && (
-                              <span className="text-xs text-warm-400 hidden sm:block">
+                              <span className="text-xs text-warm-400">
                                 {new Date(fa.completed_at).toLocaleDateString('en-US', {
                                   month: 'short',
                                   day: 'numeric',

@@ -161,7 +161,7 @@ export function PatternImpactPanel({
       {/* Lifecycle Funnel and Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Lifecycle Funnel */}
-        <div className="bg-white rounded-xl border border-warm-100 p-4">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Pattern Lifecycle Funnel</h4>
           <LifecycleFunnel data={data.lifecycle} />
           <div className="mt-4 p-3 bg-warm-50 rounded-lg">
@@ -184,7 +184,7 @@ export function PatternImpactPanel({
 
         {/* Lifecycle Distribution Chart */}
         {lifecycleChartData.length > 0 && (
-          <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
             <h4 className="text-sm font-medium text-warm-700 mb-4">Current Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -220,7 +220,7 @@ export function PatternImpactPanel({
 
       {/* Top Impactful Patterns */}
       {data.topPatterns.length > 0 && (
-        <div className="bg-white rounded-xl border border-warm-100 overflow-hidden">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-hidden">
           <div className="px-4 py-3 border-b border-warm-100">
             <h4 className="text-sm font-medium text-warm-700">Most Impactful Patterns</h4>
           </div>

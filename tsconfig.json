@@ -69,6 +69,7 @@
     "archive",
     "helm-website-ui",
     "helm-intelligence",
+    "helm-vid",
     "scripts",
     "supabase/functions"
   ]

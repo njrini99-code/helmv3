@@ -82,15 +82,12 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
           key={card.label}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: index * 0.1 }}
-          className={cn(
-            'relative rounded-2xl border p-5 overflow-hidden',
-            card.bgColor,
-            card.borderColor
-          )}
+          transition={{ duration: 0.4, delay: index * 0.04 }}
+          className="relative rounded-2xl border bg-white/70 backdrop-blur-xl border-white/20 shadow-glass p-5 overflow-hidden hover:shadow-card-hover transition-all duration-200"
         >
-          {/* Background gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent pointer-events-none" />
+          {/* Per-card color tint preserves chromatic cue over the glass base */}
+          <div className={cn('absolute inset-0 pointer-events-none opacity-40', card.bgColor)} />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent pointer-events-none" />
 
           <div className="relative">
             {/* Icon */}
@@ -137,7 +134,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
                     )}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(card.percentValue * 100, 100)}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.3 + index * 0.1 }}
+                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.04 }}
                   />
                 </div>
               </div>

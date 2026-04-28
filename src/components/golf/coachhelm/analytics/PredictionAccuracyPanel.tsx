@@ -177,7 +177,7 @@ export function PredictionAccuracyPanel({
 
       {/* Accuracy Over Time Chart */}
       {hasAccuracyData && (
-        <div className="bg-white rounded-xl border border-warm-100 p-4">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Accuracy Over Time</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -217,7 +217,7 @@ export function PredictionAccuracyPanel({
 
       {/* Calibration Chart */}
       {hasCalibrationData && (
-        <div className="bg-white rounded-xl border border-warm-100 p-4">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-1">Calibration Chart</h4>
           <p className="text-xs text-warm-500 mb-4">
             Comparing predicted confidence vs actual accuracy
@@ -271,7 +271,7 @@ export function PredictionAccuracyPanel({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Error Distribution */}
         {hasErrorData && (
-          <div className="bg-white rounded-xl border border-warm-100 p-4">
+          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
             <h4 className="text-sm font-medium text-warm-700 mb-4">Error Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -312,7 +312,7 @@ export function PredictionAccuracyPanel({
         )}
 
         {/* Confidence Analysis */}
-        <div className="bg-white rounded-xl border border-warm-100 p-4">
+        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Confidence Analysis</h4>
           <div className="space-y-4">
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">

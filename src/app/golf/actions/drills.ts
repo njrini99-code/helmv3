@@ -20,6 +20,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 export interface InsightDrill {
@@ -141,4 +142,93 @@ export async function recordDrillView(drillId: string): Promise<void> {
     },
     'info',
   );
+}
+
+/**
+ * Records that a player tapped "Add to my practice plan" on a drill.
+ *
+ * 2026-04-27: switched from log-only telemetry to a real INSERT into
+ * `golf_insight_drill_attachments` (the table that already backs
+ * `getDrillsForInsight` above). Without an `insightId` we have no row to
+ * attach to, so we fall back to the prior log-only behavior — the table's
+ * primary key is (insight_id, drill_id) and `insight_id` is NOT NULL.
+ *
+ * Live schema columns: `insight_id uuid NOT NULL`, `drill_id uuid NOT NULL`,
+ * `rank int default 0`. No `attached_at` / `attached_by` columns.
+ *
+ * Idempotency: upsert on the composite PK so re-tapping the button doesn't
+ * error out.
+ */
+export async function recordDrillAddedToPlan(
+  drillId: string,
+  insightId: string | null = null,
+): Promise<{ success: boolean; error?: string }> {
+  if (!drillId) return { success: false, error: 'Drill id required' };
+
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Without an insight to attach to, the row can't be persisted (insight_id
+  // is NOT NULL on the table). Fall back to telemetry so the click still
+  // shows up in product analytics.
+  if (!insightId) {
+    await logServerEvent(
+      `drill_added_to_plan user=${user.id} drill=${drillId} insight=none`,
+      {
+        action: 'drills.recordDrillAddedToPlan',
+        featureArea: 'insights',
+        extra: { userId: user.id, drillId, insightId: null },
+      },
+      'info',
+    );
+    return { success: true };
+  }
+
+  const { error: upsertError } = await supabase
+    .from('golf_insight_drill_attachments')
+    .upsert(
+      { insight_id: insightId, drill_id: drillId, rank: 0 },
+      { onConflict: 'insight_id,drill_id' },
+    );
+
+  if (upsertError) {
+    // Keep the telemetry breadcrumb so we can still see engagement even if
+    // the persistence call fails (RLS denial, etc.).
+    await logServerError(
+      `recordDrillAddedToPlan upsert failed: ${upsertError.message}`,
+      {
+        action: 'drills.recordDrillAddedToPlan',
+        featureArea: 'insights',
+        extra: { userId: user.id, drillId, insightId, errorCode: upsertError.code },
+      },
+    );
+    await logServerEvent(
+      `drill_added_to_plan_failed user=${user.id} drill=${drillId} insight=${insightId}`,
+      {
+        action: 'drills.recordDrillAddedToPlan',
+        featureArea: 'insights',
+        extra: { userId: user.id, drillId, insightId },
+      },
+      'warning',
+    );
+    return { success: false, error: 'Failed to attach drill' };
+  }
+
+  await logServerEvent(
+    `drill_added_to_plan user=${user.id} drill=${drillId} insight=${insightId}`,
+    {
+      action: 'drills.recordDrillAddedToPlan',
+      featureArea: 'insights',
+      extra: { userId: user.id, drillId, insightId },
+    },
+    'info',
+  );
+
+  // Analytics dashboards read from this table; revalidate the analytics route.
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
+
+  return { success: true };
 }

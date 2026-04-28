@@ -29,7 +29,10 @@ import { cn } from '@/lib/utils';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { IconPlay, IconCheck } from '@/components/icons';
 import { toast } from '@/components/ui/toast';
-import { recordDrillView as defaultRecordDrillView } from '@/app/golf/actions/drills';
+import {
+  recordDrillView as defaultRecordDrillView,
+  recordDrillAddedToPlan,
+} from '@/app/golf/actions/drills';
 
 export interface DrillSheetDrill {
   id: string;
@@ -51,9 +54,11 @@ export interface DrillSheetProps {
   drill: DrillSheetDrill;
   /** Shown as a subtle "Recommended because of: {title}" line. */
   insightContext?: DrillSheetInsightContext;
+  /** Source insight that recommended this drill (for plan attachment). */
+  insightId?: string;
   /** Injected for tests; defaults to the real server action. */
   onLogDrill?: (drillId: string) => Promise<void> | void;
-  /** Injected for tests; defaults to the real "coming soon" stub + toast. */
+  /** Injected for tests; defaults to recordDrillAddedToPlan. */
   onAddToPlan?: (drillId: string) => Promise<void> | void;
 }
 
@@ -73,18 +78,25 @@ const CATEGORY_LABEL: Record<string, string> = {
   course_management: 'Course management',
 };
 
-function defaultAddToPlan(_drillId: string): void {
-  toast.info('Noted', "We'll include this in your next practice session.");
-}
-
 export function DrillSheet({
   open,
   onClose,
   drill,
   insightContext,
+  insightId,
   onLogDrill = defaultRecordDrillView,
-  onAddToPlan = defaultAddToPlan,
+  onAddToPlan,
 }: DrillSheetProps) {
+  const effectiveAddToPlan =
+    onAddToPlan ??
+    (async (drillId: string) => {
+      const result = await recordDrillAddedToPlan(drillId, insightId ?? null);
+      if (result.success) {
+        toast.info('Added', "We'll include this in your next practice session.");
+      } else {
+        toast.error('Failed to add', result.error || 'Try again in a moment.');
+      }
+    });
   const [addPending, startAdd] = useTransition();
   const [logPending, startLog] = useTransition();
 
@@ -92,7 +104,7 @@ export function DrillSheet({
 
   const handleAddToPlan = () => {
     startAdd(() => {
-      void Promise.resolve(onAddToPlan(drill.id));
+      void Promise.resolve(effectiveAddToPlan(drill.id));
     });
   };
 

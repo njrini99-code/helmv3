@@ -40,6 +40,12 @@ export async function register() {
       ignoreErrors: [
         'NEXT_NOT_FOUND',
         'NEXT_REDIRECT',
+        // Supabase emits these for stale refresh-token cookies (logged-out
+        // users, long-idle tabs). Middleware already swallows them — don't
+        // page the team for normal session expiry.
+        'Invalid Refresh Token: Refresh Token Not Found',
+        'Refresh Token Not Found',
+        'AuthApiError',
       ],
     });
   }
@@ -51,6 +57,13 @@ export async function register() {
       debug: false,
       tracesSampleRate: isDev ? 0.1 : 1.0,
       environment: process.env.NODE_ENV || 'development',
+      ignoreErrors: [
+        'NEXT_NOT_FOUND',
+        'NEXT_REDIRECT',
+        'Invalid Refresh Token: Refresh Token Not Found',
+        'Refresh Token Not Found',
+        'AuthApiError',
+      ],
     });
   }
 }

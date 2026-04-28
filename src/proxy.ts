@@ -61,7 +61,22 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  return await updateSession(request);
+  try {
+    return await updateSession(request);
+  } catch (error) {
+    // Supabase-js raises AuthApiError "Invalid Refresh Token: Refresh Token
+    // Not Found" whenever a stale or already-rotated refresh-token cookie
+    // arrives. That's normal background behaviour for logged-out users and
+    // long-idle tabs — it should NOT surface as an error in Vercel logs.
+    // Downgrade to a warning and let the request continue with no session.
+    const message = error instanceof Error ? error.message : String(error);
+    if (/refresh token/i.test(message)) {
+      console.warn('[Proxy] Stale refresh token; treating session as logged out:', message);
+    } else {
+      console.warn('[Proxy] Session update failed:', message);
+    }
+    return NextResponse.next();
+  }
 }
 
 /**

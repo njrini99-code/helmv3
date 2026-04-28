@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { headers } from 'next/headers';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
@@ -180,10 +181,14 @@ export async function POST(request: NextRequest) {
     
     // Sanitize
     const sanitized = sanitizePayload(body);
-    
-    // Insert using authenticated user's client (RLS applies)
+
+    // Insert using service-role admin client. RLS on admin_events restricts INSERT
+    // to service_role only (see migration 20260214220000_create_admin_events.sql);
+    // the user-scoped client is denied with code 42501. We've already authenticated
+    // the user above, so it's safe to use the privileged client to persist the row.
     type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-    const { data, error } = await supabase
+    const adminDb = createAdminClient();
+    const { data, error } = await adminDb
       .from('admin_events')
       .insert({
         event_type: sanitized.eventType,

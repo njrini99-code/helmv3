@@ -63,3 +63,6 @@ next-shadcn-dashboard-starter/
 .env*.local
 .playwright-mcp/
 .full-review-archive-*/
+helm-vid/
+.full-review/
+.claude/scheduled_tasks.lock

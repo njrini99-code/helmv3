@@ -39,6 +39,7 @@ import { MovementPill } from './MovementPill';
 import { WhyPopover } from './WhyPopover';
 import { DrillChips } from './DrillChips';
 import { ResolutionCelebration } from './ResolutionCelebration';
+import { PromoteToFocusAreaButton } from '../PromoteToFocusAreaButton';
 
 export type InsightAction =
   | 'rate_helpful'
@@ -525,6 +526,13 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
     });
   };
 
+  // The promote button renders its own bottom-sheet flow and calls
+  // createFocusAreaFromInsight directly — independent of the parent's
+  // onAction handler. We only suppress it for resolved insights (already
+  // graduated to a focus area or done).
+  const promotable =
+    insight.lifecycle_state !== 'resolved' && insight.status !== 'resolved';
+
   return (
     <div className={cn('flex flex-wrap items-center gap-2 pt-3', emphasis && 'gap-3')}>
       {audience === 'player' ? (
@@ -563,6 +571,16 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             <IconCheck size={14} />
             Got it
           </button>
+          {promotable && (
+            <PromoteToFocusAreaButton
+              source="insight"
+              sourceId={insight.id}
+              playerId={insight.player_id}
+              suggestedTitle={insight.title}
+              suggestedDescription={insight.content}
+              suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
+            />
+          )}
           <button
             type="button"
             disabled={dismissPending}
@@ -600,23 +618,36 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             <IconCheck size={14} />
             Acknowledge
           </button>
-          <button
-            type="button"
-            disabled={focusPending}
-            data-testid="action-create-focus-area"
-            onClick={(e) => {
-              e.stopPropagation();
-              fire('create_focus_area', startFocus);
-            }}
-            className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-              'bg-primary-500 text-white hover:bg-primary-600 transition-colors',
-              focusPending && 'opacity-60 pointer-events-none',
-              emphasis && 'px-4 py-2 text-sm',
-            )}
-          >
-            Create focus area
-          </button>
+          {promotable ? (
+            <PromoteToFocusAreaButton
+              source="insight"
+              sourceId={insight.id}
+              playerId={insight.player_id}
+              suggestedTitle={insight.title}
+              suggestedDescription={insight.content}
+              suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
+              className={emphasis ? 'px-4 py-2 text-sm' : undefined}
+              label="Create focus area"
+            />
+          ) : (
+            <button
+              type="button"
+              disabled={focusPending}
+              data-testid="action-create-focus-area"
+              onClick={(e) => {
+                e.stopPropagation();
+                fire('create_focus_area', startFocus);
+              }}
+              className={cn(
+                'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
+                'bg-primary-500 text-white hover:bg-primary-600 transition-colors',
+                focusPending && 'opacity-60 pointer-events-none',
+                emphasis && 'px-4 py-2 text-sm',
+              )}
+            >
+              Create focus area
+            </button>
+          )}
           <button
             type="button"
             disabled={dismissPending}
@@ -672,4 +703,30 @@ function rewriteForPlayer(text: string): string {
     .replace(/\bthey're\b/gi, "you're")
     .replace(/\btheir\b/gi, 'your')
     .replace(/\bthey\b/gi, 'you');
+}
+
+/**
+ * Maps an `EvidenceInsight.category` to the focus-area type vocabulary the
+ * development.ts action expects. Unknown / null categories fall through to
+ * `other` so the action can still accept them.
+ */
+function mapInsightCategoryToAreaType(category: EvidenceInsight['category']): string {
+  switch (category) {
+    case 'putting':
+      return 'putting';
+    case 'tee':
+      return 'driving';
+    case 'approach':
+      return 'iron_play';
+    case 'short_game':
+      return 'short_game';
+    case 'scoring':
+      return 'other';
+    case 'pressure':
+      return 'mental_game';
+    case 'course_management':
+      return 'mental_game';
+    default:
+      return 'other';
+  }
 }

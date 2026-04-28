@@ -3333,3 +3333,210 @@ export async function refreshPlayerAnalysisAsCoach(
     error: result.error,
   };
 }
+
+// ============================================================================
+// TEAM COACHHELM SETTINGS — read/write
+// ============================================================================
+//
+// Live schema (`golf_team_coachhelm_settings`):
+//   id uuid pk, team_id uuid (unique fk -> golf_teams.id), enabled boolean,
+//   disabled_at timestamptz nullable, disabled_by uuid nullable (-> users.id),
+//   disabled_reason text nullable, created_at, updated_at.
+//
+// The gate at gate.ts:116 and the orchestrator at insights.ts:3081 already
+// read this row to decide whether to skip CoachHelm processing for a team —
+// but until now there was no writer or UI, so the row was never created and
+// the toggle effectively defaulted to enabled.
+//
+// `getOrCreateTeamCoachHelmSettings`: reads (or lazily seeds) the row for a
+// team. Auth: caller must be a coach in the team's organization.
+//
+// `updateTeamCoachHelmSettings`: applies a partial patch (currently only
+// `enabled` is user-editable; flipping it false records `disabled_at`,
+// `disabled_by`, and `disabled_reason`). Auth: head coach for the team.
+
+export interface TeamCoachHelmSettings {
+  id: string;
+  team_id: string;
+  enabled: boolean;
+  disabled_at: string | null;
+  disabled_by: string | null;
+  disabled_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TeamCoachHelmSettingsPatch {
+  enabled?: boolean;
+  disabled_reason?: string | null;
+}
+
+async function ensureCoachInTeamOrg(
+  teamId: string,
+): Promise<
+  | { ok: true; userId: string; coachId: string; isHeadCoach: boolean }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Not authenticated' };
+
+  const { data: team } = await supabase
+    .from('golf_teams')
+    .select('id, organization_id')
+    .eq('id', teamId)
+    .maybeSingle();
+  if (!team?.organization_id) return { ok: false, error: 'Team not found' };
+
+  // `golf_coaches` has no `role` column — head-coach status lives on the
+  // `golf_team_coach_staff` join row (role enum: 'head_coach' | 'assistant'
+  // | etc.). First check coach belongs to the team's org, then look up
+  // the staff record for head-coach gating.
+  const { data: coach } = await supabase
+    .from('golf_coaches')
+    .select('id, organization_id')
+    .eq('user_id', user.id)
+    .eq('organization_id', team.organization_id)
+    .maybeSingle();
+  if (!coach) return { ok: false, error: 'Forbidden' };
+
+  const { data: staff } = await supabase
+    .from('golf_team_coach_staff')
+    .select('role')
+    .eq('team_id', teamId)
+    .eq('coach_id', coach.id)
+    .maybeSingle();
+
+  const role = staff?.role;
+  const isHeadCoach =
+    typeof role === 'string' && role.toLowerCase().includes('head');
+
+  return { ok: true, userId: user.id, coachId: coach.id, isHeadCoach };
+}
+
+export async function getOrCreateTeamCoachHelmSettings(
+  teamId: string,
+): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
+  if (!teamId) return { success: false, error: 'Team id required' };
+
+  const access = await ensureCoachInTeamOrg(teamId);
+  if (!access.ok) return { success: false, error: access.error };
+
+  const supabase = await createClient();
+
+  const { data: existing, error: selectError } = await supabase
+    .from('golf_team_coachhelm_settings')
+    .select(
+      'id, team_id, enabled, disabled_at, disabled_by, disabled_reason, created_at, updated_at',
+    )
+    .eq('team_id', teamId)
+    .maybeSingle();
+
+  if (selectError) {
+    await logServerError(
+      `getOrCreateTeamCoachHelmSettings select failed: ${selectError.message}`,
+      {
+        action: 'insights.getOrCreateTeamCoachHelmSettings',
+        featureArea: 'coachhelm_settings',
+        extra: { teamId, errorCode: selectError.code },
+      },
+    );
+    return { success: false, error: 'Failed to load team settings' };
+  }
+
+  if (existing) {
+    return { success: true, settings: existing as TeamCoachHelmSettings };
+  }
+
+  const { data: inserted, error: insertError } = await supabase
+    .from('golf_team_coachhelm_settings')
+    .insert({ team_id: teamId, enabled: true })
+    .select(
+      'id, team_id, enabled, disabled_at, disabled_by, disabled_reason, created_at, updated_at',
+    )
+    .single();
+
+  if (insertError || !inserted) {
+    await logServerError(
+      `getOrCreateTeamCoachHelmSettings insert failed: ${insertError?.message ?? 'no row'}`,
+      {
+        action: 'insights.getOrCreateTeamCoachHelmSettings',
+        featureArea: 'coachhelm_settings',
+        extra: { teamId, errorCode: insertError?.code },
+      },
+    );
+    return { success: false, error: 'Failed to create team settings' };
+  }
+
+  return { success: true, settings: inserted as TeamCoachHelmSettings };
+}
+
+export async function updateTeamCoachHelmSettings(
+  teamId: string,
+  patch: TeamCoachHelmSettingsPatch,
+): Promise<{ success: boolean; settings?: TeamCoachHelmSettings; error?: string }> {
+  if (!teamId) return { success: false, error: 'Team id required' };
+
+  const access = await ensureCoachInTeamOrg(teamId);
+  if (!access.ok) return { success: false, error: access.error };
+  if (!access.isHeadCoach) {
+    return { success: false, error: 'Only the head coach can change CoachHelm settings' };
+  }
+
+  // Make sure a row exists before we update.
+  const seed = await getOrCreateTeamCoachHelmSettings(teamId);
+  if (!seed.success || !seed.settings) {
+    return { success: false, error: seed.error || 'Failed to load team settings' };
+  }
+
+  const supabase = await createClient();
+
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (typeof patch.enabled === 'boolean') {
+    update.enabled = patch.enabled;
+    if (patch.enabled === false) {
+      update.disabled_at = new Date().toISOString();
+      update.disabled_by = access.userId;
+      if (typeof patch.disabled_reason === 'string') {
+        update.disabled_reason = patch.disabled_reason;
+      }
+    } else {
+      update.disabled_at = null;
+      update.disabled_by = null;
+      update.disabled_reason = null;
+    }
+  } else if (patch.disabled_reason !== undefined) {
+    update.disabled_reason = patch.disabled_reason;
+  }
+
+  const { data: updated, error } = await supabase
+    .from('golf_team_coachhelm_settings')
+    .update(update)
+    .eq('team_id', teamId)
+    .select(
+      'id, team_id, enabled, disabled_at, disabled_by, disabled_reason, created_at, updated_at',
+    )
+    .single();
+
+  if (error || !updated) {
+    await logServerError(
+      `updateTeamCoachHelmSettings failed: ${error?.message ?? 'no row'}`,
+      {
+        action: 'insights.updateTeamCoachHelmSettings',
+        featureArea: 'coachhelm_settings',
+        extra: { teamId, errorCode: error?.code },
+      },
+    );
+    return { success: false, error: 'Failed to update team settings' };
+  }
+
+  revalidatePath('/golf/dashboard/settings/coaching-intelligence');
+  revalidatePath('/golf/dashboard/intelligence');
+
+  return { success: true, settings: updated as TeamCoachHelmSettings };
+}

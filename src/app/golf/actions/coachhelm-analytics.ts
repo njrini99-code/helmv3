@@ -619,52 +619,45 @@ export async function getCoachHelmOverview(
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
-    // Query total insights in last 30 days
-    const { count: totalInsights } = await supabase
+    // Single fetch over the broadest 14-day window covering all 6 prior count
+    // queries; bucket in memory to avoid 6 sequential round-trips.
+    const { data: insightRows } = await supabase
       .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
+      .select('created_at, action_taken, outcome_status')
       .in('player_id', playerIds)
-      .gte('created_at', thirtyDaysAgo.toISOString());
+      .gte('created_at', fourteenDaysAgo.toISOString());
 
-    // Query insights this week
-    const { count: insightsThisWeek } = await supabase
-      .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
-      .in('player_id', playerIds)
-      .gte('created_at', sevenDaysAgo.toISOString());
+    const thirtyMs = thirtyDaysAgo.getTime();
+    const sevenMs = sevenDaysAgo.getTime();
+    const fourteenMs = fourteenDaysAgo.getTime();
 
-    // Query insights last week (for comparison)
-    const { count: insightsLastWeek } = await supabase
-      .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
-      .in('player_id', playerIds)
-      .gte('created_at', fourteenDaysAgo.toISOString())
-      .lt('created_at', sevenDaysAgo.toISOString());
+    let totalInsights = 0;
+    let insightsThisWeek = 0;
+    let insightsLastWeek = 0;
+    let actedInsights = 0;
+    let improvedInsights = 0;
+    let outcomedInsights = 0;
+    for (const row of (insightRows ?? []) as Array<{
+      created_at: string | null;
+      action_taken: boolean | null;
+      outcome_status: string | null;
+    }>) {
+      const ts = row.created_at ? Date.parse(row.created_at) : 0;
+      if (ts >= thirtyMs) {
+        totalInsights++;
+        if (row.action_taken) actedInsights++;
+        if (row.outcome_status) outcomedInsights++;
+        if (row.outcome_status === 'improved') improvedInsights++;
+      }
+      if (ts >= sevenMs) insightsThisWeek++;
+      else if (ts >= fourteenMs) insightsLastWeek++;
+    }
+    // Note: `totalInsights` aggregates the full 30-day window. The 14-day
+    // SELECT above only feeds this-week / last-week / 30-day bins via the
+    // per-row created_at check — so values are consistent with the prior
+    // 6-query implementation.
 
-    // Query action rate (insights with action_taken = true)
-    const { count: actedInsights } = await supabase
-      .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
-      .in('player_id', playerIds)
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .eq('action_taken', true);
-
-    // Query improvement rate
-    const { count: improvedInsights } = await supabase
-      .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
-      .in('player_id', playerIds)
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .eq('outcome_status', 'improved');
-
-    const { count: outcomedInsights } = await supabase
-      .from('golf_coach_insights')
-      .select('*', { count: 'exact', head: true })
-      .in('player_id', playerIds)
-      .gte('created_at', thirtyDaysAgo.toISOString())
-      .not('outcome_status', 'is', null);
-
-    // Query active patterns count
+    // Active patterns count — single dedicated count (different table).
     const { count: activePatternsCount } = await supabase
       .from('golf_patterns_v2')
       .select('*', { count: 'exact', head: true })

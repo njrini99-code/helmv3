@@ -29,12 +29,15 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { calcConfidence, type InsightEvidence, type InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
+import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analytics/effectiveness-writer';
+import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const BATCH_LIMIT = 2000;
+const PAGE_SIZE = 2000;
+const UPDATE_CONCURRENCY = 50;
 const HEALTHY_GAP_THRESHOLD = 0.20; // within 20% of comparison = healthy
 const HEALTHY_CYCLES_TO_RESOLVE = 2;
 const ARCHIVE_DETECTED_AGE_DAYS = 30;
@@ -75,66 +78,88 @@ export async function GET(req: NextRequest) {
   const nowIso = new Date().toISOString();
   const now = Date.now();
 
-  // Pull every non-terminal insight. Resolved/archived rows are frozen.
-  const { data, error } = await supabase
-    .from('golf_coach_insights')
-    .select('id, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at')
-    .in('lifecycle_state', ['tentative', 'detected', 'matured', 'addressed'])
-    .limit(BATCH_LIMIT);
+  // Paginate through every non-terminal insight. Resolved/archived rows are frozen.
+  const rows: InsightRow[] = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('golf_coach_insights')
+      .select('id, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at')
+      .in('lifecycle_state', ['tentative', 'detected', 'matured', 'addressed'])
+      .order('created_at', { ascending: true })
+      .range(offset, offset + PAGE_SIZE - 1);
 
-  if (error) {
-    await logServerError(
-      `cron.insight_lifecycle.fetch failed: ${error.message}`,
-      {
-        action: 'cron.coachhelm.insight_lifecycle.fetch',
-        featureArea: 'coachhelm',
-        extra: { code: error.code },
-      },
-      'error',
-    );
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (error) {
+      await logServerError(
+        `cron.insight_lifecycle.fetch failed: ${error.message}`,
+        {
+          action: 'cron.coachhelm.insight_lifecycle.fetch',
+          featureArea: 'coachhelm',
+          extra: { code: error.code, offset },
+        },
+        'error',
+      );
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    // Generated Database types lag the live schema. Cast through unknown.
+    const page = ((data ?? []) as unknown) as InsightRow[];
+    rows.push(...page);
+    if (page.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
   }
 
-  // The generated Database types lag the live schema until the next
-  // `npm run db:types`. `lifecycle_state`, `evidence`, `metadata` are live
-  // columns (applied via migration 20260422100000) — cast through unknown
-  // rather than disabling type safety on the client.
-  const rows = ((data ?? []) as unknown) as InsightRow[];
-
+  // Build patches up front so we can run updates concurrently.
+  type EvaluatedRow = { id: string; patch: UpdatePatch };
+  const evaluated: EvaluatedRow[] = [];
   let resolvedCount = 0;
   let archivedCount = 0;
   let recencyAdjustedCount = 0;
   let demotedCount = 0;
   let healthyCyclesUpdatedCount = 0;
-  let failed = 0;
 
   for (const row of rows) {
     try {
       const patch = evaluateRow(row, now, nowIso);
       if (!patch) continue;
-
       if (patch.lifecycle_state === 'resolved') resolvedCount++;
       if (patch.lifecycle_state === 'archived') archivedCount++;
       if (patch.lifecycle_state === 'tentative') demotedCount++;
       if (patch.evidence) recencyAdjustedCount++;
-      // Any metadata write that isn't already accounted for above counts as
-      // a healthy-cycle bookkeeping update.
-      if (
-        patch.metadata &&
-        !patch.lifecycle_state &&
-        !patch.evidence
-      ) {
+      if (patch.metadata && !patch.lifecycle_state && !patch.evidence) {
         healthyCyclesUpdatedCount++;
       }
+      evaluated.push({ id: row.id, patch });
+    } catch (err) {
+      await logServerError(
+        `cron.insight_lifecycle.evaluate failed: ${err instanceof Error ? err.message : String(err)}`,
+        {
+          action: 'cron.coachhelm.insight_lifecycle.evaluate',
+          featureArea: 'coachhelm',
+          extra: { insightId: row.id, stack: err instanceof Error ? err.stack : undefined },
+        },
+        'error',
+      );
+    }
+  }
 
-      // Same generated-types-lag reason as the SELECT above: the update
-      // payload is a superset of the typed row. Use `unknown` to narrow-escape
-      // without disabling typing on the client itself.
-      const { error: updateError } = await supabase
-        .from('golf_coach_insights')
-        .update(patch as unknown as Record<string, never>)
-        .eq('id', row.id);
-
+  // Issue updates in concurrent chunks (50 in flight at once) instead of
+  // serial round-trips. Per-row updates remain because evidence + metadata
+  // patches are row-specific (recency decay, healthy_cycles_count).
+  let failed = 0;
+  for (let i = 0; i < evaluated.length; i += UPDATE_CONCURRENCY) {
+    const chunk = evaluated.slice(i, i + UPDATE_CONCURRENCY);
+    const results = await Promise.all(
+      chunk.map(({ id, patch }) =>
+        supabase
+          .from('golf_coach_insights')
+          .update(patch as unknown as Record<string, never>)
+          .eq('id', id),
+      ),
+    );
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      const updateError = result?.error;
       if (updateError) {
         failed++;
         await logServerError(
@@ -142,26 +167,36 @@ export async function GET(req: NextRequest) {
           {
             action: 'cron.coachhelm.insight_lifecycle.update',
             featureArea: 'coachhelm',
-            extra: { insightId: row.id, code: updateError.code },
+            extra: { insightId: chunk[j]?.id, code: updateError.code },
           },
           'error',
         );
       }
-    } catch (err) {
-      failed++;
-      await logServerError(
-        `cron.insight_lifecycle.evaluate failed: ${err instanceof Error ? err.message : String(err)}`,
-        {
-          action: 'cron.coachhelm.insight_lifecycle.evaluate',
-          featureArea: 'coachhelm',
-          extra: {
-            insightId: row.id,
-            stack: err instanceof Error ? err.stack : undefined,
-          },
-        },
-        'error',
-      );
     }
+  }
+
+  // After lifecycle progression, run the analytics rollups so
+  // golf_insight_effectiveness and golf_prediction_model_performance fill.
+  // Failures here MUST NOT mask lifecycle progression success.
+  let effectivenessResult: Awaited<ReturnType<typeof rollupInsightEffectivenessForYesterday>> | null = null;
+  let predictionResult: Awaited<ReturnType<typeof rollupPredictionPerformanceRolling30d>> | null = null;
+  try {
+    effectivenessResult = await rollupInsightEffectivenessForYesterday(supabase);
+  } catch (err) {
+    await logServerError(
+      `cron.insight_lifecycle.effectiveness_rollup failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'cron.coachhelm.insight_lifecycle.effectiveness_rollup', featureArea: 'coachhelm' },
+      'error',
+    );
+  }
+  try {
+    predictionResult = await rollupPredictionPerformanceRolling30d(supabase);
+  } catch (err) {
+    await logServerError(
+      `cron.insight_lifecycle.prediction_rollup failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'cron.coachhelm.insight_lifecycle.prediction_rollup', featureArea: 'coachhelm' },
+      'error',
+    );
   }
 
   return NextResponse.json({
@@ -173,6 +208,8 @@ export async function GET(req: NextRequest) {
     demoted_to_tentative: demotedCount,
     healthy_cycles_updated: healthyCyclesUpdatedCount,
     failed,
+    effectiveness_rollup: effectivenessResult,
+    prediction_rollup: predictionResult,
   });
 }
 

@@ -181,12 +181,16 @@ export function PlayerCoachHelmDashboard({
       // Refresh the page data — server component re-runs the insight-delivery
       // fetchers and passes fresh top/secondary props in.
       router.refresh();
-    } catch {
-      // Silently ignore refresh errors
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Refresh failed',
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
     } finally {
       setRefreshing(false);
     }
-  }, [playerId, router]);
+  }, [playerId, router, addToast]);
 
   /**
    * Unified handler wired into every `<InsightCard>` + `<HeroInsightCard>` on
@@ -286,13 +290,12 @@ export function PlayerCoachHelmDashboard({
           onClick={handleRefresh}
           disabled={refreshing}
           className={cn(
-            'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0',
-            refreshing && 'animate-spin pointer-events-none'
+            'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0 disabled:opacity-60'
           )}
           title="Refresh insights"
           aria-label="Refresh insights"
         >
-          <IconRefresh size={18} />
+          <IconRefresh size={18} className={refreshing ? 'animate-spin' : undefined} />
         </button>
         <Link
           href="/golf/dashboard/settings"

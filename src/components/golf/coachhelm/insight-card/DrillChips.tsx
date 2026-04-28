@@ -98,6 +98,7 @@ export function DrillChips({
         <DrillSheet
           open
           onClose={() => setOpenDrillId(null)}
+          insightId={insightId}
           drill={{
             id: openDrill.id,
             title: openDrill.title,

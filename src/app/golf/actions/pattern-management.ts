@@ -311,57 +311,12 @@ export async function getTeamPatterns(
 }
 
 // ============================================================================
-// GET PLAYER PATTERNS (WITH EXTENDED DATA)
+// GET PLAYER PATTERNS (WITH EXTENDED DATA) — REMOVED 2026-04-27
 // ============================================================================
-
-export async function getPlayerPatternsExtended(
-  playerId: string
-): Promise<{
-  success: boolean;
-  patterns?: ExtendedPattern[];
-  error?: string;
-}> {
-  const supabase = await createClient();
-
-  try {
-    // Get player info
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id, first_name, last_name, avatar_url')
-      .eq('id', playerId)
-      .single();
-
-    // Get patterns
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: patterns, error } = await (supabase.from('golf_patterns_v2' as any) as any)
-      .select('*')
-      .eq('player_id', playerId)
-      .order('stroke_impact', { ascending: false });
-
-    if (error) {
-      await logServerError(`getPlayerPatternsExtended query failed: ${error.message}`, {
-        action: 'getPlayerPatternsExtended',
-        featureArea: 'pattern_management',
-        playerId,
-        extra: { errorCode: error.code },
-      });
-      return { success: true, patterns: [] };
-    }
-
-    const transformedPatterns = (patterns || []).map((row: PatternDbRow) =>
-      transformPatternRow(row, player || undefined)
-    );
-
-    return { success: true, patterns: transformedPatterns };
-  } catch (error) {
-    await logServerError(`getPlayerPatternsExtended failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'getPlayerPatternsExtended',
-      featureArea: 'pattern_management',
-      playerId,
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
+// `getPlayerPatternsExtended` was unused (no callers anywhere in src/ or
+// src/test). Removed to keep the public surface area honest. If a per-player
+// patterns view ships in the future, reach for `getTeamPatterns({ playerId })`
+// instead — same shape, narrower query.
 
 // ============================================================================
 // VALIDATE PATTERN
@@ -709,103 +664,9 @@ async function createFocusAreaFromPatternInternal(
   }
 }
 
-export async function createFocusAreaFromPattern(
-  patternId: string,
-  playerId: string
-): Promise<{ success: boolean; focusAreaId?: string; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
-    if (!ownership.allowed) {
-      return { success: false, error: 'Forbidden' };
-    }
-
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Coach not found' };
-    }
-
-    const result = await createFocusAreaFromPatternInternal(patternId, coach.id);
-
-    if (result.success) {
-      revalidatePath('/golf/dashboard/patterns');
-      revalidatePath(`/golf/dashboard/roster/${playerId}`);
-      revalidatePath('/golf/dashboard/development');
-      revalidatePath('/golf/dashboard/my-development');
-    }
-
-    return result;
-  } catch (error) {
-    await logServerError(`createFocusAreaFromPattern failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'createFocusAreaFromPattern',
-      featureArea: 'pattern_management',
-      extra: { patternId, playerId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
-
-// ============================================================================
-// UPDATE PATTERN NOTES
-// ============================================================================
-
-export async function updatePatternNotes(
-  patternId: string,
-  notes: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    const ownership = await verifyPatternAccess(patternId, user.id, supabase);
-    if (!ownership.allowed) {
-      return { success: false, error: 'Forbidden' };
-    }
-
-    const patternsTable = supabase.from('golf_patterns_v2');
-
-    const { error } = await patternsTable
-      .update({
-        coach_notes: notes,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', patternId);
-
-    if (error) {
-      await logServerError(`updatePatternNotes update failed: ${error.message}`, {
-        action: 'updatePatternNotes',
-        featureArea: 'pattern_management',
-        extra: { patternId, errorCode: error.code },
-      });
-      return { success: false, error: 'Failed to update notes' };
-    }
-
-    revalidatePath('/golf/dashboard/patterns');
-    return { success: true };
-  } catch (error) {
-    await logServerError(`updatePatternNotes failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'updatePatternNotes',
-      featureArea: 'pattern_management',
-      extra: { patternId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
+// `createFocusAreaFromPattern` and `updatePatternNotes` removed 2026-04-27 —
+// orphan exports with no UI/server callers. The pattern→focus-area path is
+// driven by `createFocusAreaFromPatternInternal` (used by validate-pattern).
 
 // ============================================================================
 // GET PATTERN STATS

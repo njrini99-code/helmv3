@@ -33,5 +33,12 @@ Sentry.init({
   ignoreErrors: [
     'NEXT_NOT_FOUND',
     'NEXT_REDIRECT',
+    // Supabase emits these for stale refresh-token cookies (logged-out users,
+    // long-idle tabs, just-rotated tokens). They are normal session expiry,
+    // not application errors — middleware already swallows them and falls
+    // through to the unauthenticated path.
+    'Invalid Refresh Token: Refresh Token Not Found',
+    'Refresh Token Not Found',
+    'AuthApiError',
   ],
 });

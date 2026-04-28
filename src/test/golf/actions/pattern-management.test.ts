@@ -25,8 +25,6 @@ import {
   dismissPattern,
   markPatternAddressed,
   resolvePattern,
-  updatePatternNotes,
-  createFocusAreaFromPattern,
 } from '@/app/golf/actions/pattern-management';
 
 function buildSupabase(opts: {
@@ -123,14 +121,6 @@ describe('pattern-management — ownership guards', () => {
     {
       name: 'resolvePattern',
       run: () => resolvePattern('pattern-1'),
-    },
-    {
-      name: 'updatePatternNotes',
-      run: () => updatePatternNotes('pattern-1', 'notes'),
-    },
-    {
-      name: 'createFocusAreaFromPattern',
-      run: () => createFocusAreaFromPattern('pattern-1', 'player-1'),
     },
   ]) {
     it(`${name} rejects when coach does not own the pattern player`, async () => {

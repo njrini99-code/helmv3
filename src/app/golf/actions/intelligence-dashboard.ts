@@ -413,44 +413,10 @@ export async function getTeamInsightsSummary(
       }
     }
 
-    // If no stored correlations, generate some common placeholder defaults based on team data
-    if (correlations.length === 0) {
-      correlations.push(
-        {
-          id: 'default-fw-gir',
-          title: 'Fairways → Greens Correlation',
-          description:
-            'Players who hit more fairways consistently hit more greens in regulation. Accuracy off the tee sets up easier approach shots.',
-          metrics: ['fairwayPercentage', 'girPercentage'],
-          correlation: 0.65,
-          strokeImpact: 0.5,
-          isDefault: true,
-          playerCount: playerSummaries.length || 1,
-        },
-        {
-          id: 'default-3putt-score',
-          title: '3-Putts → Scoring Impact',
-          description:
-            'Three-putts have a strong correlation with higher scores. Reducing 3-putts by 1 per round typically saves 0.8-1.0 strokes.',
-          metrics: ['threePuttsPerRound', 'scoringAverage'],
-          correlation: 0.72,
-          strokeImpact: 0.9,
-          isDefault: true,
-          playerCount: playerSummaries.length || 1,
-        },
-        {
-          id: 'default-scramble',
-          title: 'Scrambling → Par Recovery',
-          description:
-            'Players with higher scrambling percentages recover better from missed greens, preventing bogeys from becoming doubles.',
-          metrics: ['scramblingPercentage', 'bogeyAvoidance'],
-          correlation: 0.58,
-          strokeImpact: 0.4,
-          isDefault: true,
-          playerCount: playerSummaries.length || 1,
-        }
-      );
-    }
+    // 2026-04-27: hardcoded `isDefault:true` placeholder correlations removed.
+    // When no real pattern-derived correlations exist for the team we now
+    // return [] so the UI can render an honest empty state / hide the tab,
+    // matching `generateTeamCorrelations` below.
 
     return {
       success: true,
@@ -479,60 +445,16 @@ export async function getTeamInsightsSummary(
 export async function generateTeamCorrelations(
   teamId: string
 ): Promise<{ success: boolean; correlations?: CorrelationDiscovery[]; error?: string }> {
+  // 2026-04-27: hardcoded defaults removed; real correlations from
+  // team_correlations.ts not yet wired into a UI surface that needs them.
+  // Returns [] so consumers hide the tab. Auth check kept so callers still
+  // get a consistent permission-denied path when teamId is invalid.
   try {
-    // Verify user has access to this team
     const access = await verifyTeamAccess(teamId);
     if (!access.authorized) {
       return { success: false, error: access.error || 'Not authorized' };
     }
-
-    const supabase = await createClient();
-
-    // Get team players via golf_team_members (golf_players has NO team_id column).
-    const { data: memberRows } = await supabase
-      .from('golf_team_members')
-      .select('player_id, golf_players!inner(id, first_name, last_name)')
-      .eq('team_id', teamId)
-      .eq('status', 'active');
-
-    const players = (memberRows ?? [])
-      .map((row) => row.golf_players)
-      .filter(
-        (p): p is { id: string; first_name: string; last_name: string } =>
-          p !== null && typeof p === 'object' && 'id' in p,
-      );
-
-    if (!players || players.length === 0) {
-      return { success: true, correlations: [] };
-    }
-
-    // Return default placeholder correlations (not computed from real data)
-    const correlations: CorrelationDiscovery[] = [
-      {
-        id: `team-${teamId}-fw-gir`,
-        title: 'Fairways → Greens Correlation',
-        description:
-          'Team analysis shows players who hit more fairways consistently hit more greens in regulation.',
-        metrics: ['fairwayPercentage', 'girPercentage'],
-        correlation: 0.65,
-        strokeImpact: 0.5,
-        isDefault: true,
-        playerCount: players.length,
-      },
-      {
-        id: `team-${teamId}-putt-score`,
-        title: 'Putting → Scoring Relationship',
-        description:
-          'Strong negative correlation between putts per round and scoring average across the team.',
-        metrics: ['puttsPerRound', 'scoringAverage'],
-        correlation: -0.7,
-        strokeImpact: 0.8,
-        isDefault: true,
-        playerCount: players.length,
-      },
-    ];
-
-    return { success: true, correlations };
+    return { success: true, correlations: [] };
   } catch (error) {
     await logServerError(`Error in generateTeamCorrelations: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.generateTeamCorrelations' });
     return { success: false, error: 'Internal server error' };

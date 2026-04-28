@@ -1340,61 +1340,8 @@ export async function getReviewGenerationStatus(reviewId: string): Promise<{
 // ============================================================================
 // ANNOTATION FUNCTIONS
 // ============================================================================
-
-/**
- * Add or update annotation on a review insight
- */
-export async function annotateInsight(
-  insightId: string,
-  annotation: string
-): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
-
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return { success: false, error: 'Not authenticated' };
-    }
-
-    // Verify user is a coach
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!coach) {
-      return { success: false, error: 'Not authorized - coach access required' };
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const insightsTable = supabase.from('golf_review_insights' as any);
-    const { error } = await insightsTable
-      .update({
-        coach_notes: annotation,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', insightId);
-
-    if (error) {
-      await logServerError(`annotateInsight update failed: ${error.message}`, {
-        action: 'annotateInsight',
-        featureArea: 'round_reviews',
-        extra: { insightId, errorCode: error.code },
-      });
-      return { success: false, error: 'Failed to save annotation' };
-    }
-
-    return { success: true };
-  } catch (error) {
-    await logServerError(`annotateInsight failed: ${error instanceof Error ? error.message : String(error)}`, {
-      action: 'annotateInsight',
-      featureArea: 'round_reviews',
-      extra: { insightId },
-    });
-    return { success: false, error: 'An unexpected error occurred' };
-  }
-}
+// `annotateInsight` removed 2026-04-27 — `golf_review_insights` table dropped.
+// Reviews now store coach annotations inline in golf_round_reviews.round_stats.
 
 /**
  * Add or update coach notes on a review

@@ -43,6 +43,7 @@ import {
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
 import { IconSparkles, IconRefresh } from '@/components/icons';
+import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 
 // ============================================================================
 // TYPES
@@ -65,6 +66,54 @@ interface RoundData {
     score: number | null;
     par: number | null;
   }>;
+}
+
+// ============================================================================
+// HELPERS
+// ============================================================================
+
+/** Maps an insight category (or a free-form area string) to the focus-area
+ *  type vocabulary the development.ts action expects. */
+function mapCategoryToAreaType(input: string | null | undefined): string {
+  if (!input) return 'other';
+  const v = input.toLowerCase();
+  if (v.includes('putt')) return 'putting';
+  if (v.includes('approach') || v.includes('iron') || v.includes('gir')) return 'iron_play';
+  if (v.includes('drive') || v.includes('tee') || v.includes('fairway')) return 'driving';
+  if (v.includes('chip') || v.includes('short') || v.includes('scramble') || v.includes('sand')) return 'short_game';
+  if (v.includes('mental') || v.includes('pressure') || v.includes('course')) return 'mental_game';
+  return 'other';
+}
+
+interface PromoteSuggestion {
+  title: string;
+  description: string;
+  areaType: string;
+}
+
+/** Picks the best section-level pre-fill for the Promote-to-Focus-Area CTA.
+ *  Prefers the takeaway insight (carries category + concrete framing); falls
+ *  back to the top areasForImprovement entry on the stored review. */
+function derivePromoteSuggestion(
+  takeawayInsight: EvidenceInsight | null,
+  storedReview: RoundReviewWithRound | null,
+): PromoteSuggestion | null {
+  if (takeawayInsight) {
+    return {
+      title: takeawayInsight.title,
+      description: takeawayInsight.content,
+      areaType: mapCategoryToAreaType(takeawayInsight.category),
+    };
+  }
+  const top = storedReview?.review_content?.areasForImprovement?.[0];
+  if (top) {
+    return {
+      title: top.area,
+      description: top.recommendation,
+      areaType: mapCategoryToAreaType(top.area),
+    };
+  }
+  return null;
 }
 
 // ============================================================================
@@ -326,51 +375,79 @@ export default function RoundReviewPage() {
 
   // Loading state
   const isLoading = loadingRound || loadingStoredReview || generatingReview || v1Loading || v1Generating;
+  const isGenerating = generatingReview || v1Generating;
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="h-5 w-28 bg-warm-100 rounded-lg skeleton-shimmer" />
-          <div className="h-5 w-20 bg-warm-100 rounded-lg skeleton-shimmer" />
-        </div>
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-warm-100 overflow-hidden">
-            <div className="bg-gradient-to-br from-primary-600/20 to-primary-700/10 px-6 pt-6 pb-5">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
-                <div className="h-5 w-32 bg-warm-200/40 rounded-lg skeleton-shimmer" />
-                <div className="h-10 w-20 bg-warm-200/40 rounded-lg skeleton-shimmer" />
+      <m.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
+      >
+        {/* Header stays mounted during generation so the Refresh button is
+            always reachable. The icon spins while a generation is in flight. */}
+        <MobileNavHeader
+          title="Round Review"
+          subtitle={round?.course_name ?? undefined}
+          backHref="/golf/dashboard/rounds"
+          backLabel="Rounds"
+        >
+          {isV2Enabled && (
+            <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
+              <IconSparkles size={12} />
+              CoachHelm AI
+            </span>
+          )}
+          <button
+            onClick={() => generateReview()}
+            disabled={isGenerating}
+            className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
+          >
+            <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </MobileNavHeader>
+
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-warm-100 overflow-hidden">
+              <div className="bg-gradient-to-br from-primary-600/20 to-primary-700/10 px-6 pt-6 pb-5">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
+                  <div className="h-5 w-32 bg-warm-200/40 rounded-lg skeleton-shimmer" />
+                  <div className="h-10 w-20 bg-warm-200/40 rounded-lg skeleton-shimmer" />
+                </div>
+              </div>
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-3 gap-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
+                      <div className="h-6 w-10 bg-warm-200/60 rounded mx-auto mb-1 skeleton-shimmer" />
+                      <div className="h-3 w-12 bg-warm-100 rounded mx-auto skeleton-shimmer" />
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-3">
+                  <div className="h-4 w-24 bg-warm-100 rounded skeleton-shimmer" />
+                  <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
+                  <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
+                </div>
               </div>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                    <div className="h-6 w-10 bg-warm-200/60 rounded mx-auto mb-1 skeleton-shimmer" />
-                    <div className="h-3 w-12 bg-warm-100 rounded mx-auto skeleton-shimmer" />
-                  </div>
-                ))}
-              </div>
-              <div className="space-y-3">
-                <div className="h-4 w-24 bg-warm-100 rounded skeleton-shimmer" />
-                <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
-                <div className="h-16 bg-warm-50 rounded-xl border border-warm-100 skeleton-shimmer" />
-              </div>
-            </div>
+            <p className="text-sm text-warm-500 font-medium text-center">
+              {isGenerating ? (
+                <span className="flex items-center justify-center gap-2">
+                  <IconSparkles size={16} className="text-purple-500" />
+                  {isV2Enabled ? 'Running CoachHelm analysis...' : 'Analyzing your round...'}
+                </span>
+              ) : (
+                'Loading review...'
+              )}
+            </p>
           </div>
-          <p className="text-sm text-warm-500 font-medium text-center">
-            {generatingReview || v1Generating ? (
-              <span className="flex items-center justify-center gap-2">
-                <IconSparkles size={16} className="text-purple-500" />
-                {isV2Enabled ? 'Running CoachHelm analysis...' : 'Analyzing your round...'}
-              </span>
-            ) : (
-              'Loading review...'
-            )}
-          </p>
         </div>
-      </div>
+      </m.div>
     );
   }
 
@@ -445,17 +522,17 @@ export default function RoundReviewPage() {
         backLabel="Rounds"
       >
         {isV2Enabled && v2Review && (
-          <span className="hidden sm:flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
+          <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
             <IconSparkles size={12} />
             CoachHelm AI
           </span>
         )}
         <button
           onClick={() => generateReview()}
-          disabled={generatingReview}
+          disabled={isGenerating}
           className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
         >
-          <IconRefresh size={14} className={generatingReview ? 'animate-spin' : ''} />
+          <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
           Refresh
         </button>
       </MobileNavHeader>
@@ -529,6 +606,41 @@ export default function RoundReviewPage() {
         ) : (
           v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
+
+        {/* Promote-to-focus-area CTA. One section-level button — the bottom
+            sheet lets the player edit before confirming. We prefer the
+            takeaway insight (it carries category + concrete framing); fall
+            back to the top "areas for improvement" entry from the stored
+            review content. */}
+        {(() => {
+          const promoteSuggestion = derivePromoteSuggestion(
+            takeawayInsight,
+            storedReview,
+          );
+          if (!storedReview?.id || !promoteSuggestion) return null;
+          return (
+            <div className="rounded-2xl border border-primary-200/60 bg-primary-50/40 backdrop-blur-xl p-4 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-warm-900">
+                  Turn this into a focus area
+                </p>
+                <p className="text-xs text-warm-600 mt-0.5">
+                  {promoteSuggestion.title}
+                </p>
+              </div>
+              <PromoteToFocusAreaButton
+                source="review"
+                sourceId={storedReview.id}
+                playerId={round.player_id}
+                suggestedTitle={promoteSuggestion.title}
+                suggestedDescription={promoteSuggestion.description}
+                suggestedAreaType={promoteSuggestion.areaType}
+                reviewContext={round.course_name ?? undefined}
+                className="flex-shrink-0"
+              />
+            </div>
+          );
+        })()}
       </m.div>
       </div>
 
@@ -539,13 +651,13 @@ export default function RoundReviewPage() {
             href={`/golf/dashboard/rounds/${roundId}`}
             className="flex-1 py-3 bg-warm-100 text-warm-700 rounded-xl text-center font-medium hover:bg-warm-200 transition-colors"
           >
-            View Full Stats
+            Round Detail
           </Link>
           <Link
             href="/golf/dashboard/stats"
             className="flex-1 py-3 bg-primary-600 text-white rounded-xl text-center font-medium hover:bg-primary-700 transition-colors"
           >
-            View Stats
+            All Stats
           </Link>
         </div>
       </m.div>

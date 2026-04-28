@@ -8,6 +8,7 @@ import { fetchAdminRollupB, type RollupB } from './admin/rollup-b';
 import { fetchAdminRollupC } from './admin/rollup-c';
 import { EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c.shared';
 import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
@@ -74,7 +75,11 @@ const cachedAdminDashboardData = unstable_cache(
       fn: 'get_admin_dashboard_rollup',
     ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>;
     const { data, error } = await rpc('get_admin_dashboard_rollup');
-    if (error) throw error instanceof Error ? error : new Error(String(error));
+    // Supabase Postgrest errors are plain objects, not Error instances —
+    // String(err) yielded "[object Object]" which surfaced as
+    // "Error: [object Object]" in production logs and Sentry. Use
+    // describeError() so the underlying code/msg/details/hint are preserved.
+    if (error) throw error instanceof Error ? error : new Error(describeError(error));
     if (!data) throw new Error('Empty rollup response');
     return data;
   },
@@ -1435,14 +1440,14 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   try {
     [rollupA, rollupB] = await Promise.all([
       fetchAdminRollupA().catch((e) => {
-        void logServerError(`[admin-data] fetchAdminRollupA threw: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
-        throw new Error(`rollupA failed: ${e?.message ?? String(e)}`);
+        void logServerError(`[admin-data] fetchAdminRollupA threw: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } });
+        throw new Error(`rollupA failed: ${describeError(e)}`);
       }),
       fetchAdminRollupB(),
     ]);
   } catch (e) {
     // Only rollupA failures reach here; rollupB gracefully degrades internally.
-    void logServerError(`[admin-data] rollupA failed: ${e instanceof Error ? e.message : String(e)}`, { action: 'admin_data.getAdminDashboardData' });
+    void logServerError(`[admin-data] rollupA failed: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData' });
     throw e;
   }
 
@@ -1458,7 +1463,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const [rollupC, vercelAnalytics, platformHealth, dataQualityRaw] = await Promise.all([
     fetchAdminRollupC(rollupA.allRoundsMinimal).catch((e) => {
       void logServerError(
-        `[admin-data] fetchAdminRollupC threw: ${e instanceof Error ? e.message : String(e)}`,
+        `[admin-data] fetchAdminRollupC threw: ${describeError(e)}`,
         { action: 'admin_data.getAdminDashboardData', metadata: { stack: e?.stack } },
       );
       rollupCDegraded = true;
@@ -1518,8 +1523,8 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     };
   } catch (e) {
     const err = e as Error;
-    await logServerError(`[admin-data] assembleAdminDashboardData threw: ${err?.message ?? String(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: err?.stack } });
-    throw new Error(`assembleAdminDashboardData failed: ${err?.message ?? String(e)}`);
+    await logServerError(`[admin-data] assembleAdminDashboardData threw: ${describeError(e)}`, { action: 'admin_data.getAdminDashboardData', metadata: { stack: err?.stack } });
+    throw new Error(`assembleAdminDashboardData failed: ${describeError(e)}`);
   }
 }
 

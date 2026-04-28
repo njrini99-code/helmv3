@@ -16,6 +16,11 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { IconCheck } from '@/components/icons';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
+import {
+    getOrCreateTeamCoachHelmSettings,
+    updateTeamCoachHelmSettings,
+    type TeamCoachHelmSettings,
+} from '@/app/golf/actions/insights';
 
 // camelCase -> snake_case column mapping that mirrors the one in
 // useCoachPhilosophy, kept here so we can hit the server action directly
@@ -73,6 +78,10 @@ type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
     const [coachId, setCoachId] = useState<string | null>(null);
+    const [teamId, setTeamId] = useState<string | null>(null);
+    const [teamSettings, setTeamSettings] = useState<TeamCoachHelmSettings | null>(null);
+    const [teamSettingsSaving, setTeamSettingsSaving] = useState(false);
+    const [teamSettingsError, setTeamSettingsError] = useState<string | null>(null);
     const supabase = createClient();
 
     useEffect(() => {
@@ -82,16 +91,56 @@ export default function CoachingIntelligenceSettingsPage() {
 
             const { data: coach } = await supabase
                 .from('golf_coaches')
-                .select('id')
+                .select('id, organization_id')
                 .eq('user_id', user.id)
                 .maybeSingle();
 
             if (coach) {
                 setCoachId(coach.id);
+
+                if (coach.organization_id) {
+                    const { data: team } = await supabase
+                        .from('golf_teams')
+                        .select('id')
+                        .eq('organization_id', coach.organization_id)
+                        .maybeSingle();
+                    if (team?.id) {
+                        setTeamId(team.id);
+                        const result = await getOrCreateTeamCoachHelmSettings(team.id);
+                        if (result.success && result.settings) {
+                            setTeamSettings(result.settings);
+                        }
+                    }
+                }
             }
         }
         getCoach();
     }, [supabase]);
+
+    const handleTeamCoachHelmToggle = useCallback(
+        async (nextEnabled: boolean) => {
+            if (!teamId) return;
+            // Optimistic UI: flip immediately, revert on failure.
+            const previous = teamSettings;
+            setTeamSettings((s: TeamCoachHelmSettings | null) =>
+                s ? { ...s, enabled: nextEnabled } : s,
+            );
+            setTeamSettingsSaving(true);
+            setTeamSettingsError(null);
+            const result = await updateTeamCoachHelmSettings(teamId, {
+                enabled: nextEnabled,
+            });
+            setTeamSettingsSaving(false);
+            if (result.success && result.settings) {
+                setTeamSettings(result.settings);
+            } else {
+                // Revert
+                setTeamSettings(previous);
+                setTeamSettingsError(result.error || 'Failed to update');
+            }
+        },
+        [teamId, teamSettings],
+    );
 
     const { philosophy, loading, saving, save } = useCoachPhilosophy(coachId);
 
@@ -337,6 +386,47 @@ export default function CoachingIntelligenceSettingsPage() {
                         />
                     </div>
                 </section></AnimatedItem>
+
+                {/* Team CoachHelm Settings Section */}
+                {teamId ? (
+                    <AnimatedItem>
+                        <section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <h2 className="text-base font-semibold text-warm-900">Team CoachHelm</h2>
+                                    <p className="text-sm text-warm-500 mt-1 max-w-md">
+                                        Master switch for AI-generated insights, patterns, and predictions
+                                        across the entire team. Disable to pause everything CoachHelm does
+                                        for this team without losing existing data.
+                                    </p>
+                                    {teamSettingsError ? (
+                                        <p className="text-xs text-red-600 mt-2">
+                                            {teamSettingsError}
+                                        </p>
+                                    ) : null}
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only peer"
+                                        checked={teamSettings?.enabled ?? true}
+                                        disabled={!teamSettings || teamSettingsSaving}
+                                        onChange={(e) => handleTeamCoachHelmToggle(e.target.checked)}
+                                    />
+                                    <div className="w-11 h-6 bg-warm-200 rounded-full peer peer-checked:bg-primary-500 peer-disabled:opacity-50 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-transform peer-checked:after:translate-x-5" />
+                                </label>
+                            </div>
+                            {teamSettings && !teamSettings.enabled ? (
+                                <div className="mt-4 pt-4 border-t border-warm-100 text-xs text-warm-500">
+                                    CoachHelm is paused for this team.
+                                    {teamSettings.disabled_at
+                                        ? ` Disabled ${new Date(teamSettings.disabled_at).toLocaleDateString()}.`
+                                        : null}
+                                </div>
+                            ) : null}
+                        </section>
+                    </AnimatedItem>
+                ) : null}
 
                 {/* Display Preferences Section */}
                 <AnimatedItem><section className="glass-premium rounded-2xl overflow-clip">
