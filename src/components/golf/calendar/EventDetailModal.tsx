@@ -10,6 +10,7 @@ import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
+import { toast } from '@/components/ui/toast';
 import { m, useReducedMotion } from 'framer-motion';
 import { calendarSpring } from '@/lib/motion';
 
@@ -260,7 +261,6 @@ export function EventDetailModal({
       name: attendee.playerName,
       avatar_url: attendee.avatarUrl,
       response: attendee.status,
-      responded_at: attendee.respondedAt,
     })) || []
   ), [rsvpSummary]);
 
@@ -424,6 +424,47 @@ export function EventDetailModal({
         ? prev.attendeeIds.filter(id => id !== playerId)
         : [...prev.attendeeIds, playerId],
     }));
+  };
+
+  const handleSendRosterReminder = async (playerIds: string[]) => {
+    if (!event?.id || playerIds.length === 0) return;
+    try {
+      const { sendEventReminderToPlayers } = await loadGolfCalendarActions();
+      const result = await sendEventReminderToPlayers(event.id, playerIds);
+      if (result.success) {
+        const sent = result.data?.sent ?? playerIds.length;
+        toast.success('Reminders sent', `Notified ${sent} player${sent === 1 ? '' : 's'}.`);
+      } else {
+        toast.error('Failed to send reminders', result.error ?? 'Try again in a moment.');
+      }
+    } catch (err) {
+      toast.error(
+        'Failed to send reminders',
+        err instanceof Error ? err.message : 'Try again in a moment.',
+      );
+    }
+  };
+
+  const handleExportRoster = () => {
+    if (!event || !rsvpSummary) return;
+    const header = ['Name', 'Status'];
+    const rows = rsvpSummary.attendees.map((a) => [
+      a.playerName.replace(/"/g, '""'),
+      a.status,
+    ]);
+    const csv = [header, ...rows]
+      .map((cells) => cells.map((c) => `"${c}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const safeTitle = event.title?.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'event';
+    a.href = url;
+    a.download = `rsvp-${safeTitle}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleSelectSuggestedTime = (suggestion: { start: Date; end: Date }) => {
@@ -860,6 +901,8 @@ export function EventDetailModal({
               <RSVPStatusSection
                 participants={rsvpParticipants}
                 totalInvited={rsvpSummary?.total || 0}
+                onSendReminder={handleSendRosterReminder}
+                onExport={handleExportRoster}
               />
               {rsvpSummaryLoading && (
                 <p className="text-xs text-warm-500 mt-2">Loading RSVP summary...</p>

@@ -273,9 +273,17 @@ export async function notifyEventUpdate(
 // RSVP RESPONSES
 // ============================================================================
 
+export class RSVPDeadlinePassedError extends Error {
+  constructor(public deadline: string) {
+    super('RSVP deadline has passed');
+    this.name = 'RSVPDeadlinePassedError';
+  }
+}
+
 /**
- * Update a player's RSVP status
- * Notifies event creator of the response
+ * Update a player's RSVP status. Throws RSVPDeadlinePassedError if the
+ * event's rsvp_deadline is in the past — server-side enforcement so a
+ * stale client tab can't slip a late RSVP in.
  */
 export async function updateRSVP(
   eventId: string,
@@ -283,6 +291,22 @@ export async function updateRSVP(
   status: RSVPStatus,
   supabase: SupabaseClient
 ): Promise<void> {
+  // Fetch event up front: we need it for both deadline enforcement and
+  // creator notification, so paying the round-trip once keeps things cheap.
+  const { data: eventData } = await supabase
+    .from('golf_events')
+    .select(`
+      *,
+      creator:golf_coaches(user_id)
+    `)
+    .eq('id', eventId)
+    .single();
+  const event = eventData as EventWithCreator | null;
+
+  if (event?.rsvp_deadline && new Date(event.rsvp_deadline).getTime() < Date.now()) {
+    throw new RSVPDeadlinePassedError(event.rsvp_deadline);
+  }
+
   // Upsert attendance record so players can respond even if no invite exists yet
   await supabase
     .from('golf_event_attendance')
@@ -295,17 +319,6 @@ export async function updateRSVP(
       },
       { onConflict: 'event_id,player_id' }
     );
-
-  // Get event and player details for notification
-  const { data: eventData } = await supabase
-    .from('golf_events')
-    .select(`
-      *,
-      creator:golf_coaches(user_id)
-    `)
-    .eq('id', eventId)
-    .single();
-  const event = eventData as EventWithCreator | null;
 
   const { data: player } = await supabase
     .from('golf_players')

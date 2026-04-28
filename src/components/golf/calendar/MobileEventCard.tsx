@@ -213,6 +213,7 @@ export function MobileEventCard({
           <MobileRSVPButtons
             currentResponse={userRsvpStatus || null}
             onRespond={handleRsvp}
+            rsvpDeadline={event.rsvp_deadline}
             size="md"
             layout="horizontal"
             showLabels

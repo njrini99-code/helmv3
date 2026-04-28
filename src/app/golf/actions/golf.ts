@@ -2634,12 +2634,15 @@ export async function respondToEvent(
       return { success: false, error: 'Player profile not found' };
     }
 
-    // Map vocabulary: app uses 'accepted' but DB column expects 'confirmed'
-    const dbStatus = status === 'accepted' ? 'confirmed' : status;
-
-    // Update RSVP
-    const { updateRSVP } = await import('@/lib/calendar/rsvp');
-    await updateRSVP(eventId, player.id, dbStatus as typeof status, supabase);
+    const { updateRSVP, RSVPDeadlinePassedError } = await import('@/lib/calendar/rsvp');
+    try {
+      await updateRSVP(eventId, player.id, status, supabase);
+    } catch (err) {
+      if (err instanceof RSVPDeadlinePassedError) {
+        return { success: false, error: 'RSVP deadline has passed for this event.' };
+      }
+      throw err;
+    }
 
     revalidatePath('/golf/dashboard/calendar');
     updateTag(CACHE_TAGS.DASHBOARD);
@@ -2648,6 +2651,96 @@ export async function respondToEvent(
 
   } catch {
     return { success: false, error: 'Failed to update RSVP' };
+  }
+}
+
+/**
+ * Coach-triggered reminder: drops in-app rows into golf_calendar_notifications
+ * for the supplied players, deduplicated against the cron-generated reminders
+ * by a distinct notification_type. Use admin client because notifications are
+ * inserted on behalf of other users.
+ */
+export async function sendEventReminderToPlayers(
+  eventId: string,
+  playerIds: string[],
+): Promise<ActionResult<{ sent: number }>> {
+  if (!eventId || playerIds.length === 0) {
+    return { success: false, error: 'Event id and at least one player required' };
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    const { data: event } = await supabase
+      .from('golf_events')
+      .select('id, title, start_time, location, team_id')
+      .eq('id', eventId)
+      .maybeSingle();
+    if (!event) return { success: false, error: 'Event not found' };
+
+    const { data: players } = await supabase
+      .from('golf_players')
+      .select('id, user_id')
+      .in('id', playerIds);
+
+    const userIds = (players ?? [])
+      .map((p) => p.user_id)
+      .filter((u): u is string => Boolean(u));
+    if (userIds.length === 0) {
+      return { success: true, data: { sent: 0 } };
+    }
+
+    const start = new Date(event.start_time);
+    const timeStr = start.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    const message = event.location
+      ? `${timeStr} at ${event.location}`
+      : timeStr;
+
+    const { createAdminClient } = await import('@/lib/supabase/admin');
+    const adminClient = createAdminClient();
+
+    const rows = userIds.map((uid) => ({
+      user_id: uid,
+      event_id: eventId,
+      notification_type: 'event_reminder_manual' as const,
+      title: `Reminder: ${event.title}`,
+      message,
+      action_url: `/golf/dashboard/calendar?event=${eventId}`,
+    }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (adminClient as any)
+      .from('golf_calendar_notifications')
+      .upsert(rows, {
+        onConflict: 'event_id,user_id,notification_type',
+        ignoreDuplicates: false,
+      });
+
+    if (error) {
+      await logServerError(`sendEventReminderToPlayers failed: ${error.message}`, {
+        action: 'sendEventReminderToPlayers',
+        featureArea: 'calendar',
+        extra: { eventId, count: userIds.length },
+      });
+      return { success: false, error: 'Failed to send reminders' };
+    }
+
+    return { success: true, data: { sent: userIds.length } };
+  } catch (err) {
+    await logServerError(`sendEventReminderToPlayers error: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'sendEventReminderToPlayers',
+      featureArea: 'calendar',
+      extra: { eventId },
+    });
+    return { success: false, error: 'Failed to send reminders' };
   }
 }
 

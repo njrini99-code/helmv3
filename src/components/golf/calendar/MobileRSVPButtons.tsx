@@ -13,7 +13,7 @@
 
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, HelpCircle, XCircle, Loader2 } from 'lucide-react';
+import { CheckCircle2, HelpCircle, XCircle, Loader2, Lock } from 'lucide-react';
 import { useHapticFeedback } from '@/hooks/use-mobile-detection';
 
 export type RSVPResponse = 'accepted' | 'tentative' | 'declined';
@@ -23,6 +23,10 @@ interface MobileRSVPButtonsProps {
   onRespond: (response: RSVPResponse) => Promise<{ success: boolean; error?: string }>;
   disabled?: boolean;
   isPending?: boolean; // Shows when RSVP is waiting to sync
+  /** Event RSVP deadline (ISO). Buttons lock once it has passed. */
+  rsvpDeadline?: string | null;
+  /** Optional explicit lock flag; if omitted we derive from rsvpDeadline. */
+  isLocked?: boolean;
   size?: 'sm' | 'md' | 'lg';
   layout?: 'horizontal' | 'vertical';
   showLabels?: boolean;
@@ -95,6 +99,8 @@ export function MobileRSVPButtons({
   onRespond,
   disabled = false,
   isPending = false,
+  rsvpDeadline,
+  isLocked,
   size = 'md',
   layout = 'horizontal',
   showLabels = true,
@@ -102,18 +108,25 @@ export function MobileRSVPButtons({
 }: MobileRSVPButtonsProps) {
   const [loadingResponse, setLoadingResponse] = useState<RSVPResponse | null>(null);
   const [optimisticResponse, setOptimisticResponse] = useState<RSVPResponse | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { triggerHaptic } = useHapticFeedback();
 
   const sizeConfig = sizeClasses[size];
   const displayResponse = optimisticResponse ?? currentResponse;
 
+  const lockedByDeadline =
+    isLocked ??
+    (rsvpDeadline ? new Date(rsvpDeadline).getTime() < Date.now() : false);
+  const isInteractionDisabled = disabled || lockedByDeadline;
+
   const handleRespond = useCallback(async (response: RSVPResponse) => {
-    if (disabled || loadingResponse) return;
+    if (isInteractionDisabled || loadingResponse) return;
 
     // Haptic feedback
     triggerHaptic('light');
 
     // Optimistic update
+    setErrorMessage(null);
     setOptimisticResponse(response);
     setLoadingResponse(response);
 
@@ -123,79 +136,91 @@ export function MobileRSVPButtons({
       if (result.success) {
         triggerHaptic('success');
       } else {
-        // Revert optimistic update on failure
         setOptimisticResponse(null);
+        setErrorMessage(result.error ?? 'Could not save your RSVP. Tap to retry.');
         triggerHaptic('error');
       }
-    } catch {
-      // Revert optimistic update on error
+    } catch (err) {
       setOptimisticResponse(null);
+      setErrorMessage(err instanceof Error ? err.message : 'Could not save your RSVP. Tap to retry.');
       triggerHaptic('error');
     } finally {
       setLoadingResponse(null);
     }
-  }, [disabled, loadingResponse, onRespond, triggerHaptic]);
+  }, [isInteractionDisabled, loadingResponse, onRespond, triggerHaptic]);
 
   return (
-    <div
-      className={cn(
-        'flex',
-        layout === 'horizontal' ? 'flex-row gap-2' : 'flex-col gap-2',
-        className
+    <div className={cn('flex flex-col gap-2', className)}>
+      <div
+        className={cn(
+          'flex',
+          layout === 'horizontal' ? 'flex-row gap-2' : 'flex-col gap-2',
+        )}
+      >
+        {RSVP_OPTIONS.map((option) => {
+          const Icon = option.icon;
+          const isActive = displayResponse === option.value;
+          const isLoading = loadingResponse === option.value;
+
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => handleRespond(option.value)}
+              disabled={isInteractionDisabled || isLoading}
+              aria-label={`${option.label} for this event`}
+              aria-pressed={isActive}
+              className={cn(
+                'relative flex items-center justify-center rounded-xl border-2',
+                'transition-all duration-200 ease-out',
+                'touch-manipulation select-none',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500',
+                sizeConfig.button,
+                sizeConfig.gap,
+                layout === 'horizontal' && 'flex-1',
+                layout === 'vertical' && 'w-full',
+                isActive
+                  ? cn(option.activeClass, 'border-transparent scale-[1.02]')
+                  : cn(option.inactiveClass, option.hoverClass, 'border-transparent'),
+                isInteractionDisabled && 'opacity-50 cursor-not-allowed',
+                isLoading && 'animate-pulse',
+              )}
+            >
+              {isLoading ? (
+                <Loader2 className={cn(sizeConfig.icon, 'animate-spin')} aria-hidden="true" />
+              ) : lockedByDeadline ? (
+                <Lock className={cn(sizeConfig.icon, 'flex-shrink-0')} aria-hidden="true" />
+              ) : (
+                <Icon className={cn(sizeConfig.icon, 'flex-shrink-0')} aria-hidden="true" />
+              )}
+
+              {showLabels && (
+                <span className={cn(sizeConfig.text, 'font-semibold whitespace-nowrap')}>
+                  {size === 'sm' ? option.shortLabel : option.label}
+                </span>
+              )}
+
+              {isPending && isActive && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {lockedByDeadline && (
+        <p
+          role="status"
+          className="text-xs text-warm-500 flex items-center gap-1.5 px-1"
+        >
+          <Lock className="w-3 h-3" aria-hidden="true" />
+          RSVP closed for this event
+        </p>
       )}
-    >
-      {RSVP_OPTIONS.map((option) => {
-        const Icon = option.icon;
-        const isActive = displayResponse === option.value;
-        const isLoading = loadingResponse === option.value;
-
-        return (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => handleRespond(option.value)}
-            disabled={disabled || isLoading}
-            className={cn(
-              // Base styles
-              'relative flex items-center justify-center rounded-xl border-2',
-              'transition-all duration-200 ease-out',
-              'touch-manipulation select-none',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary-500',
-              // Size
-              sizeConfig.button,
-              sizeConfig.gap,
-              // Layout
-              layout === 'horizontal' && 'flex-1',
-              layout === 'vertical' && 'w-full',
-              // State
-              isActive
-                ? cn(option.activeClass, 'border-transparent scale-[1.02]')
-                : cn(option.inactiveClass, option.hoverClass, 'border-transparent'),
-              // Disabled
-              disabled && 'opacity-50 cursor-not-allowed',
-              // Loading
-              isLoading && 'animate-pulse'
-            )}
-          >
-            {isLoading ? (
-              <Loader2 className={cn(sizeConfig.icon, 'animate-spin')} />
-            ) : (
-              <Icon className={cn(sizeConfig.icon, 'flex-shrink-0')} />
-            )}
-
-            {showLabels && (
-              <span className={cn(sizeConfig.text, 'font-semibold whitespace-nowrap')}>
-                {size === 'sm' ? option.shortLabel : option.label}
-              </span>
-            )}
-
-            {/* Pending indicator */}
-            {isPending && isActive && (
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse" />
-            )}
-          </button>
-        );
-      })}
+      {errorMessage && !lockedByDeadline && (
+        <p role="alert" className="text-xs text-rose-600 px-1">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }

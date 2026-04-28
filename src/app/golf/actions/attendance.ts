@@ -39,9 +39,10 @@ interface AttendanceRecord {
   event_id: string;
   player_id: string;
   status: AttendanceStatus | null;
-  absence_reason: string | null;
-  responded_at: string | null;
-  reminder_sent: boolean | null;
+  rsvp_at: string | null;
+  checked_in: boolean | null;
+  checked_in_at: string | null;
+  notes: string | null;
   player: AttendancePlayer | null;
 }
 
@@ -54,17 +55,9 @@ interface AttendanceReport {
 // ============================================================================
 
 /**
- * Check in a player for an event.
- *
- * golf_event_attendance schema only has: id, event_id, player_id, status
- * (attending/not_attending/maybe/pending/excused/unexcused), absence_reason,
- * responded_at, reminder_sent, created_at, updated_at.
- *
- * There are no checked_in, checked_in_at, checked_in_by, check_in_method columns.
- * Check-in is represented by setting status to 'attending'.
- *
- * TODO: If full check-in tracking is needed (timestamps, method, who checked in),
- * a migration should add these columns to golf_event_attendance.
+ * Check in a player for an event. Live golf_event_attendance has dedicated
+ * checked_in (bool) and checked_in_at (timestamptz) columns; we set both and
+ * also flip status to 'accepted' so RSVP filters surface checked-in players.
  */
 export async function checkInPlayer(
   eventId: string,
@@ -79,7 +72,6 @@ export async function checkInPlayer(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify event exists (golf_events uses start_time, not start_date)
     const { data: event } = await supabase
       .from('golf_events')
       .select('id, start_time')
@@ -90,8 +82,7 @@ export async function checkInPlayer(
       return { success: false, error: 'Event not found' };
     }
 
-    // Upsert attendance record - set status to 'accepted' (check-in = accepted)
-    // UNIQUE(event_id, player_id) allows upsert
+    const now = new Date().toISOString();
     const { error: upsertError } = await supabase
       .from('golf_event_attendance')
       .upsert(
@@ -99,7 +90,9 @@ export async function checkInPlayer(
           event_id: eventId,
           player_id: playerId,
           status: 'accepted' as AttendanceStatus,
-          responded_at: new Date().toISOString(),
+          rsvp_at: now,
+          checked_in: true,
+          checked_in_at: now,
         },
         { onConflict: 'event_id,player_id' }
       );
@@ -150,15 +143,17 @@ export async function bulkCheckIn(
       return { success: false, error: 'Coach not found' };
     }
 
-    // OPTIMIZED: Batch upsert instead of sequential individual check-ins
-    // golf_event_attendance columns: event_id, player_id, status, absence_reason, responded_at
+    // OPTIMIZED: Batch upsert instead of sequential individual check-ins.
+    // Live cols: event_id, player_id, status, rsvp_at, checked_in, checked_in_at.
     const now = new Date().toISOString();
 
     const upsertRecords = playerIds.map((playerId) => ({
       event_id: eventId,
       player_id: playerId,
       status: 'accepted' as AttendanceStatus,
-      responded_at: now,
+      rsvp_at: now,
+      checked_in: true,
+      checked_in_at: now,
     }));
 
     const { error: upsertError, data: upsertedData } = await supabase
@@ -223,13 +218,13 @@ export async function markNoShow(
       return { success: false, error: 'Coach not found' };
     }
 
-    // Update attendance record - mark as declined (no-show)
-    // golf_event_attendance.status uses RSVP values: accepted, declined, tentative, pending
+    // Mark as declined (no-show). Live table has no updated_at column.
     const { error: updateError } = await supabase
       .from('golf_event_attendance')
       .update({
         status: 'declined' as AttendanceStatus,
-        updated_at: new Date().toISOString(),
+        rsvp_at: new Date().toISOString(),
+        checked_in: false,
       })
       .eq('event_id', eventId)
       .eq('player_id', playerId);
@@ -269,15 +264,18 @@ export async function getAttendanceReport(
       return { success: false, error: 'Not authenticated' };
     }
 
-    // TODO: golf_attendance_summary table/view does not exist yet.
-    // A migration is needed if summary aggregation is desired.
-    // For now, we only return the detailed attendance records.
-
-    // Get detailed attendance records
+    // No golf_attendance_summary view exists; aggregate in-app from raw rows.
     const { data: attendance } = await supabase
       .from('golf_event_attendance')
       .select(`
-        *,
+        id,
+        event_id,
+        player_id,
+        status,
+        rsvp_at,
+        checked_in,
+        checked_in_at,
+        notes,
         player:player_id (
           first_name,
           last_name,
@@ -380,25 +378,3 @@ export async function getPlayerAttendanceStats(
   }
 }
 
-// ============================================================================
-// VERIFY QR CODE CHECK-IN
-// ============================================================================
-
-/**
- * Verify a QR code for check-in.
- *
- * TODO: golf_events does not have a metadata column for QR tokens.
- * A migration is needed to add QR code support (e.g., a qr_token column
- * or a separate golf_event_checkin_settings table).
- * For now, this function is a stub that always returns an error.
- */
-export async function verifyQRCodeCheckIn(
-  _qrToken: string
-): Promise<ActionResult<{ eventId: string; eventTitle: string }>> {
-  // QR code check-in requires a metadata/qr_token column on golf_events
-  // which does not exist in the current schema.
-  return {
-    success: false,
-    error: 'QR code check-in is not yet supported. A database migration is required.',
-  };
-}

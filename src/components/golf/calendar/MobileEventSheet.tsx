@@ -557,6 +557,7 @@ export function MobileEventSheet({
                 <MobileRSVPButtons
                   currentResponse={userRsvpStatus || null}
                   onRespond={handleRsvp}
+                  rsvpDeadline={event.rsvp_deadline}
                   size="lg"
                   layout="horizontal"
                   showLabels

@@ -28,7 +28,6 @@ interface RSVPParticipant {
   name: string;
   avatar_url?: string | null;
   response: 'accepted' | 'tentative' | 'declined' | 'pending';
-  responded_at?: string | null;
   email?: string;
   phone?: string;
 }

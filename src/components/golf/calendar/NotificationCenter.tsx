@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { m, AnimatePresence, type PanInfo } from 'framer-motion';
 import {
   IconBell,
@@ -32,6 +32,9 @@ function getNotificationIcon(type: Notification['type']) {
     case 'event_cancelled':
       return <IconX size={16} className="text-red-500" />;
     case 'event_reminder':
+    case 'event_reminder_24h':
+    case 'event_reminder_1h':
+    case 'event_reminder_manual':
     case 'rsvp_reminder':
       return <IconClock size={16} className="text-purple-500" />;
     default:
@@ -120,6 +123,15 @@ export function NotificationCenter() {
     void triggerHaptic('light');
     setIsOpen((v) => !v);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
 
   return (
     <div className="relative">

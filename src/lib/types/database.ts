@@ -10530,6 +10530,7 @@ export type Database = {
       }
       get_current_golf_player_id: { Args: never; Returns: string }
       get_current_player_team_ids: { Args: never; Returns: string[] }
+      get_db_telemetry: { Args: never; Returns: Json }
       get_enhanced_system_health: {
         Args: never
         Returns: {
@@ -10670,6 +10671,7 @@ export type Database = {
         Args: { p_window?: string }
         Returns: Json
       }
+      get_shot_data_quality: { Args: never; Returns: Json }
       get_team_health_dashboard: {
         Args: never
         Returns: {
@@ -10747,6 +10749,10 @@ export type Database = {
       }
       recalculate_team_baseball_season_stats: {
         Args: { p_season_year?: number; p_team_id: string }
+        Returns: undefined
+      }
+      recompute_golf_round_totals: {
+        Args: { p_round_id: string }
         Returns: undefined
       }
       refresh_player_stats_cache: {
