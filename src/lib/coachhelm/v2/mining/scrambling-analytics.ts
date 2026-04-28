@@ -26,7 +26,17 @@ import { calcConfidence } from '../insights/types';
 type Supabase = SupabaseClient<Database>;
 
 const WINDOW_DAYS = 60;
-const MIN_ATTEMPTS = 6;
+/**
+ * P2 (2026-04-27): tightened from 6 → 15. With <15 up-and-down attempts the
+ * Bernoulli proportion has a 95% CI roughly the width of the 8pp emit
+ * threshold itself, so the insight was firing on noise (e.g. "Scrambling
+ * from rough is 15%" on N=13). For sand specifically the bar is more
+ * relaxed (6) — see SAND_MIN_ATTEMPTS — because tour-level sand-save
+ * sample sizes are inherently small and the absolute success rate is
+ * still meaningful at lower N.
+ */
+const MIN_ATTEMPTS = 15;
+const SAND_MIN_ATTEMPTS = 6;
 const GAP_THRESHOLD = 0.08; // 8 percentage points
 
 type ScrambleLie = 'fairway' | 'rough' | 'bunker';
@@ -83,7 +93,16 @@ export async function generateScramblingInsights(
 
     for (const lie of LIE_ORDER) {
       const stats = byLie[lie];
-      if (!stats || stats.attempts < MIN_ATTEMPTS) continue;
+      if (!stats) continue;
+      const minForLie = lie === 'bunker' ? SAND_MIN_ATTEMPTS : MIN_ATTEMPTS;
+      if (stats.attempts < minForLie) {
+        if (stats.attempts > 0) {
+          console.debug(
+            `[insight-skip] reason=insufficient_sample type=scrambling_${lie} n=${stats.attempts} min=${minForLie}`,
+          );
+        }
+        continue;
+      }
 
       const baseline = BASELINE[lie];
       const gap = stats.pct - baseline; // signed — negative = worse than D2
