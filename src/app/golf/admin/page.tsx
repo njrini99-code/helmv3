@@ -908,12 +908,17 @@ function AdminDashboardContent() {
             </div>
           ) : data ? (
             <div className="space-y-6">
-              {(data.errorSummaryDegraded || data.adminEventSummaryDegraded) && (
-                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/50 text-amber-700 text-xs font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                  Some metrics are using approximate calculations (database functions unavailable)
-                </div>
-              )}
+              {/*
+                The "approximate calculations" banner used to fire whenever
+                `errorSummaryDegraded` or `adminEventSummaryDegraded` was set,
+                but `admin-data.ts` already runs a complete in-TS fallback that
+                produces correct grouped errors when those RPCs return null —
+                so the banner was misleading. The flags remain on the payload
+                for diagnostics; they are intentionally not surfaced to users.
+
+                The rollup B/C banner below DOES still render — that one fires
+                only on a real RPC timeout (rare) and is worth surfacing.
+              */}
               {(data.rollupBDegraded || data.rollupCDegraded) && (
                 <div className="flex items-start gap-2 px-4 py-2.5 rounded-xl bg-amber-50/80 border border-amber-200/50 text-amber-700 text-xs font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1" />

@@ -9,6 +9,12 @@ import { fetchAdminRollupC } from './admin/rollup-c';
 import { EMPTY_ROLLUP_C, type RollupC } from './admin/rollup-c.shared';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import {
+  computeActivation,
+  computeMedianTTFV,
+  computeWoWGrowth,
+  type TTFVRecord,
+} from '@/lib/admin/metrics';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
@@ -1776,12 +1782,15 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   const avgOnboarding = (coachOnboarded + playerOnboarded) / Math.max(totalCoaches + totalPlayers, 1) * 100;
 
   // --- Growth metrics ---
-  const userGrowthRate = users.newUsersLastWeek > 0
-    ? Math.round(((users.newUsersThisWeek - users.newUsersLastWeek) / users.newUsersLastWeek) * 100)
-    : users.newUsersThisWeek > 0 ? 100 : 0;
-  const roundGrowthRate = rounds.roundsLastWeek > 0
-    ? Math.round(((rounds.roundsThisWeek - rounds.roundsLastWeek) / rounds.roundsLastWeek) * 100)
-    : rounds.roundsThisWeek > 0 ? 100 : 0;
+  // WoW growth via shared metrics helper so the Overview header and the
+  // Intelligence card render the exact same number (single source of truth).
+  // Helper returns a ratio (0..1 = +100%, -0.5 = -50%); we round to whole-percent.
+  const userGrowthRate = Math.round(
+    computeWoWGrowth(users.newUsersThisWeek, users.newUsersLastWeek) * 100
+  );
+  const roundGrowthRate = Math.round(
+    computeWoWGrowth(rounds.roundsThisWeek, rounds.roundsLastWeek) * 100
+  );
 
   // Churn (players active 30-60d ago but not in last 30d)
   const churnedPlayers30d = [...playersActive30_60dSet].filter((id) => !playersActive30dSet.has(id)).length;
@@ -2699,44 +2708,72 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   // ============================================
 
   // --- BI Growth ---
+  // Activation rates via shared metrics helper. Helper returns a ratio in
+  // [0, 1]; we surface as percent with one decimal (e.g. 42.7) for parity with
+  // existing call sites and the BI cards' `safeFixed(_, 0)` formatter.
   const biActivatedPlayers = playerOnboarded;
   const biActivatedCoaches = coachOnboarded;
-  const biPlayerActivationRate = totalPlayers > 0
-    ? Math.round((biActivatedPlayers / totalPlayers) * 1000) / 10 : 0;
-  const biCoachActivationRate = totalCoaches > 0
-    ? Math.round((biActivatedCoaches / totalCoaches) * 1000) / 10 : 0;
+  const biPlayerActivationRate =
+    Math.round(
+      computeActivation({ signups: totalPlayers, activated: biActivatedPlayers }) * 1000
+    ) / 10;
+  const biCoachActivationRate =
+    Math.round(
+      computeActivation({ signups: totalCoaches, activated: biActivatedCoaches }) * 1000
+    ) / 10;
   const totalUsersForActivation = totalPlayers + totalCoaches;
-  const biOverallActivationRate = totalUsersForActivation > 0
-    ? Math.round(((biActivatedPlayers + biActivatedCoaches) / totalUsersForActivation) * 1000) / 10
-    : 0;
+  const biOverallActivationRate =
+    Math.round(
+      computeActivation({
+        signups: totalUsersForActivation,
+        activated: biActivatedPlayers + biActivatedCoaches,
+      }) * 1000
+    ) / 10;
 
-  // Median TTFV (days from signup to first round) — use allRoundsMinimal for first-round dates
+  // Median TTFV (days from signup to first round) — use allRoundsMinimal for
+  // first-round dates, then route through the shared metrics helper. Helper
+  // skips users with bad timestamps or first-round-before-signup, identical
+  // to the previous inline behavior.
   const playerFirstRound = new Map<string, string>();
   for (const r of rollupA.allRoundsMinimal) {
     if (!r.player_id || !r.created_at) continue;
     const existing = playerFirstRound.get(r.player_id);
     if (!existing || r.created_at < existing) playerFirstRound.set(r.player_id, r.created_at);
   }
-  const ttfvDays: number[] = [];
+  const ttfvRecords: TTFVRecord[] = [];
   for (const u of users.usersForDirectory) {
     if (!u.created_at) continue;
     const pid = userIdToPlayerId.get(u.id);
     if (!pid) continue;
     const firstRound = playerFirstRound.get(pid);
     if (!firstRound) continue;
-    const days = (new Date(firstRound).getTime() - new Date(u.created_at).getTime()) / 86400000;
-    if (days >= 0 && days < 365) ttfvDays.push(days);
+    ttfvRecords.push({ signupAt: u.created_at, firstValueAt: firstRound });
   }
-  ttfvDays.sort((a, b) => a - b);
-  const biMedianTTFVDays = ttfvDays.length > 0
-    ? Math.round(ttfvDays[Math.floor(ttfvDays.length / 2)]! * 10) / 10
-    : null;
+  // Helper returns 0 if no usable rows; preserve the historical "null when
+  // no data" contract by checking the input length explicitly.
+  const biMedianTTFVDays =
+    ttfvRecords.length > 0
+      ? Math.round(computeMedianTTFV(ttfvRecords) * 10) / 10
+      : null;
 
   const totalSignupCount = users.usersForDirectory.length;
   const completedOnboardingCount = biActivatedPlayers + biActivatedCoaches;
   const submittedFirstRoundCount = rollupC.userJourney.submittedFirstRound;
   const activeThisWeekCount = rollupC.userJourney.activeThisWeek;
-  const receivedInsightsCount = uniqueInsightPlayers;
+
+  // Funnel must monotonically decrease — "Received AI Insights" was previously
+  // the *all-time* count of players who ever received insights, which could
+  // exceed "Active This Week" and break the strict-subset invariant. Redefine
+  // the step as `active_this_week ∩ received_insights` so the funnel reads
+  // correctly as "of the players active this week, how many got AI insights".
+  const playersActiveThisWeekIds = new Set(rollupA.rounds.playersThisWeek);
+  const playersWithInsightsAllTime = new Set(
+    coachhelm.insightPlayerRows.map((r) => r.player_id).filter((id): id is string => Boolean(id))
+  );
+  let receivedInsightsCount = 0;
+  for (const pid of playersActiveThisWeekIds) {
+    if (playersWithInsightsAllTime.has(pid)) receivedInsightsCount += 1;
+  }
 
   const biActivationFunnel = buildFunnelSteps([
     { step: 'Signed Up', count: totalSignupCount },
@@ -2745,6 +2782,9 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     { step: 'Active This Week', count: activeThisWeekCount },
     { step: 'Received AI Insights', count: receivedInsightsCount },
   ]);
+  // Keep the all-time aggregate available for any downstream reader that
+  // intentionally wants a non-funnel "any insights ever" count.
+  void uniqueInsightPlayers;
 
   // --- BI Retention (D1/D7/D30) ---
   const computeDayRetention = (daysBack: number, windowDays: number = 1) => {

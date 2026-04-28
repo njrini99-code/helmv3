@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { computeD7Retention, type RoundForRetention } from '@/lib/admin/metrics';
 
 // ============================================
 // TYPES
@@ -137,56 +138,60 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
       )
     );
 
+    // Normalize rounds for the shared D7 retention helper. The "signup
+    // anchor" used by this surface is the user's *first round* (we don't
+    // have the auth-level signup date here), so we derive a synthetic
+    // signupAt map from each user's earliest round.
     const rounds = aiRoundsRes.data ?? [];
-    const roundsByUser = new Map<string, string[]>();
+    const normalizedRounds: RoundForRetention[] = [];
+    const firstRoundByUser = new Map<string, number>();
     for (const r of rounds) {
-      const uid = String((r as Record<string, unknown>).player_id ?? '');
-      const created = String((r as Record<string, unknown>).created_at ?? '');
-      if (!roundsByUser.has(uid)) roundsByUser.set(uid, []);
-      roundsByUser.get(uid)!.push(created);
+      const rec = r as Record<string, unknown>;
+      const uid = String(rec.player_id ?? '');
+      const createdRaw = String(rec.created_at ?? '');
+      if (!uid || !createdRaw) continue;
+      const ts = new Date(createdRaw).getTime();
+      if (!Number.isFinite(ts)) continue;
+      normalizedRounds.push({ player_id: uid, created_at: createdRaw });
+      const prior = firstRoundByUser.get(uid);
+      if (prior === undefined || ts < prior) firstRoundByUser.set(uid, ts);
     }
 
-    // Simple D7 retention: users who submitted a round in both first 7 days and days 7-14
-    let aiRetained = 0;
-    let aiTotal = 0;
-    let nonAiRetained = 0;
-    let nonAiTotal = 0;
-
-    const now = Date.now();
-    for (const [uid, dates] of roundsByUser) {
-      if (dates.length === 0) continue;
-      const sortedDates = dates.map((d) => new Date(d).getTime()).sort();
-      const firstRound = sortedDates[0]!;
-      const daysSinceFirst = (now - firstRound) / (1000 * 60 * 60 * 24);
-      if (daysSinceFirst < 14) continue; // Need at least 14 days of history
-
-      const hasDay0to7 = sortedDates.some(
-        (d) => d - firstRound < 7 * 24 * 60 * 60 * 1000
-      );
-      const hasDay7to14 = sortedDates.some(
-        (d) =>
-          d - firstRound >= 7 * 24 * 60 * 60 * 1000 &&
-          d - firstRound < 14 * 24 * 60 * 60 * 1000
-      );
-
-      const isAiUser = aiCoachIds.has(uid);
-
-      if (isAiUser) {
-        aiTotal += 1;
-        if (hasDay0to7 && hasDay7to14) aiRetained += 1;
-      } else {
-        nonAiTotal += 1;
-        if (hasDay0to7 && hasDay7to14) nonAiRetained += 1;
-      }
+    // Split signupAt maps into AI vs non-AI cohorts, then call the shared
+    // metrics helper for each. This keeps D7 retention math identical to the
+    // overview/Intelligence tabs (single source of truth).
+    const aiSignupAt = new Map<string, string>();
+    const nonAiSignupAt = new Map<string, string>();
+    for (const [uid, firstTs] of firstRoundByUser) {
+      const iso = new Date(firstTs).toISOString();
+      if (aiCoachIds.has(uid)) aiSignupAt.set(uid, iso);
+      else nonAiSignupAt.set(uid, iso);
     }
 
-    const aiUserRetentionD7 = aiTotal > 0 ? aiRetained / aiTotal : null;
+    const aiUserRetentionD7 =
+      aiSignupAt.size > 0
+        ? computeD7Retention(normalizedRounds, aiSignupAt)
+        : null;
     const nonAiUserRetentionD7 =
-      nonAiTotal > 0 ? nonAiRetained / nonAiTotal : null;
+      nonAiSignupAt.size > 0
+        ? computeD7Retention(normalizedRounds, nonAiSignupAt)
+        : null;
     const aiRetentionLift =
       aiUserRetentionD7 != null && nonAiUserRetentionD7 != null
         ? aiUserRetentionD7 - nonAiUserRetentionD7
         : null;
+
+    // Reconstruct roundsByUser only for downstream feature-stickiness math.
+    const roundsByUser = new Map<string, string[]>();
+    for (const r of rounds) {
+      const uid = String((r as Record<string, unknown>).player_id ?? '');
+      const created = String((r as Record<string, unknown>).created_at ?? '');
+      if (!uid || !created) continue;
+      const bucket = roundsByUser.get(uid);
+      if (bucket) bucket.push(created);
+      else roundsByUser.set(uid, [created]);
+    }
+    const aiTotal = aiSignupAt.size;
 
     // Insight action rate: ratio of insights that led to follow-up activity
     const totalInsights = (insightLogRes.data ?? []).reduce(
