@@ -136,6 +136,15 @@ class CoachHelmIntelligence {
   private reasoningEngine: ReasoningEngine;
   private confidenceCalibrator: ConfidenceCalibrator;
   private insightComposer: InsightComposer;
+  /**
+   * Per-call cache for `fetchPlayerStats`. `analyzePlayer` and
+   * `generateRoundReview` both call it (and `analyzeRoundForReview` etc.
+   * downstream may call it again) — without a cache we hit the heavy
+   * `getDetailedStatsAsAdmin` action multiple times for the same player
+   * inside one analysis. Cleared at the top of every `analyzePlayer` so
+   * stats stay fresh across separate analysis runs.
+   */
+  private _statsCache: Map<string, GolfStats | undefined> = new Map();
 
   constructor() {
     this.reasoningEngine = new ReasoningEngine();
@@ -162,6 +171,11 @@ class CoachHelmIntelligence {
       includeLieAnalysis = true,
       depth = 'standard',
     } = options;
+
+    // Drop any stats cached from a prior analyzePlayer run (different player
+    // or stale data from earlier in the process lifetime). Within a single
+    // analyzePlayer call the cache lets repeat callers share one fetch.
+    this._statsCache.clear();
 
     // Tier-1 evidence-backed insights (Groups A + B + C — Insight Quality phase).
     // These read directly from raw tables and don't depend on the legacy
@@ -1563,13 +1577,18 @@ class CoachHelmIntelligence {
    * authorized the player by other means.
    */
   private async fetchPlayerStats(playerId: string): Promise<GolfStats | undefined> {
+    if (this._statsCache.has(playerId)) {
+      return this._statsCache.get(playerId);
+    }
     try {
       // Dynamic import to avoid client/server import issues.
       const { getDetailedStatsAsAdmin } = await import('@/app/golf/actions/stats-data');
       const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
+      this._statsCache.set(playerId, stats);
       return stats;
     } catch (error) {
       console.error('[CoachHelm] Error fetching player stats:', error);
+      this._statsCache.set(playerId, undefined);
       return undefined;
     }
   }
