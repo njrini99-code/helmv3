@@ -66,3 +66,4 @@ next-shadcn-dashboard-starter/
 helm-vid/
 .full-review/
 .claude/scheduled_tasks.lock
+*.png

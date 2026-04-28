@@ -63,8 +63,10 @@ interface RoundData {
   round_type?: string | null;
   days_since_last?: number;
   putts?: number;
+  total_fairways?: number;
   total_fairways_hit?: number;
   total_gir?: number;
+  total_gir_possible?: number;
 }
 
 /**
@@ -90,7 +92,7 @@ export class PatternMiner {
     // Load rounds with computed fields
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, round_date, round_type, total_putts, total_fairways_hit, total_gir')
+      .select('id, score_to_par, round_date, round_type, total_putts, total_fairways, total_fairways_hit, total_gir, total_gir_possible')
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
       .order('round_date', { ascending: false })
@@ -107,8 +109,10 @@ export class PatternMiner {
       round_date: r.round_date,
       round_type: normalizeRoundType(r.round_type),
       putts: r.total_putts ?? undefined,
+      total_fairways: r.total_fairways ?? undefined,
       total_fairways_hit: r.total_fairways_hit ?? undefined,
       total_gir: r.total_gir ?? undefined,
+      total_gir_possible: r.total_gir_possible ?? undefined,
     })));
 
     // Mine different pattern types
@@ -193,7 +197,17 @@ export class PatternMiner {
     const patterns: MinedPattern[] = [];
     const baselineAvg = this.calculateBaseline();
 
-    // Test various conditions
+    // Test various conditions.
+    //
+    // The original 4 conditions (rest/rust + round-type) were starving on
+    // teams whose data lacks variation in those dimensions — e.g. Guilford
+    // College Men's Golf has 11/12 tournament rounds for its top player and
+    // back-to-back tournament days, so `round_type=tournament` saturates
+    // (support 0.92, no lift) and `days_since_last>=7` matches almost
+    // nothing. We add round-shape conditions derived from the per-round
+    // counters that are already loaded — these surface "heavy putting day",
+    // "fairway-poor day", "GIR-poor day", and "blow-up round" patterns that
+    // any team will produce when those traits are present.
     const conditionsToTest: Array<{
       condition: PatternCondition;
       test: (r: RoundData) => boolean;
@@ -236,6 +250,56 @@ export class PatternMiner {
         },
         test: (r) => r.round_type === 'qualifier',
       },
+      // Putting-heavy days (33+ putts is a clear above-average putting load)
+      {
+        condition: {
+          field: 'putts',
+          operator: 'gte',
+          value: 33,
+          label: 'Heavy putting day (33+ putts)',
+        },
+        test: (r) => (r.putts ?? 0) >= 33,
+      },
+      // Low-fairway days (<55% fairways hit out of attempted)
+      {
+        condition: {
+          field: 'fairway_pct',
+          operator: 'lt',
+          value: 0.55,
+          label: 'Off the tee struggles (<55% fairways)',
+        },
+        test: (r) => {
+          const att = r.total_fairways ?? 0;
+          if (att <= 0) return false;
+          return ((r.total_fairways_hit ?? 0) / att) < 0.55;
+        },
+      },
+      // Low-GIR days (<55% GIR of possible)
+      {
+        condition: {
+          field: 'gir_pct',
+          operator: 'lt',
+          value: 0.55,
+          label: 'Approach struggles (<55% GIR)',
+        },
+        test: (r) => {
+          const possible = r.total_gir_possible ?? 0;
+          if (possible <= 0) return false;
+          return ((r.total_gir ?? 0) / possible) < 0.55;
+        },
+      },
+      // Blow-up rounds: score_to_par >= +5. This is its own pattern type —
+      // identifies the player's tendency to fall apart. The bad-round base
+      // rate already filters out players who never have these.
+      {
+        condition: {
+          field: 'score_to_par',
+          operator: 'gte',
+          value: 5,
+          label: 'Blow-up round (+5 or worse)',
+        },
+        test: (r) => (r.score_to_par ?? 0) >= 5,
+      },
     ];
 
     for (const { condition, test } of conditionsToTest) {
@@ -270,11 +334,27 @@ export class PatternMiner {
       const expectedBad = totalBadRounds / this.rounds.length;
       const lift = expectedBad > 0 ? confidence / expectedBad : 1;
 
-      if (
+      // Lift gate: the original `lift >= 1.5` requirement is mathematically
+      // unreachable when the player's base rate of bad rounds (>= +3) is
+      // high — e.g. when 75% of rounds are bad, no condition can produce
+      // confidence > 1.0, so lift is capped at 1/0.75 ≈ 1.33. This is what
+      // starved every Guilford College pattern despite real signal in the
+      // stroke-impact dimension.
+      //
+      // Accept the pattern when EITHER:
+      //   (a) classic gate: lift >= 1.5 over the bad-round base rate, OR
+      //   (b) impact gate: |strokeImpact| >= 0.6 strokes — a half-shot per
+      //       round is itself a strong signal, even when the player is so
+      //       inconsistent overall that the bad-round base rate caps lift.
+      const passesClassicGate =
         support >= THRESHOLDS.minSupport &&
         confidence >= THRESHOLDS.minConfidence &&
-        lift >= THRESHOLDS.minLift
-      ) {
+        lift >= THRESHOLDS.minLift;
+      const passesImpactGate =
+        support >= THRESHOLDS.minSupport &&
+        Math.abs(strokeImpact) >= 0.6;
+
+      if (passesClassicGate || passesImpactGate) {
         patterns.push(
           this.createPattern(
             'conditional',
