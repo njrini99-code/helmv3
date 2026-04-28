@@ -1660,13 +1660,21 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
     }),
     fetchVercelAnalytics(),
     (async (): Promise<PlatformHealthStatsResult | null> => {
+      // get_platform_health_stats is `RETURNS TABLE(...)` (SETOF), so PostgREST
+      // returns an array — even with a single row. Reading `res.data.x` directly
+      // silently produces undefined and every `phs?.x ?? 0` fallback collapses
+      // to zero, which is why the System tab showed DB Size 0.0 KB / Active
+      // Sessions 0 / 0 connections even with the RPC working in SQL. Always
+      // unwrap the first row.
       try {
         const admin = createAdminClient();
         const rpc = admin.rpc.bind(admin) as unknown as (
           fn: 'get_platform_health_stats',
-        ) => Promise<{ data: PlatformHealthStatsResult | null; error: unknown }>;
+        ) => Promise<{ data: PlatformHealthStatsResult[] | null; error: unknown }>;
         const res = await rpc('get_platform_health_stats');
-        return res.data ?? null;
+        const rows = res.data ?? [];
+        if (!Array.isArray(rows) || rows.length === 0) return null;
+        return rows[0] ?? null;
       } catch {
         return null;
       }

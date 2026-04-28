@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { m, useSpring, useTransform, useInView } from 'framer-motion';
 
 interface AnimatedNumberProps {
@@ -20,7 +20,6 @@ export function AnimatedNumber({
 }: AnimatedNumberProps) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
-  const [hasAnimated, setHasAnimated] = useState(false);
 
   const spring = useSpring(0, {
     mass: 0.8,
@@ -32,12 +31,16 @@ export function AnimatedNumber({
     `${prefix}${current.toFixed(decimals)}${suffix}`
   );
 
+  // Track value changes so the spring follows live data, not just the
+  // first-paint value. Previous behavior gated the .set() call behind a
+  // one-shot `hasAnimated` flag — fine for marketing pages, fatal for an
+  // admin dashboard whose KPIs update from a placeholder 0 to a real
+  // number once the data fetch resolves: the spring stuck at 0 forever.
   useEffect(() => {
-    if (isInView && !hasAnimated) {
+    if (isInView) {
       spring.set(value);
-      setHasAnimated(true);
     }
-  }, [isInView, value, spring, hasAnimated]);
+  }, [isInView, value, spring]);
 
   const finalDisplay = `${prefix}${value.toFixed(decimals)}${suffix}`;
 

@@ -226,7 +226,7 @@ function AdminDashboardContent() {
   const { trackFeature } = useAnalyticsTracking();
   const supabase = useMemo(() => createClient(), []);
 
-  const { realtime, alerts } = useAdminRealtimeContext();
+  const { realtime, alerts, presence } = useAdminRealtimeContext();
 
   // Map old tab IDs to new ones for backward compat
   const urlTab = searchParams.get('tab') as string | null;
@@ -382,11 +382,19 @@ function AdminDashboardContent() {
           tone: data.errorLogs.incidentCounts.resolvedRecently > 0 ? 'healthy' : 'neutral',
         },
         {
+          // Reflect *live* admin viewers (Supabase Realtime presence) instead
+          // of the stale `users.last_seen >= 1h` proxy we used to surface
+          // through `data.health.activeSessions`. The previous metric was both
+          // misleading (it counted any signed-in user, not admins on the
+          // dashboard) and structurally broken because get_platform_health_stats
+          // returns SETOF and was being read as a single object — so the
+          // sidebar always rendered "0" even with admins online. The 1h count
+          // moves to the detail line so we keep that signal visible.
           key: 'sessions',
-          label: 'Active Sessions',
-          value: `${data.health.activeSessions}`,
-          detail: `${data.health.realActiveUsers1h} online in the last hour`,
-          tone: data.health.activeSessions > 0 ? 'healthy' : 'neutral',
+          label: 'Admins Online',
+          value: `${presence?.onlineCount ?? 0}`,
+          detail: `${data.health.realActiveUsers1h} signed-in users in the last hour`,
+          tone: (presence?.onlineCount ?? 0) > 0 ? 'healthy' : 'neutral',
         },
         {
           key: 'latency',
