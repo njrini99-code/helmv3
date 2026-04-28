@@ -162,57 +162,85 @@ export default function RoundReviewPage() {
 
   const supabase = useMemo(() => createClient(), []);
 
-  // Fetch round data with auth check — only allow viewing own rounds
+  // Fetch round data with auth check. Players see only their own rounds.
+  // Coaches see any round belonging to a player on their team — same access
+  // model as the parent /rounds/[id] server page and the round-review-system
+  // server actions (`generateAndStoreRoundReview`, `getRoundReview` both use
+  // role 'player_or_coach' in verifyReviewAccess). Previously this client
+  // page hard-rejected coaches with "You must be a player to view round
+  // reviews." which left `loadingStoredReview` stuck on its initial `true`
+  // (the dependent effect early-returns when `round` stays null), so the page
+  // hung on the "Loading review..." skeleton forever for coach sessions.
   useEffect(() => {
     async function fetchRound() {
       setLoadingRound(true);
       try {
-        // Get current user to verify ownership
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           setError('Not authenticated');
           return;
         }
 
-        // Get the player ID for the current user
-        const { data: playerRecord } = await supabase
-          .from('golf_players')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // Look up player + coach records in parallel — a user may legitimately
+        // be one or the other (and historically dual-role accounts exist).
+        const [{ data: playerRecord }, { data: coachRecord }] = await Promise.all([
+          supabase.from('golf_players').select('id').eq('user_id', user.id).maybeSingle(),
+          supabase.from('golf_coaches').select('id, organization_id').eq('user_id', user.id).maybeSingle(),
+        ]);
 
-        const currentPlayerId = playerRecord?.id;
+        const currentPlayerId = playerRecord?.id ?? null;
+        const coachOrgId = coachRecord?.organization_id ?? null;
 
-        if (!currentPlayerId) {
-          // Non-player users cannot view round reviews
-          setError('You must be a player to view round reviews.');
+        if (!currentPlayerId && !coachOrgId) {
+          setError('You must be a player or coach to view round reviews.');
           return;
         }
 
-        // Fetch round — if user is a player, restrict to their own rounds
-        let query = supabase
+        // Fetch the round unrestricted — we authorize ownership below. RLS
+        // already prevents reading rounds the user has no relationship to.
+        const { data, error: fetchError } = await supabase
           .from('golf_rounds')
           .select('*, holes:golf_holes(*)')
-          .eq('id', roundId);
-
-        if (currentPlayerId) {
-          query = query.eq('player_id', currentPlayerId);
-        }
-
-        const { data, error: fetchError } = await query.maybeSingle();
+          .eq('id', roundId)
+          .maybeSingle();
 
         if (fetchError || !data) {
           setError('Round not found');
           return;
         }
 
-        if (data) {
-          const roundData = data as RoundData;
-          if (roundData.holes) {
-            roundData.holes = roundData.holes.sort((a, b) => a.hole_number - b.hole_number);
+        const roundData = data as RoundData;
+
+        // Authorize: player owns the round OR coach has team membership over
+        // the round's player. Mirrors the server action's verifyReviewAccess.
+        const isOwnRound = currentPlayerId !== null && roundData.player_id === currentPlayerId;
+        let isCoachOnTeam = false;
+        if (!isOwnRound && coachOrgId) {
+          const { data: orgTeam } = await supabase
+            .from('golf_teams')
+            .select('id')
+            .eq('organization_id', coachOrgId)
+            .maybeSingle();
+          if (orgTeam?.id) {
+            const { data: teamMembership } = await supabase
+              .from('golf_team_members')
+              .select('id')
+              .eq('team_id', orgTeam.id)
+              .eq('player_id', roundData.player_id)
+              .maybeSingle();
+            isCoachOnTeam = !!teamMembership;
           }
-          setRound(roundData);
         }
+
+        if (!isOwnRound && !isCoachOnTeam) {
+          setError('Round not found');
+          return;
+        }
+
+        if (roundData.holes) {
+          roundData.holes = roundData.holes.sort((a, b) => a.hole_number - b.hole_number);
+        }
+        setRound(roundData);
       } catch {
         setError('Failed to load round');
       } finally {
@@ -223,34 +251,47 @@ export default function RoundReviewPage() {
     fetchRound();
   }, [roundId, supabase]);
 
-  // Fetch stored review and averages
+  // Fetch stored review and averages. Resets `loadingStoredReview` regardless
+  // of whether `round` resolved — previously an early `if (!round) return;`
+  // left the flag stuck on its initial `true`, which hung the umbrella
+  // `isLoading` boolean and the page on the "Loading review..." skeleton
+  // whenever the round-fetch step bailed (e.g. error path, auth rejection).
   useEffect(() => {
+    if (!loadingRound && !round) {
+      setLoadingStoredReview(false);
+      return;
+    }
+    if (!round) return;
+    let cancelled = false;
+
     async function fetchReviewAndAverages() {
       if (!round) return;
-
       setLoadingStoredReview(true);
       try {
         // Fetch stored review
         const reviewResult = await getRoundReview(roundId);
-        if (reviewResult.success && reviewResult.review) {
+        if (!cancelled && reviewResult.success && reviewResult.review) {
           setStoredReview(reviewResult.review);
         }
 
         // Fetch averages for comparison
         const avgResult = await getStatAverages(round.player_id);
-        if (avgResult.success) {
+        if (!cancelled && avgResult.success) {
           setPlayerAvg(avgResult.playerAvg ?? null);
           setTeamAvg(avgResult.teamAvg ?? null);
         }
       } catch {
         // Silently ignore fetch errors
       } finally {
-        setLoadingStoredReview(false);
+        if (!cancelled) setLoadingStoredReview(false);
       }
     }
 
     fetchReviewAndAverages();
-  }, [round, roundId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [round, roundId, loadingRound]);
 
   // Fetch evidence-backed takeaway + supporting insights in parallel once we
   // know which player the round belongs to. Server actions handle auth +
