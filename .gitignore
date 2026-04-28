@@ -67,3 +67,5 @@ helm-vid/
 .full-review/
 .claude/scheduled_tasks.lock
 *.png
+# Hosted email assets must reach prod — exempt them from the global *.png ignore.
+!public/email/*.png
