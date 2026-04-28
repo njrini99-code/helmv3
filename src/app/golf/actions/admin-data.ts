@@ -1217,6 +1217,161 @@ export async function resolveDashboardIncident(input: {
 }
 
 // ============================================
+// ADMIN INCIDENTS — cursor-paginated feed
+// ============================================
+//
+// The Overview tab still uses the single-shot fetch baked into the rollup
+// pipeline (rawAdminErrorEvents / errorLogs). This separate exported action
+// powers the System tab's incident feed where the row count grows unbounded
+// over time and pulling everything per render becomes the bottleneck.
+//
+// Cursor is the `created_at` ISO string of the last row in the previous page.
+// The feed is ordered DESC, so paging forward means `created_at < cursor`.
+// Limit is clamped to [1, 200]; default is 50.
+
+/** Active, non-info admin_event row in the shape consumed by the System tab
+ *  incident list. Shape is camelCased and free of any `any`.
+ *
+ *  `admin_events` has no `status` column on the DB side — `resolved=false`
+ *  is the canonical "active" signal. We surface a synthesized
+ *  `status: 'active'` so the consuming UI matches the dashboard's existing
+ *  active/open/resolved/historical vocabulary. */
+export interface AdminIncident {
+  id: string;
+  eventType: string;
+  severity: 'critical' | 'error' | 'warning';
+  status: 'active';
+  title: string;
+  message: string | null;
+  metadata: Record<string, unknown> | null;
+  userId: string | null;
+  userEmail: string | null;
+  url: string | null;
+  resolved: boolean;
+  resolvedAt: string | null;
+  resolvedBy: string | null;
+  createdAt: string;
+}
+
+export interface GetAdminIncidentsParams {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface GetAdminIncidentsResult {
+  items: AdminIncident[];
+  nextCursor: string | null;
+}
+
+/** Raw row shape returned by Supabase before camelCasing. Kept private — the
+ *  exported `AdminIncident` is the public contract. */
+interface AdminIncidentRow {
+  id: string;
+  event_type: string;
+  severity: string;
+  title: string;
+  message: string | null;
+  metadata: Record<string, unknown> | null;
+  user_id: string | null;
+  user_email: string | null;
+  url: string | null;
+  resolved: boolean;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+}
+
+const ADMIN_INCIDENTS_DEFAULT_LIMIT = 50;
+const ADMIN_INCIDENTS_MAX_LIMIT = 200;
+
+function clampIncidentLimit(n: number | undefined): number {
+  if (typeof n !== 'number' || !Number.isFinite(n)) return ADMIN_INCIDENTS_DEFAULT_LIMIT;
+  const truncated = Math.trunc(n);
+  if (truncated < 1) return 1;
+  if (truncated > ADMIN_INCIDENTS_MAX_LIMIT) return ADMIN_INCIDENTS_MAX_LIMIT;
+  return truncated;
+}
+
+function normalizeIncidentSeverity(input: string): 'critical' | 'error' | 'warning' {
+  // The DB filter restricts to these three already; this tightens the type for
+  // callers and keeps an unexpected value from leaking through.
+  if (input === 'critical' || input === 'error' || input === 'warning') return input;
+  return 'error';
+}
+
+/** Cursor-paginated incident feed for the System tab. Filters to active
+ *  (status='active') admin_events at error/warning/critical severity, ordered
+ *  by created_at DESC. The cursor is the created_at of the last item on the
+ *  previous page; pass it back in to walk further into the past. */
+export async function getAdminIncidents(
+  params: GetAdminIncidentsParams = {},
+): Promise<GetAdminIncidentsResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
+  const { data: userRow } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+  if ((userRow?.role as string | undefined) !== 'admin') throw new Error('Forbidden');
+
+  const limit = clampIncidentLimit(params.limit);
+  const admin = createAdminClient();
+
+  // `admin_events` has no `status` column; `resolved=false` is the active
+  // signal. The exported `AdminIncident.status` is synthesized below.
+  let query = admin
+    .from('admin_events')
+    .select(
+      'id, event_type, severity, title, message, metadata, user_id, user_email, url, resolved, resolved_at, resolved_by, created_at',
+    )
+    .in('severity', ['critical', 'error', 'warning'])
+    .eq('resolved', false)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (params.cursor) {
+    query = query.lt('created_at', params.cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    void logServerError(
+      `[admin-data] getAdminIncidents query failed: ${describeError(error)}`,
+      { action: 'admin_data.getAdminIncidents', featureArea: 'admin' },
+    );
+    throw error instanceof Error ? error : new Error(describeError(error));
+  }
+
+  const rows = (data ?? []) as unknown as AdminIncidentRow[];
+  const items: AdminIncident[] = rows.map((row) => ({
+    id: row.id,
+    eventType: row.event_type,
+    severity: normalizeIncidentSeverity(row.severity),
+    status: 'active',
+    title: row.title,
+    message: row.message,
+    metadata: row.metadata,
+    userId: row.user_id,
+    userEmail: row.user_email,
+    url: row.url,
+    resolved: row.resolved,
+    resolvedAt: row.resolved_at,
+    resolvedBy: row.resolved_by,
+    createdAt: row.created_at,
+  }));
+
+  // Only emit a cursor when the page filled exactly — a short page means we
+  // hit the end and there's nothing left to fetch.
+  const lastItem = items[items.length - 1];
+  const nextCursor = items.length === limit && lastItem ? lastItem.createdAt : null;
+
+  return { items, nextCursor };
+}
+
+// ============================================
 // BI DASHBOARD TYPES
 // ============================================
 
@@ -1488,22 +1643,59 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
         return null;
       }
     })(),
-    // Shot telemetry quality — 4 `count(head)` calls that are not covered by
-    // any rollup slice. Single Promise.all keeps this under one network wave.
-    (async () => {
+    // Shot telemetry quality — single RPC `get_shot_data_quality` collapses
+    // what used to be 4 separate `count(head=true)` calls on golf_shots into
+    // one conditional-aggregation SELECT (migration
+    // 20260428210000_get_shot_data_quality.sql). The RPC returns *missing*
+    // counts; we derive shotsWithX = total - missingX so downstream
+    // dataQuality consumers (assembleAdminDashboardData) keep the existing
+    // shape.
+    (async (): Promise<{
+      totalShots: number;
+      shotsWithDistance: number;
+      shotsWithLie: number;
+      shotsWithClub: number;
+    }> => {
       const admin = createAdminClient();
-      const [totalShotsRes, withDistanceRes, withLieRes, withClubRes] = await Promise.all([
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('distance_to_hole_before', 'is', null),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('lie_before', 'is', null),
-        admin.from('golf_shots').select('id', { count: 'exact', head: true }).not('club_type', 'is', null),
-      ]);
-      return {
-        totalShots: totalShotsRes.count ?? 0,
-        shotsWithDistance: withDistanceRes.count ?? 0,
-        shotsWithLie: withLieRes.count ?? 0,
-        shotsWithClub: withClubRes.count ?? 0,
-      };
+      const rpc = admin.rpc.bind(admin) as unknown as (
+        fn: 'get_shot_data_quality',
+      ) => Promise<{
+        data: {
+          total_shots: number;
+          missing_distance_before: number;
+          missing_lie_before: number;
+          missing_club_type: number;
+        } | null;
+        error: unknown;
+      }>;
+      try {
+        const { data, error } = await rpc('get_shot_data_quality');
+        if (error || !data) {
+          if (error) {
+            void logServerError(
+              `[admin-data] get_shot_data_quality errored: ${describeError(error)}`,
+              { action: 'admin_data.getAdminDashboardData', featureArea: 'admin' },
+            );
+          }
+          return { totalShots: 0, shotsWithDistance: 0, shotsWithLie: 0, shotsWithClub: 0 };
+        }
+        const total = Number(data.total_shots ?? 0);
+        const missingDistance = Number(data.missing_distance_before ?? 0);
+        const missingLie = Number(data.missing_lie_before ?? 0);
+        const missingClub = Number(data.missing_club_type ?? 0);
+        return {
+          totalShots: total,
+          shotsWithDistance: Math.max(0, total - missingDistance),
+          shotsWithLie: Math.max(0, total - missingLie),
+          shotsWithClub: Math.max(0, total - missingClub),
+        };
+      } catch (e) {
+        void logServerError(
+          `[admin-data] get_shot_data_quality threw: ${describeError(e)}`,
+          { action: 'admin_data.getAdminDashboardData', featureArea: 'admin' },
+        );
+        return { totalShots: 0, shotsWithDistance: 0, shotsWithLie: 0, shotsWithClub: 0 };
+      }
     })(),
   ]);
 
