@@ -287,18 +287,14 @@ export class PatternMiner {
           return ((r.total_gir ?? 0) / possible) < 0.55;
         },
       },
-      // Blow-up rounds: score_to_par >= +5. This is its own pattern type —
-      // identifies the player's tendency to fall apart. The bad-round base
-      // rate already filters out players who never have these.
-      {
-        condition: {
-          field: 'score_to_par',
-          operator: 'gte',
-          value: 5,
-          label: 'Blow-up round (+5 or worse)',
-        },
-        test: (r) => (r.score_to_par ?? 0) >= 5,
-      },
+      // NOTE: a "Blow-up round (score_to_par >= +5)" condition was previously
+      // included here, but it was tautological — its outcome is also
+      // score_to_par, so the pattern read "when score is +5 or worse, score
+      // is +5 or worse." That self-defining rule produced meaningless lift
+      // values (1.33–1.71) and just restated the input. It was removed in
+      // QA-B. If we want to surface blow-up tendencies in the future, the
+      // outcome metric needs to be a NON-score field (e.g. fairway_pct,
+      // putts_per_round) so the pattern actually predicts something.
     ];
 
     for (const { condition, test } of conditionsToTest) {
