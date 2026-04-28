@@ -808,6 +808,7 @@ export function PremiumCalendarClient({
                       onDateClick={handleDateClick}
                       onEventClick={handleEventClick}
                       isDraggable={true}
+                      playerBusyPeriods={selectedPlayer ? (playerBusyPeriods as unknown as import('./MonthView').MonthBusyPeriod[]) : []}
                     />
                   )}
 

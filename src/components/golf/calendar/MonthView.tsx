@@ -7,12 +7,31 @@ import { isToday } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { PremiumEventBlock } from './PremiumEventBlock';
 
+export interface MonthBusyPeriod {
+  start: string;
+  end: string;
+  type: 'event' | 'class' | 'blocked';
+  playerId?: string;
+  color?: { bg: string; light: string; border: string; name: string };
+}
+
 interface MonthViewProps {
   month: Date;
   events: CalendarEvent[];
   onDateClick?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
   isDraggable?: boolean;
+  /**
+   * Multi-player busy periods (already color-tagged upstream by
+   * PremiumCalendarClient). Surfaced as a row of colored dots at the bottom
+   * of each day cell so coaches can scan a month for shared busy days.
+   */
+  playerBusyPeriods?: MonthBusyPeriod[];
+}
+
+interface PlayerBusyDot {
+  playerId: string;
+  bg: string;
 }
 
 // Shared day cell content renderer
@@ -21,12 +40,14 @@ function DayCellContent({
   isCurrentMonth,
   isCurrentDay,
   dayEvents,
+  busyDots,
   onEventClick,
 }: {
   date: Date;
   isCurrentMonth: boolean;
   isCurrentDay: boolean;
   dayEvents: CalendarEvent[];
+  busyDots?: PlayerBusyDot[];
   onEventClick?: (event: CalendarEvent) => void;
 }) {
   return (
@@ -100,6 +121,27 @@ function DayCellContent({
           </p>
         )}
       </div>
+
+      {/* Player availability dots — one per selected player who is busy this day */}
+      {busyDots && busyDots.length > 0 && (
+        <div
+          aria-hidden="true"
+          className="absolute bottom-1.5 right-1.5 flex items-center gap-1"
+        >
+          {busyDots.slice(0, 5).map((dot) => (
+            <span
+              key={dot.playerId}
+              className="w-1.5 h-1.5 rounded-full ring-1 ring-white/80"
+              style={{ background: dot.bg }}
+            />
+          ))}
+          {busyDots.length > 5 && (
+            <span className="text-[9px] font-bold text-warm-500 ml-0.5 tabular-nums">
+              +{busyDots.length - 5}
+            </span>
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -110,6 +152,7 @@ function DroppableDayCell({
   isCurrentMonth,
   isCurrentDay,
   dayEvents,
+  busyDots,
   onDateClick,
   onEventClick,
 }: {
@@ -117,6 +160,7 @@ function DroppableDayCell({
   isCurrentMonth: boolean;
   isCurrentDay: boolean;
   dayEvents: CalendarEvent[];
+  busyDots?: PlayerBusyDot[];
   onDateClick?: (date: Date) => void;
   onEventClick?: (event: CalendarEvent) => void;
 }) {
@@ -160,6 +204,7 @@ function DroppableDayCell({
         isCurrentMonth={isCurrentMonth}
         isCurrentDay={isCurrentDay}
         dayEvents={dayEvents}
+        busyDots={busyDots}
         onEventClick={onEventClick}
       />
     </div>
@@ -168,7 +213,7 @@ function DroppableDayCell({
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function MonthView({ month, events, onDateClick, onEventClick, isDraggable = false }: MonthViewProps) {
+export function MonthView({ month, events, onDateClick, onEventClick, isDraggable = false, playerBusyPeriods = [] }: MonthViewProps) {
   const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
   const startDate = new Date(firstDay);
   startDate.setDate(startDate.getDate() - startDate.getDay());
@@ -199,6 +244,29 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
     });
   };
 
+  // Pre-bucket player busy periods by YYYY-MM-DD so each cell renders in O(1).
+  // Inside a bucket we deduplicate by playerId so two classes on the same day
+  // collapse to one dot.
+  const dotsByDay = (() => {
+    const map = new Map<string, Map<string, PlayerBusyDot>>();
+    for (const period of playerBusyPeriods) {
+      if (!period.color || !period.playerId) continue;
+      const start = new Date(period.start);
+      const key = `${start.getFullYear()}-${start.getMonth()}-${start.getDate()}`;
+      if (!map.has(key)) map.set(key, new Map());
+      const dayMap = map.get(key)!;
+      if (!dayMap.has(period.playerId)) {
+        dayMap.set(period.playerId, { playerId: period.playerId, bg: period.color.bg });
+      }
+    }
+    return map;
+  })();
+  const dotsForDate = (date: Date): PlayerBusyDot[] => {
+    const key = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+    const dayMap = dotsByDay.get(key);
+    return dayMap ? Array.from(dayMap.values()) : [];
+  };
+
   return (
     <div className="flex-1 overflow-auto px-4 md:px-5 pt-2 pb-4 overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]" data-scroll-container>
       {/* Container-based grid with soft gaps instead of hard lines */}
@@ -221,6 +289,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
           const isCurrentMonth = date.getMonth() === month.getMonth();
           const isCurrentDay = isToday(date.toISOString());
 
+          const busyDots = dotsForDate(date);
           return isDraggable ? (
             <DroppableDayCell
               key={index}
@@ -228,6 +297,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
               isCurrentMonth={isCurrentMonth}
               isCurrentDay={isCurrentDay}
               dayEvents={dayEvents}
+              busyDots={busyDots}
               onDateClick={onDateClick}
               onEventClick={onEventClick}
             />
@@ -245,7 +315,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
                 }
               }}
               className={cn(
-                'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl',
+                'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl relative',
                 isCurrentMonth ? 'bg-white/60' : 'bg-warm-50/30',
                 'hover:bg-white/80 active:bg-white/90 hover:shadow-sm',
                 isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40'
@@ -256,6 +326,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
                 isCurrentMonth={isCurrentMonth}
                 isCurrentDay={isCurrentDay}
                 dayEvents={dayEvents}
+                busyDots={busyDots}
                 onEventClick={onEventClick}
               />
             </div>

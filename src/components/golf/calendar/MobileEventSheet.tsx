@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Plane,
   MoreHorizontal,
+  ChevronDown,
 } from 'lucide-react';
 import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
 import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
@@ -68,6 +69,14 @@ interface MobileEventSheetProps {
     declined: number;
     pending: number;
     total: number;
+    /** Optional drilldown roster — when present, the attendance card on
+     *  the coach sheet expands to show each attendee with their status. */
+    attendees?: Array<{
+      playerId: string;
+      playerName: string;
+      avatarUrl: string | null;
+      status: 'accepted' | 'tentative' | 'declined' | 'pending';
+    }>;
   } | null;
   /** Pre-fill event type when creating a new event (from quick-add FAB) */
   initialEventType?: GolfEventType;
@@ -124,6 +133,7 @@ export function MobileEventSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showRoster, setShowRoster] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -577,10 +587,33 @@ export function MobileEventSheet({
           {!isCreating && isCoach && rsvpSummary && rsvpSummary.total > 0 && (
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4">
-                <h4 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Attendance ({rsvpSummary.accepted + rsvpSummary.tentative}/{rsvpSummary.total})
-                </h4>
+                <button
+                  type="button"
+                  onClick={() => rsvpSummary.attendees && setShowRoster((v) => !v)}
+                  disabled={!rsvpSummary.attendees}
+                  className={cn(
+                    'w-full flex items-center justify-between gap-2 mb-3',
+                    rsvpSummary.attendees && 'active:opacity-80',
+                  )}
+                  aria-expanded={showRoster}
+                  aria-controls="mobile-rsvp-roster"
+                >
+                  <h4 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
+                    <Users className="w-4 h-4" />
+                    Attendance ({rsvpSummary.accepted + rsvpSummary.tentative}/{rsvpSummary.total})
+                  </h4>
+                  {rsvpSummary.attendees && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-warm-500">
+                      {showRoster ? 'Hide roster' : 'View roster'}
+                      <ChevronDown
+                        className={cn(
+                          'w-3.5 h-3.5 transition-transform duration-200',
+                          showRoster && 'rotate-180',
+                        )}
+                      />
+                    </span>
+                  )}
+                </button>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
@@ -603,6 +636,53 @@ export function MobileEventSheet({
                     <p className="text-xs text-warm-500 font-medium">Pending</p>
                   </div>
                 </div>
+
+                {showRoster && rsvpSummary.attendees && (
+                  <ul
+                    id="mobile-rsvp-roster"
+                    className="mt-3 space-y-1.5 max-h-72 overflow-y-auto"
+                  >
+                    {rsvpSummary.attendees.map((att) => {
+                      const dot =
+                        att.status === 'accepted' ? 'bg-primary-500'
+                        : att.status === 'tentative' ? 'bg-amber-500'
+                        : att.status === 'declined' ? 'bg-rose-500'
+                        : 'bg-warm-300';
+                      const label =
+                        att.status === 'accepted' ? 'Going'
+                        : att.status === 'tentative' ? 'Maybe'
+                        : att.status === 'declined' ? 'Declined'
+                        : 'Pending';
+                      const initials = att.playerName
+                        .split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase();
+                      return (
+                        <li
+                          key={att.playerId}
+                          className="flex items-center gap-3 px-2 py-2 bg-white rounded-xl"
+                        >
+                          {att.avatarUrl ? (
+                            <img
+                              src={att.avatarUrl}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                            />
+                          ) : (
+                            <span className="w-8 h-8 rounded-full bg-warm-100 text-warm-600 text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                              {initials || '?'}
+                            </span>
+                          )}
+                          <span className="flex-1 text-sm font-medium text-warm-800 truncate">
+                            {att.playerName}
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-xs text-warm-500 flex-shrink-0">
+                            <span className={cn('w-2 h-2 rounded-full', dot)} aria-hidden="true" />
+                            {label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           )}
