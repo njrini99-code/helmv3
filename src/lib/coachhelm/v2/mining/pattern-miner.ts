@@ -10,7 +10,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient } from '@/lib/supabase/server';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import type {
   MinedPattern,
   PatternCondition,
@@ -20,10 +20,10 @@ import type {
 import { extractAllFeatures } from '../features';
 
 const THRESHOLDS = {
-  minSupport: 0.12,      // 12% of rounds — need statistical significance
-  minConfidence: 0.60,   // 60% confidence
+  minSupport: 0.08,      // 8% of rounds — loosened from 0.12 to surface patterns on ~28-round players
+  minConfidence: 0.55,   // 55% confidence — loosened from 0.60
   minLift: 1.5,          // 1.5x lift — meaningful above random
-  minSampleSize: 8,      // 8 rounds minimum — robust sample
+  minSampleSize: 6,      // 6 rounds minimum — loosened from 8
   minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
 
@@ -130,6 +130,32 @@ export class PatternMiner {
 
     // Save patterns to database
     await this.savePatterns(deduplicatedPatterns);
+
+    // Surface silent threshold starvation: when we have enough rounds to
+    // theoretically produce patterns but the rule-based miner returns 0.
+    // The `[pattern-miner.thresholds]` prefix makes this discoverable in
+    // production logs and admin trace dashboards.
+    if (deduplicatedPatterns.length === 0 && this.rounds.length >= 10) {
+      const message = `[pattern-miner.thresholds] 0 patterns produced for player ${this.playerId} despite ${this.rounds.length} rounds — thresholds may be starving output (minSupport=${THRESHOLDS.minSupport}, minConfidence=${THRESHOLDS.minConfidence}, minSampleSize=${THRESHOLDS.minSampleSize})`;
+      console.warn(message);
+      try {
+        await logServerEvent(
+          message,
+          {
+            action: 'pattern-miner.thresholds.starvation',
+            featureArea: 'coachhelm.mining',
+            metadata: {
+              playerId: this.playerId,
+              roundCount: this.rounds.length,
+              thresholds: THRESHOLDS,
+            },
+          },
+          'warning',
+        );
+      } catch {
+        // Tracing must never break the miner — the console.warn above is the fallback.
+      }
+    }
 
     return deduplicatedPatterns;
   }

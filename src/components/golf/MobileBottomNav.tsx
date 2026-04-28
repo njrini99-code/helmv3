@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconGolf, IconBell } from '@/components/icons';
+import { IconHome, IconUsers, IconCalendar, IconChartBar, IconMessage, IconGolf, IconBell, IconSparkles } from '@/components/icons';
 import { CountBadge } from '@/components/ui/badge';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { useHapticFeedback } from '@/hooks/use-haptic-feedback';
@@ -21,7 +21,8 @@ const coachNavItems: NavItem[] = [
   { href: '/golf/dashboard/roster', label: 'Roster', icon: <IconUsers size={24} /> },
   { href: '/golf/dashboard/calendar', label: 'Calendar', icon: <IconCalendar size={24} /> },
   { href: '/golf/dashboard/stats', label: 'Stats', icon: <IconChartBar size={24} /> },
-  { href: '/golf/dashboard/alerts', label: 'Alerts', icon: <IconBell size={24} /> },
+  // Insights is the canonical CoachHelm surface; /alerts route still works for bookmarks but is no longer in nav.
+  { href: '/golf/dashboard/insights', label: 'Insights', icon: <IconSparkles size={24} /> },
 ];
 
 const playerNavItems: NavItem[] = [
@@ -100,8 +101,8 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                     </span>
                   </span>
                 )}
-                {item.label === 'Alerts' && badges.total > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" role="status" aria-label="New alerts available" />
+                {(item.label === 'Insights' || item.label === 'Alerts') && badges.total > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" role="status" aria-label="New insights available" />
                 )}
               </div>
               <span className={cn(

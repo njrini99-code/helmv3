@@ -13,6 +13,7 @@ import {
   IconFlag,
   IconActivity,
   IconBolt,
+  IconChevronDown,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
@@ -305,6 +306,8 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             exit={{ opacity: 0 }}
             className="space-y-5"
           >
+            {/* === PRIMARY SPINE === */}
+
             {/* Grade + Summary */}
             <motion.div variants={fadeUp}>
               <GradeSummaryCard content={ruleBasedContent} />
@@ -325,29 +328,6 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               )}
             </motion.div>
 
-            {/* Key Stats Grid */}
-            {ruleBasedContent.keyStats && ruleBasedContent.keyStats.length > 0 && (
-              <motion.div variants={fadeUp}>
-                <KeyStatsGrid stats={ruleBasedContent.keyStats} />
-              </motion.div>
-            )}
-
-            {/* Game Breakdown: Putting + Driving + Short Game */}
-            <motion.div variants={fadeUp}>
-              <GameBreakdownSection
-                putting={ruleBasedContent.puttingBreakdown}
-                driving={ruleBasedContent.drivingAnalysis}
-                shortGame={ruleBasedContent.shortGameAnalysis}
-              />
-            </motion.div>
-
-            {/* Improvement Opportunities */}
-            {ruleBasedContent.strokesToGain && ruleBasedContent.strokesToGain.length > 0 && (
-              <motion.div variants={fadeUp}>
-                <StrokesToGainCard items={ruleBasedContent.strokesToGain} />
-              </motion.div>
-            )}
-
             {/* Highlights + Improvements */}
             <motion.div variants={fadeUp}>
               <HighlightsAndImprovements
@@ -356,10 +336,27 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               />
             </motion.div>
 
+            {/* Improvement Opportunities (Strokes to Gain) */}
+            {ruleBasedContent.strokesToGain && ruleBasedContent.strokesToGain.length > 0 && (
+              <motion.div variants={fadeUp}>
+                <StrokesToGainCard items={ruleBasedContent.strokesToGain} />
+              </motion.div>
+            )}
+
             {/* Recommendations */}
             {ruleBasedContent.recommendations && ruleBasedContent.recommendations.length > 0 && (
               <motion.div variants={fadeUp}>
                 <RecommendationsCard recs={ruleBasedContent.recommendations} />
+              </motion.div>
+            )}
+
+            {/* === SECONDARY DETAIL — collapsed by default === */}
+            {((ruleBasedContent.keyStats && ruleBasedContent.keyStats.length > 0) ||
+              ruleBasedContent.puttingBreakdown ||
+              ruleBasedContent.drivingAnalysis ||
+              ruleBasedContent.shortGameAnalysis) && (
+              <motion.div variants={fadeUp}>
+                <StatsDetailDisclosure content={ruleBasedContent} />
               </motion.div>
             )}
           </motion.div>
@@ -651,6 +648,51 @@ function ScoringDistribution({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Stats Detail Disclosure — collapses Key Stats / Putting / Driving / Short Game
+ *  behind a single native <details> so the spine of the review (grade, scorecard,
+ *  highlights, recommendations) reads cleanly. */
+function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
+  const hasKeyStats = !!(content.keyStats && content.keyStats.length > 0);
+  const driving = content.drivingAnalysis;
+  const shortGame = content.shortGameAnalysis;
+  const hasDriving = !!(driving && (driving.avgDistance !== null || driving.fairwayPct !== null));
+  const hasShortGame = !!(shortGame && (shortGame.scrambleAttempts > 0 || shortGame.sandAttempts > 0));
+  const hasPutting = !!content.puttingBreakdown;
+
+  return (
+    <details className="group rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+      <summary
+        className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none list-none hover:bg-warm-50/60 active:bg-warm-50 transition-colors"
+        aria-label="Toggle stats detail"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-lg bg-warm-100/80">
+            <IconChartBar size={14} className="text-warm-600" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold text-warm-900">Stats Detail</h3>
+            <p className="text-micro text-warm-500 mt-0.5">Putting, driving, short game, and key stats</p>
+          </div>
+        </div>
+        <IconChevronDown
+          size={18}
+          className="text-warm-500 transition-transform duration-200 group-open:rotate-180"
+        />
+      </summary>
+      <div className="px-5 pb-5 pt-1 space-y-4 border-t border-warm-100">
+        {hasKeyStats && <KeyStatsGrid stats={content.keyStats} />}
+        {(hasPutting || hasDriving || hasShortGame) && (
+          <GameBreakdownSection
+            putting={content.puttingBreakdown}
+            driving={content.drivingAnalysis}
+            shortGame={content.shortGameAnalysis}
+          />
+        )}
+      </div>
+    </details>
   );
 }
 
