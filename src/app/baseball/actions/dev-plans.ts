@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
-import type { Json } from '@/lib/types/database.types';
+import type { Json } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
 
 // Goal status types

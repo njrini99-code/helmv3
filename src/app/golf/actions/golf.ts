@@ -2680,6 +2680,27 @@ export async function sendEventReminderToPlayers(
       .maybeSingle();
     if (!event) return { success: false, error: 'Event not found' };
 
+    // Authorize: caller must coach this event's team. Without this gate any
+    // authenticated user could spam reminders into any team's notification
+    // table (we use the admin client below, which bypasses RLS).
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!coach) {
+      return { success: false, error: 'Only this team\'s coaches can send reminders' };
+    }
+    const { data: staffRow } = await supabase
+      .from('golf_team_coach_staff')
+      .select('id')
+      .eq('team_id', event.team_id)
+      .eq('coach_id', coach.id)
+      .maybeSingle();
+    if (!staffRow) {
+      return { success: false, error: 'Only this team\'s coaches can send reminders' };
+    }
+
     const { data: players } = await supabase
       .from('golf_players')
       .select('id, user_id')

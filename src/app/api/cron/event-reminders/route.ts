@@ -14,7 +14,7 @@
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -61,6 +61,18 @@ export async function GET(req: NextRequest) {
       'error',
     );
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+  }
+
+  if (inserted24h > 0 || inserted1h > 0) {
+    await logServerEvent(
+      `event_reminders cron inserted 24h=${inserted24h} 1h=${inserted1h}`,
+      {
+        action: 'cron.eventReminders.summary',
+        featureArea: 'calendar',
+        extra: { inserted24h, inserted1h },
+      },
+      'info',
+    );
   }
 
   return NextResponse.json({ success: true, inserted24h, inserted1h });

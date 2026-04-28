@@ -13,7 +13,7 @@
  */
 
 import type { GolfShot, GolfHole, GolfRound } from '@/lib/types/golf';
-import type { Json } from '@/lib/types/database.types';
+import type { Json } from '@/lib/types/database';
 
 // ============================================================================
 // TYPES
