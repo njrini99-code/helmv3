@@ -159,6 +159,12 @@ export interface TracerData {
     metadata: Record<string, unknown> | null;
     resolved: boolean;
   }[];
+  /**
+   * True if any of the bounded queries (rounds, players, etc.) hit their
+   * row limit. UI can surface "showing latest N — older not shown" when set.
+   * Tonight: just expose, don't render.
+   */
+  truncated: boolean;
   /** Per-round integrity data from hole-level aggregation */
   roundIntegrity?: Record<string, {
     round_id: string;
@@ -676,9 +682,19 @@ export async function getTracerData(): Promise<TracerData> {
   const ago45d = new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString();
 
   // Batch 1: Core data
-  // Explicit .limit() to override Supabase's default 1000-row PostgREST cap
+  // Bounded queries: silent 10K truncation is dangerous because the caller
+  // can't tell if data is complete. Tightened caps:
+  //   - players: 1000 (any realistic team size fits)
+  //   - rounds:  500 most recent by round_date DESC (Tracer surfaces recent
+  //              activity; older rounds aren't actionable)
+  //   - stats:   1000 (one row per player; matches player cap)
+  // golf_shots is fetched chunked-by-round-id below, so it's already bounded
+  // by the round count above — no separate cap needed.
+  const ROUNDS_LIMIT = 500;
+  const PLAYERS_LIMIT = 1000;
+  const STATS_LIMIT = 1000;
   const [allPlayersResult, allRoundsResult, statsAccuracyResult] = await Promise.all([
-    adminDb.from('golf_players').select('id, first_name, last_name').limit(10000),
+    adminDb.from('golf_players').select('id, first_name, last_name').limit(PLAYERS_LIMIT),
     adminDb
       .from('golf_rounds')
       .select(`
@@ -700,8 +716,8 @@ export async function getTracerData(): Promise<TracerData> {
         created_at,
         updated_at
       `)
-      .order('updated_at', { ascending: false })
-      .limit(10000),
+      .order('round_date', { ascending: false })
+      .limit(ROUNDS_LIMIT),
     adminDb
       .from('golf_player_stats_cache')
       .select(`
@@ -714,8 +730,16 @@ export async function getTracerData(): Promise<TracerData> {
         is_stale,
         updated_at
       `)
-      .limit(10000),
+      .limit(STATS_LIMIT),
   ]);
+
+  // Detect truncation: if any leg returned exactly its limit, more rows
+  // likely exist beyond the cap. UI can surface this via the `truncated`
+  // flag on the returned TracerData.
+  const truncated =
+    (allPlayersResult.data?.length ?? 0) >= PLAYERS_LIMIT ||
+    (allRoundsResult.data?.length ?? 0) >= ROUNDS_LIMIT ||
+    (statsAccuracyResult.data?.length ?? 0) >= STATS_LIMIT;
 
   // Surface query errors instead of silently returning empty data
   // NOTE: console.warn used (not console.log) because production build strips console.log
@@ -1110,6 +1134,7 @@ export async function getTracerData(): Promise<TracerData> {
       critical7d: recentCriticalCount7d,
       warnings7d: recentWarningCount7d,
     },
+    truncated,
     roundIntegrity,
     rawTraces: tracerEvents
       .filter((event) => event.created_at >= ago7d)

@@ -186,9 +186,15 @@ export async function getSystemTabData(): Promise<SystemTabData> {
         .gte('hour', ago7d)
         .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
 
+      // Bounded: last 7 days only + hard 500-row ceiling. Downstream
+      // aggregator only counts last-7-days rows for `failures_7d`, so the
+      // `.gte` is consistent with existing semantics. The 500 cap protects
+      // against unbounded growth on jobs that fire frequently.
       ((adminDb.from('background_job_logs' as never) as any)
         .select('*')
-        .order('started_at', { ascending: false }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .gte('started_at', ago7d)
+        .order('started_at', { ascending: false })
+        .limit(500) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
 
       // get_db_telemetry returns a single jsonb payload (not a rowset).
       (adminDb.rpc('get_db_telemetry' as never) as unknown) as Promise<{ data: unknown; error: unknown }>,
