@@ -91,6 +91,15 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
   // Use ref to keep a stable supabase reference
   const supabaseRef = useRef(createClient());
 
+  // Single-flight guard for generate(). Two effects historically raced here:
+  // (a) the post-mount setTimeout retry inside fetchReviewAndCheckStatus, and
+  // (b) the auto-retry effect at the bottom of this hook. If both fired the
+  // server got two concurrent generateAndStoreRoundReview calls for the same
+  // round, which competed for the (round_id) UNIQUE row and burned compute.
+  // While a generate() promise is in flight, every additional caller awaits
+  // the same promise instead of starting a new one.
+  const inFlightRef = useRef<Promise<void> | null>(null);
+
   // Fetch existing review and check CoachHelm status
   useEffect(() => {
     if (!roundId) {
@@ -181,18 +190,16 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
         }
         if (!cancelled) setIsCoachHelmEnabled(enabled);
 
-        // Fetch existing review - wrapped in try/catch for RLS issues
+        // Fetch existing review - wrapped in try/catch for RLS issues.
+        //
+        // NOTE: A previous version retried after a 3-second setTimeout on the
+        // theory that a background generator might still be writing. That path
+        // raced with the auto-retry effect at the bottom of this hook (both
+        // could fire generate() concurrently for the same round). The single-
+        // flight inFlightRef in generate() now serializes those calls, and the
+        // auto-retry effect handles late completion via state-driven retry.
         try {
-          const found = await fetchReview();
-
-          // If no review found, the background generation may still be running.
-          // Retry once after a short delay.
-          if (!found && !cancelled) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-            if (!cancelled) {
-              await fetchReview();
-            }
-          }
+          await fetchReview();
         } catch {
           // Silently skip if table doesn't exist or RLS blocks
         }
@@ -212,133 +219,151 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
   const generate = useCallback(async () => {
     if (!roundId || !playerId) return;
 
-    setGenerating(true);
-    setError(null);
+    // Single-flight: if a generation is already running, await that one
+    // instead of dispatching a second concurrent call. See inFlightRef comment.
+    if (inFlightRef.current) {
+      return inFlightRef.current;
+    }
 
-    try {
-      // Primary path: generateAndStoreRoundReview from round-review-system.ts
-      // This ALWAYS works with rule-based analysis and optionally enhances with CoachHelm AI
-      const result = await generateAndStoreRoundReview(roundId, playerId);
+    const run = (async () => {
+      setGenerating(true);
+      setError(null);
 
-      if (result.success && result.review) {
-        // Extract the review_content which has our RoundReviewContent shape
-        const content = result.review.review_content;
+      try {
+        // Primary path: generateAndStoreRoundReview from round-review-system.ts
+        // This ALWAYS works with rule-based analysis and optionally enhances with CoachHelm AI
+        const result = await generateAndStoreRoundReview(roundId, playerId);
 
-        // Store the full rule-based content for the viewer
-        setRuleBasedContent(content);
+        if (result.success && result.review) {
+          // Extract the review_content which has our RoundReviewContent shape
+          const content = result.review.review_content;
 
-        // Build a RoundReview from the stored review data
-        const basicReview: RoundReview = {
-          id: result.review.id,
-          roundId: result.review.round_id,
-          playerId: result.review.player_id,
-          roundScore: result.review.round?.total_score ?? 0,
-          roundScoreToPar: result.review.round?.score_to_par ?? 0,
-          scoringAvgBefore: null,
-          scoringAvgAfter: null,
-          qualifyingPositionBefore: null,
-          qualifyingPositionAfter: null,
-          gapToNextPosition: null,
-          goalImpacts: [],
-          highlights: [],
-          areasToReview: [],
-          roundStats: {
-            totalScore: result.review.round?.total_score ?? 0,
-            scoreToPar: result.review.round?.score_to_par ?? 0,
-            frontNine: 0,
-            backNine: 0,
-            eagles: 0,
-            birdies: 0,
-            pars: 0,
-            bogeys: 0,
-            doublePlus: 0,
-            fairwaysHit: result.review.round?.total_fairways_hit ?? 0,
-            fairwaysPossible: result.review.round?.total_fairways ?? 14,
-            fairwayPct: result.review.round?.total_fairways
-              ? Math.round(((result.review.round?.total_fairways_hit ?? 0) / result.review.round.total_fairways) * 100)
-              : 0,
-            greensHit: result.review.round?.total_gir ?? 0,
-            greensPossible: result.review.round?.total_gir_possible ?? 18,
-            girPct: result.review.round?.total_gir_possible
-              ? Math.round(((result.review.round?.total_gir ?? 0) / result.review.round.total_gir_possible) * 100)
-              : 0,
-            totalPutts: result.review.round?.total_putts ?? 0,
-            puttsPerHole: result.review.round?.total_putts ? +(result.review.round.total_putts / 18).toFixed(2) : 0,
-            puttsPerGir: 0,
-            onePutts: 0,
-            threePutts: 0,
-            upAndDowns: 0,
-            upAndDownAttempts: 0,
-            scramblePct: 0,
-            sandSaves: 0,
-            sandAttempts: 0,
-            sandPct: 0,
-          },
-          playerAverages: {
-            totalScore: 72,
-            scoreToPar: 0,
-            frontNine: 36,
-            backNine: 36,
-            eagles: 0,
-            birdies: 0,
-            pars: 0,
-            bogeys: 0,
-            doublePlus: 0,
-            fairwaysHit: 0,
-            fairwaysPossible: 14,
-            fairwayPct: 50,
-            greensHit: 0,
-            greensPossible: 18,
-            girPct: 50,
-            totalPutts: 32,
-            puttsPerHole: 1.78,
-            puttsPerGir: 1.8,
-            onePutts: 4,
-            threePutts: 1,
-            upAndDowns: 3,
-            upAndDownAttempts: 6,
-            scramblePct: 50,
-            sandSaves: 1,
-            sandAttempts: 2,
-            sandPct: 50,
-          },
-          teamAverages: null,
-          strokesGained: null,
-          patternsDetected: [],
-          patternsRecurring: [],
-          summary: content?.summary ?? 'Round review generated.',
-          primaryTakeaway: content?.recommendations?.[0] ?? '',
-          nextPracticePriority: content?.recommendations?.[1] ?? null,
-          linkedFocusAreaId: null,
-          sharedWithCoach: result.review.shared_with_coach ?? false,
-          sharedAt: result.review.shared_at ?? null,
-          coachViewedAt: result.review.coach_viewed_at ?? null,
-          coachNotes: result.review.coach_notes ?? null,
-          createdAt: result.review.created_at,
-        };
-        setReview(basicReview);
+          // Store the full rule-based content for the viewer
+          setRuleBasedContent(content);
 
-        // If CoachHelm is enabled, also try to get the enhanced AI review
-        if (isCoachHelmEnabled) {
-          try {
-            const aiResult = await generateAIRoundReview(roundId, playerId);
-            if (aiResult.success && aiResult.review) {
-              setIntelligentReview(aiResult.review);
+          // Build a RoundReview from the stored review data
+          const basicReview: RoundReview = {
+            id: result.review.id,
+            roundId: result.review.round_id,
+            playerId: result.review.player_id,
+            roundScore: result.review.round?.total_score ?? 0,
+            roundScoreToPar: result.review.round?.score_to_par ?? 0,
+            scoringAvgBefore: null,
+            scoringAvgAfter: null,
+            qualifyingPositionBefore: null,
+            qualifyingPositionAfter: null,
+            gapToNextPosition: null,
+            goalImpacts: [],
+            highlights: [],
+            areasToReview: [],
+            roundStats: {
+              totalScore: result.review.round?.total_score ?? 0,
+              scoreToPar: result.review.round?.score_to_par ?? 0,
+              frontNine: 0,
+              backNine: 0,
+              eagles: 0,
+              birdies: 0,
+              pars: 0,
+              bogeys: 0,
+              doublePlus: 0,
+              fairwaysHit: result.review.round?.total_fairways_hit ?? 0,
+              fairwaysPossible: result.review.round?.total_fairways ?? 14,
+              fairwayPct: result.review.round?.total_fairways
+                ? Math.round(((result.review.round?.total_fairways_hit ?? 0) / result.review.round.total_fairways) * 100)
+                : 0,
+              greensHit: result.review.round?.total_gir ?? 0,
+              greensPossible: result.review.round?.total_gir_possible ?? 18,
+              girPct: result.review.round?.total_gir_possible
+                ? Math.round(((result.review.round?.total_gir ?? 0) / result.review.round.total_gir_possible) * 100)
+                : 0,
+              totalPutts: result.review.round?.total_putts ?? 0,
+              puttsPerHole: result.review.round?.total_putts ? +(result.review.round.total_putts / 18).toFixed(2) : 0,
+              puttsPerGir: 0,
+              onePutts: 0,
+              threePutts: 0,
+              upAndDowns: 0,
+              upAndDownAttempts: 0,
+              scramblePct: 0,
+              sandSaves: 0,
+              sandAttempts: 0,
+              sandPct: 0,
+            },
+            playerAverages: {
+              totalScore: 72,
+              scoreToPar: 0,
+              frontNine: 36,
+              backNine: 36,
+              eagles: 0,
+              birdies: 0,
+              pars: 0,
+              bogeys: 0,
+              doublePlus: 0,
+              fairwaysHit: 0,
+              fairwaysPossible: 14,
+              fairwayPct: 50,
+              greensHit: 0,
+              greensPossible: 18,
+              girPct: 50,
+              totalPutts: 32,
+              puttsPerHole: 1.78,
+              puttsPerGir: 1.8,
+              onePutts: 4,
+              threePutts: 1,
+              upAndDowns: 3,
+              upAndDownAttempts: 6,
+              scramblePct: 50,
+              sandSaves: 1,
+              sandAttempts: 2,
+              sandPct: 50,
+            },
+            teamAverages: null,
+            strokesGained: null,
+            patternsDetected: [],
+            patternsRecurring: [],
+            summary: content?.summary ?? 'Round review generated.',
+            primaryTakeaway: content?.recommendations?.[0] ?? '',
+            nextPracticePriority: content?.recommendations?.[1] ?? null,
+            linkedFocusAreaId: null,
+            sharedWithCoach: result.review.shared_with_coach ?? false,
+            sharedAt: result.review.shared_at ?? null,
+            coachViewedAt: result.review.coach_viewed_at ?? null,
+            coachNotes: result.review.coach_notes ?? null,
+            createdAt: result.review.created_at,
+          };
+          setReview(basicReview);
+
+          // If CoachHelm is enabled, also try to get the enhanced AI review
+          if (isCoachHelmEnabled) {
+            try {
+              const aiResult = await generateAIRoundReview(roundId, playerId);
+              if (aiResult.success && aiResult.review) {
+                setIntelligentReview(aiResult.review);
+              }
+            } catch {
+              // AI enhancement failed, rule-based review is already set above
             }
-          } catch {
-            // AI enhancement failed, rule-based review is already set above
           }
+
+          return;
         }
 
-        return;
+        // If generateAndStoreRoundReview failed, show error
+        throw new Error(result.error || 'Failed to generate review');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to generate review');
+      } finally {
+        setGenerating(false);
       }
+    })();
 
-      // If generateAndStoreRoundReview failed, show error
-      throw new Error(result.error || 'Failed to generate review');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate review');
+    inFlightRef.current = run;
+    try {
+      await run;
     } finally {
-      setGenerating(false);
+      // Always clear the in-flight ref so a future user-initiated retry can
+      // dispatch a fresh call. Concurrent callers awaiting this same promise
+      // will still resolve from the original run.
+      inFlightRef.current = null;
     }
   }, [roundId, playerId, isCoachHelmEnabled]);
 
