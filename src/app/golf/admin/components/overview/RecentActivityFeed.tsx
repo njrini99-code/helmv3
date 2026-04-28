@@ -26,6 +26,27 @@ interface FeedItem {
 
 const VISIBLE_LIMIT = 15;
 
+/**
+ * Pattern-miner threshold-starvation events fire once per player per analyze
+ * pass and overwhelm the feed. We collapse 2+ within the same UTC hour into a
+ * single row showing the bucket count. The original rows remain in
+ * admin_events for forensic queries.
+ */
+const PATTERN_MINER_PREFIX = '[pattern-miner.thresholds.starvation]';
+
+function isPatternMinerStarvation(item: { kind: FeedItemKind; text: string; detail?: string | null }): boolean {
+  if (item.kind !== 'error' && item.kind !== 'audit') return false;
+  if (item.text.includes(PATTERN_MINER_PREFIX)) return true;
+  if (item.detail && item.detail.includes(PATTERN_MINER_PREFIX)) return true;
+  return false;
+}
+
+function hourBucketKey(iso: string): string {
+  // Truncate to the hour in UTC for stable grouping irrespective of TZ.
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}-${d.getUTCHours()}`;
+}
+
 function timeAgo(dateStr: string): string {
   const now = new Date();
   const then = new Date(dateStr);
@@ -150,6 +171,52 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
         sortPriority: isError ? 3 : 2,
       });
     }
+
+    // Collapse pattern-miner threshold-starvation spam: when 2+ rows fall in
+    // the same hour bucket, render ONE row with the player count. Original
+    // rows stay in admin_events for debugging.
+    const patternMinerBuckets = new Map<string, FeedItem[]>();
+    const collapsed: FeedItem[] = [];
+    for (const item of feed) {
+      if (isPatternMinerStarvation(item)) {
+        const key = hourBucketKey(item.timestamp);
+        const bucket = patternMinerBuckets.get(key);
+        if (bucket) {
+          bucket.push(item);
+        } else {
+          patternMinerBuckets.set(key, [item]);
+        }
+        continue;
+      }
+      collapsed.push(item);
+    }
+    for (const [key, bucket] of patternMinerBuckets) {
+      const head = bucket[0];
+      if (!head) continue;
+      if (bucket.length === 1) {
+        collapsed.push(head);
+        continue;
+      }
+      // Newest timestamp wins for the surfaced row; sortPriority/kind/style
+      // mirror the source rows so it visually slots in with other audit lines.
+      let newest: FeedItem = head;
+      for (const cur of bucket) {
+        if (new Date(cur.timestamp).getTime() > new Date(newest.timestamp).getTime()) {
+          newest = cur;
+        }
+      }
+      const playerCount = bucket.length;
+      collapsed.push({
+        id: `pattern-miner-bucket-${key}`,
+        kind: 'audit',
+        text: `Pattern miner produced 0 patterns for ${playerCount} players (last 1h)`,
+        detail: 'pattern-miner.thresholds.starvation',
+        timestamp: newest.timestamp,
+        sortPriority: 2,
+      });
+    }
+    feed.length = 0;
+    feed.push(...collapsed);
 
     // Sort: within same day, show rounds/signups first (lower sortPriority),
     // then by timestamp descending
