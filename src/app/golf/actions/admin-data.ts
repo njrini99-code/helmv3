@@ -15,6 +15,12 @@ import {
   computeWoWGrowth,
   type TTFVRecord,
 } from '@/lib/admin/metrics';
+import {
+  groupIncidents,
+  type GroupedIncident,
+  type RawIncident,
+  type IncidentSeverity,
+} from '@/lib/admin/incident-grouping';
 
 // ============================================
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
@@ -222,6 +228,20 @@ export interface AdminDashboardData {
     topFeatureByAdoption: string;
     npsProxy: number;
     platformHealthScore: number;
+    /** Per-input breakdown of how `platformHealthScore` was computed. Each
+     *  entry is one of the four equal-weighted inputs (25% each). `value` is
+     *  the raw metric (already scaled into 0–100), `contribution` is its
+     *  contribution to the final score (`value * weight`, summed = score). */
+    platformHealthBreakdown: {
+      key: string;
+      label: string;
+      description: string;
+      weight: number;
+      rawValue: number;
+      rawDisplay: string;
+      value: number;
+      contribution: number;
+    }[];
   };
   usage: {
     roundsByType: { type: string; count: number }[];
@@ -428,6 +448,14 @@ export interface AdminDashboardData {
       resolvedRecently: number;
     };
     recentErrors: DashboardErrorIncident[];
+    /**
+     * Tighter regrouping of `recentErrors` keyed by a stable signature
+     * (severity + errorCode + normalised route + message prefix). One card
+     * per signature in the System tab Incident Command Feed instead of one
+     * card per occurrence. Keep `recentErrors` around for code that still
+     * iterates the per-incident list (legacy stats tiles, copy summary).
+     */
+    groupedIncidents: GroupedIncident[];
     errorsByDay: { date: string; count: number }[];
     bySeverity: { severity: string; count: number }[];
     topErrors: {
@@ -2029,14 +2057,63 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     ? Math.round((Math.min(philosophyCount, coachesUsingInsightsCount) / totalCoaches) * 100)
     : 0;
 
-  // Platform health score (0-100)
-  const healthScores = [
-    Math.min(avgOnboarding, 100),
-    Math.min(weeklyRetention * 2, 100),
-    Math.min(npsProxy * 1.5, 100),
-    Math.min(completedRoundsCount / Math.max(totalRoundsCount, 1) * 100, 100),
+  // Platform health score (0-100) — average of 4 equally-weighted inputs.
+  // We also build a per-input breakdown so the UI can surface *why* the
+  // score is what it is. Each weight = 1/4 = 0.25, contribution = value*weight.
+  const completionRateRaw = totalRoundsCount > 0
+    ? (completedRoundsCount / totalRoundsCount) * 100
+    : 0;
+
+  const healthScoreInputs = [
+    {
+      key: 'onboarding',
+      label: 'Onboarding Completion',
+      description: '% of all coaches + players who completed onboarding.',
+      rawValue: avgOnboarding,
+      rawDisplay: `${Math.round(avgOnboarding)}%`,
+      // Already a percentage; capped at 100.
+      value: Math.min(avgOnboarding, 100),
+    },
+    {
+      key: 'weekly_retention',
+      label: 'Weekly Retention (D7)',
+      description: '% of 30-day-active players who entered a round this week (×2 to scale to 0–100).',
+      rawValue: weeklyRetention,
+      rawDisplay: `${Math.round(weeklyRetention)}%`,
+      value: Math.min(weeklyRetention * 2, 100),
+    },
+    {
+      key: 'nps_proxy',
+      label: 'Coach NPS Proxy',
+      description: '% of coaches with both a saved philosophy AND insights viewed (×1.5 to scale to 0–100).',
+      rawValue: npsProxy,
+      rawDisplay: `${Math.round(npsProxy)}%`,
+      value: Math.min(npsProxy * 1.5, 100),
+    },
+    {
+      key: 'round_completion',
+      label: 'Round Completion Rate',
+      description: '% of rounds that were finished (vs. abandoned mid-round).',
+      rawValue: completionRateRaw,
+      rawDisplay: `${Math.round(completionRateRaw)}%`,
+      value: Math.min(completionRateRaw, 100),
+    },
   ];
+
+  const healthScores = healthScoreInputs.map((i) => i.value);
   const platformHealthScore = Math.round(healthScores.reduce((s, v) => s + v, 0) / healthScores.length);
+
+  const equalWeight = 1 / healthScoreInputs.length;
+  const platformHealthBreakdown = healthScoreInputs.map((i) => ({
+    key: i.key,
+    label: i.label,
+    description: i.description,
+    weight: equalWeight,
+    rawValue: Math.round(i.rawValue * 10) / 10,
+    rawDisplay: i.rawDisplay,
+    value: Math.round(i.value * 10) / 10,
+    contribution: Math.round(i.value * equalWeight * 10) / 10,
+  }));
 
   // Recent rounds (from Slice A)
   const recentRounds = rounds.recentRounds.map((r) => ({
@@ -2571,6 +2648,31 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       if (lastSeenDiff !== 0) return lastSeenDiff;
       return b.occurrences - a.occurrences;
     });
+
+  // ============================================
+  // GROUPED INCIDENTS — Smart signature-based collapse for the System tab
+  // ============================================
+  //
+  // The existing `recentErrors` list already merges events by their
+  // (normalised full message + route + action + errorCode) key, but slight
+  // variations in error text (different round IDs, varying suffixes) still
+  // produce many "Platform incident" cards in the UI for what is really one
+  // root cause. Re-group those rows here using a tighter signature
+  // (severity + errorCode + normalised route + 80-char message prefix) so the
+  // System tab's incident feed renders one card per distinct cause with an
+  // occurrence count, instead of N nearly-identical cards.
+  const groupedIncidentsInput: RawIncident[] = recentErrors.map((incident) => ({
+    id: incident.id,
+    severity: (incident.severity as IncidentSeverity) ?? 'error',
+    title: incident.title,
+    message: incident.message,
+    route: incident.route ?? incident.url ?? null,
+    errorCode: incident.errorCode,
+    metadata: null,
+    createdAt: incident.lastSeen ?? incident.createdAt,
+    resolved: incident.status === 'resolved',
+  }));
+  const groupedIncidents = groupIncidents(groupedIncidentsInput);
 
   const incidentCounts = recentErrors.reduce((acc, incident) => {
     acc[incident.status] += 1;
@@ -3478,6 +3580,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       topFeatureByAdoption,
       npsProxy,
       platformHealthScore,
+      platformHealthBreakdown,
     },
     usage: {
       roundsByType: roundsByTypeArr,
@@ -3585,6 +3688,7 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       criticalErrors7d: criticalCount,
       incidentCounts,
       recentErrors,
+      groupedIncidents,
       errorsByDay,
       bySeverity: errorSummary?.by_severity ?? [],
       topErrors: (errorSummary?.top_errors ?? []).map((e) => ({

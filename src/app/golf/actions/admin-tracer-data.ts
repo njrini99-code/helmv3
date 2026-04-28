@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { normalizeIncidentRoute } from '@/lib/admin/incident-grouping';
 
 // ============================================
 // TYPES
@@ -231,29 +232,11 @@ function normalizeTracerMessage(message: string): string {
     .replace(/\s+/g, ' ');
 }
 
+// Delegates to the shared admin helper so the tracer-side route normalisation
+// stays in lockstep with the System tab grouping. Keeping the local name lets
+// the rest of this file stay untouched while we centralise the implementation.
 function normalizeTracerPath(pathOrUrl: string | null): string {
-  if (!pathOrUrl) return '';
-
-  const rawPath = (() => {
-    try {
-      return new URL(pathOrUrl, 'http://localhost').pathname;
-    } catch {
-      return pathOrUrl.split('?')[0]?.split('#')[0] ?? pathOrUrl;
-    }
-  })();
-
-  const segments = rawPath
-    .split('/')
-    .filter(Boolean)
-    .map((segment) => (
-      /^[0-9]+$/.test(segment)
-      || /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)
-      || /^[a-f0-9]{16,}$/i.test(segment)
-        ? ':id'
-        : segment
-    ));
-
-  return segments.length > 0 ? `/${segments.join('/')}` : '/';
+  return normalizeIncidentRoute(pathOrUrl);
 }
 
 function normalizeTracerIncidentKey(

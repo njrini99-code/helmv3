@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
+import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 import { cn } from '@/lib/utils';
 import {
   IconLayers3,
@@ -207,8 +208,82 @@ export function ErrorFeed({ errorLogs }: Props) {
     }
     return incident;
   });
-  const activeIncidents = recentErrors.filter((incident) => incident.status !== 'resolved');
-  const resolvedIncidents = [...recentErrors]
+
+  // Smart incident grouping. The server already groups events into
+  // `recentErrors` rows by message-key, but slight wording variations on the
+  // same root cause (different round IDs, e.g. the recurring `ON CONFLICT
+  // specification` predictor error) still produce many near-duplicate cards.
+  // Re-merge here using the shared signature so the operator sees one row per
+  // distinct signature with its occurrence count, not 27 carbon copies.
+  type MergedIncident = (typeof recentErrors)[number] & {
+    underlyingIncidents: typeof recentErrors;
+    groupOccurrences: number;
+    groupAffectedUsers: number;
+    signature: string;
+  };
+
+  const mergedIncidents: MergedIncident[] = useMemo(() => {
+    const buckets = new Map<string, typeof recentErrors>();
+    for (const incident of recentErrors) {
+      const sig = buildIncidentSignature({
+        severity: (incident.severity as 'critical' | 'error' | 'warning' | 'info') ?? 'error',
+        errorCode: incident.errorCode,
+        route: incident.route ?? incident.url ?? null,
+        message: incident.message,
+      });
+      const existing = buckets.get(sig);
+      if (existing) existing.push(incident);
+      else buckets.set(sig, [incident]);
+    }
+
+    return Array.from(buckets.entries()).map(([signature, group]) => {
+      // Sort underlying incidents newest-first so the head one drives the card.
+      const sorted = [...group].sort((a, b) =>
+        new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime(),
+      );
+      const head = sorted[0]!;
+      const groupOccurrences = group.reduce((sum, inc) => sum + (inc.occurrences ?? 1), 0);
+      // affectedUsers per row already counts unique users per group, so we
+      // approximate the union by summing — overcount risk is small in
+      // practice and the field is already a soft signal.
+      const groupAffectedUsers = group.reduce((sum, inc) => sum + (inc.affectedUsers ?? 0), 0);
+      // Promote the worst severity in the bucket (matches the server-side ratchet).
+      const severityRank: Record<string, number> = { critical: 0, error: 1, warning: 2, info: 3 };
+      const worstSeverity = group.reduce((worst, inc) =>
+        (severityRank[inc.severity] ?? 99) < (severityRank[worst] ?? 99) ? inc.severity : worst,
+        head.severity,
+      );
+      // A merged card is "resolved" only if every underlying incident is.
+      const hasOpen = group.some((inc) => inc.status !== 'resolved');
+      const mergedStatus = hasOpen
+        ? group.some((inc) => inc.status === 'open') ? 'open' as const
+          : group.some((inc) => inc.status === 'active') ? 'active' as const
+          : 'historical' as const
+        : 'resolved' as const;
+      const mergedFirstSeen = group.reduce(
+        (min, inc) => (new Date(inc.firstSeen).getTime() < new Date(min).getTime() ? inc.firstSeen : min),
+        head.firstSeen,
+      );
+
+      return {
+        ...head,
+        severity: worstSeverity,
+        status: mergedStatus,
+        firstSeen: mergedFirstSeen,
+        underlyingIncidents: sorted,
+        groupOccurrences,
+        groupAffectedUsers,
+        signature,
+        // Override per-card occurrences/affectedUsers so the existing render
+        // path picks up the merged totals without further changes.
+        occurrences: groupOccurrences,
+        affectedUsers: groupAffectedUsers,
+      } satisfies MergedIncident;
+    });
+  }, [recentErrors]);
+
+  const activeIncidents = mergedIncidents.filter((incident) => incident.status !== 'resolved');
+  const resolvedIncidents = [...mergedIncidents]
     .filter((incident) => incident.status === 'resolved')
     .sort((a, b) => new Date(b.resolvedAt ?? b.lastSeen).getTime() - new Date(a.resolvedAt ?? a.lastSeen).getTime());
 
@@ -245,34 +320,54 @@ export function ErrorFeed({ errorLogs }: Props) {
     }
   };
 
-  const handleResolve = (incident: AdminDashboardData['errorLogs']['recentErrors'][number]) => {
+  const handleResolve = (incident: MergedIncident) => {
     setPendingIncidentId(incident.id);
-    // Optimistic UI: immediately mark as resolved in local state
-    setOptimisticallyResolved((prev) => new Set(prev).add(incident.id));
+    // Optimistic UI: immediately mark every underlying incident in the group as resolved.
+    setOptimisticallyResolved((prev) => {
+      const next = new Set(prev);
+      for (const underlying of incident.underlyingIncidents) next.add(underlying.id);
+      return next;
+    });
     setQueueTab('resolved');
     setExpandedId(incident.id);
     startTransition(async () => {
       try {
-        const result = await resolveDashboardIncident({
-          incidentKey: incident.id,
-          title: incident.title,
-          message: incident.message,
-          severity: incident.severity,
-          route: incident.route,
-          url: incident.url,
-          action: incident.action,
-          featureArea: incident.featureArea,
-          errorCode: incident.errorCode,
-          source: incident.source,
-        });
-        setResolveFeedback(incident.id, result.success ? 'success' : 'error', result.message);
-        if (result.success) {
+        // Resolve every underlying incident in the signature group. Each call
+        // hits the same server action that the per-card flow used; we fan out
+        // here so a single click resolves all variants of the same root cause.
+        const results = await Promise.all(
+          incident.underlyingIncidents.map((underlying) =>
+            resolveDashboardIncident({
+              incidentKey: underlying.id,
+              title: underlying.title,
+              message: underlying.message,
+              severity: underlying.severity,
+              route: underlying.route,
+              url: underlying.url,
+              action: underlying.action,
+              featureArea: underlying.featureArea,
+              errorCode: underlying.errorCode,
+              source: underlying.source,
+            }).catch((error) => ({
+              success: false,
+              resolvedCount: 0,
+              message: error instanceof Error ? error.message : 'Could not resolve incident.',
+            })),
+          ),
+        );
+        const allOk = results.every((r) => r.success);
+        const totalResolved = results.reduce((sum, r) => sum + (r.resolvedCount ?? 0), 0);
+        const message = allOk
+          ? `Resolved ${incident.underlyingIncidents.length} incident${incident.underlyingIncidents.length === 1 ? '' : 's'} (${totalResolved} admin event${totalResolved === 1 ? '' : 's'}).`
+          : results.find((r) => !r.success)?.message ?? 'One or more incidents in this group could not be resolved.';
+        setResolveFeedback(incident.id, allOk ? 'success' : 'error', message);
+        if (allOk) {
           router.refresh();
         } else {
-          // Rollback optimistic update on failure
+          // Rollback optimistic update on partial failure so the operator can retry.
           setOptimisticallyResolved((prev) => {
             const next = new Set(prev);
-            next.delete(incident.id);
+            for (const underlying of incident.underlyingIncidents) next.delete(underlying.id);
             return next;
           });
           setQueueTab('active');
@@ -280,10 +375,9 @@ export function ErrorFeed({ errorLogs }: Props) {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Could not resolve incident.';
         setResolveFeedback(incident.id, 'error', message);
-        // Rollback optimistic update on error
         setOptimisticallyResolved((prev) => {
           const next = new Set(prev);
-          next.delete(incident.id);
+          for (const underlying of incident.underlyingIncidents) next.delete(underlying.id);
           return next;
         });
         setQueueTab('active');
@@ -297,9 +391,10 @@ export function ErrorFeed({ errorLogs }: Props) {
     .map((incident, index) => `${queueTab === 'resolved' ? 'Resolved' : 'Active'} Incident ${index + 1}\n${incident.copySummary}`)
     .join('\n\n====================\n\n');
 
-  // Recompute incident counts from the optimistic-aware list so the summary
-  // tiles stay in sync with the tab badges after marking incidents resolved.
-  const liveCounts = recentErrors.reduce(
+  // Recompute incident counts from the optimistic-aware merged list so the
+  // summary tiles stay in sync with the tab badges after marking incidents
+  // resolved. Counts reflect signature-grouped cards, not raw rows.
+  const liveCounts = mergedIncidents.reduce(
     (acc, incident) => {
       acc[incident.status] += 1;
       if (incident.occurrences > 1) acc.repeated += 1;
@@ -494,7 +589,14 @@ export function ErrorFeed({ errorLogs }: Props) {
                         <IconWarning size={16} />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-sm font-semibold leading-6 text-warm-900">{incident.title}</h4>
+                        <h4 className="text-sm font-semibold leading-6 text-warm-900">
+                          {incident.title}
+                          {incident.groupOccurrences > 1 && (
+                            <span className="ml-2 text-xs font-medium text-warm-500 tabular-nums">
+                              · &times;{incident.groupOccurrences}
+                            </span>
+                          )}
+                        </h4>
                         <p className="mt-0.5 line-clamp-2 text-sm leading-6 text-warm-700">{incident.summary}</p>
                         <p className="mt-1 text-xs leading-5 text-warm-500">
                           {incident.diagnosisBasis}
@@ -577,6 +679,52 @@ export function ErrorFeed({ errorLogs }: Props) {
 
                 {isExpanded && (
                   <div className="mt-3 space-y-3">
+                    {incident.underlyingIncidents.length > 1 && (
+                      <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+                          Group occurrences ({incident.underlyingIncidents.length} variants · signature {incident.signature})
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {incident.underlyingIncidents.slice(0, 5).map((underlying) => (
+                            <li
+                              key={underlying.id}
+                              className="flex items-start justify-between gap-2 rounded-lg border border-white/40 bg-white/55 px-2.5 py-1.5 text-xs"
+                            >
+                              <div className="min-w-0">
+                                <p className="font-mono text-[11px] text-warm-700 truncate">
+                                  {formatTimestamp(underlying.lastSeen)} · {timeAgo(underlying.lastSeen)}
+                                  {' '}<span className="text-warm-500">({underlying.occurrences} hit{underlying.occurrences === 1 ? '' : 's'})</span>
+                                </p>
+                                <p className="mt-0.5 truncate text-warm-600">
+                                  {underlying.message}
+                                </p>
+                              </div>
+                              {underlying.status !== 'resolved' && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResolve({
+                                    ...underlying,
+                                    underlyingIncidents: [underlying],
+                                    groupOccurrences: underlying.occurrences,
+                                    groupAffectedUsers: underlying.affectedUsers,
+                                    signature: incident.signature,
+                                  } as MergedIncident)}
+                                  disabled={isPending}
+                                  className="shrink-0 rounded-md border border-primary-200 bg-primary-50/70 px-2 py-1 text-[10px] font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50"
+                                >
+                                  Resolve
+                                </button>
+                              )}
+                            </li>
+                          ))}
+                          {incident.underlyingIncidents.length > 5 && (
+                            <li className="text-[11px] text-warm-500">
+                              And {incident.underlyingIncidents.length - 5} more occurrences in this signature group.
+                            </li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                       <NarrativePanel label="Diagnosis Basis" body={incident.diagnosisBasis} />
                       <NarrativePanel label="Likely Cause" body={incident.likelyCause} />
