@@ -181,8 +181,17 @@ export function PeopleTab({ data }: Props) {
     return count;
   }, [userActivity.teams, userActivity.unassigned]);
 
+  // Coaches + players is the population that appears in the team/unassigned
+  // directory below. summary.totalUsers (from data.users) also counts admins
+  // and any user rows without a coach/player record, so the two numbers will
+  // disagree on screens like the "never logged in" alert. Use the directory
+  // population as the canonical "user" count throughout this tab so the KPIs,
+  // tab badges, and alert math stay consistent (51 = 51, not 51 in one spot
+  // and 61 elsewhere).
+  const directoryUserCount = coachCount + playerCount;
+
   const viewTabs: { label: string; value: ViewMode; count?: number }[] = [
-    { label: 'All Users', value: 'all', count: summary.totalUsers },
+    { label: 'All Users', value: 'all', count: directoryUserCount },
     { label: 'Coaches', value: 'coaches', count: coachCount },
     { label: 'Players', value: 'players', count: playerCount },
     { label: 'Teams', value: 'teams', count: userActivity.teams.length },
@@ -329,10 +338,10 @@ export function PeopleTab({ data }: Props) {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-amber-900">
-                  {summary.neverLoggedIn} of {summary.totalUsers} users have never logged in
+                  {summary.neverLoggedIn} of {directoryUserCount} users have never logged in
                 </p>
                 <p className="text-xs text-amber-700 mt-1">
-                  {Math.round((summary.neverLoggedIn / Math.max(summary.totalUsers, 1)) * 100)}% never-login rate suggests onboarding needs attention.
+                  {Math.round((summary.neverLoggedIn / Math.max(directoryUserCount, 1)) * 100)}% never-login rate suggests onboarding needs attention.
                 </p>
               </div>
             </div>
@@ -362,14 +371,15 @@ export function PeopleTab({ data }: Props) {
 
       {/* Summary Stats Row */}
       {!showAtRiskEmptyState && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <SummaryCard label="Total Users" value={summary.totalUsers} icon={<IconUsers size={14} />} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <SummaryCard label="Total Users" value={directoryUserCount} icon={<IconUsers size={14} />} />
           <SummaryCard label="Active Today" value={summary.activeToday} color={summary.activeToday > 0 ? 'green' : undefined} icon={<div className="w-2 h-2 rounded-full bg-primary-500" />} />
           <SummaryCard label="Active 7d" value={summary.activeThisWeek} color={summary.activeThisWeek > 5 ? 'green' : undefined} />
           <SummaryCard label="Never Logged In" value={summary.neverLoggedIn} color={summary.neverLoggedIn > 0 ? 'amber' : undefined} />
           <SummaryCard label="Stuck Onboarding" value={summary.stuckInOnboarding} color={summary.stuckInOnboarding > 0 ? 'orange' : undefined} />
+          {/* Churn Risk was a duplicate of Inactive 14d+ (rollup-c sets churnRisk = inactivePlus14d).
+              Render a single, clearer card instead of stacking two identical 28s side-by-side. */}
           <SummaryCard label="Inactive 14d+" value={summary.inactivePlus14d} color={summary.inactivePlus14d > 0 ? 'red' : undefined} />
-          <SummaryCard label="Churn Risk" value={summary.churnRisk} color={summary.churnRisk > 0 ? 'red' : undefined} />
         </div>
       )}
 
