@@ -16,18 +16,6 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import type { CoachHelmSettings, CoachHelmStatus } from './types';
 
-// Internal types for database rows (tables created via migration)
-interface CoachHelmSettingsRow {
-  enabled: boolean;
-  disabled_at?: string | null;
-  disabled_reason?: string | null;
-}
-
-interface TeamCoachHelmSettingsRow {
-  enabled: boolean;
-  disabled_reason: string | null;
-}
-
 const LOOKUP_FAILED_REASON = 'Coach record lookup failed';
 const PLAYER_LOOKUP_FAILED_REASON = 'Player record lookup failed';
 
@@ -49,24 +37,8 @@ async function getCoachHelmCoachSettings(
   supabase: SupabaseClient,
 ): Promise<CoachHelmSettings | null> {
   try {
-    const fromFn = (supabase as unknown as {
-      from: (t: string) => {
-        select: (cols: string) => {
-          eq: (
-            col: string,
-            val: string,
-          ) => {
-            maybeSingle: () => Promise<{
-              data: CoachHelmSettingsRow | null;
-              error: { message: string } | null;
-            }>;
-          };
-        };
-      };
-    }).from;
-
-    const { data, error } = await fromFn
-      .call(supabase, 'golf_coachhelm_settings')
+    const { data, error } = await supabase
+      .from('golf_coachhelm_settings')
       .select('enabled, disabled_at, disabled_reason')
       .eq('coach_id', coachId)
       .maybeSingle();
@@ -74,7 +46,9 @@ async function getCoachHelmCoachSettings(
     if (error || !data) return null;
 
     return {
-      enabled: data.enabled,
+      // DB column is `boolean | null`; default null/undefined to true
+      // (the legacy local type narrowed this to `boolean`).
+      enabled: data.enabled ?? true,
       disabledAt: data.disabled_at ?? null,
       disabledReason: data.disabled_reason ?? null,
     };
@@ -96,24 +70,8 @@ async function getTeamCoachHelmSettings(
   supabase: SupabaseClient,
 ): Promise<{ enabled: boolean; disabledReason: string | null } | null> {
   try {
-    const fromFn = (supabase as unknown as {
-      from: (t: string) => {
-        select: (cols: string) => {
-          eq: (
-            col: string,
-            val: string,
-          ) => {
-            maybeSingle: () => Promise<{
-              data: (TeamCoachHelmSettingsRow & { disabled_at?: string | null }) | null;
-              error: { message: string } | null;
-            }>;
-          };
-        };
-      };
-    }).from;
-
-    const { data, error } = await fromFn
-      .call(supabase, 'golf_team_coachhelm_settings')
+    const { data, error } = await supabase
+      .from('golf_team_coachhelm_settings')
       .select('enabled, disabled_reason, disabled_at')
       .eq('team_id', teamId)
       .maybeSingle();
@@ -121,7 +79,9 @@ async function getTeamCoachHelmSettings(
     if (error || !data) return null;
 
     return {
-      enabled: data.enabled,
+      // DB column is `boolean | null`; default null/undefined to true
+      // (callers already use `?? true` downstream — preserves runtime behavior).
+      enabled: data.enabled ?? true,
       disabledReason: data.disabled_reason,
     };
   } catch (err) {
@@ -161,28 +121,8 @@ export async function isCoachHelmEnabledForCoach(
   const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
 
   // Get coach record with team via organization
-  const fromFn = (supabase as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (
-          col: string,
-          val: string,
-        ) => {
-          single: () => Promise<{
-            data: { user_id: string | null; organization_id: string | null } | null;
-            error: { message: string } | null;
-          }>;
-          maybeSingle: () => Promise<{
-            data: { id: string } | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  }).from;
-
-  const { data: coach, error: coachError } = await fromFn
-    .call(supabase, 'golf_coaches')
+  const { data: coach, error: coachError } = await supabase
+    .from('golf_coaches')
     .select('user_id, organization_id')
     .eq('id', coachId)
     .single();
@@ -191,7 +131,7 @@ export async function isCoachHelmEnabledForCoach(
     await logServerError('gate.isCoachHelmEnabledForCoach lookup failed', {
       action: 'gate.isCoachHelmEnabledForCoach',
       featureArea: 'coachhelm.gate',
-      metadata: { coachId, dbError: coachError as unknown },
+      metadata: { coachId, dbError: coachError },
     });
     return {
       userEnabled: false,
@@ -230,8 +170,8 @@ export async function isCoachHelmEnabledForCoach(
 
   // Check team-level settings if coach has an organization
   if (coach.organization_id) {
-    const { data: team } = await fromFn
-      .call(supabase, 'golf_teams')
+    const { data: team } = await supabase
+      .from('golf_teams')
       .select('id')
       .eq('organization_id', coach.organization_id)
       .maybeSingle();
@@ -285,30 +225,8 @@ export async function isCoachHelmEnabledForPlayer(
 
   const supabase = (supabaseOverride ?? (await createClient())) as SupabaseClient;
 
-  const fromFn = (supabase as unknown as {
-    from: (t: string) => {
-      select: (cols: string) => {
-        eq: (
-          col: string,
-          val: string,
-        ) => {
-          single: () => Promise<{
-            data: {
-              user_id: string | null;
-              team:
-                | { team_id: string | null }
-                | Array<{ team_id: string | null }>
-                | null;
-            } | null;
-            error: { message: string } | null;
-          }>;
-        };
-      };
-    };
-  }).from;
-
-  const { data: player, error: playerError } = await fromFn
-    .call(supabase, 'golf_players')
+  const { data: player, error: playerError } = await supabase
+    .from('golf_players')
     .select('user_id, team:golf_team_members(team_id)')
     .eq('id', playerId)
     .single();
@@ -317,7 +235,7 @@ export async function isCoachHelmEnabledForPlayer(
     await logServerError('gate.isCoachHelmEnabledForPlayer lookup failed', {
       action: 'gate.isCoachHelmEnabledForPlayer',
       featureArea: 'coachhelm.gate',
-      metadata: { playerId, dbError: playerError as unknown },
+      metadata: { playerId, dbError: playerError },
     });
     return {
       userEnabled: false,
