@@ -866,7 +866,13 @@ export class StatsInsightGenerator {
     }
 
     // 5-10 foot make percentage (stroke-saver range)
-    if (stats.puttMakePct5_10 !== null && stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10 - 10) {
+    // P2: require minimum 10 attempts in the bucket — under that, a
+    // single make/miss swings the rate by 10pp and the insight is noise.
+    if (
+      stats.puttMakePct5_10 !== null &&
+      stats.puttMakeCount5_10 >= 10 &&
+      stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10 - 10
+    ) {
       const delta = BENCHMARKS.puttMake5_10 - stats.puttMakePct5_10;
       // Estimate stroke impact: ~3-4 birdie putts per round in this range
       const strokesLost = delta / 100 * 3.5;
@@ -893,7 +899,15 @@ export class StatsInsightGenerator {
     }
 
     // Putting miss direction analysis
-    if (stats.puttMissShortPct !== null && stats.puttMissShortPct > 50) {
+    // P2: gate on >= 60 total putts (~ 20 misses) so a 50/50 short-vs-long
+    // call isn't built on a handful of putts. The pct fields are computed
+    // over puttMissTotal which isn't exposed on stats, so we use totalPutts
+    // as a proxy for "do we have enough miss data to talk about bias?".
+    if (
+      stats.puttMissShortPct !== null &&
+      stats.puttMissShortPct > 50 &&
+      stats.totalPutts >= 60
+    ) {
       insights.push({
         id: 'putting-miss-short',
         playerId: this.playerId,
@@ -1082,7 +1096,13 @@ export class StatsInsightGenerator {
     const insights: StatsInsight[] = [];
 
     // Fairway percentage
-    if (stats.fairwayPercentage !== null && stats.fairwayPercentage < BENCHMARKS.fairwayPct - 10) {
+    // P2: gate on >=10 par-4+ tee-shot opportunities. Below that a single
+    // missed fairway swings the percentage by 10pp.
+    if (
+      stats.fairwayPercentage !== null &&
+      stats.fairwayOpportunities >= 10 &&
+      stats.fairwayPercentage < BENCHMARKS.fairwayPct - 10
+    ) {
       const deficit = BENCHMARKS.fairwayPct - stats.fairwayPercentage;
       // Each missed fairway costs ~0.3-0.5 strokes based on GIR differential
       const strokesLost = deficit / 100 * 14 * 0.4;
@@ -1205,7 +1225,9 @@ export class StatsInsightGenerator {
     }
 
     // Sand save percentage
-    if (stats.sandSavePercentage !== null && stats.sandSavePercentage < BENCHMARKS.sandSavePct - 10 && stats.sandSaveAttempts >= 5) {
+    // P2: bumped from >=5 to >=6 per design spec — sand-save % is high
+    // variance per attempt and ought to be the most-conservatively gated.
+    if (stats.sandSavePercentage !== null && stats.sandSavePercentage < BENCHMARKS.sandSavePct - 10 && stats.sandSaveAttempts >= 6) {
       const deficit = BENCHMARKS.sandSavePct - stats.sandSavePercentage;
       insights.push({
         id: 'scrambling-sand',
@@ -1231,7 +1253,14 @@ export class StatsInsightGenerator {
     }
 
     // Scrambling by lie
-    if (stats.scramblingPctRough !== null && stats.scramblingPctFairway !== null) {
+    // P2: per-lie scramble counts aren't exposed on GolfStats, so use the
+    // overall scrambleAttempts as a proxy. Require >= 30 total scrambles
+    // (≈ 15 per lie at typical 50/50 split) before reporting a lie gap.
+    if (
+      stats.scramblingPctRough !== null &&
+      stats.scramblingPctFairway !== null &&
+      stats.scrambleAttempts >= 30
+    ) {
       const roughDeficit = stats.scramblingPctFairway - stats.scramblingPctRough;
       if (roughDeficit > 20 && stats.scramblingPctRough < 40) {
         insights.push({
@@ -1856,8 +1885,12 @@ export class StatsInsightGenerator {
       });
     }
 
-    // Putting: 5-10ft make rate
-    if (stats.puttMakePct5_10 !== null && stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10) {
+    // Putting: 5-10ft make rate — P2: gate on >=10 attempts in bucket
+    if (
+      stats.puttMakePct5_10 !== null &&
+      stats.puttMakeCount5_10 >= 10 &&
+      stats.puttMakePct5_10 < BENCHMARKS.puttMake5_10
+    ) {
       const delta = BENCHMARKS.puttMake5_10 - stats.puttMakePct5_10;
       leakages.push({
         area: '5-10ft Putt Conversion',
@@ -1931,8 +1964,8 @@ export class StatsInsightGenerator {
       });
     }
 
-    // Sand saves
-    if (stats.sandSavePercentage !== null && stats.sandSavePercentage < BENCHMARKS.sandSavePct && stats.sandSaveAttempts >= 5) {
+    // Sand saves — P2: minimum 6 sand attempts (was 5)
+    if (stats.sandSavePercentage !== null && stats.sandSavePercentage < BENCHMARKS.sandSavePct && stats.sandSaveAttempts >= 6) {
       const deficit = BENCHMARKS.sandSavePct - stats.sandSavePercentage;
       leakages.push({
         area: 'Sand Saves',
