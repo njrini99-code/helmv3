@@ -376,32 +376,40 @@ export class PerformancePredictor {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const table = supabase.from('golf_predictions' as any) as any;
 
-    const { error } = await table.insert({
-      id: prediction.id,
-      player_id: prediction.playerId,
-      metric: prediction.metric,
-      predicted_value: prediction.predictedValue,
-      confidence: prediction.confidence,
-      confidence_interval_low: prediction.predictedRangeLow,
-      confidence_interval_high: prediction.predictedRangeHigh,
-      predicted_low: prediction.predictedRangeLow,
-      predicted_high: prediction.predictedRangeHigh,
-      prediction_window_days: predictionWindowDays,
-      trend,
-      key_drivers: prediction.keyFactors,
-      input_features: this.features,
-      model_version: 'coachhelm-v2',
-      due_date: prediction.dueDate,
-      prediction_context: {
-        prediction_type: prediction.predictionType,
-        context: prediction.context,
+    // Upsert on the natural key (player_id, metric, due_date) so repeated
+    // analyzePlayer() runs refresh the existing prediction row instead of
+    // appending a duplicate. Backed by partial unique index
+    // `golf_predictions_natural_key` (see migration
+    // 20260428170000_predictions_unique_natural_key.sql).
+    const { error } = await table.upsert(
+      {
+        player_id: prediction.playerId,
+        metric: prediction.metric,
+        predicted_value: prediction.predictedValue,
+        confidence: prediction.confidence,
+        confidence_interval_low: prediction.predictedRangeLow,
+        confidence_interval_high: prediction.predictedRangeHigh,
+        predicted_low: prediction.predictedRangeLow,
+        predicted_high: prediction.predictedRangeHigh,
+        prediction_window_days: predictionWindowDays,
+        trend,
+        key_drivers: prediction.keyFactors,
+        input_features: this.features,
+        model_version: 'coachhelm-v2',
+        due_date: prediction.dueDate,
+        prediction_context: {
+          prediction_type: prediction.predictionType,
+          context: prediction.context,
+        },
+        confidence_factors: {
+          raw_confidence: prediction.confidence,
+          calibrated_confidence: prediction.calibratedConfidence,
+          sensitivities: prediction.sensitivities,
+        },
+        updated_at: new Date().toISOString(),
       },
-      confidence_factors: {
-        raw_confidence: prediction.confidence,
-        calibrated_confidence: prediction.calibratedConfidence,
-        sensitivities: prediction.sensitivities,
-      },
-    });
+      { onConflict: 'player_id,metric,due_date' }
+    );
 
     if (error) {
       throw new Error(`Failed to save CoachHelm prediction: ${error.message}`);
