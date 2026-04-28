@@ -84,7 +84,10 @@ export default async function MyDevelopmentPage() {
       target_value,
       started_at,
       completed_at,
-      created_at
+      created_at,
+      from_review_id,
+      from_insight_id,
+      review_context
     `)
     .eq('player_id', player.id)
     .order('created_at', { ascending: false });
@@ -222,6 +225,23 @@ export default async function MyDevelopmentPage() {
 
                               {fa.description && (
                                 <p className="text-sm text-warm-600 mt-3 leading-relaxed">{fa.description}</p>
+                              )}
+
+                              {/* Source chip — surfaces WHY this focus area
+                                  exists (came from a round review or a
+                                  CoachHelm insight) instead of looking like
+                                  a coach-imposed task with no context. */}
+                              {(fa.from_review_id || fa.from_insight_id) && (
+                                <div className="mt-3 flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                                    {fa.from_review_id ? 'From a round review' : 'From a CoachHelm insight'}
+                                  </span>
+                                  {fa.review_context && (
+                                    <span className="text-[11px] text-warm-500 truncate">
+                                      {fa.review_context}
+                                    </span>
+                                  )}
+                                </div>
                               )}
 
                               {/* Progress bar if metrics exist */}

@@ -30,14 +30,22 @@ export type ReviewSentiment = 'positive' | 'neutral' | 'challenging';
 export type OverallGrade = 'A' | 'B' | 'C' | 'D' | 'F';
 export type StatComparison = 'above' | 'below' | 'average';
 
+/** Whether a highlight/area came from THIS round's data or from a longer-term
+ *  trend (CoachHelm career-level insight). Drives a small UI badge so users
+ *  don't conflate "your driving was bad today" with "your driving is a 90-day
+ *  weakness". Defaults to 'round' for backward compatibility on stored data. */
+export type RoundReviewItemSource = 'round' | 'trend';
+
 export interface RoundReviewHighlight {
   title: string;
   description: string;
+  source?: RoundReviewItemSource;
 }
 
 export interface RoundReviewImprovementArea {
   area: string;
   recommendation: string;
+  source?: RoundReviewItemSource;
 }
 
 export interface RoundReviewKeyStat {
@@ -617,6 +625,7 @@ function buildCoachHelmHighlight(review: IntelligentRoundReview): RoundReviewHig
   return {
     title: review.primaryTakeaway || review.composedReview.headline,
     description: `${review.composedReview.body}${impact}`.trim(),
+    source: 'trend',
   };
 }
 
@@ -634,6 +643,7 @@ function buildCoachHelmImprovementAreas(review: IntelligentRoundReview): RoundRe
     {
       area: focusArea,
       recommendation: primaryRecommendation,
+      source: 'trend',
     },
   ];
 }

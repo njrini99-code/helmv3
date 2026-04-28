@@ -138,8 +138,10 @@ export function StatsIntelligenceStrip({
   const composite = data?.composite ?? data?.categories?.overall ?? null;
   const compositeDisplay = composite != null ? Math.round(composite) : null;
 
+  // The full insight feed lives at /dashboard/coachhelm. The stats strip
+  // previously rendered up to 3 insights, duplicating content. Trim to the
+  // top insight and lean on the "View all" link to the dedicated surface.
   const topInsightRow = useMemo(() => data?.insights[0] ?? null, [data]);
-  const remainingInsights = useMemo(() => data?.insights.slice(1, 3) ?? [], [data]);
 
   if (loading) {
     return (
@@ -252,18 +254,18 @@ export function StatsIntelligenceStrip({
         </div>
       )}
 
-      {/* Top insights */}
+      {/* Top insight (single — full feed lives on /coachhelm) */}
       {hasInsights && topInsightRow && (
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
             <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">
-              Top insights
+              Top insight
             </p>
             <Link
               href="/golf/dashboard/coachhelm"
               className="inline-flex items-center gap-0.5 text-[11px] font-medium text-primary-600 hover:text-primary-700"
             >
-              View all
+              View all in CoachHelm
               <IconChevronRight size={12} />
             </Link>
           </div>
@@ -272,18 +274,6 @@ export function StatsIntelligenceStrip({
             density="default"
             audience={audience}
           />
-          {remainingInsights.length > 0 && (
-            <div className="space-y-2">
-              {remainingInsights.map((insight) => (
-                <InsightCard
-                  key={insight.id}
-                  insight={insight}
-                  density="compact"
-                  audience={audience}
-                />
-              ))}
-            </div>
-          )}
         </div>
       )}
 

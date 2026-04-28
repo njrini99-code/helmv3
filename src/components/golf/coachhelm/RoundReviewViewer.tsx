@@ -1000,6 +1000,23 @@ function GameBreakdownSection({
   );
 }
 
+/** Tiny "This round" / "90-day trend" pill. The default `'round'` covers
+ *  legacy stored items written before the source field existed. */
+function TimeframeBadge({ source }: { source?: 'round' | 'trend' }) {
+  const isTrend = source === 'trend';
+  return (
+    <span
+      className={
+        isTrend
+          ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200'
+          : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200'
+      }
+    >
+      {isTrend ? '90-day trend' : 'This round'}
+    </span>
+  );
+}
+
 /** Highlights + Improvement */
 function HighlightsAndImprovements({
   highlights,
@@ -1027,7 +1044,10 @@ function HighlightsAndImprovements({
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
                 className="p-3.5 rounded-xl bg-white/80 border border-primary-100 shadow-sm"
               >
-                <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
+                  <TimeframeBadge source={h.source} />
+                </div>
                 <p className="text-label text-warm-600 mt-1 leading-relaxed">{h.description}</p>
               </motion.div>
             ))}
@@ -1049,7 +1069,10 @@ function HighlightsAndImprovements({
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
                 className="p-3.5 rounded-xl bg-white/80 border border-amber-100 shadow-sm"
               >
-                <div className="text-xs font-semibold text-warm-900">{formatLabel(area.area)}</div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="text-xs font-semibold text-warm-900">{formatLabel(area.area)}</div>
+                  <TimeframeBadge source={area.source} />
+                </div>
                 <p className="text-label text-warm-600 mt-1 leading-relaxed">{area.recommendation}</p>
               </motion.div>
             ))}
