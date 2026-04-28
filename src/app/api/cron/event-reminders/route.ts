@@ -167,19 +167,88 @@ async function dispatchReminders(
 
   if (notifications.length === 0) return 0;
 
-  const { error: insertErr, count } = await supabase
+  const { data: insertedRows, error: insertErr } = await supabase
     .from('golf_calendar_notifications')
     .upsert(notifications, {
       onConflict: 'event_id,user_id,notification_type',
       ignoreDuplicates: true,
-      count: 'exact',
-    });
+    })
+    .select('user_id, event_id');
 
   if (insertErr) {
     throw new Error(`insert notifications: ${insertErr.message}`);
   }
 
-  return count ?? notifications.length;
+  const inserted = (insertedRows ?? []) as Array<{ user_id: string; event_id: string }>;
+  if (inserted.length === 0) return 0;
+
+  // Fan out push + email per newly-inserted reminder. Only firing for the
+  // users who actually got a NEW notification row keeps reminders idempotent
+  // across cron ticks: an already-notified user never gets a second blast.
+  void dispatchExternalChannels(inserted, eventById, kind).catch(() => {
+    // Already logged inside the helper; swallow so the upsert success path
+    // doesn't depend on email/push deliverability.
+  });
+
+  return inserted.length;
+}
+
+async function dispatchExternalChannels(
+  inserted: Array<{ user_id: string; event_id: string }>,
+  eventById: Map<string, EventRow>,
+  kind: ReminderKind,
+): Promise<void> {
+  const userIdsByEvent = new Map<string, string[]>();
+  for (const row of inserted) {
+    if (!userIdsByEvent.has(row.event_id)) userIdsByEvent.set(row.event_id, []);
+    userIdsByEvent.get(row.event_id)!.push(row.user_id);
+  }
+
+  const [{ sendBulkPushNotification }, { sendBulkEmailNotification }, { createAdminClient: createAdmin }] = await Promise.all([
+    import('@/lib/notifications/push'),
+    import('@/lib/notifications/email'),
+    import('@/lib/supabase/admin'),
+  ]);
+  const adminClient = createAdmin();
+
+  for (const [eventId, userIds] of userIdsByEvent) {
+    const event = eventById.get(eventId);
+    if (!event) continue;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
+    const start = new Date(event.start_time);
+    const data: Record<string, unknown> = {
+      eventName: event.title,
+      eventDate: event.start_time,
+      eventDateFormatted: start.toLocaleString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }),
+      location: event.location || '',
+      eventUrl: `${baseUrl}/golf/dashboard/calendar?event=${eventId}`,
+      reminderWindow: kind === 'event_reminder_24h' ? '24h' : '1h',
+    };
+
+    void sendBulkPushNotification('event_rsvp_reminder', userIds, data).catch(() => {
+      // Push failure is non-fatal; the in-app row is already inserted.
+    });
+
+    // Email needs each user's email address.
+    const { data: userRows } = await adminClient
+      .from('users')
+      .select('id, email')
+      .in('id', userIds);
+    const recipients = (userRows ?? [])
+      .filter((u) => u.email)
+      .map((u) => ({ id: u.id as string, email: u.email as string }));
+    if (recipients.length > 0) {
+      void sendBulkEmailNotification('event_rsvp_reminder', recipients, data).catch(() => {
+        // Email failure is non-fatal; logged inside helper.
+      });
+    }
+  }
 }
 
 function buildMessage(event: EventRow, kind: ReminderKind): string {
