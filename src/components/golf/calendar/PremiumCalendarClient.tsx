@@ -783,6 +783,7 @@ export function PremiumCalendarClient({
                     coachBusyPeriods={coachBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
                     playerBusyPeriods={playerBusyPeriods as unknown as import('./AvailabilityDayView').BusyPeriod[]}
                     selectedPlayer={selectedPlayer}
+                    selectedPlayers={selectedPlayers}
                     onTimeSlotClick={handleTimeSlotClick}
                   />
                 </div>

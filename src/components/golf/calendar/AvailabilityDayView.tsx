@@ -1,322 +1,363 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Clock } from 'lucide-react';
-import { TeamMember } from './CalendarAvatarSidebar';
+/**
+ * AvailabilityDayView — premium hour-rail comparison view.
+ *
+ * Renders the current user's busy periods alongside one-or-more selected
+ * players' busy periods, colored by the per-player swatch assigned in
+ * CalendarAvatarSidebar. Free hours surface a centered ghost CTA so coaches
+ * can drop a new event into common availability without opening the create
+ * modal first.
+ *
+ * Each busy period may carry a `color` field (added upstream by
+ * PremiumCalendarClient when fanning out per selected player). The view
+ * uses that color for the block background, ring, and avatar dot. Periods
+ * without a color (the viewer's own coachBusyPeriods) fall back to the
+ * primary-stamp + class-stripe palette.
+ */
 
-// ============================================================================
-// TYPES
-// ============================================================================
+import { useState } from 'react';
+import { Plus, BookOpen, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { TeamMember } from './CalendarAvatarSidebar';
+
+export interface BusyPeriodColor {
+  bg: string;
+  light: string;
+  border: string;
+  name: string;
+}
 
 export interface BusyPeriod {
-  start: string; // ISO string
-  end: string; // ISO string
+  start: string;
+  end: string;
   type: 'event' | 'class' | 'blocked';
   title?: string;
   eventId?: string;
   ownerId?: string;
   ownerType?: 'coach' | 'player';
+  /** Per-player swatch when this row came from a selected-player overlay. */
+  color?: BusyPeriodColor;
+  /** Player id this period belongs to (matches a selectedPlayers entry). */
+  playerId?: string;
+}
+
+interface SelectedPlayerWithColor extends TeamMember {
+  color: BusyPeriodColor;
 }
 
 interface AvailabilityDayViewProps {
   date: Date;
-  coachBusyPeriods: BusyPeriod[]; // Coach's blocked time
-  playerBusyPeriods: BusyPeriod[]; // Selected player's blocked time
+  coachBusyPeriods: BusyPeriod[];
+  playerBusyPeriods: BusyPeriod[];
+  /** First-selected player — kept for backward compatibility. */
   selectedPlayer: TeamMember | null;
-  onTimeSlotClick: (date: Date, hour: number) => void; // Quick event creation
+  /** Full selection so the header can render per-player chips. */
+  selectedPlayers?: SelectedPlayerWithColor[];
+  onTimeSlotClick: (date: Date, hour: number) => void;
 }
 
-// ============================================================================
-// COLOR CODING SYSTEM
-// ============================================================================
+const START_HOUR = 7;
+const END_HOUR = 19;
+const HOURS = Array.from(
+  { length: END_HOUR - START_HOUR + 1 },
+  (_, i) => START_HOUR + i,
+);
 
-const EVENT_COLORS = {
-  // Team events (coach-created)
-  practice: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
-  tournament: { bg: 'bg-amber-500/20', border: 'border-amber-500', text: 'text-amber-700' },
-  qualifier: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
-  meeting: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
-  travel: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
-  other: { bg: 'bg-warm-500/20', border: 'border-warm-500', text: 'text-warm-700' },
+function formatHour(hour: number): string {
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${display} ${period}`;
+}
 
-  // Coach-specific
-  blocked: { bg: 'bg-orange-500/10', border: 'border-orange-400', text: 'text-orange-700' },
+function formatRange(period: BusyPeriod): string {
+  const start = new Date(period.start);
+  const end = new Date(period.end);
+  return `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} – ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+}
 
-  // Player-specific
-  class: {
-    bg: 'bg-rose-500/10',
-    border: 'border-rose-300',
-    text: 'text-rose-600',
-    pattern: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(244, 63, 94, 0.05) 10px, rgba(244, 63, 94, 0.05) 20px)',
-  },
-  playerEvent: { bg: 'bg-primary-500/20', border: 'border-primary-500', text: 'text-primary-700' },
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
 
-  // Availability states
-  free: { bg: 'bg-primary-50', border: 'border-primary-200', text: 'text-primary-700' },
-  busy: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-600' },
-};
-
-// ============================================================================
-// COMPONENT
-// ============================================================================
+function getInitials(member: { first_name?: string; last_name?: string }) {
+  return `${member.first_name?.[0] || ''}${member.last_name?.[0] || ''}`.toUpperCase();
+}
 
 export function AvailabilityDayView({
   date,
   coachBusyPeriods,
   playerBusyPeriods,
   selectedPlayer,
+  selectedPlayers = [],
   onTimeSlotClick,
 }: AvailabilityDayViewProps) {
   const [hoveredHour, setHoveredHour] = useState<number | null>(null);
+  const today = new Date();
+  const isToday = isSameDay(date, today);
 
-  // Working hours: 7 AM to 7 PM
-  const startHour = 7;
-  const endHour = 19;
-  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+  const playersById = new Map(selectedPlayers.map((p) => [p.id, p]));
 
-  /**
-   * Check if a specific hour is free for both coach and player
-   */
-  const isBothFree = (hour: number): boolean => {
+  function periodsForHour(periods: BusyPeriod[], hour: number): BusyPeriod[] {
     const hourStart = new Date(date);
     hourStart.setHours(hour, 0, 0, 0);
     const hourEnd = new Date(date);
     hourEnd.setHours(hour + 1, 0, 0, 0);
-
-    const isCoachBusy = coachBusyPeriods.some(period => {
+    return periods.filter((period) => {
       const start = new Date(period.start);
       const end = new Date(period.end);
       return start < hourEnd && end > hourStart;
     });
-
-    const isPlayerBusy = playerBusyPeriods.some(period => {
-      const start = new Date(period.start);
-      const end = new Date(period.end);
-      return start < hourEnd && end > hourStart;
-    });
-
-    return !isCoachBusy && !isPlayerBusy;
-  };
-
-  /**
-   * Get busy periods that overlap with a specific hour
-   */
-  const getBusyPeriodsForHour = (hour: number): { coach: BusyPeriod[]; player: BusyPeriod[] } => {
-    const hourStart = new Date(date);
-    hourStart.setHours(hour, 0, 0, 0);
-    const hourEnd = new Date(date);
-    hourEnd.setHours(hour + 1, 0, 0, 0);
-
-    const coach = coachBusyPeriods.filter(period => {
-      const start = new Date(period.start);
-      const end = new Date(period.end);
-      return start < hourEnd && end > hourStart;
-    });
-
-    const player = playerBusyPeriods.filter(period => {
-      const start = new Date(period.start);
-      const end = new Date(period.end);
-      return start < hourEnd && end > hourStart;
-    });
-
-    return { coach, player };
-  };
-
-  /**
-   * Format hour for display
-   */
-  const formatHour = (hour: number): string => {
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-    return `${displayHour} ${period}`;
-  };
-
-  /**
-   * Format time range for busy period
-   */
-  const formatTimeRange = (period: BusyPeriod): string => {
-    const start = new Date(period.start);
-    const end = new Date(period.end);
-    return `${start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} - ${end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
-  };
+  }
 
   return (
-    <div className="bg-white rounded-2xl border border-warm-200 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-warm-200 bg-warm-50">
-        <div className="flex items-center justify-between">
+    <div className="bg-white/85 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-glass overflow-hidden">
+      {/* Premium header */}
+      <header className="relative px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h3 className="text-lg font-semibold text-warm-900">
-              Availability: {date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </h3>
-            {selectedPlayer && (
-              <p className="text-sm text-warm-500 mt-1">
-                Viewing schedule for <span className="font-medium text-warm-700">{selectedPlayer.first_name} {selectedPlayer.last_name}</span>
-              </p>
-            )}
+            <div className="flex items-center gap-3">
+              <h3 className="font-[family-name:var(--font-fraunces)] text-[26px] leading-tight font-semibold text-warm-900">
+                {date.toLocaleDateString('en-US', { weekday: 'long' })}
+              </h3>
+              {isToday && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-semibold tracking-wide ring-1 ring-primary-200/70">
+                  Today
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-warm-500 mt-1 tabular-nums">
+              {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </p>
           </div>
 
-          {/* Legend */}
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-primary-500"></div>
-              <span className="text-warm-600">Your Event</span>
+          {selectedPlayers.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap" role="list" aria-label="Selected players">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-warm-400 mr-1">
+                Comparing
+              </span>
+              {selectedPlayers.map((player) => (
+                <div
+                  key={player.id}
+                  role="listitem"
+                  className="inline-flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-white/70 border border-warm-200/70 shadow-sm"
+                  title={`${player.first_name} ${player.last_name}`}
+                >
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white"
+                    style={{ background: player.color.bg }}
+                  >
+                    {player.avatar_url ? (
+                      <img
+                        src={player.avatar_url}
+                        alt=""
+                        className="w-full h-full rounded-full object-cover"
+                      />
+                    ) : (
+                      getInitials(player)
+                    )}
+                  </span>
+                  <span className="text-xs font-medium text-warm-700">
+                    {player.first_name}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-orange-500"></div>
-              <span className="text-warm-600">Your Class</span>
-            </div>
-            {selectedPlayer && (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-rose-400" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(244, 63, 94, 0.2) 2px, rgba(244, 63, 94, 0.2) 4px)' }}></div>
-                  <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Class</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-primary-500"></div>
-                  <span className="text-warm-600">{selectedPlayer.first_name}&apos;s Event</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-primary-100 border border-primary-300"></div>
-                  <span className="text-warm-600">Both Free</span>
-                </div>
-              </>
-            )}
-          </div>
+          )}
         </div>
-      </div>
+      </header>
 
-      {/* Time Grid */}
-      <div className="divide-y divide-warm-200">
-        {hours.map(hour => {
-          const busyPeriods = getBusyPeriodsForHour(hour);
-          const bothFree = selectedPlayer && isBothFree(hour);
+      {/* Time rail */}
+      <div className="divide-y divide-warm-200/70">
+        {HOURS.map((hour) => {
+          const yourPeriods = periodsForHour(coachBusyPeriods, hour);
+          const playerPeriodsThisHour = periodsForHour(playerBusyPeriods, hour);
+          const totalBusy = yourPeriods.length + playerPeriodsThisHour.length;
           const isHovered = hoveredHour === hour;
+          const showFreeAffordance = totalBusy === 0;
 
           return (
             <div
               key={hour}
-              className="flex items-stretch transition-colors duration-150"
-              style={{ minHeight: '80px' }}
+              className="relative flex items-stretch group"
+              style={{ minHeight: '88px' }}
               onMouseEnter={() => setHoveredHour(hour)}
               onMouseLeave={() => setHoveredHour(null)}
             >
-              {/* Hour Label */}
-              <div className="flex items-center justify-center w-24 py-4 px-4 bg-warm-50 border-r border-warm-200">
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-warm-700">{formatHour(hour)}</p>
-                  <Clock className="w-3 h-3 text-warm-400 mx-auto mt-1" />
-                </div>
+              {/* Hour label rail */}
+              <div className="w-20 flex-shrink-0 flex items-start justify-end pt-3 pr-3 select-none">
+                <span className="text-xs font-semibold text-warm-400 tabular-nums">
+                  {formatHour(hour)}
+                </span>
               </div>
 
-              {/* Time Slot Content */}
-              <div className="flex-1 p-3 relative">
-                {/* Free slot indicator */}
-                {bothFree && (
-                  <div className="absolute inset-0 bg-primary-50/50 border-l-2 border-primary-400">
-                    <div className="flex items-center justify-between h-full px-4">
-                      <span className="text-sm font-medium text-primary-700">
-                        ✓ Both available
-                      </span>
-                      {isHovered && (
-                        <button
-                          onClick={() => onTimeSlotClick(date, hour)}
-                          className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg flex items-center gap-1 shadow-sm transition-all"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Quick Add
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Your busy periods (current user) */}
-                {busyPeriods.coach.map((period, index) => {
-                  const isClass = period.type === 'class';
-                  const isBlocked = period.type === 'blocked';
-                  return (
-                    <div
-                      key={`you-${index}`}
-                      className={`mb-2 p-3 rounded-lg border-l-3 backdrop-blur-sm ${
-                        isClass
-                          ? 'bg-orange-500/10 border-orange-400'
-                          : isBlocked
-                            ? 'bg-orange-500/10 border-orange-400'
-                            : 'bg-primary-500/10 border-primary-500'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                isClass || isBlocked
-                                  ? 'bg-orange-500 text-white'
-                                  : 'bg-primary-600 text-white'
-                              }`}
-                            >
-                              {isClass ? 'Your Class' : isBlocked ? 'Blocked' : 'You'}
-                            </span>
-                            <span
-                              className={`text-sm font-medium ${
-                                isClass || isBlocked ? 'text-orange-900' : 'text-primary-900'
-                              }`}
-                            >
-                              {period.title || 'Busy'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-warm-500 mt-1">{formatTimeRange(period)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Player busy periods */}
-                {busyPeriods.player.map((period, index) => {
-                  const isClass = period.type === 'class';
-                  return (
-                    <div
-                      key={`player-${index}`}
-                      className={`mb-2 p-3 rounded-lg border-l-3 backdrop-blur-sm ${
-                        isClass
-                          ? 'bg-rose-500/5 border-rose-400'
-                          : 'bg-primary-500/10 border-primary-500'
-                      }`}
-                      style={isClass ? { backgroundImage: EVENT_COLORS.class.pattern } : undefined}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2 py-0.5 text-xs font-medium rounded ${
-                                isClass ? 'bg-rose-500 text-white' : 'bg-primary-600 text-white'
-                              }`}
-                            >
-                              {isClass ? 'Class' : 'Player Event'}
-                            </span>
-                            <span className={`text-sm font-medium ${isClass ? 'text-rose-900' : 'text-primary-900'}`}>
-                              {period.title || 'Busy'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-warm-500 mt-1">{formatTimeRange(period)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* Empty state */}
-                {busyPeriods.coach.length === 0 && busyPeriods.player.length === 0 && !bothFree && (
-                  <div className="flex items-center justify-center h-full text-warm-400">
-                    <span className="text-sm">No scheduled events</span>
+              {/* Track */}
+              <div className="flex-1 relative px-3 py-2.5">
+                {showFreeAffordance ? (
+                  <FreeSlot
+                    isHovered={isHovered}
+                    hasComparisonContext={selectedPlayers.length > 0}
+                    onClick={() => onTimeSlotClick(date, hour)}
+                  />
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {yourPeriods.map((period, i) => (
+                      <BusyBlock
+                        key={`you-${i}-${period.eventId ?? period.start}`}
+                        period={period}
+                        ownerLabel="You"
+                        ownerColor={null}
+                      />
+                    ))}
+                    {playerPeriodsThisHour.map((period, i) => {
+                      const owner = period.playerId ? playersById.get(period.playerId) : null;
+                      return (
+                        <BusyBlock
+                          key={`p-${i}-${period.eventId ?? period.start}`}
+                          period={period}
+                          ownerLabel={owner ? owner.first_name : selectedPlayer?.first_name ?? 'Player'}
+                          ownerColor={period.color ?? owner?.color ?? null}
+                          ownerInitials={owner ? getInitials(owner) : undefined}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Footer hint */}
+      <footer className="px-6 py-3 bg-warm-50/40 border-t border-warm-200/60 flex items-center justify-between text-[11px] text-warm-500">
+        <span>
+          Working hours · {formatHour(START_HOUR)} – {formatHour(END_HOUR)}
+        </span>
+        <span className="hidden sm:inline">
+          Hover an empty hour to schedule
+        </span>
+      </footer>
+    </div>
+  );
+}
+
+interface FreeSlotProps {
+  isHovered: boolean;
+  hasComparisonContext: boolean;
+  onClick: () => void;
+}
+
+function FreeSlot({ isHovered, hasComparisonContext, onClick }: FreeSlotProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'absolute inset-1.5 rounded-xl border border-dashed border-transparent',
+        'transition-all duration-200 ease-out',
+        'flex items-center justify-center gap-2',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+        isHovered
+          ? 'bg-primary-50/60 border-primary-200 shadow-[inset_0_0_0_1px_rgba(34,197,94,0.15)]'
+          : 'bg-transparent',
+      )}
+      aria-label={hasComparisonContext ? 'Schedule when both are free' : 'Schedule at this time'}
+    >
+      <span
+        className={cn(
+          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full',
+          'text-[12px] font-medium tracking-wide',
+          'transition-all duration-200',
+          isHovered
+            ? 'bg-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.25)] scale-100'
+            : 'bg-transparent text-transparent scale-95',
+        )}
+      >
+        <Plus className="w-3.5 h-3.5" />
+        Schedule here
+      </span>
+      {!isHovered && hasComparisonContext && (
+        <span className="text-[11px] font-medium text-primary-600/80">
+          ✓ Both available
+        </span>
+      )}
+    </button>
+  );
+}
+
+interface BusyBlockProps {
+  period: BusyPeriod;
+  ownerLabel: string;
+  ownerColor: BusyPeriodColor | null;
+  ownerInitials?: string;
+}
+
+function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockProps) {
+  const isClass = period.type === 'class';
+  const isBlocked = period.type === 'blocked';
+  const colorBg = ownerColor?.bg ?? (isClass || isBlocked ? '#f97316' : '#16a34a');
+  const colorLight = ownerColor?.light ?? (isClass || isBlocked ? 'rgba(249, 115, 22, 0.1)' : 'rgba(22, 163, 74, 0.1)');
+  const colorBorder = ownerColor?.border ?? (isClass || isBlocked ? 'rgba(249, 115, 22, 0.4)' : 'rgba(22, 163, 74, 0.4)');
+
+  const stripePattern = isClass
+    ? `repeating-linear-gradient(45deg, transparent 0 8px, ${ownerColor ? ownerColor.light : 'rgba(0,0,0,0.04)'} 8px 16px)`
+    : undefined;
+
+  return (
+    <div
+      className={cn(
+        'group/block relative overflow-hidden rounded-xl px-3.5 py-2.5',
+        'border ring-1 ring-inset',
+        'transition-transform duration-200',
+        'hover:-translate-y-[1px]',
+      )}
+      style={{
+        background: `linear-gradient(135deg, ${colorLight} 0%, rgba(255,255,255,0.4) 100%)`,
+        borderColor: colorBorder,
+        boxShadow: `inset 3px 0 0 0 ${colorBg}`,
+      }}
+    >
+      {stripePattern && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 pointer-events-none opacity-60"
+          style={{ background: stripePattern }}
+        />
+      )}
+
+      <div className="relative flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5">
+            {ownerInitials ? (
+              <span
+                aria-hidden="true"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold flex-shrink-0"
+                style={{ background: colorBg }}
+              >
+                {ownerInitials}
+              </span>
+            ) : (
+              <span
+                aria-hidden="true"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white flex-shrink-0"
+                style={{ background: colorBg }}
+              >
+                {isClass ? <BookOpen className="w-2.5 h-2.5" /> : isBlocked ? <Lock className="w-2.5 h-2.5" /> : null}
+              </span>
+            )}
+            <p className="text-sm font-semibold text-warm-900 truncate">
+              {period.title || (isClass ? 'Class' : isBlocked ? 'Blocked' : 'Busy')}
+            </p>
+          </div>
+          <p className="text-[11px] text-warm-500 tabular-nums pl-7">
+            {ownerLabel} · {formatRange(period)}
+          </p>
+        </div>
       </div>
     </div>
   );
