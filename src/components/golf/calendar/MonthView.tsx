@@ -277,7 +277,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-xs font-semibold uppercase tracking-wider rounded-lg text-warm-500/60"
+            className="px-3 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.1em] rounded-lg text-warm-500/70"
           >
             {day}
           </div>

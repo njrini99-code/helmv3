@@ -250,8 +250,13 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
         {allDayEvents.length > 0 && (
           <div className="mb-4 px-1 pb-3 border-b border-warm-200/40">
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary-500/60" />
-              <span className="text-xs font-semibold text-warm-500 uppercase tracking-wider">All day</span>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary-700">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary-500" aria-hidden="true" />
+                All day
+              </span>
+              <span className="text-[11px] text-warm-400 tabular-nums">
+                {allDayEvents.length} event{allDayEvents.length === 1 ? '' : 's'}
+              </span>
             </div>
             <div className="space-y-1.5">
               {allDayEvents.map((event) => (

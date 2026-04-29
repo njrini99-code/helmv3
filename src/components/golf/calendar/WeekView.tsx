@@ -372,6 +372,11 @@ export function WeekView({
                 >
                   {dayNum}
                 </div>
+                {isCurrentDay && (
+                  <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-primary-600">
+                    Today
+                  </span>
+                )}
               </div>
             );
           })}
@@ -386,7 +391,10 @@ export function WeekView({
             )}
           >
             <div className="px-2 py-1.5 flex items-center justify-end">
-              <span className="text-xs font-medium text-warm-400">All day</span>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-50/70 ring-1 ring-primary-100/70 text-[9px] font-semibold uppercase tracking-[0.08em] text-primary-700">
+                <span className="w-1 h-1 rounded-full bg-primary-500" aria-hidden="true" />
+                All day
+              </span>
             </div>
             {allDayEventsByDay.map((dayEvents, dayIndex) => (
               <div key={dayIndex} className="px-0.5 py-1 space-y-0.5 min-h-[32px]">

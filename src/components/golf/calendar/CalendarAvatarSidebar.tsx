@@ -140,11 +140,13 @@ export function CalendarAvatarSidebar({
       <Tooltip content="Show all team events" side="right">
         <button
           onClick={handleAllClick}
+          aria-pressed={isAllSelected}
           className={cn(
             'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
             isAllSelected
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.3)]'
-              : 'bg-warm-100/90 text-warm-500'
+              : 'bg-warm-100/80 text-warm-500 hover:bg-warm-200/90 hover:text-warm-700'
           )}
         >
           ALL
@@ -152,7 +154,7 @@ export function CalendarAvatarSidebar({
       </Tooltip>
 
       {/* Divider */}
-      <div className="relative z-10 w-8 h-px bg-gradient-to-r from-transparent via-warm-300 to-transparent flex-shrink-0" aria-hidden="true" />
+      <div className="relative z-10 w-8 h-px bg-gradient-to-r from-transparent via-warm-300/60 to-transparent flex-shrink-0" aria-hidden="true" />
 
       {/* Scrollable Avatar List with Gradient Masks */}
       <div className="flex-1 min-h-0 w-full relative overflow-hidden isolate">
@@ -255,20 +257,26 @@ export function CalendarAvatarSidebar({
       {/* Color Legend - Inline when players selected */}
       {selectedPlayers.length > 0 && (
         <div className="w-full px-1 py-2 border-t border-warm-300/40 flex-shrink-0">
-          <p className="text-[8px] font-semibold text-warm-400 uppercase tracking-wider mb-1.5 text-center">
-            Legend
-          </p>
-          <div className="flex flex-col gap-1">
+          <div className="flex items-center justify-center gap-1 mb-1.5">
+            <span className="text-[8px] font-semibold text-warm-400 uppercase tracking-[0.1em]">
+              Legend
+            </span>
+            <span className="text-[8px] font-semibold text-warm-400 tabular-nums">
+              · {selectedPlayers.length}
+            </span>
+          </div>
+          <ul className="flex flex-col gap-1" role="list">
             {selectedPlayers.map((player, index) => {
               const color = PLAYER_COLORS[index % PLAYER_COLORS.length]!;
               return (
-                <div
+                <li
                   key={player.id}
-                  className="flex items-center gap-2 px-0.5"
+                  className="flex items-center gap-1.5 px-0.5"
                 >
-                  <div
-                    className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                  <span
+                    className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/80"
                     style={{ background: color.bg }}
+                    aria-hidden="true"
                   />
                   <span
                     className="text-[9px] text-warm-600 font-medium overflow-hidden text-ellipsis whitespace-nowrap"
@@ -276,10 +284,10 @@ export function CalendarAvatarSidebar({
                   >
                     {player.first_name}
                   </span>
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </div>
       )}
 

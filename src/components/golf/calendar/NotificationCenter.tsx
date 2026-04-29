@@ -178,8 +178,15 @@ export function NotificationCenter() {
               className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[380px] bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-[0_12px_40px_rgba(16,24,40,0.18)] z-50 overflow-clip"
             >
               {/* Header */}
-              <div className="px-4 py-3 border-b border-warm-200/60 flex items-center justify-between">
-                <h3 className="text-subhead font-semibold text-warm-900">Notifications</h3>
+              <div className="relative px-4 py-3 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-subhead font-semibold text-warm-900">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-semibold text-primary-700 tabular-nums">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
