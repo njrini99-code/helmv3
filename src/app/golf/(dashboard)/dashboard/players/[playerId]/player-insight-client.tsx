@@ -530,62 +530,76 @@ export function PlayerInsightClient({
                 )}
               </div>
 
-              {/* Active Patterns Card */}
-              <div className="glass-premium rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-semibold text-warm-900">Active Patterns</h3>
-                  <span className="text-xs text-warm-400 font-medium">{patterns.length} active</span>
+              {/* Active Patterns Card — premium */}
+              <div className="bg-white/85 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-glass overflow-hidden">
+                <div className="px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-[family-name:var(--font-fraunces)] text-[20px] leading-tight font-semibold text-warm-900">
+                      Active Patterns
+                    </h3>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-semibold ring-1 ring-primary-100 tabular-nums">
+                      {patterns.length}
+                    </span>
+                  </div>
                 </div>
                 {patterns.length === 0 ? (
-                  <p className="text-sm text-warm-400 text-center py-4">No active patterns detected</p>
+                  <p className="text-sm text-warm-400 text-center py-8 px-6">No active patterns detected</p>
                 ) : (
-                  <div className="space-y-3">
+                  <ul className="divide-y divide-warm-200/60">
                     {patterns.map((pattern) => (
-                      <div key={pattern.id} className="bg-warm-50/60 rounded-xl p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
+                      <li key={pattern.id} className="px-6 py-4 hover:bg-warm-50/50 transition-colors">
+                        <div className="flex items-start justify-between gap-3 mb-1.5">
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className={cn('w-2 h-2 rounded-full flex-shrink-0', severityDotColor(pattern.severity))} />
-                            <span className="text-sm font-medium text-warm-900 truncate">{pattern.name ?? 'Unnamed Pattern'}</span>
+                            <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', severityDotColor(pattern.severity))} aria-hidden="true" />
+                            <span className="text-sm font-semibold text-warm-900 truncate">
+                              {pattern.name ?? 'Pattern'}
+                            </span>
                           </div>
                           {pattern.stroke_impact !== null && (
                             <span className={cn(
-                              'text-xs font-semibold tabular-nums flex-shrink-0',
-                              pattern.stroke_impact < 0 ? 'text-red-500' : 'text-emerald-600',
+                              'text-xs font-semibold tabular-nums flex-shrink-0 px-1.5 py-0.5 rounded-md',
+                              pattern.stroke_impact < 0
+                                ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-100'
+                                : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
                             )}>
                               {pattern.stroke_impact > 0 ? '+' : ''}{pattern.stroke_impact.toFixed(1)}/rd
                             </span>
                           )}
                         </div>
                         {pattern.description && (
-                          <p className="text-xs text-warm-500 line-clamp-2">{pattern.description}</p>
+                          <p className="text-xs text-warm-500 line-clamp-2 leading-relaxed mb-2 pl-3.5">
+                            {pattern.description}
+                          </p>
                         )}
-                        <div className="flex items-center gap-2 text-[11px] text-warm-400">
-                          <span className="capitalize">{pattern.lifecycle_state ?? 'detected'}</span>
-                          {pattern.first_detected && (
-                            <>
-                              <span>&middot;</span>
-                              <span>Detected {formatRelativeDate(pattern.first_detected)}</span>
-                            </>
-                          )}
+                        <div className="flex items-center justify-between gap-2 pl-3.5">
+                          <div className="flex items-center gap-1.5 text-[11px] text-warm-400">
+                            <span className="capitalize">{pattern.lifecycle_state ?? 'detected'}</span>
+                            {pattern.first_detected && (
+                              <>
+                                <span aria-hidden="true">·</span>
+                                <span>{formatRelativeDate(pattern.first_detected)}</span>
+                              </>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Link
+                              href={`/golf/dashboard/patterns?pattern=${pattern.id}`}
+                              className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                            >
+                              Details
+                            </Link>
+                            <span className="text-warm-200" aria-hidden="true">·</span>
+                            <Link
+                              href={`/golf/dashboard/development?player=${player.id}`}
+                              className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                            >
+                              Focus
+                            </Link>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 pt-1">
-                          <Link
-                            href={`/golf/dashboard/patterns?pattern=${pattern.id}`}
-                            className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                          >
-                            View Details
-                          </Link>
-                          <span className="text-warm-200">|</span>
-                          <Link
-                            href={`/golf/dashboard/development?player=${player.id}`}
-                            className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                          >
-                            Create Focus Area
-                          </Link>
-                        </div>
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </div>
             </div>

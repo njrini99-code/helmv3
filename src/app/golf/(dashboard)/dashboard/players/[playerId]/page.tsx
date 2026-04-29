@@ -216,17 +216,61 @@ export default async function PlayerInsightPage({
   const rounds = (roundsResult.data as RoundRow[] | null) ?? [];
 
   // Patterns: derive name/description from metadata since the live schema
-  // has neither column (LIVE-8).
+  // has neither column (LIVE-8). Two metadata shapes coexist:
+  //   - "conditional" patterns carry `name` + `description` directly.
+  //   - "contextual" / shot-dispersion patterns carry a richer
+  //     {situation, tendencies, recommendation, insight} blob — synthesize a
+  //     human title from situation.distanceRange.label + lie, and use the
+  //     embedded `insight` text as the description.
+  // We also dedupe by the synthesized title so the 4-of-a-kind "Wedge from
+  // rough" rows the miner emits collapse to one card.
   const rawPatterns = (patternsResult.data as Array<Record<string, unknown>> | null) ?? [];
-  const patterns: PatternRow[] = rawPatterns.map((p) => {
+  const seenTitles = new Set<string>();
+  const patterns: PatternRow[] = [];
+  for (const p of rawPatterns) {
     const meta = (p.metadata as Record<string, unknown> | null) ?? null;
     const metaDescription = typeof meta?.description === 'string' ? meta.description : null;
     const metaName = typeof meta?.name === 'string' ? meta.name : null;
-    return {
+    const metaInsight = typeof meta?.insight === 'string' ? meta.insight : null;
+    const metaRecommendation = typeof meta?.recommendation === 'string' ? meta.recommendation : null;
+
+    let name = metaName;
+    let description = metaDescription ?? metaInsight ?? metaRecommendation;
+    if (!name) {
+      const situation = (meta?.situation as Record<string, unknown> | null) ?? null;
+      const lie = typeof situation?.lie === 'string' ? situation.lie : null;
+      const range = (situation?.distanceRange as Record<string, unknown> | null) ?? null;
+      const rangeLabel = typeof range?.label === 'string' ? range.label : null;
+      const tendencies = Array.isArray(meta?.tendencies)
+        ? (meta?.tendencies as Array<Record<string, unknown>>)
+        : [];
+      const topTendency = tendencies[0];
+      const direction = typeof topTendency?.direction === 'string'
+        ? topTendency.direction.replace(/_/g, ' ')
+        : null;
+
+      if (rangeLabel && lie) {
+        name = direction
+          ? `${rangeLabel} from ${lie} → ${direction}`
+          : `${rangeLabel} from ${lie}`;
+      } else if (rangeLabel) {
+        name = rangeLabel;
+      } else if ((p.pattern_type as string | null) === 'contextual') {
+        name = 'Shot pattern';
+      } else {
+        name = (p.pattern_type as string | null) ?? null;
+      }
+    }
+
+    const dedupKey = (name ?? '').toLowerCase().trim();
+    if (dedupKey && seenTitles.has(dedupKey)) continue;
+    if (dedupKey) seenTitles.add(dedupKey);
+
+    patterns.push({
       id: p.id as string,
       pattern_type: (p.pattern_type as string | null) ?? null,
-      name: metaName ?? (p.pattern_type as string | null) ?? null,
-      description: metaDescription,
+      name,
+      description,
       severity: (p.severity as string | null) ?? null,
       stroke_impact: (p.stroke_impact as number | null) ?? null,
       lifecycle_state: (p.lifecycle_state as string | null) ?? null,
@@ -234,8 +278,8 @@ export default async function PlayerInsightPage({
       is_active: (p.is_active as boolean | null) ?? null,
       created_at: p.created_at as string,
       metadata: meta,
-    };
-  });
+    });
+  }
 
   // Insights: derive tone + acknowledged from live columns.
   const rawInsights = (insightsResult.data as Array<Record<string, unknown>> | null) ?? [];
