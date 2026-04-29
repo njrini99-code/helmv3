@@ -32,10 +32,12 @@ const NOTABLE_PAR4_LENGTH_GAP_STROKES = 0.40;
 
 /**
  * D2 baseline avg score-to-par per par-type. Mirrors the contract; these are
- * typical college-D2 averages. Par 5s are scoring opportunities, which is why
- * the baseline is the lowest over-par value.
+ * typical college-D2 averages. The baseline is no longer used to drive
+ * insight generation — every emit now anchors against real benchmarks
+ * (team average from golf_player_stats_cache + PGA Tour averages from
+ * insights/benchmarks.ts). Constants kept for legacy test fixtures.
  */
-const D2_BASELINE_BY_PAR: Record<3 | 4 | 5, number> = {
+const LEGACY_D2_BASELINE_BY_PAR: Record<3 | 4 | 5, number> = {
   3: 0.30,
   4: 0.40,
   5: 0.20,
@@ -238,6 +240,7 @@ function composeParContent(
   par: 3 | 4 | 5,
   agg: ParTypeAggregate,
   baseline: number,
+  baselineLabel: string,
   strokesImpact: number,
 ): string {
   const yourDisplay = (agg.avgScoreToPar >= 0 ? '+' : '') + agg.avgScoreToPar.toFixed(2);
@@ -254,7 +257,7 @@ function composeParContent(
 
   return (
     `Across your ${agg.holesPlayed} par-${par} holes in the last ${WINDOW_DAYS} days, ` +
-    `you averaged ${yourDisplay} to par. D2 average for par ${par} is ${baseDisplay} — ` +
+    `you averaged ${yourDisplay} to par. ${baselineLabel} is ${baseDisplay} — ` +
     `you are ${gap} strokes ${direction}. Projected impact: ~${strokesImpact.toFixed(2)} strokes per round. ` +
     closing
   );
@@ -328,9 +331,43 @@ export async function generateParTypeInsights(playerId: string): Promise<void> {
 
   const aggregates = aggregateByPar(rows);
 
+  const { resolveTeamAverage, resolvePgaBenchmark } = await import(
+    '@/lib/coachhelm/v2/insights/benchmarks'
+  );
+
   for (const agg of aggregates) {
     if (agg.holesPlayed < MIN_HOLES_PER_PAR) continue;
-    const baseline = D2_BASELINE_BY_PAR[agg.par];
+    const metric = `par_scoring_par${agg.par}`;
+
+    // Two real benchmarks: team average (live, from
+    // golf_player_stats_cache) and PGA Tour average (constants in
+    // benchmarks.ts). Team avg is the primary tick when the team has
+    // peers; PGA falls into primary when the player has no team peers
+    // yet so the panel always anchors against real data instead of a
+    // synthetic D2 placeholder.
+    const teamAvg = await resolveTeamAverage(playerId, metric, supabase);
+    const pga = resolvePgaBenchmark(metric);
+
+    let baseline: number;
+    let baselineLabel: string;
+    let baselineSource: 'team_avg' | 'pga_baseline';
+    let secondary: { value: number; label: string; source: 'pga_baseline' } | null = null;
+
+    if (teamAvg) {
+      baseline = teamAvg.value;
+      baselineLabel = `Team average (${teamAvg.sample_size} player${teamAvg.sample_size === 1 ? '' : 's'})`;
+      baselineSource = 'team_avg';
+      if (pga) secondary = { value: pga.value, label: pga.label, source: 'pga_baseline' };
+    } else if (pga) {
+      baseline = pga.value;
+      baselineLabel = pga.label;
+      baselineSource = 'pga_baseline';
+    } else {
+      // No real anchor available — skip the insight entirely rather than
+      // emit a synthetic baseline. Generators must never fabricate data.
+      continue;
+    }
+
     const gap = agg.avgScoreToPar - baseline;
     if (Math.abs(gap) < NOTABLE_PAR_GAP_STROKES) continue;
 
@@ -354,14 +391,21 @@ export async function generateParTypeInsights(playerId: string): Promise<void> {
     const yourDisp = (agg.avgScoreToPar >= 0 ? '+' : '') + agg.avgScoreToPar.toFixed(2);
 
     const evidence: InsightEvidence = {
-      metric: `par_scoring_par${agg.par}`,
+      metric,
       metric_label: `Average score-to-par on par ${agg.par}s`,
       unit: 'strokes',
       your_value: Number(agg.avgScoreToPar.toFixed(3)),
       your_value_display: yourDisp,
-      comparison_value: baseline,
-      comparison_label: `D2 average for par ${agg.par}`,
-      comparison_source: 'd2_avg',
+      comparison_value: Number(baseline.toFixed(3)),
+      comparison_label: baselineLabel,
+      comparison_source: baselineSource,
+      ...(secondary
+        ? {
+            secondary_value: Number(secondary.value.toFixed(3)),
+            secondary_label: secondary.label,
+            secondary_source: secondary.source,
+          }
+        : {}),
       sample_n: agg.holesPlayed,
       window_days: WINDOW_DAYS,
       window_start: windowStart,
@@ -383,9 +427,10 @@ export async function generateParTypeInsights(playerId: string): Promise<void> {
     };
 
     const direction = gap > 0 ? '↑' : '↓';
+    const titleAnchor = baselineSource === 'team_avg' ? 'team' : 'PGA';
     const title =
-      `Par ${agg.par} scoring: ${yourDisp} (${direction} vs D2)`;
-    const content = composeParContent(agg.par, agg, baseline, strokesImpact);
+      `Par ${agg.par} scoring: ${yourDisp} (${direction} vs ${titleAnchor})`;
+    const content = composeParContent(agg.par, agg, baseline, baselineLabel, strokesImpact);
     const drillTags = DRILL_TAGS_BY_PAR[agg.par];
 
     try {
@@ -521,7 +566,7 @@ export const __internal = {
   MIN_HOLES_FOR_PAR4_LENGTH_SPLIT,
   NOTABLE_PAR_GAP_STROKES,
   NOTABLE_PAR4_LENGTH_GAP_STROKES,
-  D2_BASELINE_BY_PAR,
+  LEGACY_D2_BASELINE_BY_PAR,
   DRILL_TAGS_BY_PAR,
   PAR4_LENGTH_BUCKETS,
   aggregateByPar,

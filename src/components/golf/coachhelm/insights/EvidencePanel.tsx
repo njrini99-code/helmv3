@@ -132,6 +132,113 @@ function formatSample(sample: number, metric: string): string {
   return `${sample} ${noun}`;
 }
 
+/**
+ * Horizontal scale that places the player's value, the primary baseline
+ * (team avg), and the optional secondary baseline (PGA) as ticks on the
+ * same axis. Lets the coach see at a glance both "where am I" and "where
+ * is the team" relative to "tour-grade." Falls back to the legacy "X vs Y"
+ * pill when the metric only carries a single anchor.
+ */
+function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
+  const ticks: Array<{
+    value: number;
+    label: string;
+    role: 'you' | 'primary' | 'secondary';
+  }> = [
+    {
+      value: evidence.your_value,
+      label: 'You',
+      role: 'you',
+    },
+    {
+      value: evidence.comparison_value,
+      label: SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label,
+      role: 'primary',
+    },
+  ];
+  if (
+    typeof evidence.secondary_value === 'number' &&
+    evidence.secondary_value !== evidence.comparison_value
+  ) {
+    ticks.push({
+      value: evidence.secondary_value,
+      label: evidence.secondary_label
+        ?? (evidence.secondary_source ? SOURCE_LABELS[evidence.secondary_source] : 'Benchmark'),
+      role: 'secondary',
+    });
+  }
+
+  // Pad the axis 10% beyond the extremes so the ticks aren't pinned to
+  // the edges. For percent metrics clamp to [0, 1].
+  const rawMin = Math.min(...ticks.map((t) => t.value));
+  const rawMax = Math.max(...ticks.map((t) => t.value));
+  const span = Math.max(rawMax - rawMin, 0.0001);
+  const pad = span * 0.25;
+  let axisMin = rawMin - pad;
+  let axisMax = rawMax + pad;
+  if (evidence.unit === 'percent') {
+    axisMin = Math.max(0, axisMin);
+    axisMax = Math.min(1, axisMax);
+  }
+  const axisSpan = Math.max(axisMax - axisMin, 0.0001);
+
+  const positions = ticks.map((t) => ({
+    ...t,
+    pct: ((t.value - axisMin) / axisSpan) * 100,
+  }));
+
+  const youColor = 'bg-primary-600 text-white ring-2 ring-primary-200';
+  const primaryColor = 'bg-warm-700 text-white ring-2 ring-warm-200';
+  const secondaryColor = 'bg-violet-600 text-white ring-2 ring-violet-200';
+
+  return (
+    <div className="space-y-2" data-testid="evidence-benchmark-scale">
+      <div className="relative h-7">
+        {/* Axis */}
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-warm-200/80 via-warm-200 to-warm-200/80" />
+        {positions.map((p, i) => (
+          <span
+            key={`${p.role}-${i}`}
+            className={cn(
+              'absolute top-1/2 -translate-y-1/2 -translate-x-1/2',
+              'w-3 h-3 rounded-full',
+              'shadow-[0_1px_3px_rgba(16,24,40,0.18)]',
+              p.role === 'you' && youColor,
+              p.role === 'primary' && primaryColor,
+              p.role === 'secondary' && secondaryColor,
+            )}
+            style={{ left: `${Math.max(0, Math.min(100, p.pct))}%` }}
+            aria-label={`${p.label}: ${formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}`}
+            title={`${p.label}: ${formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}`}
+          />
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] tabular-nums">
+        {positions.map((p, i) => (
+          <span
+            key={`legend-${p.role}-${i}`}
+            className="inline-flex items-center gap-1.5"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'w-2 h-2 rounded-full',
+                p.role === 'you' && 'bg-primary-600',
+                p.role === 'primary' && 'bg-warm-700',
+                p.role === 'secondary' && 'bg-violet-600',
+              )}
+            />
+            <span className="text-warm-700 font-semibold">
+              {formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}
+            </span>
+            <span className="text-warm-500">{p.label}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function EvidencePanel({
   evidence,
   compact = true,
@@ -148,38 +255,29 @@ export function EvidencePanel({
     return (
       <div
         data-testid={testId ?? 'evidence-panel-compact'}
-        className={cn(
-          'flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-xs text-warm-700 tabular-nums',
-        )}
+        className={cn('mt-3 space-y-2.5')}
       >
-        <span
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/70 border border-white/40 font-medium"
-          data-testid="evidence-your-value"
-        >
-          <span aria-hidden>🎯</span>
-          <span>
-            {formatValue(evidence.your_value, evidence.unit, evidence.your_value_display)}
-            {' vs '}
-            {formatValue(evidence.comparison_value, evidence.unit)}{' '}
-            <span className="text-warm-500">
-              {SOURCE_LABELS[evidence.comparison_source] ?? evidence.comparison_label}
-            </span>
+        <BenchmarkScale evidence={evidence} />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-warm-500 tabular-nums">
+          <span data-testid="evidence-sample">
+            {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
           </span>
-        </span>
-        <span className="text-warm-500" data-testid="evidence-sample">
-          {formatSample(evidence.sample_n, evidence.metric)} in {evidence.window_days} days
-        </span>
-        {evidence.strokes_impact !== 0 && (
-          <span className="text-warm-600" data-testid="evidence-impact">
-            ~{Math.abs(evidence.strokes_impact).toFixed(1)} strokes/round
+          {evidence.strokes_impact !== 0 && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="text-warm-700 font-medium" data-testid="evidence-impact">
+                ~{Math.abs(evidence.strokes_impact).toFixed(1)} strokes/round
+              </span>
+            </>
+          )}
+          <span aria-hidden="true">·</span>
+          <span
+            className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-semibold', colors.bg, colors.text)}
+            data-testid="evidence-confidence"
+          >
+            {confPct}% confidence
           </span>
-        )}
-        <span
-          className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
-          data-testid="evidence-confidence"
-        >
-          {confPct}% confidence
-        </span>
+        </div>
       </div>
     );
   }

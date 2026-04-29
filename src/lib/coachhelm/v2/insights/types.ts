@@ -62,10 +62,17 @@ export interface InsightEvidence {
   your_value: number;
   your_value_display: string;
 
-  // What you're being compared to
+  // What you're being compared to (primary tick — typically team_avg)
   comparison_value: number;
   comparison_label: string;
   comparison_source: InsightComparisonSource;
+
+  // Optional secondary tick — typically the PGA Tour benchmark for the same
+  // metric. The EvidencePanel renders it as a second tick on the same scale
+  // so the player can see where the team avg sits relative to Tour grade.
+  secondary_value?: number;
+  secondary_label?: string;
+  secondary_source?: InsightComparisonSource;
 
   // Sample / window
   sample_n: number;

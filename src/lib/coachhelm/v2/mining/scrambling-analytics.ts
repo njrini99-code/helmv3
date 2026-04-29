@@ -302,8 +302,8 @@ async function emitScrambleInsight(
     your_value: Number(stats.pct.toFixed(3)),
     your_value_display: `${Math.round(stats.pct * 100)}%`,
     comparison_value: baseline,
-    comparison_label: `D2 average from ${LIE_LABEL[stats.lie]}`,
-    comparison_source: 'd2_avg',
+    comparison_label: `PGA Tour avg from ${LIE_LABEL[stats.lie]}`,
+    comparison_source: 'pga_baseline',
     sample_n: stats.attempts,
     window_days: WINDOW_DAYS,
     window_start: windowStart,
@@ -332,14 +332,14 @@ async function emitScrambleInsight(
   const polarity = gap >= 0 ? 'above' : 'below';
   const title =
     gap >= 0
-      ? `Scrambling from ${LIE_LABEL[stats.lie]} is ${Math.round(stats.pct * 100)}% — above D2 average`
-      : `Scrambling from ${LIE_LABEL[stats.lie]} is ${Math.round(stats.pct * 100)}% — below D2 average`;
+      ? `Scrambling from ${LIE_LABEL[stats.lie]} is ${Math.round(stats.pct * 100)}% — above PGA Tour avg`
+      : `Scrambling from ${LIE_LABEL[stats.lie]} is ${Math.round(stats.pct * 100)}% — below PGA Tour avg`;
   const content =
     `Of your ${stats.attempts} up-and-down attempts from ${LIE_LABEL[stats.lie]} ` +
     `in the last ${WINDOW_DAYS} days, you got up and down ${stats.made} times ` +
-    `(${Math.round(stats.pct * 100)}%). D2 average from this lie is ` +
+    `(${Math.round(stats.pct * 100)}%). PGA Tour avg from this lie is ` +
     `${Math.round(baseline * 100)}% — you're ${Math.abs(Math.round(gap * 100))} ` +
-    `points ${polarity} peer. Closing this gap is worth roughly ` +
+    `points ${polarity} tour grade. Closing this gap is worth roughly ` +
     `${strokesImpact} strokes per round.`;
 
   const drillTags = DRILL_TAGS[stats.lie];

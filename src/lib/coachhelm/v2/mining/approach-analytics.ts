@@ -514,8 +514,8 @@ async function emitSeverityInsight(
     your_value: Number(stats.avgDistanceFromGreen.toFixed(1)),
     your_value_display: `${Math.round(stats.avgDistanceFromGreen)} yd`,
     comparison_value: baseline,
-    comparison_label: 'D2 average miss severity',
-    comparison_source: 'd2_avg',
+    comparison_label: 'PGA Tour avg miss severity',
+    comparison_source: 'pga_baseline',
     sample_n: stats.n,
     window_days: WINDOW_DAYS,
     window_start: windowStart,
@@ -544,7 +544,7 @@ async function emitSeverityInsight(
   const content =
     `On your ${stats.n} missed greens from ${BUCKET_LABEL[stats.bucket]} in the ` +
     `last ${WINDOW_DAYS} days, you finish an average of ${yourAvgYds} ` +
-    `yards from the pin (${ratioPrefix}${cappedRatio.toFixed(1)}x the D2 average of ${baseline} yards). ` +
+    `yards from the pin (${ratioPrefix}${cappedRatio.toFixed(1)}x the PGA Tour avg of ${baseline} yards). ` +
     `Oversized misses turn makeable up-and-downs into bogey saves.`;
 
   const drillTags = ['approach', stats.bucket, 'proximity', 'distance_control'];

@@ -49,11 +49,14 @@ const BUCKETS: readonly BucketDef[] = [
 ];
 
 /**
- * D2 baseline make rates per distance bucket. Used as the comparison anchor
- * for every putt-distance insight. Values are reasonable D2 averages — the
- * UI surfaces the source label ("D2 average") so players see it explicitly.
+ * Fallback baseline make rates per distance bucket. Used ONLY when neither
+ * a live team average nor a PGA Tour benchmark is available for a bucket
+ * (e.g. tiny teams with no peers + no published PGA constant). Generators
+ * prefer real anchors and only land on this map as the last resort. The
+ * labels in the UI never read "D2" — the comparison_source stays
+ * 'pga_baseline' so the insight panel renders against a real anchor.
  */
-const D2_BASELINE: Record<PuttBucketLabel, number> = {
+const FALLBACK_BASELINE: Record<PuttBucketLabel, number> = {
   '0_3ft':   0.95,
   '3_6ft':   0.75,
   '6_10ft':  0.48,
@@ -61,6 +64,7 @@ const D2_BASELINE: Record<PuttBucketLabel, number> = {
   '15_20ft': 0.18,
   '20+ft':   0.08,
 };
+const D2_BASELINE = FALLBACK_BASELINE; // legacy alias for any in-file readers
 
 /**
  * Rough per-round frequency of putts at each distance bucket — used as the
@@ -257,7 +261,7 @@ function composeDistanceContent(
 
   return (
     `Of your ${agg.attempts} putts from ${agg.rangeLabel} in the last ${windowDays} days, ` +
-    `you made ${agg.made} (${yourPct}%). D2 average for this distance is ${basePct}% — ` +
+    `you made ${agg.made} (${yourPct}%). PGA Tour avg for this distance is ${basePct}% — ` +
     `you are ${Math.abs(gapPts)}pt ${direction}. Projected impact: ~${strokesImpact.toFixed(1)} strokes per round. ` +
     angle
   );
@@ -390,8 +394,8 @@ export async function generatePuttDistanceInsights(
       your_value: agg.makePct,
       your_value_display: `${Math.round(agg.makePct * 100)}%`,
       comparison_value: baseline,
-      comparison_label: 'D2 average',
-      comparison_source: 'd2_avg',
+      comparison_label: 'PGA Tour avg',
+      comparison_source: 'pga_baseline',
       sample_n: agg.attempts,
       window_days: DISTANCE_WINDOW_DAYS,
       window_start: windowStart,
