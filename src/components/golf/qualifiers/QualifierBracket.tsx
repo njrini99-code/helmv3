@@ -113,7 +113,7 @@ function PlayerBracketCard({
       {/* Position */}
       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cream-100/82 shadow-sm">
         {getPositionIcon(position) || (
-          <span className={cn('text-sm font-bold', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
+          <span className={cn('text-[13px] font-medium', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
             {position}
             {entry.isTied && <span className="text-xs">T</span>}
           </span>
@@ -151,7 +151,7 @@ function PlayerBracketCard({
 
       {/* Score */}
       <div className="text-right">
-        <p className={cn('text-lg font-bold tabular-nums', styles.score)}>
+        <p className={cn('text-[17px] font-medium tracking-[-0.005em] tabular-nums', styles.score)}>
           {entry.totalScore > 0 ? entry.totalScore : '-'}
         </p>
         <p className="text-xs text-warm-400">

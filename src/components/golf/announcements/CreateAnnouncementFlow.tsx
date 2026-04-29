@@ -353,7 +353,7 @@ function AnnouncementDialog({
                     <IconUser size={11} />
                     Select
                     {!isAllTeam && recipientPlayerIds!.length > 0 && (
-                      <span className="bg-primary-200 text-primary-800 text-micro font-bold px-1.5 rounded-full leading-tight">
+                      <span className="bg-primary-200 text-primary-800 text-micro font-medium px-1.5 rounded-full leading-tight">
                         {recipientPlayerIds!.length}
                       </span>
                     )}
@@ -472,7 +472,7 @@ function AnnouncementDialog({
                 <IconClipboardList size={11} />
                 Add Task
                 {inlineTasks.length > 0 && (
-                  <span className="bg-warm-200 text-warm-600 text-micro font-bold px-1.5 rounded-full leading-tight">
+                  <span className="bg-warm-200 text-warm-600 text-micro font-medium px-1.5 rounded-full leading-tight">
                     {inlineTasks.length}
                   </span>
                 )}
@@ -495,7 +495,7 @@ function AnnouncementDialog({
                         className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-warm-200 bg-white text-xs"
                       >
                         <div className={cn('w-5 h-5 rounded flex items-center justify-center', colors.bg)}>
-                          <span className={cn('text-[8px] font-bold leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
+                          <span className={cn('text-[8px] font-medium leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
                         </div>
                         <span className="font-medium text-warm-700 max-w-[120px] truncate">{doc.title}</span>
                         <button
@@ -556,7 +556,7 @@ function AnnouncementDialog({
                               className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 text-left transition-colors"
                             >
                               <div className={cn('w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0', colors.bg)}>
-                                <span className={cn('text-[9px] font-bold', colors.text)}>{getFileLabel(doc.file_type)}</span>
+                                <span className={cn('text-[10px] font-medium', colors.text)}>{getFileLabel(doc.file_type)}</span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-warm-700 truncate">{doc.title}</p>
@@ -597,7 +597,7 @@ function AnnouncementDialog({
                   layout
                 >
                   <div className="flex items-start gap-2 p-2.5 border border-warm-200 rounded-xl bg-warm-50/30">
-                    <span className="w-5 h-5 rounded-md bg-warm-200/60 flex items-center justify-center text-micro font-bold text-warm-500 flex-shrink-0 mt-0.5">
+                    <span className="w-5 h-5 rounded-md bg-warm-200/60 flex items-center justify-center text-micro font-medium text-warm-500 flex-shrink-0 mt-0.5">
                       {index + 1}
                     </span>
                     <div className="flex-1 min-w-0 space-y-1">

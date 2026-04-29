@@ -102,7 +102,7 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
         exit={{ scale: 0, opacity: 0 }}
         className={cn(
           'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1',
-          'text-xs font-bold rounded-full',
+          'text-[11px] font-medium rounded-full',
           hasCritical
             ? 'bg-red-500 text-white'
             : counts.warning > 0
@@ -152,7 +152,7 @@ export function NavAlertBadge({ count, hasCritical = false, className }: NavAler
     <span
       className={cn(
         'relative inline-flex items-center justify-center min-w-[18px] h-[18px] px-1',
-        'text-xs font-bold rounded-full',
+        'text-[11px] font-medium rounded-full',
         hasCritical
           ? 'bg-red-500 text-white'
           : 'bg-amber-500 text-white',

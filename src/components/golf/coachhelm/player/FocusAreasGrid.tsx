@@ -103,7 +103,7 @@ function FocusAreaCardContent({
     <>
       {/* Priority indicator */}
       <div className={cn(
-        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold',
+        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium',
         index === 0 ? 'bg-primary-100 text-primary-700' :
         index === 1 ? 'bg-primary-50 text-primary-600' :
         'bg-warm-100 text-warm-500'
@@ -190,7 +190,7 @@ function FocusAreaCard({
 
   const sharedClassName = cn(
     'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
-    'glass-standard',
+    'surface-matte',
     interactive && 'hover:bg-cream-50/92 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
   );
 

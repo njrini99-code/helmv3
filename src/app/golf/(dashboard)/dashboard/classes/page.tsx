@@ -498,7 +498,7 @@ export default function GolfClassesPage() {
                   <IconBook size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-warm-900">{classes.length}</p>
+                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">{classes.length}</p>
                   <p className="text-xs text-warm-500">Classes</p>
                 </div>
               </div>
@@ -509,7 +509,7 @@ export default function GolfClassesPage() {
                   <IconCalendar size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-warm-900">{totalCredits}</p>
+                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">{totalCredits}</p>
                   <p className="text-xs text-warm-500">Credits</p>
                 </div>
               </div>
@@ -520,7 +520,7 @@ export default function GolfClassesPage() {
                   <IconClock size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-warm-900">
+                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">
                     {Object.keys(classesByDay).length}
                   </p>
                   <p className="text-xs text-warm-500">Days/Week</p>
@@ -533,7 +533,7 @@ export default function GolfClassesPage() {
                   <IconMapPin size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold tabular-nums text-warm-900">
+                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">
                     {classes && classes.length > 0
                       ? new Set(classes.map(c => c.building).filter(Boolean)).size
                       : 0}
@@ -565,7 +565,7 @@ export default function GolfClassesPage() {
                               <button
                                 key={`${cls.id}-${day}`}
                                 onClick={() => handleClassClick(cls)}
-                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:shadow-glass-sm active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
+                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
                                 style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
                               >
                                 {code && (

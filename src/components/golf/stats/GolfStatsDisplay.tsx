@@ -190,7 +190,7 @@ export default function GolfStatsDisplay({
           )}
           <AnimatePresence>
             {showFilters && (
-              <motion.div className="glass-standard rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
+              <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-warm-700">Quick Filters</h3>
                   <button onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</button>

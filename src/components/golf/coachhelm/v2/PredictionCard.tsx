@@ -49,7 +49,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-gradient-to-br from-warm-50 to-white rounded-xl border border-warm-200 p-4 hover:shadow-md transition-shadow"
+      className="bg-cream-50/85 rounded-xl border border-warm-200 p-4 hover:shadow-md transition-shadow"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">

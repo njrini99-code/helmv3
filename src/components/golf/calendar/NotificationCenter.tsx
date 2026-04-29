@@ -148,7 +148,7 @@ export function NotificationCenter() {
             count badge when we know the number. iOS red (#FF3B30). */}
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white shadow-sm tabular-nums"
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-medium rounded-full flex items-center justify-center ring-2 ring-cream-50 tabular-nums"
             style={{ backgroundColor: '#FF3B30' }}
           >
             {unreadCount > 9 ? '9+' : unreadCount}

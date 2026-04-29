@@ -185,7 +185,7 @@ export function PredictionAccuracyPanel({
 
       {/* Accuracy Over Time Chart */}
       {hasAccuracyData && (
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Accuracy Over Time</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -225,7 +225,7 @@ export function PredictionAccuracyPanel({
 
       {/* Calibration Chart */}
       {hasCalibrationData && (
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-1">Calibration Chart</h4>
           <p className="text-xs text-warm-500 mb-4">
             Comparing predicted confidence vs actual accuracy
@@ -279,7 +279,7 @@ export function PredictionAccuracyPanel({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Error Distribution */}
         {hasErrorData && (
-          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
             <h4 className="text-sm font-medium text-warm-700 mb-4">Error Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -320,13 +320,13 @@ export function PredictionAccuracyPanel({
         )}
 
         {/* Confidence Analysis */}
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Confidence Analysis</h4>
           <div className="space-y-4">
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-amber-800">Overconfidence Rate</span>
-                <span className="text-lg font-bold text-amber-700">
+                <span className="text-[17px] font-medium tracking-[-0.005em] text-amber-700">
                   {Math.round(data.summary.overconfidenceRate * 100)}%
                 </span>
               </div>
@@ -339,7 +339,7 @@ export function PredictionAccuracyPanel({
             <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-blue-800">Underconfidence Rate</span>
-                <span className="text-lg font-bold text-blue-700">
+                <span className="text-[17px] font-medium tracking-[-0.005em] text-blue-700">
                   {Math.round(data.summary.underconfidenceRate * 100)}%
                 </span>
               </div>
@@ -390,7 +390,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-lg font-bold text-warm-900">{value}</span>
+      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -446,7 +446,7 @@ function ConfidenceIndicator({
       <p className="text-xs text-warm-500">{label}</p>
       <p
         className={cn(
-          'text-sm font-bold',
+          'text-[13px] font-medium',
           isHigh ? 'text-red-600' : type === 'over' ? 'text-amber-600' : 'text-blue-600'
         )}
       >

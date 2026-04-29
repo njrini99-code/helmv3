@@ -9,7 +9,7 @@ interface ReviewSummaryProps {
 export function ReviewSummary({ review }: ReviewSummaryProps) {
   return (
     <div
-      className="rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-5"
+      className="rounded-xl border border-primary-200 bg-primary-50/55 p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
     >
       <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">

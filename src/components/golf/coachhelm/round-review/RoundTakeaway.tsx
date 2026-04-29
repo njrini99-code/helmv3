@@ -193,7 +193,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
             className={cn(preheader.bright ? 'text-primary-600' : 'text-amber-500')}
             aria-hidden
           />
-          <h2 className="text-xs font-bold uppercase tracking-widest text-warm-500 border-b border-warm-200/60 pb-0.5">
+          <h2 className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 border-b border-warm-200/60 pb-0.5">
             {preheader.label}
           </h2>
         </div>

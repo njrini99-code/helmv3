@@ -181,7 +181,7 @@ export function CreateFeedSection({
                 <div className="text-center">
                   <p
                     className={cn(
-                      'text-xs font-bold uppercase tracking-wide',
+                      'text-[11px] font-medium uppercase tracking-wide',
                       isSelected ? 'text-white' : option.colorClass
                     )}
                   >

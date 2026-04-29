@@ -891,7 +891,7 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
   return (
     <div
       className={cn(
-        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass',
+        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl ',
         'p-10 text-center',
       )}
     >

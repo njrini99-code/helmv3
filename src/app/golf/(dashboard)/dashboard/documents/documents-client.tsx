@@ -639,7 +639,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <button
                     key={folder}
                     onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
-                    className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
+                    className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
                   >
                     <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover/folder:bg-primary-100 transition-colors">
                       <IconFolder size={18} className="text-primary-600" />
@@ -668,7 +668,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 placeholder={currentFolder && currentFolder !== '' ? `Search in ${currentFolder}...` : 'Search documents...'}
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-100/68 backdrop-blur-sm transition-colors"
+                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/35 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-100/68 backdrop-blur-sm transition-colors"
               />
               {searchQuery && (
                 <button
@@ -718,7 +718,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => { void triggerHaptic('light'); setShowSortMenu(!showSortMenu); }}
-                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 aria-haspopup="menu"
                 aria-expanded={showSortMenu}
               >

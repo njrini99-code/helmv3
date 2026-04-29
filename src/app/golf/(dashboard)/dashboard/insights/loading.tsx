@@ -22,7 +22,7 @@ export default function Loading() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-5 space-y-2">
+            <div key={i} className="surface-matte rounded-3xl p-5 space-y-2">
               <div className="h-3 w-20 skeleton-shimmer rounded" />
               <div className="h-7 w-12 skeleton-shimmer rounded" />
             </div>
@@ -33,7 +33,7 @@ export default function Loading() {
 
         <div className="space-y-3">
           {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-5 space-y-3">
+            <div key={i} className="surface-matte rounded-3xl p-5 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 skeleton-shimmer rounded-lg" />
                 <div className="flex-1 space-y-2">

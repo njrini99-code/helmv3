@@ -217,7 +217,7 @@ export function RoundReviewDisplay({
           <div
             className={cn(
               'w-14 h-14 rounded-xl flex items-center justify-center',
-              'font-bold text-2xl shadow-lg',
+              'font-medium text-2xl shadow-lg',
               gradeStyle.bg,
               gradeStyle.text
             )}
@@ -516,7 +516,7 @@ export function RoundReviewDisplay({
                   return (
                     <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                       <div className="text-micro opacity-70">H{h.hole}</div>
-                      <div className="text-sm font-bold">{h.score}</div>
+                      <div className="text-[13px] font-medium">{h.score}</div>
                       <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
                         {h.threePutt && <span className="text-[8px]">3P</span>}
                         {h.onePutt && <span className="text-[8px]">1P</span>}
@@ -528,7 +528,7 @@ export function RoundReviewDisplay({
                 {/* Front 9 total */}
                 <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
                   <div className="text-micro opacity-70">OUT</div>
-                  <div className="text-sm font-bold">
+                  <div className="text-[13px] font-medium">
                     {review.holeByHole.filter(h => h.hole <= 9).reduce((s, h) => s + h.score, 0)}
                   </div>
                   <div className="min-h-[12px]" />
@@ -550,7 +550,7 @@ export function RoundReviewDisplay({
                     return (
                       <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                         <div className="text-micro opacity-70">H{h.hole}</div>
-                        <div className="text-sm font-bold">{h.score}</div>
+                        <div className="text-[13px] font-medium">{h.score}</div>
                         <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
                           {h.threePutt && <span className="text-[8px]">3P</span>}
                           {h.onePutt && <span className="text-[8px]">1P</span>}
@@ -562,7 +562,7 @@ export function RoundReviewDisplay({
                   {/* Back 9 total */}
                   <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
                     <div className="text-micro opacity-70">IN</div>
-                    <div className="text-sm font-bold">
+                    <div className="text-[13px] font-medium">
                       {review.holeByHole.filter(h => h.hole >= 10).reduce((s, h) => s + h.score, 0)}
                     </div>
                     <div className="min-h-[12px]" />
@@ -697,12 +697,12 @@ export function RoundReviewDisplay({
               {review.puttingBreakdown.avgFirstPuttDist !== null && (
                 <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                   <div className="text-xs text-warm-500">Avg 1st Putt</div>
-                  <div className="text-lg font-bold text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
                 </div>
               )}
               <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                 <div className="text-xs text-warm-500">One-Putts</div>
-                <div className="text-lg font-bold text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
+                <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
               </div>
             </div>
 
@@ -747,7 +747,7 @@ export function RoundReviewDisplay({
                 className="flex items-start gap-3 p-3 rounded-lg bg-cream-100/68 border border-warm-200/45"
               >
                 <div className={cn(
-                  'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold',
+                  'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-medium',
                   index === 0 ? 'bg-red-100 text-red-700' :
                   index === 1 ? 'bg-amber-100 text-amber-700' :
                   'bg-warm-100 text-warm-600'
@@ -758,7 +758,7 @@ export function RoundReviewDisplay({
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm text-warm-900">{item.category}</span>
                     <span className={cn(
-                      'text-sm font-bold',
+                      'text-[13px] font-medium',
                       item.potentialStrokes >= 2 ? 'text-red-600' :
                       item.potentialStrokes >= 1 ? 'text-amber-600' :
                       'text-warm-600'
@@ -874,13 +874,13 @@ export function RoundReviewDisplay({
                   {review.drivingAnalysis.avgDistance !== null && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Avg Distance</div>
-                      <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
+                      <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
                     </div>
                   )}
                   {review.drivingAnalysis.longestDrive && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Longest Drive</div>
-                      <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
+                      <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
                       <div className="text-micro text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
                     </div>
                   )}

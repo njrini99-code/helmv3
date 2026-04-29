@@ -310,7 +310,7 @@ export default function GolfMessagesPage() {
     <AnimatedPage className="h-[calc(100dvh-var(--golf-mobile-bottom-nav-offset))] lg:h-[100dvh] flex">
       {/* Conversation List */}
       <div className={cn(
-        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 glass-standard flex flex-col',
+        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 surface-matte flex flex-col',
         mobileShowChat && 'hidden lg:flex'
       )}>
         {/* Header — uses shared LargeTitleHeader for consistent safe area, sticky, backdrop */}
@@ -419,7 +419,7 @@ export default function GolfMessagesPage() {
           <>
             {/* Chat Header */}
             <div
-              className="border-b border-warm-200/60 glass-standard flex items-center gap-3 px-4"
+              className="border-b border-warm-200/60 surface-matte flex items-center gap-3 px-4"
               style={{
                 paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)',
                 paddingBottom: '0.75rem',
@@ -651,7 +651,7 @@ export default function GolfMessagesPage() {
                               'px-4 py-2.5',
                               isOwn
                                 ? 'bg-primary-500 text-white'
-                                : 'bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 text-warm-900 shadow-glass-sm',
+                                : 'bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 text-warm-900 ',
                               // Dynamic border radius based on position in group
                               isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
                               isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
@@ -1133,8 +1133,8 @@ function ConversationRow({
           <span className="absolute -top-1 -right-1 w-5 h-5
                           bg-primary-500 rounded-full
                           flex items-center justify-center
-                          text-xs font-bold text-white
-                          ring-2 ring-white shadow-sm">
+                          text-[11px] font-medium text-white
+                          ring-2 ring-cream-50">
             {conv.unread_count > 9 ? '9+' : conv.unread_count}
           </span>
         )}

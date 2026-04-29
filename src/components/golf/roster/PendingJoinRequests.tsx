@@ -153,7 +153,7 @@ export function PendingJoinRequests() {
           </div>
           <div className="flex items-center gap-2">
             {requests.length > 0 && (
-              <span className="w-6 h-6 bg-amber-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+              <span className="w-6 h-6 bg-amber-500 text-white text-[11px] font-medium rounded-full flex items-center justify-center">
                 {requests.length}
               </span>
             )}

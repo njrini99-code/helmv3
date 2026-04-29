@@ -162,11 +162,11 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
+    <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-warm-500 font-medium">{label}</p>
-          <p className="text-2xl font-bold tabular-nums text-warm-900 mt-1">{value}</p>
+          <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900 mt-1">{value}</p>
           {subtext && (
             <p className="text-sm text-warm-500 mt-1 flex items-center gap-1">
               {trend === 'up' && <IconTrendingUp size={14} className="text-primary-600" />}
@@ -213,12 +213,12 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group surface-matte rounded-3xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
+      className="w-full group surface-matte rounded-3xl p-4 hover:hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
         <div className="w-8 text-center flex-shrink-0">
-          <span className={`text-sm font-bold ${rank <= 3 ? 'text-primary-600' : 'text-warm-400'}`}>
+          <span className={`text-[13px] font-medium ${rank <= 3 ? 'text-primary-600' : 'text-warm-400'}`}>
             #{rank}
           </span>
         </div>
@@ -907,7 +907,7 @@ export default function StatsClient({
             const inactivePlayers = players.filter(p => !p.stats?.rounds_played || p.stats.rounds_played === 0);
 
             return (
-              <div className="bg-cream-100/68 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 shadow-glass-sm">
+              <div className="bg-cream-100/68 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 ">
                 <h3 className="text-xs font-semibold text-primary-800 uppercase tracking-wider mb-3">Team Insights</h3>
                 <div className="flex flex-wrap gap-4 text-sm">
                   {bestPlayer && (
@@ -948,7 +948,7 @@ export default function StatsClient({
           })()}
 
           {/* Filters Bar */}
-          <div className="bg-cream-100/60 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 shadow-glass-sm">
+          <div className="bg-cream-100/60 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 ">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex-1 min-w-[200px] relative">
                 <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
@@ -1155,7 +1155,7 @@ export default function StatsClient({
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15, duration: 0.4, ease: 'easeOut' }}
-                className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-6"
+                className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6"
               >
                 <IconGolf size={36} className="text-primary-500" />
               </m.div>
@@ -1236,7 +1236,7 @@ export default function StatsClient({
                   href={`/golf/dashboard/rounds/${round.id}`}
                   className="flex items-center gap-4 px-4 py-3 rounded-xl bg-cream-100/68 border border-warm-200/45 hover:bg-cream-100/82 active:bg-cream-50/92 hover:shadow-sm transition-colors duration-200 group"
                 >
-                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1', scoreBg, scoreColor)}>
+                  <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-medium text-lg ring-1', scoreBg, scoreColor)}>
                     {round.total_score ?? '--'}
                   </div>
                   <div className="flex-1 min-w-0">

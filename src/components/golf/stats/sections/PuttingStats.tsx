@@ -67,7 +67,7 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.15 + idx * 0.04, type: 'spring', stiffness: 300 }}
             >
-              <div className={`text-lg font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+              <div className={`text-[17px] font-medium tracking-[-0.005em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
               <div className="text-xs text-warm-500">{item.range}</div>
             </motion.div>
           ))}
@@ -117,7 +117,7 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.35 + idx * 0.04, type: 'spring', stiffness: 300 }}
             >
-              <div className={`text-xl font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+              <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
               <div className="text-xs text-warm-500">{item.label}</div>
             </motion.div>
           ))}
@@ -159,31 +159,31 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
               </div>
               <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-2">
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-primary-600">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct0_3, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">0-3 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-primary-600">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct3_5, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">3-5 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-yellow-600">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-yellow-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct5_10, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">5-10 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-orange-600">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-orange-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct10_15, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">10-15 ft</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-red-600">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-red-600">
                     {formatStat(stats.puttingByBreak[selectedBreak].makePct15_20, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">15-20 ft</div>
@@ -203,19 +203,19 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
               <div className="text-sm font-semibold text-warm-700 mb-3">Miss Direction</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-warm-700">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missShortPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">Short</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-blue-700">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-blue-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missLowPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">Low</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded">
-                  <div className="text-lg font-bold text-purple-700">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-purple-700">
                     {formatStat(stats.puttingByBreak[selectedBreak].missHighPct, '%', 0)}
                   </div>
                   <div className="text-xs text-warm-500">High</div>

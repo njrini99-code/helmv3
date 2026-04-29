@@ -29,7 +29,7 @@ export const QuickStatRow = memo(function QuickStatRow({ stats }: QuickStatRowPr
     return (
         <div className={cn(
             'grid grid-cols-2 sm:flex sm:items-center sm:justify-between',
-            'glass-premium',
+            'surface-matte',
             'rounded-2xl px-4 md:px-5 py-3.5',
             'gap-y-3 gap-x-2'
         )}>
@@ -42,7 +42,7 @@ export const QuickStatRow = memo(function QuickStatRow({ stats }: QuickStatRowPr
                         <p className="text-label font-medium text-warm-400 uppercase tracking-wider mb-0.5 truncate">
                             {stat.label}
                         </p>
-                        <p className="text-base font-bold text-warm-900 tabular-nums truncate">
+                        <p className="text-[15px] font-medium text-warm-900 tabular-nums truncate">
                             {stat.value !== null ? `${stat.value}${stat.suffix || ''}` : '--'}
                         </p>
                     </div>

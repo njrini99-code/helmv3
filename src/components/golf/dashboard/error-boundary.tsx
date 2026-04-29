@@ -24,7 +24,7 @@ export class DashboardErrorBoundary extends Component<Props, State> {
     override render() {
         if (this.state.hasError) {
             return this.props.fallback ?? (
-                <div className="glass-standard rounded-2xl p-6 text-center">
+                <div className="surface-matte rounded-3xl p-6 text-center">
                     <p className="text-sm text-warm-600 font-medium mb-2">
                         {this.props.name ?? 'Widget'} failed to load
                     </p>

@@ -364,7 +364,7 @@ export function WeekView({
                 </p>
                 <div
                   className={cn(
-                    'w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold mt-0.5 transition-all',
+                    'w-8 h-8 flex items-center justify-center rounded-full text-[13px] font-medium mt-0.5 transition-all',
                     isCurrentDay
                       ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
                       : 'text-warm-800'

@@ -304,7 +304,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         <div className="flex items-center gap-2 mb-1.5">
                           {cls.course_code && (
                             <span
-                              className="font-mono text-xs font-bold px-1.5 py-0.5 rounded"
+                              className="font-mono text-[11px] font-medium px-1.5 py-0.5 rounded"
                               style={{
                                 backgroundColor: `${cls.color || '#16A34A'}15`,
                                 color: cls.color || '#16A34A',

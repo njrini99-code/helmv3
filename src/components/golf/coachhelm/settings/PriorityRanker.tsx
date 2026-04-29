@@ -77,7 +77,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             {/* Rank badge */}
             <div
                 className={cn(
-                    'w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold',
+                    'w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-medium',
                     rank === 1 && 'bg-primary-100 text-primary-700',
                     rank === 2 && 'bg-primary-50 text-primary-600',
                     rank === 3 && 'bg-warm-100 text-warm-600',

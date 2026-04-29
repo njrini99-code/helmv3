@@ -83,7 +83,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: index * 0.04 }}
-          className="relative rounded-2xl border bg-cream-100/75 backdrop-blur-xl border-white/20 shadow-glass p-5 overflow-hidden hover:shadow-card-hover transition-all duration-200"
+          className="relative rounded-2xl border bg-cream-100/75 backdrop-blur-xl border-white/20 p-5 overflow-hidden hover:shadow-card-hover transition-all duration-200"
         >
           {/* Per-card color tint preserves chromatic cue over the glass base */}
           <div className={cn('absolute inset-0 pointer-events-none opacity-40', card.bgColor)} />

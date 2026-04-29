@@ -180,7 +180,7 @@ export function RSVPProgressRing({
           y={config.diameter / 2}
           textAnchor="middle"
           dominantBaseline="middle"
-          className={cn('font-bold fill-warm-900', config.fontSize)}
+          className={cn('font-medium fill-warm-900', config.fontSize)}
           transform={`rotate(90 ${config.diameter / 2} ${config.diameter / 2})`}
         >
           {confirmed}

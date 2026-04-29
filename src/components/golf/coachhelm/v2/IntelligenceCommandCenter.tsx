@@ -192,7 +192,7 @@ const OverviewSummary = memo(function OverviewSummary({
             )}>Team Health</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className={cn('font-bold tabular-nums', getHealthColor(healthScore), isPage ? 'text-4xl' : 'text-2xl')}>{healthScore}</span>
+            <span className={cn('font-medium tabular-nums', getHealthColor(healthScore), isPage ? 'text-4xl' : 'text-2xl')}>{healthScore}</span>
             <span className={cn('text-warm-400', isPage ? 'text-sm' : 'text-xs')}>/100</span>
           </div>
           <span className={cn('font-medium', getHealthColor(healthScore), isPage ? 'text-sm' : 'text-xs')}>
@@ -331,7 +331,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         {/* Tone icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-cream-100/82 shadow-sm border border-warm-200/60',
+          'bg-cream-100/82 shadow-sm border border-warm-200/35',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <IconSparkles size={isPage ? 18 : 14} className={tone.icon} />
@@ -341,7 +341,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           {/* Badge row */}
           <div className={cn('flex items-center gap-2 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
-              'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+              'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full',
               isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
               tone.badge
             )}>
@@ -350,7 +350,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             {/* Stroke impact badge */}
             {strokeImpact !== null && strokeImpact > 0 && (
               <span className={cn(
-                'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
+                'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
                 isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
                 strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
@@ -402,7 +402,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {hasDirectEvidence && (
                 <div>
                   <h5 className={cn(
-                    'font-bold text-warm-400 uppercase tracking-wider',
+                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
                     isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
                   )}>
                     Evidence
@@ -417,12 +417,12 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-cream-100/68 rounded-lg border border-warm-200/60 text-center',
+                          'bg-cream-100/68 rounded-lg border border-warm-200/35 text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
                         <div className={cn(
-                          'font-bold text-warm-800 tabular-nums',
+                          'font-medium text-warm-800 tabular-nums',
                           isPage ? 'text-base' : 'text-sm'
                         )}>
                           {String(metric.value)}
@@ -463,7 +463,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {!hasDirectEvidence && evidenceSteps.length > 0 && (
                 <div>
                   <h5 className={cn(
-                    'font-bold text-warm-400 uppercase tracking-wider',
+                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
                     isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
                   )}>
                     Evidence
@@ -478,12 +478,12 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-cream-100/68 rounded-lg border border-warm-200/60 text-center',
+                          'bg-cream-100/68 rounded-lg border border-warm-200/35 text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
                         <div className={cn(
-                          'font-bold text-warm-800 tabular-nums',
+                          'font-medium text-warm-800 tabular-nums',
                           isPage ? 'text-base' : 'text-sm'
                         )}>
                           {step.premise?.split(':').slice(1).join(':').trim() || step.premise}
@@ -514,18 +514,18 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Stroke impact visual bar (if present) */}
               {strokeImpact !== null && strokeImpact > 0 && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
                   isPage ? 'p-3' : 'p-2'
                 )}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={cn(
-                      'font-bold text-warm-500 uppercase tracking-wider',
+                      'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Stroke Impact
                     </span>
                     <span className={cn(
-                      'font-bold tabular-nums',
+                      'font-medium tabular-nums',
                       isPage ? 'text-sm' : 'text-xs',
                       strokeImpact >= 1.0 ? 'text-red-600' : strokeImpact >= 0.5 ? 'text-amber-600' : 'text-warm-600'
                     )}>
@@ -551,13 +551,13 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Call to action / Recommendation */}
               {insight.callToAction && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
                     <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
-                      'font-bold text-primary-700 uppercase tracking-wider',
+                      'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Coach Action Plan
@@ -670,7 +670,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         {/* Category icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-cream-100/82 shadow-sm border border-warm-200/60',
+          'bg-cream-100/82 shadow-sm border border-warm-200/35',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <CategoryIcon size={isPage ? 18 : 14} className={tone.icon} />
@@ -680,7 +680,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
           {/* Badge row */}
           <div className={cn('flex items-center gap-2 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
-              'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+              'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full',
               isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
               tone.badge
             )}>
@@ -694,7 +694,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
             </span>
             {group.strokeImpact != null && group.strokeImpact > 0 && (
               <span className={cn(
-                'font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
+                'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
                 isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
                 group.strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
@@ -782,7 +782,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.memberInsights.length > 1 && (
                 <div>
                   <h5 className={cn(
-                    'font-bold text-warm-400 uppercase tracking-wider',
+                    'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
                     isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
                   )}>
                     Individual Details
@@ -792,7 +792,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       <div
                         key={i}
                         className={cn(
-                          'flex items-start gap-2 bg-cream-100/68 rounded-lg border border-warm-200/60',
+                          'flex items-start gap-2 bg-cream-100/68 rounded-lg border border-warm-200/35',
                           isPage ? 'text-sm p-3' : 'text-xs p-2'
                         )}
                       >
@@ -821,13 +821,13 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {/* Call to action */}
               {group.callToAction && (
                 <div className={cn(
-                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/35',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
                     <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
-                      'font-bold text-primary-700 uppercase tracking-wider',
+                      'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
                       isPage ? 'text-xs' : 'text-[9px]'
                     )}>
                       Coach Action Plan
@@ -903,7 +903,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
   return (
     <div
       className={cn(
-        'bg-cream-100/82 border border-warm-200/60 overflow-hidden',
+        'bg-cream-100/82 border border-warm-200/35 overflow-hidden',
         isPage ? 'rounded-2xl' : 'rounded-xl',
         'shadow-sm hover:shadow-md transition-shadow'
       )}
@@ -916,7 +916,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1.5')}>
           {getTypeIcon()}
           <span className={cn(
-            'font-bold text-warm-400 uppercase tracking-wider',
+            'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
             isPage ? 'text-xs' : 'text-[9px]'
           )}>
             {pattern.patternType}
@@ -944,7 +944,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         <div className="space-y-1">
           <div className="flex items-center justify-between">
             <span className={cn(
-              'font-bold tabular-nums',
+              'font-medium tabular-nums',
               isPage ? 'text-sm' : 'text-xs',
               isNegative ? 'text-red-600' : 'text-primary-600'
             )}>
@@ -975,7 +975,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
               {/* Conditions */}
               {pattern.conditions.length > 0 && (
                 <div>
-                  <span className="text-[9px] font-bold text-warm-400 uppercase tracking-wider">
+                  <span className="text-[10px] font-medium text-warm-400 uppercase tracking-wider">
                     When
                   </span>
                   <div className="mt-1 space-y-1">
@@ -991,19 +991,19 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
               {/* Stats grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-sm font-bold text-warm-800 tabular-nums">
+                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
                     {Math.round(pattern.support * 100)}%
                   </div>
                   <div className="text-[9px] text-warm-400">Frequency</div>
                 </div>
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-sm font-bold text-warm-800 tabular-nums">
+                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
                     {pattern.lift.toFixed(1)}x
                   </div>
                   <div className="text-[9px] text-warm-400">Lift</div>
                 </div>
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-sm font-bold text-warm-800 tabular-nums">
+                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
                     {pattern.sampleSize}
                   </div>
                   <div className="text-[9px] text-warm-400">Samples</div>
@@ -1015,7 +1015,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                 <div className="p-2.5 bg-primary-50/80 rounded-lg border border-primary-100/60">
                   <div className="flex items-center gap-2 mb-1">
                     <IconTarget size={10} className="text-primary-600" />
-                    <span className="text-[9px] font-bold text-primary-700 uppercase">Recommendation</span>
+                    <span className="text-[10px] font-medium text-primary-700 uppercase">Recommendation</span>
                   </div>
                   <p className="text-xs text-primary-800 leading-relaxed">
                     {pattern.recommendation}
@@ -1060,7 +1060,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
   return (
     <div
       className={cn(
-        'bg-cream-100/82 border border-warm-200/60 shadow-sm hover:shadow-md transition-shadow',
+        'bg-cream-100/82 border border-warm-200/35 shadow-sm hover:shadow-md transition-shadow',
         isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3'
       )}
     >
@@ -1075,7 +1075,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
           </div>
           <div>
             <span className={cn(
-              'font-bold text-warm-400 uppercase tracking-wider block',
+              'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 block',
               isPage ? 'text-xs' : 'text-[9px]'
             )}>
               Next Round
@@ -1099,7 +1099,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
       {/* Score prediction + confidence gauge */}
       <div className={cn('flex items-center gap-3', isPage ? 'mb-4' : 'mb-3')}>
         <span className={cn(
-          'font-bold tabular-nums',
+          'font-medium tabular-nums',
           isPage ? 'text-4xl' : 'text-2xl',
           isNeutral ? 'text-warm-700' : isPositive ? 'text-primary-600' : 'text-red-600'
         )}>
@@ -1158,13 +1158,13 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-warm-100">
           <div className="flex-1 text-center bg-red-50/60 rounded-lg py-1.5">
             <div className="text-xs text-red-400">Blowup</div>
-            <div className="text-xs font-bold text-red-600 tabular-nums">
+            <div className="text-[11px] font-medium text-red-600 tabular-nums">
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </div>
           </div>
           <div className="flex-1 text-center bg-primary-50/60 rounded-lg py-1.5">
             <div className="text-xs text-primary-400">Great Round</div>
-            <div className="text-xs font-bold text-primary-600 tabular-nums">
+            <div className="text-[11px] font-medium text-primary-600 tabular-nums">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
           </div>
@@ -1182,7 +1182,7 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
   return (
     <div className={cn('flex flex-col items-center text-center', isPage ? 'py-16' : 'py-8')}>
       <div className={cn(
-        'rounded-xl bg-cream-100/82 shadow-sm flex items-center justify-center border border-warm-200/60',
+        'rounded-xl bg-cream-100/82 shadow-sm flex items-center justify-center border border-warm-200/35',
         isPage ? 'w-16 h-16 rounded-2xl mb-4' : 'w-10 h-10 mb-2.5'
       )}>
         {icon}
@@ -1376,7 +1376,7 @@ export function IntelligenceCommandCenter({
             /* Page: two-column layout for top items */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Insights</h3>
+                <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider">Top Insights</h3>
                 {displayGroups ? (
                   insightGroups.slice(0, 2).map((group) => (
                     <InsightGroupCard
@@ -1415,13 +1415,13 @@ export function IntelligenceCommandCenter({
               <div className="space-y-4">
                 {sortedPatterns[0] && (
                   <>
-                    <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider">Top Pattern</h3>
+                    <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider">Top Pattern</h3>
                     <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
                   </>
                 )}
                 {predictions[0] && (
                   <>
-                    <h3 className="text-sm font-bold text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
+                    <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
                     <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
                   </>
                 )}

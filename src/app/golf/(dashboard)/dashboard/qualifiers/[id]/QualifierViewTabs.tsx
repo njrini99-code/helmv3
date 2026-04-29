@@ -89,7 +89,7 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
                   >
                     <td className="py-3 pr-4 text-sm">
                       {showPosition ? (
-                        <span className={isLeader ? 'font-bold text-primary-600' : 'text-warm-600'}>
+                        <span className={isLeader ? 'font-medium text-primary-600' : 'text-warm-600'}>
                           {position}
                           {entry.isTied && 'T'}
                         </span>

@@ -1420,7 +1420,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="relative glass-standard rounded-2xl overflow-clip p-6 sm:p-8 text-center">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-6 sm:p-8 text-center">
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
               <IconFlag size={24} className="text-primary-500" />
             </div>
@@ -1463,7 +1463,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
-          <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
             <StepProgressBar />
             <h1 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-3">
               New Round
@@ -1668,7 +1668,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               {/* ── Course Details: Compact summary when saved, full form when new ── */}
               {courseMode === 'saved' && selectedCourse ? (
                 /* Compact summary card for selected saved course */
-                <div className="rounded-2xl border border-primary-200/50 bg-gradient-to-br from-primary-50/50 to-white/80 backdrop-blur-sm p-5 shadow-sm">
+                <div className="rounded-2xl border border-primary-200/50 bg-primary-50/55 backdrop-blur-sm p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
                       <IconCheck size={16} className="text-primary-600" />
@@ -2155,7 +2155,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
     return (
       <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
         <div className="w-full max-w-2xl">
-          <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
             <StepProgressBar />
             <HoleConfigurationForm
               courseName={setupData.courseName}
@@ -2375,11 +2375,11 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
             const ScoreCell = ({ h }: { h: HoleStats }) => {
               const diff = (h?.score ?? 0) - (h?.par ?? 0);
-              const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-bold'
+              const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-medium'
                 : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-semibold'
                 : diff === 0 ? 'text-warm-700 bg-white font-medium'
                 : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-semibold'
-                : 'text-red-600 bg-red-50/70 font-bold';
+                : 'text-red-600 bg-red-50/70 font-medium';
               return (
                 <div className={`text-center py-1.5 ${cls}`}>
                   <span className="text-xs">{h?.score}</span>
@@ -2407,7 +2407,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                   className="relative glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
                 >
                   {/* Celebration Header */}
-                  <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 pt-6 pb-5 text-center">
+                  <div className="relative overflow-hidden rounded-t-2xl bg-primary-600 px-6 pt-6 pb-5 text-center">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
                     <m.div
                       initial={{ opacity: 0, scale: 0.5 }}
@@ -2424,7 +2424,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.25, duration: 0.3 }}
-                          className="text-5xl font-bold text-white tabular-nums"
+                          className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
                         >
                           {totalScore}
                         </m.span>
@@ -2471,7 +2471,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       className="mb-6"
                     >
                       <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
-                      <div className="rounded-xl border border-warm-200/60 overflow-x-auto overflow-hidden">
+                      <div className="rounded-xl border border-warm-200/35 overflow-x-auto overflow-hidden">
                         {/* Front 9 (or all 9 for 9-hole round) */}
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((_, i) => (

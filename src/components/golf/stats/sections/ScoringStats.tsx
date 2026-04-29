@@ -157,7 +157,7 @@ export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; 
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 0.05, type: 'spring', stiffness: 300 }}
             >
-              <div className={`text-2xl font-bold ${item.color} tabular-nums`}>
+              <div className={`text-[24px] md:text-[30px] font-light tracking-[-0.025em] ${item.color} tabular-nums`}>
                 {formatStat(item.value, '', 2)}
               </div>
               <div className="text-xs text-warm-500">{item.label}</div>

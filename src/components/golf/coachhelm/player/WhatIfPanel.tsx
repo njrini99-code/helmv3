@@ -127,7 +127,7 @@ export function WhatIfPanel({
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-sm font-bold text-primary-700 tabular-nums">
+                <p className="text-[13px] font-medium text-primary-700 tabular-nums">
                   {Number(simResult.projectedScore ?? 0) > 0 ? '+' : ''}{Number(simResult.projectedScore ?? 0).toFixed(1)}
                 </p>
                 {simResult.rankChange !== 0 && (

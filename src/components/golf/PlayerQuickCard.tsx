@@ -70,7 +70,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
         isOpen && 'opacity-100 scale-100 pointer-events-auto',
         position === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'
       )}>
-        <div className="relative glass-standard rounded-2xl overflow-clip shadow-xl transition-all duration-300">
+        <div className="relative surface-matte rounded-3xl overflow-clip shadow-xl transition-all duration-300">
           {/* Shine effect */}
           <div
             className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

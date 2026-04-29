@@ -56,7 +56,7 @@ function DayCellContent({
       <div className="flex items-center justify-between mb-1.5">
         <div
           className={cn(
-            'w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-bold transition-all',
+            'w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-medium transition-all',
             isCurrentDay
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
               : isCurrentMonth
@@ -136,7 +136,7 @@ function DayCellContent({
             />
           ))}
           {busyDots.length > 5 && (
-            <span className="text-[9px] font-bold text-warm-500 ml-0.5 tabular-nums">
+            <span className="text-[10px] font-medium text-warm-500 ml-0.5 tabular-nums">
               +{busyDots.length - 5}
             </span>
           )}

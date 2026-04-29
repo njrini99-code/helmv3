@@ -263,7 +263,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
         onClick={(e) => e.stopPropagation()}
         className={cn(
           'rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto overscroll-contain',
-          'bg-cream-50/95 backdrop-blur-2xl ring-1 ring-warm-200/55',
+          'bg-cream-50/95 backdrop-blur-xl ring-1 ring-warm-200/55',
           'shadow-[0_-12px_48px_rgba(28,25,23,0.16),0_24px_64px_rgba(28,25,23,0.18),inset_0_1px_0_rgba(255,255,255,0.7)]'
         )}
       >
@@ -327,7 +327,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Hotel */}
           {trip.hotel_name && (
             <div className="p-4 bg-blue-50/70 rounded-xl">
-              <p className="text-micro font-bold text-blue-500 uppercase tracking-widest mb-1.5">Lodging</p>
+              <p className="text-micro font-medium text-blue-500 uppercase tracking-[0.12em] opacity-80 mb-1.5">Lodging</p>
               <p className="font-semibold text-warm-900">{trip.hotel_name}</p>
               {trip.hotel_address && <p className="text-sm text-warm-600 mt-1">{trip.hotel_address}</p>}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-warm-500">

@@ -453,7 +453,7 @@ export default function RoundReviewPage() {
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="space-y-4">
             <div className="rounded-2xl border border-warm-100 overflow-hidden">
-              <div className="bg-gradient-to-br from-primary-600/20 to-primary-700/10 px-6 pt-6 pb-5">
+              <div className="bg-primary-50/55 px-6 pt-6 pb-5">
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-warm-200/60 skeleton-shimmer" />
                   <div className="h-5 w-32 bg-warm-200/40 rounded-lg skeleton-shimmer" />

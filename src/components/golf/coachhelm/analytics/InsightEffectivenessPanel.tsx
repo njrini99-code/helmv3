@@ -144,7 +144,7 @@ export function InsightEffectivenessPanel({
 
       {/* Chart */}
       {hasData && (
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Effectiveness by Type</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -181,7 +181,7 @@ export function InsightEffectivenessPanel({
 
       {/* Detailed Table */}
       {hasData && (
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-hidden">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
           <div className="px-4 py-3 border-b border-warm-100">
             <h4 className="text-sm font-medium text-warm-700">Detailed Breakdown</h4>
           </div>
@@ -252,7 +252,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-lg font-bold text-warm-900">{value}</span>
+      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -361,7 +361,7 @@ function CustomTooltip({
           </div>
           <div className="flex justify-between gap-4 pt-1 border-t border-warm-100">
             <span className="text-warm-500">Effectiveness:</span>
-            <span className="font-bold text-purple-600">{data.effectivenessScore}%</span>
+            <span className="font-medium text-purple-600">{data.effectivenessScore}%</span>
           </div>
           <div className="flex justify-between gap-4 pt-1">
             <span className="text-warm-500">Generated:</span>

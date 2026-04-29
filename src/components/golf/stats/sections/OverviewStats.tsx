@@ -39,7 +39,7 @@ export function OverviewSWCard({
           <p className="text-sm font-semibold text-warm-900 truncate">{item.label}</p>
           <p className="text-xs text-warm-600 mt-0.5">{item.detail}</p>
         </div>
-        <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-bold tabular-nums ${
+        <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium tabular-nums ${
           isStrength
             ? 'bg-primary-100 text-primary-700'
             : 'bg-red-100 text-red-700'
@@ -100,7 +100,7 @@ export function OverviewStats({
       {/* Player Header Card */}
       <motion.div
         variants={sectionVariants}
-        className="relative glass-standard rounded-2xl overflow-clip p-6"
+        className="relative surface-matte rounded-3xl overflow-clip p-6"
       >
         <div className="flex items-start gap-5">
           {/* Player Avatar */}
@@ -113,7 +113,7 @@ export function OverviewStats({
               />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-warm-100/65 flex items-center justify-center">
-                <span className="text-warm-500 font-bold text-2xl">
+                <span className="text-warm-500 font-medium text-2xl">
                   {playerName?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                 </span>
               </div>
@@ -167,7 +167,7 @@ export function OverviewStats({
 
       {/* Key Performance Metrics */}
       <motion.div variants={sectionVariants}>
-        <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+        <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
           Performance Overview
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -205,13 +205,13 @@ export function OverviewStats({
       {/* Strokes Gained Summary */}
       {stats.sgTotalPerRound !== null && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+          <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
             Strokes Gained
           </h3>
-          <div className="glass-standard rounded-xl p-4">
+          <div className="surface-matte rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium text-warm-600">Total</span>
-              <span className={`text-xl font-bold tabular-nums ${stats.sgTotalPerRound >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
+              <span className={`text-[20px] font-medium tracking-[-0.012em] tabular-nums ${stats.sgTotalPerRound >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
                 {stats.sgTotalPerRound >= 0 ? '+' : ''}{stats.sgTotalPerRound.toFixed(2)}
               </span>
             </div>
@@ -223,7 +223,7 @@ export function OverviewStats({
                 { label: 'Putting', value: stats.sgPuttingPerRound },
               ].map(sg => (
                 <div key={sg.label} className="text-center p-2 rounded-lg bg-warm-50/80">
-                  <div className={`text-sm font-bold tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
+                  <div className={`text-[13px] font-medium tabular-nums ${sg.value !== null && sg.value >= 0 ? 'text-primary-600' : 'text-red-500'}`}>
                     {sg.value !== null ? (sg.value >= 0 ? '+' : '') + sg.value.toFixed(2) : '--'}
                   </div>
                   <div className="text-xs text-warm-500 mt-0.5">{sg.label}</div>
@@ -241,7 +241,7 @@ export function OverviewStats({
             {/* Strengths */}
             {statisticalStrengths && statisticalStrengths.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+                <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
                   Top Strengths
                 </h3>
                 <div className="space-y-2">
@@ -254,7 +254,7 @@ export function OverviewStats({
             {/* Weaknesses */}
             {statisticalWeaknesses && statisticalWeaknesses.length > 0 && (
               <div>
-                <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+                <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
                   Areas to Improve
                 </h3>
                 <div className="space-y-2">
@@ -271,12 +271,12 @@ export function OverviewStats({
       {/* Personal Bests */}
       {trendData?.personalBests && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+          <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
             Personal Records
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {trendData.personalBests.bestScore && (
-              <div className="glass-standard rounded-xl p-4 text-center">
+              <div className="surface-matte rounded-xl p-4 text-center">
                 <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestScore.value}
                 </div>
@@ -287,7 +287,7 @@ export function OverviewStats({
               </div>
             )}
             {trendData.personalBests.bestToPar && (
-              <div className="glass-standard rounded-xl p-4 text-center">
+              <div className="surface-matte rounded-xl p-4 text-center">
                 <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
@@ -298,7 +298,7 @@ export function OverviewStats({
               </div>
             )}
             {trendData.personalBests.bestGir && (
-              <div className="glass-standard rounded-xl p-4 text-center">
+              <div className="surface-matte rounded-xl p-4 text-center">
                 <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestGir.value}%
                 </div>
@@ -309,7 +309,7 @@ export function OverviewStats({
               </div>
             )}
             {trendData.personalBests.lowestPutts && (
-              <div className="glass-standard rounded-xl p-4 text-center">
+              <div className="surface-matte rounded-xl p-4 text-center">
                 <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.lowestPutts.value}
                 </div>
@@ -326,31 +326,31 @@ export function OverviewStats({
       {/* Recent Trend */}
       {trendData?.periodComparison && (
         <motion.div variants={sectionVariants}>
-          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide mb-3">
+          <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide mb-3">
             Recent Form (Last 30 Days)
           </h3>
-          <div className="glass-standard rounded-xl p-4">
+          <div className="surface-matte rounded-xl p-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-lg font-bold text-warm-900 tabular-nums">
+                <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.roundCount}
                 </div>
                 <div className="text-xs text-warm-500">Rounds</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-warm-900 tabular-nums">
+                <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.scoringAvg?.toFixed(1) || '--'}
                 </div>
                 <div className="text-xs text-warm-500">Avg Score</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-warm-900 tabular-nums">
+                <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.girPct?.toFixed(0) || '--'}%
                 </div>
                 <div className="text-xs text-warm-500">GIR</div>
               </div>
               <div className="text-center">
-                <div className="text-lg font-bold text-warm-900 tabular-nums">
+                <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900 tabular-nums">
                   {trendData.periodComparison.last30Days.puttsPerRound?.toFixed(1) || '--'}
                 </div>
                 <div className="text-xs text-warm-500">Putts/Rnd</div>

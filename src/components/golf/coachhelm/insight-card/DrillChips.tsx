@@ -141,7 +141,7 @@ function DrillChipButton({ drill, onClick }: DrillChipButtonProps) {
       }}
       className={cn(
         'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full flex-shrink-0',
-        'bg-cream-100/82 border border-warm-200/60',
+        'bg-cream-100/82 border border-warm-200/35',
         'text-xs font-medium text-warm-800',
         'hover:bg-white hover:border-primary-200/60 hover:shadow-sm',
         'transition-colors',

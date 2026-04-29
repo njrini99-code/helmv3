@@ -187,7 +187,7 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
   const activeAreas = existingAreas.filter(a => a.status === 'active' || a.status === 'in_progress');
 
   return (
-    <div className="rounded-xl border border-warm-200/80 bg-gradient-to-br from-warm-50 to-white p-4">
+    <div className="rounded-xl border border-warm-200/80 bg-cream-50/85 p-4">
       <div className="flex items-center gap-3 mb-3">
         {player.avatar_url ? (
           <Image
@@ -199,7 +199,7 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
             unoptimized
           />
         ) : (
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-primary-600/90 flex items-center justify-center">
             <span className="text-white font-semibold text-sm">
               {player.first_name?.[0]}{player.last_name?.[0]}
             </span>
@@ -791,7 +791,7 @@ export function DevelopmentPlansClient({
           'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
           selectedPlayerId === null
             ? 'bg-primary-600 text-white shadow-sm'
-            : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/60',
+            : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/35',
         )}
       >
         All Players
@@ -806,7 +806,7 @@ export function DevelopmentPlansClient({
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
               selectedPlayerId === player.id
                 ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/60',
+                : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/35',
             )}
           >
             {player.first_name} {player.last_name?.[0]}.
@@ -850,7 +850,7 @@ export function DevelopmentPlansClient({
       {focusAreas.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="glass-standard rounded-xl p-4">
+            <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconActivity size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Active</p>
@@ -858,7 +858,7 @@ export function DevelopmentPlansClient({
               <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.activeCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
             </div>
-            <div className="glass-standard rounded-xl p-4">
+            <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconCheck size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</p>
@@ -868,7 +868,7 @@ export function DevelopmentPlansClient({
                 {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% completion` : 'none yet'}
               </p>
             </div>
-            <div className="glass-standard rounded-xl p-4">
+            <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTrendingUp size={14} className="text-blue-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Avg Progress</p>
@@ -878,7 +878,7 @@ export function DevelopmentPlansClient({
                 <div className="h-full bg-primary-500 rounded-full transition-[width] duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
             </div>
-            <div className="glass-standard rounded-xl p-4">
+            <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTarget size={14} className="text-violet-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
@@ -893,7 +893,7 @@ export function DevelopmentPlansClient({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconUser size={24} className="text-warm-400" />
             </div>
@@ -903,7 +903,7 @@ export function DevelopmentPlansClient({
             </p>
           </div>
         ) : filteredFocusAreas.length === 0 ? (
-          <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={24} className="text-primary-600" />
             </div>
@@ -935,13 +935,13 @@ export function DevelopmentPlansClient({
               const stats = playerStats[selectedPlayerId];
               if (!p) return null;
               return (
-                <div className="glass-standard rounded-2xl p-5 mb-4">
+                <div className="surface-matte rounded-3xl p-5 mb-4">
                   <div className="flex items-center gap-4">
                     {p.avatar_url ? (
                       <Image src={p.avatar_url} alt={`${p.first_name} ${p.last_name}`} width={48} height={48} className="w-12 h-12 rounded-full object-cover" unoptimized />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
-                        <span className="text-white font-bold text-base">{p.first_name?.[0]}{p.last_name?.[0]}</span>
+                      <div className="w-12 h-12 rounded-full bg-primary-600/90 flex items-center justify-center">
+                        <span className="text-white font-medium text-base">{p.first_name?.[0]}{p.last_name?.[0]}</span>
                       </div>
                     )}
                     <div className="flex-1">
@@ -983,14 +983,14 @@ export function DevelopmentPlansClient({
           /* All players grouped view */
           <div className="space-y-6">
             {focusAreasByPlayer.map(({ player, areas, stats }) => (
-              <div key={player.id} className="glass-standard rounded-2xl overflow-clip">
+              <div key={player.id} className="surface-matte rounded-3xl overflow-clip">
                 {/* Player header */}
                 <div className="flex items-center justify-between p-5 pb-0">
                   <div className="flex items-center gap-3">
                     {player.avatar_url ? (
                       <Image src={player.avatar_url} alt={`${player.first_name} ${player.last_name}`} width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-primary-600/90 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">{player.first_name?.[0]}{player.last_name?.[0]}</span>
                       </div>
                     )}

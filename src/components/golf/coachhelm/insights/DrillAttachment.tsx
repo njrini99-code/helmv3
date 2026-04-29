@@ -143,7 +143,7 @@ function DrillCard({ drill, onView }: DrillCardProps) {
       data-testid="drill-card"
       className={cn(
         'group w-full text-left',
-        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass',
+        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl ',
         'px-4 py-3',
         'hover:bg-cream-100/82 hover:shadow-card-hover transition-all duration-200',
         'disabled:opacity-60',

@@ -15,7 +15,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-warm-900 to-warm-800 text-white p-6"
+      className="relative overflow-hidden rounded-2xl bg-warm-900 text-white p-6"
       style={{ animation: 'fadeInUp 0.5s ease-out' }}
     >
       {/* Background pattern */}
@@ -33,7 +33,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
         <div className="text-center mb-4">
           <div className="text-sm text-warm-400 mb-1">Round Complete</div>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-5xl font-bold">{review.roundScore}</span>
+            <span className="text-[44px] md:text-[52px] font-light tracking-[-0.025em]">{review.roundScore}</span>
             <span className={cn(
               'text-2xl font-semibold px-3 py-1 rounded-lg',
               scoreToPar < 0 && 'bg-primary-500/20 text-primary-400',

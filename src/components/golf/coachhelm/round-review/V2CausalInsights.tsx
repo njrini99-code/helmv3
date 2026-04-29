@@ -103,7 +103,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 {insight.doseResponse && (
                   <>
                     <span className="text-warm-200">|</span>
-                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-md text-micro font-bold border border-primary-200/50">
+                    <span className="px-2 py-0.5 bg-primary-100 text-primary-700 rounded-md text-micro font-medium border border-primary-200/50">
                       Actionable
                     </span>
                   </>

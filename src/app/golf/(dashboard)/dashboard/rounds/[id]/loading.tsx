@@ -12,7 +12,7 @@ export default function Loading() {
       </div>
 
       {/* Round Summary Card */}
-      <div className="glass-standard rounded-2xl overflow-clip mb-6">
+      <div className="surface-matte rounded-3xl overflow-clip mb-6">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex-1">
@@ -50,7 +50,7 @@ export default function Loading() {
       </div>
 
       {/* Scorecard */}
-      <div className="glass-standard rounded-2xl overflow-clip">
+      <div className="surface-matte rounded-3xl overflow-clip">
         <div className="p-4 border-b border-warm-200">
           <div className="h-6 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
         </div>

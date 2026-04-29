@@ -156,7 +156,7 @@ export function PremiumRoundHeader({
               transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="text-right flex-shrink-0"
             >
-              <div className="text-5xl font-bold text-warm-900 tabular-nums">
+              <div className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
               {scoreDisplay !== null && (

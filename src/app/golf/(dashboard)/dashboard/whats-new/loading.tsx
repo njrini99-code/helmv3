@@ -13,7 +13,7 @@ export default function Loading() {
         {/* Day group 1 */}
         <section>
           <div className="h-4 w-24 skeleton-shimmer rounded mb-2" />
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass px-5 py-1 divide-y divide-warm-100">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-1 divide-y divide-warm-100">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex items-start gap-3 py-3">
                 <div className="w-9 h-9 rounded-xl skeleton-shimmer flex-shrink-0" />
@@ -30,7 +30,7 @@ export default function Loading() {
         {/* Day group 2 */}
         <section>
           <div className="h-4 w-20 skeleton-shimmer rounded mb-2" />
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass px-5 py-1">
+          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl px-5 py-1">
             <div className="flex items-start gap-3 py-3">
               <div className="w-9 h-9 rounded-xl skeleton-shimmer flex-shrink-0" />
               <div className="flex-1 space-y-2">

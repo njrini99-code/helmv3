@@ -148,7 +148,7 @@ export function AvailabilityDayView({
                   title={`${player.first_name} ${player.last_name}`}
                 >
                   <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ring-2 ring-white"
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-medium ring-2 ring-cream-50"
                     style={{ background: player.color.bg }}
                   >
                     {player.avatar_url ? (
@@ -336,7 +336,7 @@ function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockP
             {ownerInitials ? (
               <span
                 aria-hidden="true"
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[9px] font-bold flex-shrink-0"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-medium flex-shrink-0"
                 style={{ background: colorBg }}
               >
                 {ownerInitials}

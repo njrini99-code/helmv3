@@ -91,7 +91,7 @@ export function PatternImpactPanel({
             <span className="text-xs font-medium text-warm-500">Resolution Rate</span>
             <span
               className={cn(
-                'text-sm font-bold',
+                'text-[13px] font-medium',
                 data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
               )}
             >
@@ -161,7 +161,7 @@ export function PatternImpactPanel({
       {/* Lifecycle Funnel and Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Lifecycle Funnel */}
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Pattern Lifecycle Funnel</h4>
           <LifecycleFunnel data={data.lifecycle} />
           <div className="mt-4 p-3 bg-warm-50 rounded-lg">
@@ -169,7 +169,7 @@ export function PatternImpactPanel({
               <span className="text-sm font-medium text-warm-700">Conversion Rate</span>
               <span
                 className={cn(
-                  'text-lg font-bold',
+                  'text-[17px] font-medium tracking-[-0.005em]',
                   data.conversionRate >= 0.5 ? 'text-primary-600' : 'text-amber-600'
                 )}
               >
@@ -184,7 +184,7 @@ export function PatternImpactPanel({
 
         {/* Lifecycle Distribution Chart */}
         {lifecycleChartData.length > 0 && (
-          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
             <h4 className="text-sm font-medium text-warm-700 mb-4">Current Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -220,7 +220,7 @@ export function PatternImpactPanel({
 
       {/* Top Impactful Patterns */}
       {data.topPatterns.length > 0 && (
-        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-hidden">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 overflow-hidden">
           <div className="px-4 py-3 border-b border-warm-100">
             <h4 className="text-sm font-medium text-warm-700">Most Impactful Patterns</h4>
           </div>
@@ -262,7 +262,7 @@ function StatCard({
         {icon}
         <span className="text-xs text-warm-500">{label}</span>
       </div>
-      <span className="text-lg font-bold text-warm-900">{value}</span>
+      <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{value}</span>
     </div>
   );
 }
@@ -443,7 +443,7 @@ function PatternRow({
               ) : (
                 <IconTrendingUp size={14} />
               )}
-              <span className="text-sm font-bold tabular-nums">
+              <span className="text-[13px] font-medium tabular-nums">
                 {pattern.strokesImpact > 0 ? '+' : ''}
                 {pattern.strokesImpact.toFixed(1)}
               </span>

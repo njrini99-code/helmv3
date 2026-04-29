@@ -188,7 +188,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
   }));
 
   const youColor = 'bg-primary-600 text-white ring-2 ring-primary-200';
-  const primaryColor = 'bg-warm-700 text-white ring-2 ring-warm-200';
+  const primaryColor = 'bg-warm-700 text-white ring-1 ring-warm-200/45';
   const secondaryColor = 'bg-violet-600 text-white ring-2 ring-violet-200';
 
   return (
@@ -344,7 +344,7 @@ export function EvidencePanel({
     <div
       data-testid={testId ?? 'evidence-panel-expanded'}
       className={cn(
-        'mt-3 bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4',
+        'mt-3 bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4',
       )}
     >
       <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-warm-500">

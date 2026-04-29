@@ -69,7 +69,7 @@ function StatsSectionSkeleton() {
       {/* Metrics grid skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="glass-standard rounded-2xl p-4 animate-pulse">
+          <div key={i} className="surface-matte rounded-3xl p-4 animate-pulse">
             <div className="h-7 bg-warm-200 rounded w-16 mx-auto mb-2" />
             <div className="h-4 bg-warm-200 rounded w-12 mx-auto" />
           </div>
@@ -77,7 +77,7 @@ function StatsSectionSkeleton() {
       </div>
 
       {/* Charts skeleton */}
-      <div className="glass-standard rounded-2xl p-6 animate-pulse">
+      <div className="surface-matte rounded-3xl p-6 animate-pulse">
         <div className="h-48 bg-warm-100 rounded-xl" />
       </div>
     </div>
@@ -177,13 +177,13 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       <AnimatedItem>
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Profile Header Card - Compact */}
-        <div className="relative glass-standard rounded-2xl overflow-clip mb-8">
+        <div className="relative surface-matte rounded-3xl overflow-clip mb-8">
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-5">
               {/* Avatar */}
               <div className="flex-shrink-0">
                 {player.avatar_url ? (
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-2 ring-white shadow-lg">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-1 ring-cream-50">
                     <Image
                       src={player.avatar_url}
                       alt={`${player.first_name} ${player.last_name}`}
@@ -291,7 +291,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </div>
 
           {totalRounds === 0 ? (
-            <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center">
+            <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-12 text-center">
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
                   <IconFlag size={20} className="text-warm-400" />
@@ -305,7 +305,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 <Link
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="group relative glass-standard rounded-2xl block hover:shadow-md transition-all hover:-translate-y-0.5"
+                  className="group relative surface-matte rounded-3xl block hover:shadow-md transition-all hover:-translate-y-0.5"
                   style={{
                     animation: 'fadeInUp 0.4s ease-out forwards',
                     animationDelay: `${index * 60}ms`,

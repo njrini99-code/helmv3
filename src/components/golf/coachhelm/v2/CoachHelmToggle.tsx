@@ -57,7 +57,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
     <div className="space-y-4">
       <div
         className={cn(
-          'relative overflow-clip rounded-2xl border bg-cream-100/75 p-5 backdrop-blur-xl shadow-glass transition-all',
+          'relative overflow-clip rounded-2xl border bg-cream-100/75 p-5 backdrop-blur-xl transition-all',
           enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-warm-200/55 ring-1 ring-warm-200/60'
         )}
       >
@@ -69,7 +69,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
           {/* Icon */}
           <div
             className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center shadow-glass-sm ring-1 ring-white/70',
+              'w-12 h-12 rounded-xl flex items-center justify-center ring-1 ring-white/70',
               enabled
                 ? 'bg-gradient-green text-white'
                 : 'bg-warm-200 text-warm-500'
@@ -111,7 +111,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
             className={cn(
               'relative h-8 w-16 rounded-full border transition-all',
               enabled
-                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-primary-500 shadow-glass-sm'
+                ? 'border-primary-400/40 bg-gradient-to-r from-primary-500 to-primary-500 '
                 : 'border-warm-200 bg-warm-200',
               saving && 'opacity-60 cursor-not-allowed'
             )}
@@ -121,7 +121,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
               initial={false}
               animate={{ x: enabled ? 32 : 4 }}
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              className="absolute top-1 h-6 w-6 rounded-full bg-white shadow-glass-sm"
+              className="absolute top-1 h-6 w-6 rounded-full bg-white "
             />
           </button>
         </div>
@@ -194,7 +194,7 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-xl border px-3 py-2 text-xs font-medium shadow-glass-sm',
+        'flex items-start gap-3 rounded-xl border px-3 py-2 text-xs font-medium ',
         enabled
           ? 'border-white/70 bg-cream-100/75 text-warm-700'
           : 'border-warm-200/55 bg-cream-100/60 text-warm-400'

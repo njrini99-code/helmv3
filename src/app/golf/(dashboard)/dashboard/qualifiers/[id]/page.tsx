@@ -179,7 +179,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Qualifier Header */}
         <AnimatedItem>
-        <div className="relative glass-standard rounded-2xl overflow-clip p-6 mb-6">
+        <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-warm-900 mb-2 truncate">
@@ -249,7 +249,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
 
         {/* Real-time Leaderboard */}
         <AnimatedItem>
-        <div className="relative glass-standard rounded-2xl overflow-clip p-6 mb-6">
+        <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <IconTrophy size={20} className="text-amber-500" />
             <h2 className="text-lg font-semibold text-warm-900">Leaderboard</h2>

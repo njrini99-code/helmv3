@@ -247,7 +247,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                         : [
                             'bg-glass-subtle backdrop-blur-glass', // Standard glass
                             'border border-warm-200/45',
-                            'shadow-glass-sm'
+                            ''
                         ]
                 )}
                 whileHover={{
@@ -609,7 +609,7 @@ export function TopPerformerRow({
 }: TopPerformerRowProps) {
     const rankColors: Record<number, { bg: string; text: string; icon?: string }> = {
         1: { bg: 'bg-gradient-to-br from-amber-100 to-amber-200', text: 'text-amber-700', icon: '🥇' },
-        2: { bg: 'bg-gradient-to-br from-warm-100 to-warm-200', text: 'text-warm-600', icon: '🥈' },
+        2: { bg: 'bg-warm-100/65', text: 'text-warm-600', icon: '🥈' },
         3: { bg: 'bg-gradient-to-br from-orange-100 to-orange-200', text: 'text-orange-600', icon: '🥉' }
     };
 

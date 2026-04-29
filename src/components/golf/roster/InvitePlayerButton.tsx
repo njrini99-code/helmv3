@@ -169,7 +169,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
             <>
               <div className="bg-warm-50 rounded-lg p-4 border border-warm-200">
                 <p className="text-xs font-medium text-warm-500 mb-2">Invite Code</p>
-                <p className="text-2xl font-mono font-bold text-warm-900 tracking-wider select-all">
+                <p className="text-2xl font-mono font-medium text-warm-900 tracking-wider select-all">
                   {inviteCode}
                 </p>
               </div>

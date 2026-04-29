@@ -568,7 +568,7 @@ export function EventDetailModal({
         initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={prefersReducedMotion ? { duration: 0 } : calendarSpring.modalEntry}
-        className="relative bg-white rounded-[24px] border border-warm-200/60 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+        className="relative bg-white rounded-[24px] border border-warm-200/35 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
       >
         {/* Colored Header Band - tinted by event type */}
         <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-5 pb-4')}>
@@ -834,7 +834,7 @@ export function EventDetailModal({
                           <Image src={player.avatar_url} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" unoptimized />
                         ) : (
                           <div className={cn(
-                            'w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold',
+                            'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-medium',
                             isSelected ? 'bg-white/20 text-white' : 'bg-warm-300 text-warm-500'
                           )}>
                             {player.first_name[0]}{player.last_name[0]}

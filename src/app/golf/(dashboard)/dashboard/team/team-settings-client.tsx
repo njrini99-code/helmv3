@@ -172,7 +172,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       <div className="max-w-2xl mx-auto px-6 py-8">
 
       {/* Team Info */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-6 mb-6">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-6 mb-6">
         <h2 className="text-lg font-semibold text-warm-900">Team Information</h2>
 
         <div>
@@ -211,7 +211,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </div>
 
       {/* Invite Code */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 space-y-4">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-warm-900">Player Invitations</h2>
         <p className="text-sm text-warm-500">
           Share this link with players to invite them to join your team.

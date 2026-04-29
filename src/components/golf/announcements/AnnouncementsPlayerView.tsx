@@ -184,12 +184,12 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
               {ann.title}
             </h3>
             {needsAck && (
-              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-medium uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                 Action needed
               </span>
             )}
             {!needsAck && isNew && !hasAcknowledged && (
-              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-bold uppercase tracking-wider rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+              <span className="flex-shrink-0 px-2 py-0.5 text-micro font-medium uppercase tracking-wider rounded-full bg-primary-50 text-primary-700 border border-primary-200">
                 New
               </span>
             )}
@@ -300,7 +300,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                   {/* Documents - downloadable */}
                   {detail.documents && detail.documents.length > 0 && (
                     <div>
-                      <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
+                      <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
                           <button
@@ -333,7 +333,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                   {detail.tasks && detail.tasks.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest">Your Tasks</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80">Your Tasks</p>
                         {myTotalTasks > 0 && (
                           <span className={cn(
                             'text-xs font-semibold tabular-nums',

@@ -237,7 +237,7 @@ export default function GolfTasksPage() {
           >
             Active ({activeCount})
             {stats.overdue_tasks > 0 && filter !== 'active' && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[11px] font-medium rounded-full flex items-center justify-center">
                 {stats.overdue_tasks}
               </span>
             )}

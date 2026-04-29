@@ -306,7 +306,7 @@ export function ShotAnalysisCard({
                       strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(Number(safeResilience ?? 0) / 2, 1))}
                     />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-warm-900 tabular-nums">
+                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-warm-900 tabular-nums">
                     {Number(safeResilience ?? 0).toFixed(1)}
                   </span>
                 </div>

@@ -135,7 +135,7 @@ export function CategoryDrillDown({
                 </span>
 
                 {/* Value */}
-                <span className="font-bold tabular-nums text-warm-900 shrink-0">
+                <span className="font-medium tabular-nums text-warm-900 shrink-0">
                   {fmt(player.value)}{' '}
                   <span className="text-xs font-normal text-warm-400">{primaryMetric}</span>
                 </span>

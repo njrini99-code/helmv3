@@ -142,7 +142,7 @@ export function CalendarAvatarSidebar({
           onClick={handleAllClick}
           aria-pressed={isAllSelected}
           className={cn(
-            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-bold text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
+            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-medium text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
             isAllSelected
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.3)]'
@@ -206,7 +206,7 @@ export function CalendarAvatarSidebar({
                     aria-label={getFullName(member)}
                     className={cn(
                       'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
-                      !selected && 'bg-gradient-to-br from-warm-50 to-warm-200 text-warm-600 shadow-sm',
+                      !selected && 'bg-warm-100/65 text-warm-600 shadow-sm',
                       selected && 'scale-[1.08]',
                     )}
                     style={
@@ -233,7 +233,7 @@ export function CalendarAvatarSidebar({
                     {selected && playerColor && (
                       <span
                         aria-hidden="true"
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-[9px] font-bold"
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-[10px] font-medium"
                         style={{ background: playerColor.bg }}
                       >
                         {selectedPlayerIds.indexOf(member.id) + 1}

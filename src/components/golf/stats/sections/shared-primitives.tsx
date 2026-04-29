@@ -296,7 +296,7 @@ export function StatCard({
   return (
     <motion.div
       variants={itemVariants}
-      className={`relative glass-standard rounded-xl overflow-clip p-4 group cursor-default`}
+      className={`relative surface-matte rounded-xl overflow-clip p-4 group cursor-default`}
       whileHover={{
         scale: 1.02,
         y: -4,
@@ -340,7 +340,7 @@ export function StatCard({
         )}
       </div>
       <div
-        className={`font-bold ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-primary-600' : 'text-warm-900'} tabular-nums`}
+        className={`font-medium ${large ? 'text-3xl' : 'text-2xl'} ${highlight ? 'text-primary-600' : 'text-warm-900'} tabular-nums`}
       >
         {displayValue}
       </div>
@@ -412,7 +412,7 @@ export function StatSection({
 
   return (
     <motion.div
-      className="relative glass-standard rounded-2xl overflow-clip mb-4 group"
+      className="relative surface-matte rounded-3xl overflow-clip mb-4 group"
       variants={sectionVariants}
       initial="hidden"
       animate="visible"
@@ -431,7 +431,7 @@ export function StatSection({
         onClick={() => collapsible && setIsOpen(!isOpen)}
       >
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-warm-700 uppercase tracking-wide">
+          <h3 className="text-[13px] font-medium text-warm-700 uppercase tracking-wide">
             {title}
           </h3>
           {collapsible && (

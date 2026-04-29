@@ -399,7 +399,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
       />
       <div className="flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 sm:p-8">
+        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8">
           <p className="text-warm-500 text-sm mb-6">
             Found {rounds.length} recoverable round{rounds.length !== 1 ? 's' : ''} in your browser&apos;s offline storage.
           </p>

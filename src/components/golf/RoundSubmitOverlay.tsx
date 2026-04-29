@@ -150,7 +150,7 @@ export function RoundSubmitOverlay({
             >
               <div className="glass-prominent rounded-2xl shadow-2xl overflow-hidden">
                 {/* Green gradient celebration header */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 pt-8 pb-6 text-center">
+                <div className="relative overflow-hidden bg-primary-600 px-6 pt-8 pb-6 text-center">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
 
                   {/* Animated checkmark */}
@@ -190,7 +190,7 @@ export function RoundSubmitOverlay({
                     transition={{ delay: 0.4 }}
                     className="flex items-baseline justify-center gap-2"
                   >
-                    <span className="text-4xl font-bold text-white tabular-nums">{totalScore}</span>
+                    <span className="text-[36px] md:text-[42px] font-light tracking-[-0.025em] text-white tabular-nums">{totalScore}</span>
                     <span className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}>
                       ({toParLabel})
                     </span>

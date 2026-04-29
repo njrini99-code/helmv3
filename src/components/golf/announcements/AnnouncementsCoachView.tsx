@@ -197,7 +197,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                             {p.avatar_url ? (
                               <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[8px] font-bold text-primary-700 leading-none">
+                              <span className="text-[8px] font-medium text-primary-700 leading-none">
                                 {(p.first_name?.[0] || '')}{(p.last_name?.[0] || '')}
                               </span>
                             )}
@@ -205,7 +205,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                         ))}
                         {ann.acknowledged_count > 5 && (
                           <span className="w-5 h-5 rounded-full border-[1.5px] border-white flex items-center justify-center flex-shrink-0 bg-warm-100">
-                            <span className="text-[8px] font-bold text-warm-500 leading-none">+{ann.acknowledged_count - 5}</span>
+                            <span className="text-[8px] font-medium text-warm-500 leading-none">+{ann.acknowledged_count - 5}</span>
                           </span>
                         )}
                       </span>
@@ -286,7 +286,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Documents */}
                     {detail.documents && detail.documents.length > 0 && (
                       <div>
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Attachments</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
                         <div className="flex flex-wrap gap-2">
                           {detail.documents.map((d) => (
                             <button
@@ -311,14 +311,14 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {/* Tasks with player assignments */}
                     {detail.tasks && detail.tasks.length > 0 && (
                       <div>
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-widest mb-2.5">Tasks</p>
+                        <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Tasks</p>
                         <div className="space-y-2">
                           {detail.tasks.map((t) => {
                             const completed = t.assignments?.filter(a => a.status === 'completed').length || 0;
                             const total = t.assignments?.length || 0;
                             const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
                             return (
-                              <div key={t.task_id} className="p-3.5 bg-warm-50/80 rounded-xl border border-warm-200/60">
+                              <div key={t.task_id} className="p-3.5 bg-warm-50/80 rounded-xl border border-warm-200/35">
                                 <div className="flex items-center justify-between mb-1.5">
                                   <span className="text-sm font-medium text-warm-900">{t.task?.title || 'Task'}</span>
                                   <span className={cn(
@@ -373,7 +373,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                     {detail.requires_acknowledgement && (
                       <div>
                         <div className="flex items-center justify-between mb-2.5">
-                          <p className="text-label font-semibold text-warm-400 uppercase tracking-widest">Acknowledgements</p>
+                          <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80">Acknowledgements</p>
                           <span className={cn(
                             'text-xs font-semibold tabular-nums',
                             detail.acknowledged_count >= detail.total_recipients ? 'text-primary-600' : 'text-warm-600'
@@ -402,7 +402,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                     {player?.avatar_url ? (
                                       <img src={player.avatar_url} alt="" className="w-full h-full object-cover" />
                                     ) : (
-                                      <span className="text-[9px] font-bold text-primary-700 leading-none">{initials}</span>
+                                      <span className="text-[10px] font-medium text-primary-700 leading-none">{initials}</span>
                                     )}
                                   </div>
                                   <span className="text-xs text-warm-700 font-medium flex-1">

@@ -39,7 +39,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
   const roundColumns = Array.from({ length: maxRoundNumber }, (_, i) => i + 1);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="flex items-center gap-2 mb-4">
         <IconChartBar size={20} className="text-warm-500" />
         <h2 className="text-lg font-semibold text-warm-900">Round-by-Round Scores</h2>
@@ -73,7 +73,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
                   } hover:bg-warm-50 transition-colors`}
                 >
                   <td className="py-3 pr-4 text-sm">
-                    <span className={`tabular-nums ${position === 1 && hasRounds ? 'font-bold text-primary-600' : 'text-warm-500'}`}>
+                    <span className={`tabular-nums ${position === 1 && hasRounds ? 'font-medium text-primary-600' : 'text-warm-500'}`}>
                       {hasRounds ? position : '-'}
                     </span>
                   </td>
@@ -100,7 +100,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
                     );
                   })}
                   <td className="py-3 pl-3 text-right">
-                    <span className="text-sm font-bold text-warm-900 tabular-nums">
+                    <span className="text-[13px] font-medium text-warm-900 tabular-nums">
                       {hasRounds ? data.totalScore : '-'}
                     </span>
                   </td>

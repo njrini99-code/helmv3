@@ -107,10 +107,10 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Loading state — shimmer skeleton
   if (loading) {
     return (
-      <div className={cn('rounded-2xl glass-standard p-6', className)}>
+      <div className={cn('rounded-2xl surface-matte p-6', className)}>
         <div className="space-y-5">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gradient-to-br from-warm-200 to-warm-100 rounded-xl animate-pulse" />
+            <div className="h-10 w-10 bg-warm-100/65 rounded-xl animate-pulse" />
             <div className="space-y-2">
               <div className="h-4 w-28 bg-warm-200 rounded-lg animate-pulse" />
               <div className="h-3 w-20 bg-warm-100 rounded animate-pulse" />
@@ -223,7 +223,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
   // Generating overlay
   if (generating) {
     return (
-      <div className={cn('rounded-2xl glass-standard p-6', className)}>
+      <div className={cn('rounded-2xl surface-matte p-6', className)}>
         <div className="flex flex-col items-center justify-center py-10">
           <div className="relative">
             <motion.div
@@ -445,7 +445,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
             gc.bg, gc.text, gc.border, gc.ring, gc.glow,
           )}
         >
-          <span className="text-3xl font-bold">{content.overallGrade}</span>
+          <span className="text-[32px] md:text-[36px] font-light tracking-[-0.025em]">{content.overallGrade}</span>
         </motion.div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -514,7 +514,7 @@ function ScorecardStrip({
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.05 * i, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className={cn(
-                      'inline-flex items-center justify-center w-7 h-7 text-xs font-bold rounded-lg transition-shadow',
+                      'inline-flex items-center justify-center w-7 h-7 text-[11px] font-medium rounded-lg transition-shadow',
                       scoreToPairColor(h.scoreToPar),
                     )}
                   >
@@ -524,7 +524,7 @@ function ScorecardStrip({
               ))}
               <td className="py-2">
                 <span className={cn(
-                  'text-sm font-bold',
+                  'text-[13px] font-medium',
                   totalScore <= totalPar ? 'text-primary-700' : 'text-red-600',
                 )}>
                   {totalScore}
@@ -537,7 +537,7 @@ function ScorecardStrip({
               {nineHoles.map(h => (
                 <td key={h.hole} className={cn(
                   'text-label py-1.5 font-medium',
-                  h.threePutt ? 'text-red-500 font-bold' : h.onePutt ? 'text-primary-600' : 'text-warm-400',
+                  h.threePutt ? 'text-red-500 font-medium' : h.onePutt ? 'text-primary-600' : 'text-warm-400',
                 )}>
                   {h.putts}
                 </td>
@@ -632,7 +632,7 @@ function ScoringDistribution({
             initial={{ width: 0 }}
             animate={{ width: `${(s.count / totalHoles) * 100}%` }}
             transition={{ delay: 0.2 + i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className={cn('flex items-center justify-center text-xs font-bold text-white', s.color)}
+            className={cn('flex items-center justify-center text-[11px] font-medium text-white', s.color)}
             style={{ minWidth: s.count > 0 ? '32px' : 0 }}
           >
             {s.count}
@@ -791,7 +791,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
                   transition={{ delay: 0.03 * i, duration: 0.3 }}
                   className={cn(
                     'absolute rounded-full -translate-x-1/2',
-                    isLast ? 'w-3 h-3 ring-2 ring-white shadow-sm' : 'w-1.5 h-1.5',
+                    isLast ? 'w-3 h-3 ring-2 ring-cream-50' : 'w-1.5 h-1.5',
                     d.rollingScoreToPar <= 0 ? 'bg-primary-500' : 'bg-red-400',
                   )}
                   style={{ top: `${pct}%`, left: '50%' }}
@@ -809,7 +809,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
       <div className="flex justify-between mt-2 text-micro text-warm-400">
         <span>Hole 1</span>
         <span className={cn(
-          'font-bold text-xs',
+          'font-medium text-xs',
           (values[values.length - 1] ?? 0) <= 0 ? 'text-primary-600' : 'text-red-500',
         )}>
           Final: {formatScoreToPar(values[values.length - 1] ?? 0)}
@@ -1025,7 +1025,7 @@ function GameBreakdownSection({
                   className="flex items-center gap-2.5 text-xs px-3 py-2 rounded-lg bg-warm-50/50 border border-warm-100/50"
                 >
                   <span className={cn(
-                    'w-5 h-5 rounded-full flex items-center justify-center text-micro font-bold',
+                    'w-5 h-5 rounded-full flex items-center justify-center text-micro font-medium',
                     ud.success ? 'bg-primary-100 text-primary-700' : 'bg-red-100 text-red-600',
                   )}>
                     {ud.success ? '\u2713' : '\u2717'}
@@ -1143,7 +1143,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
             className="flex items-center gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
           >
             <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center border border-blue-200/50 shadow-sm">
-              <span className="text-base font-bold text-blue-700 tabular-nums">
+              <span className="text-[15px] font-medium text-blue-700 tabular-nums">
                 {item.potentialStrokes > 0 ? `-${item.potentialStrokes}` : item.potentialStrokes}
               </span>
             </div>
@@ -1175,7 +1175,7 @@ function RecommendationsCard({ recs }: { recs: string[] }) {
             transition={{ delay: 0.1 * i, duration: 0.35 }}
             className="flex items-start gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100/50"
           >
-            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-micro font-bold mt-0.5 shadow-sm">
+            <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-micro font-medium mt-0.5 shadow-sm">
               {i + 1}
             </span>
             <p className="text-xs text-warm-700 leading-relaxed">{rec}</p>

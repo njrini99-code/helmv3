@@ -28,7 +28,7 @@ export default function Loading() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl p-6 space-y-3">
+            <div key={i} className="surface-matte rounded-3xl p-6 space-y-3">
               <div className="h-3 w-24 skeleton-shimmer rounded" />
               <div className="h-8 w-16 skeleton-shimmer rounded" />
               <div className="h-3 w-32 skeleton-shimmer rounded" />
@@ -36,7 +36,7 @@ export default function Loading() {
           ))}
         </div>
 
-        <div className="glass-standard rounded-2xl p-6">
+        <div className="surface-matte rounded-3xl p-6">
           <div className="h-5 w-32 skeleton-shimmer rounded mb-4" />
           <div className="h-64 w-full skeleton-shimmer rounded-xl" />
         </div>

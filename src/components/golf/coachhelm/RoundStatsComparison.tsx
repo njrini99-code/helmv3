@@ -177,7 +177,7 @@ function StatBar({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-warm-700">{label}</span>
         <div className="flex items-center gap-2">
-          <span className={cn('text-sm font-bold', config.textColor)}>
+          <span className={cn('text-[13px] font-medium', config.textColor)}>
             {displayValue}
           </span>
           {config.icon && (

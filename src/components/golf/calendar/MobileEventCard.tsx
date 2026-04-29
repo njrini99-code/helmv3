@@ -137,7 +137,7 @@ export function MobileEventCard({
               <div className="flex items-center gap-2 mb-1.5">
                 {relativeLabel && (
                   <span className={cn(
-                    'text-xs font-bold uppercase tracking-wide px-2 py-0.5 rounded-md',
+                    'text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-md',
                     relativeLabel === 'Today'
                       ? 'bg-primary-500/10 text-primary-700'
                       : 'bg-warm-100 text-warm-500'
@@ -184,7 +184,7 @@ export function MobileEventCard({
             {/* RSVP status indicator */}
             {userRsvpStatus && (
               <div className={cn(
-                'w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm',
+                'w-8 h-8 rounded-xl flex items-center justify-center font-medium text-sm',
                 userRsvpStatus === 'accepted' && 'bg-primary-500/10 text-primary-600',
                 userRsvpStatus === 'tentative' && 'bg-amber-500/10 text-amber-600',
                 userRsvpStatus === 'declined' && 'bg-rose-500/10 text-rose-500'

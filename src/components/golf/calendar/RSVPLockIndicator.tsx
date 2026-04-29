@@ -141,7 +141,7 @@ export function RSVPLockIndicator({
 
       {/* Urgency badge */}
       {!compact && isUrgent && (
-        <span className="shrink-0 px-2 py-0.5 text-xs font-bold uppercase tracking-wide rounded-full bg-rose-600 text-white">
+        <span className="shrink-0 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide rounded-full bg-rose-600 text-white">
           Urgent
         </span>
       )}

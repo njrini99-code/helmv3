@@ -122,7 +122,7 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
   const trend = calculateTrend(scores);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -230,7 +230,7 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
   }));
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -285,7 +285,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
   const displayRounds = expanded ? rounds : rounds.slice(0, 5);
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -317,7 +317,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className="text-lg font-bold text-warm-900">{round.total_score}</p>
+                <p className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{round.total_score}</p>
               </div>
               <div className={`px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
                 {round.total_to_par === 0 ? 'E' : round.total_to_par > 0 ? `+${round.total_to_par}` : round.total_to_par}
@@ -354,13 +354,13 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
       {metrics.map((m, i) => (
         <div
           key={i}
-          className="relative glass-standard rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+          className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
           style={{ animation: `scaleIn 0.3s ease-out forwards`, animationDelay: `${i * 50}ms` }}
         >
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />
-          <p className={`text-2xl font-bold ${m.color}`}>{m.value}</p>
+          <p className={`text-[24px] md:text-[30px] font-light tracking-[-0.025em] ${m.color}`}>{m.value}</p>
           <p className="text-xs font-medium text-warm-700 mt-1">{m.label}</p>
           <p className="text-xs text-warm-400">{m.subtext}</p>
         </div>
@@ -403,7 +403,7 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
   };
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip">
+    <div className="relative surface-matte rounded-3xl overflow-clip">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -452,7 +452,7 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
                   {round.course_name}
                 </td>
                 <td className="px-6 py-3 text-center">
-                  <span className="text-lg font-bold text-warm-900">{round.total_score}</span>
+                  <span className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{round.total_score}</span>
                 </td>
                 <td className="px-6 py-3 text-center">
                   <span className={`inline-flex px-2.5 py-1 rounded-lg text-sm font-semibold ${getScoreColor(round.total_to_par)}`}>
@@ -485,7 +485,7 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
   if (data.length === 0) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -541,7 +541,7 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
   if (data.length === 0) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -581,11 +581,11 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
 
       <div className="flex justify-center gap-6 mt-4 pt-4 border-t border-warm-100">
         <div className="text-center">
-          <div className="text-lg font-bold text-warm-900">{stats.girPercentage?.toFixed(1) ?? '--'}%</div>
+          <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{stats.girPercentage?.toFixed(1) ?? '--'}%</div>
           <div className="text-xs text-warm-500">Overall GIR</div>
         </div>
         <div className="text-center">
-          <div className="text-lg font-bold text-warm-900">{stats.girPerRound?.toFixed(1) ?? '--'}</div>
+          <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{stats.girPerRound?.toFixed(1) ?? '--'}</div>
           <div className="text-xs text-warm-500">GIR/Round</div>
         </div>
       </div>
@@ -623,7 +623,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
   if (!hasData) return null;
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -632,7 +632,7 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
           <h3 className="text-base font-semibold text-warm-900">Strokes Gained (per Round)</h3>
           <p className="text-sm text-warm-500 mt-0.5">vs PGA Tour baseline</p>
         </div>
-        <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
+        <div className={`px-3 py-1.5 rounded-lg text-[13px] font-medium ${
           (stats.sgTotalPerRound ?? 0) >= 0
             ? 'bg-primary-100 text-primary-700'
             : 'bg-red-100 text-red-700'
@@ -734,7 +734,7 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
   };
 
   return (
-    <div className="relative glass-standard rounded-2xl overflow-clip p-6">
+    <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
         style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
       />
@@ -912,7 +912,7 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
 
       {/* Empty State */}
       {stats.roundsPlayed < 3 && (
-        <div className="relative text-center py-12 glass-standard rounded-2xl overflow-clip">
+        <div className="relative text-center py-12 surface-matte rounded-3xl overflow-clip">
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
             style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
           />

@@ -94,7 +94,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.12 * index + 0.2, duration: 0.3 }}
                   className={cn(
-                    'text-xs font-bold px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
+                    'text-[11px] font-medium px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
                     isNegative
                       ? 'bg-red-100 text-red-700 border border-red-200/50'
                       : 'bg-primary-100 text-primary-700 border border-primary-200/50'
@@ -121,7 +121,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                 </span>
                 <span className="text-warm-200">|</span>
                 <span className={cn(
-                  'px-2 py-0.5 rounded-md text-micro font-bold border',
+                  'px-2 py-0.5 rounded-md text-micro font-medium border',
                   pattern.trend === 'strengthening' && 'bg-amber-100 text-amber-700 border-amber-200/50',
                   pattern.trend === 'stable' && 'bg-warm-100 text-warm-600 border-warm-200/50',
                   pattern.trend === 'weakening' && 'bg-primary-100 text-primary-700 border-primary-200/50',

@@ -390,7 +390,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Team CoachHelm Settings Section */}
                 {teamId ? (
                     <AnimatedItem>
-                        <section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+                        <section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <h2 className="text-base font-semibold text-warm-900">Team CoachHelm</h2>

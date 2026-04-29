@@ -97,7 +97,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
           </div>
           <h2 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">Announcements</h2>
           {unreadCount > 0 && (
-            <span className="px-1.5 py-0.5 text-micro font-bold rounded-full bg-primary-100 text-primary-700 border border-primary-200 tabular-nums">
+            <span className="px-1.5 py-0.5 text-micro font-medium rounded-full bg-primary-100 text-primary-700 border border-primary-200 tabular-nums">
               {unreadCount} new
             </span>
           )}
@@ -147,7 +147,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                         {ann.title}
                       </h3>
                       {needsAck && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                        <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                           Action
                         </span>
                       )}

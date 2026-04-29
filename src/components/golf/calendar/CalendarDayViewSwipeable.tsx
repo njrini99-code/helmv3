@@ -260,7 +260,7 @@ export function CalendarDayViewSwipeable({
                 {dateLabel}
               </h2>
               {isTodayDate && (
-                <span className="px-2 py-0.5 text-xs font-bold uppercase tracking-wide bg-primary-100 text-primary-700 rounded-full">
+                <span className="px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide bg-primary-100 text-primary-700 rounded-full">
                   Now
                 </span>
               )}
@@ -344,7 +344,7 @@ export function CalendarDayViewSwipeable({
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-primary-500/10 rounded-3xl blur-2xl scale-150" />
-                <div className="relative w-20 h-20 rounded-3xl bg-gradient-to-br from-warm-50 to-warm-100 border border-warm-200/50 flex items-center justify-center shadow-sm">
+                <div className="relative w-20 h-20 rounded-3xl bg-warm-100/60 border border-warm-200/50 flex items-center justify-center shadow-sm">
                   <Calendar className="w-10 h-10 text-warm-300" />
                 </div>
               </div>

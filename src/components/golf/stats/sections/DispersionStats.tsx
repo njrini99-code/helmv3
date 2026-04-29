@@ -169,7 +169,7 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
         >
           <div className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">{item.label}</div>
           <div className="mt-1 flex items-end justify-between gap-3">
-            <div className="text-2xl font-bold tabular-nums">{item.count}</div>
+            <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums">{item.count}</div>
             <div className="text-xs font-medium opacity-80">{item.percentage}</div>
           </div>
         </motion.div>

@@ -131,7 +131,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
         <div className={`text-xs font-semibold ${isCurrent ? 'text-white' : 'text-warm-300'}`}>Hole {hole.number}</div>
         <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-400'}`}>Par {hole.par}</div>
         <div className={`text-xs ${isCurrent ? 'text-primary-100' : 'text-warm-500'}`}>{hole.yardage} yds</div>
-        <div className={`mt-1 text-lg font-bold ${scoreColor}`}>
+        <div className={`mt-1 text-[17px] font-medium tracking-[-0.005em] ${scoreColor}`}>
           {hasScore ? hole.score : '-'}
         </div>
         {hasScore && !isCurrent && (
@@ -190,7 +190,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
               {autoSaveStatus === 'error' && '!'}
             </span>
           )}
-          <span className="text-xs font-bold text-primary-400 uppercase tracking-wide">
+          <span className="text-[11px] font-medium text-primary-400 uppercase tracking-wide">
             Hole {currentHoleNumber} of {holes.length}
           </span>
         </div>
@@ -210,7 +210,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
             <div className="text-xs font-semibold text-amber-400">{is9Hole ? 'TOTAL' : 'OUT'}</div>
             <div className="text-xs text-warm-400">Par {front9.reduce((sum, hole) => sum + hole.par, 0)}</div>
             <div className="text-xs text-warm-500">{front9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-            <div className="mt-1 text-lg font-bold text-amber-400">{front9HasScores ? front9Score : '-'}</div>
+            <div className="mt-1 text-[17px] font-medium tracking-[-0.005em] text-amber-400">{front9HasScores ? front9Score : '-'}</div>
           </div>
           {!is9Hole && back9.map((hole, index) => renderHoleButton(hole, index + 9))}
           {!is9Hole && (
@@ -218,7 +218,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
               <div className="text-xs font-semibold text-amber-400">IN</div>
               <div className="text-xs text-warm-400">Par {back9.reduce((sum, hole) => sum + hole.par, 0)}</div>
               <div className="text-xs text-warm-500">{back9.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-              <div className="mt-1 text-lg font-bold text-amber-400">{back9HasScores ? back9Score : '-'}</div>
+              <div className="mt-1 text-[17px] font-medium tracking-[-0.005em] text-amber-400">{back9HasScores ? back9Score : '-'}</div>
             </div>
           )}
           {!is9Hole && (
@@ -226,7 +226,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
               <div className="text-xs font-semibold text-white">TOTAL</div>
               <div className="text-xs text-warm-400">Par {totalPar}</div>
               <div className="text-xs text-warm-500">{holes.reduce((sum, hole) => sum + hole.yardage, 0)}</div>
-              <div className="mt-1 text-lg font-bold text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
+              <div className="mt-1 text-[17px] font-medium tracking-[-0.005em] text-white">{(front9HasScores || back9HasScores) ? front9Score + back9Score : '-'}</div>
             </div>
           )}
         </div>
@@ -699,7 +699,7 @@ export default function ShotTrackingComprehensive({
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold">Hole {currentHole.number}</h1>
+                  <h1 className="text-[32px] md:text-[36px] font-light tracking-[-0.025em]">Hole {currentHole.number}</h1>
                   <span className="px-3 py-1 bg-white/15 backdrop-blur-sm rounded-md text-xs font-semibold uppercase tracking-wide">
                     Par {currentHole.par}
                   </span>
@@ -719,7 +719,7 @@ export default function ShotTrackingComprehensive({
                     return (
                       <>
                         <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Score</p>
-                        <p className="text-4xl font-bold mt-1">
+                        <p className="text-[36px] md:text-[42px] font-light tracking-[-0.025em] mt-1">
                           {holeScore}
                           <span className="text-xl ml-1 font-semibold text-primary-100">
                             {toPar > 0 ? `+${toPar}` : toPar === 0 ? 'E' : toPar}
@@ -731,7 +731,7 @@ export default function ShotTrackingComprehensive({
                 ) : (
                   <>
                     <p className="text-primary-200 text-xs font-semibold uppercase tracking-wider">Distance</p>
-                    <p className="text-4xl font-bold mt-1">
+                    <p className="text-[36px] md:text-[42px] font-light tracking-[-0.025em] mt-1">
                       {distanceToHole}<span className="text-xl ml-1 font-semibold text-primary-100">{distanceUnit === 'yards' ? 'YDS' : 'FT'}</span>
                     </p>
                   </>
@@ -743,7 +743,7 @@ export default function ShotTrackingComprehensive({
             {!isHoleComplete && <div className="xl:hidden mt-6 bg-white/10 backdrop-blur-sm rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-primary-100 font-semibold uppercase tracking-wide">Progress</span>
-                <span className="text-xs text-primary-100 font-bold">{Math.round(progressPercent)}%</span>
+                <span className="text-xs text-primary-100 font-medium">{Math.round(progressPercent)}%</span>
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                 <div
@@ -756,7 +756,7 @@ export default function ShotTrackingComprehensive({
                   <span className="w-1.5 h-1.5 rounded-full border border-warm-200/55"></span>
                   Tee
                 </span>
-                <span className="font-bold text-sm">{displayDistance} {displayUnit} left</span>
+                <span className="font-medium text-sm">{displayDistance} {displayUnit} left</span>
                 <span className="flex items-center gap-2 font-medium">
                   Hole
                   <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
@@ -771,7 +771,7 @@ export default function ShotTrackingComprehensive({
                ================================================================ */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-warm-600 uppercase tracking-wider">Shot Review</p>
+                <p className="text-[13px] font-medium text-warm-600 uppercase tracking-wider">Shot Review</p>
                 <span className="text-xs font-semibold text-primary-700 bg-primary-50 px-2.5 py-1 rounded-md ring-1 ring-primary-200">
                   Score: {shotHistory.length} ({shotHistory.length - currentHole.par > 0 ? '+' : ''}{shotHistory.length - currentHole.par})
                 </span>
@@ -799,7 +799,7 @@ export default function ShotTrackingComprehensive({
                       }`}
                     >
                       {/* Shot number */}
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[13px] font-medium flex-shrink-0 ${
                         shot.isPenalty
                           ? 'bg-red-100 text-red-600'
                           : shot.result === 'hole'
@@ -835,7 +835,7 @@ export default function ShotTrackingComprehensive({
                       {/* Shot distance + result badge */}
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {!shot.isPenalty && (
-                          <span className="text-sm font-bold text-primary-600">{shot.shotDistance}y</span>
+                          <span className="text-[13px] font-medium text-primary-600">{shot.shotDistance}y</span>
                         )}
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
                           shot.result === 'hole' ? 'bg-primary-100 text-primary-700'
@@ -870,14 +870,14 @@ export default function ShotTrackingComprehensive({
           <div className="space-y-5">
               {/* Club Selection (Tee Shot Par 4/5) - Segmented Control */}
               {isTeeShot && currentHole.par !== 3 && (
-                <div className="relative glass-standard rounded-2xl overflow-clip p-6 transition-colors duration-300">
+                <div className="relative surface-matte rounded-3xl overflow-clip p-6 transition-colors duration-300">
                   <div
                     className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
                     style={{
                       background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                     }}
                   />
-                  <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">Club Off Tee</p>
+                  <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-4">Club Off Tee</p>
                   <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Club off tee">
                     <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
                       role="radio"
@@ -903,9 +903,9 @@ export default function ShotTrackingComprehensive({
 
               {/* Putt Details (FIRST - when putting) */}
               {isPutting && (
-                <div className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
+                <div className="bg-primary-50/55 rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
                   <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm font-bold text-primary-900 uppercase tracking-wide">Putting Details</p>
+                    <p className="text-[13px] font-medium text-primary-900 uppercase tracking-wide">Putting Details</p>
                     <span className="text-xs font-semibold text-primary-700 bg-primary-100 px-2 py-1 rounded-md">Fill First</span>
                   </div>
                   <p className="text-xs text-warm-600 mb-4">Describe your putt before selecting the result</p>
@@ -945,14 +945,14 @@ export default function ShotTrackingComprehensive({
               )}
 
               {/* Shot Result - Context-Aware */}
-              <div className="relative glass-standard rounded-2xl overflow-clip p-6 transition-colors duration-300">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-6 transition-colors duration-300">
                 <div
                   className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
                   style={{
                     background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                   }}
                 />
-                <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">
+                <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-4">
                   {isPutting ? 'Putt Result' : 'Shot Result'}
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2" role="radiogroup" aria-label={isPutting ? 'Putt result' : 'Shot result'}>
@@ -1015,14 +1015,14 @@ export default function ShotTrackingComprehensive({
               {((isTeeShot && ['rough', 'sand', 'other'].includes(resultOfShot || '')) ||
                 (isApproachOrAroundGreen && resultOfShot && !['green', 'hole'].includes(resultOfShot)) ||
                 (isPutting && resultOfShot && resultOfShot !== 'hole')) && (
-                <div className="relative glass-standard rounded-2xl overflow-clip p-6 transition-colors duration-300">
+                <div className="relative surface-matte rounded-3xl overflow-clip p-6 transition-colors duration-300">
                   <div
                     className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
                     style={{
                       background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
                     }}
                   />
-                  <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-4">Miss Direction</p>
+                  <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-4">Miss Direction</p>
                   {isTeeShot && (
                     <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Miss direction">
                       {['left', 'right'].map(d => (
@@ -1055,9 +1055,9 @@ export default function ShotTrackingComprehensive({
 
               {/* Distance Remaining - Final Step (if not holed) */}
               {resultOfShot && resultOfShot !== 'hole' && (
-                <div className="bg-gradient-to-br from-primary-50 to-white rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
+                <div className="bg-primary-50/55 rounded-xl p-6 border-2 border-primary-200 shadow-lg shadow-primary-950/5">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm font-bold text-primary-900 uppercase tracking-wide">
+                    <p className="text-[13px] font-medium text-primary-900 uppercase tracking-wide">
                       {isPutting ? 'Leave Distance' : 'Distance Remaining'}
                     </p>
                     <span className="text-xs font-semibold text-primary-700 bg-primary-100 px-2 py-1 rounded-md">Required</span>
@@ -1079,7 +1079,7 @@ export default function ShotTrackingComprehensive({
                       onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       placeholder="Enter distance"
-                      className={`w-full h-14 px-5 rounded-xl text-3xl font-bold text-primary-900 text-center bg-white border-2 focus:ring-4 focus:outline-none transition-colors placeholder:text-warm-300 ${
+                      className={`w-full h-14 px-5 rounded-xl text-[32px] md:text-[36px] font-light tracking-[-0.025em] text-primary-900 text-center bg-white border-2 focus:ring-4 focus:outline-none transition-colors placeholder:text-warm-300 ${
                         distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0)
                           ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
                           : 'border-primary-300 focus:border-primary-500 focus:ring-primary-100'
@@ -1099,7 +1099,7 @@ export default function ShotTrackingComprehensive({
                               dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(ft) });
                               dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
                             }}
-                            className={`py-2 rounded-lg text-xs font-bold transition-colors ${
+                            className={`py-2 rounded-lg text-[11px] font-medium transition-colors ${
                               distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
                                 ? 'bg-primary-600 text-white shadow-sm'
                                 : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50 active:bg-primary-100'
@@ -1113,7 +1113,7 @@ export default function ShotTrackingComprehensive({
                     <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
                       <button
                         onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
-                        className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-colors ${
+                        className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
                           distanceAfterUnit === 'yards'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                             : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
@@ -1123,7 +1123,7 @@ export default function ShotTrackingComprehensive({
                       </button>
                       <button
                         onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
-                        className={`flex-1 py-2.5 rounded-md font-bold text-sm uppercase tracking-wide transition-colors ${
+                        className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
                           distanceAfterUnit === 'feet'
                             ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                             : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50 active:bg-warm-100'
@@ -1136,7 +1136,7 @@ export default function ShotTrackingComprehensive({
                   {distanceAfterShot && (
                     <div className="flex items-center justify-between bg-cream-100/68 rounded-lg px-4 py-2.5 border border-primary-200">
                       <span className="text-xs font-semibold text-warm-600 uppercase tracking-wide">Shot Distance</span>
-                      <span className="text-lg font-bold text-primary-700">
+                      <span className="text-[17px] font-medium tracking-[-0.005em] text-primary-700">
                         ~{Math.round(calculateShotDistanceWithDirection(
                           distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
                           distanceAfterUnit === 'feet' ? (parseFloat(distanceAfterShot) || 0) / 3 : (parseFloat(distanceAfterShot) || 0),
@@ -1167,7 +1167,7 @@ export default function ShotTrackingComprehensive({
                 onClick={handleNextShot}
                 disabled={!ready}
                 aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
-                className={`w-full py-4 rounded-lg font-bold text-base transition-colors ${
+                className={`w-full py-4 rounded-lg font-medium text-base transition-colors ${
                   ready
                     ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                     : 'bg-warm-100 text-warm-400 cursor-not-allowed ring-1 ring-warm-200'}`}>
@@ -1230,16 +1230,16 @@ export default function ShotTrackingComprehensive({
 
         {/* Right Sidebar - Overhead Course View */}
         <div className="hidden xl:block w-44 p-4">
-          <div className="relative sticky top-32 glass-standard rounded-2xl overflow-clip p-4 transition-colors duration-300">
+          <div className="relative sticky top-32 surface-matte rounded-3xl overflow-clip p-4 transition-colors duration-300">
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs font-bold text-warm-400 uppercase tracking-wider">Hole {currentHole.number}</p>
-                <p className="text-lg font-bold text-warm-800">Par {currentHole.par}</p>
+                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Hole {currentHole.number}</p>
+                <p className="text-[17px] font-medium tracking-[-0.005em] text-warm-800">Par {currentHole.par}</p>
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold text-warm-400 uppercase tracking-wider">{isHoleComplete ? 'Score' : 'Shot'}</p>
-                <p className="text-lg font-bold text-primary-600">{isHoleComplete ? shotHistory.length : currentShot}</p>
+                <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">{isHoleComplete ? 'Score' : 'Shot'}</p>
+                <p className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">{isHoleComplete ? shotHistory.length : currentShot}</p>
               </div>
             </div>
 
@@ -1388,12 +1388,12 @@ export default function ShotTrackingComprehensive({
             <div className="mt-3 p-3 bg-warm-100 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[9px] font-bold text-warm-400 uppercase">Lie</p>
-                  <p className="text-sm font-bold text-warm-700 capitalize">{currentLie}</p>
+                  <p className="text-[10px] font-medium text-warm-400 uppercase">Lie</p>
+                  <p className="text-[13px] font-medium text-warm-700 capitalize">{currentLie}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-bold text-warm-400 uppercase">To Hole</p>
-                  <p className="text-sm font-bold text-primary-600">{displayDistance} {displayUnit === 'yards' ? 'yds' : 'ft'}</p>
+                  <p className="text-[10px] font-medium text-warm-400 uppercase">To Hole</p>
+                  <p className="text-[13px] font-medium text-primary-600">{displayDistance} {displayUnit === 'yards' ? 'yds' : 'ft'}</p>
                 </div>
               </div>
             </div>
@@ -1401,7 +1401,7 @@ export default function ShotTrackingComprehensive({
             {/* Shot History */}
             {shotHistory.length > 0 && (
               <div className="mt-3 pt-3 border-t border-warm-200">
-                <p className="text-[9px] font-bold text-warm-400 uppercase tracking-wider mb-2">Shots</p>
+                <p className="text-[10px] font-medium text-warm-400 uppercase tracking-wider mb-2">Shots</p>
                 <div
                   className="space-y-1 max-h-24 overflow-y-auto overscroll-contain touch-pan-y"
                   style={{ WebkitOverflowScrolling: 'touch' }}
@@ -1425,10 +1425,10 @@ export default function ShotTrackingComprehensive({
                               : 'bg-warm-50 hover:bg-warm-100 active:bg-warm-200'
                         }`}
                       >
-                        <span className={`font-bold ${shot.isPenalty ? 'text-red-600' : 'text-warm-600'}`}>
+                        <span className={`font-medium ${shot.isPenalty ? 'text-red-600' : 'text-warm-600'}`}>
                           {shot.isPenalty ? 'P' : shot.shotNumber}
                         </span>
-                        <span className={`font-bold ${shot.isPenalty ? 'text-red-500' : 'text-primary-600'}`}>
+                        <span className={`font-medium ${shot.isPenalty ? 'text-red-500' : 'text-primary-600'}`}>
                           {shot.isPenalty ? '+1' : `${shot.shotDistance}y`}
                         </span>
                       </button>
@@ -1601,7 +1601,7 @@ export default function ShotTrackingComprehensive({
                 <>
                   {/* Shot Type Info */}
                   <div className="flex items-center gap-3 p-3 bg-warm-50/80 rounded-xl border border-warm-100">
-                    <span className="text-xs font-bold text-warm-500 uppercase tracking-wide">Type:</span>
+                    <span className="text-[11px] font-medium text-warm-500 uppercase tracking-wide">Type:</span>
                     <span className="text-sm font-semibold text-warm-700 capitalize">
                       {editingShot.isPenalty ? 'Penalty' : editingShot.shotType.replace('_', ' ')}
                     </span>
@@ -1610,7 +1610,7 @@ export default function ShotTrackingComprehensive({
                   {/* Penalty Shot Edit */}
                   {editFormData.isPenalty ? (
                     <div>
-                      <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Penalty Type</p>
+                      <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Penalty Type</p>
                       <div className="space-y-2">
                         {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
                           <button
@@ -1632,7 +1632,7 @@ export default function ShotTrackingComprehensive({
                       {/* Club Type (for non-penalty shots) */}
                       {editingShot.shotType === 'tee' && (
                         <div>
-                          <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Club</p>
+                          <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Club</p>
                           <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
                             <button
                               onClick={() => updateEditForm({ clubType: 'driver' })}
@@ -1660,7 +1660,7 @@ export default function ShotTrackingComprehensive({
 
                       {/* Lie Before */}
                       <div>
-                        <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Lie Before</p>
+                        <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Lie Before</p>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map(lie => {
                             const lieLabel = lie.charAt(0).toUpperCase() + lie.slice(1);
@@ -1685,7 +1685,7 @@ export default function ShotTrackingComprehensive({
 
                       {/* Distance Before */}
                       <div>
-                        <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Distance Before</p>
+                        <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Distance Before</p>
                         <div className="flex items-center gap-3">
                           <input
                             type="number"
@@ -1724,7 +1724,7 @@ export default function ShotTrackingComprehensive({
 
                       {/* Result */}
                       <div>
-                        <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Result</p>
+                        <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Result</p>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           {(['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as const).map(r => {
                             const resultLabel = r.charAt(0).toUpperCase() + r.slice(1);
@@ -1778,7 +1778,7 @@ export default function ShotTrackingComprehensive({
                       {/* Distance After (if not holed) */}
                       {editFormData.result !== 'hole' && (
                         <div>
-                          <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Distance After</p>
+                          <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Distance After</p>
                           {/* Quick-select distance presets */}
                           {editingShot.shotType === 'putting' ? (
                             <div className="grid grid-cols-6 gap-2 mb-3">
@@ -1787,7 +1787,7 @@ export default function ShotTrackingComprehensive({
                                   key={ft}
                                   type="button"
                                   onClick={() => updateEditForm({ distanceToHoleAfter: String(ft), distanceUnitAfter: 'feet' })}
-                                  className={`py-2 rounded-lg text-xs font-bold transition-colors ${
+                                  className={`py-2 rounded-lg text-[11px] font-medium transition-colors ${
                                     editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
                                       ? 'bg-primary-600 text-white shadow-sm'
                                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1804,7 +1804,7 @@ export default function ShotTrackingComprehensive({
                                   key={yds}
                                   type="button"
                                   onClick={() => updateEditForm({ distanceToHoleAfter: String(yds), distanceUnitAfter: 'yards' })}
-                                  className={`py-2 rounded-lg text-xs font-bold transition-colors ${
+                                  className={`py-2 rounded-lg text-[11px] font-medium transition-colors ${
                                     editFormData.distanceToHoleAfter === String(yds) && editFormData.distanceUnitAfter === 'yards'
                                       ? 'bg-primary-600 text-white shadow-sm'
                                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'
@@ -1856,7 +1856,7 @@ export default function ShotTrackingComprehensive({
                       {editingShot.shotType === 'tee' &&
                        editFormData.result !== 'hole' && editFormData.result !== 'green' && (
                         <div>
-                          <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Miss Direction</p>
+                          <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Miss Direction</p>
                           <div className="grid grid-cols-2 gap-2">
                             {['left', 'right', 'short', 'long'].map(dir => (
                               <button
@@ -1888,7 +1888,7 @@ export default function ShotTrackingComprehensive({
                       {editingShot.shotType === 'putting' && (
                         <>
                           <div>
-                            <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Putt Break</p>
+                            <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Putt Break</p>
                             <div className="grid grid-cols-2 gap-2">
                               {[{v: 'left_to_right', l: 'L to R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R to L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
                                 <button
@@ -1906,7 +1906,7 @@ export default function ShotTrackingComprehensive({
                             </div>
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-warm-600 uppercase tracking-wider mb-3">Putt Slope</p>
+                            <p className="text-[11px] font-medium text-warm-600 uppercase tracking-wider mb-3">Putt Slope</p>
                             <div className="grid grid-cols-2 gap-2">
                               {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
                                 <button
@@ -1938,7 +1938,7 @@ export default function ShotTrackingComprehensive({
                       {editFormData.distanceToHoleBefore && editFormData.distanceToHoleAfter && (
                         <div className="flex items-center justify-between bg-primary-50 rounded-lg px-4 py-3 ring-1 ring-primary-200">
                           <span className="text-xs font-semibold text-primary-700 uppercase tracking-wide">Calculated Distance</span>
-                          <span className="text-lg font-bold text-primary-700">
+                          <span className="text-[17px] font-medium tracking-[-0.005em] text-primary-700">
                             ~{Math.round(calculateShotDistanceWithDirection(
                               editFormData.distanceUnitBefore === 'feet' ? parseFloat(editFormData.distanceToHoleBefore) / 3 : parseFloat(editFormData.distanceToHoleBefore),
                               editFormData.distanceUnitAfter === 'feet' ? parseFloat(editFormData.distanceToHoleAfter) / 3 : parseFloat(editFormData.distanceToHoleAfter),

@@ -510,7 +510,7 @@ export function PlayerInsightClient({
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Streak</p>
                     <p className={cn(
-                      'text-lg font-bold tabular-nums',
+                      'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
                       trendSummary.streakType === 'positive' ? 'text-emerald-600' :
                       trendSummary.streakType === 'negative' ? 'text-red-500' : 'text-warm-900',
                     )}>

@@ -221,7 +221,7 @@ export function TeamStatsTable({
         />
       </div>
 
-    <div className="relative glass-standard rounded-2xl overflow-clip">
+    <div className="relative surface-matte rounded-3xl overflow-clip">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>

@@ -18,7 +18,7 @@ export default function Loading() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="glass-standard rounded-2xl overflow-clip p-6">
+            <div key={i} className="surface-matte rounded-3xl overflow-clip p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="h-6 w-48 bg-warm-200/60 rounded skeleton-shimmer mb-2" />

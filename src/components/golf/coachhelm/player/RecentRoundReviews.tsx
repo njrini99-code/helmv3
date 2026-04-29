@@ -58,7 +58,7 @@ function RoundReviewCard({
         href={`/golf/dashboard/rounds/${round.id}`}
         className={cn(
           'flex items-center gap-4 p-4 rounded-xl transition-all duration-200',
-          'glass-standard',
+          'surface-matte',
           'hover:bg-cream-50/92 hover:shadow-md hover:-translate-y-0.5',
           'group'
         )}
@@ -71,7 +71,7 @@ function RoundReviewCard({
           'bg-warm-50 border border-warm-100'
         )}>
           <span className={cn(
-            'text-xl font-bold',
+            'text-xl font-medium',
             isUnderPar ? 'text-primary-600' :
             isOverPar ? 'text-amber-600' :
             'text-warm-600'

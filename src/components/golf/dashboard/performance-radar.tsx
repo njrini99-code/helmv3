@@ -60,7 +60,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                 'relative overflow-clip',
                 'bg-glass-subtle backdrop-blur-glass-prominent',
                 'border border-warm-200/45 rounded-2xl',
-                'shadow-glass p-5'
+                'p-5'
             )}>
                 <div className="flex items-center gap-2 mb-4">
                     <IconChartBar size={14} className="text-primary-600" />
@@ -84,7 +84,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
     return (
         <div className={cn(
             'relative overflow-clip',
-            'glass-premium',
+            'surface-matte',
             'rounded-2xl p-5'
         )}>
             <div className="absolute -top-10 -right-10 w-28 h-28 bg-primary-500/8 rounded-full blur-2xl pointer-events-none" />
@@ -100,7 +100,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                     </div>
                     {data.sg_total !== null && (
                         <div className={cn(
-                            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm font-bold tabular-nums',
+                            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium tabular-nums',
                             data.sg_total >= 0
                                 ? 'bg-primary-50 text-primary-700'
                                 : 'bg-red-50 text-red-700'
@@ -142,7 +142,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                         )}
                                     </div>
                                     <span className={cn(
-                                        'text-xs font-bold tabular-nums',
+                                        'text-[11px] font-medium tabular-nums',
                                         isPositive ? 'text-primary-700' : 'text-red-600'
                                     )}>
                                         {isPositive ? '+' : ''}{value.toFixed(2)}

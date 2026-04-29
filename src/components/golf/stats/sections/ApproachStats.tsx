@@ -180,7 +180,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 }}
               >
-                <div className={`text-xl font-bold ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
+                <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
                 <div className="text-xs text-warm-500">{item.label}</div>
               </motion.div>
             ))}
@@ -203,7 +203,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.6 + idx * 0.04 }}
                 >
-                  <div className="text-lg font-bold text-warm-700 tabular-nums">
+                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700 tabular-nums">
                     <span className="text-warm-400 mr-1">{item.icon}</span>
                     {formatStat(item.value, '%', 0)}
                   </div>

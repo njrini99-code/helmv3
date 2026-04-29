@@ -18,7 +18,7 @@ function GlassCardSkeleton({ children, className }: { children: React.ReactNode;
   return (
     <div
       className={cn(
-        'glass-standard rounded-2xl p-6',
+        'surface-matte rounded-3xl p-6',
         className
       )}
     >
@@ -113,7 +113,7 @@ function InsightsPanelSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="relative rounded-xl border border-warm-200/60 bg-cream-100/60 p-4 overflow-hidden"
+            className="relative rounded-xl border border-warm-200/35 bg-cream-100/60 p-4 overflow-hidden"
           >
             <SkeletonPulse className="absolute top-0 left-0 right-0 h-0.5" />
             <div className="flex items-start gap-3">

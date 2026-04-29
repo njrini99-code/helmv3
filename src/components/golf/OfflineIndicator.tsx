@@ -151,7 +151,7 @@ export function OfflineIndicator({
 
           {/* Pending count badge */}
           {pendingCount.total > 0 && !isSyncing && (
-            <span className="flex items-center justify-center w-4 h-4 rounded-full bg-current/20 text-xs font-bold">
+            <span className="flex items-center justify-center w-4 h-4 rounded-full bg-current/20 text-[11px] font-medium">
               {pendingCount.total}
             </span>
           )}

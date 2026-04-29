@@ -31,7 +31,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
           Strokes Gained
         </h3>
         <div className={cn(
-          'text-lg font-bold tabular-nums',
+          'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
           strokesGained.total >= 0 ? 'text-primary-600' : 'text-red-500'
         )}>
           {strokesGained.total >= 0 ? '+' : ''}{strokesGained.total.toFixed(1)}

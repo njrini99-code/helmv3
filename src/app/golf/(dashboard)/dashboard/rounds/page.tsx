@@ -384,7 +384,7 @@ export default async function RoundsPage() {
                       <div key={monthYear}>
                         {/* Month divider */}
                         <div className="flex items-center gap-3 mb-2.5">
-                          <span className="text-[11px] font-bold text-warm-400 uppercase tracking-widest">{monthYear}</span>
+                          <span className="text-[11px] font-medium text-warm-400 uppercase tracking-[0.12em] opacity-80">{monthYear}</span>
                           <div className="h-px flex-1 bg-warm-200/60" />
                         </div>
 
@@ -443,13 +443,13 @@ export default async function RoundsPage() {
                                         </div>
                                         <div className="text-right flex-shrink-0">
                                           <p className={cn(
-                                            'text-xl font-bold tabular-nums leading-none',
+                                            'text-[20px] font-medium tracking-[-0.012em] tabular-nums leading-none',
                                             scoreToPar < 0 ? 'text-primary-600' : 'text-warm-800'
                                           )}>
                                             {round.total_score || '--'}
                                           </p>
                                           <p className={cn(
-                                            'text-[10px] font-bold tabular-nums mt-0.5',
+                                            'text-[10px] font-medium tabular-nums mt-0.5',
                                             scoreToPar < 0 ? 'text-primary-500' : scoreToPar === 0 ? 'text-blue-500' : 'text-amber-500'
                                           )}>
                                             {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}
@@ -465,7 +465,7 @@ export default async function RoundsPage() {
                                           {round.total_score || '--'}
                                         </p>
                                         <span className={cn(
-                                          'px-1.5 py-px rounded text-[11px] font-bold tabular-nums',
+                                          'px-1.5 py-px rounded text-[11px] font-medium tabular-nums',
                                           scoreToPar < 0 ? 'bg-primary-100 text-primary-700' : scoreToPar === 0 ? 'bg-blue-100 text-blue-600' : 'bg-amber-100 text-amber-700'
                                         )}>
                                           {scoreToPar === 0 ? 'E' : scoreToPar > 0 ? `+${scoreToPar}` : scoreToPar}

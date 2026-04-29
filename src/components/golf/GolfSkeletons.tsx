@@ -1,6 +1,6 @@
 /**
  * Golf-specific skeleton loaders for consistent loading states
- * Matches the glass-standard card design system
+ * Matches the surface-matte card design system
  */
 
 import { cn } from '@/lib/utils';
@@ -300,7 +300,7 @@ export function DashboardSkeleton() {
             {/* Top Performers */}
             <div>
               <div className="h-4 w-32 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="glass-standard rounded-2xl overflow-clip shadow-glass-sm">
+              <div className="surface-matte rounded-3xl overflow-clip ">
                 <div className="divide-y divide-white/20">
                   {[1, 2, 3].map((i) => (
                     <div key={i} className="flex items-center gap-3 px-4 py-4">
@@ -322,7 +322,7 @@ export function DashboardSkeleton() {
             {/* Chart Skeleton */}
             <div>
               <div className="h-4 w-40 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="glass-standard rounded-2xl p-6 shadow-glass-sm">
+              <div className="surface-matte rounded-3xl p-6 ">
                 <div className="h-64 bg-warm-100/40 rounded-lg skeleton-shimmer" />
               </div>
             </div>
@@ -330,7 +330,7 @@ export function DashboardSkeleton() {
             {/* Recent Rounds */}
             <div>
               <div className="h-4 w-32 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
-              <div className="glass-standard rounded-2xl overflow-clip shadow-glass-sm">
+              <div className="surface-matte rounded-3xl overflow-clip ">
                 <div className="divide-y divide-white/20">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <RoundRowSkeleton key={i} delay={i * 30} showPlayer={false} />
@@ -468,7 +468,7 @@ export function StatsPageSkeleton() {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="glass-standard rounded-2xl p-5 overflow-clip relative">
+            <div key={i} className="surface-matte rounded-3xl p-5 overflow-clip relative">
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
               <div className="relative space-y-2">
                 <div className="h-3 w-24 bg-warm-100/60 rounded skeleton-shimmer" />
@@ -479,7 +479,7 @@ export function StatsPageSkeleton() {
           ))}
         </div>
 
-        <div className="glass-standard rounded-2xl p-4 mb-4 shadow-glass-sm">
+        <div className="surface-matte rounded-3xl p-4 mb-4 ">
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px] h-11 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
             <div className="h-11 w-40 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
@@ -490,7 +490,7 @@ export function StatsPageSkeleton() {
           {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
-              className="relative glass-standard rounded-2xl overflow-clip shadow-glass-sm"
+              className="relative surface-matte rounded-3xl overflow-clip "
               style={{ animationDelay: `${i * 40}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -561,7 +561,7 @@ export function DetailedStatsSkeleton() {
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className="relative glass-standard rounded-xl overflow-clip p-4 shadow-glass-sm"
+                className="relative surface-matte rounded-xl overflow-clip p-4 "
                 style={{ animationDelay: `${i * 50}ms` }}
               >
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -578,7 +578,7 @@ export function DetailedStatsSkeleton() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="relative glass-standard rounded-2xl overflow-clip p-4 shadow-glass-sm"
+              className="relative surface-matte rounded-3xl overflow-clip p-4 "
               style={{ animationDelay: `${(i + 4) * 50}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -747,7 +747,7 @@ export function RosterPageSkeleton() {
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="relative glass-standard rounded-2xl overflow-clip shadow-glass-sm"
+              className="relative surface-matte rounded-3xl overflow-clip "
               style={{ animationDelay: `${i * 30}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -809,7 +809,7 @@ export function GenericPageSkeleton() {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="relative glass-standard rounded-2xl p-5 overflow-clip shadow-glass-sm"
+            className="relative surface-matte rounded-3xl p-5 overflow-clip "
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -844,7 +844,7 @@ export function FormPageSkeleton() {
           <div className="h-4 w-64 bg-warm-100/60 rounded skeleton-shimmer" />
         </div>
 
-        <div className="relative glass-standard rounded-2xl p-6 overflow-clip shadow-glass-sm">
+        <div className="relative surface-matte rounded-3xl p-6 overflow-clip ">
           <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
           <div className="relative space-y-6">
             {[1, 2, 3, 4].map((i) => (
@@ -890,7 +890,7 @@ export function DetailPageSkeleton() {
             {[1, 2].map((i) => (
               <div
                 key={i}
-                className="relative glass-standard rounded-2xl p-5 overflow-clip shadow-glass-sm"
+                className="relative surface-matte rounded-3xl p-5 overflow-clip "
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -911,7 +911,7 @@ export function DetailPageSkeleton() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            <div className="relative glass-standard rounded-2xl p-5 overflow-clip shadow-glass-sm">
+            <div className="relative surface-matte rounded-3xl p-5 overflow-clip ">
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
               <div className="relative space-y-3">
                 <div className="h-4 w-24 bg-warm-200/60 rounded skeleton-shimmer" />
@@ -952,7 +952,7 @@ export function DevelopmentPageSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="relative glass-standard rounded-2xl p-5 overflow-clip shadow-glass-sm"
+            className="relative surface-matte rounded-3xl p-5 overflow-clip "
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -1002,7 +1002,7 @@ export function AlertsPageSkeleton() {
           {[1, 2, 3, 4, 5].map((i) => (
             <div
               key={i}
-              className="relative glass-standard rounded-2xl p-4 overflow-clip shadow-glass-sm"
+              className="relative surface-matte rounded-3xl p-4 overflow-clip "
               style={{ animationDelay: `${i * 50}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -1042,7 +1042,7 @@ export function ClassesPageSkeleton() {
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="relative glass-standard rounded-2xl p-5 overflow-clip shadow-glass-sm"
+              className="relative surface-matte rounded-3xl p-5 overflow-clip "
               style={{ animationDelay: `${i * 60}ms` }}
             >
               <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />

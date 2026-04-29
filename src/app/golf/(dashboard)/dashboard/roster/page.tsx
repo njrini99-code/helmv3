@@ -352,7 +352,7 @@ export default async function GolfRosterPage() {
               </svg>
             </div>
             <div className="relative z-10">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <div className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6 shadow-sm">
                 <IconUsers size={36} className="text-primary-500" />
               </div>
               <h3 className="text-2xl font-semibold text-warm-900 mb-3">Build Your Team</h3>
