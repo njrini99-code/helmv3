@@ -263,13 +263,13 @@ export function QualifierBracket({
       <div className="mt-6 pt-4 border-t border-warm-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-primary-50 rounded-xl">
-            <p className="text-2xl font-bold text-primary-600">
+            <p className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em]">
               {leaderboard.filter((_, i) => i < effectiveCutline).length}
             </p>
             <p className="text-xs text-warm-500 mt-1">Qualifying</p>
           </div>
           <div className="p-3 bg-amber-50 rounded-xl">
-            <p className="text-2xl font-bold text-amber-600">
+            <p className="text-[28px] md:text-[32px] font-light text-amber-700 tracking-[-0.025em]">
               {leaderboard.filter((entry, i) => {
                 if (i < effectiveCutline) return false;
                 return cutlineScore > 0 && entry.totalScore > 0 && entry.totalScore - cutlineScore <= 3;
@@ -278,7 +278,7 @@ export function QualifierBracket({
             <p className="text-xs text-warm-500 mt-1">On Bubble</p>
           </div>
           <div className="p-3 bg-warm-50 rounded-xl">
-            <p className="text-2xl font-bold text-warm-600">
+            <p className="text-[28px] md:text-[32px] font-light text-warm-700 tracking-[-0.025em]">
               {leaderboard.length}
             </p>
             <p className="text-xs text-warm-500 mt-1">Total Players</p>

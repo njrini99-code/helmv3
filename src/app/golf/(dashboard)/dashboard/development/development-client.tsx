@@ -855,7 +855,7 @@ export function DevelopmentPlansClient({
                 <IconActivity size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Active</p>
               </div>
-              <p className="text-2xl font-bold text-warm-900">{summaryStats.activeCount}</p>
+              <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.activeCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
             </div>
             <div className="glass-standard rounded-xl p-4">
@@ -863,7 +863,7 @@ export function DevelopmentPlansClient({
                 <IconCheck size={14} className="text-primary-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</p>
               </div>
-              <p className="text-2xl font-bold text-primary-600">{summaryStats.completedCount}</p>
+              <p className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em]">{summaryStats.completedCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">
                 {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% completion` : 'none yet'}
               </p>
@@ -873,7 +873,7 @@ export function DevelopmentPlansClient({
                 <IconTrendingUp size={14} className="text-blue-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Avg Progress</p>
               </div>
-              <p className="text-2xl font-bold text-warm-900">{summaryStats.avgProgress}%</p>
+              <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.avgProgress}%</p>
               <div className="mt-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
                 <div className="h-full bg-primary-500 rounded-full transition-[width] duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
@@ -883,7 +883,7 @@ export function DevelopmentPlansClient({
                 <IconTarget size={14} className="text-violet-600" />
                 <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
               </div>
-              <p className="text-2xl font-bold text-warm-900 tabular-nums">{summaryStats.total}</p>
+              <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{summaryStats.total}</p>
               <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
             </div>
           </div>

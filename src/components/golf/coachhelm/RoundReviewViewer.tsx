@@ -721,7 +721,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
               )}
             >
               <p className="text-label font-medium text-warm-500 mb-0.5">{formatLabel(stat.label)}</p>
-              <p className="text-2xl font-bold text-warm-900 tabular-nums">{stat.value}</p>
+              <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{stat.value}</p>
               <p className={cn('text-label font-semibold mt-0.5', cmp.color)}>
                 {cmp.icon} {cmp.label}
               </p>
@@ -858,7 +858,7 @@ function GameBreakdownSection({
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
                 className={cn('text-center p-3 rounded-xl', item.bg)}
               >
-                <div className={cn('text-2xl font-bold tabular-nums', item.textColor)}>{item.value}</div>
+                <div className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', item.textColor)}>{item.value}</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">{item.label}</div>
               </motion.div>
             ))}
@@ -923,20 +923,20 @@ function GameBreakdownSection({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             {driving.avgDistance !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-2xl font-bold text-warm-900 tabular-nums">{driving.avgDistance}y</div>
+                <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.avgDistance}y</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Avg Distance</div>
               </div>
             )}
             {driving.longestDrive && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-2xl font-bold text-warm-900 tabular-nums">{driving.longestDrive.distance}y</div>
+                <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.longestDrive.distance}y</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Longest (#{driving.longestDrive.hole})</div>
               </div>
             )}
             {driving.fairwayPct !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-2xl font-bold tabular-nums',
+                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
                   driving.fairwayPct >= 60 ? 'text-primary-700' : driving.fairwayPct >= 45 ? 'text-warm-900' : 'text-red-600',
                 )}>
                   {driving.fairwayPct}%
@@ -989,7 +989,7 @@ function GameBreakdownSection({
             {shortGame.scramblePct !== null && (
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-2xl font-bold tabular-nums',
+                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
                   shortGame.scramblePct >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.scramblePct}%
@@ -1002,7 +1002,7 @@ function GameBreakdownSection({
             {shortGame.sandAttempts > 0 && (
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-2xl font-bold tabular-nums',
+                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
                   (shortGame.sandSavePct ?? 0) >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.sandSavePct !== null ? `${shortGame.sandSavePct}%` : '--'}

@@ -209,7 +209,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {showRemoveConfirm && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-warm-900 mb-2">
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
               Remove Player?
             </h2>
             <p className="text-warm-600 mb-6">
@@ -257,7 +257,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       {showStatusModal && (
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h2 className="text-xl font-bold text-warm-900 mb-2">
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
               Change Player Status
             </h2>
             <p className="text-warm-600 mb-6">

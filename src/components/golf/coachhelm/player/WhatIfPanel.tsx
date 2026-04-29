@@ -104,7 +104,7 @@ export function WhatIfPanel({
         >
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
-          <span className="text-2xl font-bold text-warm-900 tabular-nums">
+          <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {hasPrediction ? (
               <>{Number(resolvedCurrentPrediction ?? 0) > 0 ? '+' : ''}{Number(resolvedCurrentPrediction ?? 0).toFixed(1)}</>
             ) : '--'}

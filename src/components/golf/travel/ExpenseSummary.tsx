@@ -341,7 +341,7 @@ export function ExpenseSummary({
           </div>
           <div className="p-4 bg-warm-50 rounded-xl">
             <p className="text-sm text-warm-700 mb-1">Split</p>
-            <p className="text-xl font-bold text-warm-900">
+            <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em]">
               {formatCurrency(summary.byPaidBy.split)}
             </p>
           </div>

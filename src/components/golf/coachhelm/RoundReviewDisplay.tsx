@@ -243,7 +243,7 @@ export function RoundReviewDisplay({
           <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/20">
             {score !== undefined && (
               <div className="text-center">
-                <div className="text-3xl font-bold text-warm-900">{score}</div>
+                <div className="text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em]">{score}</div>
                 {scoreToPar !== undefined && (
                   <div
                     className={cn(
@@ -445,7 +445,7 @@ export function RoundReviewDisplay({
                     {stat.label}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xl font-bold text-warm-900">
+                    <span className="text-[20px] font-medium text-warm-900 tracking-[-0.012em]">
                       {stat.value}
                     </span>
                     <div className={cn('flex items-center gap-1', comparison.color)}>
@@ -919,7 +919,7 @@ export function RoundReviewDisplay({
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
                     <div className="text-xs text-red-600">Strokes Lost</div>
-                    <div className="text-xl font-bold text-red-700">{review.penaltyAnalysis.strokesLost}</div>
+                    <div className="text-[20px] font-medium text-red-700 tracking-[-0.012em]">{review.penaltyAnalysis.strokesLost}</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     {review.penaltyAnalysis.holes.map(p => (

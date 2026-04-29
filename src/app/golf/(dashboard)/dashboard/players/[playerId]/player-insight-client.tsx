@@ -256,7 +256,7 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('text-2xl font-bold tabular-nums', ratingColor(rating))}>{rating}</span>
+        <span className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', ratingColor(rating))}>{rating}</span>
         <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">Rating</span>
       </div>
     </div>

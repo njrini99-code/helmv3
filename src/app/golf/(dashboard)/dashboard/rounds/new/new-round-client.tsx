@@ -2450,15 +2450,15 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       className="grid grid-cols-3 gap-3 mb-5"
                     >
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-xl font-bold text-warm-900 tabular-nums">{totalPutts}</p>
+                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{totalPutts}</p>
                         <p className="text-xs text-warm-500 font-medium">Putts</p>
                       </div>
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-xl font-bold text-warm-900 tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
+                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
                         <p className="text-xs text-warm-500 font-medium">Fairways</p>
                       </div>
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-xl font-bold text-warm-900 tabular-nums">{girCount}/{fs.length}</p>
+                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{girCount}/{fs.length}</p>
                         <p className="text-xs text-warm-500 font-medium">GIR</p>
                       </div>
                     </m.div>

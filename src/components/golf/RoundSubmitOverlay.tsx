@@ -348,11 +348,11 @@ export function RoundSubmitOverlay({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold text-warm-900 tabular-nums">{totalScore}</span>
+                  <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{totalScore}</span>
                 </div>
               </div>
 
-              <h2 className="text-xl font-bold text-warm-900 mb-1">
+              <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] mb-1">
                 Submitting Round
               </h2>
               <p className="text-sm text-warm-500 mb-1">

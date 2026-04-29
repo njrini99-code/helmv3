@@ -86,7 +86,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                         </div>
                       ) : (
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-amber-600 tabular-nums">
+                          <p className="text-[28px] md:text-[32px] font-light text-amber-700 tracking-[-0.025em] tabular-nums">
                             {round.current_hole} <span className="text-base font-medium text-amber-400">/ {holesTarget}</span>
                           </p>
                         </div>

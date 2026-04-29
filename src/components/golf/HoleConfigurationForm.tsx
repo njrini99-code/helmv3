@@ -92,17 +92,17 @@ export function HoleConfigurationForm({
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-2xl font-bold text-primary-600 tabular-nums">{totalPar}</div>
+          <div className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em] tabular-nums">{totalPar}</div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Par</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-2xl font-bold text-warm-900 tabular-nums">
+          <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {totalYards.toLocaleString()}
           </div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Total Yards</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-2xl font-bold text-warm-600 tabular-nums">{holesPerRound}</div>
+          <div className="text-[28px] md:text-[32px] font-light text-warm-700 tracking-[-0.025em] tabular-nums">{holesPerRound}</div>
           <div className="text-xs font-bold text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
       </div>

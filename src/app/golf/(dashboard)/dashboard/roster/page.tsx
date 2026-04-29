@@ -442,14 +442,14 @@ export default async function GolfRosterPage() {
                 <div className="px-5 md:px-6 pb-4 md:pb-5">
                   <div className="flex items-center justify-between bg-warm-50/80 rounded-xl p-4 md:p-5">
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-warm-900 tabular-nums leading-none">
+                      <p className="text-2xl md:text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em] tabular-nums leading-none">
                         {player.rounds_count || 0}
                       </p>
                       <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
                     </div>
                     <div className="w-px h-12 bg-warm-200/80" />
                     <div className="text-center flex-1">
-                      <p className="text-2xl md:text-3xl font-bold text-warm-900 tabular-nums leading-none">
+                      <p className="text-2xl md:text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em] tabular-nums leading-none">
                         {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
                       </p>
                       <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>

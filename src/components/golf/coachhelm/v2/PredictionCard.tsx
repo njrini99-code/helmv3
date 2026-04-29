@@ -69,7 +69,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
       {/* Main Prediction */}
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-baseline gap-1">
-          <span className={cn('text-3xl font-bold', getScoreColor())}>
+          <span className={cn('text-[32px] md:text-[36px] font-light tracking-[-0.025em]', getScoreColor())}>
             {formatScore(prediction.predictedValue)}
           </span>
         </div>

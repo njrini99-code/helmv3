@@ -134,7 +134,7 @@ function FocusAreaCardContent({
 
       {/* Strokes gained display */}
       <div className="flex items-baseline gap-1 mb-3 flex-wrap">
-        <span className={cn('text-2xl font-bold tabular-nums', strokesColor)}>
+        <span className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', strokesColor)}>
           {formatStrokesGained(focusArea.strokesGained)}
         </span>
         <span className="text-xs text-warm-500 whitespace-nowrap">strokes/round</span>

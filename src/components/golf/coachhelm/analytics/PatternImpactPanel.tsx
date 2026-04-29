@@ -283,7 +283,7 @@ function StatCardLarge({
       <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">{label}</p>
       <p
         className={cn(
-          'text-2xl font-bold tabular-nums',
+          'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
           color === 'green' && 'text-primary-600',
           color === 'amber' && 'text-amber-600',
           color === 'slate' && 'text-warm-900'

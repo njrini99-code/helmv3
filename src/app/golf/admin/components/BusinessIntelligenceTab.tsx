@@ -596,7 +596,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <GlassCard className="text-center">
           <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Coach Weekly Retention</p>
           <p className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
             r.coachWeeklyRetention >= 30 ? 'text-primary-600' : 'text-amber-600'
           )}>
             {r.coachWeeklyRetention}%
@@ -605,7 +605,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <GlassCard className="text-center">
           <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Player Weekly Retention</p>
           <p className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
             r.playerWeeklyRetention >= 30 ? 'text-primary-600' : 'text-amber-600'
           )}>
             {r.playerWeeklyRetention}%

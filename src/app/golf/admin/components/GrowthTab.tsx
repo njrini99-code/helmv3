@@ -185,7 +185,7 @@ function AIROICard({ roi, coachhelm }: { roi: AdminDashboardData['coachhelmRoi']
         </div>
         <div className="bg-white/50 rounded-xl p-4 text-center border border-white/30">
           <p className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
             roi.scoreDifference !== null && roi.scoreDifference > 0 ? 'text-primary-600' : 'text-warm-900'
           )}>
             {roi.scoreDifference !== null ? (roi.scoreDifference > 0 ? `+${roi.scoreDifference.toFixed(1)}` : roi.scoreDifference.toFixed(1)) : <span className="text-warm-400">—</span>}

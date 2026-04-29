@@ -164,7 +164,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         )}>
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Follow-ups Due</div>
           <div className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
             followUpsDue > 0 ? 'text-orange-600' : 'text-warm-900'
           )}>
             {followUpsDue}
@@ -179,7 +179,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
         )}>
           <div className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Hot Leads</div>
           <div className={cn(
-            'text-2xl font-bold tabular-nums',
+            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
             hotLeads > 0 ? 'text-red-600' : 'text-warm-900'
           )}>
             {hotLeads}

@@ -343,7 +343,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
             <div className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">
               {SECTOR_LABELS[sector]}
             </div>
-            <div className="mt-2 text-xl font-bold text-warm-900 tabular-nums">
+            <div className="mt-2 text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
               {band?.count ?? 0}
             </div>
             <div className="text-xs text-warm-500">
