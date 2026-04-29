@@ -505,6 +505,13 @@ const config: Config = {
         // Legacy durations
         'base': '220ms',
         '400': '400ms',
+        // Cinematic motion — California-modern × neo-futurism brief.
+        // Slow, intentional, never twitchy.
+        '450': '450ms',
+        '500': '500ms',
+        '600': '600ms',
+        '700': '700ms',
+        'cinematic': '500ms',
       },
       transitionTimingFunction: {
         'DEFAULT': 'cubic-bezier(0.4, 0, 0.2, 1)',
@@ -516,6 +523,12 @@ const config: Config = {
         'ios-spring': 'cubic-bezier(0.32, 0.72, 0, 1)',      // iOS sheet / bottom sheet
         'ios-smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',       // iOS nav transition
         'ios-sharp': 'cubic-bezier(0.4, 0, 0.6, 1)',         // iOS alert dismiss
+        // California-modern cinematic easing — same shape as ios-smooth
+        // but exposed under a more readable name. The brief calls for
+        // "slow, intentional, cinematic" motion, so heroes and surface
+        // hovers reach for this curve at 450–600ms.
+        'apple': 'cubic-bezier(0.16, 1, 0.3, 1)',
+        'cinematic': 'cubic-bezier(0.22, 1, 0.36, 1)',
         // Legacy timings
         'out': 'cubic-bezier(0.33, 1, 0.68, 1)',
         'smooth': 'cubic-bezier(0.16, 1, 0.3, 1)',

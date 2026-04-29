@@ -72,12 +72,9 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
 
     return (
         <div className={cn(
-            'relative overflow-clip',
-            'glass-premium',
-            'rounded-2xl'
+            'relative overflow-clip surface-matte rounded-3xl'
         )}>
-            {/* Tabs */}
-            <div className="flex border-b border-white/15">
+            <div className="flex">
                 {tabs.map(tab => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.key;
@@ -86,22 +83,27 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={cn(
-                                'flex-1 flex items-center justify-center gap-1.5 px-3 py-3 text-xs font-medium transition-all',
-                                isActive
-                                    ? 'text-primary-700 border-b-2 border-primary-600 bg-primary-50/30'
-                                    : 'text-warm-500 hover:text-warm-700 hover:bg-white/30'
+                                'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-4 text-[13px] font-medium transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                                isActive ? 'text-warm-900' : 'text-warm-500 hover:text-warm-700'
                             )}
                         >
                             <Icon size={13} />
                             <span>{tab.label}</span>
                             {tab.count > 0 && (
                                 <span className={cn(
-                                    'min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-micro font-bold tabular-nums',
-                                    isActive ? 'bg-primary-600 text-white' : 'bg-warm-200 text-warm-600',
-                                    tab.key === 'deadlines' && tab.count > 0 && 'bg-red-600 text-white'
+                                    'inline-flex min-w-[16px] h-[16px] items-center justify-center px-1 rounded-full text-[10px] font-medium tabular-nums',
+                                    isActive ? 'bg-primary-100/90 text-primary-700' : 'bg-warm-100/80 text-warm-500',
+                                    tab.key === 'deadlines' && tab.count > 0 && (isActive ? 'bg-red-100 text-red-700' : 'bg-red-50 text-red-600')
                                 )}>
                                     {tab.count}
                                 </span>
+                            )}
+                            {isActive && (
+                                <m.span
+                                    layoutId="action-tab-indicator"
+                                    className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-primary-500/80"
+                                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                                />
                             )}
                         </button>
                     );
@@ -109,66 +111,61 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
             </div>
 
             {/* Content */}
-            <div className="p-1 min-h-[200px]">
+            <div className="min-h-[200px]">
                 <AnimatePresence mode="wait">
                     <m.div
                         key={activeTab}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     >
                         {activeItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
-                                    <IconCheck size={24} className="text-primary-600/80" />
+                            <div className="flex flex-col items-center justify-center py-14 px-6 text-center">
+                                <div className="w-14 h-14 rounded-2xl bg-primary-50/65 flex items-center justify-center mb-4">
+                                    <IconCheck size={22} className="text-primary-600/85" />
                                 </div>
-                                <p className="text-subhead font-semibold text-warm-900 mb-1">All caught up</p>
-                                <p className="text-xs leading-relaxed text-warm-500">
+                                <p className="text-[15px] font-medium tracking-[-0.005em] text-warm-900 mb-1.5">All caught up</p>
+                                <p className="text-[12px] leading-relaxed text-warm-500">
                                     {activeTab === 'tasks' ? 'No pending tasks' :
                                      activeTab === 'announcements' ? 'No new announcements' :
                                      'No upcoming deadlines'}
                                 </p>
                             </div>
                         ) : (
-                            <div className="divide-y divide-white/10">
+                            <div>
                                 {activeItems.slice(0, 6).map((item) => (
                                     <Link key={item.id} href={getItemLink(item, role)}>
-                                        <div className={cn(
-                                            'flex items-start gap-3 px-4 py-3 hover:bg-white/30 transition-colors cursor-pointer rounded-lg'
-                                        )}>
-                                            {/* Priority indicator */}
-                                            <div className="flex-shrink-0 mt-0.5">
+                                        <div className="group flex items-start gap-3 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer">
+                                            <div className="flex-shrink-0 mt-1">
                                                 {item.overdue ? (
-                                                    <IconAlertCircle size={16} className="text-red-500" />
+                                                    <IconAlertCircle size={15} className="text-red-500" />
                                                 ) : item.type === 'announcement' ? (
-                                                    <IconBell size={16} className="text-blue-500" />
+                                                    <IconBell size={15} className="text-blue-500" />
                                                 ) : item.priority === 'high' || item.priority === 'urgent' ? (
-                                                    <IconAlertCircle size={16} className="text-amber-500" />
+                                                    <IconAlertCircle size={15} className="text-amber-500" />
                                                 ) : (
-                                                    <IconClipboardList size={16} className="text-warm-400" />
+                                                    <IconClipboardList size={15} className="text-warm-400" />
                                                 )}
                                             </div>
-
-                                            {/* Content */}
                                             <div className="flex-1 min-w-0">
                                                 <p className={cn(
-                                                    'text-sm font-medium truncate',
+                                                    'text-[14px] font-medium tracking-[-0.005em] truncate',
                                                     item.overdue ? 'text-red-700' : 'text-warm-900'
                                                 )}>
                                                     {item.title}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-xs text-warm-400 tabular-nums" suppressHydrationWarning>
+                                                    <span className="text-[11px] text-warm-400 tabular-nums" suppressHydrationWarning>
                                                         {now ? formatRelativeDate(item.date, now) : ''}
                                                     </span>
                                                     {item.overdue && (
-                                                        <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+                                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700">
                                                             Overdue
                                                         </span>
                                                     )}
                                                     {(item.priority === 'high' || item.priority === 'urgent') && !item.overdue && (
-                                                        <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
                                                             {item.priority === 'urgent' ? 'Urgent' : 'High'}
                                                         </span>
                                                     )}

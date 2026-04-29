@@ -26,24 +26,23 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
 
     return (
         <div className={cn(
-            'relative overflow-clip',
-            'bg-glass-subtle backdrop-blur-glass-prominent',
-            'border border-white/30 rounded-2xl',
-            'shadow-glass p-5'
+            'relative overflow-clip surface-matte rounded-3xl p-6'
         )}>
-            {/* Glow */}
-            <div className="absolute -top-10 -right-10 w-28 h-28 bg-primary-500/8 rounded-full blur-2xl pointer-events-none" />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -top-16 -right-12 w-40 h-40 rounded-full opacity-70"
+                style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.10), transparent 70%)' }}
+            />
 
             <div className="relative z-10">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-end justify-between mb-5">
+                    <div className="flex items-center gap-2.5">
                         <IconActivity size={14} className="text-primary-600" />
-                        <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">
+                        <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">
                             Team Pulse
                         </h3>
                     </div>
-                    <span className="text-xs text-warm-400 tabular-nums">
+                    <span className="text-[12px] text-warm-400 tabular-nums">
                         <AnimatedNumber value={roundsThisWeek} /> rounds this week
                     </span>
                 </div>
@@ -54,64 +53,59 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         <div
                             role="img"
                             aria-label={`Team pulse: ${improving} improving, ${stable} stable, ${declining} declining`}
-                            className="h-3 rounded-full overflow-hidden flex bg-warm-100 mb-3"
+                            className="h-2 rounded-full overflow-hidden flex bg-warm-100/70 mb-4"
                         >
                             <m.div
-                                className="bg-primary-500 rounded-l-full"
+                                className="bg-primary-500/85 rounded-l-full"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${improvingPct}%` }}
-                                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.1 }}
+                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
                             />
                             <m.div
-                                className="bg-warm-300"
+                                className="bg-warm-300/85"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${stablePct}%` }}
-                                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.2 }}
+                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
                             />
                             <m.div
-                                className="bg-red-400 rounded-r-full"
+                                className="bg-red-400/85 rounded-r-full"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${decliningPct}%` }}
-                                transition={{ duration: 0.6, ease: 'easeOut', delay: 0.3 }}
+                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
                             />
                         </div>
 
-                        {/* Legend */}
-                        <div className="flex items-center justify-between gap-2 mb-4">
+                        <div className="flex items-center justify-between gap-2 mb-5">
                             <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />
-                                <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums"><AnimatedNumber value={improving} /></span> improving
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                                <span className="text-[12px] text-warm-600">
+                                    <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={improving} /></span> improving
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-warm-300" />
-                                <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums"><AnimatedNumber value={stable} /></span> stable
+                                <div className="w-1.5 h-1.5 rounded-full bg-warm-300" />
+                                <span className="text-[12px] text-warm-600">
+                                    <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={stable} /></span> stable
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                                <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                                <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums"><AnimatedNumber value={declining} /></span> declining
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                                <span className="text-[12px] text-warm-600">
+                                    <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={declining} /></span> declining
                                 </span>
                             </div>
                         </div>
 
-                        {/* Top mover callout */}
                         {topMover && (
-                            <div className={cn(
-                                'flex items-center gap-2.5 px-3 py-2.5 rounded-xl',
-                                'bg-primary-50/60 border border-primary-100/50'
-                            )}>
-                                <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                                    <IconTrendingUp size={14} className="text-primary-600" />
+                            <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-primary-50/55">
+                                <div className="w-8 h-8 rounded-2xl bg-primary-100/80 flex items-center justify-center flex-shrink-0">
+                                    <IconTrendingUp size={14} className="text-primary-700" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold text-primary-800 truncate">
+                                    <p className="text-[13px] font-medium text-primary-800 truncate tracking-[-0.005em]">
                                         Top Mover: {topMover.name}
                                     </p>
-                                    <p className="text-label text-primary-600">
+                                    <p className="text-[11px] text-primary-600">
                                         {topMover.delta} {topMover.delta === 1 ? 'stroke' : 'strokes'} lower avg
                                     </p>
                                 </div>
@@ -119,12 +113,12 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         )}
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-center py-6">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-3">
+                    <div className="flex flex-col items-center justify-center text-center py-7">
+                        <div className="w-14 h-14 rounded-2xl bg-primary-50/60 flex items-center justify-center mb-4">
                             <IconActivity size={22} className="text-primary-600/70" />
                         </div>
-                        <p className="text-subhead font-semibold text-warm-900 mb-1">No player trends yet</p>
-                        <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">Trends appear after players submit 6+ rounds</p>
+                        <p className="text-[15px] font-medium tracking-[-0.005em] text-warm-900 mb-1.5">No player trends yet</p>
+                        <p className="text-[12px] leading-relaxed text-warm-500 max-w-[240px]">Trends appear after players submit 6+ rounds</p>
                     </div>
                 )}
             </div>

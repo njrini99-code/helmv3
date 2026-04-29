@@ -14,7 +14,6 @@ import {
 } from '@/components/icons';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 
@@ -84,47 +83,40 @@ export interface PlayerDashboardData {
 function JoinTeamBanner() {
     return (
         <m.div
-            className="mb-5 md:mb-6"
-            initial={{ opacity: 0, y: 12 }}
+            className="mb-7 md:mb-9"
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
         >
-            {/* Cream-on-cream banner with a primary accent rail.
-                Apple light-mode wouldn't drop a saturated green tile onto a
-                warm cream page — the banner now reads as a section-level
-                advisory, not a billboard. */}
-            <div className="relative overflow-hidden rounded-2xl surface-apple">
-                {/* Soft primary glow in the corner gives the banner identity
-                    without flooding the surface */}
+            {/* Cream-on-cream banner — no accent rail, no saturated tile.
+                Reads as a section-level advisory, the kind a magazine
+                runs above a chapter break. */}
+            <div className="relative overflow-hidden rounded-3xl surface-matte">
                 <div
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-10 -top-16 w-48 h-48 rounded-full"
-                    style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.18), transparent 70%)' }}
+                    aria-hidden
+                    className="pointer-events-none absolute -right-16 -top-20 w-56 h-56 rounded-full opacity-80"
+                    style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.12), transparent 70%)' }}
                 />
-                {/* 3px primary edge gives the eye a clear handle without
-                    fighting the cream body */}
-                <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-primary-500 via-primary-600 to-primary-500" />
 
-                <div className="relative flex items-center gap-3 md:gap-4 px-5 py-4 md:px-6 md:py-5 pl-6 md:pl-7">
-                    <div className="w-11 h-11 rounded-xl bg-primary-50 ring-1 ring-primary-100 flex items-center justify-center flex-shrink-0 shadow-[0_2px_6px_rgba(22,163,74,0.15)]">
+                <div className="relative flex items-center gap-5 md:gap-6 px-5 py-5 md:px-8 md:py-6">
+                    <div className="w-12 h-12 rounded-2xl bg-primary-50/75 flex items-center justify-center flex-shrink-0">
                         <IconUsers size={20} className="text-primary-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-[18px] leading-tight font-semibold text-warm-900 mb-0.5">
+                        <h3 className="text-[18px] md:text-[20px] leading-tight font-medium tracking-[-0.012em] text-warm-900 mb-1">
                             Join your team
                         </h3>
-                        <p className="text-warm-500 text-[13px] leading-relaxed">
+                        <p className="text-warm-500 text-[13px] leading-relaxed max-w-md">
                             Drop in the invite code from your coach to unlock schedules, qualifiers, and CoachHelm insights.
                         </p>
                     </div>
                     <Link
                         href="/golf/dashboard/settings"
                         className={cn(
-                            'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl flex-shrink-0',
-                            'bg-primary-600 text-white font-semibold text-[13px]',
-                            'shadow-[0_4px_14px_rgba(22,163,74,0.28)]',
-                            'hover:bg-primary-700 active:scale-[0.97] transition-all',
-                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2'
+                            'inline-flex items-center gap-2 px-5 py-2.5 rounded-full flex-shrink-0 text-[13px] font-medium',
+                            'bg-primary-600/95 text-white',
+                            'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
+                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
                         )}
                     >
                         <IconSettings size={14} />
@@ -211,7 +203,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                     one undifferentiated block. */}
                 {stats.roundsPlayed === 0 ? (
                     <>
-                        <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                        <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                             <div className="relative overflow-hidden rounded-3xl surface-apple">
                                 {/* Layered radial glows — primary in the upper-right,
                                     a softer secondary glow in the lower-left, both
@@ -245,8 +237,8 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         </div>
                                     </div>
 
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary-700 mb-4">
-                                        <IconSparkles size={12} />
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50/60 text-[11px] font-medium uppercase tracking-[0.14em] text-primary-700 mb-5">
+                                        <IconSparkles size={11} />
                                         Day 1
                                     </span>
 
@@ -260,18 +252,18 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     <Link
                                         href="/golf/dashboard/rounds/new"
                                         className={cn(
-                                            'group inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl',
-                                            'bg-primary-600 hover:bg-primary-700 text-white font-semibold text-[15px]',
-                                            'shadow-[0_8px_24px_rgba(22,163,74,0.32),inset_0_1px_0_rgba(255,255,255,0.18)]',
-                                            'transition-all duration-200 active:scale-[0.97]',
-                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-50'
+                                            'group inline-flex items-center gap-2 px-7 py-3.5 rounded-full',
+                                            'bg-primary-600/95 text-white font-medium text-[15px] tracking-[-0.005em]',
+                                            'shadow-[0_4px_14px_rgba(22,163,74,0.20)]',
+                                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.28)]',
+                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-50'
                                         )}
                                     >
-                                        <IconPlus size={16} className="transition-transform group-hover:rotate-90 duration-300" />
+                                        <IconPlus size={16} className="transition-transform duration-500 group-hover:rotate-90" />
                                         Submit your first round
                                     </Link>
 
-                                    <div className="mt-10 md:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                                    <div className="mt-12 md:mt-14 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 max-w-2xl mx-auto">
                                         {[
                                             { icon: <IconChartBar size={18} />, label: 'Scoring average', tone: 'primary' as const },
                                             { icon: <IconTarget size={18} />, label: 'Best round', tone: 'amber' as const },
@@ -279,25 +271,20 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                             { icon: <IconSparkles size={18} />, label: 'AI coaching', tone: 'violet' as const },
                                         ].map((item) => {
                                             const toneCls = {
-                                                primary: 'bg-primary-50 ring-primary-100 text-primary-700',
-                                                amber: 'bg-amber-50 ring-amber-100 text-amber-700',
-                                                blue: 'bg-blue-50 ring-blue-100 text-blue-700',
-                                                violet: 'bg-violet-50 ring-violet-100 text-violet-700',
+                                                primary: 'bg-primary-50/70 text-primary-700',
+                                                amber: 'bg-amber-50/70 text-amber-700',
+                                                blue: 'bg-blue-50/70 text-blue-700',
+                                                violet: 'bg-violet-50/70 text-violet-700',
                                             }[item.tone];
                                             return (
                                                 <div
                                                     key={item.label}
-                                                    className={cn(
-                                                        'group flex flex-col items-center text-center gap-2 p-4 rounded-2xl',
-                                                        'bg-cream-100/60 backdrop-blur-md ring-1 ring-warm-200/55',
-                                                        'shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
-                                                        'transition-transform hover:-translate-y-[1px] duration-200'
-                                                    )}
+                                                    className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl bg-cream-50/55 ring-1 ring-warm-200/35 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px]"
                                                 >
-                                                    <span className={cn('w-9 h-9 rounded-xl ring-1 flex items-center justify-center', toneCls)}>
+                                                    <span className={cn('w-10 h-10 rounded-2xl flex items-center justify-center', toneCls)}>
                                                         {item.icon}
                                                     </span>
-                                                    <span className="text-[12px] font-semibold text-warm-700 leading-tight">
+                                                    <span className="text-[12.5px] font-medium text-warm-700 leading-tight tracking-[-0.005em]">
                                                         {item.label}
                                                     </span>
                                                 </div>
@@ -309,7 +296,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         </m.div>
 
                         {enhancedData && enhancedData.todayEvents.length > 0 && (
-                            <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                            <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                                 <DashboardErrorBoundary name="Schedule">
                                     <TodayTimeline events={enhancedData.todayEvents} role="player" timezone={enhancedData.timezone} />
                                 </DashboardErrorBoundary>
@@ -320,7 +307,6 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             <DashboardErrorBoundary name="Focus Areas">
                                 <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
                                 <PremiumGlassCard glow>
-                                    <ShineEffect />
                                     <PlayerFocusAreas playerId={player.id} />
                                 </PremiumGlassCard>
                             </DashboardErrorBoundary>
@@ -331,7 +317,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                     <>
                         {/* ROW 1: Stat Cards */}
                         <DashboardErrorBoundary name="Stats">
-                        <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5 md:mb-6" variants={itemVariants}>
+                        <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-7 md:mb-10" variants={itemVariants}>
                             <StatCardSparkline
                                 label="Scoring Avg"
                                 value={enhancedData?.sparklines.scoringAvg.value ?? stats.scoringAverage}
@@ -381,9 +367,9 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             fills naturally — avoids the dead vertical space that
                             appeared when the shorter left column finished before
                             the taller right column. */}
-                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6 items-start" variants={itemVariants}>
+                        <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-5 md:gap-6 mb-7 md:mb-10 items-start" variants={itemVariants}>
                             {/* LEFT COLUMN */}
-                            <div className="lg:col-span-3 flex flex-col gap-4 md:gap-5 min-w-0">
+                            <div className="lg:col-span-3 flex flex-col gap-5 md:gap-6 min-w-0">
                                 <DashboardErrorBoundary name="Schedule">
                                     <TodayTimeline
                                         events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
@@ -407,12 +393,12 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     <>
                                         <SectionHeader title="Scoring Trend" />
                                         <PremiumGlassCard>
-                                            <div className="flex flex-col items-center justify-center py-8 text-center">
-                                                <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mb-3">
-                                                    <IconChartBar size={24} className="text-warm-400" />
+                                            <div className="flex flex-col items-center justify-center py-10 text-center">
+                                                <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-4">
+                                                    <IconChartBar size={22} className="text-warm-400" />
                                                 </div>
-                                                <p className="text-lg font-semibold text-warm-900 mb-1">Not enough data yet</p>
-                                                <p className="text-sm text-warm-500">Submit 2+ rounds to see your scoring trend</p>
+                                                <p className="text-[17px] font-medium tracking-[-0.012em] text-warm-900 mb-1.5">Not enough data yet</p>
+                                                <p className="text-[13px] text-warm-500">Submit 2+ rounds to see your scoring trend</p>
                                             </div>
                                         </PremiumGlassCard>
                                     </>
@@ -426,7 +412,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             </div>
 
                             {/* RIGHT COLUMN */}
-                            <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
+                            <div className="lg:col-span-2 flex flex-col gap-5 md:gap-6 min-w-0">
                                 <DashboardErrorBoundary name="Performance">
                                     <PerformanceRadar
                                         data={enhancedData?.strokesGained ?? EMPTY_STROKES_GAINED}
@@ -438,7 +424,6 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 <DashboardErrorBoundary name="Focus Areas">
                                     <SectionHeader title="Focus Areas" icon={<IconTarget size={14} />} />
                                     <PremiumGlassCard glow>
-                                        <ShineEffect />
                                         <PlayerFocusAreas playerId={player.id} />
                                     </PremiumGlassCard>
                                 </DashboardErrorBoundary>
@@ -447,14 +432,13 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
                         {/* ROW 4: Recent Rounds (full width) */}
                         <DashboardErrorBoundary name="Recent Rounds">
-                        <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                        <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                             <SectionHeader
                                 title="Recent Rounds"
                                 action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
                             />
                             <PremiumGlassCard noPadding>
-                                <ShineEffect />
-                                <div className="divide-y divide-white/20">
+                                <div className="divide-y divide-warm-200/30">
                                     {recentRounds.map((round) => (
                                         <RoundRow
                                             key={round.id}
@@ -472,7 +456,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
                         {/* Secondary Stats */}
                         {enhancedData?.secondaryStats && (
-                            <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                            <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                                 <QuickStatRow stats={[
                                     { label: 'FIR%', value: enhancedData.secondaryStats.firPct, suffix: '%' },
                                     { label: 'Scrambling', value: enhancedData.secondaryStats.scramblingPct, suffix: '%' },
@@ -487,13 +471,13 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             <Link
                                 href="/golf/dashboard/rounds/new"
                                 className={cn(
-                                    'flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-semibold',
-                                    'bg-primary-600 hover:bg-primary-700 text-white',
-                                    'shadow-[0_4px_16px_rgba(22,163,74,0.25)]',
-                                    'transition-colors duration-200 active:scale-[0.98]'
+                                    'group flex items-center justify-center gap-2 w-full py-4 rounded-full text-[14px] font-medium tracking-[-0.005em]',
+                                    'bg-primary-600/95 text-white',
+                                    'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
+                                    'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
                                 )}
                             >
-                                <IconPlus size={16} />
+                                <IconPlus size={16} className="transition-transform duration-500 group-hover:rotate-90" />
                                 Submit New Round
                             </Link>
                         </m.div>

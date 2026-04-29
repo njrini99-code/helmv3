@@ -26,32 +26,39 @@ import { Avatar } from '@/components/ui/avatar';
 import { IOS_DURATION_NORMAL, IOS_EASE } from '@/lib/ios-animations';
 
 // ============================================================================
-// ANIMATION VARIANTS — iOS-native (250ms, ease-out, quick stagger)
+// ANIMATION VARIANTS — California-modern cinematic (slow, intentional)
 // ============================================================================
+
+const APPLE_EASE = [0.16, 1, 0.3, 1] as const;
 
 export const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
         transition: {
-            // Quick 40ms stagger keeps entrance snappy; iOS feels sluggish past ~50ms.
-            staggerChildren: 0.04,
-            delayChildren: 0,
+            // Slow 80ms stagger lets each section land separately —
+            // intentional, never twitchy.
+            staggerChildren: 0.08,
+            delayChildren: 0.02,
         },
     },
 } as const;
 
 export const itemVariants = {
-    hidden: { opacity: 0, y: 8 },
+    hidden: { opacity: 0, y: 14 },
     visible: {
         opacity: 1,
         y: 0,
         transition: {
-            duration: IOS_DURATION_NORMAL,
-            ease: IOS_EASE as unknown as [number, number, number, number],
+            duration: 0.55,
+            ease: APPLE_EASE as unknown as [number, number, number, number],
         },
     },
 };
+
+// Re-export so existing iOS imports keep working
+void IOS_DURATION_NORMAL;
+void IOS_EASE;
 
 // ============================================================================
 // PREMIUM GLASS CARD
@@ -65,7 +72,11 @@ interface PremiumGlassCardProps {
     hover?: boolean;
 }
 
-// OPTIMIZATION: Memoize to prevent unnecessary re-renders
+// PremiumGlassCard now reads as a sculpted matte panel rather than a
+// glassy tile. Generous default padding (p-6 md:p-7), 24px corners,
+// diffused natural-light shadow, slow cinematic hover lift. The
+// "glow" prop fades a soft sage glow rather than the older saturated
+// blue/green stack — keeps the eye on the content.
 export const PremiumGlassCard = memo(function PremiumGlassCard({
     children,
     className,
@@ -75,28 +86,35 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
 }: PremiumGlassCardProps) {
     const Component = hover ? m.div : 'div';
     const hoverProps = hover ? {
-        whileHover: { y: -2 },
-        transition: { type: 'spring' as const, stiffness: 400, damping: 30 }
+        whileHover: { y: -3 },
+        transition: { duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }
     } : {};
 
     return (
         <Component
             className={cn(
                 'relative overflow-clip',
-                // Premium glass treatment (products page aesthetic)
-                'glass-premium',
-                'rounded-2xl', // Standardized: 16px
-                'transition-shadow duration-200',
-                !noPadding && 'p-5',
+                'surface-matte',
+                'rounded-3xl',
+                'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                !noPadding && 'p-6 md:p-7',
                 className
             )}
             {...hoverProps}
         >
-            {/* Enhanced ambient glow */}
+            {/* Soft natural-light glow — diffused, never flashy */}
             {glow && (
                 <>
-                    <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-blue-500/8 rounded-full blur-2xl pointer-events-none" />
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 rounded-full opacity-70"
+                        style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.10), transparent 70%)' }}
+                    />
+                    <div
+                        aria-hidden
+                        className="pointer-events-none absolute -bottom-16 -left-16 w-48 h-48 rounded-full opacity-60"
+                        style={{ background: 'radial-gradient(closest-side, rgba(180,83,9,0.06), transparent 70%)' }}
+                    />
                 </>
             )}
             {/* Content */}
@@ -143,57 +161,37 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             role={href ? "link" : "region"}
             aria-label={accessibleLabel}
             className={cn(
-                // Enhanced Premium glass effect - More transparent
-                "relative overflow-clip group cursor-pointer",
-                "bg-glass-subtle backdrop-blur-glass-prominent",
-                "border rounded-2xl", // Standardized: 16px
-                "p-5",
-                // Premium multi-layer shadow with inset highlight
-                "shadow-glass hover:shadow-card-hover transition-shadow duration-200",
-                // Accent border
-                accent
-                    ? "border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30"
-                    : "border-warm-200/45"
+                'relative overflow-clip group cursor-pointer',
+                'surface-matte rounded-3xl p-6',
+                'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                accent && 'before:absolute before:inset-y-6 before:left-0 before:w-[2px] before:bg-primary-500/70 before:rounded-r-full'
             )}
-            whileHover={{
-                y: -4,
-                scale: 1.02,
-            }}
-            transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+            whileHover={{ y: -3 }}
+            transition={{ duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }}
         >
-            {/* Subtle inner gradient for depth */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none rounded-2xl" />
-
-            {/* Hover glow effect */}
-            <div className="absolute -inset-1 bg-primary-500/0 group-hover:bg-primary-500/5 rounded-2xl transition-colors duration-300 pointer-events-none" />
-
             <div className="relative flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-warm-500 mb-1">{label}</p>
+                    <p className="text-[12px] font-medium text-warm-500 mb-1.5 tracking-wide uppercase opacity-80">{label}</p>
                     <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold tracking-tight text-warm-900 tabular-nums" suppressHydrationWarning>
+                        <p className="text-[32px] md:text-[36px] font-light leading-none tracking-[-0.025em] text-warm-900 tabular-nums" suppressHydrationWarning>
                             {isNumeric ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value}
                         </p>
                         {trend && (
                             <span className={cn(
-                                'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
-                                trend.positive
-                                    ? 'text-primary-700 bg-primary-50'
-                                    : 'text-red-600 bg-red-50'
+                                'inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums',
+                                trend.positive ? 'text-primary-600' : 'text-red-500'
                             )}>
-                                {trend.positive ? <IconTrendingUp size={12} /> : <IconTrendingDown size={12} />}
+                                {trend.positive ? <IconTrendingUp size={11} /> : <IconTrendingDown size={11} />}
                                 {Math.abs(trend.value).toFixed(1)}
                             </span>
                         )}
                     </div>
                     {subValue && (
-                        <p className="text-xs text-warm-400 mt-1">{subValue}</p>
+                        <p className="text-[12px] text-warm-400 mt-1.5">{subValue}</p>
                     )}
                 </div>
                 <div className={cn(
-                    'w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
-                    'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
-                    'group-hover:scale-105 transition-transform duration-200',
+                    'w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105',
                     iconBg, iconColor
                 )}>
                     {icon}
@@ -201,7 +199,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             </div>
 
             {href && (
-                <div className="absolute bottom-4 right-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-5 right-5 opacity-0 md:group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                     <IconArrowRight size={14} className="text-primary-500" />
                 </div>
             )}
@@ -303,6 +301,10 @@ interface SectionHeaderProps {
     className?: string;
 }
 
+// Editorial section title — drops the all-caps tracking-wider chip
+// in favor of a sculptural lowercase serif-adjacent sans. The label
+// sits at body-size with -0.015em tracking; the eye reads it as a
+// chapter break rather than a system label.
 export function SectionHeader({
     title,
     icon,
@@ -310,16 +312,21 @@ export function SectionHeader({
     className
 }: SectionHeaderProps) {
     return (
-        <div className={cn('flex items-center justify-between mb-4', className)}>
-            <div className="flex items-center gap-2">
-                {icon && <span className="text-primary-600">{icon}</span>}
-                <h2 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">{title}</h2>
+        <div className={cn('flex items-end justify-between mb-4 md:mb-5', className)}>
+            <div className="flex items-center gap-2.5 min-w-0">
+                {icon && <span className="text-primary-600 flex-shrink-0">{icon}</span>}
+                <h2 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] truncate">
+                    {title}
+                </h2>
             </div>
             {action && (
-                <Link href={action.href} prefetch={true}>
-                    <button className="flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                <Link href={action.href} prefetch={true} className="flex-shrink-0">
+                    <button className="group flex items-center gap-1 text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300">
                         {action.label}
-                        <IconArrowRight size={14} />
+                        <IconArrowRight
+                            size={13}
+                            className="transition-transform duration-300 group-hover:translate-x-0.5"
+                        />
                     </button>
                 </Link>
             )}
@@ -360,45 +367,44 @@ export function RoundRow({
             role={id ? undefined : "button"}
             tabIndex={id ? undefined : 0}
             aria-label={accessibleLabel}
-            className="group flex items-center gap-4 px-4 py-4 hover:bg-white/30 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            whileHover={{ x: 4 }}
+            className="group flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
+            whileHover={{ x: 3 }}
         >
             <div className={cn(
-                'w-14 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0',
-                'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
-                toPar < 0 ? 'bg-gradient-to-br from-primary-50 to-primary-100' :
-                toPar === 0 ? 'bg-gradient-to-br from-warm-50 to-warm-100' :
-                'bg-gradient-to-br from-amber-50 to-amber-100'
+                'w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0',
+                toPar < 0 ? 'bg-primary-50/75' :
+                toPar === 0 ? 'bg-warm-100/65' :
+                'bg-amber-50/70'
             )}>
                 <span className={cn(
-                    'text-xl font-bold',
-                    toPar < 0 ? 'text-primary-600' : toPar === 0 ? 'text-warm-700' : 'text-amber-600'
+                    'text-[16px] font-medium tabular-nums leading-none tracking-[-0.012em]',
+                    toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-warm-700' : 'text-amber-700'
                 )}>
                     {score}
                 </span>
                 <span className={cn(
-                    'text-xs font-semibold',
-                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-500' : 'text-amber-500'
+                    'text-[10px] font-medium mt-0.5',
+                    toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-400' : 'text-amber-500'
                 )}>
                     {toPar > 0 ? '+' : ''}{toPar}
                 </span>
             </div>
             <div className="flex-1 min-w-0">
                 {showPlayer && playerName && (
-                    <p className="font-semibold text-warm-900 truncate">{playerName}</p>
+                    <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">{playerName}</p>
                 )}
                 <p className={cn(
                     'truncate',
-                    showPlayer ? 'text-sm text-warm-500' : 'font-semibold text-warm-900'
+                    showPlayer ? 'text-[13px] text-warm-500' : 'font-medium text-[15px] text-warm-900 tracking-[-0.005em]'
                 )}>
                     {courseName}
                 </p>
-                <p className="text-xs text-warm-400 mt-0.5" suppressHydrationWarning>
+                <p className="text-[12px] text-warm-400 mt-0.5" suppressHydrationWarning>
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
-            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <IconArrowRight size={16} className="text-primary-500" />
+            <div className="flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                <IconArrowRight size={14} className="text-primary-500" />
             </div>
         </m.div>
     );
@@ -490,14 +496,14 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                 role="article"
                 aria-label={accessibleLabel}
                 className={cn(
-                    'group relative px-4 py-4',
-                    'hover:bg-white/40 transition-colors duration-200 cursor-pointer',
-                    'focus-within:ring-2 focus-within:ring-primary-500/30 focus-within:ring-offset-1'
+                    'group relative px-5 py-5 md:px-6',
+                    'hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer',
+                    'focus-within:ring-1 focus-within:ring-primary-400/30'
                 )}
-                whileHover={{ x: 2 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                whileHover={{ x: 3 }}
+                transition={{ duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }}
             >
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-start gap-4">
                     {/* Player Avatar */}
                     <div className="flex-shrink-0 mt-0.5">
                         <Avatar
@@ -511,23 +517,23 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     <div className="flex-1 min-w-0">
                         {/* Top row: Player name + relative date */}
                         <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-semibold text-sm text-warm-900 truncate">
+                            <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">
                                 {playerName}
                             </p>
-                            <span className="text-xs text-warm-400 flex-shrink-0 tabular-nums" suppressHydrationWarning>
+                            <span className="text-[12px] text-warm-400 flex-shrink-0 tabular-nums" suppressHydrationWarning>
                                 {formatRelativeDate(date, now)}
                             </span>
                         </div>
 
                         {/* Course name + round type */}
-                        <div className="flex items-center gap-2 mb-2.5">
+                        <div className="flex items-center gap-2 mb-3">
                             <p className="text-[13px] text-warm-500 truncate">
                                 {courseName}
                             </p>
                             {roundType && (
                                 <>
-                                    <span className="text-warm-300 flex-shrink-0">&middot;</span>
-                                    <span className="text-xs text-warm-400 flex-shrink-0">
+                                    <span className="text-warm-300 flex-shrink-0" aria-hidden>&middot;</span>
+                                    <span className="text-[12px] text-warm-400 flex-shrink-0">
                                         {formatRoundType(roundType)}
                                     </span>
                                 </>
@@ -536,46 +542,38 @@ export const RecentRoundCard = memo(function RecentRoundCard({
 
                         {/* Score badge + Stat pills row */}
                         <div className="flex items-center gap-2 flex-wrap">
-                            {/* Score badge — primary visual anchor */}
+                            {/* Score badge — soft pill, no border, no inset highlight */}
                             <div className={cn(
-                                'inline-flex items-center gap-2 px-2.5 py-1 rounded-lg',
-                                'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
-                                toPar < 0 ? 'bg-primary-50/80 border border-primary-200/60' :
-                                toPar === 0 ? 'bg-warm-50/80 border border-warm-200/60' :
-                                'bg-amber-50/80 border border-amber-200/60'
+                                'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
+                                toPar < 0 ? 'bg-primary-50/70' :
+                                toPar === 0 ? 'bg-warm-100/70' :
+                                'bg-amber-50/70'
                             )}>
                                 <span className={cn(
-                                    'text-base font-bold tabular-nums leading-none',
+                                    'text-[15px] font-medium tabular-nums leading-none tracking-[-0.01em]',
                                     toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-warm-700' : 'text-amber-700'
                                 )}>
                                     {score}
                                 </span>
                                 <span className={cn(
-                                    'text-xs font-semibold tabular-nums leading-none',
+                                    'text-[11px] font-medium tabular-nums leading-none',
                                     toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-400' : 'text-amber-500'
                                 )}>
                                     {toParLabel}
                                 </span>
                             </div>
 
-                            {/* Stat pills — subtle inline metrics */}
+                            {/* Stat pills — minimal, no fill, just text */}
                             {hasStats && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3 text-[12px] text-warm-500">
                                     {totalPutts !== null && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
-                                            <svg className="w-3 h-3 text-warm-400" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
-                                            {totalPutts} putts
-                                        </span>
+                                        <span className="tabular-nums">{totalPutts} putts</span>
                                     )}
                                     {firPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
-                                            FIR {firPct}%
-                                        </span>
+                                        <span className="hidden sm:inline tabular-nums">FIR {firPct}%</span>
                                     )}
                                     {girPct !== null && (
-                                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-warm-100/70 text-xs font-medium text-warm-500 tabular-nums">
-                                            GIR {girPct}%
-                                        </span>
+                                        <span className="hidden sm:inline tabular-nums">GIR {girPct}%</span>
                                     )}
                                 </div>
                             )}
@@ -583,7 +581,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     </div>
 
                     {/* Arrow indicator */}
-                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-200">
+                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                         <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                 </div>
@@ -615,31 +613,30 @@ export function TopPerformerRow({
         3: { bg: 'bg-gradient-to-br from-orange-100 to-orange-200', text: 'text-orange-600', icon: '🥉' }
     };
 
-    const colors = rankColors[rank] || { bg: 'bg-warm-100', text: 'text-warm-500' };
+    const colors = rankColors[rank] || { bg: 'bg-warm-100/65', text: 'text-warm-500' };
     const rankLabel = rank === 1 ? '1st' : rank === 2 ? '2nd' : rank === 3 ? '3rd' : `${rank}th`;
 
     return (
         <m.div
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
-            className="flex items-center gap-3 px-4 py-4 hover:bg-white/30 rounded-lg transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2" // Standardized: 12px
-            whileHover={{ x: 4 }}
+            className="flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
+            whileHover={{ x: 3 }}
             tabIndex={0}
         >
             <div className={cn(
-                'w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold', // Standardized: 12px
-                'shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]',
+                'w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium tabular-nums',
                 colors.bg, colors.text
             )}>
                 {colors.icon || rank}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="font-semibold text-warm-900 truncate">{name}</p>
-                <p className="text-xs text-warm-500">{rounds} rounds</p>
+                <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">{name}</p>
+                <p className="text-[12px] text-warm-500">{rounds} rounds</p>
             </div>
             <div className="text-right">
-                <p className="font-bold text-warm-900 tabular-nums">{avgScore.toFixed(1)}</p>
-                <p className="text-xs text-warm-400 uppercase tracking-wide">avg</p>
+                <p className="font-medium text-warm-900 tabular-nums text-[17px] tracking-[-0.012em]">{avgScore.toFixed(1)}</p>
+                <p className="text-[11px] text-warm-400 tracking-wide">avg</p>
             </div>
         </m.div>
     );

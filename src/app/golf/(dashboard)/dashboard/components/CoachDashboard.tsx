@@ -20,7 +20,6 @@ import {
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { cn } from '@/lib/utils';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
     PremiumGlassCard,
@@ -132,33 +131,37 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
 
     return (
         <m.div
-            className={cn(
-                'relative overflow-hidden rounded-2xl',
-                'bg-gradient-to-r from-primary-50 via-primary-50/80 to-primary-50',
-                'border border-primary-200/40',
-                'shadow-[0_1px_4px_rgba(0,0,0,0.04)]'
-            )}
-            initial={{ opacity: 0, y: 12 }}
+            className="relative overflow-hidden rounded-3xl surface-matte"
+            initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
         >
-            <div className="relative z-10 flex items-center justify-between gap-3 px-4 py-3 md:px-5 md:py-3.5">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
-                        <IconUsers size={13} className="text-primary-600" />
+            <div
+                aria-hidden
+                className="pointer-events-none absolute -right-12 -top-16 w-48 h-48 rounded-full opacity-70"
+                style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.10), transparent 70%)' }}
+            />
+            <div className="relative z-10 flex items-center justify-between gap-4 px-5 py-4 md:px-7 md:py-5">
+                <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div className="w-9 h-9 rounded-2xl bg-primary-50/70 flex items-center justify-center flex-shrink-0">
+                        <IconUsers size={15} className="text-primary-700" />
                     </div>
-                    <p className="text-primary-700 text-xs font-medium truncate">
-                        <span className="hidden sm:inline">Share invite code with players</span>
-                        <span className="sm:hidden">Invite code</span>
-                    </p>
+                    <div className="min-w-0">
+                        <p className="text-[13px] md:text-[14px] font-medium text-warm-700 tracking-[-0.005em] truncate">
+                            Share invite code with players
+                        </p>
+                        <p className="hidden sm:block text-[12px] text-warm-500 mt-0.5">
+                            Tap to copy. They join from the welcome screen.
+                        </p>
+                    </div>
                 </div>
                 <m.button
                     onClick={handleCopy}
                     className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                        'bg-cream-100/82 hover:bg-white border border-primary-200/60',
-                        'text-xs font-mono tracking-widest text-primary-700',
-                        'transition-colors duration-200 active:scale-95'
+                        'inline-flex items-center gap-2 px-4 py-2 rounded-full',
+                        'bg-cream-50/85 ring-1 ring-warm-200/60 hover:ring-primary-200/80 hover:bg-cream-50',
+                        'text-[13px] font-mono tracking-[0.18em] text-primary-700',
+                        'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]'
                     )}
                     whileTap={{ scale: 0.97 }}
                 >
@@ -217,12 +220,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
         <div className="relative" ref={containerRef}>
             <button
                 onClick={() => setOpen(!open)}
-                className={cn(
-                    'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium',
-                    'bg-cream-100/60 backdrop-blur-sm border border-warm-200/45',
-                    'text-warm-600 hover:text-warm-800 hover:bg-cream-100/75',
-                    'transition-colors duration-150 active:scale-95 shadow-sm'
-                )}
+                className="pill-soft"
                 aria-label="Select date range"
                 aria-haspopup="listbox"
                 aria-expanded={open}
@@ -230,24 +228,20 @@ const DateRangeSelector = memo(function DateRangeSelector({
                 <IconClock size={12} className="text-warm-400" />
                 <span className="hidden sm:inline">{selected?.label}</span>
                 <span className="sm:hidden">{selected?.shortLabel}</span>
-                <IconChevronDown size={12} className={cn('text-warm-400 transition-transform', open && 'rotate-180')} />
+                <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
             </button>
             <AnimatePresence>
                 {open && (
                     <>
                         <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
                         <m.div
-                            initial={{ opacity: 0, y: -4, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -4, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
+                            initial={{ opacity: 0, y: -6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -6 }}
+                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                             role="listbox"
                             aria-label="Date range options"
-                            className={cn(
-                                'absolute right-0 top-full mt-1 z-40',
-                                'bg-cream-50/95 backdrop-blur-xl rounded-xl',
-                                'border border-warm-200/50 shadow-lg py-1 min-w-[160px]'
-                            )}
+                            className="absolute right-0 top-full mt-2 z-40 surface-stone rounded-2xl py-2 min-w-[180px]"
                         >
                             {DATE_RANGE_OPTIONS.map((option) => (
                                 <button
@@ -256,10 +250,10 @@ const DateRangeSelector = memo(function DateRangeSelector({
                                     aria-selected={option.value === value}
                                     onClick={() => { onChange(option.value); setOpen(false); }}
                                     className={cn(
-                                        'w-full text-left px-3 py-2 text-sm transition-colors',
+                                        'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300',
                                         option.value === value
-                                            ? 'text-primary-700 bg-primary-50 font-medium'
-                                            : 'text-warm-600 hover:bg-warm-50 active:bg-warm-100'
+                                            ? 'text-primary-700 bg-primary-50/55 font-medium'
+                                            : 'text-warm-600 hover:bg-cream-50/70'
                                     )}
                                 >
                                     {option.label}
@@ -336,13 +330,9 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                 }
             >
                 <DateRangeSelector value={dateRange} onChange={handleDateRangeChange} />
-                <div className={cn(
-                    'hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
-                    'bg-warm-50/80 border border-warm-200/40',
-                    'text-xs text-warm-400'
-                )}>
-                    <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">&#8984;</kbd>
-                    <kbd className="px-1 py-0.5 bg-white rounded text-micro font-medium shadow-sm border border-warm-200/60">K</kbd>
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100/70 ring-1 ring-warm-200/45 text-[11px] text-warm-400">
+                    <kbd className="px-1 py-0.5 rounded text-[10px] font-medium text-warm-500 tabular-nums">&#8984;</kbd>
+                    <kbd className="px-1 py-0.5 rounded text-[10px] font-medium text-warm-500">K</kbd>
                 </div>
             </LargeTitleHeader>
 
@@ -361,13 +351,13 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                     </m.div>
                 )}
                 {team?.join_code && stats.rosterSize >= 20 && (
-                    <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700">
+                    <div className="mb-6 px-5 py-3.5 rounded-2xl bg-amber-50/70 ring-1 ring-amber-200/55 text-[13px] text-amber-700">
                         Invite code is hidden because your roster has reached the 20-player limit.
                     </div>
                 )}
 
                 {/* ROW 1: Horizontal Day Timeline (full width) */}
-                <m.div className="mb-5 md:mb-6" variants={itemVariants}>
+                <m.div className="mb-7 md:mb-10" variants={itemVariants}>
                     <DashboardErrorBoundary name="Schedule">
                         <TodayTimeline
                             events={enhancedData?.todayEvents ?? EMPTY_EVENTS}
@@ -379,7 +369,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
                 {/* ROW 2: Quick Stats */}
                 <DashboardErrorBoundary name="Stats">
-                <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 mb-5 md:mb-6" variants={itemVariants}>
+                <m.div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-7 md:mb-10" variants={itemVariants}>
                     <StatCardSparkline
                         label="Scoring Avg"
                         value={enhancedData?.sparklines.scoringAvg.value ?? (stats.teamScoringAverage ? Number(stats.teamScoringAverage.toFixed(1)) : null)}
@@ -426,11 +416,10 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
                 {/* ROW 3: Recent Rounds + Notifications/Actions side by side */}
                 <DashboardErrorBoundary name="Recent Rounds">
-                <m.div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                <m.div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 mb-7 md:mb-10" variants={itemVariants}>
                     <div className="lg:col-span-2 min-w-0">
                         <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
                         <PremiumGlassCard noPadding>
-                            <ShineEffect />
                             {filteredRounds.length === 0 ? (
                                 <EmptyState
                                     type="rounds"
@@ -439,7 +428,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                     action={null}
                                 />
                             ) : (
-                                <div className="divide-y divide-white/15">
+                                <div className="divide-y divide-warm-200/30">
                                     {filteredRounds.slice(0, 6).map((round) => (
                                         <RecentRoundCard
                                             key={round.id}
@@ -463,7 +452,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                             )}
                         </PremiumGlassCard>
                     </div>
-                    <div className="flex flex-col gap-4 md:gap-5 min-w-0">
+                    <div className="flex flex-col gap-5 md:gap-6 min-w-0">
                         <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="coach" />
                     </div>
                 </m.div>
@@ -471,7 +460,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
                 {/* ROW 4: Trend + Team Pulse + Top Performers */}
                 <DashboardErrorBoundary name="Performance Trend">
-                <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-5 mb-5 md:mb-6" variants={itemVariants}>
+                <m.div className="grid grid-cols-1 lg:grid-cols-5 gap-5 md:gap-6 mb-7 md:mb-10" variants={itemVariants}>
                     <div className="lg:col-span-3 min-w-0">
                         <SectionHeader title="Performance Trend" />
                         {hasTrendData ? (
@@ -480,30 +469,31 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                             </PremiumGlassCard>
                         ) : (
                             <PremiumGlassCard>
-                                <div className="flex flex-col items-center justify-center py-8 md:py-10 text-center">
-                                    <div className="w-12 h-12 rounded-full bg-warm-100/80 flex items-center justify-center mb-4">
+                                <div className="flex flex-col items-center justify-center py-10 md:py-12 text-center">
+                                    <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-5">
                                         <IconChartBar size={22} className="text-warm-400" />
                                     </div>
-                                    <h3 className="text-base font-semibold text-warm-800 mb-1.5">No trend data yet</h3>
-                                    <p className="text-sm text-warm-500 max-w-xs mb-5 leading-relaxed">
+                                    <h3 className="text-[17px] font-medium tracking-[-0.012em] text-warm-900 mb-2">No trend data yet</h3>
+                                    <p className="text-[13px] text-warm-500 max-w-sm mb-7 leading-relaxed">
                                         Trends appear once your players submit rounds across multiple months.
                                     </p>
                                     <Link
                                         href="/golf/dashboard/roster"
                                         className={cn(
-                                            'inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium',
-                                            'bg-primary-600 hover:bg-primary-700 text-white',
-                                            'transition-colors duration-150 shadow-sm'
+                                            'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[14px] font-medium',
+                                            'bg-primary-600/95 text-white',
+                                            'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
+                                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
                                         )}
                                     >
-                                        <IconPlus size={16} />
+                                        <IconPlus size={14} className="transition-transform duration-500 group-hover:rotate-90" />
                                         Invite Players
                                     </Link>
                                 </div>
                             </PremiumGlassCard>
                         )}
                     </div>
-                    <div className="lg:col-span-2 flex flex-col gap-4 md:gap-5 min-w-0">
+                    <div className="lg:col-span-2 flex flex-col gap-5 md:gap-6 min-w-0">
                         <TeamPulseCard data={enhancedData?.teamPulse ?? EMPTY_TEAM_PULSE} />
                         <div className="min-w-0">
                             <SectionHeader
@@ -511,9 +501,8 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                 action={{ label: 'Full Rankings', href: '/golf/dashboard/stats/team' }}
                             />
                             <PremiumGlassCard noPadding>
-                                <ShineEffect />
                                 {topPlayers.length > 0 ? (
-                                    <div className="divide-y divide-white/20">
+                                    <div className="divide-y divide-warm-200/30">
                                         {topPlayers.slice(0, 5).map((player, i) => (
                                             <TopPerformerRow key={player.id} rank={i + 1} name={player.name} avgScore={player.avg_score} rounds={player.rounds} />
                                         ))}
@@ -528,26 +517,25 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                 </DashboardErrorBoundary>
 
                 {/* QUICK ACTIONS */}
-                <m.div variants={itemVariants}>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <Link href="/golf/dashboard/roster" className={cn(
-                            'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-sm active:scale-95'
-                        )}>
-                            <IconPlus size={14} />
+                <m.div variants={itemVariants} className="mt-2">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                            href="/golf/dashboard/roster"
+                            className={cn(
+                                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[14px] font-medium tracking-[-0.005em]',
+                                'bg-primary-600/95 text-white',
+                                'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
+                                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
+                            )}
+                        >
+                            <IconPlus size={14} className="transition-transform duration-500 group-hover:rotate-90" />
                             Add Player
                         </Link>
-                        <Link href="/golf/dashboard/calendar" className={cn(
-                            'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-cream-100/68 text-warm-700 hover:bg-cream-100/82 transition-colors border border-warm-200/55 shadow-sm active:scale-95'
-                        )}>
+                        <Link href="/golf/dashboard/calendar" className="pill-soft">
                             <IconCalendar size={14} />
                             Schedule Event
                         </Link>
-                        <Link href="/golf/dashboard/qualifiers" className={cn(
-                            'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-cream-100/68 text-warm-700 hover:bg-cream-100/82 transition-colors border border-warm-200/55 shadow-sm active:scale-95'
-                        )}>
+                        <Link href="/golf/dashboard/qualifiers" className="pill-soft">
                             <IconFlag size={14} />
                             Create Qualifier
                         </Link>
