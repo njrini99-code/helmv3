@@ -155,7 +155,7 @@ export default function GolfStatsDisplay({
         <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
             <div className="flex-1 min-w-0">
-              <motion.h1 className="text-xl sm:text-2xl font-bold text-warm-900 truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+              <motion.h1 className="text-xl sm:text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
                 {playerName ? `${playerName}'s Stats` : 'My Stats'}
               </motion.h1>
               <motion.p className="text-warm-500 text-xs sm:text-sm mt-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>

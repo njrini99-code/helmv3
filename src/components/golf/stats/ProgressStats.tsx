@@ -753,7 +753,7 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
               <div className={`inline-flex px-3 py-1 rounded-full text-xs font-medium mb-2 ${getColorClasses(stat.color, isAboveTarget)}`}>
                 {isAboveTarget ? 'On Target' : 'Improving'}
               </div>
-              <div className="text-2xl font-bold text-warm-900">
+              <div className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">
                 {stat.value !== null ? stat.format(stat.value) : '--'}
               </div>
               <div className="text-sm text-warm-500">{stat.label}</div>

@@ -70,7 +70,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.25, type: 'spring' }}
           >
-            <div className="text-3xl font-bold text-blue-600 tabular-nums">{formatStat(stats.missLeftPct, '%')}</div>
+            <div className="text-[32px] md:text-[36px] font-light text-blue-700 tabular-nums tracking-[-0.025em]">{formatStat(stats.missLeftPct, '%')}</div>
             <div className="text-sm text-warm-500">← Left</div>
           </motion.div>
           <motion.div

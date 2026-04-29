@@ -122,7 +122,7 @@ export function OverviewStats({
 
           {/* Player Info */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-warm-900 truncate">
+            <h2 className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate">
               {playerName || 'Player'}
             </h2>
             <div className="flex flex-wrap items-center gap-3 mt-1">
@@ -143,7 +143,7 @@ export function OverviewStats({
         {/* Quick Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-5 border-t border-warm-200/60">
           <div className="text-center">
-            <div className="text-2xl font-bold text-warm-900 tabular-nums">
+            <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
               {headlineRounds}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">
@@ -151,13 +151,13 @@ export function OverviewStats({
             </div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary-600 tabular-nums">
+            <div className="text-[28px] md:text-[32px] font-light text-primary-700 tabular-nums tracking-[-0.025em]">
               {headlineScoringAvg !== null ? headlineScoringAvg.toFixed(1) : '--'}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">Scoring Avg</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-warm-900 tabular-nums">
+            <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
               {headlineBestRound || '--'}
             </div>
             <div className="text-xs text-warm-500 mt-0.5">Best Round</div>
@@ -277,7 +277,7 @@ export function OverviewStats({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {trendData.personalBests.bestScore && (
               <div className="glass-standard rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestScore.value}
                 </div>
                 <div className="text-xs text-warm-500 mt-1">Best Score</div>
@@ -288,7 +288,7 @@ export function OverviewStats({
             )}
             {trendData.personalBests.bestToPar && (
               <div className="glass-standard rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestToPar.value > 0 ? '+' : ''}{trendData.personalBests.bestToPar.value}
                 </div>
                 <div className="text-xs text-warm-500 mt-1">Best to Par</div>
@@ -299,7 +299,7 @@ export function OverviewStats({
             )}
             {trendData.personalBests.bestGir && (
               <div className="glass-standard rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.bestGir.value}%
                 </div>
                 <div className="text-xs text-warm-500 mt-1">Best GIR</div>
@@ -310,7 +310,7 @@ export function OverviewStats({
             )}
             {trendData.personalBests.lowestPutts && (
               <div className="glass-standard rounded-xl p-4 text-center">
-                <div className="text-2xl font-bold text-amber-600 tabular-nums">
+                <div className="text-[28px] md:text-[32px] font-light text-amber-700 tabular-nums tracking-[-0.025em]">
                   {trendData.personalBests.lowestPutts.value}
                 </div>
                 <div className="text-xs text-warm-500 mt-1">Lowest Putts</div>

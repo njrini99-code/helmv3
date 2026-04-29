@@ -1465,7 +1465,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         <div className="w-full max-w-2xl">
           <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
             <StepProgressBar />
-            <h1 className="text-2xl font-semibold tracking-tight text-warm-900 mb-2">
+            <h1 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-3">
               New Round
             </h1>
             <p className="text-warm-500 text-sm mb-6">
