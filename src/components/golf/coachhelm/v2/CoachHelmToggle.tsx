@@ -57,8 +57,8 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
     <div className="space-y-4">
       <div
         className={cn(
-          'relative overflow-clip rounded-2xl border bg-white/70 p-5 backdrop-blur-xl shadow-glass transition-all',
-          enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-white/60 ring-1 ring-warm-200/60'
+          'relative overflow-clip rounded-2xl border bg-cream-100/75 p-5 backdrop-blur-xl shadow-glass transition-all',
+          enabled ? 'border-primary-100/70 ring-1 ring-primary-200/60' : 'border-warm-200/55 ring-1 ring-warm-200/60'
         )}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
@@ -196,8 +196,8 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
       className={cn(
         'flex items-start gap-3 rounded-xl border px-3 py-2 text-xs font-medium shadow-glass-sm',
         enabled
-          ? 'border-white/70 bg-white/70 text-warm-700'
-          : 'border-white/40 bg-white/50 text-warm-400'
+          ? 'border-white/70 bg-cream-100/75 text-warm-700'
+          : 'border-warm-200/55 bg-cream-100/60 text-warm-400'
       )}
     >
       <div

@@ -176,7 +176,7 @@ const OverviewSummary = memo(function OverviewSummary({
       {/* Team Health Score */}
       {healthScore !== null && (
         <div className={cn(
-          'bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm',
+          'bg-cream-100/82 backdrop-blur-sm rounded-xl border border-warm-200/55 shadow-sm',
           isPage ? 'p-5 rounded-2xl' : 'p-3'
         )}>
           <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
@@ -203,7 +203,7 @@ const OverviewSummary = memo(function OverviewSummary({
 
       {/* Quick Counts */}
       <div className={cn(
-        'bg-white/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm',
+        'bg-cream-100/82 backdrop-blur-sm rounded-xl border border-warm-200/55 shadow-sm',
         isPage ? 'p-5 rounded-2xl' : 'p-3'
       )}>
         <div className={cn('flex items-center gap-2', isPage ? 'mb-3' : 'mb-1.5')}>
@@ -241,7 +241,7 @@ const OverviewSummary = memo(function OverviewSummary({
       {/* Page-only: extra stat cards */}
       {isPage && (
         <>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 p-5 shadow-sm">
+          <div className="bg-cream-100/82 backdrop-blur-sm rounded-2xl border border-warm-200/55 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center">
                 <IconTrendingUp size={16} className="text-warm-500" />
@@ -255,7 +255,7 @@ const OverviewSummary = memo(function OverviewSummary({
               {highImpactPatterns} high-impact
             </span>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/40 p-5 shadow-sm">
+          <div className="bg-cream-100/82 backdrop-blur-sm rounded-2xl border border-warm-200/55 p-5 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center">
                 <IconTarget size={16} className="text-warm-500" />
@@ -331,7 +331,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         {/* Tone icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-white/80 shadow-sm border border-white/50',
+          'bg-cream-100/82 shadow-sm border border-warm-200/60',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <IconSparkles size={isPage ? 18 : 14} className={tone.icon} />
@@ -417,7 +417,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-white/60 rounded-lg border border-white/50 text-center',
+                          'bg-cream-100/68 rounded-lg border border-warm-200/60 text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
@@ -478,7 +478,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                       <div
                         key={i}
                         className={cn(
-                          'bg-white/60 rounded-lg border border-white/50 text-center',
+                          'bg-cream-100/68 rounded-lg border border-warm-200/60 text-center',
                           isPage ? 'p-3' : 'p-2'
                         )}
                       >
@@ -514,7 +514,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Stroke impact visual bar (if present) */}
               {strokeImpact !== null && strokeImpact > 0 && (
                 <div className={cn(
-                  'bg-white/60 rounded-lg border border-white/50',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
                   isPage ? 'p-3' : 'p-2'
                 )}>
                   <div className="flex items-center justify-between mb-1.5">
@@ -551,7 +551,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Call to action / Recommendation */}
               {insight.callToAction && (
                 <div className={cn(
-                  'bg-white/60 rounded-lg border border-white/50',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
@@ -584,7 +584,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <button
                     onClick={(e) => { e.stopPropagation(); onAction('dismiss'); }}
                     className={cn(
-                      'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-white/60 rounded-lg transition-colors',
+                      'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
                       isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
@@ -670,7 +670,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         {/* Category icon */}
         <div className={cn(
           'flex-shrink-0 rounded-lg flex items-center justify-center',
-          'bg-white/80 shadow-sm border border-white/50',
+          'bg-cream-100/82 shadow-sm border border-warm-200/60',
           isPage ? 'w-10 h-10' : 'w-7 h-7'
         )}>
           <CategoryIcon size={isPage ? 18 : 14} className={tone.icon} />
@@ -737,7 +737,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                   className={cn(
                     'inline-flex items-center font-medium rounded-full border',
                     isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
-                    'bg-white/70 text-warm-600 border-warm-200/60'
+                    'bg-cream-100/75 text-warm-600 border-warm-200/60'
                   )}
                 >
                   {p.playerName}
@@ -792,13 +792,13 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       <div
                         key={i}
                         className={cn(
-                          'flex items-start gap-2 bg-white/60 rounded-lg border border-white/50',
+                          'flex items-start gap-2 bg-cream-100/68 rounded-lg border border-warm-200/60',
                           isPage ? 'text-sm p-3' : 'text-xs p-2'
                         )}
                       >
                         {mi.playerName && (
                           <span className={cn(
-                            'flex-shrink-0 inline-flex items-center font-semibold rounded-full border bg-white/80 text-warm-700 border-warm-200/60',
+                            'flex-shrink-0 inline-flex items-center font-semibold rounded-full border bg-cream-100/82 text-warm-700 border-warm-200/60',
                             isPage ? 'text-xs px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
                           )}>
                             {mi.playerName}
@@ -821,7 +821,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {/* Call to action */}
               {group.callToAction && (
                 <div className={cn(
-                  'bg-white/60 rounded-lg border border-white/50',
+                  'bg-cream-100/68 rounded-lg border border-warm-200/60',
                   isPage ? 'p-4' : 'p-2.5'
                 )}>
                   <div className={cn('flex items-center gap-2', isPage ? 'mb-2' : 'mb-1')}>
@@ -857,7 +857,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <button
                       onClick={(e) => { e.stopPropagation(); onDismissGroup(group); }}
                       className={cn(
-                        'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-white/60 rounded-lg transition-colors',
+                        'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
                         isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
@@ -903,7 +903,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
   return (
     <div
       className={cn(
-        'bg-white/80 border border-warm-200/60 overflow-hidden',
+        'bg-cream-100/82 border border-warm-200/60 overflow-hidden',
         isPage ? 'rounded-2xl' : 'rounded-xl',
         'shadow-sm hover:shadow-md transition-shadow'
       )}
@@ -1060,7 +1060,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
   return (
     <div
       className={cn(
-        'bg-white/80 border border-warm-200/60 shadow-sm hover:shadow-md transition-shadow',
+        'bg-cream-100/82 border border-warm-200/60 shadow-sm hover:shadow-md transition-shadow',
         isPage ? 'rounded-2xl p-5' : 'rounded-xl p-3'
       )}
     >
@@ -1182,7 +1182,7 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
   return (
     <div className={cn('flex flex-col items-center text-center', isPage ? 'py-16' : 'py-8')}>
       <div className={cn(
-        'rounded-xl bg-white/80 shadow-sm flex items-center justify-center border border-white/50',
+        'rounded-xl bg-cream-100/82 shadow-sm flex items-center justify-center border border-warm-200/60',
         isPage ? 'w-16 h-16 rounded-2xl mb-4' : 'w-10 h-10 mb-2.5'
       )}>
         {icon}
@@ -1595,7 +1595,7 @@ export function IntelligenceCommandCenter({
       {/* No data state */}
       {!hasData && !isPending && (
         <div className={cn(
-          'bg-white/60 backdrop-blur-sm border border-white/40',
+          'bg-cream-100/68 backdrop-blur-sm border border-warm-200/55',
           isPage ? 'rounded-2xl p-8 md:p-12' : 'rounded-xl p-4'
         )}>
           <div className="flex flex-col items-center text-center">

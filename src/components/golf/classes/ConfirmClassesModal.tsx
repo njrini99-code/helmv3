@@ -191,7 +191,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                     'rounded-xl border transition-all duration-200',
                     editingIndex === index
                       ? 'border-primary-400 ring-2 ring-primary-400/20 bg-white shadow-md'
-                      : 'border-warm-150 bg-white/60 hover:bg-white hover:shadow-sm hover:border-warm-200'
+                      : 'border-warm-150 bg-cream-100/68 hover:bg-white hover:shadow-sm hover:border-warm-200'
                   )}
                 >
                   {editingIndex === index ? (

@@ -123,7 +123,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
     >
       <div
         ref={modalRef}
-        className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl border border-white/40 shadow-glass overflow-hidden"
+        className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-cream-50/95 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl border border-warm-200/55 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Premium gradient header */}
@@ -180,7 +180,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
                       <span
                         className={cn(
                           'w-1.5 h-1.5 rounded-full',
-                          active ? 'bg-white/80' : s.dot,
+                          active ? 'bg-cream-100/82' : s.dot,
                         )}
                       />
                       {s.label}

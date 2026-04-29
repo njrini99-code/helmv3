@@ -159,7 +159,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
           {/* Menu */}
           <div
             role="menu"
-            className="absolute right-0 top-full mt-1.5 w-52 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 z-20 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+            className="absolute right-0 top-full mt-1.5 w-52 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 z-20 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
           >
             <button
               role="menuitem"

@@ -233,7 +233,7 @@ export function UnfinishedRoundModal({
                       className={cn(
                         'w-full p-4 rounded-xl border-2 transition-all duration-200 min-h-[44px]',
                         'flex items-center gap-4',
-                        'border-warm-200 bg-white/80 hover:bg-warm-50 active:bg-warm-100',
+                        'border-warm-200 bg-cream-100/82 hover:bg-warm-50 active:bg-warm-100',
                         'disabled:opacity-50 disabled:cursor-not-allowed'
                       )}
                     >

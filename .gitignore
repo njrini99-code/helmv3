@@ -69,3 +69,4 @@ helm-vid/
 *.png
 # Hosted email assets must reach prod — exempt them from the global *.png ignore.
 !public/email/*.png
+GolfHelm-Prospect-Deck.pptx

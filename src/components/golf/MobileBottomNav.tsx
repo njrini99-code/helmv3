@@ -51,7 +51,7 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'min-h-[var(--golf-mobile-bottom-nav-offset)]',
         // iOS-native tab bar: heavy backdrop blur + subtle top hairline
-        'bg-white/85 backdrop-blur-xl [-webkit-backdrop-filter:saturate(180%)_blur(20px)]',
+        'bg-cream-50/88 backdrop-blur-xl [-webkit-backdrop-filter:saturate(180%)_blur(20px)]',
         'border-t border-warm-200/40',
         'shadow-[0_-0.5px_0_0_rgba(0,0,0,0.04)]',
         'will-change-transform',

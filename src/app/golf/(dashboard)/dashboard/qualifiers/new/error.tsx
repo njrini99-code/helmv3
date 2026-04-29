@@ -13,7 +13,7 @@ export default function NewQualifierError({
   return (
     <div className="min-h-full bg-transparent">
       {/* Header */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
+      <div className="border-b border-warm-200/60 bg-cream-100/60 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link

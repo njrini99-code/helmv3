@@ -167,7 +167,7 @@ export function EventDocumentsSection({
             return (
               <li
                 key={row.document.id}
-                className="group flex items-center gap-3 px-3 py-2 rounded-xl bg-white/70 ring-1 ring-warm-200/60 hover:bg-white transition-colors"
+                className="group flex items-center gap-3 px-3 py-2 rounded-xl bg-cream-100/75 ring-1 ring-warm-200/60 hover:bg-white transition-colors"
               >
                 <span className="w-8 h-8 rounded-lg bg-primary-50 ring-1 ring-primary-100 flex items-center justify-center flex-shrink-0">
                   <Icon className="w-4 h-4 text-primary-700" />
@@ -279,7 +279,7 @@ function DocumentPickerDialog({
     >
       <div
         ref={modalRef}
-        className="w-full max-w-lg max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass overflow-hidden"
+        className="w-full max-w-lg max-h-[80vh] flex flex-col bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/55 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">

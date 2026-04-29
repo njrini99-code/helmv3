@@ -118,7 +118,7 @@ export function InsightsFeed({
   return (
     <div className="space-y-3 overflow-hidden">
       {/* Header - Compact for narrow dashboard column */}
-      <div className="relative overflow-clip rounded-xl border border-white/70 bg-white/70 px-3 py-3 shadow-glass-sm backdrop-blur-xl">
+      <div className="relative overflow-clip rounded-xl border border-white/70 bg-cream-100/75 px-3 py-3 shadow-glass-sm backdrop-blur-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
         <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-primary-500/10 blur-2xl pointer-events-none" />
         <div className="absolute -bottom-8 -left-6 h-16 w-16 rounded-full bg-primary-400/10 blur-2xl pointer-events-none" />
@@ -289,10 +289,10 @@ function EmptyState({
   description: string;
 }) {
   return (
-    <div className="relative overflow-clip rounded-xl border border-white/70 bg-white/70 px-3 py-6 text-center shadow-glass-sm">
+    <div className="relative overflow-clip rounded-xl border border-white/70 bg-cream-100/75 px-3 py-6 text-center shadow-glass-sm">
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/8 via-white/0 to-primary-400/8 pointer-events-none" />
       <div className="relative flex flex-col items-center">
-        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-white/80 shadow-glass-sm text-primary-600">
+        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-cream-100/82 shadow-glass-sm text-primary-600">
           {icon}
         </div>
         <h4 className="text-sm font-semibold text-warm-700 mb-0.5">{title}</h4>

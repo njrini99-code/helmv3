@@ -59,7 +59,7 @@ export function PuttMissTagSelector({
                 'text-sm font-semibold',
                 isSelected
                   ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
-                  : 'bg-white/70 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100',
+                  : 'bg-cream-100/75 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100',
                 disabled && 'opacity-50 cursor-not-allowed'
               )}
             >

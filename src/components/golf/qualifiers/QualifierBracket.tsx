@@ -64,7 +64,7 @@ function getPositionStyles(position: number, isAboveCutline: boolean, isOnBubble
   }
   if (isAboveCutline) {
     return {
-      card: 'bg-white/70 border-primary-200/50',
+      card: 'bg-cream-100/75 border-primary-200/50',
       ring: '',
       name: 'text-warm-900',
       score: 'text-primary-600',
@@ -111,7 +111,7 @@ function PlayerBracketCard({
       }}
     >
       {/* Position */}
-      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/80 shadow-sm">
+      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cream-100/82 shadow-sm">
         {getPositionIcon(position) || (
           <span className={cn('text-sm font-bold', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
             {position}

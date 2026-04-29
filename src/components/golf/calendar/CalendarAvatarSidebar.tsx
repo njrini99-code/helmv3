@@ -110,7 +110,7 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Expand sidebar" side="right">
           <button
             onClick={() => setIsCollapsed(false)}
-            className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-white/40 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
+            className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-warm-200/55 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
             aria-label="Expand player filter"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />
@@ -126,12 +126,12 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-white/90 backdrop-blur-xl border border-white/40 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
+    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-cream-50/92 backdrop-blur-xl border border-warm-200/55 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}
         aria-label="Collapse player filter"
-        className="absolute -right-3 top-4 w-6 h-12 bg-white/90 border border-white/40 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
+        className="absolute -right-3 top-4 w-6 h-12 bg-cream-50/92 border border-warm-200/55 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>

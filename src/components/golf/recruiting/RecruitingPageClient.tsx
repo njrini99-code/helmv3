@@ -124,7 +124,7 @@ export function RecruitingPageClient({
               onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
               className={cn(
                 'group relative flex flex-col items-start gap-1 px-4 py-3.5 rounded-2xl',
-                'bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
+                'bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
                 'transition-all duration-200',
                 'hover:shadow-[0_6px_20px_rgba(16,24,40,0.07)] hover:-translate-y-[1px]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
@@ -160,7 +160,7 @@ export function RecruitingPageClient({
             placeholder="Search by name, hometown, email, or notes…"
             className={cn(
               'w-full pl-9 pr-3 py-2.5 rounded-xl',
-              'bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
+              'bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
               'text-sm text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white',
               'transition-colors',
@@ -177,7 +177,7 @@ export function RecruitingPageClient({
               'px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
               filter === 'all'
                 ? 'bg-warm-100 text-warm-500 cursor-default'
-                : 'bg-white/80 text-warm-700 hover:bg-white border border-white/40',
+                : 'bg-cream-100/82 text-warm-700 hover:bg-white border border-warm-200/55',
             )}
           >
             All ({counts.all})
@@ -188,7 +188,7 @@ export function RecruitingPageClient({
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
               className={cn(
-                'pl-7 pr-7 py-2 rounded-xl bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
+                'pl-7 pr-7 py-2 rounded-xl bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
                 'text-xs font-semibold text-warm-700',
                 'focus:outline-none focus:ring-2 focus:ring-primary-100 transition-colors',
               )}
@@ -258,7 +258,7 @@ export function RecruitingPageClient({
 
 function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => void }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass px-6 py-14 text-center">
+    <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-warm-200/55 shadow-glass px-6 py-14 text-center">
       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mx-auto mb-4 shadow-sm">
         <GraduationCap className="w-7 h-7 text-primary-700" />
       </div>

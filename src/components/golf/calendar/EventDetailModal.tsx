@@ -580,7 +580,7 @@ export function EventDetailModal({
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="Close modal"
-              className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-white/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+              className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-cream-100/68 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
               <X className="w-5 h-5" aria-hidden="true" />
             </button>
@@ -1138,7 +1138,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass overflow-hidden"
+        className="w-full max-w-md bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/55 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">

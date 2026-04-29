@@ -191,7 +191,7 @@ function FocusAreaCard({
   const sharedClassName = cn(
     'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
     'glass-standard',
-    interactive && 'hover:bg-white/90 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
+    interactive && 'hover:bg-cream-50/92 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
   );
 
   if (interactive) {

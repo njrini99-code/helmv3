@@ -130,12 +130,12 @@ function ExpandableSection({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <div className="border border-white/20 rounded-xl overflow-clip bg-white/50 backdrop-blur-sm">
+    <div className="border border-white/20 rounded-xl overflow-clip bg-cream-100/60 backdrop-blur-sm">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           'w-full flex items-center justify-between px-4 py-3',
-          'hover:bg-white/60 transition-colors',
+          'hover:bg-cream-100/68 transition-colors',
           'text-left'
         )}
       >
@@ -290,8 +290,8 @@ export function RoundReviewDisplay({
                 onClick={onShare}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-                  'bg-white/60 hover:bg-white/80 active:bg-white/90 text-warm-700',
-                  'transition-colors border border-white/30'
+                  'bg-cream-100/68 hover:bg-cream-100/82 active:bg-cream-50/92 text-warm-700',
+                  'transition-colors border border-warm-200/45'
                 )}
               >
                 Share with Coach
@@ -308,8 +308,8 @@ export function RoundReviewDisplay({
                 onClick={onExport}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-                  'bg-white/60 hover:bg-white/80 active:bg-white/90 text-warm-700',
-                  'transition-colors border border-white/30'
+                  'bg-cream-100/68 hover:bg-cream-100/82 active:bg-cream-50/92 text-warm-700',
+                  'transition-colors border border-warm-200/45'
                 )}
               >
                 Export
@@ -438,7 +438,7 @@ export function RoundReviewDisplay({
                   transition={{ delay: index * 0.08 }}
                   className={cn(
                     'p-3 rounded-lg border',
-                    'bg-white/60 border-white/30'
+                    'bg-cream-100/68 border-warm-200/45'
                   )}
                 >
                   <div className="text-xs text-warm-500 font-medium mb-1">
@@ -599,7 +599,7 @@ export function RoundReviewDisplay({
                 {/* Front 9 */}
                 <div className={cn(
                   'p-3 rounded-xl border',
-                  frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-white/60 border-white/30'
+                  frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-cream-100/68 border-warm-200/45'
                 )}>
                   <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Front 9</div>
                   <div className="space-y-1.5">
@@ -624,7 +624,7 @@ export function RoundReviewDisplay({
                 {/* Back 9 */}
                 <div className={cn(
                   'p-3 rounded-xl border',
-                  !frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-white/60 border-white/30'
+                  !frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-cream-100/68 border-warm-200/45'
                 )}>
                   <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Back 9</div>
                   <div className="space-y-1.5">
@@ -695,12 +695,12 @@ export function RoundReviewDisplay({
             {/* Summary stats */}
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/20">
               {review.puttingBreakdown.avgFirstPuttDist !== null && (
-                <div className="p-2 rounded-lg bg-white/60 text-center">
+                <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                   <div className="text-xs text-warm-500">Avg 1st Putt</div>
                   <div className="text-lg font-bold text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
                 </div>
               )}
-              <div className="p-2 rounded-lg bg-white/60 text-center">
+              <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                 <div className="text-xs text-warm-500">One-Putts</div>
                 <div className="text-lg font-bold text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
               </div>
@@ -744,7 +744,7 @@ export function RoundReviewDisplay({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-white/30"
+                className="flex items-start gap-3 p-3 rounded-lg bg-cream-100/68 border border-warm-200/45"
               >
                 <div className={cn(
                   'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-xs font-bold',
@@ -872,13 +872,13 @@ export function RoundReviewDisplay({
                 <div className="text-xs font-semibold text-warm-500 mb-2 uppercase tracking-wider">Driving</div>
                 <div className="grid grid-cols-2 gap-2">
                   {review.drivingAnalysis.avgDistance !== null && (
-                    <div className="p-2.5 rounded-lg bg-white/60 border border-white/30">
+                    <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Avg Distance</div>
                       <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
                     </div>
                   )}
                   {review.drivingAnalysis.longestDrive && (
-                    <div className="p-2.5 rounded-lg bg-white/60 border border-white/30">
+                    <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Longest Drive</div>
                       <div className="text-lg font-bold text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
                       <div className="text-micro text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>

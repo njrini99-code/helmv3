@@ -651,7 +651,7 @@ export default function GolfMessagesPage() {
                               'px-4 py-2.5',
                               isOwn
                                 ? 'bg-primary-500 text-white'
-                                : 'bg-white/70 backdrop-blur-sm border border-white/30 text-warm-900 shadow-glass-sm',
+                                : 'bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 text-warm-900 shadow-glass-sm',
                               // Dynamic border radius based on position in group
                               isFirstInGroup && isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'),
                               isFirstInGroup && !isLastInGroup && (isOwn ? 'rounded-2xl rounded-br-lg' : 'rounded-2xl rounded-bl-lg'),
@@ -938,7 +938,7 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
   const canSend = (message.trim() || pendingAttachments.length > 0) && !sending;
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4 bg-white/60 backdrop-blur-sm border-t border-white/30">
+    <form onSubmit={handleSubmit} className="p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:pb-4 bg-cream-100/68 backdrop-blur-sm border-t border-warm-200/45">
       {/* Pending attachment previews */}
       {pendingAttachments.length > 0 && (
         <AttachmentPreview
@@ -949,7 +949,7 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
       )}
       <div className={cn(
         'flex items-end gap-2 p-1.5 rounded-2xl',
-        'bg-white/50 border border-white/30',
+        'bg-cream-100/60 border border-warm-200/45',
         'focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20',
         'transition-all duration-200'
       )}>

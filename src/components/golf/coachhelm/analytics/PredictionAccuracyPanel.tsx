@@ -185,7 +185,7 @@ export function PredictionAccuracyPanel({
 
       {/* Accuracy Over Time Chart */}
       {hasAccuracyData && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Accuracy Over Time</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -225,7 +225,7 @@ export function PredictionAccuracyPanel({
 
       {/* Calibration Chart */}
       {hasCalibrationData && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-1">Calibration Chart</h4>
           <p className="text-xs text-warm-500 mb-4">
             Comparing predicted confidence vs actual accuracy
@@ -279,7 +279,7 @@ export function PredictionAccuracyPanel({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Error Distribution */}
         {hasErrorData && (
-          <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
             <h4 className="text-sm font-medium text-warm-700 mb-4">Error Distribution</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -320,7 +320,7 @@ export function PredictionAccuracyPanel({
         )}
 
         {/* Confidence Analysis */}
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Confidence Analysis</h4>
           <div className="space-y-4">
             <div className="p-4 bg-amber-50 rounded-xl border border-amber-100">
@@ -459,7 +459,7 @@ function ConfidenceIndicator({
 function ProgressBar({ value, color }: { value: number; color: 'amber' | 'blue' }) {
   return (
     <div className="mt-2">
-      <div className="h-1.5 bg-white/50 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-cream-100/60 rounded-full overflow-hidden">
         <motion.div
           className={cn('h-full rounded-full', color === 'amber' ? 'bg-amber-400' : 'bg-blue-400')}
           initial={{ width: 0 }}
@@ -481,7 +481,7 @@ function AccuracyTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
+      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
         <p className="text-sm font-semibold text-warm-900 mb-2">{data.date}</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
@@ -514,7 +514,7 @@ function CalibrationTooltip({
     const data = payload[0].payload;
     const diff = data.actual - data.expected;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
+      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
         <p className="text-sm font-semibold text-warm-900 mb-2">{data.range} Confidence</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
@@ -553,7 +553,7 @@ function ErrorTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
+      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
         <p className="text-sm font-medium text-warm-900">{data.category}</p>
         <p className="text-xs text-warm-600">
           {data.count} errors ({data.percentage.toFixed(1)}%)

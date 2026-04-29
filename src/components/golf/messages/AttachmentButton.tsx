@@ -142,7 +142,7 @@ export function AttachmentButton({
           role="menu"
           className={cn(
             'absolute bottom-full left-0 mb-2 w-60',
-            'bg-white/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
+            'bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
             'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
             'py-1.5 z-50',
             'origin-bottom-left animate-in fade-in zoom-in-95 slide-in-from-bottom-1 duration-180'

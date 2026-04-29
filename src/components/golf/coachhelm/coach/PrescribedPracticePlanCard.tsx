@@ -261,7 +261,7 @@ function DrillRow({
         : 'bg-warm-50 text-warm-600 border-warm-200';
 
   return (
-    <div className="rounded-xl border border-warm-200/70 bg-white/60 p-4 space-y-3">
+    <div className="rounded-xl border border-warm-200/70 bg-cream-100/68 p-4 space-y-3">
       {/* Row 1: area badge + priority + title */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0 flex-wrap">

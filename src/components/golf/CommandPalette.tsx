@@ -265,10 +265,10 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       {/* Premium Glass Dialog */}
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-lg animate-scale-in">
         <div className={cn(
-          'bg-white/60 backdrop-blur-[24px]', // Enhanced glass effect
+          'bg-cream-100/68 backdrop-blur-[24px]', // Enhanced glass effect
           'rounded-2xl', // Standardized: 16px
           'shadow-card-hover',
-          'border border-white/30',
+          'border border-warm-200/45',
           'overflow-hidden'
         )}>
           {/* Search Input */}
@@ -292,7 +292,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               aria-activedescendant={filteredCommands[selectedIndex]?.id ? `cmd-${filteredCommands[selectedIndex].id}` : undefined}
               className="flex-1 outline-none text-warm-900 placeholder:text-warm-400 bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-cream-100/68 backdrop-blur-sm rounded-lg border border-warm-200/45">
               ESC
             </kbd>
           </div>
@@ -329,7 +329,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   <div
                     className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center', // Standardized: 12px
-                      index === selectedIndex ? 'bg-primary-100' : 'bg-white/60 backdrop-blur-sm'
+                      index === selectedIndex ? 'bg-primary-100' : 'bg-cream-100/68 backdrop-blur-sm'
                     )}
                     aria-hidden="true"
                   >
@@ -350,12 +350,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           {/* Footer */}
           <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-warm-500">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↵</kbd>
               <span>Select</span>
             </div>
           </div>

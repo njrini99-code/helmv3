@@ -753,7 +753,7 @@ export default function ShotTrackingComprehensive({
               </div>
               <div className="flex justify-between mt-3 text-xs text-primary-100">
                 <span className="flex items-center gap-2 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full border border-white/60"></span>
+                  <span className="w-1.5 h-1.5 rounded-full border border-warm-200/55"></span>
                   Tee
                 </span>
                 <span className="font-bold text-sm">{displayDistance} {displayUnit} left</span>
@@ -1134,7 +1134,7 @@ export default function ShotTrackingComprehensive({
                     </div>
                   </div>
                   {distanceAfterShot && (
-                    <div className="flex items-center justify-between bg-white/60 rounded-lg px-4 py-2.5 border border-primary-200">
+                    <div className="flex items-center justify-between bg-cream-100/68 rounded-lg px-4 py-2.5 border border-primary-200">
                       <span className="text-xs font-semibold text-warm-600 uppercase tracking-wide">Shot Distance</span>
                       <span className="text-lg font-bold text-primary-700">
                         ~{Math.round(calculateShotDistanceWithDirection(
@@ -1538,7 +1538,7 @@ export default function ShotTrackingComprehensive({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-warm-200/60 px-6 py-4 rounded-t-2xl">
+            <div className="sticky top-0 bg-cream-50/92 backdrop-blur-md border-b border-warm-200/60 px-6 py-4 rounded-t-2xl">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-warm-900">
                   Edit Shot {editingShot.shotNumber}

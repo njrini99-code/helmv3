@@ -94,7 +94,7 @@ export function FormatToggle({
             className={`relative flex min-h-[38px] items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
               isActive
                 ? 'text-warm-900'
-                : 'text-warm-500 hover:bg-white/60 hover:text-warm-700 active:bg-white/80'
+                : 'text-warm-500 hover:bg-cream-100/68 hover:text-warm-700 active:bg-cream-100/82'
             }`}
             whileTap={{ scale: 0.97 }}
           >

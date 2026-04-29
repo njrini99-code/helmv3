@@ -490,7 +490,7 @@ export function InsightFiltersPanel({
           onClick={() => setIsMobileOpen(true)}
           className={cn(
             'flex items-center gap-2 px-4 py-2.5',
-            'bg-white/80 backdrop-blur-sm border border-warm-200 rounded-xl',
+            'bg-cream-100/82 backdrop-blur-sm border border-warm-200 rounded-xl',
             'text-sm font-medium text-warm-700',
             'hover:bg-warm-50 active:bg-warm-100 transition-colors'
           )}

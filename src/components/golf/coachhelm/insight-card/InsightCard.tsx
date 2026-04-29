@@ -316,11 +316,11 @@ const CompactInsightRow = forwardRef<HTMLButtonElement, CompactInsightRowProps>(
           'border transition-colors',
           config.bgClass,
           config.borderClass,
-          'hover:bg-white/80',
+          'hover:bg-cream-100/82',
           className,
         )}
       >
-        <div className={cn('w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center flex-shrink-0', config.iconColor)}>
+        <div className={cn('w-7 h-7 rounded-lg bg-cream-100/82 flex items-center justify-center flex-shrink-0', config.iconColor)}>
           <Icon size={14} />
         </div>
         <div className="flex-1 min-w-0">
@@ -393,7 +393,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
           <div className="flex items-start gap-3">
             <div
               className={cn(
-                'w-9 h-9 rounded-lg bg-white/80 shadow-sm flex items-center justify-center flex-shrink-0',
+                'w-9 h-9 rounded-lg bg-cream-100/82 shadow-sm flex items-center justify-center flex-shrink-0',
                 config.iconColor,
               )}
             >
@@ -464,7 +464,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
               className="overflow-hidden"
             >
-              <div className="px-4 pb-4 space-y-3 border-t border-white/40">
+              <div className="px-4 pb-4 space-y-3 border-t border-warm-200/55">
                 <div className="pt-3">
                   <EvidencePanel evidence={insight.evidence} compact={false} />
                 </div>
@@ -530,7 +530,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  'w-11 h-11 rounded-xl bg-white/90 shadow-sm flex items-center justify-center flex-shrink-0',
+                  'w-11 h-11 rounded-xl bg-cream-50/92 shadow-sm flex items-center justify-center flex-shrink-0',
                   config.iconColor,
                 )}
               >
@@ -579,7 +579,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           )}
 
           {hasActions && onAction && (
-            <div className="pt-2 border-t border-white/40">
+            <div className="pt-2 border-t border-warm-200/55">
               <InsightActions
                 insight={insight}
                 audience={audience}
@@ -686,7 +686,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             }}
             className={cn(
               'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
-              'text-warm-500 hover:text-warm-700 hover:bg-white/60 transition-colors',
+              'text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 transition-colors',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -753,7 +753,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
             }}
             className={cn(
               'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
-              'text-warm-500 hover:text-warm-700 hover:bg-white/60 transition-colors',
+              'text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 transition-colors',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >

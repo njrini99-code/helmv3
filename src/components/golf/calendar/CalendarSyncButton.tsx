@@ -165,8 +165,8 @@ export function CalendarSyncButton({
             onClick={() => setIsOpen(true)}
             className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center',
-              'bg-white/60 hover:bg-white/80 active:bg-white/90 backdrop-blur-sm',
-              'border border-white/40 hover:border-primary-200',
+              'bg-cream-100/68 hover:bg-cream-100/82 active:bg-cream-50/92 backdrop-blur-sm',
+              'border border-warm-200/55 hover:border-primary-200',
               'text-warm-500 hover:text-primary-600',
               'shadow-sm hover:shadow-md',
               'transition-[color,background-color,border-color,box-shadow] duration-200',

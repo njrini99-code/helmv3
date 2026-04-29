@@ -173,7 +173,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             'absolute -right-3 top-7 z-50',
             'w-6 h-6 rounded-full bg-warm-900 border border-white/20',
             'flex items-center justify-center',
-            'shadow-lg hover:bg-white/10 hover:border-white/30',
+            'shadow-lg hover:bg-white/10 hover:border-warm-200/45',
             'transition-colors duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
           )}

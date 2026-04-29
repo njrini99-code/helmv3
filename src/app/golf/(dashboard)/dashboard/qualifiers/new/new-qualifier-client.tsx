@@ -253,7 +253,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                         flex items-center gap-3 p-3 rounded-xl border transition-all text-left
                         ${isSelected
                           ? 'bg-primary-50 border-primary-200 ring-1 ring-primary-200'
-                          : 'bg-white/50 border-warm-200 hover:border-warm-300 hover:bg-white/80 active:bg-white/90'
+                          : 'bg-cream-100/60 border-warm-200 hover:border-warm-300 hover:bg-cream-100/82 active:bg-cream-50/92'
                         }
                       `}
                     >

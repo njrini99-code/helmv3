@@ -85,7 +85,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
         className={cn(
           'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
           'text-[11px] font-medium text-warm-600',
-          'bg-white/70 border border-white/60 hover:bg-white/90',
+          'bg-cream-100/75 border border-warm-200/55 hover:bg-cream-50/92',
           'transition-colors',
           className,
         )}
@@ -102,7 +102,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
           data-testid="why-popover-desktop"
           className={cn(
             'absolute z-30 mt-2 w-72 p-3',
-            'bg-white/95 backdrop-blur-xl border border-white/40',
+            'bg-cream-50/95 backdrop-blur-xl border border-warm-200/55',
             'rounded-xl shadow-lg',
           )}
         >

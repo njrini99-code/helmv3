@@ -46,7 +46,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
       onClick={onClick}
       className={cn(
         'group relative w-full text-left',
-        'bg-white/80 backdrop-blur-xl rounded-2xl border border-white/40',
+        'bg-cream-100/82 backdrop-blur-xl rounded-2xl border border-warm-200/55',
         'shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
         'transition-all duration-200',
         'hover:bg-white hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)] hover:-translate-y-[1px]',

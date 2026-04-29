@@ -256,7 +256,7 @@ export function MissPatternChart({
             transition={animated ? { delay: 0.5, duration: 0.3 } : undefined}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <div className="text-center bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
+            <div className="text-center bg-cream-50/92 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
               <div className="text-sm font-bold text-warm-900 leading-tight tabular-nums">
                 {primaryMiss.percentage}%
               </div>

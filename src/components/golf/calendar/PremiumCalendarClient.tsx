@@ -746,7 +746,7 @@ export function PremiumCalendarClient({
               <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between">
                 <button
                   onClick={() => setShowPlayerFilter(!showPlayerFilter)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/50 text-warm-700 text-sm font-medium min-h-[44px]"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cream-100/60 text-warm-700 text-sm font-medium min-h-[44px]"
                 >
                   <span>
                     {selectedPlayerIds.length > 0
@@ -769,7 +769,7 @@ export function PremiumCalendarClient({
                     className={`flex items-center gap-2 px-4 py-2 rounded-full whitespace-nowrap min-h-[44px] transition-colors ${
                       selectedPlayerIds.length === 0
                         ? 'bg-primary-500 text-white'
-                        : 'bg-white/50 text-warm-700'
+                        : 'bg-cream-100/60 text-warm-700'
                     }`}
                   >
                     <span className="text-sm font-medium">All</span>

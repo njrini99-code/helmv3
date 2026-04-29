@@ -144,7 +144,7 @@ export function InsightEffectivenessPanel({
 
       {/* Chart */}
       {hasData && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-4">
           <h4 className="text-sm font-medium text-warm-700 mb-4">Effectiveness by Type</h4>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -181,7 +181,7 @@ export function InsightEffectivenessPanel({
 
       {/* Detailed Table */}
       {hasData && (
-        <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-hidden">
+        <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass overflow-hidden">
           <div className="px-4 py-3 border-b border-warm-100">
             <h4 className="text-sm font-medium text-warm-700">Detailed Breakdown</h4>
           </div>
@@ -348,7 +348,7 @@ function CustomTooltip({
   if (active && payload && payload.length && payload[0]) {
     const data = payload[0].payload;
     return (
-      <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
+      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
         <p className="text-sm font-semibold text-warm-900 mb-2">{data.name}</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">

@@ -105,7 +105,7 @@ export function ConflictWarning({
                 {conflict.conflictingEvents.map((event, j) => (
                   <div
                     key={j}
-                    className="flex items-start gap-2 text-sm bg-white/50 rounded-lg p-2 border border-amber-200"
+                    className="flex items-start gap-2 text-sm bg-cream-100/60 rounded-lg p-2 border border-amber-200"
                   >
                     <div className="flex-shrink-0 mt-0.5">
                       <Clock className="w-4 h-4 text-amber-600" />
@@ -161,7 +161,7 @@ export function ConflictWarning({
 
           {/* No suggestions available */}
           {suggestions.length === 0 && (
-            <div className="p-3 bg-white/50 rounded-lg border border-amber-200">
+            <div className="p-3 bg-cream-100/60 rounded-lg border border-amber-200">
               <p className="text-sm text-amber-700">
                 No alternative times available this week. Please choose a different date or remove
                 conflicting attendees.

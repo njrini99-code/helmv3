@@ -565,7 +565,7 @@ export default function GolfClassesPage() {
                               <button
                                 key={`${cls.id}-${day}`}
                                 onClick={() => handleClassClick(cls)}
-                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-white/40 hover:shadow-glass-sm active:bg-warm-50 transition-all bg-white/60 backdrop-blur-sm"
+                                className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:shadow-glass-sm active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
                                 style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
                               >
                                 {code && (

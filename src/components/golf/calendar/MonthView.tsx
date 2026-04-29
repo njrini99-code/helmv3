@@ -190,8 +190,8 @@ function DroppableDayCell({
       }}
       className={cn(
         'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 relative rounded-xl',
-        isCurrentMonth ? 'bg-white/60' : 'bg-warm-50/30',
-        'hover:bg-white/80 active:bg-white/90 hover:shadow-sm',
+        isCurrentMonth ? 'bg-cream-100/68' : 'bg-warm-50/30',
+        'hover:bg-cream-100/82 active:bg-cream-50/92 hover:shadow-sm',
         isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40',
         isOver && 'bg-primary-100/60 ring-2 ring-primary-400'
       )}
@@ -316,8 +316,8 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
               }}
               className={cn(
                 'min-h-[110px] p-2.5 cursor-pointer transition-all duration-200 rounded-xl relative',
-                isCurrentMonth ? 'bg-white/60' : 'bg-warm-50/30',
-                'hover:bg-white/80 active:bg-white/90 hover:shadow-sm',
+                isCurrentMonth ? 'bg-cream-100/68' : 'bg-warm-50/30',
+                'hover:bg-cream-100/82 active:bg-cream-50/92 hover:shadow-sm',
                 isCurrentDay && 'bg-primary-50/40 ring-1 ring-primary-200/40'
               )}
             >

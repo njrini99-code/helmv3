@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="min-h-full">
       {/* Header Skeleton */}
-      <div className="border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
+      <div className="border-b border-warm-200/60 bg-cream-100/60 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div>

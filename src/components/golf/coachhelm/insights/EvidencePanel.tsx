@@ -344,7 +344,7 @@ export function EvidencePanel({
     <div
       data-testid={testId ?? 'evidence-panel-expanded'}
       className={cn(
-        'mt-3 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4',
+        'mt-3 bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-4',
       )}
     >
       <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-warm-500">

@@ -476,7 +476,7 @@ export function DevelopmentPlansClient({
           'group relative rounded-2xl border transition-[background-color,border-color,box-shadow] duration-200',
           isCompleted
             ? 'bg-white/40 border-warm-200/60'
-            : 'bg-white/70 backdrop-blur-xl border-white/20 shadow-sm hover:shadow-md',
+            : 'bg-cream-100/75 backdrop-blur-xl border-white/20 shadow-sm hover:shadow-md',
         )}
         style={{
           animation: 'fadeInUp 0.35s ease-out forwards',
@@ -792,7 +792,7 @@ export function DevelopmentPlansClient({
           'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
           selectedPlayerId === null
             ? 'bg-primary-600 text-white shadow-sm'
-            : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
+            : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/60',
         )}
       >
         All Players
@@ -807,7 +807,7 @@ export function DevelopmentPlansClient({
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
               selectedPlayerId === player.id
                 ? 'bg-primary-600 text-white shadow-sm'
-                : 'bg-white/70 text-warm-600 hover:bg-white border border-warm-200/60',
+                : 'bg-cream-100/75 text-warm-600 hover:bg-white border border-warm-200/60',
             )}
           >
             {player.first_name} {player.last_name?.[0]}.

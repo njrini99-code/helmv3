@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 export function MetricCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-5 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-5 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -37,7 +37,7 @@ export function MetricCardSkeleton({ delay = 0 }: { delay?: number }) {
 export function PlayerCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-4 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-4 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -91,7 +91,7 @@ function RoundRowSkeleton({ delay = 0, showPlayer = true }: { delay?: number; sh
 export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-[16px] border border-white/30 rounded-2xl p-4 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-[16px] border border-warm-200/45 rounded-2xl p-4 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -115,7 +115,7 @@ export function QuickActionSkeleton({ delay = 0 }: { delay?: number }) {
 export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-6 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-6 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -143,7 +143,7 @@ export function StatsCardSkeleton({ delay = 0 }: { delay?: number }) {
 function QualifierCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-5 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-5 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -190,7 +190,7 @@ function MessageThreadSkeleton({ delay = 0 }: { delay?: number }) {
 export function AnnouncementCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl overflow-clip border-l-[3px] border-l-warm-200"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl overflow-clip border-l-[3px] border-l-warm-200"
       style={{ animationDelay: `${delay}ms` }}
     >
       <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
@@ -243,7 +243,7 @@ export function CalendarEventSkeleton({ delay = 0 }: { delay?: number }) {
 function DocumentCardSkeleton({ delay = 0 }: { delay?: number }) {
   return (
     <div
-      className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-4 overflow-clip"
+      className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-4 overflow-clip"
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Shimmer effect */}
@@ -273,7 +273,7 @@ export function DashboardSkeleton() {
             <div className="h-8 w-48 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-9 w-32 rounded-lg bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-9 w-32 rounded-lg bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         {/* Stats Grid */}
@@ -356,7 +356,7 @@ export function CalendarSkeleton() {
   return (
     <div className="h-full flex flex-col">
       {/* Calendar Header */}
-      <div className="flex items-center justify-between p-4 border-b border-warm-200/60 bg-white/50 backdrop-blur-sm">
+      <div className="flex items-center justify-between p-4 border-b border-warm-200/60 bg-cream-100/60 backdrop-blur-sm">
         <div className="flex items-center gap-4">
           <div className="h-8 w-32 bg-warm-200/60 rounded-lg skeleton-shimmer" />
           <div className="flex items-center gap-1">
@@ -431,7 +431,7 @@ export function RoundsListSkeleton() {
             <div className="h-7 w-24 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-32 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-28 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-28 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         {/* Month group */}
@@ -463,7 +463,7 @@ export function StatsPageSkeleton() {
             <div className="h-7 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-28 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-28 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -481,8 +481,8 @@ export function StatsPageSkeleton() {
 
         <div className="glass-standard rounded-2xl p-4 mb-4 shadow-glass-sm">
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px] h-11 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
-            <div className="h-11 w-40 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+            <div className="flex-1 min-w-[200px] h-11 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
+            <div className="h-11 w-40 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
           </div>
         </div>
 
@@ -537,7 +537,7 @@ export function DetailedStatsSkeleton() {
               <div className="h-7 w-48 bg-warm-200/60 rounded skeleton-shimmer" />
               <div className="h-4 w-32 bg-warm-100/60 rounded mt-2 skeleton-shimmer" />
             </div>
-            <div className="h-10 w-48 rounded-lg bg-white/70 border border-white/40 skeleton-shimmer" />
+            <div className="h-10 w-48 rounded-lg bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
           </div>
         </div>
 
@@ -546,7 +546,7 @@ export function DetailedStatsSkeleton() {
           {Array.from({ length: 7 }).map((_, i) => (
             <div
               key={i}
-              className="h-9 w-24 rounded-full bg-white/75 border border-white/40 skeleton-shimmer flex-shrink-0"
+              className="h-9 w-24 rounded-full bg-cream-100/80 border border-warm-200/55 skeleton-shimmer flex-shrink-0"
               style={{ animationDelay: `${i * 30}ms` }}
             />
           ))}
@@ -613,7 +613,7 @@ export function ShotStatsTabSkeleton() {
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="relative bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-xl overflow-clip p-4"
+            className="relative bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-xl overflow-clip p-4"
           >
             <div className="h-3 w-20 bg-warm-200/60 rounded mb-2 skeleton-shimmer" />
             <div className="h-8 w-16 bg-warm-200/60 rounded skeleton-shimmer" />
@@ -622,7 +622,7 @@ export function ShotStatsTabSkeleton() {
       </div>
 
       {/* Stats Section */}
-      <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-4">
+      <div className="bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-4">
         <div className="h-4 w-32 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -635,7 +635,7 @@ export function ShotStatsTabSkeleton() {
       </div>
 
       {/* Another Section */}
-      <div className="bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-white/30 rounded-2xl p-4">
+      <div className="bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent border border-warm-200/45 rounded-2xl p-4">
         <div className="h-4 w-40 bg-warm-200/60 rounded mb-4 skeleton-shimmer" />
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -658,7 +658,7 @@ export function MessagesPageSkeleton() {
   return (
     <div className="h-[calc(100dvh-64px)] flex">
       {/* Conversation List */}
-      <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 bg-white/45 backdrop-blur-sm md:backdrop-blur-glass-prominent flex flex-col">
+      <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200/60 bg-cream-100/55 backdrop-blur-sm md:backdrop-blur-glass-prominent flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-warm-100">
           <div className="flex items-center justify-between mb-1">
@@ -684,7 +684,7 @@ export function MessagesPageSkeleton() {
       {/* Chat Window */}
       <div className="hidden lg:flex flex-1 min-w-0 flex-col bg-warm-50">
         {/* Chat header */}
-        <div className="p-4 border-b border-warm-200/60 bg-white/50 flex items-center gap-3">
+        <div className="p-4 border-b border-warm-200/60 bg-cream-100/60 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-warm-200/60 skeleton-shimmer" />
           <div className="flex-1 space-y-1.5">
             <div className="h-4 w-28 bg-warm-200/60 rounded skeleton-shimmer" />
@@ -740,7 +740,7 @@ export function RosterPageSkeleton() {
             <div className="h-7 w-32 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-32 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-32 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         <div className="space-y-3">
@@ -803,7 +803,7 @@ export function GenericPageSkeleton() {
             <div className="h-7 w-40 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-56 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-32 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-32 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         {[1, 2, 3, 4].map((i) => (
@@ -879,8 +879,8 @@ export function DetailPageSkeleton() {
             <div className="h-4 w-36 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
           <div className="flex gap-2">
-            <div className="h-9 w-24 rounded-lg bg-white/70 border border-white/40 skeleton-shimmer" />
-            <div className="h-9 w-9 rounded-lg bg-white/70 border border-white/40 skeleton-shimmer" />
+            <div className="h-9 w-24 rounded-lg bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
+            <div className="h-9 w-9 rounded-lg bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
           </div>
         </div>
 
@@ -946,7 +946,7 @@ export function DevelopmentPageSkeleton() {
             <div className="h-7 w-44 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-64 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-36 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-36 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         {[1, 2, 3].map((i) => (
@@ -1035,7 +1035,7 @@ export function ClassesPageSkeleton() {
             <div className="h-7 w-28 bg-warm-200/60 rounded skeleton-shimmer" />
             <div className="h-4 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
           </div>
-          <div className="h-10 w-32 rounded-xl bg-white/70 border border-white/40 skeleton-shimmer" />
+          <div className="h-10 w-32 rounded-xl bg-cream-100/75 border border-warm-200/55 skeleton-shimmer" />
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">

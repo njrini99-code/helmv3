@@ -84,7 +84,7 @@ function FocusAreasSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="p-4 rounded-xl border border-white/30 bg-white/50 space-y-3"
+            className="p-4 rounded-xl border border-warm-200/45 bg-cream-100/60 space-y-3"
           >
             <div className="flex items-center gap-2">
               <SkeletonPulse className="w-8 h-8 rounded-lg" />
@@ -113,7 +113,7 @@ function InsightsPanelSkeleton() {
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="relative rounded-xl border border-warm-200/60 bg-white/50 p-4 overflow-hidden"
+            className="relative rounded-xl border border-warm-200/60 bg-cream-100/60 p-4 overflow-hidden"
           >
             <SkeletonPulse className="absolute top-0 left-0 right-0 h-0.5" />
             <div className="flex items-start gap-3">
@@ -147,7 +147,7 @@ function RecentRoundsSkeleton() {
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className="flex items-center gap-4 p-4 rounded-xl bg-white/50 border border-white/30"
+            className="flex items-center gap-4 p-4 rounded-xl bg-cream-100/60 border border-warm-200/45"
           >
             <SkeletonPulse className="w-14 h-14 rounded-xl flex-shrink-0" />
             <div className="flex-1 space-y-1">
@@ -171,7 +171,7 @@ export default function CoachHelmLoading() {
       <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-transparent pointer-events-none" />
 
       {/* Header skeleton */}
-      <div className="sticky top-0 z-20 border-b border-warm-200/30 relative bg-white/50 backdrop-blur-sm pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
+      <div className="sticky top-0 z-20 border-b border-warm-200/30 relative bg-cream-100/60 backdrop-blur-sm pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

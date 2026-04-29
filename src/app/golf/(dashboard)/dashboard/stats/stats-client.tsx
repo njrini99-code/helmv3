@@ -215,7 +215,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group glass-premium rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-white/80 active:bg-white/90 transition-[transform,box-shadow,background-color] duration-200 text-left"
+      className="w-full group glass-premium rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -278,7 +278,7 @@ function PlayerCard({
         </div>
 
         {/* Arrow indicator */}
-        <div className="hidden md:flex items-center pl-4 border-l border-white/30">
+        <div className="hidden md:flex items-center pl-4 border-l border-warm-200/45">
           <IconChevronRight size={20} className="text-warm-300 group-hover:text-warm-500 transition-colors" />
         </div>
       </div>
@@ -909,7 +909,7 @@ export default function StatsClient({
             const inactivePlayers = players.filter(p => !p.stats?.rounds_played || p.stats.rounds_played === 0);
 
             return (
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl border border-white/30 p-4 mb-4 shadow-glass-sm">
+              <div className="bg-cream-100/68 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 shadow-glass-sm">
                 <h3 className="text-xs font-semibold text-primary-800 uppercase tracking-wider mb-3">Team Insights</h3>
                 <div className="flex flex-wrap gap-4 text-sm">
                   {bestPlayer && (
@@ -950,7 +950,7 @@ export default function StatsClient({
           })()}
 
           {/* Filters Bar */}
-          <div className="bg-white/50 backdrop-blur-sm rounded-2xl border border-white/30 p-4 mb-4 shadow-glass-sm">
+          <div className="bg-cream-100/60 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 shadow-glass-sm">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex-1 min-w-[200px] relative">
                 <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
@@ -961,14 +961,14 @@ export default function StatsClient({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   enterKeyHint="search"
                   autoComplete="off"
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-white/40 bg-white/60 text-base md:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors"
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors"
                 />
               </div>
 
               <select
                 value={classFilter}
                 onChange={(e) => setClassFilter(e.target.value)}
-                className="px-4 py-2 rounded-xl border border-white/40 bg-white/60 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
+                className="px-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
               >
                 <option value="all">All Classes</option>
                 {graduationYears.map(year => (
@@ -979,7 +979,7 @@ export default function StatsClient({
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                className="px-4 py-2 rounded-xl border border-white/40 bg-white/60 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
+                className="px-4 py-2 rounded-xl border border-warm-200/55 bg-cream-100/68 text-base md:text-sm text-warm-700 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none"
               >
                 <option value="avg">Sort: Best Avg</option>
                 <option value="name">Sort: Name A-Z</option>
@@ -1051,7 +1051,7 @@ export default function StatsClient({
         <button
           onClick={handleRefresh}
           disabled={loadingDetailed || intelligenceRefreshing}
-          className="flex h-10 w-10 items-center justify-center rounded-xl border border-warm-200 bg-white/80 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-warm-200 bg-cream-100/82 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
           title={intelligenceRefreshing ? 'Running CoachHelm engine…' : 'Refresh stats'}
           aria-label="Refresh stats"
         >
@@ -1067,7 +1067,7 @@ export default function StatsClient({
         <button
           onClick={handleBackClick}
           aria-label="Go back"
-          className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-white/90 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl lg:flex"
+          className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-cream-50/92 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl lg:flex"
           style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
@@ -1238,7 +1238,7 @@ export default function StatsClient({
                 <a
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-white/60 border border-white/30 hover:bg-white/80 active:bg-white/90 hover:shadow-sm transition-colors duration-200 group"
+                  className="flex items-center gap-4 px-4 py-3 rounded-xl bg-cream-100/68 border border-warm-200/45 hover:bg-cream-100/82 active:bg-cream-50/92 hover:shadow-sm transition-colors duration-200 group"
                 >
                   <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center font-bold text-lg ring-1', scoreBg, scoreColor)}>
                     {round.total_score ?? '--'}

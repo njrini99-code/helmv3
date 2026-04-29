@@ -163,7 +163,7 @@ export function CalendarHeader({
           className={cn(
             'rounded-lg text-sm font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
             'text-warm-600 hover:text-warm-800',
-            'bg-white/50 hover:bg-white/70 border border-warm-200/40',
+            'bg-cream-100/60 hover:bg-cream-100/75 border border-warm-200/40',
             isMobile ? 'px-3 py-2 min-h-[40px]' : 'px-3 py-1.5',
           )}
         >
@@ -226,7 +226,7 @@ export function CalendarHeader({
             {tzDropdownOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-2xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-[0_12px_40px_rgba(16,24,40,0.14)] py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-2xl bg-cream-50/95 backdrop-blur-xl border border-warm-200/50 shadow-[0_12px_40px_rgba(16,24,40,0.14)] py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
               >
                 {secondaryTimezone && (
                   <>

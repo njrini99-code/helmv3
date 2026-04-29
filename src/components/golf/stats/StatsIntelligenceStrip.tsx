@@ -214,7 +214,7 @@ export function StatsIntelligenceStrip({
           {compositeDisplay != null && (
             <span
               className={cn(
-                'inline-flex items-baseline gap-1 text-sm font-semibold tabular-nums px-2.5 py-1 rounded-full border border-warm-200 bg-white/70',
+                'inline-flex items-baseline gap-1 text-sm font-semibold tabular-nums px-2.5 py-1 rounded-full border border-warm-200 bg-cream-100/75',
                 ratingColor(compositeDisplay),
               )}
             >

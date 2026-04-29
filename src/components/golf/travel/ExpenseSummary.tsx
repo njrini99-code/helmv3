@@ -111,7 +111,7 @@ export function ExpenseSummary({
     if (active && payload && payload.length && payload[0]) {
       const item = payload[0];
       return (
-        <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
+        <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
           <p className="text-sm font-medium text-warm-900">{item.name}</p>
           <p className="text-sm text-warm-600">{formatCurrency(item.value)}</p>
           <p className="text-xs text-warm-400">
@@ -164,7 +164,7 @@ export function ExpenseSummary({
         {/* Budget Progress Bar */}
         {totalBudget > 0 && (
           <div className="mt-4">
-            <div className="h-2 bg-white/50 rounded-full overflow-hidden">
+            <div className="h-2 bg-cream-100/60 rounded-full overflow-hidden">
               <motion.div
                 className={`h-full rounded-full ${
                   summary.total <= totalBudget ? 'bg-primary-500' : 'bg-red-500'

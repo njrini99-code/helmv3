@@ -148,7 +148,7 @@ export function InsightDrillDownModal({
               </span>
             </div>
             {insight.reasoning && (
-              <span className="text-xs px-2 py-0.5 bg-white/50 rounded-full text-warm-500">
+              <span className="text-xs px-2 py-0.5 bg-cream-100/60 rounded-full text-warm-500">
                 {insight.reasoning.reasoningChain?.length || 0} reasoning steps
               </span>
             )}

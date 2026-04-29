@@ -183,7 +183,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: 0.1 * i }}
-                className="flex items-center justify-between text-sm bg-white/50 rounded-lg px-3 py-2"
+                className="flex items-center justify-between text-sm bg-cream-100/60 rounded-lg px-3 py-2"
               >
                 <span className="text-warm-600">{factor.name}</span>
                 <span className={cn(

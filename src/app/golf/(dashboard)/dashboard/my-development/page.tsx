@@ -336,7 +336,7 @@ export default async function MyDevelopmentPage() {
                     return (
                       <div
                         key={fa.id}
-                        className="relative bg-white/50 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip"
+                        className="relative bg-cream-100/60 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip"
                       >
                         <ShineEffect />
                         <div className="p-5">

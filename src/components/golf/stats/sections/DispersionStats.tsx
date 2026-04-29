@@ -63,7 +63,7 @@ function getCoverageLabel(group: SprayChartShotGroup) {
 
 function DispersionEmptyState({ family }: { family: SprayChartShotFamily }) {
   return (
-    <div className="rounded-2xl border border-dashed border-warm-200 bg-white/70 px-5 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-warm-200 bg-cream-100/75 px-5 py-10 text-center">
       <div className="text-sm font-semibold text-warm-700">{FAMILY_LABELS[family]} spray chart unavailable</div>
       <p className="mt-1 text-sm text-warm-500">
         Complete more rounds with shot tracking to visualize real {family === 'driving' ? 'tee-shot' : 'approach-shot'} patterns.
@@ -117,7 +117,7 @@ function SummaryChip({
     ? 'border-primary-200/80 bg-primary-100/80 text-primary-700'
     : tone === 'warm'
       ? 'border-amber-200/80 bg-amber-100/80 text-amber-800'
-      : 'border-white/70 bg-white/70 text-warm-700';
+      : 'border-white/70 bg-cream-100/75 text-warm-700';
 
   return (
     <motion.div
@@ -333,7 +333,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
             : ratio > 0.66
               ? 'bg-amber-100 border-amber-200'
               : 'bg-warm-100 border-warm-200'
-          : 'bg-white/80 border-warm-100';
+          : 'bg-cream-100/82 border-warm-100';
 
         return (
           <div

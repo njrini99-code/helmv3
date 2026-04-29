@@ -149,7 +149,7 @@ export function InsightCard({
                 {confidencePercent}% confidence
               </span>
               {insight.reasoning && (
-                <span className="text-xs px-2 py-0.5 bg-white/50 rounded-full text-warm-500">
+                <span className="text-xs px-2 py-0.5 bg-cream-100/60 rounded-full text-warm-500">
                   AI Reasoning
                 </span>
               )}
@@ -192,7 +192,7 @@ export function InsightCard({
                       {insight.reasoning.reasoningChain.slice(0, 3).map((step, i) => (
                         <div
                           key={i}
-                          className="text-xs bg-white/60 rounded-lg p-2 border border-white"
+                          className="text-xs bg-cream-100/68 rounded-lg p-2 border border-white"
                         >
                           <span className="font-medium text-warm-600">
                             Step {step.stepNumber}:
@@ -213,7 +213,7 @@ export function InsightCard({
 
                 {/* Call to Action */}
                 {insight.callToAction && (
-                  <div className="p-3 bg-white/50 rounded-lg border border-white mb-4">
+                  <div className="p-3 bg-cream-100/60 rounded-lg border border-white mb-4">
                     <h4 className="text-xs font-medium text-warm-500 uppercase mb-1">
                       Suggested Action
                     </h4>
@@ -227,7 +227,7 @@ export function InsightCard({
                 {playerId && (
                   <button
                     onClick={handleViewDetails}
-                    className="w-full flex items-center justify-between p-3 mb-4 bg-white/70 hover:bg-white rounded-lg border border-warm-200 hover:border-primary-200 transition-all group"
+                    className="w-full flex items-center justify-between p-3 mb-4 bg-cream-100/75 hover:bg-white rounded-lg border border-warm-200 hover:border-primary-200 transition-all group"
                   >
                     <div className="flex items-center gap-2">
                       <IconSparkles size={16} className="text-primary-600" />
@@ -260,7 +260,7 @@ export function InsightCard({
                         e.stopPropagation();
                         onAction('dismiss');
                       }}
-                      className="flex items-center gap-2 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-white/50 active:bg-white/70 transition-colors"
+                      className="flex items-center gap-2 text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-cream-100/60 active:bg-cream-100/75 transition-colors"
                     >
                       <IconX size={14} />
                       Dismiss

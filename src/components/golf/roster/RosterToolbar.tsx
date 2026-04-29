@@ -54,8 +54,8 @@ export const RosterToolbar = memo(function RosterToolbar({
           onClick={handleToggleMenu}
           className={cn(
             'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
-            'bg-white/70 backdrop-blur-sm border border-warm-200/60 text-warm-700',
-            'hover:bg-white/90 hover:border-warm-300',
+            'bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 text-warm-700',
+            'hover:bg-cream-50/92 hover:border-warm-300',
             'transition-[color,background-color,transform] duration-150 active:scale-95',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
@@ -76,7 +76,7 @@ export const RosterToolbar = memo(function RosterToolbar({
               role="menu"
               className={cn(
                 'absolute left-0 top-full mt-1.5 z-40',
-                'bg-white/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
+                'bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
                 'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
                 'py-1.5 min-w-[200px]',
                 'origin-top-left animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180'
@@ -114,8 +114,8 @@ export const RosterToolbar = memo(function RosterToolbar({
           }}
           className={cn(
             'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
-            'bg-white/70 backdrop-blur-sm border border-warm-200/60 text-warm-700',
-            'hover:bg-white/90 hover:border-warm-300',
+            'bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 text-warm-700',
+            'hover:bg-cream-50/92 hover:border-warm-300',
             'transition-[color,background-color,transform] duration-150 active:scale-95',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}

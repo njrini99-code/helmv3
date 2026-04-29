@@ -722,7 +722,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-clip">
+          <div className="bg-cream-50/92 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-warm-200/45 overflow-clip">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />

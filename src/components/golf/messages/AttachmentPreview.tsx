@@ -125,7 +125,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
 
       {/* Upload Progress Overlay */}
       {status === 'uploading' && (
-        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center">
+        <div className="absolute inset-0 bg-cream-100/82 flex flex-col items-center justify-center">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '0ms' }} />
             <span className="w-1.5 h-1.5 rounded-full bg-primary-600 skeleton-shimmer" style={{ animationDelay: '150ms' }} />

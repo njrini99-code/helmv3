@@ -578,7 +578,7 @@ export function InsightsPageContent({
           onClick={handleRefresh}
           disabled={isRefreshing || isGenerating}
           className={cn(
-            'p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center',
+            'p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-cream-100/60 active:bg-warm-100 transition-all flex items-center justify-center',
             isRefreshing && 'animate-spin'
           )}
           title="Refresh insights"
@@ -589,7 +589,7 @@ export function InsightsPageContent({
 
         <a
           href="/golf/dashboard/settings/coaching-intelligence"
-          className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-warm-100 transition-all flex items-center justify-center"
+          className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg text-warm-500 hover:text-warm-700 hover:bg-cream-100/60 active:bg-warm-100 transition-all flex items-center justify-center"
           title="AI Settings"
         >
           <IconSettings size={18} />
@@ -638,7 +638,7 @@ export function InsightsPageContent({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-white/60 backdrop-blur-xl -mx-4 md:-mx-6 px-4 md:px-6 py-4 mb-6 lg:top-[89px]"
+          className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-cream-100/68 backdrop-blur-xl -mx-4 md:-mx-6 px-4 md:px-6 py-4 mb-6 lg:top-[89px]"
         >
           <div className="space-y-4">
             <InsightSearchBar
@@ -764,7 +764,7 @@ function TriageFilterStrip({
             onChange={(e) => onSelectPlayer(e.target.value || undefined)}
             className={cn(
               'min-h-[36px] px-3 py-1.5 text-sm',
-              'bg-white/80 backdrop-blur-sm border border-warm-200 rounded-lg',
+              'bg-cream-100/82 backdrop-blur-sm border border-warm-200 rounded-lg',
               'text-warm-900',
               'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',
               'transition-colors duration-200',
@@ -866,7 +866,7 @@ function ChipGroup<T extends string>({ label, options, selected, onToggle }: Chi
                 'min-h-[32px]',
                 isSelected
                   ? 'bg-primary-600 text-white border-primary-600 hover:bg-primary-700 active:bg-primary-800'
-                  : 'bg-white/70 text-warm-700 border-warm-200 hover:bg-white hover:border-warm-300 active:bg-warm-50',
+                  : 'bg-cream-100/75 text-warm-700 border-warm-200 hover:bg-white hover:border-warm-300 active:bg-warm-50',
               )}
             >
               {isSelected && <IconCheck size={12} />}
@@ -891,7 +891,7 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
   return (
     <div
       className={cn(
-        'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass',
+        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass',
         'p-10 text-center',
       )}
     >

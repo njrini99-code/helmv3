@@ -506,7 +506,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* Global drag overlay */}
       {isDragOver && (
         <div className="fixed inset-0 z-40 bg-primary-600/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border-2 border-dashed border-primary-400">
+          <div className="bg-cream-50/92 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border-2 border-dashed border-primary-400">
             <IconUpload size={48} className="mx-auto text-primary-600 mb-4" />
             <p className="text-xl font-semibold text-warm-900">Drop files to upload</p>
             <p className="text-sm text-warm-500 mt-1">Release to add files</p>
@@ -640,7 +640,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <button
                     key={folder}
                     onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
-                    className="group/folder flex items-center gap-3 p-3.5 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
+                    className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
                   >
                     <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center flex-shrink-0 group-hover/folder:bg-primary-100 transition-colors">
                       <IconFolder size={18} className="text-primary-600" />
@@ -669,7 +669,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 placeholder={currentFolder && currentFolder !== '' ? `Search in ${currentFolder}...` : 'Search documents...'}
                 enterKeyHint="search"
                 autoComplete="off"
-                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-white/60 backdrop-blur-sm transition-colors"
+                className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/60 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-100/68 backdrop-blur-sm transition-colors"
               />
               {searchQuery && (
                 <button
@@ -697,7 +697,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       'px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors',
                       categoryFilter === cat
                         ? 'bg-primary-600 text-white shadow-sm'
-                        : 'bg-white/80 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
+                        : 'bg-cream-100/82 text-warm-600 border border-warm-200 hover:bg-white hover:border-warm-300'
                     )}
                   >
                     {cat}
@@ -719,7 +719,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => { void triggerHaptic('light'); setShowSortMenu(!showSortMenu); }}
-                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-white/70 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-white/90 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 aria-haspopup="menu"
                 aria-expanded={showSortMenu}
               >
@@ -731,7 +731,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
                   <div
                     role="menu"
-                    className="absolute right-0 top-full mt-1.5 z-40 w-44 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                    className="absolute right-0 top-full mt-1.5 z-40 w-44 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
                   >
                     {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
                       <button
@@ -839,7 +839,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative glass-premium rounded-2xl overflow-clip hover:shadow-md hover:bg-white/80 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+                className="group relative glass-premium rounded-2xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}
@@ -889,7 +889,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }} />
                               <div
                                 role="menu"
-                                className="absolute right-0 top-full mt-1.5 z-40 w-56 bg-white/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                                className="absolute right-0 top-full mt-1.5 z-40 w-56 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
                               >
                                 <button
                                   role="menuitem"
@@ -1263,7 +1263,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       {/* ─── Delete Confirmation Modal ──────────────────────────── */}
       {deleteConfirmDoc && (
         <div className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-white/30 overflow-clip">
+          <div className="bg-cream-50/92 backdrop-blur-xl rounded-2xl max-w-sm w-full shadow-2xl border border-warm-200/45 overflow-clip">
             <div className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />

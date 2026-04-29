@@ -164,7 +164,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className={cn('rounded-2xl border border-dashed border-warm-300 bg-white/50 backdrop-blur-xl p-10', className)}
+        className={cn('rounded-2xl border border-dashed border-warm-300 bg-cream-100/60 backdrop-blur-xl p-10', className)}
       >
         <div className="flex flex-col items-center justify-center text-center">
           <motion.div
@@ -371,7 +371,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             exit={{ opacity: 0 }}
             className="space-y-4"
           >
-            <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5">
+            <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5">
               <h3 className="text-sm font-semibold text-warm-900 mb-3">Summary</h3>
               <p className="text-sm text-warm-600 leading-relaxed">{review.summary}</p>
               {review.primaryTakeaway && (
@@ -434,7 +434,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
   const gc = gradeColors[content.overallGrade] ?? gradeColors['C']!;
   const cleanSummary = sanitizeNaN(content.summary);
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-6 shadow-sm">
       <div className="flex items-start gap-5">
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
@@ -551,7 +551,7 @@ function ScorecardStrip({
   );
 
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconFlag size={14} />
         Scorecard
@@ -620,7 +620,7 @@ function ScoringDistribution({
   ].filter(s => s.count > 0);
 
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Scoring Distribution
@@ -663,7 +663,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
   const hasPutting = !!content.puttingBreakdown;
 
   return (
-    <details className="group rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
+    <details className="group rounded-2xl border border-warm-200 bg-cream-100/75 backdrop-blur-xl shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
       <summary
         className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none list-none hover:bg-warm-50/60 active:bg-warm-50 transition-colors"
         aria-label="Toggle stats detail"
@@ -699,7 +699,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
 /** Key Stats Grid */
 function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Key Stats
@@ -742,7 +742,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
   const range = max - min || 1;
 
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconActivity size={14} />
         Round Momentum
@@ -837,7 +837,7 @@ function GameBreakdownSection({
   if (!hasPutting && !hasDriving && !hasShortGame) return null;
 
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm overflow-clip shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm overflow-clip shadow-sm">
       {/* Putting */}
       {hasPutting && (
         <div className="p-5">
@@ -1084,7 +1084,7 @@ function HighlightsAndImprovements({
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
-                className="p-3.5 rounded-xl bg-white/80 border border-primary-100 shadow-sm"
+                className="p-3.5 rounded-xl bg-cream-100/82 border border-primary-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
@@ -1109,7 +1109,7 @@ function HighlightsAndImprovements({
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
-                className="p-3.5 rounded-xl bg-white/80 border border-amber-100 shadow-sm"
+                className="p-3.5 rounded-xl bg-cream-100/82 border border-amber-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-xs font-semibold text-warm-900">{formatLabel(area.area)}</div>
@@ -1128,7 +1128,7 @@ function HighlightsAndImprovements({
 /** Strokes to Gain Priority */
 function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconBolt size={14} className="text-blue-600" />
         Biggest Improvement Opportunities
@@ -1161,7 +1161,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
 /** Recommendations */
 function RecommendationsCard({ recs }: { recs: string[] }) {
   return (
-    <div className="rounded-2xl border border-warm-200 bg-white/80 backdrop-blur-sm p-5 shadow-sm">
+    <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
         <IconSparkles size={14} className="text-primary-600" />
         Practice Recommendations

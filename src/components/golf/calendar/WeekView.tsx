@@ -65,7 +65,7 @@ function DroppableTimeSlot({
         // Subtle alternating row tint instead of hard borders
         isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
         isCurrentDay && 'bg-primary-50/25',
-        'hover:bg-white/50 active:bg-white/70',
+        'hover:bg-cream-100/60 active:bg-cream-100/75',
         isOver && 'bg-primary-100/50'
       )}
     >
@@ -475,7 +475,7 @@ export function WeekView({
                           'border-b border-warm-200/[0.12]',
                           isEvenHour ? 'bg-white/30' : 'bg-warm-50/20',
                           isCurrentDay && 'bg-primary-50/25',
-                          'hover:bg-white/50 active:bg-white/70',
+                          'hover:bg-cream-100/60 active:bg-cream-100/75',
                         )}
                       />
                     );
@@ -585,7 +585,7 @@ export function WeekView({
           {/* Selected player indicator */}
           {selectedPlayerName && (
             <div
-              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full bg-white/80 backdrop-blur-md border border-primary-600/20 shadow-sm"
+              className="absolute top-3 left-16 z-20 px-3 py-1.5 rounded-full bg-cream-100/82 backdrop-blur-md border border-primary-600/20 shadow-sm"
             >
               <p className="text-xs font-medium text-primary-700">
                 Viewing {selectedPlayerName}&apos;s schedule

@@ -126,7 +126,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRo
           'absolute top-3 left-3 z-10 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
           isSelected
             ? 'bg-primary-500 border-primary-500 text-white'
-            : 'bg-white/80 border-warm-300 hover:border-warm-400',
+            : 'bg-cream-100/82 border-warm-300 hover:border-warm-400',
         )}
       >
         {isSelected && <IconCheck size={12} />}

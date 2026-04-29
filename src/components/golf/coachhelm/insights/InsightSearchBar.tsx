@@ -100,7 +100,7 @@ export function InsightSearchBar({
         enterKeyHint="search"
         className={cn(
           'w-full min-h-[44px] pl-10 pr-10 py-2.5 text-base lg:text-sm',
-          'bg-white/80 backdrop-blur-sm',
+          'bg-cream-100/82 backdrop-blur-sm',
           'border border-warm-200 rounded-xl',
           'text-warm-900 placeholder:text-warm-400',
           'focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30',

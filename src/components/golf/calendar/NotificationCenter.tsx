@@ -138,7 +138,7 @@ export function NotificationCenter() {
       {/* Bell Button */}
       <button
         onClick={handleToggle}
-        className="relative p-2.5 rounded-xl bg-white/70 backdrop-blur-sm border border-white/30 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-white/90 hover:shadow-md active:scale-95 transition-all duration-200"
+        className="relative p-2.5 rounded-xl bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-cream-50/92 hover:shadow-md active:scale-95 transition-all duration-200"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
         aria-expanded={isOpen}
       >
@@ -175,7 +175,7 @@ export function NotificationCenter() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
-              className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[380px] bg-white/90 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-[0_12px_40px_rgba(16,24,40,0.18)] z-50 overflow-clip"
+              className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[380px] bg-cream-50/92 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-[0_12px_40px_rgba(16,24,40,0.18)] z-50 overflow-clip"
             >
               {/* Header */}
               <div className="relative px-4 py-3 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15 flex items-center justify-between">
@@ -275,7 +275,7 @@ function NotificationGroup({
 }) {
   return (
     <section>
-      <div className="px-4 pt-3 pb-1.5 sticky top-0 bg-white/90 backdrop-blur-xl z-10">
+      <div className="px-4 pt-3 pb-1.5 sticky top-0 bg-cream-50/92 backdrop-blur-xl z-10">
         <p className="text-caption-2 font-semibold text-warm-500 uppercase tracking-[0.08em]">
           {label}
         </p>
@@ -343,7 +343,7 @@ function NotificationRow({
         onClick={() => onSelect(notification)}
         className={cn(
           'relative w-full px-4 py-3 flex gap-3 text-left',
-          'bg-white/90 hover:bg-warm-50 active:bg-warm-100 transition-colors',
+          'bg-cream-50/92 hover:bg-warm-50 active:bg-warm-100 transition-colors',
           !notification.read && 'bg-primary-50/40',
         )}
       >

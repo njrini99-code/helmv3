@@ -90,7 +90,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 p-3">
+    <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 p-3">
       <p className="text-xs font-medium text-warm-500 mb-1">{label}</p>
       {payload.map((entry, index) => (
         <p key={index} className="text-sm font-semibold" style={{ color: entry.color }}>

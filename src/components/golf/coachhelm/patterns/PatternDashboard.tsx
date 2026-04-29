@@ -199,7 +199,7 @@ export function PatternDashboard({
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
         {/* View mode tabs */}
-        <div className="flex bg-white/50 rounded-lg p-1 border border-white/20 overflow-x-auto scrollbar-none">
+        <div className="flex bg-cream-100/60 rounded-lg p-1 border border-white/20 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setViewMode('all')}
             className={cn(

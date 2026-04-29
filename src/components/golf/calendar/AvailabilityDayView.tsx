@@ -115,7 +115,7 @@ export function AvailabilityDayView({
   }
 
   return (
-    <div className="bg-white/85 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-glass overflow-hidden">
+    <div className="bg-cream-50/88 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-glass overflow-hidden">
       {/* Premium header */}
       <header className="relative px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/20">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -144,7 +144,7 @@ export function AvailabilityDayView({
                 <div
                   key={player.id}
                   role="listitem"
-                  className="inline-flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-white/70 border border-warm-200/70 shadow-sm"
+                  className="inline-flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-cream-100/75 border border-warm-200/70 shadow-sm"
                   title={`${player.first_name} ${player.last_name}`}
                 >
                   <span

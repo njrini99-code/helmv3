@@ -526,7 +526,7 @@ export function OfflineSyncStatus({
             ? 'bg-amber-50/95 border-amber-200'
             : syncError
               ? 'bg-red-50/95 border-red-200'
-              : 'bg-white/95 border-warm-200'
+              : 'bg-cream-50/95 border-warm-200'
         )}
       >
         <div className="flex items-start gap-3">
