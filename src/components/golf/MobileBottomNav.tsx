@@ -50,16 +50,14 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40 lg:hidden',
         'min-h-[var(--golf-mobile-bottom-nav-offset)]',
-        // iOS-native tab bar: heavy backdrop blur + subtle top hairline
-        'bg-cream-50/88 backdrop-blur-xl [-webkit-backdrop-filter:saturate(180%)_blur(20px)]',
-        'border-t border-warm-200/40',
-        'shadow-[0_-0.5px_0_0_rgba(0,0,0,0.04)]',
+        'bg-cream-50/92 backdrop-blur-xl',
+        'border-t border-warm-200/35',
         'will-change-transform',
         isVisible ? '' : 'translate-y-full pointer-events-none'
       )}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+      style={{ paddingBottom: 'env(safe-area-inset-bottom)', transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)' }}
     >
-      <div className="flex items-center justify-around px-2 py-1">
+      <div className="flex items-center justify-around px-2 py-1.5">
         {navItems.map((item) => {
           const isActive = pathname === item.href ||
             (item.href !== '/golf/dashboard' && pathname.startsWith(item.href));
@@ -78,20 +76,15 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                 }
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl transition-colors duration-200',
-                'min-w-[60px] min-h-[48px]',
-                'active:scale-95 touch-manipulation',
-                isActive
-                  ? 'text-primary-600'
-                  : 'text-warm-400 hover:text-warm-600'
+                'flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'min-w-[60px] min-h-[48px] touch-manipulation',
+                isActive ? 'text-primary-700' : 'text-warm-400 hover:text-warm-600'
               )}
               aria-current={isActive ? 'page' : undefined}
             >
               <div className={cn(
-                'relative p-1.5 rounded-xl transition-colors duration-200',
-                isActive
-                  ? 'bg-primary-100/80 text-primary-600 shadow-sm'
-                  : 'text-warm-400'
+                'relative px-2.5 py-1 rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                isActive ? 'bg-primary-50/85 text-primary-700' : 'text-warm-400'
               )}>
                 {item.icon}
                 {item.label === 'Messages' && badges.messages > 0 && (
@@ -102,12 +95,12 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
                   </span>
                 )}
                 {(item.label === 'Insights' || item.label === 'Alerts') && badges.total > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-white" role="status" aria-label="New insights available" />
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-primary-500 ring-2 ring-cream-50" role="status" aria-label="New insights available" />
                 )}
               </div>
               <span className={cn(
-                'text-label font-medium transition-colors',
-                isActive ? 'text-primary-600' : 'text-warm-500'
+                'text-[10px] font-medium tracking-[0.01em] transition-colors duration-500',
+                isActive ? 'text-primary-700' : 'text-warm-500'
               )}>
                 {item.label}
               </span>

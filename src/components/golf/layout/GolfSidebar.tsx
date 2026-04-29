@@ -149,13 +149,14 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     <aside
       aria-label="Main navigation"
       className={cn(
-        // Dark sidebar per Batch 3 spec
-        'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
+        // Warm-charcoal sidebar — a sculpted basalt block beside the
+        // linen canvas. The hue (28,25,23) has the same warm cast as
+        // warm-900, so the cream page reads as the bright element and
+        // the rail recedes.
+        'bg-[rgba(28,25,23,0.96)] backdrop-blur-xl',
         'flex flex-col relative',
-        'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
         'will-change-[width]',
-        // Mobile: fill the parent drawer wrapper (which is already sized + safe-area aware).
-        // Desktop: fixed sidebar with its own width + h-dvh.
         isMobile
           ? 'w-full h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
           : cn(
@@ -171,29 +172,28 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
             'absolute -right-3 top-7 z-50',
-            'w-6 h-6 rounded-full bg-warm-900 border border-white/20',
+            'w-6 h-6 rounded-full bg-[rgba(28,25,23,0.96)] ring-1 ring-white/15',
             'flex items-center justify-center',
-            'shadow-lg hover:bg-white/10 hover:border-warm-200/45',
-            'transition-colors duration-200',
-            'focus:outline-none focus:ring-2 focus:ring-primary-500/40'
+            'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-white/8',
+            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
         >
           {isCollapsed ? (
-            <IconChevronRight size={14} className="text-white/70" aria-hidden="true" />
+            <IconChevronRight size={14} className="text-white/65" aria-hidden="true" />
           ) : (
-            <IconChevronLeft size={14} className="text-white/70" aria-hidden="true" />
+            <IconChevronLeft size={14} className="text-white/65" aria-hidden="true" />
           )}
         </button>
       )}
 
       {/* Logo */}
       <div className={cn(
-        'h-16 flex items-center border-b border-white/10',
-        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'h-16 flex items-center border-b border-white/[0.06]',
+        'transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
-        <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-2.5" onClick={handleNavClick}>
-          {/* Logo icon */}
+        <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-3" onClick={handleNavClick}>
           <div className="w-9 h-9 flex items-center justify-center flex-shrink-0">
             <Image
               src="/helm-golf-logo-transparent.png"
@@ -205,10 +205,9 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
               unoptimized
             />
           </div>
-          {/* Brand text (hidden when collapsed) */}
           {!isCollapsed && (
-            <span className="text-lg font-bold leading-none tracking-tight text-white">
-              Golf<span className="text-primary-400">Helm</span>
+            <span className="text-[17px] font-medium leading-none tracking-[-0.012em] text-white">
+              Golf<span className="text-primary-400/85">Helm</span>
             </span>
           )}
         </Link>
@@ -217,33 +216,32 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {/* Team/User Info */}
       <div
         className={cn(
-          'border-b border-white/10 overflow-hidden transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 py-4'
+          'border-b border-white/[0.06] overflow-hidden transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 py-5'
         )}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary-400/85 to-primary-700/95 flex items-center justify-center flex-shrink-0">
             {avatarUrl ? (
               <Image
                 src={avatarUrl}
                 alt={userName || 'User avatar'}
-                width={36}
-                height={36}
-                className="w-9 h-9 rounded-lg object-cover"
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-2xl object-cover"
               />
             ) : (
-              <span className="text-white font-semibold text-sm">
+              <span className="text-white font-medium text-[13px] tracking-[-0.005em]">
                 {userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white truncate">
+            <p className="text-[14px] font-medium text-white truncate tracking-[-0.005em]">
               {userName || 'User'}
             </p>
-            <p className="text-xs text-white/50 truncate flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary-500" aria-hidden="true" />
-              <span className="sr-only">Online - </span>
+            <p className="text-[11.5px] text-white/45 truncate flex items-center gap-1.5">
+              <span className="w-1 h-1 rounded-full bg-primary-400/80" aria-hidden />
               {teamName || 'Golf Team'}
             </p>
           </div>
@@ -260,9 +258,9 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         )}
       >
         {/* Primary Navigation */}
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-4 pt-1 pb-3 text-[10.5px] font-medium text-white/35 uppercase tracking-[0.12em] whitespace-nowrap">
               {userRole === 'coach' ? 'Team Management' : 'My Golf'}
             </p>
           )}
@@ -279,22 +277,18 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-footnote font-medium touch-manipulation overflow-hidden',
-                  'transition-colors duration-150 ease-out will-change-transform',
-                  'active:scale-[0.98]',
+                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+                  'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   active
-                    ? 'bg-white/10 text-primary-400'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white/90',
-                  isCollapsed ? 'justify-center px-2' : 'px-3'
+                    ? 'bg-white/[0.07] text-white'
+                    : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+                  isCollapsed ? 'justify-center px-2' : 'px-3.5'
                 )}
               >
-                {active && (
-                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
-                )}
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
+                <Icon size={17} className={cn('flex-shrink-0', active ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
                 <span
                   className={cn(
-                    'whitespace-nowrap transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                    'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                     isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                   )}
                 >
@@ -306,20 +300,20 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   </span>
                 )}
                 {item.badge && isCollapsed && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-warm-900" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-[rgba(28,25,23,0.96)]" />
                 )}
               </Link>
             );
           })}
         </div>
 
-        {/* Divider */}
-        <div className="my-4 mx-3 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" aria-hidden="true" />
+        {/* Divider — minimal hairline, no gradient */}
+        <div className="my-5 mx-4 h-px bg-white/[0.05]" aria-hidden />
 
         {/* Secondary Navigation */}
-        <div className="space-y-0.5">
+        <div className="space-y-1">
           {!isCollapsed && (
-            <p className="px-3 py-2 text-xs font-semibold text-white/40 uppercase tracking-wider whitespace-nowrap">
+            <p className="px-4 pt-1 pb-3 text-[10.5px] font-medium text-white/35 uppercase tracking-[0.12em] whitespace-nowrap">
               {userRole === 'coach' ? 'More' : 'Team'}
             </p>
           )}
@@ -336,21 +330,18 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-footnote font-medium touch-manipulation overflow-hidden',
-                  'transition-colors duration-150 ease-out active:scale-[0.98]',
+                  'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+                  'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   active
-                    ? 'bg-white/10 text-primary-400'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white/90',
-                  isCollapsed ? 'justify-center px-2' : 'px-3'
+                    ? 'bg-white/[0.07] text-white'
+                    : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+                  isCollapsed ? 'justify-center px-2' : 'px-3.5'
                 )}
               >
-                {active && (
-                  <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
-                )}
-                <Icon size={18} className={cn('flex-shrink-0', active ? 'text-primary-400' : 'text-white/50')} aria-hidden="true" />
+                <Icon size={17} className={cn('flex-shrink-0', active ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
                 <span
                   className={cn(
-                    'whitespace-nowrap transition-opacity duration-300',
+                    'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                     isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                   )}
                 >
@@ -362,7 +353,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                   </span>
                 )}
                 {item.badge && isCollapsed && (
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-warm-900" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary-500 ring-2 ring-[rgba(28,25,23,0.96)]" />
                 )}
               </Link>
             );
@@ -372,8 +363,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
 
       {/* Bottom Section */}
       <div className={cn(
-        'border-t border-white/10 space-y-0.5',
-        'transition-[padding] duration-300',
+        'border-t border-white/[0.06] space-y-1',
+        'transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
         <Link
@@ -384,21 +375,18 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-label={isCollapsed ? 'Settings' : undefined}
           aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
           className={cn(
-            'relative flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-footnote font-medium touch-manipulation overflow-hidden',
-            'transition-colors duration-150 ease-out active:scale-[0.98]',
+            'relative flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
             pathname.startsWith('/golf/dashboard/settings')
-              ? 'bg-white/10 text-primary-400'
-              : 'text-white/60 hover:bg-white/5 hover:text-white/90',
-            isCollapsed ? 'justify-center px-2' : 'px-3'
+              ? 'bg-white/[0.07] text-white'
+              : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
+            isCollapsed ? 'justify-center px-2' : 'px-3.5'
           )}
         >
-          {pathname.startsWith('/golf/dashboard/settings') && (
-            <div className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-primary-500" />
-          )}
-          <IconSettings size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
+          <IconSettings size={17} className={cn('flex-shrink-0', pathname.startsWith('/golf/dashboard/settings') ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
           <span
             className={cn(
-              'whitespace-nowrap transition-opacity duration-300',
+              'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
             )}
           >
@@ -411,16 +399,16 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           title={isCollapsed ? 'Sign out' : undefined}
           aria-label={isCollapsed ? (isSigningOut ? 'Signing out' : 'Sign out') : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-3 lg:py-2.5 rounded-[10px] text-footnote font-medium touch-manipulation',
-            'text-white/60 hover:bg-sf-red/10 hover:text-sf-red',
-            'transition-colors duration-150 ease-out disabled:opacity-50 active:scale-[0.98]',
-            isCollapsed ? 'justify-center px-2' : 'px-3'
+            'w-full flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
+            'text-white/55 hover:bg-red-500/8 hover:text-red-400',
+            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] disabled:opacity-50',
+            isCollapsed ? 'justify-center px-2' : 'px-3.5'
           )}
         >
-          <IconLogout size={18} className="flex-shrink-0 text-white/50" aria-hidden="true" />
+          <IconLogout size={17} className="flex-shrink-0 text-white/45" aria-hidden="true" />
           <span
             className={cn(
-              'whitespace-nowrap transition-opacity duration-300',
+              'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
             )}
           >

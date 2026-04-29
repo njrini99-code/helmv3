@@ -103,17 +103,16 @@ export function CalendarHeader({
   };
 
   return (
-    <header className="flex items-center justify-between gap-2 px-4 md:px-6 py-3 md:py-4 flex-shrink-0 min-w-0">
+    <header className="flex items-center justify-between gap-3 px-4 md:px-6 py-4 md:py-5 flex-shrink-0 min-w-0">
       {/* Left: Title + Nav */}
-      <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-        {/* Mobile hamburger menu */}
+      <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
         <button
           type="button"
           onClick={toggleMobile}
           className={cn(
-            'lg:hidden p-2.5 -ml-2 rounded-xl',
-            'text-warm-500 hover:text-warm-700 hover:bg-warm-100/80',
-            'transition-colors duration-150 active:scale-95',
+            'lg:hidden p-2.5 -ml-2 rounded-2xl',
+            'text-warm-500 hover:text-warm-700 hover:bg-warm-100/65',
+            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
           aria-label="Open navigation menu"
@@ -121,21 +120,21 @@ export function CalendarHeader({
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Title — larger, bolder */}
-        <h2 className="text-base md:text-xl font-bold text-warm-900 tracking-tight truncate min-w-0">
+        {/* Editorial title — sculptural, light weight */}
+        <h2 className="text-[20px] md:text-[26px] font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
           {getTitle()}
         </h2>
 
-        {/* Navigation — minimal glass arrows */}
+        {/* Navigation — borderless arrows */}
         <div className="flex items-center gap-0.5 ml-1">
           <button
             type="button"
             onClick={() => onNavigate('prev')}
             aria-label={`Previous ${view}`}
             className={cn(
-              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
-              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
-              isMobile ? 'w-12 h-12' : 'w-8 h-8',
+              'rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'text-warm-500 hover:text-warm-800 hover:bg-cream-100/70',
+              isMobile ? 'w-10 h-10' : 'w-9 h-9',
               'flex items-center justify-center'
             )}
           >
@@ -146,9 +145,9 @@ export function CalendarHeader({
             onClick={() => onNavigate('next')}
             aria-label={`Next ${view}`}
             className={cn(
-              'rounded-lg transition-[color,background-color,transform] duration-150 active:scale-95',
-              'text-warm-500 hover:text-warm-700 hover:bg-warm-100/60',
-              isMobile ? 'w-12 h-12' : 'w-8 h-8',
+              'rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'text-warm-500 hover:text-warm-800 hover:bg-cream-100/70',
+              isMobile ? 'w-10 h-10' : 'w-9 h-9',
               'flex items-center justify-center'
             )}
           >
@@ -156,16 +155,10 @@ export function CalendarHeader({
           </button>
         </div>
 
-        {/* Today Button — clean pill */}
         <button
           type="button"
           onClick={() => onNavigate('today')}
-          className={cn(
-            'rounded-lg text-sm font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
-            'text-warm-600 hover:text-warm-800',
-            'bg-cream-100/60 hover:bg-cream-100/75 border border-warm-200/40',
-            isMobile ? 'px-3 py-2 min-h-[40px]' : 'px-3 py-1.5',
-          )}
+          className="pill-soft"
         >
           Today
         </button>
@@ -173,12 +166,12 @@ export function CalendarHeader({
 
       {/* Right: View Toggle + Add Event */}
       <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
-        {/* View Toggle — glass segment control (hidden on mobile) */}
+        {/* View Toggle — soft segmented control */}
         {!isMobile && (
           <div
             role="radiogroup"
             aria-label="Calendar view"
-            className="inline-flex rounded-xl p-1 bg-warm-100/60 border border-warm-300/20"
+            className="inline-flex rounded-full p-1 bg-cream-100/70 ring-1 ring-warm-200/50"
           >
             {(['day', 'week', 'month'] as const).map((v) => (
               <button
@@ -188,10 +181,10 @@ export function CalendarHeader({
                 aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
-                  'px-3.5 py-1.5 text-footnote font-medium rounded-lg transition-[color,background-color,box-shadow] duration-200',
+                  'px-4 py-1.5 text-[12.5px] font-medium rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   view === v
-                    ? 'bg-white text-warm-900 shadow-sm'
-                    : 'text-warm-400 hover:text-warm-600'
+                    ? 'bg-cream-50 text-warm-900 shadow-[0_1px_2px_rgba(58,50,40,0.05),0_4px_10px_rgba(58,50,40,0.04)]'
+                    : 'text-warm-500 hover:text-warm-700'
                 )}
               >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -210,15 +203,15 @@ export function CalendarHeader({
               aria-haspopup="menu"
               aria-expanded={tzDropdownOpen}
               className={cn(
-                'flex items-center gap-1.5 rounded-lg text-footnote font-medium transition-[color,background-color,transform] duration-150 active:scale-95',
+                'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                 secondaryTimezone
-                  ? 'px-2.5 py-1.5 bg-primary-50 text-primary-700 border border-primary-200/60'
-                  : 'px-2 py-1.5 text-warm-400 hover:text-warm-600 hover:bg-warm-100/60'
+                  ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
+                  : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
               )}
             >
               <Globe className="w-3.5 h-3.5" />
               {secondaryTimezone && (
-                <span className="text-xs">
+                <span className="text-[11.5px]">
                   {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
                 </span>
               )}
@@ -226,7 +219,7 @@ export function CalendarHeader({
             {tzDropdownOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-full mt-1.5 z-50 w-48 rounded-2xl bg-cream-50/95 backdrop-blur-xl border border-warm-200/50 shadow-[0_12px_40px_rgba(16,24,40,0.14)] py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+                className="absolute right-0 top-full mt-2 z-50 w-48 rounded-2xl surface-stone py-2 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-300"
               >
                 {secondaryTimezone && (
                   <>
@@ -234,11 +227,11 @@ export function CalendarHeader({
                       type="button"
                       role="menuitem"
                       onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(null); setTzDropdownOpen(false); }}
-                      className="w-full text-left px-3 py-2.5 min-h-[40px] text-[14px] font-medium text-warm-500 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
+                      className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-warm-500 hover:bg-cream-50/70 transition-colors duration-300"
                     >
                       Remove overlay
                     </button>
-                    <div className="h-px bg-warm-200/50 my-1" />
+                    <div className="h-px bg-warm-200/35 my-1 mx-4" />
                   </>
                 )}
                 {TZ_OPTIONS
@@ -250,10 +243,10 @@ export function CalendarHeader({
                     role="menuitem"
                     onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(tz.value); setTzDropdownOpen(false); }}
                     className={cn(
-                      'w-full text-left px-3 py-2.5 min-h-[40px] text-[14px] transition-colors',
+                      'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300',
                       secondaryTimezone === tz.value
-                        ? 'bg-primary-50/70 text-primary-700 font-semibold'
-                        : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
+                        ? 'bg-primary-50/55 text-primary-700 font-medium'
+                        : 'text-warm-700 hover:bg-cream-50/70'
                     )}
                   >
                     {tz.label}
@@ -264,14 +257,19 @@ export function CalendarHeader({
           </div>
         )}
 
-        {/* Add Event Button — brand green (hidden on mobile, uses FAB) */}
+        {/* Add Event — soft primary pill */}
         {onAddEvent && !isMobile && (
           <button
             type="button"
             onClick={onAddEvent}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white active:scale-95 transition-[transform,box-shadow] duration-150 bg-gradient-to-br from-primary-500 to-primary-600 shadow-[0_2px_10px_rgba(22,163,74,0.3),inset_0_1px_0_rgba(255,255,255,0.2)]"
+            className={cn(
+              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+              'bg-primary-600/95 text-white',
+              'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
+              'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
+            )}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />
             Add Event
           </button>
         )}
