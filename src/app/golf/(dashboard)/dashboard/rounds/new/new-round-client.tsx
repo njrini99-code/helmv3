@@ -1488,7 +1488,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
               {/* ── Course Selection ── */}
               {!loadingSavedCourses && savedCourses.length > 0 && (
-                <div className="rounded-2xl border border-white/30 bg-white/60 backdrop-blur-sm p-5 shadow-sm">
+                <div className="rounded-2xl border border-warm-200/45 bg-cream-100/68 backdrop-blur-sm p-5 shadow-sm">
                   {/* Header with mode toggle */}
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -1569,7 +1569,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             placeholder="Search saved courses..."
                             enterKeyHint="search"
                             autoComplete="off"
-                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200/70 bg-white/80 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-colors"
+                            className="w-full pl-9 pr-4 py-2 rounded-lg border border-warm-200/70 bg-cream-100/82 text-base md:text-sm text-warm-700 placeholder:text-warm-400 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none transition-colors"
                           />
                         </div>
                       )}
@@ -1594,7 +1594,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                                 className={`w-full text-left rounded-xl border p-3.5 transition-[color,background-color,border-color,box-shadow] duration-150 ${
                                   isSelected
                                     ? 'border-primary-400/60 bg-primary-50/60 ring-2 ring-primary-500/20 shadow-sm'
-                                    : 'border-warm-200/70 bg-white/70 hover:border-warm-300 hover:bg-white/90 hover:shadow-sm'
+                                    : 'border-warm-200/70 bg-cream-100/75 hover:border-warm-300 hover:bg-cream-50/92 hover:shadow-sm'
                                 }`}
                               >
                                 <div className="flex items-start justify-between gap-3">
@@ -1731,7 +1731,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         onChange={(e) => setSetupData({ ...setupData, courseName: e.target.value })}
                         enterKeyHint="next"
                         autoComplete="off"
-                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                        className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                         placeholder="Pebble Beach Golf Links"
                         required
                       />
@@ -1749,7 +1749,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           onChange={(e) => setSetupData({ ...setupData, courseCity: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="Pebble Beach"
                         />
                       </div>
@@ -1764,7 +1764,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           onChange={(e) => setSetupData({ ...setupData, courseState: e.target.value })}
                           enterKeyHint="next"
                           autoComplete="off"
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="CA"
                           maxLength={2}
                         />
@@ -1785,7 +1785,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           value={setupData.courseRating}
                           onChange={(e) => setSetupData({ ...setupData, courseRating: e.target.value })}
                           onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="72.1"
                         />
                       </div>
@@ -1801,7 +1801,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           value={setupData.courseSlope}
                           onChange={(e) => setSetupData({ ...setupData, courseSlope: e.target.value })}
                           onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                           placeholder="133"
                           aria-label="Course slope rating"
                         />
@@ -1814,7 +1814,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           id="teesPlayed"
                           value={setupData.teesPlayed}
                           onChange={(e) => setSetupData({ ...setupData, teesPlayed: e.target.value })}
-                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-white/80 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
+                          className="w-full px-4 py-2.5 rounded-lg border border-warm-200 bg-cream-100/82 focus:ring-2 focus:ring-primary-600 focus:border-transparent outline-none transition-colors"
                         >
                           <option>Championship</option>
                           <option>Black</option>
@@ -1834,7 +1834,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150 ${
                           saveCourseChecked
                             ? 'border-primary-300/60 bg-primary-50/50'
-                            : 'border-warm-200/70 bg-white/50 hover:bg-white/70'
+                            : 'border-warm-200/70 bg-white/50 hover:bg-cream-100/75'
                         }`}
                       >
                         <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${
@@ -1875,7 +1875,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           setSetupData(prev => ({ ...prev, roundType: 'qualifier' }));
                           setSelectedQualifierId(q.id);
                         }}
-                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-white/80 hover:bg-white hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
+                        className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-cream-100/82 hover:bg-white hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
                       >
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-semibold text-warm-900 truncate">{q.name}</p>
@@ -2244,7 +2244,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               activeProgressHoleRef.current = 0;
             }
           }}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/90 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200 text-sm font-medium text-warm-600 hover:bg-white transition-colors shadow-sm"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

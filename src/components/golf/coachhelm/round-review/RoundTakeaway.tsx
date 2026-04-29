@@ -137,7 +137,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
       <section
         data-testid="round-takeaway-empty"
         aria-label="No standout takeaway from this round"
-        className="rounded-2xl border border-warm-200 bg-white/70 backdrop-blur-xl p-5 shadow-sm"
+        className="rounded-2xl border border-warm-200 bg-cream-100/75 backdrop-blur-xl p-5 shadow-sm"
       >
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0 text-warm-500">

@@ -159,7 +159,7 @@ export function V2ReviewSummary({
           className="space-y-4"
         >
           {/* AI Summary Card */}
-          <div className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm">
+          <div className="rounded-2xl bg-cream-100/82 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm">
             <div className="px-5 py-3.5 bg-gradient-to-r from-primary-50 to-primary-50 border-b border-primary-100/60 flex items-center gap-3">
               <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-sm shadow-primary-500/20">
                 <IconSparkles size={14} className="text-white" />

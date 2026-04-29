@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { StatusPill } from '@/components/ui/status-pill';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
@@ -141,18 +142,23 @@ function getEventTypeStyle(type: string) {
   return styles[type] || { bg: 'bg-warm-50', text: 'text-warm-700', dot: 'bg-warm-500', label: type };
 }
 
-function getTripStatus(trip: TripData, now?: Date | null) {
-  if (!now) return { label: 'Upcoming', color: 'bg-warm-100 text-warm-600' };
+type TripStatusTone = 'warm' | 'primary' | 'amber' | 'blue';
+function getTripStatus(trip: TripData, now?: Date | null): {
+  label: string;
+  tone: TripStatusTone;
+  pulse?: boolean;
+} {
+  if (!now) return { label: 'Upcoming', tone: 'warm' };
   const departure = new Date(trip.departure_date);
   const returnDate = trip.return_date ? new Date(trip.return_date) : null;
   const diffMs = departure.getTime() - now.getTime();
   const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-  if (returnDate && now > returnDate) return { label: 'Completed', color: 'bg-warm-100 text-warm-500' };
-  if (now >= departure && returnDate && now <= returnDate) return { label: 'In Transit', color: 'bg-primary-100 text-primary-700', pulse: true };
-  if (diffDays <= 3 && diffDays > 0) return { label: `${diffDays}d away`, color: 'bg-amber-100 text-amber-700' };
-  if (diffDays <= 7 && diffDays > 0) return { label: `${diffDays}d away`, color: 'bg-blue-100 text-blue-700' };
-  return { label: 'Upcoming', color: 'bg-warm-100 text-warm-600' };
+  if (returnDate && now > returnDate) return { label: 'Completed', tone: 'warm' };
+  if (now >= departure && returnDate && now <= returnDate) return { label: 'In Transit', tone: 'primary', pulse: true };
+  if (diffDays <= 3 && diffDays > 0) return { label: `${diffDays}d away`, tone: 'amber' };
+  if (diffDays <= 7 && diffDays > 0) return { label: `${diffDays}d away`, tone: 'blue' };
+  return { label: 'Upcoming', tone: 'warm' };
 }
 
 // ============================================================================
@@ -201,9 +207,14 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
               <h3 className="font-semibold text-warm-900 truncate">{trip.event_name}</h3>
-              <span className={cn('flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium', status.color)}>
+              <StatusPill
+                tone={status.tone}
+                size="xs"
+                dot={status.tone !== 'warm'}
+                className={cn('flex-shrink-0', status.pulse && 'animate-pulse')}
+              >
                 {status.label}
-              </span>
+              </StatusPill>
             </div>
 
             <div className="flex items-center gap-1.5 text-sm text-warm-500 mb-2">
@@ -649,22 +660,28 @@ function OverviewSection({
 }) {
   return (
     <m.div variants={fadeUp} className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-warm-400">{icon}</span>
-          <h2 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">{title}</h2>
-          <span className="text-xs text-warm-400 font-medium">{count}</span>
+      <div className="flex items-end justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-warm-100/80 ring-1 ring-warm-200/60 text-warm-600 flex-shrink-0">
+            {icon}
+          </span>
+          <h2 className="font-[family-name:var(--font-fraunces)] text-[20px] leading-tight font-semibold tracking-[-0.01em] text-warm-900 truncate">
+            {title}
+          </h2>
+          <StatusPill tone="warm" size="xs" className="flex-shrink-0">
+            {count}
+          </StatusPill>
           {urgentCount !== undefined && urgentCount > 0 && (
-            <span className="px-1.5 py-0.5 text-micro font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
-              {urgentCount}
-            </span>
+            <StatusPill tone="rose" variant="solid" size="xs" className="flex-shrink-0">
+              {urgentCount} urgent
+            </StatusPill>
           )}
         </div>
         <button
           onClick={onViewAll}
-          className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
+          className="text-[12px] font-semibold text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
         >
-          View all
+          View all →
         </button>
       </div>
       {children}

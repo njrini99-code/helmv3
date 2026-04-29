@@ -41,7 +41,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.25, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-      className="rounded-2xl bg-white/80 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm"
+      className="rounded-2xl bg-cream-100/82 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm"
     >
       {/* Header */}
       <div className="px-5 py-3.5 bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-100/60 flex items-center gap-3">
