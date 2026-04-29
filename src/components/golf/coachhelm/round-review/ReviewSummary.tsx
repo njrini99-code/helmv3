@@ -12,7 +12,7 @@ export function ReviewSummary({ review }: ReviewSummaryProps) {
       className="rounded-xl border border-primary-200 bg-primary-50/55 p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.6s both' }}
     >
-      <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-medium text-warm-900 mb-3 flex items-center gap-2">
         <span className="text-lg">🧠</span>
         CoachHelm Summary
       </h3>

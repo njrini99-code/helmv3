@@ -178,7 +178,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
           {/* Title row */}
           <div className="flex items-center gap-2.5 mb-1.5">
             <h3 className={cn(
-              'font-semibold text-warm-900 truncate',
+              'font-medium text-warm-900 truncate',
               unread ? 'text-[15px]' : 'text-sm'
             )}>
               {ann.title}
@@ -202,7 +202,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
           <div className="flex items-center gap-2 flex-wrap">
             {/* Urgency pill */}
             <span className={cn(
-              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-label font-semibold uppercase tracking-wider border',
+              'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-label font-medium uppercase tracking-wider border',
               urg.bg, urg.text, urg.border
             )}>
               <span className={cn('w-1.5 h-1.5 rounded-full', urg.dot)} />
@@ -300,7 +300,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                   {/* Documents - downloadable */}
                   {detail.documents && detail.documents.length > 0 && (
                     <div>
-                      <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
+                      <p className="text-label font-medium text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
                           <button
@@ -333,10 +333,10 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                   {detail.tasks && detail.tasks.length > 0 && (
                     <div>
                       <div className="flex items-center justify-between mb-2.5">
-                        <p className="text-label font-semibold text-warm-400 uppercase tracking-[0.12em] opacity-80">Your Tasks</p>
+                        <p className="text-label font-medium text-warm-400 uppercase tracking-[0.12em] opacity-80">Your Tasks</p>
                         {myTotalTasks > 0 && (
                           <span className={cn(
-                            'text-xs font-semibold tabular-nums',
+                            'text-xs font-medium tabular-nums',
                             myCompletedTasks === myTotalTasks ? 'text-primary-600' : 'text-warm-500'
                           )}>
                             {myCompletedTasks}/{myTotalTasks}

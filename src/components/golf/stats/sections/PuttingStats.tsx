@@ -152,7 +152,7 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
           <div className="space-y-4">
             {/* Make % by Distance for Selected Break */}
             <div className="bg-warm-50 rounded-lg p-4">
-              <div className="text-sm font-semibold text-warm-700 mb-3">
+              <div className="text-sm font-medium text-warm-700 mb-3">
                 Make % by Distance - {selectedBreak === 'left_to_right' ? 'Left to Right' :
                                       selectedBreak === 'right_to_left' ? 'Right to Left' :
                                       selectedBreak === 'straight' ? 'Straight' : 'Multiple Breaks'}
@@ -200,7 +200,7 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
 
             {/* Miss Direction for Selected Break */}
             <div className="bg-warm-50 rounded-lg p-4">
-              <div className="text-sm font-semibold text-warm-700 mb-3">Miss Direction</div>
+              <div className="text-sm font-medium text-warm-700 mb-3">Miss Direction</div>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center p-2 bg-white rounded">
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700">

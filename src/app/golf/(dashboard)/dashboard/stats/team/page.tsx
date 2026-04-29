@@ -66,7 +66,7 @@ export default async function TeamStatsPage() {
     return (
       <div className="min-h-full flex items-center justify-center">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
           <p className="text-warm-500">
             Create a team first to view team statistics.
           </p>

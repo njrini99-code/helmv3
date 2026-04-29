@@ -141,7 +141,7 @@ export function PatternValidationModal({
                     <IconSparkles size={20} className="text-primary-600" />
                   </div>
                   <div>
-                    <h2 id="pattern-validation-modal-title" className="text-lg font-semibold text-warm-900">
+                    <h2 id="pattern-validation-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
                       Validate Pattern
                     </h2>
                     <p className="text-sm text-warm-500">
@@ -177,7 +177,7 @@ export function PatternValidationModal({
                     <span className="text-warm-500">
                       Impact:{' '}
                       <span className={cn(
-                        'font-semibold',
+                        'font-medium',
                         pattern.strokeImpact > 0 ? 'text-red-600' : 'text-primary-600'
                       )}>
                         {pattern.strokeImpact > 0 ? '+' : ''}{pattern.strokeImpact.toFixed(1)} strokes
@@ -185,7 +185,7 @@ export function PatternValidationModal({
                     </span>
                     <span className="text-warm-500">
                       Confidence:{' '}
-                      <span className="font-semibold text-warm-700">
+                      <span className="font-medium text-warm-700">
                         {Math.round(pattern.confidence * 100)}%
                       </span>
                     </span>

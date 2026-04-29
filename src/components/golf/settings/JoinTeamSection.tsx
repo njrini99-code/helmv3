@@ -168,7 +168,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
           <IconUsers size={20} className="text-primary-600" />
         </div>
         <div>
-          <h3 className="font-semibold text-warm-900">Team Membership</h3>
+          <h3 className="font-medium text-warm-900">Team Membership</h3>
           <p className="text-sm text-warm-500">Request to join your team</p>
         </div>
       </div>

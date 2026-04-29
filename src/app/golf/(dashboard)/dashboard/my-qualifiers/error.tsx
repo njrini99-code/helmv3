@@ -10,7 +10,7 @@ export default function Error({
   return (
     <div className="p-6">
       <div className="bg-white rounded-2xl border border-warm-200 p-8 text-center">
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">Failed to load qualifiers</h2>
+        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Failed to load qualifiers</h2>
         <p className="text-warm-600 mb-4">{error.message || 'An error occurred'}</p>
         <button
           onClick={reset}

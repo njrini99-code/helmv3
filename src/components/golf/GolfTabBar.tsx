@@ -87,7 +87,7 @@ export function GolfTabBar<T extends string>({
               {tab.count !== undefined && tab.count > 0 && (
                 <span
                   className={cn(
-                    'rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums',
+                    'rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums',
                     isActive
                       ? 'bg-primary-100 text-primary-700'
                       : 'bg-warm-200/80 text-warm-500',

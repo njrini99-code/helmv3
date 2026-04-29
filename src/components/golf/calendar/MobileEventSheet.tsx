@@ -324,7 +324,7 @@ export function MobileEventSheet({
 
         {/* Header with close */}
         <div className="flex items-center justify-between px-5 pb-3">
-          <h2 className="text-lg font-semibold text-warm-900">
+          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
             {isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
           </h2>
           <button
@@ -410,7 +410,7 @@ export function MobileEventSheet({
               autoCorrect="on"
               enterKeyHint="next"
               className={cn(
-                'w-full text-xl font-semibold text-warm-900 placeholder:text-warm-300',
+                'w-full text-[20px] font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
                 'disabled:text-warm-700',
                 'min-h-[40px]'
@@ -574,7 +574,7 @@ export function MobileEventSheet({
                 <div className="flex items-center justify-between gap-3">
                   <label
                     htmlFor="mobile-event-recurrence"
-                    className="text-sm font-semibold text-warm-900"
+                    className="text-sm font-medium text-warm-900"
                   >
                     Repeats
                   </label>
@@ -633,7 +633,7 @@ export function MobileEventSheet({
           {!isCreating && event && event.requires_rsvp && !isCoach && onRsvp && (
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4">
-                <h4 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-warm-900 mb-3 flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   Your Response
                 </h4>
@@ -671,7 +671,7 @@ export function MobileEventSheet({
                   aria-expanded={showRoster}
                   aria-controls="mobile-rsvp-roster"
                 >
-                  <h4 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
+                  <h4 className="text-sm font-medium text-warm-900 flex items-center gap-2">
                     <Users className="w-4 h-4" />
                     Attendance ({rsvpSummary.accepted + rsvpSummary.tentative}/{rsvpSummary.total})
                   </h4>
@@ -740,7 +740,7 @@ export function MobileEventSheet({
                               className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                             />
                           ) : (
-                            <span className="w-8 h-8 rounded-full bg-warm-100 text-warm-600 text-xs font-semibold flex items-center justify-center flex-shrink-0">
+                            <span className="w-8 h-8 rounded-full bg-warm-100 text-warm-600 text-xs font-medium flex items-center justify-center flex-shrink-0">
                               {initials || '?'}
                             </span>
                           )}
@@ -846,7 +846,7 @@ export function MobileEventSheet({
               onClick={handleSubmit}
               disabled={isSaving}
               className={cn(
-                'w-full py-4 rounded-2xl font-semibold text-base',
+                'w-full py-4 rounded-2xl font-medium text-base',
                 'bg-gradient-to-r from-primary-600 to-primary-500 text-white',
                 'shadow-lg shadow-primary-600/25',
                 'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]',
@@ -860,7 +860,7 @@ export function MobileEventSheet({
               type="button"
               onClick={handleClose}
               className={cn(
-                'w-full py-4 rounded-2xl font-semibold text-base',
+                'w-full py-4 rounded-2xl font-medium text-base',
                 'bg-warm-100 text-warm-700',
                 'active:scale-[0.98] transition-[transform,opacity] min-h-[52px]'
               )}

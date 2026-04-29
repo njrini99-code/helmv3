@@ -26,7 +26,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
       style={{ animation: 'fadeInUp 0.5s ease-out 0.5s both' }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
+        <h3 className="text-sm font-medium text-warm-900 flex items-center gap-2">
           <span className="text-lg">📊</span>
           Strokes Gained
         </h3>
@@ -79,7 +79,7 @@ export function StrokesGainedSection({ strokesGained }: StrokesGainedSectionProp
 
               {/* Value */}
               <div className={cn(
-                'w-12 text-right text-sm font-semibold tabular-nums',
+                'w-12 text-right text-sm font-medium tabular-nums',
                 isPositive ? 'text-primary-600' : 'text-red-500'
               )}>
                 {isPositive ? '+' : ''}{value.toFixed(2)}

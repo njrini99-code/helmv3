@@ -22,7 +22,7 @@ export function ReviewScorecard({ holes }: ReviewScorecardProps) {
       style={{ animation: 'fadeInUp 0.5s ease-out 0.2s both' }}
     >
       <div className="p-4 border-b border-warm-100">
-        <h3 className="text-sm font-semibold text-warm-900">Scorecard</h3>
+        <h3 className="text-sm font-medium text-warm-900">Scorecard</h3>
       </div>
 
       <div className="overflow-x-auto">
@@ -33,7 +33,7 @@ export function ReviewScorecard({ holes }: ReviewScorecardProps) {
             {frontNine.map((hole, index) => (
               <HoleChip key={hole.hole_number} hole={hole} delay={index * 35} />
             ))}
-            <div className="flex items-center justify-center w-10 h-10 bg-warm-100 rounded-lg text-sm font-semibold text-warm-700">
+            <div className="flex items-center justify-center w-10 h-10 bg-warm-100 rounded-lg text-sm font-medium text-warm-700">
               {frontNine.reduce((sum, h) => sum + (h.score || 0), 0)}
             </div>
           </div>
@@ -47,7 +47,7 @@ export function ReviewScorecard({ holes }: ReviewScorecardProps) {
               {backNine.map((hole, index) => (
                 <HoleChip key={hole.hole_number} hole={hole} delay={(index + 9) * 35} />
               ))}
-              <div className="flex items-center justify-center w-10 h-10 bg-warm-100 rounded-lg text-sm font-semibold text-warm-700">
+              <div className="flex items-center justify-center w-10 h-10 bg-warm-100 rounded-lg text-sm font-medium text-warm-700">
                 {backNine.reduce((sum, h) => sum + (h.score || 0), 0)}
               </div>
             </div>
@@ -81,7 +81,7 @@ function HoleChip({ hole, delay }: { hole: ScorecardHole; delay: number }) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center justify-center w-10 h-10 rounded-lg text-sm font-semibold transition-transform hover:scale-105',
+        'flex flex-col items-center justify-center w-10 h-10 rounded-lg text-sm font-medium transition-transform hover:scale-105',
         colors[colorKey]
       )}
       style={{

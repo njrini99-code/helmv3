@@ -147,7 +147,7 @@ export function RSVPStatusSection({
       <div className={cn('p-6 border-b border-warm-200', compact && 'p-4')}>
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h3 className={cn('font-semibold text-warm-900', compact ? 'text-base' : 'text-lg')}>
+            <h3 className={cn('font-medium text-warm-900', compact ? 'text-base' : 'text-lg')}>
               RSVP Status
             </h3>
             <p className="text-sm text-warm-500 mt-1">

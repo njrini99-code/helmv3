@@ -389,7 +389,7 @@ export function OfflineSyncStatus({
                 <div className="bg-white rounded-xl border border-warm-200 shadow-xl p-4 space-y-3">
                   {/* Header */}
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-warm-900">Sync Status</span>
+                    <span className="text-sm font-medium text-warm-900">Sync Status</span>
                     <button
                       onClick={handleDismiss}
                       aria-label="Dismiss sync status"
@@ -562,7 +562,7 @@ export function OfflineSyncStatus({
           <div className="flex-1 min-w-0">
             <p
               className={cn(
-                'text-sm font-semibold',
+                'text-sm font-medium',
                 !isOnline
                   ? 'text-amber-900'
                   : syncError

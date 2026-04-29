@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
+import { GeistSans } from 'geist/font/sans';
+import { GeistMono } from 'geist/font/mono';
 import { fraunces } from '@/lib/fonts';
 import './globals.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
@@ -11,6 +13,7 @@ import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHand
 import { GlobalErrorHandlerSetup } from '@/components/providers/GlobalErrorHandlerSetup';
 import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
 import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeploymentRecoveryScript';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -92,14 +95,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${dmSans.variable} ${fraunces.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable}`} suppressHydrationWarning>
       <head>
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>
       <body className="font-sans antialiased" suppressHydrationWarning>
         <StaleDeploymentRecoveryScript />
         <DatadogProvider>
-          {children}
+          <TooltipProvider delayDuration={300} skipDelayDuration={150}>
+            {children}
+          </TooltipProvider>
         </DatadogProvider>
         <ToastContainer />
         <Analytics />

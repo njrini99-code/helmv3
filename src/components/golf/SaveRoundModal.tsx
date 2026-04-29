@@ -98,7 +98,7 @@ export function SaveRoundModal({
       >
           {/* Header */}
           <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-            <h2 id="save-round-modal-title" className="text-lg font-semibold text-warm-900">
+            <h2 id="save-round-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
               Exit Round
             </h2>
             <button
@@ -151,7 +151,7 @@ export function SaveRoundModal({
                   <IconClock size={20} className="text-white" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="font-semibold text-primary-900">
+                  <p className="font-medium text-primary-900">
                     {saving ? 'Saving...' : 'Save for Later'}
                   </p>
                   <p className="text-xs text-primary-700 mt-0.5">
@@ -180,7 +180,7 @@ export function SaveRoundModal({
                   <IconTrash size={20} className={confirmingDelete ? 'text-white' : 'text-warm-600'} />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className={cn('font-semibold', confirmingDelete ? 'text-rose-900' : 'text-warm-900')}>
+                  <p className={cn('font-medium', confirmingDelete ? 'text-rose-900' : 'text-warm-900')}>
                     {confirmingDelete ? 'Tap again to confirm' : 'Delete Round'}
                   </p>
                   <p className={cn('text-xs mt-0.5', confirmingDelete ? 'text-rose-600' : 'text-warm-500')}>

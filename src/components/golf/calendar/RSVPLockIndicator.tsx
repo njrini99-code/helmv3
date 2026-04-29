@@ -128,7 +128,7 @@ export function RSVPLockIndicator({
         )}
         <p
           className={cn(
-            'font-semibold tabular-nums',
+            'font-medium tabular-nums',
             compact ? 'text-xs' : 'text-sm',
             isUrgent && 'text-rose-900',
             isWarning && 'text-amber-900',

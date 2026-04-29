@@ -215,7 +215,7 @@ export function QuickAddEventFAB({
                 )} aria-hidden="true">
                   <Icon className={cn('w-5 h-5', action.color)} />
                 </div>
-                <span className="text-sm font-semibold text-warm-900 whitespace-nowrap">
+                <span className="text-sm font-medium text-warm-900 whitespace-nowrap">
                   {action.label}
                 </span>
               </button>
@@ -242,7 +242,7 @@ export function QuickAddEventFAB({
             <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center" aria-hidden="true">
               <Calendar className="w-5 h-5 text-warm-700" />
             </div>
-            <span className="text-sm font-semibold text-warm-900">
+            <span className="text-sm font-medium text-warm-900">
               Other Event
             </span>
           </button>

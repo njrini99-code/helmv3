@@ -72,7 +72,7 @@ function MakePercentBars({ bars }: { bars: Bar[] }) {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-[11px] font-semibold text-warm-800 tabular-nums w-8 text-right">
+              <span className="text-[11px] font-medium text-warm-800 tabular-nums w-8 text-right">
                 {Math.round(bar.value)}%
               </span>
             </div>

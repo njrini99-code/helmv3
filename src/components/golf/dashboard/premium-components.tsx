@@ -268,7 +268,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                 </div>
                 <div className="flex-1 min-w-0">
                     <p className={cn(
-                        'font-semibold text-base', // Standardized: 16px
+                        'font-medium text-base', // Standardized: 16px
                         variant === 'primary' ? 'text-white' : 'text-warm-900'
                     )}>
                         {label}

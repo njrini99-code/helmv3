@@ -136,7 +136,7 @@ export function InsightCard({
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-warm-900 mb-1">
+            <h3 className="font-medium text-warm-900 mb-1">
               {insight.headline}
             </h3>
             <p className="text-sm text-warm-600 line-clamp-2">

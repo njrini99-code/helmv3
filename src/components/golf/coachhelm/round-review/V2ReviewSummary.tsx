@@ -164,7 +164,7 @@ export function V2ReviewSummary({
               <div className="p-1.5 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg shadow-sm shadow-primary-500/20">
                 <IconSparkles size={14} className="text-white" />
               </div>
-              <h3 className="text-sm font-semibold text-warm-900">AI Round Analysis</h3>
+              <h3 className="text-sm font-medium text-warm-900">AI Round Analysis</h3>
               <div className="ml-auto flex items-center gap-2.5">
                 <div className="h-1.5 w-20 bg-primary-200/50 rounded-full overflow-hidden">
                   <m.div
@@ -179,7 +179,7 @@ export function V2ReviewSummary({
                     )}
                   />
                 </div>
-                <span className="text-label font-semibold text-warm-500 tabular-nums">
+                <span className="text-label font-medium text-warm-500 tabular-nums">
                   {Math.round(calibratedConfidence * 100)}%
                 </span>
               </div>
@@ -190,7 +190,7 @@ export function V2ReviewSummary({
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35, duration: 0.4 }}
-                className="text-base font-semibold text-warm-900 mb-2"
+                className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-2"
               >
                 {headline}
               </m.h4>
@@ -218,7 +218,7 @@ export function V2ReviewSummary({
                   <div className="p-1 bg-primary-100 rounded-md">
                     <IconTarget size={12} className="text-primary-600" />
                   </div>
-                  <span className="text-label font-semibold text-primary-700 uppercase tracking-wider">Key Takeaway</span>
+                  <span className="text-label font-medium text-primary-700 uppercase tracking-wider">Key Takeaway</span>
                 </div>
                 <p className="text-sm font-medium text-primary-900 leading-relaxed">
                   {takeaway}
@@ -237,7 +237,7 @@ export function V2ReviewSummary({
                   <div className="p-1 bg-amber-100 rounded-md">
                     <IconTarget size={12} className="text-amber-600" />
                   </div>
-                  <span className="text-label font-semibold text-amber-700 uppercase tracking-wider">Practice Priority</span>
+                  <span className="text-label font-medium text-amber-700 uppercase tracking-wider">Practice Priority</span>
                 </div>
                 <p className="text-sm font-medium text-amber-900 leading-relaxed">
                   {practicePriority}

@@ -32,7 +32,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
         <div className="p-1.5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg shadow-sm shadow-amber-500/20">
           <IconSparkles size={14} className="text-white" />
         </div>
-        <h3 className="text-sm font-semibold text-warm-900">Why Your Performance Changed</h3>
+        <h3 className="text-sm font-medium text-warm-900">Why Your Performance Changed</h3>
       </div>
 
       <div className="p-4 space-y-2.5">
@@ -50,7 +50,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
             >
               {/* Cause -> Effect flow */}
               <div className="flex items-center gap-3 mb-2.5">
-                <span className="text-sm font-semibold text-warm-900">
+                <span className="text-sm font-medium text-warm-900">
                   {formatLabel(insight.cause)}
                 </span>
                 <motion.div
@@ -61,7 +61,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 >
                   <IconArrowRight size={12} className="text-amber-600" />
                 </motion.div>
-                <span className="text-sm font-semibold text-warm-900">
+                <span className="text-sm font-medium text-warm-900">
                   {formatLabel(insight.effect)}
                 </span>
               </div>
@@ -89,7 +89,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                       )}
                     />
                   </div>
-                  <span className="font-semibold text-warm-700 tabular-nums">{strengthPct}%</span>
+                  <span className="font-medium text-warm-700 tabular-nums">{strengthPct}%</span>
                 </div>
 
                 <span className="text-warm-200">|</span>
@@ -97,7 +97,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 {/* Confidence */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-warm-500">Confidence</span>
-                  <span className="font-semibold text-warm-700 tabular-nums">{confPct}%</span>
+                  <span className="font-medium text-warm-700 tabular-nums">{confPct}%</span>
                 </div>
 
                 {insight.doseResponse && (

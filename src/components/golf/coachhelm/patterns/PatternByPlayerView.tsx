@@ -81,7 +81,7 @@ function PlayerPatternCard({
 
           {/* Player info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-warm-900 truncate">
+            <h3 className="font-medium text-warm-900 truncate">
               {group.playerName}
             </h3>
             <div className="flex flex-wrap items-center gap-2 mt-1">
@@ -113,7 +113,7 @@ function PlayerPatternCard({
           {/* Stroke impact summary */}
           {totalStrokeImpact > 0 && (
             <div className="text-right flex-shrink-0">
-              <div className="text-lg font-semibold text-red-600">
+              <div className="text-lg font-medium text-red-600">
                 +{totalStrokeImpact.toFixed(1)}
               </div>
               <div className="text-xs text-warm-500">

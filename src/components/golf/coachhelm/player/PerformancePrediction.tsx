@@ -29,7 +29,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <IconSparkles size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Performance Prediction</h3>
+            <h3 className="font-medium text-warm-900">Performance Prediction</h3>
             <p className="text-xs text-warm-500">Powered by CoachHelm AI</p>
           </div>
         </div>
@@ -103,7 +103,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <IconSparkles size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Performance Prediction</h3>
+            <h3 className="font-medium text-warm-900">Performance Prediction</h3>
             <p className="text-xs text-warm-500">Your projected next round</p>
           </div>
         </div>

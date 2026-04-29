@@ -66,7 +66,7 @@ function PlayerEffectivenessCardImpl({
         <div className="w-7 h-7 rounded-lg bg-primary-100 flex items-center justify-center">
           <IconSparkles size={16} className="text-primary-600" />
         </div>
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-warm-500">
+        <h3 className="text-sm font-medium uppercase tracking-wider text-warm-500">
           Your CoachHelm Impact
         </h3>
       </div>
@@ -102,7 +102,7 @@ function PlayerEffectivenessCardImpl({
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between text-xs text-warm-600">
               <span className="font-medium">Resolved with improvement</span>
-              <span className="tabular-nums font-semibold text-warm-900">
+              <span className="tabular-nums font-medium text-warm-900">
                 {improvedCount} / {resolvedCount}
               </span>
             </div>
@@ -119,7 +119,7 @@ function PlayerEffectivenessCardImpl({
           {/* Top resolved insights */}
           {topResolvedInsights.length > 0 && (
             <div className="flex flex-col gap-2 pt-2 border-t border-warm-100">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-warm-400">
+              <p className="text-[11px] font-medium uppercase tracking-wider text-warm-400">
                 Biggest wins
               </p>
               <ul className="flex flex-col gap-1.5">
@@ -137,7 +137,7 @@ function PlayerEffectivenessCardImpl({
                       <span className="text-sm text-warm-800 flex-1 truncate">
                         {insight.title}
                       </span>
-                      <span className="text-xs font-semibold tabular-nums text-primary-600 shrink-0">
+                      <span className="text-xs font-medium tabular-nums text-primary-600 shrink-0">
                         -{abs.toFixed(1)} strokes
                       </span>
                     </li>

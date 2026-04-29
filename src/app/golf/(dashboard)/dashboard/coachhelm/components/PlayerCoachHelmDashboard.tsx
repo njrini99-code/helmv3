@@ -87,7 +87,7 @@ function EmptyState() {
       <div className="w-20 h-20 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
         <IconInfo size={40} className="text-warm-400" />
       </div>
-      <h3 className="text-xl font-semibold text-warm-900 mb-2">
+      <h3 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
         No Insights Available Yet
       </h3>
       <p className="text-warm-600 mb-6 max-w-md mx-auto">
@@ -118,7 +118,7 @@ function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
           <IconSparkles size={16} className="text-warm-400" />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-warm-900">
+          <p className="text-sm font-medium text-warm-900">
             No evidence-backed insights yet
           </p>
           <p className="text-xs text-warm-500 mt-0.5">
@@ -382,7 +382,7 @@ export function PlayerCoachHelmDashboard({
                       <div className="lg:col-span-7 space-y-3 min-w-0">
                         {secondaryFiltered.length > 0 && (
                           <>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-500 px-1">
+                            <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 px-1">
                               {topInsight ? 'More for you' : 'Your insights'}
                             </h3>
                             {secondaryFiltered.map((insight) => (
@@ -419,7 +419,7 @@ export function PlayerCoachHelmDashboard({
                       Lower visual priority than the insight feed: these are
                       reference panels, not the primary signal of the day. */}
                   <section>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-500 mb-3 px-1">
+                    <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-3 px-1">
                       Performance overview
                     </h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">
@@ -458,7 +458,7 @@ export function PlayerCoachHelmDashboard({
                           <IconChartRadar size={16} className="text-primary-600" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-warm-900">
+                          <p className="text-sm font-medium text-warm-900">
                             Deep dive analysis
                           </p>
                           <p className="text-xs text-warm-500">

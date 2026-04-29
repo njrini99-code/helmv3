@@ -89,7 +89,7 @@ export function StrokesGainedStats({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {statisticalStrengths && statisticalStrengths.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-2">Strengths</p>
+                <p className="text-xs font-medium text-primary-700 uppercase tracking-wide mb-2">Strengths</p>
                 <div className="space-y-2">
                   {statisticalStrengths.map((item, i) => (
                     <OverviewSWCard key={i} item={item} type="strength" />
@@ -99,7 +99,7 @@ export function StrokesGainedStats({
             )}
             {statisticalWeaknesses && statisticalWeaknesses.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-red-600 uppercase tracking-wide mb-2">Areas to Improve</p>
+                <p className="text-xs font-medium text-red-600 uppercase tracking-wide mb-2">Areas to Improve</p>
                 <div className="space-y-2">
                   {statisticalWeaknesses.map((item, i) => (
                     <OverviewSWCard key={i} item={item} type="weakness" />
@@ -118,7 +118,7 @@ export function StrokesGainedStats({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
       >
-        <div className="text-sm font-semibold text-blue-900 mb-2">What is Strokes Gained?</div>
+        <div className="text-sm font-medium text-blue-900 mb-2">What is Strokes Gained?</div>
         <div className="text-sm text-blue-800 space-y-1">
           <p>Strokes Gained measures performance relative to PGA Tour benchmarks:</p>
           <ul className="list-disc list-inside ml-2 space-y-1">

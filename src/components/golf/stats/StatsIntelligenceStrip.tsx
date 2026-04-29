@@ -167,7 +167,7 @@ export function StatsIntelligenceStrip({
             <IconSparkles size={18} className="text-red-500" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-red-700">CoachHelm analysis unavailable</p>
+            <p className="text-sm font-medium text-red-700">CoachHelm analysis unavailable</p>
             <p className="text-xs text-red-600/80 mt-0.5">{error}</p>
           </div>
         </div>
@@ -183,7 +183,7 @@ export function StatsIntelligenceStrip({
             <IconSparkles size={18} className="text-primary-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-warm-900">CoachHelm AI</p>
+            <p className="text-sm font-medium text-warm-900">CoachHelm AI</p>
             <p className="text-xs text-warm-500 mt-0.5 leading-relaxed">
               {sampleTooSmall
                 ? 'Need at least 3 teammates with stats cached to compute category ratings. CoachHelm will surface ratings + insights as more rounds are logged.'
@@ -204,7 +204,7 @@ export function StatsIntelligenceStrip({
             <IconSparkles size={18} className="text-primary-600" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-warm-900">CoachHelm AI</p>
+            <p className="text-sm font-medium text-warm-900">CoachHelm AI</p>
             <p className="text-xs text-warm-500 mt-0.5">
               {hasRatings ? 'Engine-derived category ratings + insights' : 'Evidence-backed insights'}
             </p>
@@ -214,7 +214,7 @@ export function StatsIntelligenceStrip({
           {compositeDisplay != null && (
             <span
               className={cn(
-                'inline-flex items-baseline gap-1 text-sm font-semibold tabular-nums px-2.5 py-1 rounded-full border border-warm-200 bg-cream-100/75',
+                'inline-flex items-baseline gap-1 text-sm font-medium tabular-nums px-2.5 py-1 rounded-full border border-warm-200 bg-cream-100/75',
                 ratingColor(compositeDisplay),
               )}
             >
@@ -240,7 +240,7 @@ export function StatsIntelligenceStrip({
                     style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
                   />
                 </div>
-                <span className={cn('text-xs font-semibold tabular-nums w-8 text-right', ratingColor(value))}>
+                <span className={cn('text-xs font-medium tabular-nums w-8 text-right', ratingColor(value))}>
                   {Math.round(value)}
                 </span>
               </div>
@@ -258,7 +258,7 @@ export function StatsIntelligenceStrip({
       {hasInsights && topInsightRow && (
         <div className="space-y-2 pt-1">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-warm-500">
+            <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500">
               Top insight
             </p>
             <Link

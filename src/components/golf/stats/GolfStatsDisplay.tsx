@@ -192,7 +192,7 @@ export default function GolfStatsDisplay({
             {showFilters && (
               <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-warm-700">Quick Filters</h3>
+                  <h3 className="text-sm font-medium text-warm-700">Quick Filters</h3>
                   <button onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</button>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-4">
@@ -277,7 +277,7 @@ export default function GolfStatsDisplay({
             <motion.div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4" animate={{ boxShadow: ['0 0 0 0 rgba(22, 163, 74, 0)', '0 0 0 20px rgba(22, 163, 74, 0.1)', '0 0 0 0 rgba(22, 163, 74, 0)'] }} transition={{ duration: 2, repeat: Infinity }}>
               <IconGolf size={40} className="text-warm-300" />
             </motion.div>
-            <motion.h2 className="text-lg font-semibold text-warm-900 mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>No Stats Yet</motion.h2>
+            <motion.h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>No Stats Yet</motion.h2>
             <motion.p className="text-warm-500 max-w-sm mx-auto" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>Complete rounds with shot tracking to see your detailed statistics here.</motion.p>
           </motion.div>
         )}

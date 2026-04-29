@@ -139,7 +139,7 @@ export function PendingJoinRequests() {
               <IconUser size={20} className="text-white" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-amber-900">
+              <h3 className="font-medium text-amber-900">
                 Pending Join Requests
               </h3>
               <p className="text-sm text-amber-700">
@@ -210,7 +210,7 @@ export function PendingJoinRequests() {
                         {/* Player Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-warm-900 truncate">
+                            <h4 className="font-medium text-warm-900 truncate">
                               {request.player?.first_name} {request.player?.last_name}
                             </h4>
                             {request.player?.graduation_year && (

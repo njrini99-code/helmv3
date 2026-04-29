@@ -133,7 +133,7 @@ export function InsightsFeed({
                 Intelligence Feed
               </p>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-warm-900">
+                <span className="text-sm font-medium text-warm-900">
                   CoachHelm AI
                 </span>
                 <span className="text-xs font-medium text-primary-700 bg-primary-100/70 px-1.5 py-0.5 rounded-full whitespace-nowrap">
@@ -147,7 +147,7 @@ export function InsightsFeed({
             onClick={handleGenerate}
             disabled={isPending}
             className={cn(
-              'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all',
+              'w-full inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium uppercase tracking-wide transition-all',
               isPending
                 ? 'bg-warm-200 text-warm-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-primary-500 to-primary-500 text-white hover:-hover'
@@ -295,7 +295,7 @@ function EmptyState({
         <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-cream-100/82 text-primary-600">
           {icon}
         </div>
-        <h4 className="text-sm font-semibold text-warm-700 mb-0.5">{title}</h4>
+        <h4 className="text-sm font-medium text-warm-700 mb-0.5">{title}</h4>
         <p className="text-xs text-warm-500 max-w-[200px] leading-relaxed">{description}</p>
       </div>
     </div>

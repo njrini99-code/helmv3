@@ -1,9 +1,52 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+/**
+ * Tooltip — Radix-backed primitive with the California-modern recipe.
+ * Two surfaces are exported:
+ *   1. The original `<Tooltip content="...">{trigger}</Tooltip>` API
+ *      kept as a thin wrapper for legacy call sites.
+ *   2. The standard Radix compound API (`Tooltip`, `TooltipTrigger`,
+ *      `TooltipContent`, `TooltipProvider`) for new code that wants
+ *      keyboard nav, controlled state, or custom content.
+ *
+ * Mount `<TooltipProvider delayDuration={300}>` once at the app root.
+ */
+
+import * as React from 'react';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 import { cn } from '@/lib/utils';
 
-interface TooltipProps {
+const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipRoot = TooltipPrimitive.Root;
+const TooltipTrigger = TooltipPrimitive.Trigger;
+
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 6, ...props }, ref) => (
+  <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
+      className={cn(
+        'z-50 overflow-hidden rounded-full px-3 py-1.5 text-[12px] font-medium tracking-[-0.005em]',
+        'bg-warm-900/95 text-cream-50',
+        'shadow-[0_2px_8px_hsl(42_14%_22%/0.18),0_8px_18px_hsl(42_14%_22%/0.12)]',
+        'data-[state=delayed-open]:animate-in data-[state=closed]:animate-out',
+        'data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0',
+        'data-[state=closed]:zoom-out-95 data-[state=delayed-open]:zoom-in-95',
+        'data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1',
+        'data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1',
+        'duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        className,
+      )}
+      {...props}
+    />
+  </TooltipPrimitive.Portal>
+));
+TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+
+interface LegacyTooltipProps {
   content: React.ReactNode;
   children: React.ReactNode;
   side?: 'top' | 'bottom' | 'left' | 'right';
@@ -11,110 +54,32 @@ interface TooltipProps {
   className?: string;
 }
 
-export function Tooltip({
+/**
+ * Legacy `<Tooltip content="...">{trigger}</Tooltip>` API kept for
+ * backward compatibility. Internally delegates to Radix so we get
+ * keyboard navigation, focus management, and ARIA correctness.
+ */
+function Tooltip({
   content,
   children,
   side = 'top',
-  delayMs = 200,
+  delayMs = 300,
   className,
-}: TooltipProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const hideTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
-  const show = useCallback(() => {
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
-      setIsVisible(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setIsAnimating(true));
-      });
-    }, delayMs);
-  }, [delayMs]);
-
-  const hide = useCallback(() => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsAnimating(false);
-    hideTimeoutRef.current = setTimeout(() => setIsVisible(false), 150);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
-    };
-  }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      hide();
-    }
-  }, [hide]);
-
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
-  };
-
-  const animateClasses = {
-    top: isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1',
-    bottom: isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-1',
-    left: isAnimating ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-1',
-    right: isAnimating ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1',
-  };
-
-  const arrowClasses = {
-    top: 'top-full left-1/2 -translate-x-1/2 -mt-px border-l-transparent border-r-transparent border-b-transparent border-t-warm-900',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 -mb-px border-l-transparent border-r-transparent border-t-transparent border-b-warm-900',
-    left: 'left-full top-1/2 -translate-y-1/2 -ml-px border-t-transparent border-b-transparent border-r-transparent border-l-warm-900',
-    right: 'right-full top-1/2 -translate-y-1/2 -mr-px border-t-transparent border-b-transparent border-l-transparent border-r-warm-900',
-  };
-
+}: LegacyTooltipProps) {
   return (
-    <div
-      className="relative inline-block"
-      onMouseEnter={show}
-      onMouseLeave={hide}
-      onFocus={show}
-      onBlur={hide}
-      onKeyDown={handleKeyDown}
-    >
-      {children}
-
-      {isVisible && (
-        <div
-          role="tooltip"
-          className={cn(
-            // Hide tooltips on touch devices / iOS Capacitor shell —
-            // they can't be dismissed and just cover content.
-            '[body.capacitor_&]:hidden max-[768px]:hidden',
-            'absolute z-50 pointer-events-none',
-            positionClasses[side],
-            'transition-all duration-150 ease-out',
-            animateClasses[side],
-          )}
-        >
-          <div className={cn(
-            'px-3 py-2',
-            'bg-warm-900 text-white',
-            'text-xs font-medium',
-            'rounded-lg',
-            'shadow-lg',
-            'whitespace-nowrap',
-            className,
-          )}>
-            {content}
-          </div>
-          {/* Arrow */}
-          <div className={cn(
-            'absolute w-0 h-0 border-4 border-transparent',
-            arrowClasses[side],
-          )} />
-        </div>
-      )}
-    </div>
+    <TooltipPrimitive.Provider delayDuration={delayMs}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>
+          {/* span wrapper so non-button triggers (icons, plain text) get
+              the necessary event handlers without forcing a button role */}
+          <span className="inline-flex">{children}</span>
+        </TooltipPrimitive.Trigger>
+        <TooltipContent side={side} className={className}>
+          {content}
+        </TooltipContent>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   );
 }
+
+export { Tooltip, TooltipRoot, TooltipTrigger, TooltipContent, TooltipProvider };

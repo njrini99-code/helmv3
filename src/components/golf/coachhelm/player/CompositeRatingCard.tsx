@@ -94,7 +94,7 @@ function CompositeRatingCardImpl({
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <div className="flex flex-col items-center gap-4 py-8">
-          <p className="text-sm font-semibold uppercase tracking-wider text-warm-500">
+          <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
             Game Strength
           </p>
           <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
@@ -119,7 +119,7 @@ function CompositeRatingCardImpl({
 
       <div className="flex flex-col items-center gap-6">
         {/* Header */}
-        <p className="text-sm font-semibold uppercase tracking-wider text-warm-500">
+        <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
           Game Strength
         </p>
 
@@ -157,7 +157,7 @@ function CompositeRatingCardImpl({
             <span className={cn('text-[44px] md:text-[52px] font-light tabular-nums tracking-[-0.025em] leading-none', getRatingColor(displayComposite))}>
               {Math.round(displayComposite)}
             </span>
-            <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-warm-400">
+            <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-warm-400">
               / 100
             </span>
           </div>
@@ -205,7 +205,7 @@ function CompositeRatingCardImpl({
                     transition={{ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
                   />
                 </div>
-                <span className="text-sm font-semibold text-warm-900 tabular-nums w-8 text-right">
+                <span className="text-sm font-medium text-warm-900 tabular-nums w-8 text-right">
                   {Math.round(value)}
                 </span>
                 {resolvedPercentiles?.[key] && (

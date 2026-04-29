@@ -42,22 +42,22 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="flex items-center gap-2 mb-4">
         <IconChartBar size={20} className="text-warm-500" />
-        <h2 className="text-lg font-semibold text-warm-900">Round-by-Round Scores</h2>
+        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Round-by-Round Scores</h2>
       </div>
 
       <div className="overflow-x-auto overscroll-x-contain touch-pan-x -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
         <table className="w-full min-w-[500px]">
           <thead>
             <tr className="border-b border-warm-200">
-              <th className="pb-3 pr-4 text-left text-xs font-semibold text-warm-500 uppercase w-8">#</th>
-              <th className="pb-3 pr-4 text-left text-xs font-semibold text-warm-500 uppercase">Player</th>
+              <th className="pb-3 pr-4 text-left text-xs font-medium text-warm-500 uppercase w-8">#</th>
+              <th className="pb-3 pr-4 text-left text-xs font-medium text-warm-500 uppercase">Player</th>
               {roundColumns.map(n => (
-                <th key={n} className="pb-3 px-2 text-center text-xs font-semibold text-warm-500 uppercase whitespace-nowrap">
+                <th key={n} className="pb-3 px-2 text-center text-xs font-medium text-warm-500 uppercase whitespace-nowrap">
                   R{n}
                 </th>
               ))}
-              <th className="pb-3 pl-3 text-right text-xs font-semibold text-warm-500 uppercase">Total</th>
-              <th className="pb-3 pl-3 text-right text-xs font-semibold text-warm-500 uppercase">To Par</th>
+              <th className="pb-3 pl-3 text-right text-xs font-medium text-warm-500 uppercase">Total</th>
+              <th className="pb-3 pl-3 text-right text-xs font-medium text-warm-500 uppercase">To Par</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-warm-100">
@@ -86,7 +86,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
                       <td key={n} className="py-3 px-2 text-center">
                         {round ? (
                           <div className="flex flex-col items-center">
-                            <span className="text-sm font-semibold text-warm-900 tabular-nums">
+                            <span className="text-sm font-medium text-warm-900 tabular-nums">
                               {round.score ?? '—'}
                             </span>
                             <span className={`text-xs tabular-nums ${toParColor(round.toPar)}`}>
@@ -105,7 +105,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
                     </span>
                   </td>
                   <td className="py-3 pl-3 text-right">
-                    <span className={`text-sm font-semibold tabular-nums ${hasRounds ? toParColor(data.totalToPar) : 'text-warm-300'}`}>
+                    <span className={`text-sm font-medium tabular-nums ${hasRounds ? toParColor(data.totalToPar) : 'text-warm-300'}`}>
                       {hasRounds ? formatToPar(data.totalToPar) : '-'}
                     </span>
                   </td>

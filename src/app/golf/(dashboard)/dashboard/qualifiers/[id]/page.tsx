@@ -182,7 +182,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
-              <h1 className="text-2xl font-semibold text-warm-900 mb-2 truncate">
+              <h1 className="text-2xl font-medium text-warm-900 mb-2 truncate">
                 {qualifierData.name}
               </h1>
               {qualifierData.description && (
@@ -252,7 +252,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <IconTrophy size={20} className="text-amber-500" />
-            <h2 className="text-lg font-semibold text-warm-900">Leaderboard</h2>
+            <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Leaderboard</h2>
           </div>
           <QualifierLeaderboardRealtime
             qualifierId={id}

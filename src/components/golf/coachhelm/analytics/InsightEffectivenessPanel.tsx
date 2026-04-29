@@ -189,25 +189,25 @@ export function InsightEffectivenessPanel({
             <table className="w-full">
               <thead>
                 <tr className="bg-warm-50">
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-warm-500 uppercase">
                     Type
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Generated
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Acted Upon
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Action Rate
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Improved
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Improvement Rate
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-semibold text-warm-500 uppercase">
+                  <th className="px-4 py-2 text-right text-xs font-medium text-warm-500 uppercase">
                     Effectiveness
                   </th>
                 </tr>
@@ -349,7 +349,7 @@ function CustomTooltip({
     const data = payload[0].payload;
     return (
       <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-semibold text-warm-900 mb-2">{data.name}</p>
+        <p className="text-sm font-medium text-warm-900 mb-2">{data.name}</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Action Rate:</span>

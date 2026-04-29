@@ -227,7 +227,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                       {/* Player Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-warm-900 truncate text-lg">
+                          <h4 className="font-medium text-warm-900 truncate text-lg">
                             {request.player?.first_name || 'Unknown'} {request.player?.last_name || 'Player'}
                           </h4>
                         </div>

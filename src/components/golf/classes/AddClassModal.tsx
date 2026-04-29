@@ -270,7 +270,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
         />
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <h2 id="add-class-title" className="text-lg font-semibold text-warm-900">
+          <h2 id="add-class-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </h2>
           <button
@@ -490,7 +490,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                 <IconWarning size={18} className="text-amber-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-semibold text-amber-800 mb-1">
+                <h4 className="text-sm font-medium text-amber-800 mb-1">
                   {hasExactDuplicate ? 'Duplicate Time Slot' : 'Schedule Conflict Detected'}
                 </h4>
                 <p className="text-sm text-amber-700 mb-3">

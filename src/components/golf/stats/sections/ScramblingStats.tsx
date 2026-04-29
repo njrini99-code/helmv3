@@ -87,10 +87,10 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
             >
               <thead>
                 <tr className="border-b border-warm-200">
-                  <th className="text-left py-2 px-2 font-semibold text-warm-700">Distance</th>
-                  <th className="text-center py-2 px-2 font-semibold text-primary-600">Fairway</th>
-                  <th className="text-center py-2 px-2 font-semibold text-amber-600">Rough</th>
-                  <th className="text-center py-2 px-2 font-semibold text-orange-600">Sand</th>
+                  <th className="text-left py-2 px-2 font-medium text-warm-700">Distance</th>
+                  <th className="text-center py-2 px-2 font-medium text-primary-600">Fairway</th>
+                  <th className="text-center py-2 px-2 font-medium text-amber-600">Rough</th>
+                  <th className="text-center py-2 px-2 font-medium text-orange-600">Sand</th>
                 </tr>
               </thead>
               <tbody>

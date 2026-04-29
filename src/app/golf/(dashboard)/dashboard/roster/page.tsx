@@ -73,7 +73,7 @@ export default async function GolfRosterPage() {
             <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <IconAlertCircle size={32} className="text-amber-500" />
             </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">Profile Not Found</h2>
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Profile Not Found</h2>
             <p className="text-warm-500 mb-6">
               Unable to find your profile. Please complete onboarding or contact support.
             </p>
@@ -98,7 +98,7 @@ export default async function GolfRosterPage() {
             <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <IconUsers size={32} className="text-amber-500" />
             </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
             <p className="text-warm-500 mb-6">
               You haven't joined a team yet. Ask your coach for a join code.
             </p>
@@ -170,7 +170,7 @@ export default async function GolfRosterPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconUsers size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Assigned</h2>
+          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Assigned</h2>
           <p className="text-warm-500 mb-6">
             You haven't created or joined a team yet. Create a team to start building your roster.
           </p>
@@ -193,7 +193,7 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-warm-900 mb-2">Team Not Found</h2>
+          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Team Not Found</h2>
           <p className="text-warm-500 mb-4">
             Unable to load team information. The team may have been deleted.
           </p>
@@ -260,7 +260,7 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-lg font-semibold text-warm-900 mb-2">Error Loading Roster</h2>
+          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Error Loading Roster</h2>
           <p className="text-warm-500 mb-4">
             Unable to load team roster. Please try refreshing the page.
           </p>
@@ -355,7 +355,7 @@ export default async function GolfRosterPage() {
               <div className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6 shadow-sm">
                 <IconUsers size={36} className="text-primary-500" />
               </div>
-              <h3 className="text-2xl font-semibold text-warm-900 mb-3">Build Your Team</h3>
+              <h3 className="text-2xl font-medium text-warm-900 mb-3">Build Your Team</h3>
               <p className="text-warm-500 mb-4 max-w-md mx-auto leading-relaxed">
                 Start building your team by inviting players to join your roster.
                 Players will receive a code they can use to join.
@@ -395,7 +395,7 @@ export default async function GolfRosterPage() {
                         </div>
                       ) : (
                         <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-warm-100/65 flex items-center justify-center">
-                          <span className="text-2xl font-semibold text-warm-500">
+                          <span className="text-2xl font-medium text-warm-500">
                             {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
                           </span>
                         </div>
@@ -410,7 +410,7 @@ export default async function GolfRosterPage() {
                     {/* Player Info */}
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg md:text-xl font-semibold text-warm-900 truncate">
+                        <h3 className="text-lg md:text-[20px] font-medium text-warm-900 tracking-[-0.015em] truncate">
                           {player.first_name} {player.last_name}
                         </h3>
                         <YearBadge year={player.graduation_year} />

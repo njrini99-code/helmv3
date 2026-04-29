@@ -97,7 +97,7 @@ export default async function GolfQualifiersPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconFlag size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Qualifiers Yet</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Qualifiers Yet</h3>
             <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {isCoach
                 ? 'Create a qualifier to track player performance for team selection'
@@ -125,7 +125,7 @@ export default async function GolfQualifiersPage() {
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">
-                        <h3 className="text-lg font-semibold text-warm-900 group-hover:text-primary-600 transition-colors truncate">
+                        <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] group-hover:text-primary-600 transition-colors truncate">
                           {qualifier.name}
                         </h3>
                         {qualifier.description && (
@@ -134,7 +134,7 @@ export default async function GolfQualifiersPage() {
                           </p>
                         )}
                       </div>
-                      <span className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-full ${statusConfig.bg} ${statusConfig.text} shadow-sm`}>
+                      <span className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-full ${statusConfig.bg} ${statusConfig.text} shadow-sm`}>
                         <span className={`w-2 h-2 rounded-full ${statusConfig.dot} ${statusConfig.pulse ? 'animate-pulse' : ''}`} />
                         {statusConfig.label || (qualifier.status || 'upcoming').replace('_', ' ')}
                       </span>

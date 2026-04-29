@@ -16,7 +16,7 @@ export default function MessagesError({
         <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconWarning size={32} className="text-red-500" />
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
+        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
           Something went wrong
         </h2>
         <p className="text-warm-500 mb-6 max-w-md">

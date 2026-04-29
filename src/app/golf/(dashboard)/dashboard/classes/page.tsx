@@ -396,7 +396,7 @@ export default function GolfClassesPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-warm-400" />
             </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">Join a Team First</h2>
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Join a Team First</h2>
             <p className="text-warm-500 mb-6">
               You need to be on a team before you can add your class schedule. Ask your coach for a join code.
             </p>
@@ -469,7 +469,7 @@ export default function GolfClassesPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-warm-300" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
               No Classes Added
             </h3>
             <p className="text-warm-500 mb-6 max-w-md mx-auto">
@@ -547,7 +547,7 @@ export default function GolfClassesPage() {
           {/* Schedule Grid */}
           <Card variant="glass">
             <div className="p-6">
-              <h2 className="text-lg font-semibold text-warm-900 mb-4">Weekly Schedule</h2>
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4">Weekly Schedule</h2>
 
               {Object.keys(classesByDay).length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 md:grid md:grid-cols-5 md:gap-4 md:overflow-x-visible md:snap-none md:pb-0 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -569,7 +569,7 @@ export default function GolfClassesPage() {
                                 style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
                               >
                                 {code && (
-                                  <p className="font-mono text-xs font-semibold text-primary-600 mb-0.5">
+                                  <p className="font-mono text-xs font-medium text-primary-600 mb-0.5">
                                     {code}
                                   </p>
                                 )}
@@ -611,7 +611,7 @@ export default function GolfClassesPage() {
           {/* All Classes List */}
           <Card variant="glass">
             <div className="p-6">
-              <h2 className="text-lg font-semibold text-warm-900 mb-4">All Classes</h2>
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4">All Classes</h2>
 
               <div className="space-y-3">
                 {classes && classes.length > 0 ? classes.map(cls => {
@@ -630,7 +630,7 @@ export default function GolfClassesPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           {code && (
-                            <span className="font-mono text-sm font-semibold text-primary-600">
+                            <span className="font-mono text-sm font-medium text-primary-600">
                               {code}
                             </span>
                           )}

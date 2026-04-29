@@ -125,13 +125,13 @@ export function ShotAnalysisCard({
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
             <IconTarget size={20} className="text-primary-600" />
           </div>
-          <h3 className="text-lg font-semibold text-warm-900">Shot Analysis</h3>
+          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Shot Analysis</h3>
         </div>
 
         {/* Yardage curve */}
         {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-warm-700">Yardage Performance</p>
+            <p className="text-sm font-medium text-warm-700">Yardage Performance</p>
             <div className="space-y-1.5">
               {resolvedYardageCurve.buckets.map((bucket, i) => {
                 const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, resolvedDeadZones);
@@ -180,7 +180,7 @@ export function ShotAnalysisCard({
 
                     <span
                       className={cn(
-                        'text-xs font-semibold tabular-nums w-12 text-right shrink-0',
+                        'text-xs font-medium tabular-nums w-12 text-right shrink-0',
                         isPositive ? 'text-primary-600' : 'text-red-500'
                       )}
                     >
@@ -211,7 +211,7 @@ export function ShotAnalysisCard({
         {resolvedYardageCurve?.buckets && resolvedYardageCurve.buckets.length > 0 && (
           resolvedDeadZones && resolvedDeadZones.length > 0 ? (
             <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
-              <p className="text-xs font-semibold text-red-700 mb-1">Dead Zones</p>
+              <p className="text-xs font-medium text-red-700 mb-1">Dead Zones</p>
               <div className="flex flex-wrap gap-2">
                 {resolvedDeadZones.map((dz) => (
                   <span
@@ -226,7 +226,7 @@ export function ShotAnalysisCard({
             </div>
           ) : (
             <div className="px-3 py-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60">
-              <p className="text-xs font-semibold text-emerald-700 mb-0.5">No dead zones</p>
+              <p className="text-xs font-medium text-emerald-700 mb-0.5">No dead zones</p>
               <p className="text-xs text-emerald-600/80">
                 Yardage performance is consistent — no distance range is bleeding strokes.
               </p>
@@ -237,7 +237,7 @@ export function ShotAnalysisCard({
         {/* Top weaknesses */}
         {topWeaknesses.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-warm-700">Key Weaknesses</p>
+            <p className="text-sm font-medium text-warm-700">Key Weaknesses</p>
             <div className="grid gap-2">
               {topWeaknesses.map((weakness, i) => (
                 <m.div
@@ -260,7 +260,7 @@ export function ShotAnalysisCard({
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-3">
-                    <p className="text-sm font-semibold text-red-500 tabular-nums">
+                    <p className="text-sm font-medium text-red-500 tabular-nums">
                       {Number(weakness.avgSG ?? 0).toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400 tabular-nums">
@@ -311,7 +311,7 @@ export function ShotAnalysisCard({
                   </span>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-warm-800">Resilience</p>
+                  <p className="text-sm font-medium text-warm-800">Resilience</p>
                   <p className={cn(
                     'text-xs font-medium',
                     Number(safeResilience ?? 0) >= 1.0 ? 'text-primary-600' : 'text-amber-600'
@@ -334,9 +334,9 @@ export function ShotAnalysisCard({
                   <IconActivity size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-warm-800">Scramble Rate</p>
+                  <p className="text-sm font-medium text-warm-800">Scramble Rate</p>
                   <p className="text-xs text-warm-600">
-                    <span className="font-semibold text-warm-900 tabular-nums">{Number(resolvedScrambleRate ?? 0).toFixed(0)}%</span>
+                    <span className="font-medium text-warm-900 tabular-nums">{Number(resolvedScrambleRate ?? 0).toFixed(0)}%</span>
                     {resolvedTeamScrambleRate != null && (
                       <span className="text-warm-400">
                         {' '}(team avg: {resolvedTeamScrambleRate}%)

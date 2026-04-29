@@ -236,7 +236,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <IconSparkles size={20} className="text-primary-600" />
             </div>
             <div>
-              <h2 id="upload-schedule-title" className="text-lg font-semibold text-warm-900">Import Schedule</h2>
+              <h2 id="upload-schedule-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Import Schedule</h2>
               <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
             </div>
           </div>

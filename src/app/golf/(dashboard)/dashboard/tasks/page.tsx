@@ -281,7 +281,7 @@ export default function GolfTasksPage() {
                   >
                     <div className="flex items-center gap-2">
                       <IconClipboardList size={18} className="text-warm-600" />
-                      <span className="font-semibold text-warm-900">Templates</span>
+                      <span className="font-medium text-warm-900">Templates</span>
                     </div>
                     {showTemplates ? (
                       <IconChevronDown size={18} className="text-warm-400" />
@@ -317,22 +317,22 @@ export default function GolfTasksPage() {
                   transition={{ delay: 0.3 }}
                   className="mt-4 surface-matte rounded-3xl p-4"
                 >
-                  <h3 className="text-sm font-semibold text-warm-400 uppercase tracking-wider mb-3">
+                  <h3 className="text-sm font-medium text-warm-400 uppercase tracking-wider mb-3">
                     Quick Stats
                   </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="text-center p-3 bg-warm-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-warm-900">{activeCount}</p>
+                      <p className="text-2xl font-medium text-warm-900">{activeCount}</p>
                       <p className="text-xs text-warm-500">Active</p>
                     </div>
                     <div className="text-center p-3 bg-primary-50 rounded-lg">
-                      <p className="text-2xl font-semibold text-primary-600">{completedCount}</p>
+                      <p className="text-2xl font-medium text-primary-600">{completedCount}</p>
                       <p className="text-xs text-warm-500">Completed</p>
                     </div>
                   </div>
                   {stats.overdue_tasks > 0 && (
                     <div className="mt-3 p-3 bg-red-50 rounded-lg text-center">
-                      <p className="text-lg font-semibold text-red-600">{stats.overdue_tasks}</p>
+                      <p className="text-lg font-medium text-red-600">{stats.overdue_tasks}</p>
                       <p className="text-xs text-red-500">Overdue</p>
                     </div>
                   )}

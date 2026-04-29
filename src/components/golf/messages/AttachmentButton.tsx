@@ -149,7 +149,7 @@ export function AttachmentButton({
           )}
         >
           <div className="px-3 py-1.5 mb-1 border-b border-warm-200/50">
-            <p className="text-[11px] font-semibold text-warm-400 uppercase tracking-[0.08em]">Attach</p>
+            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-[0.08em]">Attach</p>
           </div>
 
           <AttachmentTypeOption

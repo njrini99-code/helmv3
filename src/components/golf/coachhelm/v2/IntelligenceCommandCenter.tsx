@@ -368,7 +368,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
 
           {/* Headline */}
           <h4 className={cn(
-            'font-semibold text-warm-900 leading-snug mb-0.5',
+            'font-medium text-warm-900 leading-snug mb-0.5',
             isPage ? 'text-base' : 'text-[13px]'
           )}>
             {insight.headline}
@@ -575,7 +575,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <button
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
                     className={cn(
-                      'flex items-center gap-1 font-semibold text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
+                      'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
                       isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                     )}
                   >
@@ -687,7 +687,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {tone.badgeText}
             </span>
             <span className={cn(
-              'font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500',
+              'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500',
               isPage ? 'text-xs px-2 py-1' : 'text-[9px]'
             )}>
               {CATEGORY_LABELS[group.category]}
@@ -712,7 +712,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
 
           {/* Headline */}
           <h4 className={cn(
-            'font-semibold text-warm-900 leading-snug mb-1',
+            'font-medium text-warm-900 leading-snug mb-1',
             isPage ? 'text-base' : 'text-[13px]'
           )}>
             {group.headline}
@@ -723,7 +723,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
             <div className={cn('flex items-center gap-1 flex-wrap', isPage ? 'mb-1.5' : 'mb-1')}>
               {group.isTeamWide && (
                 <span className={cn(
-                  'inline-flex items-center gap-1 font-semibold rounded-full border',
+                  'inline-flex items-center gap-1 font-medium rounded-full border',
                   isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
                   'bg-primary-50 text-primary-700 border-primary-200/60'
                 )}>
@@ -798,7 +798,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       >
                         {mi.playerName && (
                           <span className={cn(
-                            'flex-shrink-0 inline-flex items-center font-semibold rounded-full border bg-cream-100/82 text-warm-700 border-warm-200/60',
+                            'flex-shrink-0 inline-flex items-center font-medium rounded-full border bg-cream-100/82 text-warm-700 border-warm-200/60',
                             isPage ? 'text-xs px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
                           )}>
                             {mi.playerName}
@@ -846,7 +846,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <button
                       onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
                       className={cn(
-                        'flex items-center gap-1 font-semibold text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
+                        'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
                         isPage ? 'text-xs px-4 py-2' : 'text-xs px-2.5 py-1.5'
                       )}
                     >
@@ -1187,7 +1187,7 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
       )}>
         {icon}
       </div>
-      <h4 className={cn('font-semibold text-warm-700', isPage ? 'text-lg mb-1' : 'text-[13px] mb-0.5')}>{title}</h4>
+      <h4 className={cn('font-medium text-warm-700', isPage ? 'text-lg mb-1' : 'text-[13px] mb-0.5')}>{title}</h4>
       <p className={cn('text-warm-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-xs max-w-[200px]')}>{description}</p>
     </div>
   );
@@ -1305,7 +1305,7 @@ export function IntelligenceCommandCenter({
               <IconSparkles size={20} className="text-primary-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-warm-900">Deep Analysis</h3>
+              <h3 className="text-sm font-medium text-warm-900">Deep Analysis</h3>
               <p className="text-xs text-warm-500">
                 {lastAnalyzed
                   ? `Last run ${lastAnalyzed.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
@@ -1326,7 +1326,7 @@ export function IntelligenceCommandCenter({
               onClick={handleAnalyze}
               disabled={isPending}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
+                'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all',
                 isPending
                   ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                   : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-600/20 active:scale-[0.98]'
@@ -1457,7 +1457,7 @@ export function IntelligenceCommandCenter({
               )}
               <Link
                 href="/golf/dashboard/intelligence"
-                className="flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
+                className="flex items-center justify-center gap-2 py-2.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
               >
                 View Full Intelligence Dashboard
                 <IconChevronRight size={14} />
@@ -1472,7 +1472,7 @@ export function IntelligenceCommandCenter({
           {displayGroups ? (
             <>
               {isPage && (
-                <h3 className="text-lg font-semibold text-warm-800">
+                <h3 className="text-lg font-medium text-warm-800">
                   Insights ({insightGroups.length} {insightGroups.length === 1 ? 'group' : 'groups'})
                 </h3>
               )}
@@ -1502,7 +1502,7 @@ export function IntelligenceCommandCenter({
           ) : sortedInsights.length > 0 ? (
             <>
               {isPage && (
-                <h3 className="text-lg font-semibold text-warm-800">All Insights ({sortedInsights.length})</h3>
+                <h3 className="text-lg font-medium text-warm-800">All Insights ({sortedInsights.length})</h3>
               )}
               {isPage ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1539,7 +1539,7 @@ export function IntelligenceCommandCenter({
       {activeTab === 'patterns' && (
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
-            <h3 className="text-lg font-semibold text-warm-800">All Patterns ({sortedPatterns.length})</h3>
+            <h3 className="text-lg font-medium text-warm-800">All Patterns ({sortedPatterns.length})</h3>
           )}
           {sortedPatterns.length > 0 ? (
             isPage ? (
@@ -1567,7 +1567,7 @@ export function IntelligenceCommandCenter({
       {activeTab === 'predictions' && (
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
-            <h3 className="text-lg font-semibold text-warm-800">All Forecasts ({predictions.length})</h3>
+            <h3 className="text-lg font-medium text-warm-800">All Forecasts ({predictions.length})</h3>
           )}
           {predictions.length > 0 ? (
             isPage ? (
@@ -1606,7 +1606,7 @@ export function IntelligenceCommandCenter({
               <IconSparkles size={isPage ? 36 : 22} className="text-primary-500" />
             </div>
             <h4 className={cn(
-              'font-semibold text-warm-800',
+              'font-medium text-warm-800',
               isPage ? 'text-xl mb-2' : 'text-[13px] mb-1'
             )}>
               Ready to Analyze

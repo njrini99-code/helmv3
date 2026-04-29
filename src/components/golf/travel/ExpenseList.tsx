@@ -73,7 +73,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
         <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl">💸</span>
         </div>
-        <h3 className="text-lg font-semibold text-warm-900 mb-2">No Expenses Yet</h3>
+        <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Expenses Yet</h3>
         <p className="text-sm text-warm-500 max-w-sm mx-auto">
           {isCoach
             ? 'Add your first expense to start tracking costs for this trip.'
@@ -128,7 +128,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
 
               {/* Amount */}
               <div className="text-right">
-                <p className="font-semibold text-warm-900">{formatCurrency(expense.amount)}</p>
+                <p className="font-medium text-warm-900">{formatCurrency(expense.amount)}</p>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                   expense.paid_by === 'team' ? 'bg-primary-100 text-primary-700' :
                   expense.paid_by === 'pending_reimbursement' ? 'bg-amber-100 text-amber-700' :
@@ -241,7 +241,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-warm-200 flex items-center justify-between">
-              <h3 className="font-semibold text-warm-900">Receipt</h3>
+              <h3 className="font-medium text-warm-900">Receipt</h3>
               <button
                 onClick={() => setViewingReceipt(null)}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"

@@ -125,7 +125,7 @@ export function VersionHistory({
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-semibold text-sm">
+                            <span className="font-medium text-sm">
                               v{version.version_number}
                             </span>
                             {isCurrent && (

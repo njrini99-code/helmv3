@@ -186,13 +186,13 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                 {/* Title row */}
                 <div className="flex items-start gap-2 mb-1">
                   <h3 className={cn(
-                    'text-subhead font-semibold text-warm-900 line-clamp-2 flex-1 leading-snug',
+                    'text-subhead font-medium text-warm-900 line-clamp-2 flex-1 leading-snug',
                     isAcked && 'text-warm-500',
                   )}>
                     {ann.title}
                   </h3>
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[10px] font-semibold uppercase tracking-wider flex-shrink-0 mt-0.5',
+                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[10px] font-medium uppercase tracking-wider flex-shrink-0 mt-0.5',
                     urg.badgeBg, urg.badgeText,
                   )}>
                     <span className={cn('w-1.5 h-1.5 rounded-full', urg.badgeDot)} />

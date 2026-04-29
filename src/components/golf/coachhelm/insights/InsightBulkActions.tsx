@@ -148,7 +148,7 @@ export function InsightBulkActions({
                     'flex items-center justify-center',
                     'min-w-[36px] h-9 px-3',
                     'bg-primary-500 text-white',
-                    'font-semibold text-sm rounded-lg'
+                    'font-medium text-sm rounded-lg'
                   )}
                 >
                   {selectedCount}

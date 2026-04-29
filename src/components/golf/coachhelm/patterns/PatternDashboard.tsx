@@ -418,7 +418,7 @@ export function PatternDashboard({
           >
             {patternsByType.map(([type, typePatterns]) => (
               <div key={type}>
-                <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                <h3 className="text-sm font-medium text-warm-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                   {type.charAt(0).toUpperCase() + type.slice(1)} Patterns
                   <span className="text-xs font-normal text-warm-400">
                     ({typePatterns.length})

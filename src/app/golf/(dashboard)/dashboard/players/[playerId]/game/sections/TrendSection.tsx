@@ -63,7 +63,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
           </p>
           <h2
             data-testid="section-heading-trend"
-            className="text-xl md:text-2xl font-semibold text-warm-900 mt-0.5"
+            className="text-xl md:text-2xl font-medium text-warm-900 mt-0.5"
           >
             Last {withData.length || 0} rounds
           </h2>
@@ -125,7 +125,7 @@ function TrendTooltip({ active, payload }: any) {
   return (
     <div className="rounded-lg bg-white shadow-md border border-warm-200 px-3 py-2">
       <p className="text-[10px] text-warm-500 uppercase tracking-wide">{p.round_date}</p>
-      <p className="text-sm font-semibold text-warm-900 tabular-nums">
+      <p className="text-sm font-medium text-warm-900 tabular-nums">
         {p.score_to_par === 0
           ? 'E'
           : p.score_to_par > 0

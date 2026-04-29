@@ -143,7 +143,7 @@ function ExpandableSection({
           <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center text-primary-600">
             {icon}
           </div>
-          <span className="font-semibold text-warm-900">{title}</span>
+          <span className="font-medium text-warm-900">{title}</span>
           {badge}
         </div>
         <div className="text-warm-400">
@@ -262,7 +262,7 @@ export function RoundReviewDisplay({
             )}
             <div className="flex-1">
               {courseName && (
-                <div className="font-semibold text-warm-900 text-lg">{courseName}</div>
+                <div className="font-medium text-warm-900 text-lg">{courseName}</div>
               )}
               {roundDate && (
                 <div className="text-sm text-warm-500">{formatDate(roundDate)}</div>
@@ -476,7 +476,7 @@ export function RoundReviewDisplay({
                 className="flex items-start gap-3 py-2"
               >
                 <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs font-semibold text-primary-600">
+                  <span className="text-xs font-medium text-primary-600">
                     {index + 1}
                   </span>
                 </div>
@@ -504,7 +504,7 @@ export function RoundReviewDisplay({
           <div className="space-y-3">
             {/* Front 9 */}
             <div>
-              <div className="text-xs font-semibold text-warm-500 mb-1.5 uppercase tracking-wider">Front 9</div>
+              <div className="text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Front 9</div>
               <div className="grid grid-cols-10 gap-1">
                 {review.holeByHole.filter(h => h.hole <= 9).map((h) => {
                   const bg =
@@ -538,7 +538,7 @@ export function RoundReviewDisplay({
             {/* Back 9 */}
             {review.holeByHole.filter(h => h.hole >= 10).length > 0 && (
               <div>
-                <div className="text-xs font-semibold text-warm-500 mb-1.5 uppercase tracking-wider">Back 9</div>
+                <div className="text-xs font-medium text-warm-500 mb-1.5 uppercase tracking-wider">Back 9</div>
                 <div className="grid grid-cols-10 gap-1">
                   {review.holeByHole.filter(h => h.hole >= 10).map((h) => {
                     const bg =
@@ -601,23 +601,23 @@ export function RoundReviewDisplay({
                   'p-3 rounded-xl border',
                   frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-cream-100/68 border-warm-200/45'
                 )}>
-                  <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Front 9</div>
+                  <div className="text-xs font-medium text-warm-500 mb-2 uppercase">Front 9</div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Score</span>
-                      <span className="font-semibold text-warm-900">{front.score}</span>
+                      <span className="font-medium text-warm-900">{front.score}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Putts</span>
-                      <span className="font-semibold text-warm-900">{front.putts}</span>
+                      <span className="font-medium text-warm-900">{front.putts}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">GIR</span>
-                      <span className="font-semibold text-warm-900">{front.gir}/{front.girTotal}</span>
+                      <span className="font-medium text-warm-900">{front.gir}/{front.girTotal}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Fairways</span>
-                      <span className="font-semibold text-warm-900">{front.fairways}/{front.fairwayTotal}</span>
+                      <span className="font-medium text-warm-900">{front.fairways}/{front.fairwayTotal}</span>
                     </div>
                   </div>
                 </div>
@@ -626,23 +626,23 @@ export function RoundReviewDisplay({
                   'p-3 rounded-xl border',
                   !frontBetter ? 'bg-primary-50/50 border-primary-200/50' : 'bg-cream-100/68 border-warm-200/45'
                 )}>
-                  <div className="text-xs font-semibold text-warm-500 mb-2 uppercase">Back 9</div>
+                  <div className="text-xs font-medium text-warm-500 mb-2 uppercase">Back 9</div>
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Score</span>
-                      <span className="font-semibold text-warm-900">{back.score}</span>
+                      <span className="font-medium text-warm-900">{back.score}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Putts</span>
-                      <span className="font-semibold text-warm-900">{back.putts}</span>
+                      <span className="font-medium text-warm-900">{back.putts}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">GIR</span>
-                      <span className="font-semibold text-warm-900">{back.gir}/{back.girTotal}</span>
+                      <span className="font-medium text-warm-900">{back.gir}/{back.girTotal}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-warm-600">Fairways</span>
-                      <span className="font-semibold text-warm-900">{back.fairways}/{back.fairwayTotal}</span>
+                      <span className="font-medium text-warm-900">{back.fairways}/{back.fairwayTotal}</span>
                     </div>
                   </div>
                 </div>
@@ -756,7 +756,7 @@ export function RoundReviewDisplay({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm text-warm-900">{item.category}</span>
+                    <span className="font-medium text-sm text-warm-900">{item.category}</span>
                     <span className={cn(
                       'text-[13px] font-medium',
                       item.potentialStrokes >= 2 ? 'text-red-600' :
@@ -840,7 +840,7 @@ export function RoundReviewDisplay({
                 <div className="text-center text-xs text-warm-500 pt-1">
                   Finished at{' '}
                   <span className={cn(
-                    'font-semibold',
+                    'font-medium',
                     data[data.length - 1]!.rollingScoreToPar < 0 ? 'text-primary-600' :
                     data[data.length - 1]!.rollingScoreToPar > 0 ? 'text-red-600' :
                     'text-warm-700'
@@ -869,7 +869,7 @@ export function RoundReviewDisplay({
             {/* Driving stats */}
             {review.drivingAnalysis && (
               <div>
-                <div className="text-xs font-semibold text-warm-500 mb-2 uppercase tracking-wider">Driving</div>
+                <div className="text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Driving</div>
                 <div className="grid grid-cols-2 gap-2">
                   {review.drivingAnalysis.avgDistance !== null && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
@@ -915,7 +915,7 @@ export function RoundReviewDisplay({
             {/* Penalty analysis */}
             {review.penaltyAnalysis && review.penaltyAnalysis.total > 0 && (
               <div className="pt-3 border-t border-white/20">
-                <div className="text-xs font-semibold text-warm-500 mb-2 uppercase tracking-wider">Penalties</div>
+                <div className="text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Penalties</div>
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
                     <div className="text-xs text-red-600">Strokes Lost</div>

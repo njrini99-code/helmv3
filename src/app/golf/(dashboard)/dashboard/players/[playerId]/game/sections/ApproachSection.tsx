@@ -54,7 +54,7 @@ function MissDirectionChart({ pills }: { pills: MissPill[] }) {
             className="flex items-center justify-between rounded-lg bg-warm-50/80 border border-warm-100 px-3 py-2"
           >
             <span className="text-xs text-warm-600">{p.label}</span>
-            <span className="text-sm font-semibold text-warm-900 tabular-nums">
+            <span className="text-sm font-medium text-warm-900 tabular-nums">
               {p.value}
             </span>
           </div>

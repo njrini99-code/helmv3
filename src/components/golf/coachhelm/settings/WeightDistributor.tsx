@@ -65,7 +65,7 @@ export function WeightDistributor({ values, onChange }: WeightDistributorProps) 
         <div key={weight.key} className="space-y-1.5">
           <div className="flex items-center justify-between text-sm">
             <span className="text-warm-600">{weight.label}</span>
-            <span className="font-semibold text-warm-900 tabular-nums w-12 text-right">
+            <span className="font-medium text-warm-900 tabular-nums w-12 text-right">
               {values[weight.key]}%
             </span>
           </div>

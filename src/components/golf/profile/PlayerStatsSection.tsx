@@ -116,7 +116,7 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
 
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-warm-900">Scoring Trend</h3>
+          <h3 className="text-sm font-medium text-warm-900">Scoring Trend</h3>
           <p className="text-xs text-warm-500">Last {sortedRounds.length} rounds</p>
         </div>
         {scores.length >= 4 && (
@@ -190,7 +190,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
       />
 
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-warm-900">Score Distribution</h3>
+        <h3 className="text-sm font-medium text-warm-900">Score Distribution</h3>
         <p className="text-xs text-warm-500">{total} holes played</p>
       </div>
 
@@ -240,7 +240,7 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
   return (
     <div className="flex justify-between items-center py-2.5 border-b border-warm-100 last:border-0">
       <span className="text-sm text-warm-600">{label}</span>
-      <span className={cn('text-sm font-semibold tabular-nums', highlight ? 'text-primary-600' : 'text-warm-900')}>
+      <span className={cn('text-sm font-medium tabular-nums', highlight ? 'text-primary-600' : 'text-warm-900')}>
         {value}
       </span>
     </div>
@@ -368,7 +368,7 @@ function NoStatsPlaceholder() {
       <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
         <IconTarget size={28} className="text-warm-400" />
       </div>
-      <h3 className="text-lg font-semibold text-warm-900 mb-2">No Stats Available</h3>
+      <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Stats Available</h3>
       <p className="text-sm text-warm-500 max-w-sm mx-auto">
         Complete rounds with shot-by-shot tracking to see detailed statistics and spray charts.
       </p>
@@ -444,7 +444,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
       {/* Section Header with Round Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-warm-900">Performance Stats</h2>
+          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Performance Stats</h2>
           <p className="text-sm text-warm-500">
             {selectedRoundId === 'overall'
               ? `Overall statistics from ${rounds.length} rounds`
@@ -538,7 +538,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           {/* Trends Section */}
           {rounds.length >= 2 && selectedRoundId === 'overall' && (
             <div>
-              <h3 className="text-base font-semibold text-warm-900 mb-3">Performance Trends</h3>
+              <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-3">Performance Trends</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ScoringTrendMini rounds={rounds} />
                 <ScoreDistribution stats={stats} />
@@ -548,7 +548,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
 
           {/* Detailed Stats Tabs */}
           <div>
-            <h3 className="text-base font-semibold text-warm-900 mb-3">Detailed Statistics</h3>
+            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-3">Detailed Statistics</h3>
             <DetailedStatsTabs stats={stats} />
           </div>
         </>

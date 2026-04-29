@@ -83,7 +83,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
             <div className="flex items-center gap-3">
               <Avatar name={name} src={player.avatar_url} size="lg" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-warm-900 truncate">{name}</p>
+                <p className="font-medium text-warm-900 truncate">{name}</p>
                 <p className="text-sm text-warm-500 capitalize">
                   {player.year?.replace('_', ' ') || 'Player'}
                 </p>
@@ -95,7 +95,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
           <div className="p-3 grid grid-cols-2 gap-2 text-center border-b border-warm-100">
             <div className="px-2 py-1">
               <p className="text-xs text-warm-500">Handicap</p>
-              <p className="font-semibold text-warm-900">
+              <p className="font-medium text-warm-900">
                 {player.handicap !== null && player.handicap !== undefined 
                   ? (player.handicap > 0 ? '+' : '') + player.handicap.toFixed(1)
                   : '--'}
@@ -103,7 +103,7 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
             </div>
             <div className="px-2 py-1">
               <p className="text-xs text-warm-500">Avg Score</p>
-              <p className="font-semibold text-warm-900">
+              <p className="font-medium text-warm-900">
                 {player.scoring_average?.toFixed(1) || '--'}
               </p>
             </div>

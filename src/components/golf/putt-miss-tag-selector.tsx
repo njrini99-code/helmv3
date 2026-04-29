@@ -56,7 +56,7 @@ export function PuttMissTagSelector({
               whileTap={{ scale: 0.96 }}
               className={cn(
                 'relative px-4 py-3 rounded-xl border transition-all duration-200',
-                'text-sm font-semibold',
+                'text-sm font-medium',
                 isSelected
                   ? 'bg-primary-600 border-primary-600 text-white shadow-sm shadow-primary-950/10'
                   : 'bg-cream-100/75 backdrop-blur-sm border-warm-200 text-warm-700 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100',

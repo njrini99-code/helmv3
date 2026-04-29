@@ -125,9 +125,14 @@
      ambient blur, lower opacity, slightly cooler tint to mimic
      architectural daylight rather than the iOS-style elevation recipe
      that was here before. */
-  --glass-shadow-sm: 0 1px 3px rgba(58, 50, 40, 0.04), 0 6px 18px rgba(58, 50, 40, 0.04);
-  --glass-shadow-md: 0 1px 4px rgba(58, 50, 40, 0.05), 0 12px 28px rgba(58, 50, 40, 0.06);
-  --glass-shadow-lg: 0 2px 6px rgba(58, 50, 40, 0.06), 0 24px 48px rgba(58, 50, 40, 0.08);
+  /* Warm-shifted natural-light shadows.
+     Light source: 11am sun through linen, hue ≈ 42°. Two layers
+     (tight umbra + diffused penumbra) so surfaces never look
+     stamped. Used by surface-matte / surface-stone / surface-linen
+     and by the .room utility. */
+  --glass-shadow-sm: 0 1px 2px hsl(42 14% 22% / 0.04), 0 6px 18px hsl(42 16% 22% / 0.05);
+  --glass-shadow-md: 0 1px 3px hsl(42 14% 22% / 0.05), 0 12px 28px hsl(42 16% 22% / 0.06), 0 24px 48px hsl(42 16% 22% / 0.03);
+  --glass-shadow-lg: 0 2px 4px hsl(42 14% 22% / 0.06), 0 16px 36px hsl(42 16% 22% / 0.08), 0 32px 64px hsl(42 16% 22% / 0.04);
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
@@ -640,15 +645,14 @@
   .surface-apple,
   .surface-matte {
     background:
-      linear-gradient(180deg, rgba(251, 250, 247, 0.45) 0%, rgba(247, 245, 242, 0.62) 100%),
-      rgba(247, 245, 242, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(207, 200, 184, 0.50);
+      linear-gradient(180deg, hsl(45 22% 97% / 0.5) 0%, hsl(42 18% 94% / 0.62) 100%),
+      hsl(42 18% 94% / 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid hsl(40 14% 84% / 0.42);
     box-shadow:
-      0 1px 3px rgba(58, 50, 40, 0.04),
-      0 16px 32px rgba(58, 50, 40, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+      0 1px 2px hsl(42 14% 22% / 0.04),
+      0 16px 32px hsl(42 16% 22% / 0.06);
   }
 
   /* surface-linen — softest California-modern surface. No backdrop
@@ -656,23 +660,20 @@
      for "rooms" — full-bleed sections that should feel architectural,
      not card-like. */
   .surface-linen {
-    background: #F7F5F2;
-    border: 1px solid rgba(207, 200, 184, 0.32);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.40);
+    background: hsl(42 18% 94%);
+    border: 1px solid hsl(40 14% 84% / 0.28);
   }
 
   /* surface-stone — slightly weightier matte, for hero panels that
-     need to feel like a sculpted block. Adds a faint sand-bottom
-     inset to suggest the stone is sitting on the page, not floating. */
+     need to feel like a sculpted block. Two-layer warm shadow gives
+     the panel weight without ornamentation. */
   .surface-stone {
     background:
-      linear-gradient(180deg, rgba(251, 250, 247, 0.85) 0%, rgba(240, 235, 227, 0.92) 100%);
-    border: 1px solid rgba(207, 200, 184, 0.55);
+      linear-gradient(180deg, hsl(45 22% 97%) 0%, hsl(40 14% 90%) 100%);
+    border: 1px solid hsl(40 14% 80% / 0.45);
     box-shadow:
-      0 1px 2px rgba(58, 50, 40, 0.04),
-      0 18px 40px rgba(58, 50, 40, 0.07),
-      inset 0 1px 0 rgba(255, 255, 255, 0.5),
-      inset 0 -1px 0 rgba(207, 200, 184, 0.35);
+      0 2px 4px hsl(42 14% 22% / 0.05),
+      0 18px 40px hsl(42 16% 22% / 0.07);
   }
 
   /* Glass Level 3: Prominent - Navigation, modals, overlays */
@@ -781,15 +782,48 @@
      container. Wrap dashboard rows in this for the "rooms" feel. */
   .room {
     @apply relative rounded-3xl;
-    background: linear-gradient(180deg, rgba(251, 250, 247, 0.55) 0%, rgba(247, 245, 242, 0.78) 100%);
-    border: 1px solid rgba(207, 200, 184, 0.32);
+    background: linear-gradient(180deg, hsl(45 22% 97% / 0.55) 0%, hsl(42 18% 94% / 0.78) 100%);
+    border: 1px solid hsl(40 14% 84% / 0.28);
     box-shadow:
-      0 1px 2px rgba(58, 50, 40, 0.03),
-      0 18px 40px rgba(58, 50, 40, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.45);
+      0 1px 2px hsl(42 14% 22% / 0.03),
+      0 18px 40px hsl(42 16% 22% / 0.04);
   }
   .room-inner {
     @apply relative z-10 px-6 py-7 md:px-8 md:py-9;
+  }
+
+  /* ambient-aurora — slow, breathing radial glow tucked behind hero
+     surfaces. Reads as morning light catching a linen wall. Pure
+     decoration, pointer-events-none, low GPU cost (transform only). */
+  .ambient-aurora {
+    position: absolute;
+    inset: -20% -10%;
+    pointer-events: none;
+    background:
+      radial-gradient(800px 480px at 18% 22%, hsl(155 32% 55% / 0.07), transparent 60%),
+      radial-gradient(720px 420px at 88% 10%, hsl(38 60% 55% / 0.06), transparent 65%),
+      radial-gradient(900px 540px at 60% 110%, hsl(155 26% 38% / 0.05), transparent 60%);
+    filter: blur(2px);
+    animation: ambient-aurora-drift 22s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate;
+  }
+
+  @keyframes ambient-aurora-drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+      opacity: 0.85;
+    }
+    50% {
+      transform: translate3d(-1.5%, 1%, 0) scale(1.04);
+      opacity: 1;
+    }
+    100% {
+      transform: translate3d(1.2%, -0.8%, 0) scale(1.02);
+      opacity: 0.92;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ambient-aurora { animation: none; }
   }
 
   .input-dark {

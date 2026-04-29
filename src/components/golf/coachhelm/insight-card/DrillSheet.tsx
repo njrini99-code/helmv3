@@ -130,7 +130,7 @@ export function DrillSheet({
         <header className="space-y-2">
           <h2
             data-testid="drill-sheet-title"
-            className="text-[24px] md:text-[28px] leading-tight font-semibold text-warm-900"
+            className="text-[24px] md:text-[28px] leading-tight font-medium text-warm-900"
           >
             {drill.title}
           </h2>
@@ -191,7 +191,7 @@ export function DrillSheet({
             onClick={handleAddToPlan}
             className={cn(
               'inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl',
-              'bg-primary-500 text-white text-sm font-semibold',
+              'bg-primary-500 text-white text-sm font-medium',
               'hover:bg-primary-600 active:scale-[0.99] transition-all',
               addPending && 'opacity-60 pointer-events-none',
             )}

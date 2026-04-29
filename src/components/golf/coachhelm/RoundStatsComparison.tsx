@@ -319,7 +319,7 @@ export function RoundStatsComparison({
             <IconChart size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Stats Comparison</h3>
+            <h3 className="font-medium text-warm-900">Stats Comparison</h3>
             <p className="text-xs text-warm-500">vs your average</p>
           </div>
         </div>
@@ -338,7 +338,7 @@ export function RoundStatsComparison({
           <IconChart size={20} className="text-primary-600" />
         </div>
         <div>
-          <h3 className="font-semibold text-warm-900">Stats Comparison</h3>
+          <h3 className="font-medium text-warm-900">Stats Comparison</h3>
           <p className="text-xs text-warm-500">
             How this round compares to your averages
           </p>

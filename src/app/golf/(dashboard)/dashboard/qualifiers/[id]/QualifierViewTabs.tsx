@@ -66,12 +66,12 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
           <table className="w-full">
             <thead>
               <tr className="border-b border-warm-200">
-                <th className="pb-3 pr-4 text-left text-xs font-semibold text-warm-500 uppercase">Pos</th>
-                <th className="pb-3 pr-4 text-left text-xs font-semibold text-warm-500 uppercase">Player</th>
-                <th className="pb-3 pr-4 text-right text-xs font-semibold text-warm-500 uppercase">Rounds</th>
-                <th className="pb-3 pr-4 text-right text-xs font-semibold text-warm-500 uppercase">Total</th>
-                <th className="pb-3 pr-4 text-right text-xs font-semibold text-warm-500 uppercase">To Par</th>
-                <th className="pb-3 pr-4 text-right text-xs font-semibold text-warm-500 uppercase">Avg</th>
+                <th className="pb-3 pr-4 text-left text-xs font-medium text-warm-500 uppercase">Pos</th>
+                <th className="pb-3 pr-4 text-left text-xs font-medium text-warm-500 uppercase">Player</th>
+                <th className="pb-3 pr-4 text-right text-xs font-medium text-warm-500 uppercase">Rounds</th>
+                <th className="pb-3 pr-4 text-right text-xs font-medium text-warm-500 uppercase">Total</th>
+                <th className="pb-3 pr-4 text-right text-xs font-medium text-warm-500 uppercase">To Par</th>
+                <th className="pb-3 pr-4 text-right text-xs font-medium text-warm-500 uppercase">Avg</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-warm-100">
@@ -103,7 +103,7 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
                     <td className="py-3 pr-4 text-sm text-warm-600 text-right">
                       {entry.roundsCompleted} / {numRounds}
                     </td>
-                    <td className="py-3 pr-4 text-sm font-semibold text-warm-900 text-right">
+                    <td className="py-3 pr-4 text-sm font-medium text-warm-900 text-right">
                       {entry.totalScore > 0 ? entry.totalScore : '-'}
                     </td>
                     <td className="py-3 pr-4 text-sm text-warm-600 text-right">

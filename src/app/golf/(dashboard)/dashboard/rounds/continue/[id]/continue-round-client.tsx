@@ -909,7 +909,7 @@ export default function ContinueRoundClient({
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
           <button
             onClick={() => setShowFinishConfirm(true)}
-            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-semibold hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
           >
             Submit Round
           </button>
@@ -952,7 +952,7 @@ export default function ContinueRoundClient({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 text-center mb-2">
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
               Recover Unsaved Progress?
             </h3>
             <p className="text-sm text-warm-500 text-center mb-1">
@@ -1024,9 +1024,9 @@ export default function ContinueRoundClient({
             const ScoreCell = ({ h }: { h: HoleStats }) => {
               const diff = (h?.score ?? 0) - (h?.par ?? 0);
               const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-medium'
-                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-semibold'
+                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-medium'
                 : diff === 0 ? 'text-warm-700 bg-white font-medium'
-                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-semibold'
+                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-medium'
                 : 'text-red-600 bg-red-50/70 font-medium';
               return (
                 <div className={`text-center py-1.5 ${cls}`}>
@@ -1066,7 +1066,7 @@ export default function ContinueRoundClient({
                       <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
                         <IconFlag size={24} className="text-white" />
                       </div>
-                      <h3 className="text-lg font-semibold text-white/90 mb-1">Round Complete</h3>
+                      <h3 className="text-lg font-medium text-white/90 mb-1">Round Complete</h3>
                       <div className="flex items-baseline justify-center gap-2">
                         <m.span
                           initial={{ opacity: 0, y: 8 }}
@@ -1080,7 +1080,7 @@ export default function ContinueRoundClient({
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.35 }}
-                          className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
+                          className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
                         >
                           ({toParLabel})
                         </m.span>
@@ -1118,7 +1118,7 @@ export default function ContinueRoundClient({
                       transition={{ delay: 0.3, duration: 0.3 }}
                       className="mb-6"
                     >
-                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
+                      <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
                       <div className="rounded-xl border border-warm-200/35 overflow-x-auto overflow-hidden">
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((_, i) => (

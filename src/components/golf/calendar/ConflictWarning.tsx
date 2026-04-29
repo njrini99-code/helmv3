@@ -87,7 +87,7 @@ export function ConflictWarning({
         <div className="space-y-3 flex-1">
           {/* Header */}
           <div>
-            <h4 className="font-semibold text-amber-900 flex items-center gap-2">
+            <h4 className="font-medium text-amber-900 flex items-center gap-2">
               <Users className="w-4 h-4" />
               Scheduling Conflict Detected
             </h4>

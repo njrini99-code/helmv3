@@ -57,9 +57,9 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
         <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg shadow-sm shadow-blue-500/20">
           <IconTarget size={14} className="text-white" />
         </div>
-        <h3 className="text-sm font-semibold text-warm-900">Performance Forecast</h3>
+        <h3 className="text-sm font-medium text-warm-900">Performance Forecast</h3>
         <span className={cn(
-          'text-label font-semibold px-2.5 py-0.5 rounded-full ml-auto',
+          'text-label font-medium px-2.5 py-0.5 rounded-full ml-auto',
           confidencePercent >= 75 ? 'bg-primary-100 text-primary-700' :
           confidencePercent >= 50 ? 'bg-amber-100 text-amber-700' :
           'bg-warm-100 text-warm-600'
@@ -97,7 +97,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
           <div>
             <div className="text-label text-warm-500 mb-0.5">Trend</div>
             <div className={cn(
-              'text-sm font-semibold',
+              'text-sm font-medium',
               trend === 'improving' && 'text-primary-600',
               trend === 'declining' && 'text-red-500',
               trend === 'stable' && 'text-warm-600',

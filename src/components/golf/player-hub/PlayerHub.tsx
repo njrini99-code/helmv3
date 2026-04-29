@@ -204,7 +204,7 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="font-semibold text-warm-900 truncate">{trip.event_name}</h3>
+              <h3 className="font-medium text-warm-900 truncate">{trip.event_name}</h3>
               <StatusPill
                 tone={status.tone}
                 size="xs"
@@ -305,7 +305,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           <div className="grid grid-cols-2 gap-3">
             <div className="p-4 bg-cream-50/55 rounded-2xl">
               <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
-              <p className="font-semibold text-warm-900">{fmtDate(trip.departure_date)}</p>
+              <p className="font-medium text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
               )}
@@ -316,7 +316,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
             {trip.return_date && (
               <div className="p-4 bg-cream-50/55 rounded-2xl">
                 <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
-                <p className="font-semibold text-warm-900">{fmtDate(trip.return_date)}</p>
+                <p className="font-medium text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
                 )}
@@ -328,7 +328,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {trip.hotel_name && (
             <div className="p-4 bg-blue-50/70 rounded-xl">
               <p className="text-micro font-medium text-blue-500 uppercase tracking-[0.12em] opacity-80 mb-1.5">Lodging</p>
-              <p className="font-semibold text-warm-900">{trip.hotel_name}</p>
+              <p className="font-medium text-warm-900">{trip.hotel_name}</p>
               {trip.hotel_address && <p className="text-sm text-warm-600 mt-1">{trip.hotel_address}</p>}
               <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-warm-500">
                 {trip.hotel_phone && <span>Phone: {trip.hotel_phone}</span>}
@@ -452,7 +452,7 @@ const PlayerTaskCard = memo(function PlayerTaskCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className={cn(
-                'font-semibold text-warm-900 truncate',
+                'font-medium text-warm-900 truncate',
                 isCompleted && 'line-through text-warm-500',
               )}>
                 {task.title}
@@ -544,7 +544,7 @@ const EventRSVPCard = memo(function EventRSVPCard({
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-warm-900 truncate">{event.title}</h3>
+              <h3 className="font-medium text-warm-900 truncate">{event.title}</h3>
               {event.is_mandatory && (
                 <Badge variant="danger" size="sm">Required</Badge>
               )}
@@ -568,11 +568,11 @@ const EventRSVPCard = memo(function EventRSVPCard({
               )}
               <span className="flex items-center gap-1.5">
                 <IconUsers size={12} />
-                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-micro font-semibold">
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-micro font-medium">
                   {event.going_count} going
                 </span>
                 {event.maybe_count > 0 && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-micro font-semibold">
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-micro font-medium">
                     {event.maybe_count} maybe
                   </span>
                 )}
@@ -675,7 +675,7 @@ function OverviewSection({
         </div>
         <button
           onClick={onViewAll}
-          className="text-[12px] font-semibold text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
+          className="text-[12px] font-medium text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
         >
           View all →
         </button>

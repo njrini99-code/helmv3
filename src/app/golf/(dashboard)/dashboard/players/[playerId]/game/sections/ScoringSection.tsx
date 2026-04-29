@@ -70,7 +70,7 @@ function ParTypeBars({ bars }: { bars: Bar[] }) {
               <span className="text-[10px] uppercase tracking-wide font-medium opacity-70">
                 {bar.label}
               </span>
-              <span className="text-xl font-semibold tabular-nums mt-0.5">
+              <span className="text-xl font-medium tabular-nums mt-0.5">
                 {bar.value.toFixed(2)}
               </span>
               <span className="text-[10px] tabular-nums mt-0.5 opacity-80">

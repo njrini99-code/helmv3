@@ -48,8 +48,8 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
         <div className="p-1.5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg shadow-sm shadow-purple-500/20">
           <IconSparkles size={14} className="text-white" />
         </div>
-        <h3 className="text-sm font-semibold text-warm-900">Detected Patterns</h3>
-        <span className="text-label font-semibold text-warm-500 ml-auto tabular-nums">
+        <h3 className="text-sm font-medium text-warm-900">Detected Patterns</h3>
+        <span className="text-label font-medium text-warm-500 ml-auto tabular-nums">
           {patterns.length} pattern{patterns.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -84,7 +84,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                       <IconTrendingDown size={12} className="text-primary-500" />
                     </div>
                   )}
-                  <span className="text-sm font-semibold text-warm-900">
+                  <span className="text-sm font-medium text-warm-900">
                     {pattern.description ? sanitizeNaN(pattern.description) : `${formatLabel(pattern.patternType)} Pattern`}
                   </span>
                 </div>

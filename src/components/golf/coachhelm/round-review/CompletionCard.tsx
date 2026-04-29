@@ -35,7 +35,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
           <div className="flex items-center justify-center gap-3">
             <span className="text-[44px] md:text-[52px] font-light tracking-[-0.025em]">{review.roundScore}</span>
             <span className={cn(
-              'text-2xl font-semibold px-3 py-1 rounded-lg',
+              'text-2xl font-medium px-3 py-1 rounded-lg',
               scoreToPar < 0 && 'bg-primary-500/20 text-primary-400',
               scoreToPar === 0 && 'bg-warm-500/20 text-warm-300',
               scoreToPar > 0 && 'bg-red-500/20 text-red-400',
@@ -52,7 +52,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
             <div className="text-center">
               <div className="text-xs text-warm-400 mb-1">Scoring Avg</div>
               <div className="flex items-center gap-2">
-                <span className="text-lg font-semibold">{review.scoringAvgAfter.toFixed(1)}</span>
+                <span className="text-lg font-medium">{review.scoringAvgAfter.toFixed(1)}</span>
                 {avgChange !== null && avgChange !== 0 && (
                   <span className={cn(
                     'text-xs font-medium',
@@ -68,7 +68,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
           {/* Front/Back */}
           <div className="text-center">
             <div className="text-xs text-warm-400 mb-1">Front / Back</div>
-            <div className="text-lg font-semibold">
+            <div className="text-lg font-medium">
               {review.roundStats.frontNine} / {review.roundStats.backNine}
             </div>
           </div>
@@ -76,7 +76,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
           {/* Birdies */}
           <div className="text-center">
             <div className="text-xs text-warm-400 mb-1">Birdies</div>
-            <div className="text-lg font-semibold text-primary-400">
+            <div className="text-lg font-medium text-primary-400">
               {review.roundStats.birdies}
             </div>
           </div>

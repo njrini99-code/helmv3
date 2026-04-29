@@ -121,7 +121,7 @@ function FocusAreaCardContent({
         </div>
         <div className="flex-1 min-w-0">
           <h4 className={cn(
-            'font-semibold text-warm-900 text-sm leading-tight line-clamp-2 transition-colors',
+            'font-medium text-warm-900 text-sm leading-tight line-clamp-2 transition-colors',
             interactive && 'group-hover:text-primary-600'
           )}>
             {formatAreaName(focusArea.area)}
@@ -222,7 +222,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
             <IconTarget size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Focus Areas</h3>
+            <h3 className="font-medium text-warm-900">Focus Areas</h3>
             <p className="text-xs text-warm-500">Areas to prioritize in practice</p>
           </div>
         </div>
@@ -248,7 +248,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           <IconTarget size={20} className="text-primary-600" />
         </div>
         <div>
-          <h3 className="font-semibold text-warm-900">Focus Areas</h3>
+          <h3 className="font-medium text-warm-900">Focus Areas</h3>
           <p className="text-xs text-warm-500">
             Prioritize these areas in your practice
           </p>

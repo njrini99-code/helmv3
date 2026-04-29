@@ -66,7 +66,7 @@ export function AcknowledgementTracker({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium text-warm-700">Acknowledgements</span>
         <span className={cn(
-          'text-sm font-semibold tabular-nums',
+          'text-sm font-medium tabular-nums',
           isComplete ? 'text-primary-600' : 'text-warm-900'
         )}>
           {acknowledgedCount}/{totalRecipients}

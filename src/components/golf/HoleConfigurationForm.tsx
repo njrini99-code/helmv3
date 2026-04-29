@@ -85,7 +85,7 @@ export function HoleConfigurationForm({
           </svg>
           Back
         </button>
-        <h2 className="text-lg font-semibold text-warm-900">{courseName}</h2>
+        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{courseName}</h2>
         <div className="w-16" /> {/* Spacer */}
       </div>
 
@@ -228,7 +228,7 @@ export function HoleConfigurationForm({
       {/* Save Button */}
       <button
         onClick={handleSubmit}
-        className="w-full py-4 bg-primary-600 text-white font-semibold rounded-lg
+        className="w-full py-4 bg-primary-600 text-white font-medium rounded-lg
                    hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700"
       >
         Save Course & Start Round

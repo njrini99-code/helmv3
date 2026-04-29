@@ -162,8 +162,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // Geist Sans is Vercel's display-light grotesque — sub-pixel
+        // optical sizing + range from weight 100 to 900 lets the
+        // California-modern × neo-futurism brief breathe at every
+        // scale. Fraunces stays available as the editorial serif
+        // companion for eyebrows and quotes (used sparingly).
+        sans: ['var(--font-geist-sans)', 'DM Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
         serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
+        mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+        display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         // ═══════════════════════════════════════════════════════════════

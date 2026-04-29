@@ -128,7 +128,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 id="confirm-classes-title" className="text-lg font-semibold text-warm-900">Review Your Schedule</h2>
+                <h2 id="confirm-classes-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Review Your Schedule</h2>
                 <p className="text-sm text-warm-500 mt-0.5">
                   We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
                 </p>
@@ -229,7 +229,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               type="button"
                               onClick={() => handleDayToggle(index, day.abbrev)}
                               className={cn(
-                                'flex-1 h-10 rounded-lg text-xs font-semibold transition-all duration-150',
+                                'flex-1 h-10 rounded-lg text-xs font-medium transition-all duration-150',
                                 cls.days.includes(day.abbrev)
                                   ? 'text-white shadow-sm'
                                   : 'bg-warm-50 text-warm-400 hover:bg-warm-100 active:bg-warm-200 hover:text-warm-600'
@@ -396,7 +396,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
           <div className="px-6 pt-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex-1">
-                <label className="block text-xs font-semibold text-warm-700 mb-1.5 uppercase tracking-wider">
+                <label className="block text-xs font-medium text-warm-700 mb-1.5 uppercase tracking-wider">
                   Semester Start Date
                 </label>
                 <Input

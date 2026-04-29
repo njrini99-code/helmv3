@@ -251,7 +251,7 @@ function AnnouncementDialog({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* ── Header ──────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-warm-100 flex-shrink-0">
-            <h2 id="ann-dialog-title" className="text-base font-semibold text-warm-900">
+            <h2 id="ann-dialog-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">
               New Announcement
             </h2>
             <button
@@ -277,7 +277,7 @@ function AnnouncementDialog({
               autoCapitalize="sentences"
               autoCorrect="on"
               enterKeyHint="next"
-              className="w-full text-lg font-semibold text-warm-900 placeholder:text-warm-300 bg-transparent outline-none border-none"
+              className="w-full text-[17px] font-medium text-warm-900 tracking-[-0.012em] placeholder:text-warm-300 bg-transparent outline-none border-none"
             />
 
             {/* Message textarea */}

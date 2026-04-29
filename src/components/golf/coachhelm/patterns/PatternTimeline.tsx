@@ -272,14 +272,14 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             <h3 className="text-sm font-medium text-warm-500 mb-1">Last 7 Days</h3>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-semibold text-warm-900">
+                <span className="text-2xl font-medium text-warm-900">
                   {trendSummary.detected}
                 </span>
                 <span className="text-sm text-warm-500">detected</span>
               </div>
               <div className="text-warm-300">|</div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-semibold text-primary-600">
+                <span className="text-2xl font-medium text-primary-600">
                   {trendSummary.resolved}
                 </span>
                 <span className="text-sm text-warm-500">resolved</span>

@@ -205,7 +205,7 @@ export function CalendarAvatarSidebar({
                     onClick={() => handleMemberClick(member.id)}
                     aria-label={getFullName(member)}
                     className={cn(
-                      'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-semibold cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
+                      'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-medium cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
                       !selected && 'bg-warm-100/65 text-warm-600 shadow-sm',
                       selected && 'scale-[1.08]',
                     )}
@@ -258,10 +258,10 @@ export function CalendarAvatarSidebar({
       {selectedPlayers.length > 0 && (
         <div className="w-full px-1 py-2 border-t border-warm-300/40 flex-shrink-0">
           <div className="flex items-center justify-center gap-1 mb-1.5">
-            <span className="text-[8px] font-semibold text-warm-400 uppercase tracking-[0.1em]">
+            <span className="text-[8px] font-medium text-warm-400 uppercase tracking-[0.1em]">
               Legend
             </span>
-            <span className="text-[8px] font-semibold text-warm-400 tabular-nums">
+            <span className="text-[8px] font-medium text-warm-400 tabular-nums">
               · {selectedPlayers.length}
             </span>
           </div>

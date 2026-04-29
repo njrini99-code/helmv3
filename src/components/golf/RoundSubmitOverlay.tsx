@@ -180,7 +180,7 @@ export function RoundSubmitOverlay({
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="text-lg font-semibold text-white/90 mb-1"
+                    className="text-lg font-medium text-white/90 mb-1"
                   >
                     Round Submitted
                   </m.h3>
@@ -191,7 +191,7 @@ export function RoundSubmitOverlay({
                     className="flex items-baseline justify-center gap-2"
                   >
                     <span className="text-[36px] md:text-[42px] font-light tracking-[-0.025em] text-white tabular-nums">{totalScore}</span>
-                    <span className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}>
+                    <span className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}>
                       ({toParLabel})
                     </span>
                   </m.div>

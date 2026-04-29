@@ -543,7 +543,7 @@ export function InsightFiltersPanel({
                 <div className="sticky top-0 bg-white pt-3 pb-2 px-6">
                   <div className="w-10 h-1 bg-warm-300 rounded-full mx-auto mb-4" />
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-warm-900">Filters</h3>
+                    <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Filters</h3>
                     <button
                       type="button"
                       onClick={() => setIsMobileOpen(false)}

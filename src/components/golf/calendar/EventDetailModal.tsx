@@ -573,7 +573,7 @@ export function EventDetailModal({
         {/* Colored Header Band - tinted by event type */}
         <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-5 pb-4')}>
           <div className="flex items-center justify-between mb-4">
-            <h2 id="event-modal-title" className="text-lg font-semibold text-warm-900">
+            <h2 id="event-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
               {modalTitle}
             </h2>
             <button
@@ -599,7 +599,7 @@ export function EventDetailModal({
                     onClick={() => setFormData({ ...formData, eventType: pill.type })}
                     disabled={isSaving}
                     className={cn(
-                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all duration-200',
+                      'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200',
                       isActive
                         ? cn(pill.activeBg, pill.activeText, 'shadow-md', pill.activeShadow)
                         : cn(pill.inactiveBg, pill.inactiveText),
@@ -617,7 +617,7 @@ export function EventDetailModal({
               {(() => {
                 const Icon = activeTypePill.icon;
                 return (
-                  <span className={cn('inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold', activeTypePill.activeBg, activeTypePill.activeText)}>
+                  <span className={cn('inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium', activeTypePill.activeBg, activeTypePill.activeText)}>
                     <Icon className="w-3.5 h-3.5" />
                     {activeTypePill.label}
                   </span>
@@ -650,7 +650,7 @@ export function EventDetailModal({
             autoCapitalize="sentences"
             autoCorrect="on"
             enterKeyHint="next"
-            className="w-full px-0 py-2 text-xl font-semibold text-warm-900 placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
+            className="w-full px-0 py-2 text-[20px] font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
             required
           />
 
@@ -781,7 +781,7 @@ export function EventDetailModal({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <UserPlus className="w-4 h-4 text-warm-500" />
-                  <span className="text-sm font-semibold text-warm-900">Attendees</span>
+                  <span className="text-sm font-medium text-warm-900">Attendees</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {formData.attendeeIds.length > 0 && (
@@ -800,7 +800,7 @@ export function EventDetailModal({
                         }
                       }}
                       disabled={isViewMode || isSaving}
-                      className="text-xs font-semibold text-primary-600 hover:text-primary-700 disabled:opacity-40 transition-colors"
+                      className="text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-40 transition-colors"
                     >
                       {formData.attendeeIds.length === availablePlayers.length ? 'Clear' : 'Add All'}
                     </button>
@@ -1004,7 +1004,7 @@ export function EventDetailModal({
           {/* RSVP Status Section */}
           {!isCreating && event?.id && formData.requiresRsvp && (
             <div className="border-t border-warm-200 -mx-6 px-6 pt-4">
-              <h4 className="text-sm font-semibold text-warm-900 mb-3">RSVP Status</h4>
+              <h4 className="text-sm font-medium text-warm-900 mb-3">RSVP Status</h4>
               {rsvpSummaryError && (
                 <p className="text-sm text-rose-600 mb-3">{rsvpSummaryError}</p>
               )}
@@ -1075,7 +1075,7 @@ export function EventDetailModal({
                   type="submit"
                   disabled={isSaving}
                   className={cn(
-                    'px-5 py-2 rounded-xl text-sm font-semibold text-white transition-all',
+                    'px-5 py-2 rounded-xl text-sm font-medium text-white transition-all',
                     'bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-600/20',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     isSaving && 'animate-pulse'
@@ -1144,7 +1144,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <h3
             id="series-scope-title"
-            className="text-xl font-semibold text-warm-900"
+            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]"
           >
             {verb} recurring event
           </h3>
@@ -1164,7 +1164,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                 )}
               >
-                <p className="text-sm font-semibold text-warm-900">{opt.label}</p>
+                <p className="text-sm font-medium text-warm-900">{opt.label}</p>
                 <p className="text-xs text-warm-500 mt-0.5">{opt.sub}</p>
               </button>
             </li>

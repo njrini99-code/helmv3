@@ -186,7 +186,7 @@ export function ExpenseSummary({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Pie Chart */}
         <div className="bg-white rounded-2xl border border-warm-200 p-6">
-          <h3 className="font-semibold text-warm-900 mb-4">Breakdown by Category</h3>
+          <h3 className="font-medium text-warm-900 mb-4">Breakdown by Category</h3>
           {pieData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -222,7 +222,7 @@ export function ExpenseSummary({
 
         {/* Category Breakdown with Budgets */}
         <div className="bg-white rounded-2xl border border-warm-200 p-6">
-          <h3 className="font-semibold text-warm-900 mb-4">Budget vs Actual</h3>
+          <h3 className="font-medium text-warm-900 mb-4">Budget vs Actual</h3>
           <div className="space-y-4">
             {ALL_CATEGORIES.map((category) => {
               const config = CATEGORY_CONFIG[category];
@@ -243,7 +243,7 @@ export function ExpenseSummary({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-warm-900">
+                      <span className="text-sm font-medium text-warm-900">
                         {formatCurrency(spent)}
                       </span>
                       {editingBudget === category ? (
@@ -319,7 +319,7 @@ export function ExpenseSummary({
 
       {/* Payment Status Summary */}
       <div className="bg-white rounded-2xl border border-warm-200 p-6">
-        <h3 className="font-semibold text-warm-900 mb-4">Payment Status</h3>
+        <h3 className="font-medium text-warm-900 mb-4">Payment Status</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 bg-primary-50 rounded-xl">
             <p className="text-sm text-primary-700 mb-1">Team Paid</p>

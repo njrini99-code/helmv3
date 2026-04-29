@@ -13,7 +13,7 @@ export function AlertTypeToggles({ values, onChange }: AlertTypeTogglesProps) {
         <div className="space-y-6">
             {ALERT_GROUPS.map((group) => (
                 <div key={group.title}>
-                    <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-3">
+                    <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">
                         {group.title}
                     </h3>
                     <div className="grid sm:grid-cols-2 gap-3">

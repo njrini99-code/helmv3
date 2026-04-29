@@ -195,7 +195,7 @@ export function MobileRSVPButtons({
               )}
 
               {showLabels && (
-                <span className={cn(sizeConfig.text, 'font-semibold whitespace-nowrap')}>
+                <span className={cn(sizeConfig.text, 'font-medium whitespace-nowrap')}>
                   {size === 'sm' ? option.shortLabel : option.label}
                 </span>
               )}

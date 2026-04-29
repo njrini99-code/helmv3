@@ -106,7 +106,7 @@ export function FormatToggle({
               />
             )}
             <span className="relative z-10">{opt.label}</span>
-            <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+            <span className={`relative z-10 rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
               isActive
                 ? 'bg-primary-100 text-primary-700'
                 : 'bg-warm-200/80 text-warm-500'
@@ -388,7 +388,7 @@ export function StatRow({ label, value, index = 0 }: { label: string; value: str
       transition={{ delay: stagger, duration: IOS_DURATION_NORMAL, ease: IOS_EASE as unknown as [number, number, number, number] }}
     >
       <span className="text-sm text-warm-600 group-hover:text-warm-800 transition-colors">{label}</span>
-      <span className="text-sm font-semibold text-warm-900 tabular-nums">{value}</span>
+      <span className="text-sm font-medium text-warm-900 tabular-nums">{value}</span>
     </motion.div>
   );
 }

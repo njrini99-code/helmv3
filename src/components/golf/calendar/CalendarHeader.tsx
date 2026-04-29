@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export type CalendarView = 'day' | 'week' | 'month';
 
@@ -44,19 +51,6 @@ export function CalendarHeader({
   const sidebar = useSidebarSafe();
   const toggleMobile = sidebar?.toggleMobile ?? (() => {});
   const [tzDropdownOpen, setTzDropdownOpen] = useState(false);
-  const tzDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!tzDropdownOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (tzDropdownRef.current && !tzDropdownRef.current.contains(e.target as Node)) {
-        setTzDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [tzDropdownOpen]);
 
   const getTitle = () => {
     if (view === 'day') {
@@ -195,66 +189,52 @@ export function CalendarHeader({
 
         {/* Timezone Toggle — desktop only */}
         {!isMobile && onSecondaryTimezoneChange && (
-          <div ref={tzDropdownRef} className="relative">
-            <button
-              type="button"
-              onClick={() => { void triggerHaptic('light'); setTzDropdownOpen(!tzDropdownOpen); }}
-              aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
-              aria-haspopup="menu"
-              aria-expanded={tzDropdownOpen}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                secondaryTimezone
-                  ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
-                  : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
-              )}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              {secondaryTimezone && (
-                <span className="text-[11.5px]">
-                  {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
-                </span>
-              )}
-            </button>
-            {tzDropdownOpen && (
-              <div
-                role="menu"
-                className="absolute right-0 top-full mt-2 z-50 w-48 rounded-2xl surface-stone py-2 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-300"
-              >
-                {secondaryTimezone && (
-                  <>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(null); setTzDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-warm-500 hover:bg-cream-50/70 transition-colors duration-300"
-                    >
-                      Remove overlay
-                    </button>
-                    <div className="h-px bg-warm-200/35 my-1 mx-4" />
-                  </>
+          <DropdownMenu open={tzDropdownOpen} onOpenChange={setTzDropdownOpen}>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                onClick={() => void triggerHaptic('light')}
+                aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  secondaryTimezone
+                    ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
+                    : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
                 )}
-                {TZ_OPTIONS
-                  .filter(tz => tz.value !== teamTimezone)
-                  .map(tz => (
-                  <button
+              >
+                <Globe className="w-3.5 h-3.5" />
+                {secondaryTimezone && (
+                  <span className="text-[11.5px]">
+                    {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[200px]">
+              {secondaryTimezone && (
+                <>
+                  <DropdownMenuItem
+                    onSelect={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(null); }}
+                    className="text-warm-500"
+                  >
+                    Remove overlay
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              {TZ_OPTIONS
+                .filter(tz => tz.value !== teamTimezone)
+                .map(tz => (
+                  <DropdownMenuItem
                     key={tz.value}
-                    type="button"
-                    role="menuitem"
-                    onClick={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(tz.value); setTzDropdownOpen(false); }}
-                    className={cn(
-                      'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300',
-                      secondaryTimezone === tz.value
-                        ? 'bg-primary-50/55 text-primary-700 font-medium'
-                        : 'text-warm-700 hover:bg-cream-50/70'
-                    )}
+                    onSelect={() => { void triggerHaptic('light'); onSecondaryTimezoneChange(tz.value); }}
+                    selected={secondaryTimezone === tz.value}
                   >
                     {tz.label}
-                  </button>
+                  </DropdownMenuItem>
                 ))}
-              </div>
-            )}
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         {/* Add Event — soft primary pill */}

@@ -76,7 +76,7 @@ export function ApproachMissSelector({
                   {config.icon}
                 </span>
                 <span className={cn(
-                  'text-micro font-semibold leading-none mt-1.5',
+                  'text-micro font-medium leading-none mt-1.5',
                   isSelected ? 'text-white' : config.color
                 )}>
                   {config.shortLabel}

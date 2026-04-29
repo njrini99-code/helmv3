@@ -121,11 +121,11 @@ export function AvailabilityDayView({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h3 className="text-[26px] leading-tight font-semibold text-warm-900">
+              <h3 className="text-[26px] leading-tight font-medium text-warm-900">
                 {date.toLocaleDateString('en-US', { weekday: 'long' })}
               </h3>
               {isToday && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-semibold tracking-wide ring-1 ring-primary-200/70">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-medium tracking-wide ring-1 ring-primary-200/70">
                   Today
                 </span>
               )}
@@ -137,7 +137,7 @@ export function AvailabilityDayView({
 
           {selectedPlayers.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap" role="list" aria-label="Selected players">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-warm-400 mr-1">
+              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-warm-400 mr-1">
                 Comparing
               </span>
               {selectedPlayers.map((player) => (
@@ -190,7 +190,7 @@ export function AvailabilityDayView({
             >
               {/* Hour label rail */}
               <div className="w-20 flex-shrink-0 flex items-start justify-end pt-3 pr-3 select-none">
-                <span className="text-xs font-semibold text-warm-400 tabular-nums">
+                <span className="text-xs font-medium text-warm-400 tabular-nums">
                   {formatHour(hour)}
                 </span>
               </div>
@@ -350,7 +350,7 @@ function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockP
                 {isClass ? <BookOpen className="w-2.5 h-2.5" /> : isBlocked ? <Lock className="w-2.5 h-2.5" /> : null}
               </span>
             )}
-            <p className="text-sm font-semibold text-warm-900 truncate">
+            <p className="text-sm font-medium text-warm-900 truncate">
               {period.title || (isClass ? 'Class' : isBlocked ? 'Blocked' : 'Busy')}
             </p>
           </div>

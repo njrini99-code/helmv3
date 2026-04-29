@@ -192,7 +192,7 @@ export function AlertCard({
           <div className="flex-1 min-w-0">
             {/* Header Row */}
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-semibold text-sm text-warm-900 truncate">
+              <span className="font-medium text-sm text-warm-900 truncate">
                 {alert.playerName}
               </span>
               <div className={cn(

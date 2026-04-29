@@ -86,7 +86,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
 
           {/* Impact Badge */}
           <div className="flex items-center gap-3 mt-2">
-            <span className={cn('text-sm font-semibold', impactColor)}>
+            <span className={cn('text-sm font-medium', impactColor)}>
               {isNegative ? '+' : ''}{pattern.strokeImpact.toFixed(1)} strokes
             </span>
             <span className="text-xs text-warm-400">
@@ -136,19 +136,19 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
               {/* Stats */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-warm-800">
+                  <div className="text-lg font-medium text-warm-800">
                     {supportPercent}%
                   </div>
                   <div className="text-xs text-warm-500">Frequency</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-warm-800">
+                  <div className="text-lg font-medium text-warm-800">
                     {pattern.lift.toFixed(1)}x
                   </div>
                   <div className="text-xs text-warm-500">Lift</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold text-warm-800">
+                  <div className="text-lg font-medium text-warm-800">
                     {pattern.sampleSize}
                   </div>
                   <div className="text-xs text-warm-500">Samples</div>

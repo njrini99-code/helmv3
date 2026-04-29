@@ -174,7 +174,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
             <span className="text-sm text-warm-600">Strokes per Round</span>
             <span
               className={cn(
-                'text-lg font-semibold',
+                'text-lg font-medium',
                 isPositiveImpact ? 'text-primary-600' : 'text-red-600'
               )}
             >
@@ -210,7 +210,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
           <h4 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1">
             Occurrences
           </h4>
-          <p className="text-2xl font-semibold text-warm-900">
+          <p className="text-2xl font-medium text-warm-900">
             {pattern.occurrenceCount}
           </p>
           <p className="text-xs text-warm-500 mt-1">
@@ -224,7 +224,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
           </h4>
           <div className="flex items-center gap-2">
             <TrendIcon size={20} className={trendInfo.color} />
-            <span className="text-lg font-semibold text-warm-900">
+            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
               {trendInfo.label}
             </span>
           </div>
@@ -238,7 +238,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
       <div className="bg-gradient-to-r from-primary-50 to-primary-50 border border-primary-200 rounded-xl p-4">
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-medium text-warm-900">Actionability Score</h4>
-          <span className="text-lg font-semibold text-primary-600">
+          <span className="text-lg font-medium text-primary-600">
             {Math.round(pattern.actionability * 100)}%
           </span>
         </div>
@@ -291,7 +291,7 @@ function MetricCard({
       <p className="text-xs text-warm-500 mb-1">{label}</p>
       <p
         className={cn(
-          'text-lg font-semibold',
+          'text-lg font-medium',
           highlight ? 'text-primary-600' : 'text-warm-900'
         )}
       >

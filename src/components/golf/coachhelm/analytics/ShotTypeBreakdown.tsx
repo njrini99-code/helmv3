@@ -110,7 +110,7 @@ function BarItem({
           )}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-lg font-semibold text-warm-900">{value}</span>
+          <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{value}</span>
           <span className="text-xs text-warm-500">{suffix}</span>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-blue-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
+            <h4 className="text-sm font-medium text-warm-800 uppercase tracking-wide">
               Tee Shots
             </h4>
             <span className="text-xs text-warm-400">
@@ -223,7 +223,7 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-primary-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
+            <h4 className="text-sm font-medium text-warm-800 uppercase tracking-wide">
               Approach Shots
             </h4>
             <span className="text-xs text-warm-400">
@@ -285,7 +285,7 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-amber-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
+            <h4 className="text-sm font-medium text-warm-800 uppercase tracking-wide">
               Around the Green
             </h4>
             <span className="text-xs text-warm-400">
@@ -327,7 +327,7 @@ export function ShotTypeBreakdown({
         >
           <div className="flex items-center gap-2">
             <div className="w-1 h-4 bg-purple-500 rounded-full" />
-            <h4 className="text-sm font-semibold text-warm-800 uppercase tracking-wide">
+            <h4 className="text-sm font-medium text-warm-800 uppercase tracking-wide">
               Putting
             </h4>
             <span className="text-xs text-warm-400">

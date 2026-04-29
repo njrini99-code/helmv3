@@ -71,7 +71,7 @@ export function StepIndicator<T extends string>({ currentStep, steps }: StepIndi
             >
               <div
                 className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-semibold',
+                  'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 text-sm font-medium',
                   isCompleted && 'bg-primary-600 text-white shadow-sm shadow-primary-600/30',
                   isCurrent && 'bg-white border-2 border-primary-600 text-primary-600 shadow-sm',
                   !isCompleted && !isCurrent && 'bg-warm-100 text-warm-400'

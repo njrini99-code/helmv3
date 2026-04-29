@@ -88,7 +88,7 @@ export function CausalRelationshipView({
               <p className="text-xs text-blue-600 uppercase tracking-wide font-medium mb-1">
                 Cause
               </p>
-              <p className="text-lg font-semibold text-blue-800">
+              <p className="text-lg font-medium text-blue-800">
                 {relationship.cause}
               </p>
               {relationship.causeMetric && (
@@ -129,7 +129,7 @@ export function CausalRelationshipView({
               <p className="text-xs text-primary-600 uppercase tracking-wide font-medium mb-1">
                 Effect
               </p>
-              <p className="text-lg font-semibold text-primary-800">
+              <p className="text-lg font-medium text-primary-800">
                 {relationship.effect}
               </p>
               {relationship.effectMetric && (
@@ -155,7 +155,7 @@ export function CausalRelationshipView({
         <div className="bg-white border border-warm-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-warm-600">Effect Strength</span>
-            <span className="text-lg font-semibold text-warm-900">
+            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
               {Math.round(relationship.strength * 100)}%
             </span>
           </div>
@@ -184,7 +184,7 @@ export function CausalRelationshipView({
         <div className="bg-white border border-warm-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-warm-600">Causal Confidence</span>
-            <span className="text-lg font-semibold text-warm-900">
+            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
               {Math.round(relationship.confidence * 100)}%
             </span>
           </div>
@@ -274,7 +274,7 @@ export function CausalRelationshipView({
             <IconTarget size={18} className="text-primary-600" />
             <h4 className="text-sm font-medium text-warm-900">Intervention Potential</h4>
           </div>
-          <span className="text-lg font-semibold text-primary-600">
+          <span className="text-lg font-medium text-primary-600">
             {Math.round(relationship.interventionPotential * 100)}%
           </span>
         </div>

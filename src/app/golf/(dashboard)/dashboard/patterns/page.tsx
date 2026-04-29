@@ -16,7 +16,7 @@ function ErrorState({ error }: { error: string }) {
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconInfo size={32} className="text-red-500" />
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
+        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
           Unable to Load Patterns
         </h2>
         <p className="text-warm-600 mb-6">{error}</p>
@@ -41,7 +41,7 @@ function NotCoachState() {
         <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
           <IconSparkles size={32} className="text-amber-500" />
         </div>
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">
+        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
           Coach Dashboard Only
         </h2>
         <p className="text-warm-600 mb-6">

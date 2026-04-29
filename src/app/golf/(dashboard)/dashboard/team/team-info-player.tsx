@@ -78,7 +78,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
             <SectionHeader title="Head Coach" icon={<IconUser size={18} />} />
             <PremiumGlassCard className="mt-3">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-semibold text-lg flex-shrink-0">
+                <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-medium text-lg flex-shrink-0">
                   {coach.full_name?.charAt(0) || 'C'}
                 </div>
                 <div className="min-w-0">
@@ -154,7 +154,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                       )}
                     </div>
                     {task.priority && task.priority !== 'normal' && (
-                      <span className={`px-1.5 py-0.5 text-xs font-semibold rounded uppercase tracking-wider flex-shrink-0 ${
+                      <span className={`px-1.5 py-0.5 text-xs font-medium rounded uppercase tracking-wider flex-shrink-0 ${
                         task.priority === 'high' || task.priority === 'urgent'
                           ? 'bg-red-50 text-red-600'
                           : 'bg-warm-100 text-warm-500'

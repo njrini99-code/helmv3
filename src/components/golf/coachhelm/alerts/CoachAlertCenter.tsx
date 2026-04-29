@@ -171,7 +171,7 @@ export function CoachAlertCenter({
             )}
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-warm-800">Player Alerts</h3>
+            <h3 className="text-sm font-medium text-warm-800">Player Alerts</h3>
             <p className="text-xs text-warm-500">
               {totalNeedAttention > 0
                 ? `${totalNeedAttention} need${totalNeedAttention === 1 ? 's' : ''} attention`
@@ -300,7 +300,7 @@ function EmptyAlertState() {
       >
         <IconBell size={24} className="text-primary-600" />
       </div>
-      <h4 className="text-sm font-semibold text-warm-700 mb-1">All Clear!</h4>
+      <h4 className="text-sm font-medium text-warm-700 mb-1">All Clear!</h4>
       <p className="text-xs text-warm-400 max-w-[200px]">
         No alerts right now. Your players are on track.
       </p>

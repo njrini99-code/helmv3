@@ -348,7 +348,7 @@ export function CalendarDayViewSwipeable({
                   <Calendar className="w-10 h-10 text-warm-300" />
                 </div>
               </div>
-              <h3 className="text-lg font-semibold text-warm-800 mb-1.5">
+              <h3 className="text-lg font-medium text-warm-800 mb-1.5">
                 Nothing scheduled
               </h3>
               <p className="text-sm text-warm-500 max-w-[200px] mb-8">
@@ -360,7 +360,7 @@ export function CalendarDayViewSwipeable({
                   onClick={onAddEvent}
                   className={cn(
                     'group flex items-center gap-2',
-                    'px-6 py-3 rounded-2xl font-semibold text-sm',
+                    'px-6 py-3 rounded-2xl font-medium text-sm',
                     'bg-primary-600 text-white',
                     'shadow-lg shadow-primary-600/25',
                     'hover:bg-primary-700 hover:shadow-primary-600/30',

@@ -130,7 +130,7 @@ export function InsightDrillDownModal({
           </div>
 
           {/* Headline */}
-          <h2 id="insight-drilldown-title" className="text-xl font-semibold text-warm-900 mb-2">
+          <h2 id="insight-drilldown-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
             {insight.headline}
           </h2>
 
@@ -221,19 +221,19 @@ export function InsightDrillDownModal({
                 {/* Quick stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-warm-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-semibold text-warm-900">
+                    <p className="text-2xl font-medium text-warm-900">
                       {Math.round(insight.confidence * 100)}%
                     </p>
                     <p className="text-xs text-warm-500 mt-1">Confidence</p>
                   </div>
                   <div className="bg-warm-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-semibold text-warm-900">
+                    <p className="text-2xl font-medium text-warm-900">
                       {insight.reasoning?.reasoningChain?.length || 0}
                     </p>
                     <p className="text-xs text-warm-500 mt-1">Reasoning Steps</p>
                   </div>
                   <div className="bg-warm-50 rounded-lg p-3 text-center">
-                    <p className="text-2xl font-semibold text-warm-900">
+                    <p className="text-2xl font-medium text-warm-900">
                       {insight.reasoning?.alternatives?.length || 0}
                     </p>
                     <p className="text-xs text-warm-500 mt-1">Alternatives</p>

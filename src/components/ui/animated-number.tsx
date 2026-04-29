@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { m, useSpring, useTransform, useInView } from 'framer-motion';
+import NumberFlow from '@number-flow/react';
 
 interface AnimatedNumberProps {
   value: number;
@@ -11,45 +10,29 @@ interface AnimatedNumberProps {
   className?: string;
 }
 
-export function AnimatedNumber({ 
-  value, 
-  decimals = 0, 
-  prefix = '', 
+/**
+ * Slot-machine number transition — every digit rolls into place
+ * independently, like a Tag Heuer dial. Used everywhere a hero
+ * numeric updates: stat sparklines, funnel counts, Team Pulse
+ * legend numbers, predicted scores. Reduced-motion users get a
+ * fade swap (NumberFlow handles that internally).
+ */
+export function AnimatedNumber({
+  value,
+  decimals = 0,
+  prefix = '',
   suffix = '',
-  className 
+  className,
 }: AnimatedNumberProps) {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
-
-  const spring = useSpring(0, {
-    mass: 0.8,
-    stiffness: 75,
-    damping: 15
-  });
-
-  const display = useTransform(spring, (current) =>
-    `${prefix}${current.toFixed(decimals)}${suffix}`
-  );
-
-  // Track value changes so the spring follows live data, not just the
-  // first-paint value. Previous behavior gated the .set() call behind a
-  // one-shot `hasAnimated` flag — fine for marketing pages, fatal for an
-  // admin dashboard whose KPIs update from a placeholder 0 to a real
-  // number once the data fetch resolves: the spring stuck at 0 forever.
-  useEffect(() => {
-    if (isInView) {
-      spring.set(value);
-    }
-  }, [isInView, value, spring]);
-
-  const finalDisplay = `${prefix}${value.toFixed(decimals)}${suffix}`;
-
   return (
-    <>
-      <m.span ref={ref} className={className} aria-hidden="true">
-        {display}
-      </m.span>
-      <span className="sr-only">{finalDisplay}</span>
-    </>
+    <NumberFlow
+      value={value}
+      prefix={prefix}
+      suffix={suffix}
+      format={{ minimumFractionDigits: decimals, maximumFractionDigits: decimals }}
+      className={className}
+      transformTiming={{ duration: 700, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+      spinTiming={{ duration: 900, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+    />
   );
 }

@@ -289,7 +289,7 @@ export default function GolfMessagesPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
           <p className="text-warm-500 mb-6">
             You need to be assigned to a team before you can send messages.
             {userRole === 'coach'
@@ -1070,7 +1070,7 @@ function ConversationGroup({
 }) {
   return (
     <div className="mb-2">
-      <h3 className="px-4 py-1.5 text-xs font-semibold text-warm-400 uppercase tracking-wider">
+      <h3 className="px-4 py-1.5 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">
         {label}
       </h3>
       <div className="space-y-0.5 px-2">
@@ -1146,7 +1146,7 @@ function ConversationRow({
           <div className="flex items-center gap-1.5 min-w-0">
             <span className={cn(
               'truncate',
-              hasUnread ? 'font-semibold text-warm-900' : 'font-medium text-warm-700'
+              hasUnread ? 'font-medium text-warm-900' : 'font-medium text-warm-700'
             )}>
               {displayName}
             </span>

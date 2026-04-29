@@ -69,7 +69,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTrophy size={32} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Qualifiers Yet</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Qualifiers Yet</h3>
             <p className="text-warm-500 text-sm max-w-md mx-auto">
               You haven&apos;t been entered into any qualifiers yet. Your coach will add you to qualifiers when they&apos;re created.
             </p>
@@ -90,7 +90,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-warm-900 truncate">
+                          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] truncate">
                             {qualifier.name}
                           </h3>
                           <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusBadge.className}`}>
@@ -122,7 +122,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
                           <div>
                             <p className="text-xs text-warm-500 uppercase font-medium mb-1">Rounds</p>
-                            <p className="text-lg font-semibold text-warm-900">
+                            <p className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
                               {qualifier.roundsCompleted} / {qualifier.numRounds}
                             </p>
                           </div>
@@ -130,11 +130,11 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                             <>
                               <div>
                                 <p className="text-xs text-warm-500 uppercase font-medium mb-1">Total Score</p>
-                                <p className="text-lg font-semibold text-warm-900">{qualifier.totalScore}</p>
+                                <p className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{qualifier.totalScore}</p>
                               </div>
                               <div>
                                 <p className="text-xs text-warm-500 uppercase font-medium mb-1">To Par</p>
-                                <p className={`text-lg font-semibold ${
+                                <p className={`text-lg font-medium ${
                                   (qualifier.totalToPar ?? 0) < 0 ? 'text-primary-600' :
                                   (qualifier.totalToPar ?? 0) > 0 ? 'text-amber-600' :
                                   'text-warm-900'

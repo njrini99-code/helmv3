@@ -180,9 +180,9 @@ export function NotificationCenter() {
               {/* Header */}
               <div className="relative px-4 py-3 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-subhead font-semibold text-warm-900">Notifications</h3>
+                  <h3 className="text-subhead font-medium text-warm-900">Notifications</h3>
                   {unreadCount > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-semibold text-primary-700 tabular-nums">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-medium text-primary-700 tabular-nums">
                       {unreadCount}
                     </span>
                   )}
@@ -190,7 +190,7 @@ export function NotificationCenter() {
                 {unreadCount > 0 && (
                   <button
                     onClick={handleMarkAllRead}
-                    className="text-footnote text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1 active:scale-95 transition-transform"
+                    className="text-footnote text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 active:scale-95 transition-transform"
                   >
                     <IconCheck size={12} />
                     Clear all
@@ -256,7 +256,7 @@ function EmptyState() {
       <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50 flex items-center justify-center mb-4">
         <IconBell size={22} className="text-primary-600/70" />
       </div>
-      <p className="text-subhead font-semibold text-warm-900">All caught up</p>
+      <p className="text-subhead font-medium text-warm-900">All caught up</p>
       <p className="text-footnote text-warm-500 mt-1">You have no new notifications</p>
     </div>
   );
@@ -276,7 +276,7 @@ function NotificationGroup({
   return (
     <section>
       <div className="px-4 pt-3 pb-1.5 sticky top-0 bg-cream-50/92 backdrop-blur-xl z-10">
-        <p className="text-caption-2 font-semibold text-warm-500 uppercase tracking-[0.08em]">
+        <p className="text-caption-2 font-medium text-warm-500 uppercase tracking-[0.08em]">
           {label}
         </p>
       </div>
@@ -328,7 +328,7 @@ function NotificationRow({
       {/* Swipe-reveal background (iOS red) */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-end pr-6 text-white text-xs font-semibold"
+        className="absolute inset-0 flex items-center justify-end pr-6 text-white text-xs font-medium"
         style={{ backgroundColor: '#FF3B30' }}
       >
         <IconX size={16} />
@@ -356,7 +356,7 @@ function NotificationRow({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              'text-[14px] font-semibold leading-snug',
+              'text-[14px] font-medium leading-snug',
               !notification.read ? 'text-warm-900' : 'text-warm-700',
             )}
           >

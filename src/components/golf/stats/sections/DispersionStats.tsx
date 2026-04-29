@@ -64,7 +64,7 @@ function getCoverageLabel(group: SprayChartShotGroup) {
 function DispersionEmptyState({ family }: { family: SprayChartShotFamily }) {
   return (
     <div className="rounded-2xl border border-dashed border-warm-200 bg-cream-100/75 px-5 py-10 text-center">
-      <div className="text-sm font-semibold text-warm-700">{FAMILY_LABELS[family]} spray chart unavailable</div>
+      <div className="text-sm font-medium text-warm-700">{FAMILY_LABELS[family]} spray chart unavailable</div>
       <p className="mt-1 text-sm text-warm-500">
         Complete more rounds with shot tracking to visualize real {family === 'driving' ? 'tee-shot' : 'approach-shot'} patterns.
       </p>
@@ -126,8 +126,8 @@ function SummaryChip({
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: 'spring', stiffness: 280, damping: 24 }}
     >
-      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] opacity-70">{label}</div>
-      <div className="mt-1 text-sm font-semibold">{value}</div>
+      <div className="text-[10px] font-medium uppercase tracking-[0.16em] opacity-70">{label}</div>
+      <div className="mt-1 text-sm font-medium">{value}</div>
     </motion.div>
   );
 }
@@ -167,7 +167,7 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.04 * index, type: 'spring', stiffness: 260, damping: 22 }}
         >
-          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] opacity-75">{item.label}</div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.16em] opacity-75">{item.label}</div>
           <div className="mt-1 flex items-end justify-between gap-3">
             <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums">{item.count}</div>
             <div className="text-xs font-medium opacity-80">{item.percentage}</div>
@@ -340,7 +340,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
             key={sector}
             className={`rounded-2xl border px-3 py-4 text-center transition-colors ${background}`}
           >
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-warm-500">
+            <div className="text-[11px] font-medium uppercase tracking-wide text-warm-500">
               {SECTOR_LABELS[sector]}
             </div>
             <div className="mt-2 text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
@@ -405,7 +405,7 @@ export function DispersionStats({
       <motion.div className="space-y-4" variants={containerVariants} initial="hidden" animate="visible">
         <div className="space-y-3">
           <div>
-            <h3 className="text-base font-semibold text-warm-900">Spray Charts</h3>
+            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Spray Charts</h3>
             <p className="mt-1 text-sm text-warm-500">Visualize real shot dispersion from tracked tee and approach shots.</p>
           </div>
           <GolfTabBar
@@ -433,7 +433,7 @@ export function DispersionStats({
         transition={{ type: 'spring', stiffness: 260, damping: 24 }}
       >
         <div className="space-y-1">
-          <h3 className="text-base font-semibold text-warm-900">{FAMILY_LABELS[family]} spray summary</h3>
+          <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">{FAMILY_LABELS[family]} spray summary</h3>
           <p className="text-sm text-warm-600">
             {buildSummary(currentGroup, family)}
           </p>

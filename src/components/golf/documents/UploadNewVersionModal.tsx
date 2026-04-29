@@ -107,7 +107,7 @@ export function UploadNewVersionModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>
-            <h2 id="upload-version-title" className="text-lg font-semibold text-warm-900">Upload New Version</h2>
+            <h2 id="upload-version-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Upload New Version</h2>
             <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
           </div>
           <button

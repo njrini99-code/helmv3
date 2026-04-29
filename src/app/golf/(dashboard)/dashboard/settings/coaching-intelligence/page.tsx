@@ -276,7 +276,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Priority Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Metric Priorities</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Metric Priorities</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             Drag to reorder. The top metrics will have the most influence on player ratings and "Needs Attention" flags.
                         </p>
@@ -298,7 +298,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Sensitivity Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Alert Sensitivity</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Alert Sensitivity</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             Global control for how aggressively CoachHelm flags issues.
                         </p>
@@ -314,7 +314,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Thresholds Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Fine-tune Thresholds</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Fine-tune Thresholds</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             Specific triggers for different types of alerts.
                         </p>
@@ -352,7 +352,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Weight Distributor Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Comparison Weighting</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Comparison Weighting</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             When comparing players for roster decisions, how much should each factor matter?
                         </p>
@@ -374,7 +374,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Alert Toggles Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Active Alerts</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Active Alerts</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             Select which types of automated insights you want to receive.
                         </p>
@@ -393,7 +393,7 @@ export default function CoachingIntelligenceSettingsPage() {
                         <section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <h2 className="text-base font-semibold text-warm-900">Team CoachHelm</h2>
+                                    <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Team CoachHelm</h2>
                                     <p className="text-sm text-warm-500 mt-1 max-w-md">
                                         Master switch for AI-generated insights, patterns, and predictions
                                         across the entire team. Disable to pause everything CoachHelm does
@@ -431,7 +431,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Display Preferences Section */}
                 <AnimatedItem><section className="surface-matte rounded-3xl overflow-clip">
                     <div className="p-6 border-b border-warm-100">
-                        <h2 className="text-base font-semibold text-warm-900">Display Preferences</h2>
+                        <h2 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Display Preferences</h2>
                         <p className="text-sm text-warm-500 mt-1">
                             Control what data is shown on dashboards and reports.
                         </p>

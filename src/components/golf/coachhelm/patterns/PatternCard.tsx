@@ -242,7 +242,7 @@ export function PatternCard({
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-warm-500">Stroke Impact</span>
-                    <span className={cn('text-sm font-semibold', impactColor)}>
+                    <span className={cn('text-sm font-medium', impactColor)}>
                       {isNegative ? '+' : '-'}{strokeImpactAbs.toFixed(1)}
                     </span>
                   </div>
@@ -296,7 +296,7 @@ export function PatternCard({
                         transition={{ duration: 0.5, delay: 0.3 }}
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-warm-700">
+                    <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-warm-700">
                       {confidencePercent}%
                     </span>
                   </div>
@@ -333,7 +333,7 @@ export function PatternCard({
                 <div className="pt-4 mt-4 border-t border-warm-100">
                   {/* Conditions - IF */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                       IF
                     </h4>
                     <div className="flex flex-wrap gap-2">
@@ -354,7 +354,7 @@ export function PatternCard({
 
                   {/* Outcome - THEN */}
                   <div className="mb-4">
-                    <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
+                    <h4 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">
                       THEN
                     </h4>
                     <span className={cn(
@@ -373,25 +373,25 @@ export function PatternCard({
                   {/* Stats grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
-                      <div className="text-lg font-semibold text-warm-800">
+                      <div className="text-lg font-medium text-warm-800">
                         {Math.round(pattern.support * 100)}%
                       </div>
                       <div className="text-xs text-warm-500">Frequency</div>
                     </div>
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
-                      <div className="text-lg font-semibold text-warm-800">
+                      <div className="text-lg font-medium text-warm-800">
                         {pattern.lift.toFixed(1)}x
                       </div>
                       <div className="text-xs text-warm-500">Lift</div>
                     </div>
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
-                      <div className="text-lg font-semibold text-warm-800">
+                      <div className="text-lg font-medium text-warm-800">
                         {pattern.sampleSize}
                       </div>
                       <div className="text-xs text-warm-500">Samples</div>
                     </div>
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
-                      <div className="text-lg font-semibold text-warm-800">
+                      <div className="text-lg font-medium text-warm-800">
                         {pattern.occurrenceCount}
                       </div>
                       <div className="text-xs text-warm-500">Occurrences</div>
@@ -401,7 +401,7 @@ export function PatternCard({
                   {/* Recommendation */}
                   {pattern.recommendation && (
                     <div className="p-3 bg-primary-50 rounded-lg border border-primary-100 mb-4">
-                      <h4 className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-1">
+                      <h4 className="text-xs font-medium text-primary-700 uppercase tracking-wide mb-1">
                         Recommendation
                       </h4>
                       <p className="text-sm text-primary-800">
@@ -413,7 +413,7 @@ export function PatternCard({
                   {/* Coach notes */}
                   {pattern.coachNotes && (
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 mb-4">
-                      <h4 className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
+                      <h4 className="text-xs font-medium text-blue-700 uppercase tracking-wide mb-1">
                         Coach Notes
                       </h4>
                       <p className="text-sm text-blue-800">

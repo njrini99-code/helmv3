@@ -402,7 +402,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Travel Itineraries</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Travel Itineraries</h3>
             <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {isCoach
                 ? 'Create travel itineraries for upcoming tournaments and events'
@@ -424,7 +424,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Itinerary List */}
             <div className="lg:col-span-1 space-y-4">
-              <h2 className="text-sm font-semibold text-warm-500 uppercase tracking-wider mb-2">
+              <h2 className="text-sm font-medium text-warm-500 uppercase tracking-wider mb-2">
                 Trips
               </h2>
               {itineraries.map((itinerary) => (
@@ -443,7 +443,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                     <div className="w-8 h-8 flex items-center justify-center">{getTransportIcon(itinerary.transportation_type, 20)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h3 className="font-semibold text-warm-900 truncate">{itinerary.event_name}</h3>
+                        <h3 className="font-medium text-warm-900 truncate">{itinerary.event_name}</h3>
                         {(() => {
                           const status = getTripStatus(itinerary);
                           return (
@@ -481,7 +481,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 flex items-center justify-center">{getTransportIcon(selectedItinerary.transportation_type, 28)}</div>
                         <div>
-                          <h2 className="text-xl font-semibold text-warm-900">{selectedItinerary.event_name}</h2>
+                          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">{selectedItinerary.event_name}</h2>
                           <div className="flex items-center gap-2 text-warm-500 mt-1">
                             <IconMapPin size={16} />
                             <span>{selectedItinerary.destination}</span>
@@ -546,7 +546,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           {/* Departure/Return */}
                           <div className="grid grid-cols-2 gap-6 mb-6">
                             <div className="p-4 bg-warm-50 rounded-xl">
-                              <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Departure</p>
+                              <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Departure</p>
                               <div className="flex items-center gap-2 text-warm-900">
                                 <IconCalendar size={16} className="text-warm-400" />
                                 <span className="font-medium">{formatDate(selectedItinerary.departure_date)}</span>
@@ -563,7 +563,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                             </div>
                             {selectedItinerary.return_date && (
                               <div className="p-4 bg-warm-50 rounded-xl">
-                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Return</p>
+                                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Return</p>
                                 <div className="flex items-center gap-2 text-warm-900">
                                   <IconCalendar size={16} className="text-warm-400" />
                                   <span className="font-medium">{formatDate(selectedItinerary.return_date)}</span>
@@ -581,8 +581,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           {/* Hotel Info */}
                           {selectedItinerary.hotel_name && (
                             <div className="p-4 bg-blue-50 rounded-xl mb-6">
-                              <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-2">Lodging</p>
-                              <p className="font-semibold text-warm-900">{selectedItinerary.hotel_name}</p>
+                              <p className="text-xs font-medium text-blue-600 uppercase tracking-wider mb-2">Lodging</p>
+                              <p className="font-medium text-warm-900">{selectedItinerary.hotel_name}</p>
                               {selectedItinerary.hotel_address && (
                                 <p className="text-sm text-warm-600 mt-1">{selectedItinerary.hotel_address}</p>
                               )}
@@ -607,19 +607,19 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           <div className="space-y-4">
                             {selectedItinerary.uniform_requirements && (
                               <div>
-                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Uniform</p>
+                                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-1">Uniform</p>
                                 <p className="text-warm-700">{selectedItinerary.uniform_requirements}</p>
                               </div>
                             )}
                             {selectedItinerary.gear_list && (
                               <div>
-                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Gear List</p>
+                                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-1">Gear List</p>
                                 <p className="text-warm-700">{selectedItinerary.gear_list}</p>
                               </div>
                             )}
                             {selectedItinerary.notes && (
                               <div>
-                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-1">Notes</p>
+                                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-1">Notes</p>
                                 <p className="text-warm-700">{selectedItinerary.notes}</p>
                               </div>
                             )}
@@ -635,7 +635,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         >
                           {/* Expense Actions */}
                           <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-semibold text-warm-900">Trip Expenses</h3>
+                            <h3 className="font-medium text-warm-900">Trip Expenses</h3>
                             <div className="flex items-center gap-2">
                               {expenses.length > 0 && (
                                 <button
@@ -706,7 +706,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                     <IconAirplane size={28} className="text-warm-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-warm-900 mb-2">Select a Trip</h3>
+                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Select a Trip</h3>
                   <p className="text-warm-500 max-w-sm mx-auto">
                     Choose a travel itinerary from the list to view details and track expenses.
                   </p>
@@ -725,7 +725,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Delete Itinerary?</h3>
+              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Delete Itinerary?</h3>
               <p className="text-sm text-warm-500">This action cannot be undone. All trip details and expenses will be removed.</p>
             </div>
             <div className="flex gap-3 px-6 pb-6">
@@ -751,7 +751,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-xl my-8">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-warm-900">
+              <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">
                 {editingId ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
               </h2>
               <button

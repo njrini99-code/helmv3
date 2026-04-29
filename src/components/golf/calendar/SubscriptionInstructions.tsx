@@ -117,7 +117,7 @@ export function SubscriptionInstructions({
         <div className="p-4 rounded-lg bg-primary-50 border border-primary-200">
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-primary-900 mb-1">
+              <p className="text-sm font-medium text-primary-900 mb-1">
                 First, copy this URL:
               </p>
               <code className="text-xs text-primary-700 font-mono break-all block">
@@ -212,7 +212,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
               <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
+              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -225,7 +225,7 @@ function AppleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -274,7 +274,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
               <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
+              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -287,7 +287,7 @@ function GoogleInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}
@@ -342,7 +342,7 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
           <div key={idx}>
             <div className="flex items-center gap-2 mb-2">
               <Icon className="w-4 h-4 text-warm-500" />
-              <h4 className={cn('font-semibold text-warm-900', compact ? 'text-xs' : 'text-sm')}>
+              <h4 className={cn('font-medium text-warm-900', compact ? 'text-xs' : 'text-sm')}>
                 {section.title}
               </h4>
             </div>
@@ -355,7 +355,7 @@ function OutlookInstructions({ compact }: { compact?: boolean }) {
                     compact ? 'text-xs' : 'text-sm'
                   )}
                 >
-                  <span className="text-primary-600 font-semibold shrink-0">{stepIdx + 1}.</span>
+                  <span className="text-primary-600 font-medium shrink-0">{stepIdx + 1}.</span>
                   <span>{step}</span>
                 </li>
               ))}

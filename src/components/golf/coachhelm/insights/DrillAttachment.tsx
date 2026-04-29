@@ -152,7 +152,7 @@ function DrillCard({ drill, onView }: DrillCardProps) {
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-warm-900 truncate">
+            <span className="text-sm font-medium text-warm-900 truncate">
               {drill.title}
             </span>
             {drill.video_url && (

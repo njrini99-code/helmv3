@@ -123,11 +123,11 @@ function PlayerBracketCard({
       {/* Player Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className={cn('font-semibold truncate', styles.name)}>
+          <p className={cn('font-medium truncate', styles.name)}>
             {entry.playerName}
           </p>
           {isOnBubble && (
-            <span className="px-1.5 py-0.5 text-xs font-semibold bg-amber-100 text-amber-700 rounded">
+            <span className="px-1.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded">
               BUBBLE
             </span>
           )}
@@ -248,7 +248,7 @@ export function QualifierBracket({
                 <div className="relative my-3">
                   <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-400 to-transparent" />
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-red-50 rounded-full">
-                    <span className="text-xs font-semibold text-red-600 uppercase tracking-wide">
+                    <span className="text-xs font-medium text-red-600 uppercase tracking-wide">
                       Cutline
                     </span>
                   </div>

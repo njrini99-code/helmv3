@@ -386,15 +386,15 @@ export function AnalysisStats({
                 <div className="flex items-center gap-6">
                   <div className="text-center hidden md:block">
                     <p className="text-xs text-warm-400">Avg Score</p>
-                    <p className="text-sm font-semibold text-warm-700">{course.scoringAverage?.toFixed(1) || '--'}</p>
+                    <p className="text-sm font-medium text-warm-700">{course.scoringAverage?.toFixed(1) || '--'}</p>
                   </div>
                   <div className="text-center hidden md:block">
                     <p className="text-xs text-warm-400">Best</p>
-                    <p className="text-sm font-semibold text-primary-600">{course.bestRound || '--'}</p>
+                    <p className="text-sm font-medium text-primary-600">{course.bestRound || '--'}</p>
                   </div>
                   <div className="text-center hidden md:block">
                     <p className="text-xs text-warm-400">GIR%</p>
-                    <p className="text-sm font-semibold text-warm-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
+                    <p className="text-sm font-medium text-warm-700">{course.girPct !== null ? `${course.girPct}%` : '--'}</p>
                   </div>
                   <div className="text-center md:hidden">
                     <p className="text-[13px] font-medium text-warm-800">{course.scoringAverage?.toFixed(1) || '--'}</p>
@@ -416,7 +416,7 @@ export function AnalysisStats({
           <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
             <IconTarget size={28} className="text-warm-400" />
           </div>
-          <h3 className="text-lg font-semibold text-warm-800 mb-2">Analysis Data Loading</h3>
+          <h3 className="text-lg font-medium text-warm-800 mb-2">Analysis Data Loading</h3>
           <p className="text-sm text-warm-500">Hole and course breakdown will appear here once data is loaded.</p>
         </motion.div>
       )}

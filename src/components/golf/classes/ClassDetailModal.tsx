@@ -85,10 +85,10 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         <div className="px-6 pt-5 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <span className="font-mono text-sm font-semibold text-primary-600">
+              <span className="font-mono text-sm font-medium text-primary-600">
                 {classData.course_code}
               </span>
-              <h2 id="class-detail-title" className="text-xl font-semibold text-warm-900 mt-1">
+              <h2 id="class-detail-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
               </h2>
               <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>

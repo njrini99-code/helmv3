@@ -88,7 +88,7 @@ export function PushPermissionSoftAsk() {
           <IconBell size={28} className="text-white" />
         </m.div>
 
-        <h2 className="text-xl font-semibold text-warm-900 tracking-tight">
+        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
           Stay in the loop
         </h2>
         <p className="text-sm text-warm-500 mt-1.5 max-w-sm">

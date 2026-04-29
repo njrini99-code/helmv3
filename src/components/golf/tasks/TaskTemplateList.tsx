@@ -175,7 +175,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-warm-900">Task Templates</h3>
+        <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Task Templates</h3>
         {!showCreateForm && (
           <Button
             size="sm"
@@ -347,7 +347,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
         <div className="space-y-4">
           {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
             <div key={category}>
-              <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-2">
+              <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">
                 {category}
               </p>
               <div className="space-y-2">

@@ -235,7 +235,7 @@ export function TrendChart({
                             marginTop: '-8px',
                         }}
                     >
-                        <div className="font-semibold">{hoverPt.label}</div>
+                        <div className="font-medium">{hoverPt.label}</div>
                         <div className="text-warm-300 tabular-nums">{hoverPt.value}</div>
                     </div>
                 )}

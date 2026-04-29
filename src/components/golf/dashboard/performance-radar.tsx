@@ -64,7 +64,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
             )}>
                 <div className="flex items-center gap-2 mb-4">
                     <IconChartBar size={14} className="text-primary-600" />
-                    <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">
+                    <h3 className="text-sm font-medium text-warm-500 uppercase tracking-wider">
                         Strokes Gained
                     </h3>
                 </div>
@@ -72,7 +72,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center mb-4">
                         <IconChartBar size={26} className="text-primary-600/70" />
                     </div>
-                    <p className="text-subhead font-semibold text-warm-900 mb-1.5">No strokes gained data</p>
+                    <p className="text-subhead font-medium text-warm-900 mb-1.5">No strokes gained data</p>
                     <p className="text-xs leading-relaxed text-warm-500 max-w-[240px]">
                         Submit rounds with shot tracking to see your strokes gained breakdown
                     </p>
@@ -94,7 +94,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                 <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-2">
                         <IconChartBar size={14} className="text-primary-600" />
-                        <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wider">
+                        <h3 className="text-sm font-medium text-warm-500 uppercase tracking-wider">
                             Strokes Gained
                         </h3>
                     </div>
@@ -129,13 +129,13 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                     <div className="flex items-center gap-1.5">
                                         <span className="text-xs font-medium text-warm-700">{cat.label}</span>
                                         {isBest && (
-                                            <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 flex items-center gap-0.5">
+                                            <span className="text-micro font-medium px-1.5 py-0.5 rounded-full bg-primary-50 text-primary-700 flex items-center gap-0.5">
                                                 <IconTrendingUp size={9} />
                                                 Best
                                             </span>
                                         )}
                                         {isWorst && (
-                                            <span className="text-micro font-semibold px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 flex items-center gap-0.5">
+                                            <span className="text-micro font-medium px-1.5 py-0.5 rounded-full bg-red-50 text-red-600 flex items-center gap-0.5">
                                                 <IconTrendingDown size={9} />
                                                 Focus
                                             </span>

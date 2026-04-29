@@ -274,7 +274,7 @@ function CategoryBar({ label, value }: { label: string; value: number }) {
           style={{ width: `${value}%` }}
         />
       </div>
-      <span className="text-sm font-semibold text-warm-800 tabular-nums w-8 text-right">{value}</span>
+      <span className="text-sm font-medium text-warm-800 tabular-nums w-8 text-right">{value}</span>
     </div>
   );
 }

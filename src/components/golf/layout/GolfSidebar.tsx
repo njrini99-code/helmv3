@@ -10,6 +10,7 @@ import { useSidebar } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { CountBadge } from '@/components/ui/badge';
+import { TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import {
   IconHome,
   IconUsers,
@@ -267,13 +268,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           {primaryNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            return (
+            const link = (
               <Link
                 key={item.name}
                 href={item.href}
                 prefetch={true}
                 onClick={handleNavClick}
-                title={isCollapsed ? item.name : undefined}
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
@@ -304,6 +304,15 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 )}
               </Link>
             );
+            if (isCollapsed && !isMobile) {
+              return (
+                <TooltipRoot key={item.name}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>{item.name}</TooltipContent>
+                </TooltipRoot>
+              );
+            }
+            return link;
           })}
         </div>
 
@@ -320,13 +329,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           {secondaryNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
-            return (
+            const link = (
               <Link
                 key={item.name}
                 href={item.href}
                 prefetch={true}
                 onClick={handleNavClick}
-                title={isCollapsed ? item.name : undefined}
                 aria-label={isCollapsed ? item.name : undefined}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
@@ -357,6 +365,15 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 )}
               </Link>
             );
+            if (isCollapsed && !isMobile) {
+              return (
+                <TooltipRoot key={item.name}>
+                  <TooltipTrigger asChild>{link}</TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={10}>{item.name}</TooltipContent>
+                </TooltipRoot>
+              );
+            }
+            return link;
           })}
         </div>
       </nav>

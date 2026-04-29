@@ -271,7 +271,7 @@ export function OfflineIndicator({
                 <CloudQueueIcon className="w-5 h-5 text-white" />
               )}
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-medium text-white">
                   {!isOnline
                     ? 'You are offline'
                     : syncError
@@ -293,7 +293,7 @@ export function OfflineIndicator({
               {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
                 <button
                   onClick={onSyncNow}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                  className="px-3 py-1.5 text-xs font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
                 >
                   Sync
                 </button>

@@ -86,7 +86,7 @@ export function TeamShotOverview({
               <IconTarget size={20} className="text-primary-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-warm-900">Team Shot Analysis</h3>
+              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Team Shot Analysis</h3>
               <p className="text-xs text-warm-400">Aggregated across all team players</p>
             </div>
           </div>
@@ -95,7 +95,7 @@ export function TeamShotOverview({
         {/* Yardage curve */}
         {yardageCurve.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-warm-700">Yardage Performance</p>
+            <p className="text-sm font-medium text-warm-700">Yardage Performance</p>
             <div className="space-y-1.5">
               {yardageCurve.map((bucket, i) => {
                 const isDead = isDeadZone(bucket.rangeStart, bucket.rangeEnd, deadZones);
@@ -144,7 +144,7 @@ export function TeamShotOverview({
 
                     <span
                       className={cn(
-                        'text-xs font-semibold tabular-nums w-12 text-right shrink-0',
+                        'text-xs font-medium tabular-nums w-12 text-right shrink-0',
                         isPositive ? 'text-primary-600' : 'text-red-500',
                       )}
                     >
@@ -172,7 +172,7 @@ export function TeamShotOverview({
         {/* Dead zones callout */}
         {deadZones.length > 0 && (
           <div className="px-3 py-2 rounded-xl bg-red-50 border border-red-200">
-            <p className="text-xs font-semibold text-red-700 mb-1">Dead Zones</p>
+            <p className="text-xs font-medium text-red-700 mb-1">Dead Zones</p>
             <div className="flex flex-wrap gap-2">
               {deadZones.map((dz) => (
                 <span
@@ -190,7 +190,7 @@ export function TeamShotOverview({
         {/* Top weaknesses */}
         {topWeaknesses.length > 0 && (
           <div className="space-y-2">
-            <p className="text-sm font-semibold text-warm-700">Key Weaknesses</p>
+            <p className="text-sm font-medium text-warm-700">Key Weaknesses</p>
             <div className="grid gap-2">
               {topWeaknesses.slice(0, 3).map((weakness, i) => (
                 <m.div
@@ -213,7 +213,7 @@ export function TeamShotOverview({
                     </p>
                   </div>
                   <div className="text-right shrink-0 ml-3">
-                    <p className="text-sm font-semibold text-red-500 tabular-nums">
+                    <p className="text-sm font-medium text-red-500 tabular-nums">
                       {Number(weakness.avgSG).toFixed(2)}
                     </p>
                     <p className="text-xs text-warm-400 tabular-nums">

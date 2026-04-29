@@ -265,7 +265,7 @@ function ReasoningStepCard({
           {/* Step number */}
           <div
             className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0',
+              'w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0',
               isExpanded
                 ? 'bg-primary-600 text-white'
                 : 'bg-warm-100 text-warm-600'

@@ -65,7 +65,7 @@ export function TaskCard({ task }: TaskCardProps) {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-warm-900 mb-1 line-clamp-2">{task.title}</h3>
+            <h3 className="font-medium text-warm-900 mb-1 line-clamp-2">{task.title}</h3>
             {task.description && (
               <p className="text-sm text-warm-500 line-clamp-2">{task.description}</p>
             )}
@@ -139,7 +139,7 @@ export function TaskCard({ task }: TaskCardProps) {
               style={{ overflow: 'hidden' }}
               className="mt-4 pt-4 border-t border-warm-200"
             >
-              <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-3">
+              <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">
                 Player Progress
               </p>
               <motion.div

@@ -91,7 +91,7 @@ export function WhatIfPanel({
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
               <IconSparkles size={20} className="text-primary-600" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900">Improvement Opportunities</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
           </div>
         </div>
 
@@ -123,7 +123,7 @@ export function WhatIfPanel({
               <div className="flex items-center gap-2">
                 <IconTrendingUp size={16} className="text-primary-600" />
                 <span className="text-sm text-primary-800">
-                  If you improve <span className="font-semibold">{formatMetricLabel(simResult.metric)}</span>:
+                  If you improve <span className="font-medium">{formatMetricLabel(simResult.metric)}</span>:
                 </span>
               </div>
               <div className="text-right">
@@ -156,7 +156,7 @@ export function WhatIfPanel({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-warm-900">
+                      <span className="text-sm font-medium text-warm-900">
                         {formatMetricLabel(item.metric)}
                       </span>
                       <span
@@ -185,7 +185,7 @@ export function WhatIfPanel({
                       onClick={() => handleSimulate(item.metric, item.projectedScoringImpact)}
                       disabled={simulating === item.metric}
                       className={cn(
-                        'shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold',
+                        'shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium',
                         'bg-primary-100 text-primary-700 hover:bg-primary-200',
                         'transition-colors duration-200',
                         'disabled:opacity-50 disabled:cursor-not-allowed'

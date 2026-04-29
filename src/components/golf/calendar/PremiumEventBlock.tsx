@@ -86,7 +86,7 @@ export function PremiumEventBlock({
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                'font-semibold truncate leading-tight',
+                'font-medium truncate leading-tight',
                 compact ? 'text-xs' : 'text-[13px]',
                 event.status === 'cancelled'
                   ? 'text-warm-400 line-through'
@@ -189,7 +189,7 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-semibold uppercase tracking-wider',
+        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium uppercase tracking-wider',
         config.className
       )}
     >

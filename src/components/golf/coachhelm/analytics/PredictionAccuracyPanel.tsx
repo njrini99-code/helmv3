@@ -482,7 +482,7 @@ function AccuracyTooltip({
     const data = payload[0].payload;
     return (
       <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-semibold text-warm-900 mb-2">{data.date}</p>
+        <p className="text-sm font-medium text-warm-900 mb-2">{data.date}</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Accuracy:</span>
@@ -515,7 +515,7 @@ function CalibrationTooltip({
     const diff = data.actual - data.expected;
     return (
       <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-semibold text-warm-900 mb-2">{data.range} Confidence</p>
+        <p className="text-sm font-medium text-warm-900 mb-2">{data.range} Confidence</p>
         <div className="space-y-1 text-xs">
           <div className="flex justify-between gap-4">
             <span className="text-warm-500">Expected Accuracy:</span>

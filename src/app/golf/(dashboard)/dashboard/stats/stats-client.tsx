@@ -107,7 +107,7 @@ function AvatarWithRing({
         </div>
       ) : (
         <div className="w-12 h-12 rounded-2xl bg-warm-100/65 flex items-center justify-center">
-          <span className="text-lg font-semibold text-warm-500">{initials}</span>
+          <span className="text-lg font-medium text-warm-500">{initials}</span>
         </div>
       )}
       <div className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${dotColor}`} />
@@ -229,7 +229,7 @@ function PlayerCard({
         {/* Player info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-warm-900 truncate group-hover:text-primary-600 transition-colors">
+            <h3 className="font-medium text-warm-900 truncate group-hover:text-primary-600 transition-colors">
               {player.first_name} {player.last_name}
             </h3>
             {player.graduation_year && (
@@ -261,7 +261,7 @@ function PlayerCard({
           </div>
 
           <div className="text-center hidden md:block">
-            <p className="text-lg font-semibold text-warm-700 tabular-nums">
+            <p className="text-lg font-medium text-warm-700 tabular-nums">
               {bestRound || '--'}
             </p>
             <p className="text-xs text-warm-500 uppercase tracking-wide">Best</p>
@@ -908,7 +908,7 @@ export default function StatsClient({
 
             return (
               <div className="bg-cream-100/68 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 ">
-                <h3 className="text-xs font-semibold text-primary-800 uppercase tracking-wider mb-3">Team Insights</h3>
+                <h3 className="text-xs font-medium text-primary-800 uppercase tracking-wider mb-3">Team Insights</h3>
                 <div className="flex flex-wrap gap-4 text-sm">
                   {bestPlayer && (
                     <div className="flex items-center gap-2">
@@ -995,12 +995,12 @@ export default function StatsClient({
               </div>
               {players.length === 0 ? (
                 <>
-                  <h3 className="text-lg font-semibold text-warm-900 mb-2">No Players Yet</h3>
+                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Players Yet</h3>
                   <p className="text-warm-500">Add players to your team to view their statistics.</p>
                 </>
               ) : (
                 <>
-                  <h3 className="text-lg font-semibold text-warm-900 mb-2">No Matching Players</h3>
+                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Matching Players</h3>
                   <p className="text-warm-500">Try adjusting your search or filters.</p>
                 </>
               )}
@@ -1130,7 +1130,7 @@ export default function StatsClient({
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-red-300" />
             </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">Something Went Wrong</h2>
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Something Went Wrong</h2>
             <p className="text-warm-500 max-w-sm mx-auto mb-6">{statsError}</p>
             <button
               onClick={handleRefresh}
@@ -1163,7 +1163,7 @@ export default function StatsClient({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.4 }}
-                className="text-2xl font-semibold text-warm-900 mb-3"
+                className="text-2xl font-medium text-warm-900 mb-3"
               >
                 Your Stats Dashboard
               </m.h2>
@@ -1220,7 +1220,7 @@ export default function StatsClient({
       {/* Recent Rounds Section */}
       {rounds.length > 0 && (
         <div className="max-w-6xl mx-auto px-4 md:px-6 pb-8 mt-6">
-          <h3 className="text-lg font-semibold text-warm-900 mb-3">Recent Rounds</h3>
+          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-3">Recent Rounds</h3>
           <div className="space-y-2">
             {rounds.slice(0, 10).map((round) => {
               const toPar = round.score_to_par ?? 0;
@@ -1252,7 +1252,7 @@ export default function StatsClient({
                     </div>
                     <p className="text-xs text-warm-400">{formattedDate}</p>
                   </div>
-                  <div className={cn('text-sm font-semibold tabular-nums', scoreColor)}>
+                  <div className={cn('text-sm font-medium tabular-nums', scoreColor)}>
                     {toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : toPar}
                   </div>
                   <IconChevronRight size={16} className="text-warm-300 group-hover:text-warm-400 transition-colors" />

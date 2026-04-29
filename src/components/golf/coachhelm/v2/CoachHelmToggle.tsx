@@ -81,14 +81,14 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
           {/* Content */}
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-warm-900">CoachHelm AI</h3>
+              <h3 className="text-sm font-medium text-warm-900">CoachHelm AI</h3>
               {enabled ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-xs font-semibold text-primary-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-100/80 px-2 py-0.5 text-xs font-medium text-primary-700">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary-500" />
                   Active
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold text-warm-500">
+                <span className="inline-flex items-center gap-1 rounded-full bg-warm-100 px-2 py-0.5 text-xs font-medium text-warm-500">
                   <span className="h-1.5 w-1.5 rounded-full bg-warm-400" />
                   Off
                 </span>
@@ -209,7 +209,7 @@ function FeaturePill({ label, detail, enabled }: { label: string; detail: string
         {enabled ? <IconCheck size={12} /> : <IconX size={12} />}
       </div>
       <div>
-        <p className={cn('text-xs font-semibold', enabled ? 'text-warm-700' : 'text-warm-400')}>
+        <p className={cn('text-xs font-medium', enabled ? 'text-warm-700' : 'text-warm-400')}>
           {label}
         </p>
         <p className={cn('text-xs leading-snug', enabled ? 'text-warm-500' : 'text-warm-400')}>

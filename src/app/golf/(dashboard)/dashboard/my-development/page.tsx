@@ -128,19 +128,19 @@ export default async function MyDevelopmentPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-primary-500" />
                   <span className="text-sm text-warm-600">
-                    <span className="font-semibold text-warm-900">{activeAreas.length}</span> Active
+                    <span className="font-medium text-warm-900">{activeAreas.length}</span> Active
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-warm-300" />
                   <span className="text-sm text-warm-600">
-                    <span className="font-semibold text-warm-900">{completedAreas.length}</span> Completed
+                    <span className="font-medium text-warm-900">{completedAreas.length}</span> Completed
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <IconActivity size={14} className="text-warm-400" />
                   <span className="text-sm text-warm-600">
-                    <span className="font-semibold text-warm-900">{(focusAreas || []).length}</span> Total
+                    <span className="font-medium text-warm-900">{(focusAreas || []).length}</span> Total
                   </span>
                 </div>
               </div>
@@ -156,7 +156,7 @@ export default async function MyDevelopmentPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Development Plans Yet</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Development Plans Yet</h3>
             <p className="text-warm-500 max-w-sm mx-auto mb-4">
               Your coach hasn&apos;t assigned any focus areas yet. Check back later or talk to your coach about your development goals.
             </p>
@@ -172,7 +172,7 @@ export default async function MyDevelopmentPage() {
             {/* Active Focus Areas */}
             {activeAreas.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
                   <IconClock size={20} className="text-primary-600" />
                   Active Focus Areas
                   <span className="ml-auto text-sm font-normal text-warm-400">
@@ -204,7 +204,7 @@ export default async function MyDevelopmentPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="min-w-0 flex-1">
-                                  <h3 className="font-semibold text-warm-900 line-clamp-2">{fa.title || 'Untitled'}</h3>
+                                  <h3 className="font-medium text-warm-900 line-clamp-2">{fa.title || 'Untitled'}</h3>
                                   <p className={cn('text-sm font-medium mt-0.5', areaConfig.color)}>
                                     {areaConfig.label}
                                   </p>
@@ -248,7 +248,7 @@ export default async function MyDevelopmentPage() {
                                     <span className="text-warm-500 font-medium">
                                       {fa.target_metric || 'Progress'}
                                     </span>
-                                    <span className="font-semibold text-warm-700">
+                                    <span className="font-medium text-warm-700">
                                       {fa.current_value ?? 0}
                                       <span className="text-warm-400 font-normal mx-1">/</span>
                                       {fa.target_value}
@@ -318,7 +318,7 @@ export default async function MyDevelopmentPage() {
             {/* Completed Focus Areas */}
             {completedAreas.length > 0 && (
               <div>
-                <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
                   <IconCheck size={20} className="text-warm-500" />
                   Completed
                   <span className="ml-auto text-sm font-normal text-warm-400">

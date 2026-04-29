@@ -4,6 +4,12 @@ import { useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconDownload, IconFilter, IconChevronDown } from '@/components/icons';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type SortField = 'name' | 'handicap' | 'rounds' | 'avg_score';
 type SortDirection = 'asc' | 'desc';
@@ -48,49 +54,35 @@ export const RosterToolbar = memo(function RosterToolbar({
 
   return (
     <div className="flex items-center justify-between gap-3 mb-5">
-      <div className="relative">
-        <button
-          onClick={handleToggleMenu}
-          className="pill-soft"
-          aria-label="Sort roster"
-          aria-haspopup="menu"
-          aria-expanded={showSortMenu}
-        >
-          <IconFilter size={13} className="text-warm-400" />
-          <span>Sort: {selectedSort?.label}</span>
-          <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
-          <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
-        </button>
-
-        {showSortMenu && (
-          <>
-            <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
-            <div
-              role="menu"
-              className="absolute left-0 top-full mt-2 z-40 surface-stone rounded-2xl py-2 min-w-[220px] origin-top-left animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-300"
+      <DropdownMenu open={showSortMenu} onOpenChange={setShowSortMenu}>
+        <DropdownMenuTrigger asChild>
+          <button
+            onClick={handleToggleMenu}
+            className="pill-soft"
+            aria-label="Sort roster"
+          >
+            <IconFilter size={13} className="text-warm-400" />
+            <span>Sort: {selectedSort?.label}</span>
+            <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+            <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="min-w-[220px]">
+          {SORT_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.value}
+              onSelect={() => handleSortChange(option.value)}
+              selected={option.value === sortField}
+              className="flex items-center justify-between"
             >
-              {SORT_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  role="menuitem"
-                  onClick={() => handleSortChange(option.value)}
-                  className={cn(
-                    'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300 flex items-center justify-between',
-                    option.value === sortField
-                      ? 'text-primary-700 bg-primary-50/55 font-medium'
-                      : 'text-warm-700 hover:bg-cream-50/70'
-                  )}
-                >
-                  <span>{option.label}</span>
-                  {option.value === sortField && (
-                    <span className="text-primary-500 text-[14px]">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+              <span>{option.label}</span>
+              {option.value === sortField && (
+                <span className="text-primary-500 text-[14px]">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {onExport && (
         <button

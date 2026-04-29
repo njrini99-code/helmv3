@@ -90,7 +90,7 @@ function RoundReviewCard({
 
         {/* Round info */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-warm-900 text-sm truncate group-hover:text-primary-600 transition-colors">
+          <h4 className="font-medium text-warm-900 text-sm truncate group-hover:text-primary-600 transition-colors">
             {round.courseName}
           </h4>
           <div className="flex items-center gap-3 mt-1">
@@ -127,7 +127,7 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
             <IconGolf size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Recent Round Reviews</h3>
+            <h3 className="font-medium text-warm-900">Recent Round Reviews</h3>
             <p className="text-xs text-warm-500">AI-powered round analysis</p>
           </div>
         </div>
@@ -160,7 +160,7 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
             <IconGolf size={20} className="text-primary-600" />
           </div>
           <div>
-            <h3 className="font-semibold text-warm-900">Recent Round Reviews</h3>
+            <h3 className="font-medium text-warm-900">Recent Round Reviews</h3>
             <p className="text-xs text-warm-500">
               Click any round for AI-powered analysis
             </p>

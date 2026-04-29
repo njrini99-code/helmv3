@@ -95,7 +95,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
           <div className="w-8 h-8 rounded-lg bg-primary-50 border border-primary-200/60 flex items-center justify-center">
             <IconBell size={15} className="text-primary-600" />
           </div>
-          <h2 className="text-sm font-semibold text-warm-900 uppercase tracking-wider">Announcements</h2>
+          <h2 className="text-sm font-medium text-warm-900 uppercase tracking-wider">Announcements</h2>
           {unreadCount > 0 && (
             <span className="px-1.5 py-0.5 text-micro font-medium rounded-full bg-primary-100 text-primary-700 border border-primary-200 tabular-nums">
               {unreadCount} new
@@ -141,7 +141,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                     {/* Title */}
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className={cn(
-                        'font-semibold text-warm-900 truncate',
+                        'font-medium text-warm-900 truncate',
                         unread ? 'text-[14px]' : 'text-sm'
                       )}>
                         {ann.title}

@@ -200,13 +200,13 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
           />
         ) : (
           <div className="w-10 h-10 rounded-full bg-primary-600/90 flex items-center justify-center">
-            <span className="text-white font-semibold text-sm">
+            <span className="text-white font-medium text-sm">
               {player.first_name?.[0]}{player.last_name?.[0]}
             </span>
           </div>
         )}
         <div className="min-w-0">
-          <p className="font-semibold text-warm-900 text-sm">
+          <p className="font-medium text-warm-900 text-sm">
             {player.first_name} {player.last_name}
           </p>
           <p className="text-xs text-warm-500">
@@ -220,19 +220,19 @@ function PlayerSnapshotCard({ player, stats, existingAreas }: {
         <div className="grid grid-cols-4 gap-2">
           <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
             <p className="text-xs text-warm-500">Avg Score</p>
-            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.avg_score}</p>
+            <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.avg_score}</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
             <p className="text-xs text-warm-500">Avg Putts</p>
-            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.avg_putts ?? '--'}</p>
+            <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.avg_putts ?? '--'}</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
             <p className="text-xs text-warm-500">FW %</p>
-            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.fairway_pct != null ? `${stats.fairway_pct}%` : '--'}</p>
+            <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.fairway_pct != null ? `${stats.fairway_pct}%` : '--'}</p>
           </div>
           <div className="text-center p-2 rounded-lg bg-white border border-warm-100">
             <p className="text-xs text-warm-500">GIR %</p>
-            <p className="text-sm font-semibold text-warm-900 tabular-nums">{stats.gir_pct != null ? `${stats.gir_pct}%` : '--'}</p>
+            <p className="text-sm font-medium text-warm-900 tabular-nums">{stats.gir_pct != null ? `${stats.gir_pct}%` : '--'}</p>
           </div>
         </div>
       ) : (
@@ -491,7 +491,7 @@ export function DevelopmentPlansClient({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className={cn('font-semibold text-warm-900 truncate', isCompleted && 'text-warm-500')}>{fa.title}</h3>
+                  <h3 className={cn('font-medium text-warm-900 truncate', isCompleted && 'text-warm-500')}>{fa.title}</h3>
                   <span className={cn('px-2 py-0.5 text-xs font-medium rounded-full border', status.color)}>
                     {status.label}
                   </span>
@@ -529,10 +529,10 @@ export function DevelopmentPlansClient({
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-warm-500 font-medium">{fa.target_metric || 'Progress'}</span>
-                <span className="font-semibold text-warm-700 tabular-nums">
+                <span className="font-medium text-warm-700 tabular-nums">
                   {fa.current_value ?? 0} / {fa.target_value}
                   <span className={cn(
-                    'ml-1.5 px-1.5 py-0.5 rounded text-xs font-semibold',
+                    'ml-1.5 px-1.5 py-0.5 rounded text-xs font-medium',
                     pct >= 100 ? 'bg-primary-100 text-primary-700'
                     : pct >= 75 ? 'bg-blue-50 text-blue-700'
                     : 'bg-warm-100 text-warm-600',
@@ -853,7 +853,7 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconActivity size={14} className="text-primary-600" />
-                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Active</p>
+                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Active</p>
               </div>
               <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.activeCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
@@ -861,7 +861,7 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconCheck size={14} className="text-primary-600" />
-                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Completed</p>
+                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Completed</p>
               </div>
               <p className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em]">{summaryStats.completedCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">
@@ -871,7 +871,7 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTrendingUp size={14} className="text-blue-600" />
-                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Avg Progress</p>
+                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Avg Progress</p>
               </div>
               <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.avgProgress}%</p>
               <div className="mt-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
@@ -881,7 +881,7 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTarget size={14} className="text-violet-600" />
-                <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider">Total</p>
+                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Total</p>
               </div>
               <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{summaryStats.total}</p>
               <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
@@ -897,7 +897,7 @@ export function DevelopmentPlansClient({
             <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconUser size={24} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Players Yet</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Players Yet</h3>
             <p className="text-warm-500 text-sm max-w-sm mx-auto">
               Add players to your roster to create development plans and focus areas.
             </p>
@@ -907,7 +907,7 @@ export function DevelopmentPlansClient({
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={24} className="text-primary-600" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Focus Areas</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Focus Areas</h3>
             <p className="text-warm-500 text-sm mb-6 max-w-sm mx-auto">
               {selectedPlayerId
                 ? 'Create a focus area for this player to help guide their development.'
@@ -945,7 +945,7 @@ export function DevelopmentPlansClient({
                       </div>
                     )}
                     <div className="flex-1">
-                      <h2 className="text-lg font-semibold text-warm-900">{p.first_name} {p.last_name}</h2>
+                      <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{p.first_name} {p.last_name}</h2>
                       <div className="flex items-center gap-3 text-sm text-warm-500">
                         {p.handicap != null && <span>{p.handicap > 0 ? '+' : ''}{p.handicap} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}
@@ -991,11 +991,11 @@ export function DevelopmentPlansClient({
                       <Image src={player.avatar_url} alt={`${player.first_name} ${player.last_name}`} width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
                     ) : (
                       <div className="w-10 h-10 rounded-full bg-primary-600/90 flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">{player.first_name?.[0]}{player.last_name?.[0]}</span>
+                        <span className="text-white font-medium text-sm">{player.first_name?.[0]}{player.last_name?.[0]}</span>
                       </div>
                     )}
                     <div>
-                      <h3 className="font-semibold text-warm-900">{player.first_name} {player.last_name}</h3>
+                      <h3 className="font-medium text-warm-900">{player.first_name} {player.last_name}</h3>
                       <div className="flex items-center gap-2 text-xs text-warm-500">
                         <span>{areas.length} focus area{areas.length !== 1 ? 's' : ''}</span>
                         {player.handicap != null && <span>{player.handicap > 0 ? '+' : ''}{player.handicap} HCP</span>}

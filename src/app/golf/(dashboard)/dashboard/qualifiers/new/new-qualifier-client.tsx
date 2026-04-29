@@ -99,7 +99,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 <IconFlag size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">Basic Information</h2>
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Basic Information</h2>
                 <p className="text-sm text-warm-500">Name and describe your qualifier</p>
               </div>
             </div>
@@ -129,7 +129,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 <IconCalendar size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">Schedule</h2>
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Schedule</h2>
                 <p className="text-sm text-warm-500">When will this qualifier take place?</p>
               </div>
             </div>
@@ -170,7 +170,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 <IconMapPin size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">Course & Availability</h2>
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Course & Availability</h2>
                 <p className="text-sm text-warm-500">Where and how many spots?</p>
               </div>
             </div>
@@ -202,7 +202,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                   <IconUsers size={20} className="text-primary-600" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-semibold text-warm-900">Players</h2>
+                  <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Players</h2>
                   <p className="text-sm text-warm-500">
                     {selectedPlayers.length} of {players.length} selected
                   </p>

@@ -154,7 +154,7 @@ export function MobileEventCard({
             )}
 
             {/* Title */}
-            <h3 className="text-subhead font-semibold text-warm-900 leading-snug truncate">
+            <h3 className="text-subhead font-medium text-warm-900 leading-snug truncate">
               {event.title}
             </h3>
 

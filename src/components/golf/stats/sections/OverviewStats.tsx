@@ -36,7 +36,7 @@ export function OverviewSWCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-warm-900 truncate">{item.label}</p>
+          <p className="text-sm font-medium text-warm-900 truncate">{item.label}</p>
           <p className="text-xs text-warm-600 mt-0.5">{item.detail}</p>
         </div>
         <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-[11px] font-medium tabular-nums ${

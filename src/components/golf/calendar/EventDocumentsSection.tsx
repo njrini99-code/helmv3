@@ -125,7 +125,7 @@ export function EventDocumentsSection({
     <section className={cn('space-y-2', sectionPadding)} aria-label="Attachments">
       <div className="flex items-center justify-between gap-2">
         <h4 className={cn(
-          'flex items-center gap-1.5 font-semibold text-warm-900',
+          'flex items-center gap-1.5 font-medium text-warm-900',
           compact ? 'text-sm' : 'text-sm',
         )}>
           <Paperclip className="w-4 h-4 text-warm-500" />
@@ -140,7 +140,7 @@ export function EventDocumentsSection({
           <button
             type="button"
             onClick={() => setShowPicker(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-semibold ring-1 ring-primary-100 transition-colors"
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-medium ring-1 ring-primary-100 transition-colors"
           >
             <Plus className="w-3 h-3" />
             Attach
@@ -285,7 +285,7 @@ function DocumentPickerDialog({
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <h3
             id="event-doc-picker-title"
-            className="text-xl font-semibold text-warm-900"
+            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]"
           >
             Attach a document
           </h3>
@@ -349,7 +349,7 @@ function DocumentPickerDialog({
                         <Icon className="w-4 h-4 text-primary-700" />
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-warm-900 truncate">
+                        <p className="text-sm font-medium text-warm-900 truncate">
                           {d.title}
                         </p>
                         <p className="text-[11px] text-warm-500 truncate">

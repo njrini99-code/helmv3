@@ -164,7 +164,8 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
     }, [recentRounds]);
 
     return (
-        <div className="min-h-full bg-transparent">
+        <div className="min-h-full bg-transparent relative overflow-x-clip">
+            <div className="ambient-aurora" aria-hidden />
             {/* HEADER */}
             <LargeTitleHeader
                 title={`${greeting}, ${player.first_name}`}

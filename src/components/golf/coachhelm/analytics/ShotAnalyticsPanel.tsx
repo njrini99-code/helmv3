@@ -412,7 +412,7 @@ function StatCard({
         {label}
       </p>
       <p className={cn(
-        'text-2xl font-semibold tabular-nums',
+        'text-2xl font-medium tabular-nums',
         color === 'green' && 'text-primary-600',
         color === 'amber' && 'text-amber-600',
         color === 'red' && 'text-red-600',

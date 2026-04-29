@@ -122,7 +122,7 @@ export function PremiumRoundHeader({
                 size="xl"
               />
               <div>
-                <h2 className="text-xl font-semibold text-warm-900">{playerName}</h2>
+                <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">{playerName}</h2>
                 <p className="text-sm text-warm-500 mt-0.5">{formattedDate}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-sm font-medium text-warm-700">{courseName}</span>
@@ -164,7 +164,7 @@ export function PremiumRoundHeader({
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.35, duration: 0.35 }}
-                  className={cn('text-xl font-semibold', scoreColor)}
+                  className={cn('text-xl font-medium', scoreColor)}
                 >
                   {scoreDisplay}
                 </motion.div>
@@ -194,7 +194,7 @@ export function PremiumRoundHeader({
                 className="rounded-xl bg-warm-50/50 p-3"
               >
                 <p className="text-xs text-warm-400 font-medium">{stat.label}</p>
-                <p className="text-xl font-semibold text-warm-900 tabular-nums mt-0.5">{stat.value}</p>
+                <p className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] tabular-nums mt-0.5">{stat.value}</p>
                 {stat.sub && (
                   <p className="text-xs text-warm-400 mt-0.5">{stat.sub}</p>
                 )}

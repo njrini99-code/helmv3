@@ -53,7 +53,7 @@ export default async function PlayerGamePrintPage({
             Coach scouting report
           </p>
           <h1
-            className="text-3xl font-semibold text-warm-900 mt-1"
+            className="text-3xl font-medium text-warm-900 mt-1"
             data-testid="print-player-name"
           >
             {fullName}
@@ -63,11 +63,11 @@ export default async function PlayerGamePrintPage({
             {fingerprint.composite.rating != null && (
               <>
                 {' · '}Composite{' '}
-                <span className="font-semibold tabular-nums">
+                <span className="font-medium tabular-nums">
                   {fingerprint.composite.rating}
                 </span>
                 {' · '}Trend{' '}
-                <span className="font-semibold capitalize">
+                <span className="font-medium capitalize">
                   {fingerprint.composite.trend}
                 </span>
               </>
@@ -90,7 +90,7 @@ export default async function PlayerGamePrintPage({
                   <p className="text-[10px] uppercase tracking-[0.14em] text-warm-500 font-medium">
                     {String(idx + 1).padStart(2, '0')}
                   </p>
-                  <h2 className="text-lg font-semibold text-warm-900">
+                  <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
                     {section.category}
                   </h2>
                 </div>
@@ -123,7 +123,7 @@ export default async function PlayerGamePrintPage({
                               'bg-white',
                             )}
                           >
-                            <p className="font-semibold text-warm-900">{insight.title}</p>
+                            <p className="font-medium text-warm-900">{insight.title}</p>
                             {insight.content && (
                               <p className="text-warm-700 mt-1">{insight.content}</p>
                             )}
@@ -176,7 +176,7 @@ export default async function PlayerGamePrintPage({
               <p className="text-[10px] uppercase tracking-[0.14em] text-warm-500 font-medium">
                 07
               </p>
-              <h2 className="text-lg font-semibold text-warm-900">
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
                 Recent trend
               </h2>
             </div>

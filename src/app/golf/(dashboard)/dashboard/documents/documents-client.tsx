@@ -507,7 +507,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         <div className="fixed inset-0 z-40 bg-primary-600/10 backdrop-blur-sm flex items-center justify-center pointer-events-none">
           <div className="bg-cream-50/92 backdrop-blur-xl rounded-3xl p-12 shadow-2xl border-2 border-dashed border-primary-400">
             <IconUpload size={48} className="mx-auto text-primary-600 mb-4" />
-            <p className="text-xl font-semibold text-warm-900">Drop files to upload</p>
+            <p className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">Drop files to upload</p>
             <p className="text-sm text-warm-500 mt-1">Release to add files</p>
           </div>
         </div>
@@ -575,7 +575,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center">
                     <IconFolderPlus size={16} className="text-primary-600" />
                   </div>
-                  <h2 className="text-lg font-semibold text-warm-900">Create Folder</h2>
+                  <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Create Folder</h2>
                 </div>
                 <button
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
@@ -624,7 +624,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {currentFolder === null && folders.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Folders</h2>
+              <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Folders</h2>
               <button
                 onClick={() => setCurrentFolder('')}
                 className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
@@ -718,7 +718,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => { void triggerHaptic('light'); setShowSortMenu(!showSortMenu); }}
-                className="flex items-center gap-1.5 h-11 px-3 text-xs font-semibold text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                className="flex items-center gap-1.5 h-11 px-3 text-xs font-medium text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                 aria-haspopup="menu"
                 aria-expanded={showSortMenu}
               >
@@ -740,7 +740,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                         className={cn(
                           'flex items-center gap-2 w-full px-3 py-2.5 min-h-[44px] text-[15px] transition-colors',
                           sortBy === value
-                            ? 'text-primary-700 bg-primary-50/70 font-semibold'
+                            ? 'text-primary-700 bg-primary-50/70 font-medium'
                             : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
                         )}
                       >
@@ -757,7 +757,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
         {/* Section header for files at root level */}
         {currentFolder === null && folders.length > 0 && documents.length > 0 && (
-          <h2 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-3">
+          <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">
             {searchQuery || categoryFilter ? `${filteredDocuments.length} result${filteredDocuments.length !== 1 ? 's' : ''}` : 'All Files'}
           </h2>
         )}
@@ -773,7 +773,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
                 <IconFolder size={28} className="text-warm-400" />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Documents Yet</h3>
+              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Documents Yet</h3>
               <p className="text-sm text-warm-500 mb-6 max-w-sm mx-auto">
                 {isCoach
                   ? 'Upload documents to share with your team. Drag & drop files or click upload.'
@@ -802,7 +802,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
                     <IconFolder size={24} className="text-primary-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-warm-900 mb-2">This folder is empty</h3>
+                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">This folder is empty</h3>
                   <p className="text-sm text-warm-500 mb-5 max-w-xs mx-auto">
                     Upload files to get started or drag & drop them here.
                   </p>
@@ -859,7 +859,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     <div className="flex items-center gap-1">
                       {/* Version badge */}
                       {doc.version_count && doc.version_count > 1 && (
-                        <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-warm-100 text-warm-600 flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-warm-100 text-warm-600 flex items-center gap-0.5">
                           <IconLayers size={10} />
                           v{doc.version_count}
                         </span>
@@ -941,7 +941,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-semibold text-warm-900 mb-1 truncate text-[15px] leading-tight">
+                  <h3 className="font-medium text-warm-900 mb-1 truncate text-[15px] leading-tight">
                     {doc.title}
                   </h3>
 
@@ -1011,7 +1011,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <div>
-                <h2 className="text-lg font-semibold text-warm-900">Upload Documents</h2>
+                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Upload Documents</h2>
                 <p className="text-sm text-warm-500">{pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} selected</p>
               </div>
               <button
@@ -1155,7 +1155,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-              <h2 className="text-lg font-semibold text-warm-900">Edit Document</h2>
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Edit Document</h2>
               <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
@@ -1265,7 +1265,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                 <IconTrash size={22} className="text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-warm-900 mb-2">Delete &ldquo;{deleteConfirmDoc.title}&rdquo;?</h3>
+              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Delete &ldquo;{deleteConfirmDoc.title}&rdquo;?</h3>
               <p className="text-sm text-warm-500">All versions will be permanently removed. This action cannot be undone.</p>
             </div>
             <div className="flex gap-3 px-6 pb-6">
@@ -1300,7 +1300,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-              <h2 className="text-lg font-semibold text-warm-900">Version History</h2>
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Version History</h2>
               <button onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
               </button>
@@ -1333,7 +1333,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-              <h2 className="text-lg font-semibold text-warm-900">Move to Folder</h2>
+              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Move to Folder</h2>
               <button
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"

@@ -96,7 +96,7 @@ export function CalendarFeedManager({
       <div className="p-6 border-b border-warm-200">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-warm-900">Calendar Feeds</h2>
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">Calendar Feeds</h2>
             <p className="text-sm text-warm-500 mt-1">
               Subscribe to your calendar in Apple Calendar, Google Calendar, or Outlook
             </p>
@@ -189,7 +189,7 @@ export function CalendarFeedManager({
                 <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
                   <Calendar className="w-8 h-8 text-primary-600" />
                 </div>
-                <h3 className="text-lg font-semibold text-warm-900 mb-2">
+                <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
                   No calendar feeds yet
                 </h3>
                 <p className="text-sm text-warm-500 mb-6 max-w-md mx-auto">

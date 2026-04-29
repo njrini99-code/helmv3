@@ -79,7 +79,7 @@ export function JoinRequestAlert({ className, onDismiss, dismissible = true }: J
               <IconUsers size={24} className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white text-base">
+              <h3 className="font-medium text-white text-base">
                 {requests.length} Player{requests.length > 1 ? 's' : ''} Waiting to Join
               </h3>
               <p className="text-white/80 text-sm">
@@ -93,7 +93,7 @@ export function JoinRequestAlert({ className, onDismiss, dismissible = true }: J
               href="/golf/dashboard/roster"
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-lg',
-                'bg-white text-amber-600 font-semibold text-sm',
+                'bg-white text-amber-600 font-medium text-sm',
                 'hover:bg-amber-50 transition-colors',
                 'shadow-sm'
               )}

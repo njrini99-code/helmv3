@@ -662,7 +662,7 @@ export default function RoundReviewPage() {
           return (
             <div className="rounded-2xl border border-primary-200/60 bg-primary-50/40 backdrop-blur-xl p-4 flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-warm-900">
+                <p className="text-sm font-medium text-warm-900">
                   Turn this into a focus area
                 </p>
                 <p className="text-xs text-warm-600 mt-0.5">

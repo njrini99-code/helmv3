@@ -55,7 +55,7 @@ function DistanceMeter({ distance }: { distance: number }) {
         <span className="text-[11px] uppercase tracking-wide text-warm-500 font-medium">
           Distance spectrum
         </span>
-        <span className="text-sm font-semibold text-warm-900 tabular-nums">
+        <span className="text-sm font-medium text-warm-900 tabular-nums">
           {Math.round(distance)} yd
         </span>
       </div>

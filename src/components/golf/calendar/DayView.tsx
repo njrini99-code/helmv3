@@ -250,7 +250,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
         {allDayEvents.length > 0 && (
           <div className="mb-4 px-1 pb-3 border-b border-warm-200/40">
             <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary-700">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-medium uppercase tracking-[0.08em] text-primary-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary-500" aria-hidden="true" />
                 All day
               </span>
@@ -414,7 +414,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
             ">
               <Calendar className="w-7 h-7 text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
               No events scheduled
             </h3>
             <p className="text-sm text-warm-500 max-w-xs mx-auto">

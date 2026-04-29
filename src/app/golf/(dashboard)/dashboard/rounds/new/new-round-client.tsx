@@ -1424,7 +1424,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
               <IconFlag size={24} className="text-primary-500" />
             </div>
-            <h2 className="text-xl font-semibold text-warm-900 mb-2">
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
               Round in Progress
             </h2>
             <p className="text-warm-500 text-sm mb-1">
@@ -1493,7 +1493,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         {courseMode === 'saved' ? <IconBookmark size={18} /> : <IconPlus size={18} />}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-warm-900">Course</p>
+                        <p className="text-sm font-medium text-warm-900">Course</p>
                         <p className="text-xs text-warm-500">
                           {courseMode === 'saved'
                             ? `${savedCourses.length} saved course${savedCourses.length !== 1 ? 's' : ''}`
@@ -1511,7 +1511,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             handleSavedCourseSelect(savedCourses[0]!.id);
                           }
                         }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-[color,background-color,box-shadow] ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-[color,background-color,box-shadow] ${
                           courseMode === 'saved'
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1539,7 +1539,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             teesPlayed: 'White',
                           }));
                         }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-[color,background-color,box-shadow] ${
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-[color,background-color,box-shadow] ${
                           courseMode === 'new'
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1603,7 +1603,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                                           <IconCheck size={12} className="text-white" />
                                         </span>
                                       )}
-                                      <p className={`text-sm font-semibold truncate ${isSelected ? 'text-primary-900' : 'text-warm-900'}`}>
+                                      <p className={`text-sm font-medium truncate ${isSelected ? 'text-primary-900' : 'text-warm-900'}`}>
                                         {course.courseName}
                                       </p>
                                     </div>
@@ -1670,7 +1670,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 /* Compact summary card for selected saved course */
                 <div className="rounded-2xl border border-primary-200/50 bg-primary-50/55 backdrop-blur-sm p-5 shadow-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-sm font-semibold text-warm-900 flex items-center gap-2">
+                    <h2 className="text-sm font-medium text-warm-900 flex items-center gap-2">
                       <IconCheck size={16} className="text-primary-600" />
                       Course ready
                     </h2>
@@ -1694,7 +1694,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       Change
                     </button>
                   </div>
-                  <p className="text-base font-semibold text-warm-900">{selectedCourse.courseName}</p>
+                  <p className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">{selectedCourse.courseName}</p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-warm-500">
                     {selectedCourse.courseCity && (
                       <span className="flex items-center gap-1">
@@ -1860,7 +1860,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 <div className="rounded-2xl border border-purple-200/60 bg-purple-50/40 p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <IconTrophy size={18} className="text-purple-600" />
-                    <h3 className="text-sm font-semibold text-purple-900">Active Qualifiers</h3>
+                    <h3 className="text-sm font-medium text-purple-900">Active Qualifiers</h3>
                   </div>
                   <p className="text-xs text-purple-700/70 mb-3">Tap to start a qualifier round</p>
                   <div className="space-y-2 max-h-[220px] overflow-y-auto">
@@ -1875,7 +1875,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-purple-200/60 bg-cream-100/82 hover:bg-white hover:shadow-sm active:scale-[0.98] transition-all duration-150 text-left"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-warm-900 truncate">{q.name}</p>
+                          <p className="text-sm font-medium text-warm-900 truncate">{q.name}</p>
                           <div className="flex items-center gap-3 mt-1 text-xs text-warm-500">
                             {q.courseName && (
                               <span className="flex items-center gap-1 truncate">
@@ -1887,7 +1887,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           </div>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
+                          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700">
                             Play
                           </span>
                         </div>
@@ -1941,7 +1941,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <button
                         type="button"
                         onClick={() => setHolesPerRound(9)}
-                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
+                        className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
                           holesPerRound === 9
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1952,7 +1952,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <button
                         type="button"
                         onClick={() => setHolesPerRound(18)}
-                        className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
+                        className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
                           holesPerRound === 18
                             ? 'bg-white text-warm-900 shadow-sm'
                             : 'text-warm-500 hover:text-warm-700'
@@ -1968,7 +1968,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         <button
                           type="button"
                           onClick={() => setNineSelection('front')}
-                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
+                          className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
                             nineSelection === 'front'
                               ? 'bg-white text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
@@ -1979,7 +1979,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         <button
                           type="button"
                           onClick={() => setNineSelection('back')}
-                          className={`px-5 py-2 rounded-md text-sm font-semibold transition-[color,background-color,box-shadow] ${
+                          className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
                             nineSelection === 'back'
                               ? 'bg-white text-warm-900 shadow-sm'
                               : 'text-warm-500 hover:text-warm-700'
@@ -2190,7 +2190,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
           <button
             onClick={() => setShowFinishConfirm(true)}
-            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-semibold hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
+            className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
           >
             Submit Round
           </button>
@@ -2259,7 +2259,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 text-center mb-2">
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
               Recover Unsaved Progress?
             </h3>
             <p className="text-sm text-warm-500 text-center mb-6">
@@ -2328,7 +2328,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 <IconWarning size={20} className="text-amber-600" />
               </div>
               <div>
-                <h3 id="back-setup-title" className="text-base font-semibold text-warm-900">Go back to setup?</h3>
+                <h3 id="back-setup-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Go back to setup?</h3>
                 <p className="text-sm text-warm-500 mt-0.5">Your progress and shot data will be lost.</p>
               </div>
             </div>
@@ -2376,9 +2376,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             const ScoreCell = ({ h }: { h: HoleStats }) => {
               const diff = (h?.score ?? 0) - (h?.par ?? 0);
               const cls = diff <= -2 ? 'text-primary-700 bg-primary-100 font-medium'
-                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-semibold'
+                : diff === -1 ? 'text-primary-600 bg-primary-50/70 font-medium'
                 : diff === 0 ? 'text-warm-700 bg-white font-medium'
-                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-semibold'
+                : diff === 1 ? 'text-amber-700 bg-amber-50/70 font-medium'
                 : 'text-red-600 bg-red-50/70 font-medium';
               return (
                 <div className={`text-center py-1.5 ${cls}`}>
@@ -2418,7 +2418,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
                         <IconFlag size={24} className="text-white" />
                       </div>
-                      <h3 className="text-lg font-semibold text-white/90 mb-1">Round Complete</h3>
+                      <h3 className="text-lg font-medium text-white/90 mb-1">Round Complete</h3>
                       <div className="flex items-baseline justify-center gap-2">
                         <m.span
                           initial={{ opacity: 0, y: 8 }}
@@ -2432,7 +2432,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.35 }}
-                          className={`text-lg font-semibold ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
+                          className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
                         >
                           ({toParLabel})
                         </m.span>
@@ -2470,7 +2470,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       transition={{ delay: 0.3, duration: 0.3 }}
                       className="mb-6"
                     >
-                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">Scorecard</p>
+                      <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
                       <div className="rounded-xl border border-warm-200/35 overflow-x-auto overflow-hidden">
                         {/* Front 9 (or all 9 for 9-hole round) */}
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>

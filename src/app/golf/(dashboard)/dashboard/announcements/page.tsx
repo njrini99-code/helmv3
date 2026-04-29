@@ -120,7 +120,7 @@ export default async function GolfAnnouncementsPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">No Announcements</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Announcements</h3>
             <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {isCoach
                 ? 'Create announcements to keep your team informed about schedule changes, upcoming events, and important updates.'
@@ -140,7 +140,7 @@ export default async function GolfAnnouncementsPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">Player Profile Not Found</h3>
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Player Profile Not Found</h3>
             <p className="text-warm-500 max-w-sm mx-auto">
               Unable to load your player profile. Please complete onboarding or contact support.
             </p>

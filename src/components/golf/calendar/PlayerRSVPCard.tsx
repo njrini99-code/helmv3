@@ -144,7 +144,7 @@ export function PlayerRSVPCard({
           <div className="flex-1 min-w-0">
             <h3
               className={cn(
-                'font-semibold text-warm-900 mb-1.5',
+                'font-medium text-warm-900 mb-1.5',
                 compact ? 'text-base' : 'text-lg'
               )}
             >
@@ -201,14 +201,14 @@ export function PlayerRSVPCard({
             <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
               <XCircle className="w-6 h-6 text-warm-400" />
             </div>
-            <p className="text-sm font-semibold text-warm-700 mb-1">RSVP Window Closed</p>
+            <p className="text-sm font-medium text-warm-700 mb-1">RSVP Window Closed</p>
             <p className="text-xs text-warm-500">
               You can no longer change your response
             </p>
           </div>
         ) : (
           <>
-            <p className="text-sm font-semibold text-warm-700 mb-4">
+            <p className="text-sm font-medium text-warm-700 mb-4">
               Will you attend this event?
             </p>
 

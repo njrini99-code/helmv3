@@ -55,7 +55,7 @@ export default async function PlayerHubPage() {
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h1>
+          <h1 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h1>
           <p className="text-warm-600">Join a team to see your travel, tasks, and events.</p>
         </div>
       </div>

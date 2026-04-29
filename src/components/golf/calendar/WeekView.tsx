@@ -357,7 +357,7 @@ export function WeekView({
                 )}
               >
                 <p className={cn(
-                  'text-xs font-semibold uppercase tracking-wider',
+                  'text-[11px] font-medium uppercase tracking-[0.12em] opacity-80',
                   isCurrentDay ? 'text-primary-600' : 'text-warm-400'
                 )}>
                   {dayName}
@@ -373,7 +373,7 @@ export function WeekView({
                   {dayNum}
                 </div>
                 {isCurrentDay && (
-                  <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-primary-600">
+                  <span className="mt-0.5 text-[9px] font-medium uppercase tracking-[0.1em] text-primary-600">
                     Today
                   </span>
                 )}
@@ -391,7 +391,7 @@ export function WeekView({
             )}
           >
             <div className="px-2 py-1.5 flex items-center justify-end">
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-50/70 ring-1 ring-primary-100/70 text-[9px] font-semibold uppercase tracking-[0.08em] text-primary-700">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary-50/70 ring-1 ring-primary-100/70 text-[9px] font-medium uppercase tracking-[0.08em] text-primary-700">
                 <span className="w-1 h-1 rounded-full bg-primary-500" aria-hidden="true" />
                 All day
               </span>
@@ -624,7 +624,7 @@ export function WeekView({
             <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
               <Calendar className="w-7 h-7 text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-warm-900 mb-2">
+            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
               No events this week
             </h3>
             <p className="text-sm text-warm-500 max-w-xs mx-auto">

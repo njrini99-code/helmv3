@@ -16,7 +16,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
       className="rounded-xl border border-warm-200 bg-white p-5"
       style={{ animation: 'fadeInUp 0.5s ease-out 0.1s both' }}
     >
-      <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
+      <h3 className="text-sm font-medium text-warm-900 mb-3 flex items-center gap-2">
         <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-primary-50 ring-1 ring-primary-100">
           <IconTarget size={14} className="text-primary-600" />
         </span>
@@ -53,7 +53,7 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
             {/* Change value */}
             {impact.change !== 0 && (
               <div className={cn(
-                'text-sm font-semibold tabular-nums',
+                'text-sm font-medium tabular-nums',
                 impact.direction === 'positive' ? 'text-primary-600' : 'text-red-500',
               )}>
                 {impact.change > 0 ? '+' : ''}{impact.change.toFixed(1)}

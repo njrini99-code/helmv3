@@ -144,7 +144,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
             <IconSparkles size={16} />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-warm-900">
+            <h3 className="text-sm font-medium text-warm-900">
               No standout takeaway from this round
             </h3>
             <p className="mt-1 text-sm text-warm-600 leading-relaxed">
@@ -220,7 +220,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
         <a
           data-testid="round-takeaway-add-focus"
           href={focusAreaHref}
-          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 active:scale-[0.98] transition-all shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 active:scale-[0.98] transition-all shadow-sm"
         >
           <IconTarget size={12} aria-hidden />
           Add focus area
@@ -228,7 +228,7 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
         <a
           data-testid="round-takeaway-open-coachhelm"
           href={coachHelmHref}
-          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-warm-100 text-warm-700 text-xs font-semibold hover:bg-warm-200 active:scale-[0.98] transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl bg-warm-100 text-warm-700 text-xs font-medium hover:bg-warm-200 active:scale-[0.98] transition-all"
         >
           Open in CoachHelm
           <IconArrowRight size={12} aria-hidden />

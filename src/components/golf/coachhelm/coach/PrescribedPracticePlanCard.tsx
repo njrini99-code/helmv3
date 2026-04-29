@@ -267,7 +267,7 @@ function DrillRow({
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span
             className={cn(
-              'inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border',
+              'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border',
               priorityStyles,
             )}
           >
@@ -282,7 +282,7 @@ function DrillRow({
       </div>
 
       <div>
-        <p className="text-sm font-semibold text-warm-900 leading-snug">
+        <p className="text-sm font-medium text-warm-900 leading-snug">
           {drill.title}
         </p>
         <p className="text-xs text-warm-500 mt-1 leading-relaxed">
@@ -292,7 +292,7 @@ function DrillRow({
 
       {drill.drillText && (
         <div className="rounded-lg bg-primary-50/70 border border-primary-100 px-3 py-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-primary-700 mb-1">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-primary-700 mb-1">
             Drill
           </p>
           <p className="text-xs text-primary-900 leading-relaxed">
@@ -390,7 +390,7 @@ export function PrescribedPracticePlanCard({
             <IconSparkles size={18} className="text-primary-600" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-warm-900 leading-tight">
+            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] leading-tight">
               Prescribed Practice Plan
             </h3>
             <p className="text-xs text-warm-500 mt-0.5">

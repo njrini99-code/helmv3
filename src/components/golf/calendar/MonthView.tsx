@@ -70,7 +70,7 @@ function DayCellContent({
         {/* Event count badge for days with many events */}
         {dayEvents.length > 3 && (
           <span
-            className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-primary-600/[0.08] text-primary-600/70"
+            className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-primary-600/[0.08] text-primary-600/70"
           >
             {dayEvents.length}
           </span>
@@ -277,7 +277,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-[11px] font-semibold uppercase tracking-[0.1em] rounded-lg text-warm-500/70"
+            className="px-3 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] rounded-lg text-warm-500/70"
           >
             {day}
           </div>
@@ -340,7 +340,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
           <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
             <Calendar className="w-7 h-7 text-warm-400" />
           </div>
-          <h3 className="text-lg font-semibold text-warm-900 mb-2">
+          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
             No events this month
           </h3>
           <p className="text-sm text-warm-500 max-w-xs mx-auto">

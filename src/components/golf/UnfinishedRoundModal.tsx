@@ -109,7 +109,7 @@ export function UnfinishedRoundModal({
           >
             {/* Header */}
             <div className="px-6 py-4 border-b border-warm-200/60 flex items-center justify-between">
-              <h2 id="unfinished-round-modal-title" className="text-lg font-semibold text-warm-900">
+              <h2 id="unfinished-round-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
                 Unfinished Round
               </h2>
               <button
@@ -126,7 +126,7 @@ export function UnfinishedRoundModal({
             <div className="px-6 py-6 space-y-4">
               {/* Round Info */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-warm-900 text-lg">
+                <h3 className="font-medium text-warm-900 text-lg">
                   {round.course_name || 'Unknown Course'}
                 </h3>
                 <div className="flex items-center gap-4 text-sm text-warm-500">
@@ -217,7 +217,7 @@ export function UnfinishedRoundModal({
                         <IconPlay size={20} className="text-white" />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="font-semibold text-primary-900">
+                        <p className="font-medium text-primary-900">
                           Resume Round
                         </p>
                         <p className="text-xs text-primary-700 mt-0.5">
@@ -241,7 +241,7 @@ export function UnfinishedRoundModal({
                         <IconTrash size={20} className="text-warm-600" />
                       </div>
                       <div className="flex-1 text-left">
-                        <p className="font-semibold text-warm-900">
+                        <p className="font-medium text-warm-900">
                           Delete Round
                         </p>
                         <p className="text-xs text-warm-500 mt-0.5">

@@ -312,7 +312,7 @@ export default async function RoundsPage() {
                   <div className="flex items-center gap-2 mb-1.5">
                     {roundStats.trend && (
                       <span className={cn(
-                        'text-xs font-semibold px-2 py-0.5 rounded-full',
+                        'text-xs font-medium px-2 py-0.5 rounded-full',
                         roundStats.trend === 'improving' ? 'text-primary-700 bg-primary-100' :
                         roundStats.trend === 'declining' ? 'text-red-600 bg-red-50' :
                         'text-warm-500 bg-warm-100'
@@ -419,7 +419,7 @@ export default async function RoundsPage() {
                                     {/* Top: type + day */}
                                     <div className="flex items-center justify-between mb-1.5">
                                       <span className={cn(
-                                        'px-1.5 py-px text-[10px] font-semibold rounded capitalize border',
+                                        'px-1.5 py-px text-[10px] font-medium rounded capitalize border',
                                         roundTypeMeta.bg, roundTypeMeta.text, roundTypeMeta.border
                                       )}>
                                         {roundTypeMeta.label}
@@ -437,7 +437,7 @@ export default async function RoundsPage() {
                                           className="flex-shrink-0"
                                         />
                                         <div className="min-w-0 flex-1">
-                                          <p className="text-sm font-semibold text-warm-900 truncate group-hover:text-primary-600 transition-colors leading-tight">
+                                          <p className="text-sm font-medium text-warm-900 truncate group-hover:text-primary-600 transition-colors leading-tight">
                                             {playerName}
                                           </p>
                                         </div>

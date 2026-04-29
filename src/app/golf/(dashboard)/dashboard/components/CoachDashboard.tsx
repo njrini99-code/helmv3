@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { m, AnimatePresence } from 'framer-motion';
+import { m } from 'framer-motion';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     IconUsers,
     IconCalendar,
@@ -205,65 +211,29 @@ const DateRangeSelector = memo(function DateRangeSelector({
 }) {
     const [open, setOpen] = useState(false);
     const selected = DATE_RANGE_OPTIONS.find(o => o.value === value);
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!open) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') setOpen(false);
-        };
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [open]);
 
     return (
-        <div className="relative" ref={containerRef}>
-            <button
-                onClick={() => setOpen(!open)}
-                className="pill-soft"
-                aria-label="Select date range"
-                aria-haspopup="listbox"
-                aria-expanded={open}
-            >
-                <IconClock size={12} className="text-warm-400" />
-                <span className="hidden sm:inline">{selected?.label}</span>
-                <span className="sm:hidden">{selected?.shortLabel}</span>
-                <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
-            </button>
-            <AnimatePresence>
-                {open && (
-                    <>
-                        <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-                        <m.div
-                            initial={{ opacity: 0, y: -6 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -6 }}
-                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                            role="listbox"
-                            aria-label="Date range options"
-                            className="absolute right-0 top-full mt-2 z-40 surface-stone rounded-2xl py-2 min-w-[180px]"
-                        >
-                            {DATE_RANGE_OPTIONS.map((option) => (
-                                <button
-                                    key={option.value}
-                                    role="option"
-                                    aria-selected={option.value === value}
-                                    onClick={() => { onChange(option.value); setOpen(false); }}
-                                    className={cn(
-                                        'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300',
-                                        option.value === value
-                                            ? 'text-primary-700 bg-primary-50/55 font-medium'
-                                            : 'text-warm-600 hover:bg-cream-50/70'
-                                    )}
-                                >
-                                    {option.label}
-                                </button>
-                            ))}
-                        </m.div>
-                    </>
-                )}
-            </AnimatePresence>
-        </div>
+        <DropdownMenu open={open} onOpenChange={setOpen}>
+            <DropdownMenuTrigger asChild>
+                <button className="pill-soft" aria-label="Select date range">
+                    <IconClock size={12} className="text-warm-400" />
+                    <span className="hidden sm:inline">{selected?.label}</span>
+                    <span className="sm:hidden">{selected?.shortLabel}</span>
+                    <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                {DATE_RANGE_OPTIONS.map((option) => (
+                    <DropdownMenuItem
+                        key={option.value}
+                        onSelect={() => onChange(option.value)}
+                        selected={option.value === value}
+                    >
+                        {option.label}
+                    </DropdownMenuItem>
+                ))}
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 });
 
@@ -308,7 +278,8 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
     const hasTrendData = teamScoringTrend && teamScoringTrend.length >= 2;
 
     return (
-        <div className="min-h-full bg-transparent">
+        <div className="min-h-full bg-transparent relative overflow-x-clip">
+            <div className="ambient-aurora" aria-hidden />
             {/* HEADER */}
             <LargeTitleHeader
                 title={`${greeting}, ${firstName}`}

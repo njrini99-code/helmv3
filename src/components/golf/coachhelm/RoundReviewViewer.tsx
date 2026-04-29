@@ -145,7 +145,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <IconAlertCircle size={18} className="text-red-500" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-red-900">Unable to load review</h3>
+            <h3 className="text-sm font-medium text-red-900">Unable to load review</h3>
             <p className="text-sm text-red-700 mt-1">{error}</p>
             <Button variant="secondary" size="sm" onClick={generate} disabled={generating} className="mt-3">
               <IconRefresh size={14} className={cn('mr-2', generating && 'animate-spin')} />
@@ -179,7 +179,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="text-xl font-semibold text-warm-900 mb-2"
+            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2"
           >
             Round Review
           </motion.h3>
@@ -239,7 +239,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               className="absolute -inset-3 bg-primary-500/15 rounded-3xl"
             />
           </div>
-          <h3 className="text-lg font-semibold text-warm-900 mt-7 mb-2">Analyzing Round...</h3>
+          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mt-7 mb-2">Analyzing Round...</h3>
           <p className="text-sm text-warm-500 text-center max-w-xs">
             Computing shot analytics, putting breakdown, and improvement priorities.
           </p>
@@ -284,7 +284,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <IconSparkles size={18} className="text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-warm-900">Round Review</h2>
+            <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Round Review</h2>
             <p className="text-xs text-warm-500">
               {hasV2Data ? 'CoachHelm Intelligence' : 'Shot-Level Analytics'}
             </p>
@@ -372,7 +372,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             className="space-y-4"
           >
             <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5">
-              <h3 className="text-sm font-semibold text-warm-900 mb-3">Summary</h3>
+              <h3 className="text-sm font-medium text-warm-900 mb-3">Summary</h3>
               <p className="text-sm text-warm-600 leading-relaxed">{review.summary}</p>
               {review.primaryTakeaway && (
                 <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100">
@@ -396,7 +396,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
             <div className="flex items-center gap-2 px-3 py-1.5 bg-primary-50/80 rounded-full border border-primary-200/40">
               <IconSparkles size={12} className="text-primary-600" />
-              <span className="text-label font-semibold text-primary-700 uppercase tracking-wider">AI Intelligence</span>
+              <span className="text-label font-medium text-primary-700 uppercase tracking-wider">AI Intelligence</span>
             </div>
             <div className="h-px flex-1 bg-gradient-to-r from-transparent via-primary-300/60 to-transparent" />
           </div>
@@ -450,7 +450,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <span className={cn(
-              'text-xs font-semibold px-3 py-1 rounded-full',
+              'text-xs font-medium px-3 py-1 rounded-full',
               content.sentiment === 'positive' && 'bg-primary-100 text-primary-700',
               content.sentiment === 'neutral' && 'bg-amber-100 text-amber-700',
               content.sentiment === 'challenging' && 'bg-red-100 text-red-700',
@@ -486,13 +486,13 @@ function ScorecardStrip({
         <table className="w-full border-collapse text-center">
           <thead>
             <tr>
-              <th className="text-micro font-semibold text-warm-400 uppercase w-12 text-left py-2">{label}</th>
+              <th className="text-micro font-medium text-warm-400 uppercase w-12 text-left py-2">{label}</th>
               {nineHoles.map(h => (
-                <th key={h.hole} className="text-label font-semibold text-warm-500 py-2 w-[calc((100%-96px)/9)]">
+                <th key={h.hole} className="text-label font-medium text-warm-500 py-2 w-[calc((100%-96px)/9)]">
                   {h.hole}
                 </th>
               ))}
-              <th className="text-micro font-semibold text-warm-500 uppercase w-12 py-2">Tot</th>
+              <th className="text-micro font-medium text-warm-500 uppercase w-12 py-2">Tot</th>
             </tr>
           </thead>
           <tbody>
@@ -552,7 +552,7 @@ function ScorecardStrip({
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconFlag size={14} />
         Scorecard
       </h3>
@@ -570,13 +570,13 @@ function ScorecardStrip({
         <div className="flex items-center gap-4">
           <div>
             <span className="text-warm-400">Front: </span>
-            <span className="font-semibold text-warm-800">{frontScore}</span>
+            <span className="font-medium text-warm-800">{frontScore}</span>
             <span className="text-warm-400 ml-1">({formatScoreToPar(frontScore - frontPar)})</span>
           </div>
           {back.length > 0 && (
             <div>
               <span className="text-warm-400">Back: </span>
-              <span className="font-semibold text-warm-800">{backScore}</span>
+              <span className="font-medium text-warm-800">{backScore}</span>
               <span className="text-warm-400 ml-1">({formatScoreToPar(backScore - backPar)})</span>
             </div>
           )}
@@ -621,7 +621,7 @@ function ScoringDistribution({
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Scoring Distribution
       </h3>
@@ -673,7 +673,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
             <IconChartBar size={14} className="text-warm-600" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-warm-900">Stats Detail</h3>
+            <h3 className="text-sm font-medium text-warm-900">Stats Detail</h3>
             <p className="text-micro text-warm-500 mt-0.5">Putting, driving, short game, and key stats</p>
           </div>
         </div>
@@ -700,7 +700,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
 function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Key Stats
       </h3>
@@ -722,7 +722,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
             >
               <p className="text-label font-medium text-warm-500 mb-0.5">{formatLabel(stat.label)}</p>
               <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{stat.value}</p>
-              <p className={cn('text-label font-semibold mt-0.5', cmp.color)}>
+              <p className={cn('text-label font-medium mt-0.5', cmp.color)}>
                 {cmp.icon} {cmp.label}
               </p>
             </motion.div>
@@ -743,7 +743,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconActivity size={14} />
         Round Momentum
       </h3>
@@ -841,7 +841,7 @@ function GameBreakdownSection({
       {/* Putting */}
       {hasPutting && (
         <div className="p-5">
-          <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconTarget size={14} />
             Putting
           </h3>
@@ -869,10 +869,10 @@ function GameBreakdownSection({
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-warm-50/80">
-                  <th className="text-left px-3 py-2.5 font-semibold text-warm-600">Distance</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-600">Attempts</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-600">Made</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-warm-600">Make %</th>
+                  <th className="text-left px-3 py-2.5 font-medium text-warm-600">Distance</th>
+                  <th className="text-center px-3 py-2.5 font-medium text-warm-600">Attempts</th>
+                  <th className="text-center px-3 py-2.5 font-medium text-warm-600">Made</th>
+                  <th className="text-center px-3 py-2.5 font-medium text-warm-600">Make %</th>
                 </tr>
               </thead>
               <tbody>
@@ -883,7 +883,7 @@ function GameBreakdownSection({
                     <td className="px-3 py-2.5 text-center text-warm-600 tabular-nums">{r.made}</td>
                     <td className="px-3 py-2.5 text-center">
                       <span className={cn(
-                        'font-semibold tabular-nums',
+                        'font-medium tabular-nums',
                         r.pct >= 80 ? 'text-primary-600' : r.pct >= 40 ? 'text-warm-700' : 'text-red-500',
                       )}>
                         {r.attempts > 0 ? `${r.pct}%` : '--'}
@@ -898,7 +898,7 @@ function GameBreakdownSection({
           {/* Three-putt callouts */}
           {putting.threePuttHoles.length > 0 && (
             <div className="mt-3 p-3.5 bg-red-50/60 rounded-xl border border-red-100">
-              <div className="text-xs font-semibold text-red-700 mb-2">
+              <div className="text-xs font-medium text-red-700 mb-2">
                 {putting.threePuttHoles.length} Three-Putt{putting.threePuttHoles.length > 1 ? 's' : ''}
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -916,7 +916,7 @@ function GameBreakdownSection({
       {/* Driving */}
       {hasDriving && (
         <div className={cn('p-5', hasPutting && 'border-t border-warm-100')}>
-          <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconBolt size={14} />
             Driving
           </h3>
@@ -951,7 +951,7 @@ function GameBreakdownSection({
             <div className="p-3.5 bg-warm-50 rounded-xl">
               <div className="text-label font-medium text-warm-600 mb-2">Miss Direction ({driving.missPattern.total} misses)</div>
               <div className="flex items-center gap-2">
-                <span className="text-label font-semibold text-warm-700 w-8">Left</span>
+                <span className="text-label font-medium text-warm-700 w-8">Left</span>
                 <div className="flex-1 h-3.5 bg-warm-200 rounded-full overflow-hidden flex">
                   <motion.div
                     initial={{ width: 0 }}
@@ -967,7 +967,7 @@ function GameBreakdownSection({
                     className="bg-orange-400 h-full rounded-r-full"
                   />
                 </div>
-                <span className="text-label font-semibold text-warm-700 w-8 text-right">Right</span>
+                <span className="text-label font-medium text-warm-700 w-8 text-right">Right</span>
               </div>
               <div className="flex justify-between mt-1.5 text-micro text-warm-500">
                 <span>{driving.missPattern.left} ({driving.missPattern.total > 0 ? Math.round((driving.missPattern.left / driving.missPattern.total) * 100) : 0}%)</span>
@@ -981,7 +981,7 @@ function GameBreakdownSection({
       {/* Short Game */}
       {hasShortGame && (
         <div className={cn('p-5', (hasPutting || hasDriving) && 'border-t border-warm-100')}>
-          <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconTarget size={14} />
             Short Game
           </h3>
@@ -1073,7 +1073,7 @@ function HighlightsAndImprovements({
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {highlights && highlights.length > 0 && (
         <div className="rounded-2xl border border-primary-100 bg-primary-50/40 backdrop-blur-sm p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-primary-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <h3 className="text-xs font-medium text-primary-700 uppercase tracking-wider mb-3 flex items-center gap-2">
             <IconTrendingUp size={14} />
             Highlights
           </h3>
@@ -1087,7 +1087,7 @@ function HighlightsAndImprovements({
                 className="p-3.5 rounded-xl bg-cream-100/82 border border-primary-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="text-xs font-semibold text-warm-900">{formatLabel(h.title)}</div>
+                  <div className="text-xs font-medium text-warm-900">{formatLabel(h.title)}</div>
                   <TimeframeBadge source={h.source} />
                 </div>
                 <p className="text-label text-warm-600 mt-1 leading-relaxed">{h.description}</p>
@@ -1098,7 +1098,7 @@ function HighlightsAndImprovements({
       )}
       {improvements && improvements.length > 0 && (
         <div className="rounded-2xl border border-amber-100 bg-amber-50/40 backdrop-blur-sm p-5 shadow-sm">
-          <h3 className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+          <h3 className="text-xs font-medium text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-2">
             <IconWarning size={14} />
             Areas to Work On
           </h3>
@@ -1112,7 +1112,7 @@ function HighlightsAndImprovements({
                 className="p-3.5 rounded-xl bg-cream-100/82 border border-amber-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="text-xs font-semibold text-warm-900">{formatLabel(area.area)}</div>
+                  <div className="text-xs font-medium text-warm-900">{formatLabel(area.area)}</div>
                   <TimeframeBadge source={area.source} />
                 </div>
                 <p className="text-label text-warm-600 mt-1 leading-relaxed">{area.recommendation}</p>
@@ -1129,7 +1129,7 @@ function HighlightsAndImprovements({
 function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconBolt size={14} className="text-blue-600" />
         Biggest Improvement Opportunities
       </h3>
@@ -1148,7 +1148,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs font-semibold text-warm-900">{formatLabel(item.category)}</div>
+              <div className="text-xs font-medium text-warm-900">{formatLabel(item.category)}</div>
               <p className="text-label text-warm-600 mt-0.5 leading-relaxed">{item.description}</p>
             </div>
           </motion.div>
@@ -1162,7 +1162,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
 function RecommendationsCard({ recs }: { recs: string[] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconSparkles size={14} className="text-primary-600" />
         Practice Recommendations
       </h3>

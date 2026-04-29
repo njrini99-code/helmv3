@@ -228,7 +228,7 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
                 p.role === 'secondary' && 'bg-violet-600',
               )}
             />
-            <span className="text-warm-700 font-semibold">
+            <span className="text-warm-700 font-medium">
               {formatValue(p.value, evidence.unit, p.role === 'you' ? evidence.your_value_display : undefined)}
             </span>
             <span className="text-warm-500">{p.label}</span>
@@ -272,7 +272,7 @@ export function EvidencePanel({
           )}
           <span aria-hidden="true">·</span>
           <span
-            className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-semibold', colors.bg, colors.text)}
+            className={cn('inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium', colors.bg, colors.text)}
             data-testid="evidence-confidence"
           >
             {confPct}% confidence
@@ -287,7 +287,7 @@ export function EvidencePanel({
     {
       label: 'Your number',
       value: (
-        <span className="font-semibold text-warm-900">
+        <span className="font-medium text-warm-900">
           {formatValue(evidence.your_value, evidence.unit, evidence.your_value_display)}
         </span>
       ),
@@ -297,7 +297,7 @@ export function EvidencePanel({
       label: 'Comparison',
       value: (
         <span>
-          <span className="font-semibold text-warm-900">
+          <span className="font-medium text-warm-900">
             {formatValue(evidence.comparison_value, evidence.unit)}
           </span>{' '}
           <span className="text-warm-500">
@@ -360,7 +360,7 @@ export function EvidencePanel({
         <div className="contents" data-testid="evidence-row-confidence">
           <dt className="text-warm-500">Confidence</dt>
           <dd className="flex items-center gap-2 tabular-nums">
-            <span className={cn('font-semibold', colors.text)}>{confPct}%</span>
+            <span className={cn('font-medium', colors.text)}>{confPct}%</span>
             <div
               role="progressbar"
               aria-valuenow={confPct}
