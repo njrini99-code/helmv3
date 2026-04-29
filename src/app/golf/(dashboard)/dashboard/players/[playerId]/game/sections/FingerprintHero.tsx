@@ -309,7 +309,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
     <div
       className={cn(
         'inline-flex flex-col gap-0.5 px-3 py-2 rounded-xl border',
-        'bg-white/80',
+        'bg-cream-100/82',
         metric.tone === 'good' && 'border-emerald-200',
         metric.tone === 'bad' && 'border-red-200',
         metric.tone === 'neutral' && 'border-warm-200',

@@ -43,7 +43,7 @@ interface Bar {
 function ParTypeBars({ bars }: { bars: Bar[] }) {
   return (
     <div
-      className="rounded-xl bg-white/70 border border-warm-200 p-4"
+      className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="scoring-par-chart"
     >
       <p className="text-[11px] uppercase tracking-wide text-warm-500 font-medium mb-3">

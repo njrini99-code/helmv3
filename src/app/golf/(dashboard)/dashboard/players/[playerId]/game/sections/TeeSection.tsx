@@ -48,7 +48,7 @@ function DistanceMeter({ distance }: { distance: number }) {
 
   return (
     <div
-      className="rounded-xl bg-white/70 border border-warm-200 p-4"
+      className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="tee-distance-meter"
     >
       <div className="flex items-baseline justify-between mb-2">

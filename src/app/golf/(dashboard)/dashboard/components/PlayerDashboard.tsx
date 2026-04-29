@@ -289,7 +289,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                     key={item.label}
                                                     className={cn(
                                                         'group flex flex-col items-center text-center gap-2 p-4 rounded-2xl',
-                                                        'bg-white/50 backdrop-blur-md ring-1 ring-warm-200/55',
+                                                        'bg-cream-100/60 backdrop-blur-md ring-1 ring-warm-200/55',
                                                         'shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
                                                         'transition-transform hover:-translate-y-[1px] duration-200'
                                                     )}

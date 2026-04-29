@@ -217,7 +217,7 @@ export default function CoachingIntelligenceSettingsPage() {
     if (loading || !philosophy) {
         return (
             <div className="min-h-full pb-20">
-                <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-white/70 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
+                <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-cream-100/75 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
                     <div className="max-w-3xl mx-auto px-4 md:px-6 h-16 flex items-center gap-4">
                         <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
                         <div className="h-5 w-40 skeleton-shimmer rounded-lg" />
@@ -390,7 +390,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 {/* Team CoachHelm Settings Section */}
                 {teamId ? (
                     <AnimatedItem>
-                        <section className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+                        <section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
                                     <h2 className="text-base font-semibold text-warm-900">Team CoachHelm</h2>

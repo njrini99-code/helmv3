@@ -41,7 +41,7 @@ interface MissPill {
 function MissDirectionChart({ pills }: { pills: MissPill[] }) {
   return (
     <div
-      className="rounded-xl bg-white/70 border border-warm-200 p-4"
+      className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="approach-miss-chart"
     >
       <p className="text-[11px] uppercase tracking-wide text-warm-500 font-medium mb-3">

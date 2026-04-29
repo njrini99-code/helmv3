@@ -535,7 +535,7 @@ export function PlayerInsightClient({
               </div>
 
               {/* Active Patterns Card — premium */}
-              <div className="bg-white/85 backdrop-blur-2xl rounded-2xl border border-white/50 shadow-glass overflow-hidden">
+              <div className="bg-cream-50/88 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-glass overflow-hidden">
                 <div className="px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="font-[family-name:var(--font-fraunces)] text-[20px] leading-tight font-semibold text-warm-900">
@@ -867,7 +867,7 @@ export function PlayerInsightClient({
 
           {/* Quick Actions Bar */}
           <div className="fixed bottom-0 left-0 right-0 lg:static lg:mt-6 z-20">
-            <div className="bg-white/90 backdrop-blur-xl border-t border-warm-200/60 lg:border lg:rounded-2xl lg:border-white/20 lg:bg-white/70 p-4 lg:p-5">
+            <div className="bg-cream-50/92 backdrop-blur-xl border-t border-warm-200/60 lg:border lg:rounded-2xl lg:border-white/20 lg:bg-cream-100/75 p-4 lg:p-5">
               <div className="max-w-7xl mx-auto flex items-center gap-3 overflow-x-auto">
                 <Link
                   href={`/golf/dashboard/messages?player=${player.id}`}

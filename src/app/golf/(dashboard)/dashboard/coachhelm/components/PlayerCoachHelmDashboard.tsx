@@ -299,7 +299,7 @@ export function PlayerCoachHelmDashboard({
           onClick={handleRefresh}
           disabled={refreshing}
           className={cn(
-            'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0 disabled:opacity-60'
+            'p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-cream-100/60 active:bg-cream-100/75 transition-all flex-shrink-0 disabled:opacity-60'
           )}
           title="Refresh insights"
           aria-label="Refresh insights"
@@ -308,7 +308,7 @@ export function PlayerCoachHelmDashboard({
         </button>
         <Link
           href="/golf/dashboard/settings"
-          className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-white/50 active:bg-white/70 transition-all flex-shrink-0"
+          className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-cream-100/60 active:bg-cream-100/75 transition-all flex-shrink-0"
           title="AI Settings"
           aria-label="AI Settings"
         >

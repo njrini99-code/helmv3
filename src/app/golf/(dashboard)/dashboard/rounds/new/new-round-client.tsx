@@ -1834,7 +1834,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150 ${
                           saveCourseChecked
                             ? 'border-primary-300/60 bg-primary-50/50'
-                            : 'border-warm-200/70 bg-white/50 hover:bg-cream-100/75'
+                            : 'border-warm-200/70 bg-cream-100/60 hover:bg-cream-100/75'
                         }`}
                       >
                         <div className={`flex-shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors ${
@@ -2070,7 +2070,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
                       {/* Show selected qualifier info */}
                       {selectedQualifierId && (
-                        <div className="bg-white/50 rounded-lg p-3 mt-2">
+                        <div className="bg-cream-100/60 rounded-lg p-3 mt-2">
                           {(() => {
                             const selected = qualifiers.find(q => q.id === selectedQualifierId);
                             if (!selected) return null;

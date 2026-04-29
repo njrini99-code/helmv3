@@ -80,7 +80,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
           </div>
         ) : (
           <div
-            className="h-56 w-full bg-white/70 rounded-xl border border-warm-200 p-3"
+            className="h-56 w-full bg-cream-100/75 rounded-xl border border-warm-200 p-3"
             data-testid="trend-chart-container"
           >
             <ResponsiveContainer width="100%" height="100%">
