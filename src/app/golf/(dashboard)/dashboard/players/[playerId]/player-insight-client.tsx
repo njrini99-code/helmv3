@@ -315,7 +315,11 @@ export function PlayerInsightClient({
     }
     setInsightsLoading(true);
     try {
-      const rows = await getInsightsForCoach(coachId, { player_id: player.id, limit: 8 });
+      // Capped at 4: the EvidencePanel benchmark scale gives each insight
+      // more vertical real estate, so 4 high-signal cards reads better
+      // than 8 mid-signal ones. The fetcher ranks by |strokes_impact| ×
+      // confidence so we keep only the most impactful.
+      const rows = await getInsightsForCoach(coachId, { player_id: player.id, limit: 4 });
       setInsights(rows);
     } finally {
       setInsightsLoading(false);

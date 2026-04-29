@@ -333,6 +333,11 @@ export async function getInsightsForCoach(
 
   const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
 
+  // Pull a wider set so the in-app rank-and-cut has room to favor impact +
+  // confidence over recency. We then trim to `limit` after the EvidencePanel
+  // mapping drops anything missing required scalar fields.
+  const PRE_RANK_FETCH = Math.min(50, limit * 4);
+
   let query = supabase
     .from('golf_coach_insights')
     .select(INSIGHT_SELECT)
@@ -340,7 +345,7 @@ export async function getInsightsForCoach(
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .limit(PRE_RANK_FETCH);
 
   if (opts.player_id) {
     query = query.eq('player_id', opts.player_id);
@@ -365,9 +370,30 @@ export async function getInsightsForCoach(
   }
 
   const rows = (data ?? []) as unknown as RawInsightRowWithDrills[];
-  return rows
+  const mapped = rows
     .map(mapRowToEvidenceInsight)
     .filter((r): r is EvidenceInsight => r !== null);
+
+  // Rank by |strokes_impact| × confidence — the same composite the engine
+  // uses internally to decide which insights matter — and dedupe across
+  // categories so the feed doesn't show three overlapping putting rows.
+  const seenSignatures = new Set<string>();
+  const ranked = mapped
+    .slice()
+    .sort((a, b) => {
+      const impact = (insight: EvidenceInsight) =>
+        Math.abs(insight.evidence?.strokes_impact ?? 0) *
+        Math.max(0.1, insight.evidence?.confidence ?? 0);
+      return impact(b) - impact(a);
+    })
+    .filter((insight) => {
+      const sig = `${insight.player_id}:${insight.category}:${insight.evidence?.metric ?? insight.title}`;
+      if (seenSignatures.has(sig)) return false;
+      seenSignatures.add(sig);
+      return true;
+    });
+
+  return ranked.slice(0, limit);
 }
 
 /**
