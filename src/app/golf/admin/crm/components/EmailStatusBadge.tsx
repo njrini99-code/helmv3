@@ -56,6 +56,34 @@ const TONE_COMPLAINED: BadgeTone = {
   border: 'border-red-200',
 };
 
+const TONE_UNSUBSCRIBED: BadgeTone = {
+  label: 'Unsubscribed',
+  bg: 'bg-warm-100',
+  text: 'text-warm-600',
+  border: 'border-warm-200',
+};
+
+// Inline ban / no-symbol glyph — the icon set ships no equivalent, and this
+// badge is the only consumer for now.
+function IconBan({ size = 11 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <path d="m4.93 4.93 14.14 14.14" />
+    </svg>
+  );
+}
+
 const EVENT_TONES: Record<LastEmailEventType, BadgeTone> = {
   clicked: {
     label: 'Clicked',
@@ -128,17 +156,20 @@ export function EmailStatusBadge({
     );
   }
 
+  const isUnsubscribed = email_status === 'unsubscribed';
+
   return (
     <span
       title={title}
       className={cn(
-        'inline-flex items-center rounded-full border font-medium',
+        'inline-flex items-center gap-1 rounded-full border font-medium',
         compact ? 'text-[10px] px-1.5 py-0.5' : 'text-[11px] px-1.5 py-0.5',
         tone.bg,
         tone.text,
         tone.border,
       )}
     >
+      {isUnsubscribed && <IconBan size={compact ? 10 : 11} />}
       {tone.label}
     </span>
   );
@@ -153,6 +184,7 @@ function resolveTone(
 ): BadgeTone | null {
   if (emailStatus === 'bounced') return TONE_BOUNCED;
   if (emailStatus === 'complained') return TONE_COMPLAINED;
+  if (emailStatus === 'unsubscribed') return TONE_UNSUBSCRIBED;
 
   if (lastEventType && isKnownEventType(lastEventType)) {
     return EVENT_TONES[lastEventType];

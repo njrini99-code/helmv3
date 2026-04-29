@@ -5,7 +5,11 @@ import { cn } from '@/lib/utils';
 import { IconStar, IconMoreHorizontal, IconMessageSquare, IconArrowRight, IconChevronDown, IconChevronRight, IconMail, IconUpload, IconUserPlus, IconFlame, IconZap } from '@/components/icons';
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus } from '../crm-config';
+import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
+import { SegmentBadge } from './segments/SegmentBadge';
+import { EngagementBadge } from './badges/EngagementBadge';
+import type { CoachEngagement } from '../types/foundations';
 
 // The Coach type from crm-config.tsx predates Stream 1's migration that added
 // `last_email_event_type` and `last_email_event_at` to crm_coaches. Extend it
@@ -30,6 +34,14 @@ interface CoachTableProps {
   onAddCoach?: () => void;
   statusConfig: StatusConfig;
   priorityConfig: PriorityConfig;
+  // Engagement map keyed by coach.id; rendered in the leftmost data column
+  // as a Hot/Warm/Cold pill. Optional — when omitted, no badge column shows.
+  coachEngagement?: Record<string, CoachEngagement>;
+  // Segment-membership map keyed by coach.id. Each entry is the list of
+  // segments this coach belongs to (computed in the parent — see
+  // SavedSegmentsRail integration). Stream C owns this prop & rightmost
+  // column; do NOT touch the left side of the table.
+  coachSegments?: Record<string, CrmSegment[]>;
 }
 
 const ALL_STATUSES: CoachStatus[] = [
@@ -78,6 +90,8 @@ interface CoachTableRowProps {
   onOpenPriority: (id: string | null) => void;
   statusConfig: StatusConfig;
   priorityConfig: PriorityConfig;
+  engagement?: CoachEngagement;
+  segments?: CrmSegment[];
 }
 
 const CoachTableRow = React.memo(
@@ -99,6 +113,8 @@ const CoachTableRow = React.memo(
     onOpenPriority,
     statusConfig,
     priorityConfig,
+    engagement,
+    segments,
   }: CoachTableRowProps) {
     const handleRowClick = () => onClick(coach);
     const handleCheckbox = () => onToggleSelect(coach.id);
@@ -158,6 +174,12 @@ const CoachTableRow = React.memo(
         {/* Conference — hidden below xl */}
         <td className="hidden xl:table-cell px-4 py-3">
           <p className="text-xs text-warm-500 truncate">{coach.conference}</p>
+        </td>
+
+        {/* Engagement (Hot / Warm / Cold) — leftmost data column, before Status.
+            Stream B owns this column; do not move it without coordinating. */}
+        <td className="px-4 py-3">
+          <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
         </td>
 
         {/* Status dropdown */}
@@ -226,6 +248,23 @@ const CoachTableRow = React.memo(
           )}>
             {formatRelativeDate(coach.last_contacted_at)}
           </span>
+        </td>
+
+        {/* Segments — rightmost data column. Stream C owns this. Renders one
+            mini chip per saved-segment this coach belongs to. */}
+        <td className="hidden xl:table-cell px-4 py-3">
+          {segments && segments.length > 0 ? (
+            <div className="flex flex-wrap gap-1 max-w-[180px]">
+              {segments.slice(0, 3).map((seg) => (
+                <SegmentBadge key={seg.id} segment={seg} variant="chip" />
+              ))}
+              {segments.length > 3 && (
+                <span className="text-[10px] text-warm-400 self-center">+{segments.length - 3}</span>
+              )}
+            </div>
+          ) : (
+            <span className="text-micro text-warm-300">&mdash;</span>
+          )}
         </td>
 
         {/* Three-dot action menu */}
@@ -334,6 +373,8 @@ const CoachTableRow = React.memo(
       prev.isPriorityOpen === next.isPriorityOpen &&
       prev.statusConfig === next.statusConfig &&
       prev.priorityConfig === next.priorityConfig &&
+      prev.engagement === next.engagement &&
+      prev.segments === next.segments &&
       prev.onClick === next.onClick &&
       prev.onToggleSelect === next.onToggleSelect &&
       prev.onToggleStar === next.onToggleStar &&
@@ -364,6 +405,8 @@ export function CoachTable({
   onAddCoach,
   statusConfig,
   priorityConfig,
+  coachEngagement,
+  coachSegments,
 }: CoachTableProps) {
   const [openStatusDropdown, setOpenStatusDropdown] = useState<string | null>(null);
   const [openActionMenu, setOpenActionMenu] = useState<string | null>(null);
@@ -557,10 +600,15 @@ export function CoachTable({
             <TH field="school" label="School" onSort={handleSort}><SortArrow field="school" /></TH>
             <TH field="division" label="Div" onSort={handleSort} className="w-16"><SortArrow field="division" /></TH>
             <TH field="conference" label="Conference" onSort={handleSort} className="hidden xl:table-cell"><SortArrow field="conference" /></TH>
+            {/* Engagement column header — leftmost of the new data columns,
+                aligned with the badge cell rendered inside CoachTableRow. */}
+            <th className="text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-24">Engagement</th>
             <TH field="status" label="Status" onSort={handleSort}><SortArrow field="status" /></TH>
             <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-24">Email</th>
             <TH field="priority" label="Priority" onSort={handleSort} className="hidden lg:table-cell w-20"><SortArrow field="priority" /></TH>
             <TH field="last_contacted_at" label="Last Contact" onSort={handleSort} className="hidden lg:table-cell"><SortArrow field="last_contacted_at" /></TH>
+            {/* Segments column header — Stream C owns. Hidden below xl. */}
+            <th className="hidden xl:table-cell text-left px-4 py-3 text-xs font-medium text-warm-500 uppercase tracking-wide w-[180px]">Segments</th>
             <th className="w-12 px-4 py-3" />
           </tr>
         </thead>
@@ -585,6 +633,8 @@ export function CoachTable({
               onOpenPriority={handleOpenPriority}
               statusConfig={statusConfig}
               priorityConfig={priorityConfig}
+              engagement={coachEngagement?.[coach.id]}
+              segments={coachSegments?.[coach.id]}
             />
           ))}
         </tbody>

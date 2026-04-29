@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -10,7 +10,6 @@ import {
   IconExternalLink,
   IconPlus,
   IconClock,
-  IconMessageSquare,
   IconFileText,
   IconUsers,
   IconCheck,
@@ -23,11 +22,11 @@ import {
   IconEye as Monitor,
   IconNote as StickyNote,
   IconPencil as Pencil,
-  IconVideo as Video,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { STATUS_COLORS } from '../crm-config';
 import { ToastProvider, useToast } from './Toast';
+import { CoachTimeline } from './timeline/CoachTimeline';
 
 // ============================================================================
 // TYPES
@@ -38,57 +37,6 @@ interface CoachDetailPanelProps {
   onUpdate: (updates: Partial<Coach>) => void;
   statusConfig: Record<CoachStatus, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode; icon: React.ReactNode }>;
   priorityConfig: Record<number, { label: string; color: string; bgColor: string; iconLabel: React.ReactNode }>;
-}
-
-interface EmailEvent {
-  event_type: string;
-  occurred_at: string;
-}
-
-interface ContactLog {
-  id: string;
-  contact_type: string;
-  contact_date: string;
-  notes: string | null;
-  next_action: string | null;
-  next_action_date: string | null;
-  resend_message_id: string | null;
-  crm_email_events: EmailEvent[];
-}
-
-interface CrmEvent {
-  id: string;
-  event_type: string;
-  title: string;
-  description: string | null;
-  start_time: string;
-  end_time: string;
-  location: string | null;
-  meeting_url: string | null;
-  notes: string | null;
-  outcome: string | null;
-  status: string | null;
-}
-
-// Unified timeline entry
-interface TimelineEntry {
-  id: string;
-  source: 'log' | 'event';
-  type: string;        // email | call | demo | meeting | note | follow_up | email_reminder | other
-  date: string;
-  title: string;
-  notes: string | null;
-  // Contact log specific
-  nextAction?: string | null;
-  nextActionDate?: string | null;
-  emailEvents?: EmailEvent[];
-  resendMessageId?: string | null;
-  // CRM event specific
-  location?: string | null;
-  meetingUrl?: string | null;
-  outcome?: string | null;
-  eventStatus?: string | null;
-  endTime?: string;
 }
 
 // ============================================================================
@@ -102,27 +50,9 @@ const CONTACT_TYPES = [
   { value: 'note', label: 'Note', Icon: StickyNote, dotColor: 'bg-warm-400' },
 ] as const;
 
-const TIMELINE_TYPE_CONFIG: Record<string, { Icon: typeof IconMail; dotColor: string; label: string }> = {
-  email:          { Icon: IconMail,     dotColor: 'bg-blue-500',    label: 'Email Sent' },
-  call:           { Icon: IconPhone,    dotColor: 'bg-primary-500', label: 'Call Logged' },
-  demo:           { Icon: Video,    dotColor: 'bg-violet-500',  label: 'Demo' },
-  meeting:        { Icon: IconUsers,    dotColor: 'bg-cyan-500',    label: 'Meeting' },
-  note:           { Icon: StickyNote, dotColor: 'bg-warm-400',  label: 'Note Added' },
-  follow_up:      { Icon: IconCalendar, dotColor: 'bg-amber-500',  label: 'Follow-up' },
-  email_reminder: { Icon: IconMail,     dotColor: 'bg-sky-500',     label: 'Email Reminder' },
-  other:          { Icon: IconMessageSquare, dotColor: 'bg-warm-300', label: 'Activity' },
-};
-
 const ALL_STATUSES: readonly string[] = [
   'new_lead', 'contacted', 'engaged', 'proposal', 'won', 'lost', 'nurture',
 ];
-
-const EMAIL_DELIVERY_STEPS = [
-  { key: 'sent',      label: 'Sent' },
-  { key: 'delivered',  label: 'Delivered',  eventType: 'email.delivered' },
-  { key: 'opened',     label: 'Opened',     eventType: 'email.opened' },
-  { key: 'clicked',    label: 'Clicked',    eventType: 'email.clicked' },
-] as const;
 
 // ============================================================================
 // COMPONENT
@@ -155,9 +85,9 @@ function CoachDetailPanelInner({
     [coachProp, hydratedCoach],
   );
 
-  const [logs, setLogs] = useState<ContactLog[]>([]);
-  const [events, setEvents] = useState<CrmEvent[]>([]);
-  const [loadingTimeline, setLoadingTimeline] = useState(true);
+  // Bumped to force the <CoachTimeline> component to refetch (e.g. after the
+  // user logs a new contact via the inline form).
+  const [timelineRefreshKey, setTimelineRefreshKey] = useState(0);
 
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesValue, setNotesValue] = useState(coach.notes || '');
@@ -212,101 +142,16 @@ function CoachDetailPanelInner({
   }, [coachProp.id, supabase]);
 
   // --------------------------------------------------------------------------
-  // Data fetching
+  // Reset transient form state when the panel switches between coaches.
+  // Timeline data itself is owned by <CoachTimeline coachId=... /> below.
   // --------------------------------------------------------------------------
-  const fetchTimeline = useCallback(async () => {
-    setLoadingTimeline(true);
-    try {
-      const [logsRes, eventsRes] = await Promise.all([
-        supabase
-          .from('crm_contact_log')
-          .select('*, crm_email_events(event_type, occurred_at)')
-          .eq('coach_id', coach.id)
-          .order('contact_date', { ascending: false }),
-        supabase
-          .from('crm_events')
-          .select('*')
-          .eq('coach_id', coach.id)
-          .order('start_time', { ascending: false }),
-      ]);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setLogs((logsRes.data || []).map((d: any) => ({
-        id: d.id,
-        contact_type: d.contact_type,
-        contact_date: d.contact_date,
-        notes: d.notes,
-        next_action: d.next_action,
-        next_action_date: d.next_action_date,
-        resend_message_id: d.resend_message_id || null,
-        crm_email_events: Array.isArray(d.crm_email_events) ? d.crm_email_events : [],
-      })));
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setEvents((eventsRes.data || []).map((d: any) => ({
-        id: d.id,
-        event_type: d.event_type,
-        title: d.title,
-        description: d.description,
-        start_time: d.start_time,
-        end_time: d.end_time,
-        location: d.location,
-        meeting_url: d.meeting_url,
-        notes: d.notes,
-        outcome: d.outcome,
-        status: d.status,
-      })));
-    } catch {
-      toast('Failed to load activity timeline', 'error');
-    } finally {
-      setLoadingTimeline(false);
-    }
-  }, [supabase, coach.id, toast]);
-
   useEffect(() => { const t = setTimeout(() => setIsVisible(true), 10); return () => clearTimeout(t); }, []);
   useEffect(() => {
-    fetchTimeline();
     setNotesValue(coach.notes || '');
     setFollowUpDate(coach.next_follow_up_at?.split('T')[0] || '');
     setContactForm({ name: coach.name, title: coach.title || '', email: coach.email || '', phone: coach.phone || '', school: coach.school });
     setEditingContact(false);
-  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at, fetchTimeline]);
-
-  // --------------------------------------------------------------------------
-  // Unified timeline — merge logs + events, sort by date desc
-  // --------------------------------------------------------------------------
-  const timeline = useMemo<TimelineEntry[]>(() => {
-    const logEntries: TimelineEntry[] = logs.map(l => ({
-      id: `log-${l.id}`,
-      source: 'log',
-      type: l.contact_type,
-      date: l.contact_date,
-      title: TIMELINE_TYPE_CONFIG[l.contact_type]?.label || l.contact_type,
-      notes: l.notes,
-      nextAction: l.next_action,
-      nextActionDate: l.next_action_date,
-      emailEvents: l.crm_email_events,
-      resendMessageId: l.resend_message_id,
-    }));
-
-    const eventEntries: TimelineEntry[] = events.map(e => ({
-      id: `event-${e.id}`,
-      source: 'event',
-      type: e.event_type,
-      date: e.start_time,
-      title: e.title,
-      notes: e.notes,
-      location: e.location,
-      meetingUrl: e.meeting_url,
-      outcome: e.outcome,
-      eventStatus: e.status,
-      endTime: e.end_time,
-    }));
-
-    return [...logEntries, ...eventEntries].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-  }, [logs, events]);
+  }, [coach.id, coach.name, coach.title, coach.email, coach.phone, coach.school, coach.notes, coach.next_follow_up_at]);
 
   // --------------------------------------------------------------------------
   // Handlers
@@ -359,7 +204,7 @@ function CoachDetailPanelInner({
       onUpdate(updates);
       setNewContact({ type: 'email', notes: '', nextAction: '', nextActionDate: '' });
       setShowContactForm(false);
-      fetchTimeline();
+      setTimelineRefreshKey((k) => k + 1);
       toast('Contact logged', 'success');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to log contact';
@@ -387,20 +232,6 @@ function CoachDetailPanelInner({
   // Formatting helpers
   // --------------------------------------------------------------------------
   const formatShort = (s: string) => new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const relativeTime = (dateStr: string): string => {
-    const now = Date.now();
-    const then = new Date(dateStr).getTime();
-    const diffMs = now - then;
-    const diffMin = Math.floor(diffMs / 60000);
-    if (diffMin < 1) return 'just now';
-    if (diffMin < 60) return `${diffMin}m ago`;
-    const diffHr = Math.floor(diffMin / 60);
-    if (diffHr < 24) return `${diffHr}h ago`;
-    const diffDay = Math.floor(diffHr / 24);
-    if (diffDay < 30) return `${diffDay}d ago`;
-    return formatShort(dateStr);
-  };
 
   const isOverdue = coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
@@ -704,125 +535,10 @@ function CoachDetailPanelInner({
             </div>
           )}
 
-          {/* Timeline content */}
+          {/* Timeline content — owned by <CoachTimeline> (Stream C). Bumping
+              `timelineRefreshKey` re-fetches after a contact log insert. */}
           <div className="px-5 pb-5">
-            {loadingTimeline ? (
-              <div className="space-y-4 pl-6">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="flex gap-3">
-                    <div className="w-[22px] h-[22px] rounded-full bg-warm-200/60 skeleton-shimmer flex-shrink-0" />
-                    <div className="flex-1 space-y-1.5 pt-0.5">
-                      <div className="h-3 w-24 bg-warm-200/60 rounded skeleton-shimmer" />
-                      <div className="h-3 w-48 bg-warm-100/60 rounded skeleton-shimmer" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : timeline.length === 0 ? (
-              <div className="py-10 text-center">
-                <div className="w-10 h-10 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-2">
-                  <IconMessageSquare size={18} className="text-warm-300" />
-                </div>
-                <p className="text-sm font-medium text-warm-500">No activity yet</p>
-                <p className="text-xs text-warm-400 mt-0.5">Log your first interaction with this coach</p>
-                <button onClick={() => setShowContactForm(true)}
-                  className="mt-3 px-3 py-1.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-lg hover:bg-primary-100 transition-colors">
-                  Log Contact
-                </button>
-              </div>
-            ) : (
-              <div className="relative pl-6">
-                {/* Vertical line */}
-                <div className="absolute left-[11px] top-0 bottom-0 w-px bg-warm-200/60" />
-
-                {timeline.map((entry) => {
-                  const defaultConf = { Icon: IconMessageSquare, dotColor: 'bg-warm-300', label: 'Activity' };
-                  const typeConf = TIMELINE_TYPE_CONFIG[entry.type] || defaultConf;
-
-                  return (
-                    <div key={entry.id} className="relative pb-5">
-                      {/* Dot */}
-                      <div className={cn(
-                        'absolute left-[-13px] w-[22px] h-[22px] rounded-full flex items-center justify-center bg-white ring-2',
-                        typeConf.dotColor === 'bg-blue-500' ? 'ring-blue-200' :
-                        typeConf.dotColor === 'bg-primary-500' ? 'ring-primary-200' :
-                        typeConf.dotColor === 'bg-violet-500' ? 'ring-violet-200' :
-                        typeConf.dotColor === 'bg-cyan-500' ? 'ring-cyan-200' :
-                        typeConf.dotColor === 'bg-warm-400' ? 'ring-warm-200' :
-                        typeConf.dotColor === 'bg-amber-500' ? 'ring-amber-200' :
-                        typeConf.dotColor === 'bg-sky-500' ? 'ring-sky-200' :
-                        'ring-warm-200'
-                      )}>
-                        <div className={cn('w-2 h-2 rounded-full', typeConf.dotColor)} />
-                      </div>
-
-                      {/* Content */}
-                      <div className="ml-4">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-warm-800">
-                            {entry.source === 'event' ? entry.title : typeConf.label}
-                            {entry.source === 'event' && entry.eventStatus && (
-                              <span className={cn(
-                                'text-[10px] font-semibold px-1.5 py-0.5 rounded-md ml-1.5',
-                                entry.eventStatus === 'completed' ? 'bg-emerald-50 text-emerald-600' :
-                                entry.eventStatus === 'cancelled' ? 'bg-red-50 text-red-600' :
-                                'bg-blue-50 text-blue-600'
-                              )}>
-                                {entry.eventStatus}
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-xs text-warm-400 tabular-nums flex-shrink-0 ml-2">{relativeTime(entry.date)}</span>
-                        </div>
-
-                        {/* Notes / description */}
-                        {entry.notes && (
-                          <p className="text-xs text-warm-500 mt-0.5 leading-relaxed">{entry.notes}</p>
-                        )}
-
-                        {/* Event-specific details */}
-                        {entry.source === 'event' && (
-                          <div className="mt-1 space-y-0.5">
-                            {entry.location && (
-                              <p className="text-[11px] text-warm-500 flex items-center gap-1">
-                                <span className="text-warm-400">Location:</span> {entry.location}
-                              </p>
-                            )}
-                            {entry.meetingUrl && (
-                              <a href={entry.meetingUrl} target="_blank" rel="noopener noreferrer"
-                                className="text-[11px] text-blue-600 hover:text-blue-700 flex items-center gap-1">
-                                <Video size={10} /> Join meeting
-                              </a>
-                            )}
-                            {entry.outcome && (
-                              <p className="text-[11px] text-warm-500">
-                                <span className="text-warm-400">Outcome:</span> {entry.outcome}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Email delivery dots */}
-                        {entry.type === 'email' && entry.source === 'log' && (
-                          <EmailDeliveryDots
-                            events={entry.emailEvents || []}
-                            date={entry.date}
-                          />
-                        )}
-
-                        {/* Next action */}
-                        {entry.nextAction && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-amber-600">
-                            <IconClock size={11} /> Next: {entry.nextAction}
-                            {entry.nextActionDate && <span className="text-warm-400">({formatShort(entry.nextActionDate)})</span>}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <CoachTimeline coachId={coach.id} refreshKey={timelineRefreshKey} />
           </div>
         </div>
 
@@ -865,62 +581,6 @@ function CoachDetailPanelInner({
         </div>
       </aside>
     </>
-  );
-}
-
-// ============================================================================
-// EMAIL DELIVERY DOTS (simplified)
-// ============================================================================
-function EmailDeliveryDots({
-  events,
-  date,
-}: {
-  events: EmailEvent[];
-  date: string;
-}) {
-  const isBounced = events.some(e => e.event_type === 'email.bounced');
-  const isSpam = events.some(e => e.event_type === 'email.complained');
-  const isPending = events.length === 0 && (Date.now() - new Date(date).getTime()) < 5 * 60 * 1000;
-
-  if (isBounced || isSpam) {
-    return (
-      <div className="flex items-center gap-2 mt-1.5">
-        {isBounced && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Bounced
-          </span>
-        )}
-        {isSpam && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-red-600">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400" /> Spam
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  const eventSet = new Set(events.map(e => e.event_type));
-
-  return (
-    <div className="flex items-center gap-3 mt-1.5">
-      {EMAIL_DELIVERY_STEPS.map(step => {
-        const hasEvent = step.key === 'sent'
-          ? true
-          : eventSet.has(step.eventType!);
-        return (
-          <div key={step.key} className="flex items-center gap-1">
-            <div className={cn('w-1.5 h-1.5 rounded-full', hasEvent ? 'bg-primary-500' : 'bg-warm-200')} />
-            <span className={cn('text-[10px]', hasEvent ? 'text-warm-600' : 'text-warm-300')}>{step.label}</span>
-          </div>
-        );
-      })}
-      {isPending && (
-        <div className="flex items-center gap-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-          <span className="text-[10px] text-amber-500 font-medium animate-pulse">Pending...</span>
-        </div>
-      )}
-    </div>
   );
 }
 

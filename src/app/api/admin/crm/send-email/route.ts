@@ -216,7 +216,7 @@ export async function POST(request: Request) {
             Authorization: `Bearer ${apiKey}`,
           },
           body: JSON.stringify({
-            from: 'Helm Sports Labs <admin@helmsportslabs.com>',
+            from: process.env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>',
             to: [recipient.email],
             subject: personalizedSubject,
             html: isHtmlBody
@@ -368,16 +368,16 @@ function buildEmailHtml(recipientName: string, _subject: string, body: string): 
             <tr><td style="border-top:1px solid #e7e5e4;padding-top:20px;">
               <table cellpadding="0" cellspacing="0"><tr>
                 <td style="vertical-align:top;padding-right:14px;">
-                  <img src="https://helmsportslabs.com/helm-golf-logo-transparent.png" alt="GolfHelm" width="44" height="44" style="display:block;border:0;" />
+                  <img src="${escapeHtml(process.env.HELM_LOGO_URL ?? 'https://helmsportslabs.com/helm-golf-logo-transparent.png')}" alt="GolfHelm" width="44" height="44" style="display:block;border:0;" />
                 </td>
                 <td style="vertical-align:top;">
                   <p style="margin:0 0 2px 0;font-size:15px;color:#44403c;line-height:1.5;">Best,</p>
-                  <p style="margin:0 0 2px 0;font-size:15px;color:#1c1917;font-weight:600;line-height:1.5;">Leah Potter &amp; Nick Rini</p>
+                  <p style="margin:0 0 2px 0;font-size:15px;color:#1c1917;font-weight:600;line-height:1.5;">${escapeHtml(process.env.HELM_FOUNDER_LINE ?? 'Leah Potter & Nick Rini')}</p>
                   <p style="margin:0 0 4px 0;font-size:13px;color:#78716c;line-height:1.5;">Co-Founders, Helm Sports Labs</p>
                   <p style="margin:0;font-size:13px;line-height:1.5;">
-                    <a href="https://helmsportslabs.com" style="color:#16A34A;text-decoration:none;font-weight:500;">helmsportslabs.com</a>
+                    <a href="https://${escapeHtml(process.env.HELM_DOMAIN ?? 'helmsportslabs.com')}" style="color:#16A34A;text-decoration:none;font-weight:500;">${escapeHtml(process.env.HELM_DOMAIN ?? 'helmsportslabs.com')}</a>
                     <span style="color:#d6d3d1;margin:0 6px;">|</span>
-                    <a href="mailto:admin@helmsportslabs.com" style="color:#78716c;text-decoration:none;">admin@helmsportslabs.com</a>
+                    <a href="mailto:admin@${escapeHtml(process.env.HELM_DOMAIN ?? 'helmsportslabs.com')}" style="color:#78716c;text-decoration:none;">admin@${escapeHtml(process.env.HELM_DOMAIN ?? 'helmsportslabs.com')}</a>
                   </p>
                 </td>
               </tr></table>

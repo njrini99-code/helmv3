@@ -12,6 +12,7 @@ const TRACKED_EVENTS = new Set([
   'email.clicked',
   'email.bounced',
   'email.complained',
+  'email.unsubscribed',
 ]);
 
 interface ResendWebhookPayload {

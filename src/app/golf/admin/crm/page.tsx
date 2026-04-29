@@ -49,7 +49,10 @@ import { ResendActivityView } from './components/resend/ResendActivityView';
 import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
 import { EventDetailModal } from './components/EventDetailModal';
+import { SavedSegmentsRail } from './components/segments/SavedSegmentsRail';
 import type { CRMEvent } from './components/CalendarView';
+import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
+import type { CoachEngagement } from './types/foundations';
 
 // ============================================================================
 // SIDEBAR TABS
@@ -122,6 +125,10 @@ export default function CRMPage() {
   const [followupRecipients, setFollowupRecipients] = useState<
     Array<{ email: string; name?: string | null; coach_id?: string | null }>
   >([]);
+
+  // Engagement map (coach_id -> CoachEngagement), populated by a one-shot
+  // post-load effect. Surfaced as Hot/Warm/Cold pills in CoachTable. Stream B.
+  const [engagementMap, setEngagementMap] = useState<Record<string, CoachEngagement>>({});
 
   const supabase = createClient();
 
@@ -327,6 +334,30 @@ export default function CRMPage() {
   }, [allCoaches, filters]);
 
   useEffect(() => { fetchAllCoaches(); }, [fetchAllCoaches]);
+
+  // After coaches load, fetch their engagement scores from the
+  // crm_coach_engagement materialized view. One round-trip per coach-list
+  // load — refreshed in the background by /api/cron/refresh-engagement.
+  // Stream B owns this block; Stream C edits a different region (sidebar).
+  useEffect(() => {
+    if (!allCoaches.length) {
+      setEngagementMap({});
+      return;
+    }
+    let cancelled = false;
+    const ids = allCoaches.map((c) => c.id);
+    getCoachEngagement(ids)
+      .then((map) => {
+        if (!cancelled) setEngagementMap(map);
+      })
+      .catch((err) => {
+        // Non-fatal: badges fall back to "—" placeholder when the map is empty.
+        console.warn('[crm] engagement fetch failed:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [allCoaches]);
 
   // ============================================================================
   // ACTIONS
@@ -662,6 +693,13 @@ export default function CRMPage() {
           </div>
         </nav>
 
+        {/* Saved segments rail (Stream C) */}
+        <SavedSegmentsRail
+          filters={filters}
+          setFilters={setFilters}
+          collapsed={sidebarCollapsed}
+        />
+
         {/* Action Buttons */}
         <div className="p-3 border-t border-white/10 space-y-2">
           <button
@@ -774,6 +812,7 @@ export default function CRMPage() {
                   onLogContact={handleLogContact}
                   statusConfig={STATUS_CONFIG}
                   priorityConfig={PRIORITY_CONFIG}
+                  coachEngagement={engagementMap}
                 />
               </div>
             </div>

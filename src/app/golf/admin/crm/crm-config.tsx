@@ -56,7 +56,7 @@ export interface Coach {
   timezone: string | null;
   last_contacted_at: string | null;
   next_follow_up_at: string | null;
-  email_status: 'valid' | 'bounced' | 'complained' | 'unknown';
+  email_status: 'valid' | 'bounced' | 'complained' | 'unknown' | 'unsubscribed';
   source: string | null;
   is_archived: boolean;
   archived_at: string | null;

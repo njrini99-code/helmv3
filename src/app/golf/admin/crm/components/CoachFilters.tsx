@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader } from '@/components/icons';
+import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
+import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
 
 export interface Filters {
   status: CoachStatus | 'all';
@@ -34,6 +35,7 @@ export function CoachFilters({
   const [showMore, setShowMore] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search);
   const [isDebouncing, setIsDebouncing] = useState(false);
+  const [saveSegmentOpen, setSaveSegmentOpen] = useState(false);
 
   // Debounce search input — 300ms delay before updating parent filter
   useEffect(() => {
@@ -176,14 +178,35 @@ export function CoachFilters({
           )}
         </button>
 
+        {/* Save as segment — only meaningful with at least one filter set */}
+        {activeFilterCount > 0 && (
+          <button
+            onClick={() => setSaveSegmentOpen(true)}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors whitespace-nowrap ml-auto"
+            title="Save current filters as a reusable segment"
+          >
+            <IconBookmark size={12} /> Save as segment
+          </button>
+        )}
+
         {/* Clear */}
         {activeFilterCount > 0 && (
           <button onClick={clearFilters}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap ml-auto">
+            className={cn(
+              'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap',
+              // When save-as-segment is also visible it already pushed itself with ml-auto.
+            )}>
             <IconX size={12} /> Clear {activeFilterCount}
           </button>
         )}
       </div>
+
+      {/* Save segment dialog (rendered as a portal-style overlay) */}
+      <SaveSegmentDialog
+        open={saveSegmentOpen}
+        onOpenChange={setSaveSegmentOpen}
+        filters={filters}
+      />
 
       {/* Row 2: Expandable secondary filters */}
       {showMore && (
