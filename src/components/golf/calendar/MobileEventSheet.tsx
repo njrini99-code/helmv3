@@ -40,6 +40,8 @@ import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
+export type MobileRecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
+
 export interface MobileEventFormData {
   title: string;
   eventType: GolfEventType;
@@ -50,6 +52,8 @@ export interface MobileEventFormData {
   allDay: boolean;
   location: string | null;
   description: string | null;
+  recurrence: MobileRecurrenceFrequency;
+  recurrenceCount: number;
 }
 
 interface MobileEventSheetProps {
@@ -129,6 +133,8 @@ export function MobileEventSheet({
     allDay: false,
     location: null,
     description: null,
+    recurrence: 'none',
+    recurrenceCount: 10,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -181,6 +187,8 @@ export function MobileEventSheet({
           allDay: isAllDay,
           location: event.location || null,
           description: event.description || null,
+          recurrence: 'none',
+          recurrenceCount: 10,
         });
       } else {
         // When creating, use initialEventType if provided (from quick-add FAB)
@@ -194,6 +202,8 @@ export function MobileEventSheet({
           allDay: false,
           location: null,
           description: null,
+          recurrence: 'none',
+          recurrenceCount: 10,
         });
       }
       setError(null);
@@ -555,6 +565,54 @@ export function MobileEventSheet({
               )}
             />
           </div>
+
+          {/* Recurrence (coach create only) */}
+          {isCreating && isCoach && (
+            <div className="px-5 pb-4">
+              <div className="bg-warm-50 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="mobile-event-recurrence"
+                    className="text-sm font-semibold text-warm-900"
+                  >
+                    Repeats
+                  </label>
+                  <select
+                    id="mobile-event-recurrence"
+                    value={formData.recurrence}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      recurrence: e.target.value as MobileRecurrenceFrequency,
+                    })}
+                    disabled={isSaving}
+                    className="px-3 py-1.5 rounded-xl bg-white border-0 text-sm text-warm-900 font-medium shadow-sm"
+                  >
+                    <option value="none">Doesn&apos;t repeat</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                {formData.recurrence !== 'none' && (
+                  <div className="flex items-center justify-between gap-3 text-sm text-warm-600">
+                    <span>Number of occurrences</span>
+                    <input
+                      type="number"
+                      min={2}
+                      max={52}
+                      value={formData.recurrenceCount}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        recurrenceCount: Math.max(2, Math.min(52, Number(e.target.value) || 10)),
+                      })}
+                      disabled={isSaving}
+                      className="w-20 px-2 py-1.5 rounded-xl bg-white border-0 text-sm text-warm-900 font-medium shadow-sm tabular-nums text-right"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* RSVP Section for Players */}
           {!isCreating && event && event.requires_rsvp && !isCoach && onRsvp && (

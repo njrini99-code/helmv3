@@ -975,20 +975,41 @@ export function PremiumCalendarClient({
           const timezoneOffset = new Date().getTimezoneOffset();
           try {
             if (isCreatingEvent) {
-              const result = await actionHandlers.createEvent({
-                title: data.title,
-                eventType: data.eventType,
-                startDate: data.startDate,
-                endDate: data.endDate || undefined,
-                startTime: data.allDay ? undefined : (data.startTime || undefined),
-                endTime: data.allDay ? undefined : (data.endTime || undefined),
-                allDay: data.allDay,
-                location: data.location || undefined,
-                description: data.description || undefined,
-                timezoneOffset,
-              });
-              if (!result.success) {
-                throw new Error(result.error || 'Failed to create event');
+              if (data.recurrence && data.recurrence !== 'none') {
+                const freq = data.recurrence.toUpperCase();
+                const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
+                const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+                const result = await createRecurringEvent({
+                  title: data.title,
+                  eventType: data.eventType,
+                  startDate: data.startDate,
+                  endDate: data.endDate || undefined,
+                  startTime: data.allDay ? undefined : (data.startTime || undefined),
+                  endTime: data.allDay ? undefined : (data.endTime || undefined),
+                  location: data.location || undefined,
+                  description: data.description || undefined,
+                  recurrenceRule,
+                  timezoneOffset,
+                });
+                if (!result.success) {
+                  throw new Error(result.error || 'Failed to create recurring event');
+                }
+              } else {
+                const result = await actionHandlers.createEvent({
+                  title: data.title,
+                  eventType: data.eventType,
+                  startDate: data.startDate,
+                  endDate: data.endDate || undefined,
+                  startTime: data.allDay ? undefined : (data.startTime || undefined),
+                  endTime: data.allDay ? undefined : (data.endTime || undefined),
+                  allDay: data.allDay,
+                  location: data.location || undefined,
+                  description: data.description || undefined,
+                  timezoneOffset,
+                });
+                if (!result.success) {
+                  throw new Error(result.error || 'Failed to create event');
+                }
               }
             } else if (selectedEvent) {
               const result = await actionHandlers.updateEvent(selectedEvent.id, {

@@ -2128,8 +2128,18 @@ export async function updateGolfEvent(
       }
     }
 
-    // Notify team players about event update (only for meaningful changes, not drag-and-drop reschedules)
-    if (teamId && (validatedData.title || validatedData.location || validatedData.eventType)) {
+    // Notify team players about event update. Time / location / title /
+    // type all matter to a player who's already RSVP'd — a drag-and-drop
+    // reschedule is exactly the case where attendees need to hear about it.
+    const meaningfulChange =
+      validatedData.title !== undefined ||
+      validatedData.location !== undefined ||
+      validatedData.eventType !== undefined ||
+      validatedData.startDate !== undefined ||
+      validatedData.startTime !== undefined ||
+      validatedData.endDate !== undefined ||
+      validatedData.endTime !== undefined;
+    if (teamId && meaningfulChange) {
       try {
         const { notifyEventUpdate } = await import('@/lib/calendar/rsvp');
         await notifyEventUpdate(eventId, supabase);
