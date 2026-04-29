@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   Paperclip,
   FileText,
@@ -238,6 +239,7 @@ function DocumentPickerDialog({
   onPick,
   pendingAction,
 }: DocumentPickerDialogProps) {
+  const { modalRef } = useFocusTrap(true, onCancel);
   const [docs, setDocs] = useState<GolfDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
@@ -276,6 +278,7 @@ function DocumentPickerDialog({
       onClick={onCancel}
     >
       <div
+        ref={modalRef}
         className="w-full max-w-lg max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >

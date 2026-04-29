@@ -1107,6 +1107,7 @@ interface SeriesScopeDialogProps {
 }
 
 function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogProps) {
+  const { modalRef } = useFocusTrap(true, onCancel);
   const verb = action === 'edit' ? 'Update' : 'Delete';
   const danger = action === 'delete';
   const options: Array<{ value: RecurringEditScope; label: string; sub: string }> = [
@@ -1136,6 +1137,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
       onClick={onCancel}
     >
       <div
+        ref={modalRef}
         className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >

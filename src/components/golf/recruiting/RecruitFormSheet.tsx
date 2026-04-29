@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { X, Trash2, Save, GraduationCap, MapPin, Mail, Phone } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import {
@@ -35,6 +36,7 @@ const EMPTY_FORM: RecruitInput = {
 
 export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFormSheetProps) {
   const isEditing = recruit !== null;
+  const { modalRef } = useFocusTrap(open, onClose);
   const [form, setForm] = useState<RecruitInput>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -58,15 +60,6 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
     }
     setConfirmingDelete(false);
   }, [open, recruit]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -129,6 +122,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl border border-white/40 shadow-glass overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
