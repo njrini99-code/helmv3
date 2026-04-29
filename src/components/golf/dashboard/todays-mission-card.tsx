@@ -131,9 +131,9 @@ export function TodaysMissionCard({
           <div className="h-3 w-24 bg-primary-200/50 rounded skeleton-shimmer" />
           <div className="h-8 w-64 bg-warm-200/60 rounded skeleton-shimmer" />
           <div className="space-y-2 pt-4">
-            <div className="h-10 bg-white/50 rounded-xl skeleton-shimmer" />
-            <div className="h-10 bg-white/50 rounded-xl skeleton-shimmer" />
-            <div className="h-10 bg-white/50 rounded-xl skeleton-shimmer" />
+            <div className="h-10 bg-cream-100/60 rounded-xl skeleton-shimmer" />
+            <div className="h-10 bg-cream-100/60 rounded-xl skeleton-shimmer" />
+            <div className="h-10 bg-cream-100/60 rounded-xl skeleton-shimmer" />
           </div>
         </div>
       </div>
@@ -232,7 +232,7 @@ export function TodaysMissionCard({
                     'border',
                     isChecked
                       ? 'bg-primary-50/80 border-primary-200/60 text-warm-500'
-                      : 'bg-white/70 border-white/60 hover:bg-white hover:border-primary-100 text-warm-800',
+                      : 'bg-cream-100/75 border-warm-200/55 hover:bg-white hover:border-primary-100 text-warm-800',
                   )}
                 >
                   <span

@@ -62,7 +62,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                 'p-3.5 md:p-5',
                 accent
                     ? 'border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30'
-                    : 'border-white/30',
+                    : 'border-warm-200/45',
                 href && 'cursor-pointer'
             )}
             whileHover={{ y: -3 }}

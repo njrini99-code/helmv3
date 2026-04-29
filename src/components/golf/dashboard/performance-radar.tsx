@@ -59,7 +59,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
             <div className={cn(
                 'relative overflow-clip',
                 'bg-glass-subtle backdrop-blur-glass-prominent',
-                'border border-white/30 rounded-2xl',
+                'border border-warm-200/45 rounded-2xl',
                 'shadow-glass p-5'
             )}>
                 <div className="flex items-center gap-2 mb-4">

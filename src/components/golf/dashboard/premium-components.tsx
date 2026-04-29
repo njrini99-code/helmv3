@@ -153,7 +153,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                 // Accent border
                 accent
                     ? "border-l-[3px] border-l-primary-600 border-t-white/30 border-r-white/30 border-b-white/30"
-                    : "border-white/30"
+                    : "border-warm-200/45"
             )}
             whileHover={{
                 y: -4,
@@ -248,7 +248,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                         ]
                         : [
                             'bg-glass-subtle backdrop-blur-glass', // Standard glass
-                            'border border-white/30',
+                            'border border-warm-200/45',
                             'shadow-glass-sm'
                         ]
                 )}

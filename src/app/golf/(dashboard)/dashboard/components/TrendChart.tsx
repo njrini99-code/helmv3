@@ -85,7 +85,7 @@ export function TrendChart({
 
     if (loading) {
         return (
-            <div className="h-[160px] sm:h-[180px] md:h-[200px] relative bg-white/45 backdrop-blur-[20px] border border-white/30 rounded-2xl overflow-clip">
+            <div className="h-[160px] sm:h-[180px] md:h-[200px] relative bg-cream-100/55 backdrop-blur-[20px] border border-warm-200/45 rounded-2xl overflow-clip">
                 <div className="absolute inset-0 skeleton-shimmer pointer-events-none" />
                 <div className="relative h-full flex items-center justify-center">
                     <div className="text-center space-y-2">

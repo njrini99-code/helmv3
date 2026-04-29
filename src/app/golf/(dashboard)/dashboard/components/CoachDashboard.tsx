@@ -40,7 +40,7 @@ import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData, Dash
 import type { CalendarEvent } from '@/lib/types/calendar';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
-    loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
+    loading: () => <div className="h-[200px] bg-cream-100/55 backdrop-blur-[20px] rounded-2xl border border-warm-200/45 animate-pulse" />,
     ssr: false
 });
 
@@ -156,7 +156,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                     onClick={handleCopy}
                     className={cn(
                         'flex items-center gap-2 px-3 py-1.5 rounded-lg',
-                        'bg-white/80 hover:bg-white border border-primary-200/60',
+                        'bg-cream-100/82 hover:bg-white border border-primary-200/60',
                         'text-xs font-mono tracking-widest text-primary-700',
                         'transition-colors duration-200 active:scale-95'
                     )}
@@ -219,8 +219,8 @@ const DateRangeSelector = memo(function DateRangeSelector({
                 onClick={() => setOpen(!open)}
                 className={cn(
                     'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium',
-                    'bg-white/50 backdrop-blur-sm border border-white/30',
-                    'text-warm-600 hover:text-warm-800 hover:bg-white/70',
+                    'bg-cream-100/60 backdrop-blur-sm border border-warm-200/45',
+                    'text-warm-600 hover:text-warm-800 hover:bg-cream-100/75',
                     'transition-colors duration-150 active:scale-95 shadow-sm'
                 )}
                 aria-label="Select date range"
@@ -245,7 +245,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                             aria-label="Date range options"
                             className={cn(
                                 'absolute right-0 top-full mt-1 z-40',
-                                'bg-white/95 backdrop-blur-xl rounded-xl',
+                                'bg-cream-50/95 backdrop-blur-xl rounded-xl',
                                 'border border-warm-200/50 shadow-lg py-1 min-w-[160px]'
                             )}
                         >
@@ -539,14 +539,14 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                         </Link>
                         <Link href="/golf/dashboard/calendar" className={cn(
                             'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-white/60 text-warm-700 hover:bg-white/80 transition-colors border border-white/40 shadow-sm active:scale-95'
+                            'bg-cream-100/68 text-warm-700 hover:bg-cream-100/82 transition-colors border border-warm-200/55 shadow-sm active:scale-95'
                         )}>
                             <IconCalendar size={14} />
                             Schedule Event
                         </Link>
                         <Link href="/golf/dashboard/qualifiers" className={cn(
                             'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium',
-                            'bg-white/60 text-warm-700 hover:bg-white/80 transition-colors border border-white/40 shadow-sm active:scale-95'
+                            'bg-cream-100/68 text-warm-700 hover:bg-cream-100/82 transition-colors border border-warm-200/55 shadow-sm active:scale-95'
                         )}>
                             <IconFlag size={14} />
                             Create Qualifier

@@ -223,10 +223,15 @@ export function LargeTitleHeader({
               </span>
             </button>
 
-            {/* Desktop: always-visible full title block on the left */}
+            {/* Desktop: always-visible full title block on the left.
+                Fraunces serif at -0.02em tracking matches the Apple
+                light-mode large-title treatment (SF Pro Display + heavier
+                optical sizing). Same family is used by the new
+                AvailabilityDayView, Recruiting HQ, and series-scope dialog
+                so headers read as one product. */}
             <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
               <div className="min-w-0 flex-1">
-                <h1 className="text-2xl font-semibold tracking-tight text-warm-900 truncate">
+                <h1 className="font-[family-name:var(--font-fraunces)] text-[26px] leading-tight font-semibold tracking-[-0.015em] text-warm-900 truncate">
                   {title}
                 </h1>
                 {subtitle && (
@@ -252,7 +257,7 @@ export function LargeTitleHeader({
       {/* ===== Large title — part of scrollable content (mobile only) =====
           Not sticky. Scrolls away naturally. Zero flicker. */}
       <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-2">
-        <h1 className="text-large-title text-warm-900 truncate">
+        <h1 className="font-[family-name:var(--font-fraunces)] text-[32px] leading-[1.05] font-semibold tracking-[-0.02em] text-warm-900 truncate">
           {title}
         </h1>
         {subtitle && (

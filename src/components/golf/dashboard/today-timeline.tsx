@@ -200,10 +200,10 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                 'rounded-xl border p-3.5 transition-all duration-200',
                                 config.border,
                                 isCurrent
-                                    ? 'bg-white/90 shadow-[0_2px_12px_rgba(0,0,0,0.08)] ring-1 ring-primary-200'
+                                    ? 'bg-cream-50/92 shadow-[0_2px_12px_rgba(0,0,0,0.08)] ring-1 ring-primary-200'
                                     : isPast
                                         ? 'bg-warm-50/60 opacity-50'
-                                        : 'bg-white/70',
+                                        : 'bg-cream-100/75',
                             )}
                         >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -370,10 +370,10 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                                 'rounded-xl border p-3 transition-all duration-200 h-full',
                                                 config.border,
                                                 isCurrent
-                                                    ? cn('bg-white/90 shadow-[0_2px_12px_rgba(0,0,0,0.08)]', 'ring-1 ring-primary-200')
+                                                    ? cn('bg-cream-50/92 shadow-[0_2px_12px_rgba(0,0,0,0.08)]', 'ring-1 ring-primary-200')
                                                     : isPast
                                                         ? 'bg-warm-50/60 opacity-50'
-                                                        : 'bg-white/70 hover:bg-white/90 hover:shadow-sm',
+                                                        : 'bg-cream-100/75 hover:bg-cream-50/92 hover:shadow-sm',
                                             )}>
                                                 <div className="flex items-start justify-between gap-2 mb-1">
                                                     <p className={cn(

@@ -19,7 +19,7 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
-    loading: () => <div className="h-[200px] bg-white/45 backdrop-blur-[20px] rounded-2xl border border-white/30 animate-pulse" />,
+    loading: () => <div className="h-[200px] bg-cream-100/55 backdrop-blur-[20px] rounded-2xl border border-warm-200/45 animate-pulse" />,
     ssr: false
 });
 import {
@@ -223,7 +223,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                 { icon: <IconTarget size={16} />, label: 'Performance Trends' },
                                                 { icon: <IconSparkles size={16} />, label: 'AI Coaching' },
                                             ].map((item) => (
-                                                <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-white/30">
+                                                <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-warm-200/45">
                                                     <div className="text-warm-400">{item.icon}</div>
                                                     <span className="text-xs font-medium text-warm-500">{item.label}</span>
                                                 </div>
