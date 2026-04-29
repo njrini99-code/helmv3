@@ -127,6 +127,20 @@ export async function attachDocumentToEvent(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
+    // Defense-in-depth: verify the document belongs to the same team as the
+    // event before letting the join row be created. The DB also enforces
+    // this via golf_event_documents_assert_same_team trigger, but pre-flight
+    // gives us a clean user-facing error message.
+    const [{ data: eventRow }, { data: docRow }] = await Promise.all([
+      supabase.from('golf_events').select('team_id').eq('id', eventId).maybeSingle(),
+      supabase.from('golf_documents').select('team_id').eq('id', documentId).maybeSingle(),
+    ]);
+    if (!eventRow) return { success: false, error: 'Event not found' };
+    if (!docRow) return { success: false, error: 'Document not found' };
+    if (eventRow.team_id !== docRow.team_id) {
+      return { success: false, error: 'Document is on a different team and cannot be attached' };
+    }
+
     // Resolve coach.id for attached_by. RLS will reject the insert if the
     // caller doesn't coach the event's team, so we don't reauthorize here.
     const { data: coach } = await supabase

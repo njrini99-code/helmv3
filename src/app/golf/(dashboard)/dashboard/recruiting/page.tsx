@@ -23,6 +23,7 @@ export default async function RecruitingPage() {
 
   const result = await getRecruits();
   const initialRecruits = result.success && result.data ? result.data : [];
+  const loadError = result.success ? null : (result.error ?? 'Could not load recruits');
 
   return (
     <AnimatedPage>
@@ -32,7 +33,10 @@ export default async function RecruitingPage() {
       />
       <AnimatedItem>
         <div className="px-4 md:px-6 pb-10 max-w-6xl mx-auto">
-          <RecruitingPageClient initialRecruits={initialRecruits} />
+          <RecruitingPageClient
+            initialRecruits={initialRecruits}
+            loadError={loadError}
+          />
         </div>
       </AnimatedItem>
     </AnimatedPage>

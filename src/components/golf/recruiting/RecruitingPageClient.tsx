@@ -17,6 +17,7 @@ import type { Recruit, RecruitStatus } from '@/app/golf/actions/recruiting';
 
 interface RecruitingPageClientProps {
   initialRecruits: Recruit[];
+  loadError?: string | null;
 }
 
 type StatusFilter = 'all' | RecruitStatus;
@@ -28,7 +29,10 @@ const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: 'class', label: 'Class year' },
 ];
 
-export function RecruitingPageClient({ initialRecruits }: RecruitingPageClientProps) {
+export function RecruitingPageClient({
+  initialRecruits,
+  loadError = null,
+}: RecruitingPageClientProps) {
   const router = useRouter();
   // setRecruits left out — we lean on router.refresh() so the list always
   // matches server-truth after a save/delete instead of mutating local state.
@@ -134,6 +138,12 @@ export function RecruitingPageClient({ initialRecruits }: RecruitingPageClientPr
           </button>
         </div>
       </section>
+
+      {loadError && (
+        <div className="mt-4 px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-sm text-rose-700">
+          Couldn&apos;t load your prospect list — {loadError}. Try refreshing.
+        </div>
+      )}
 
       {/* Stat strip */}
       <section

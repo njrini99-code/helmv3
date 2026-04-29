@@ -252,8 +252,23 @@ export async function createRecurringEvent(
         .insert(childRows);
 
       if (childError) {
-        // Roll back the root so we don't leave a half-built series.
-        await supabase.from('golf_events').delete().eq('id', rootId);
+        // Roll back the root so we don't leave a half-built series. Log
+        // separately if the rollback itself fails so we can find the
+        // orphan root id from observability instead of from a database scan.
+        const { error: rollbackError } = await supabase
+          .from('golf_events')
+          .delete()
+          .eq('id', rootId);
+        if (rollbackError) {
+          await logServerError(
+            `[createRecurringEvent rollbackFailed]: orphan root id=${rootId}; ${rollbackError.message}`,
+            {
+              action: 'recurring_events.createRecurringEvent.rollbackFailed',
+              featureArea: 'calendar',
+              extra: { rootId, code: rollbackError.code },
+            },
+          );
+        }
         await logServerError(`[createRecurringEvent child Error]: ${childError instanceof Error ? childError.message : String(childError)}`, { action: 'recurring_events.createRecurringEvent' });
         return { success: false, error: 'Failed to create recurring event. Please try again.' };
       }
@@ -329,7 +344,13 @@ export async function editRecurringEvent(
     if (input.updates.endDate !== undefined && input.updates.endTime) {
       updates.end_time = `${input.updates.endDate}T${input.updates.endTime}${tz}`;
     } else if (input.updates.endTime !== undefined) {
-      updates.end_time = input.updates.endTime;
+      // Time-only edit: derive the date from the existing event so we still
+      // produce a valid timestamptz (the column rejects bare "HH:mm").
+      const existingDate = (targetEvent.start_time ?? '').slice(0, 10);
+      const baseDate = input.updates.startDate ?? existingDate;
+      updates.end_time = baseDate
+        ? `${baseDate}T${input.updates.endTime}${tz}`
+        : null;
     }
     if (input.updates.location !== undefined) updates.location = input.updates.location;
 
@@ -351,9 +372,11 @@ export async function editRecurringEvent(
       case 'thisAndFuture': {
         let query = supabase.from('golf_events').update(updates);
         if (rootId) {
-          // New series: walk by parent_event_id, including the root if its
-          // start_time is also future.
+          // Walk by parent_event_id, but ALSO scope by team_id as
+          // defense-in-depth: even if a sibling row's parent_event_id was
+          // ever forged, we'd never bleed updates across teams.
           query = query
+            .eq('team_id', targetEvent.team_id)
             .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`)
             .gte('start_time', input.originalStartDate);
         } else {
@@ -376,7 +399,9 @@ export async function editRecurringEvent(
       case 'all': {
         let query = supabase.from('golf_events').update(updates);
         if (rootId) {
-          query = query.or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
         } else {
           query = query
             .eq('team_id', targetEvent.team_id)
@@ -466,6 +491,7 @@ export async function deleteRecurringEvent(
         let query = supabase.from('golf_events').delete();
         if (rootId) {
           query = query
+            .eq('team_id', targetEvent.team_id)
             .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`)
             .gte('start_time', originalStartDate);
         } else {
@@ -487,7 +513,9 @@ export async function deleteRecurringEvent(
       case 'all': {
         let query = supabase.from('golf_events').delete();
         if (rootId) {
-          query = query.or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
         } else {
           query = query
             .eq('team_id', targetEvent.team_id)

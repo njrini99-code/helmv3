@@ -332,7 +332,9 @@ export async function updateRSVP(
                       status === 'declined' ? 'declined' :
                       status === 'tentative' ? 'marked as tentative for' : 'updated';
 
-    // Use admin client to bypass RLS — inserting notification for another user
+    // Per-player notification_type so multiple players RSVP'ing the same
+    // event don't collide on the (event_id, user_id, notification_type)
+    // unique key — each player gets their own row in the coach's feed.
     const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: notifError } = await (adminClient as any)
@@ -340,11 +342,11 @@ export async function updateRSVP(
       .upsert({
         user_id: event.creator.user_id,
         event_id: eventId,
-        notification_type: 'rsvp_response',
+        notification_type: `rsvp_response:${playerId}`,
         title: `${player?.first_name} ${statusText}`,
         message: `${player?.first_name} ${player?.last_name} has ${statusText} "${event.title}"`,
         action_url: `/golf/dashboard/calendar?event=${eventId}`,
-      }, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: true });
+      }, { onConflict: 'event_id,user_id,notification_type', ignoreDuplicates: false });
 
     if (notifError) {
       console.error('[notifyRSVPResponse] Failed to insert notification:', notifError.message);

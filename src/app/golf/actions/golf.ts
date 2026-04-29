@@ -2711,10 +2711,27 @@ export async function sendEventReminderToPlayers(
       return { success: false, error: 'Only this team\'s coaches can send reminders' };
     }
 
+    // Restrict the recipient set to players who actually belong to this
+    // event's team. Without this, a coach of team A could pass arbitrary
+    // playerIds (e.g. UUIDs from team B) and admin-bypass-insert
+    // notifications targeting other teams' players.
+    const { data: teamPlayers } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', event.team_id)
+      .eq('status', 'active')
+      .in('player_id', playerIds);
+    const allowedPlayerIds = (teamPlayers ?? [])
+      .map((m) => m.player_id)
+      .filter((id): id is string => Boolean(id));
+    if (allowedPlayerIds.length === 0) {
+      return { success: true, data: { sent: 0 } };
+    }
+
     const { data: players } = await supabase
       .from('golf_players')
       .select('id, user_id')
-      .in('id', playerIds);
+      .in('id', allowedPlayerIds);
 
     const userIds = (players ?? [])
       .map((p) => p.user_id)
@@ -2854,6 +2871,75 @@ export async function getPlayerAvailability(
 
     if (!userId) {
       return { success: false, error: 'Team member not found' };
+    }
+
+    // Defense-in-depth: require the caller to share at least one team with
+    // the target before exposing busy periods. RLS on the underlying tables
+    // already protects most surfaces, but golf_player_classes has its own
+    // policy and an explicit overlap check stops cross-team probing at the
+    // action layer.
+    const { data: callerCoach } = await supabase
+      .from('golf_coaches')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const { data: callerPlayer } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const callerTeamIds = new Set<string>();
+    if (callerCoach?.organization_id) {
+      const { data: coachTeams } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', callerCoach.organization_id);
+      for (const t of coachTeams ?? []) callerTeamIds.add(t.id as string);
+    }
+    if (callerPlayer) {
+      const { data: playerTeams } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', callerPlayer.id)
+        .eq('status', 'active');
+      for (const m of playerTeams ?? []) {
+        if (m.team_id) callerTeamIds.add(m.team_id as string);
+      }
+    }
+
+    const targetTeamIds = new Set<string>();
+    const { data: targetPlayerRow } = await supabase
+      .from('golf_players')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (targetPlayerRow) {
+      const { data: targetMemberships } = await supabase
+        .from('golf_team_members')
+        .select('team_id')
+        .eq('player_id', targetPlayerRow.id)
+        .eq('status', 'active');
+      for (const m of targetMemberships ?? []) {
+        if (m.team_id) targetTeamIds.add(m.team_id as string);
+      }
+    }
+    const { data: targetCoachRow } = await supabase
+      .from('golf_coaches')
+      .select('organization_id')
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (targetCoachRow?.organization_id) {
+      const { data: targetCoachTeams } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', targetCoachRow.organization_id);
+      for (const t of targetCoachTeams ?? []) targetTeamIds.add(t.id as string);
+    }
+
+    const sharesTeam = Array.from(callerTeamIds).some((id) => targetTeamIds.has(id));
+    if (!sharesTeam) {
+      return { success: false, error: 'Not authorized to view this schedule' };
     }
 
     const dayStart = new Date(`${startDate}T00:00:00`);

@@ -53,6 +53,50 @@ interface ActionResult<T = void> {
   error?: string;
 }
 
+const FIELD_LIMITS = {
+  first_name: 120,
+  last_name: 120,
+  email: 254,
+  phone: 40,
+  hometown: 120,
+  state: 2,
+  notes: 5000,
+} as const;
+const MIN_HS_CLASS = 2020;
+const MAX_HS_CLASS = 2040;
+
+function validateRecruitInput(input: Partial<RecruitInput>): string | null {
+  if (input.first_name !== undefined) {
+    const trimmed = input.first_name.trim();
+    if (!trimmed) return 'First name cannot be empty';
+    if (trimmed.length > FIELD_LIMITS.first_name) return 'First name is too long';
+  }
+  if (input.last_name && input.last_name.trim().length > FIELD_LIMITS.last_name) {
+    return 'Last name is too long';
+  }
+  if (input.email && input.email.trim().length > FIELD_LIMITS.email) {
+    return 'Email is too long';
+  }
+  if (input.phone && input.phone.trim().length > FIELD_LIMITS.phone) {
+    return 'Phone is too long';
+  }
+  if (input.hometown && input.hometown.trim().length > FIELD_LIMITS.hometown) {
+    return 'Hometown is too long';
+  }
+  if (input.state && input.state.trim().length > FIELD_LIMITS.state) {
+    return 'State should be a 2-letter abbreviation';
+  }
+  if (input.notes && input.notes.length > FIELD_LIMITS.notes) {
+    return `Notes are too long (max ${FIELD_LIMITS.notes} characters)`;
+  }
+  if (input.hs_class !== undefined && input.hs_class !== null) {
+    if (input.hs_class < MIN_HS_CLASS || input.hs_class > MAX_HS_CLASS) {
+      return `Class year must be between ${MIN_HS_CLASS} and ${MAX_HS_CLASS}`;
+    }
+  }
+  return null;
+}
+
 async function resolveCoachAndTeam(): Promise<
   | { ok: true; coachId: string; teamId: string; supabase: Awaited<ReturnType<typeof createClient>> }
   | { ok: false; error: string }
@@ -114,6 +158,8 @@ export async function createRecruit(input: RecruitInput): Promise<ActionResult<{
   if (!input.first_name?.trim()) {
     return { success: false, error: 'First name is required' };
   }
+  const validationError = validateRecruitInput(input);
+  if (validationError) return { success: false, error: validationError };
 
   try {
     const ctx = await resolveCoachAndTeam();
@@ -164,6 +210,8 @@ export async function updateRecruit(
   updates: Partial<RecruitInput>,
 ): Promise<ActionResult> {
   if (!id) return { success: false, error: 'Recruit id required' };
+  const validationError = validateRecruitInput(updates);
+  if (validationError) return { success: false, error: validationError };
 
   try {
     const ctx = await resolveCoachAndTeam();
