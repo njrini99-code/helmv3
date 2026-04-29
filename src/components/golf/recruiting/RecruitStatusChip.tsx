@@ -1,26 +1,41 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { StatusPill, type StatusPillTone } from '@/components/ui/status-pill';
 import type { RecruitStatus } from '@/app/golf/actions/recruiting';
+
+/**
+ * Recruiting funnel status chip. Thin wrapper over the shared StatusPill
+ * so the recruiting funnel reuses the same chip-pill grammar as the rest
+ * of the dashboard. The keyed array remains the source of truth for the
+ * RecruitFormSheet picker (label + description) — only the rendering
+ * changed.
+ *
+ * The legacy *Bg/Text/Ring/dot string fields stay on each entry because
+ * the form sheet's filled-pill option buttons reach into them directly
+ * for the active-button color recipe. New consumers should prefer the
+ * `tone` field and call StatusPill directly.
+ */
 
 export const RECRUIT_STATUSES: Array<{
   value: RecruitStatus;
   label: string;
   description: string;
-  /** Primary swatch — solid pill background. */
+  tone: StatusPillTone;
+  /** Form-sheet active-button background. */
   solidBg: string;
   solidText: string;
-  /** Soft swatch — used for the default un-selected card chip. */
+  /** Form-sheet inactive-button surface. */
   softBg: string;
   softText: string;
   softRing: string;
-  /** Dot color for tiny variants. */
+  /** Used by the form sheet's tiny indicator dots. */
   dot: string;
 }> = [
   {
     value: 'watched',
     label: 'Watched',
     description: 'Tracking from a distance',
+    tone: 'amber',
     solidBg: 'bg-amber-500',
     solidText: 'text-white',
     softBg: 'bg-amber-50',
@@ -32,6 +47,7 @@ export const RECRUIT_STATUSES: Array<{
     value: 'recruiting',
     label: 'Recruiting',
     description: 'Actively engaged',
+    tone: 'primary',
     solidBg: 'bg-primary-600',
     solidText: 'text-white',
     softBg: 'bg-primary-50',
@@ -43,6 +59,7 @@ export const RECRUIT_STATUSES: Array<{
     value: 'offered',
     label: 'Offered',
     description: 'Offer extended',
+    tone: 'violet',
     solidBg: 'bg-violet-600',
     solidText: 'text-white',
     softBg: 'bg-violet-50',
@@ -54,6 +71,7 @@ export const RECRUIT_STATUSES: Array<{
     value: 'committed',
     label: 'Committed',
     description: 'Locked in',
+    tone: 'blue',
     solidBg: 'bg-blue-600',
     solidText: 'text-white',
     softBg: 'bg-blue-50',
@@ -78,39 +96,16 @@ export function RecruitStatusChip({
   size = 'sm',
   className,
 }: RecruitStatusChipProps) {
-  const config = BY_VALUE[status] ?? RECRUIT_STATUSES[1]!; // fall back to recruiting
-  const sizing = size === 'md'
-    ? 'px-2.5 py-1 text-xs'
-    : 'px-2 py-0.5 text-[11px]';
-
-  if (variant === 'dot') {
-    return (
-      <span className={cn('inline-flex items-center gap-1.5 text-xs font-medium text-warm-700', className)}>
-        <span className={cn('w-2 h-2 rounded-full', config.dot)} aria-hidden="true" />
-        {config.label}
-      </span>
-    );
-  }
-
+  const config = BY_VALUE[status] ?? RECRUIT_STATUSES[1]!;
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full font-semibold tracking-wide',
-        sizing,
-        variant === 'solid'
-          ? cn(config.solidBg, config.solidText, 'shadow-sm')
-          : cn(config.softBg, config.softText, 'ring-1 ring-inset', config.softRing),
-        className,
-      )}
+    <StatusPill
+      tone={config.tone}
+      variant={variant}
+      size={size}
+      dot={variant !== 'dot'}
+      className={className}
     >
-      <span
-        className={cn(
-          'w-1.5 h-1.5 rounded-full',
-          variant === 'solid' ? 'bg-white/80' : config.dot,
-        )}
-        aria-hidden="true"
-      />
       {config.label}
-    </span>
+    </StatusPill>
   );
 }
