@@ -21,6 +21,8 @@ function getTodayDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+export type RecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
+
 export interface GolfEventFormData {
   title: string;
   eventType: GolfEventType;
@@ -37,6 +39,8 @@ export interface GolfEventFormData {
   rsvpDeadline: string | null;
   maxAttendees: number | null;
   attendeeIds: string[];
+  recurrence: RecurrenceFrequency;
+  recurrenceCount: number;
 }
 
 interface TeamPlayer {
@@ -236,6 +240,8 @@ export function EventDetailModal({
     rsvpDeadline: null,
     maxAttendees: null,
     attendeeIds: [],
+    recurrence: 'none',
+    recurrenceCount: 10,
   });
   const [error, setError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -318,6 +324,8 @@ export function EventDetailModal({
           rsvpDeadline,
           maxAttendees: event.max_attendees ?? null,
           attendeeIds: [],
+          recurrence: 'none',
+          recurrenceCount: 10,
         });
       } else {
         // Create mode - reset to defaults
@@ -337,6 +345,8 @@ export function EventDetailModal({
           rsvpDeadline: null,
           maxAttendees: null,
           attendeeIds: [],
+          recurrence: 'none',
+          recurrenceCount: 10,
         });
       }
       setError(null);
@@ -803,6 +813,54 @@ export function EventDetailModal({
                   suggestions={conflicts.suggestions}
                   onSelectTime={handleSelectSuggestedTime}
                 />
+              )}
+            </div>
+          )}
+
+          {/* Recurrence — only on create. Edit-recurring needs a scope dialog
+              and a backing column we don't have yet, so editing here only
+              affects the single occurrence. */}
+          {canEdit && isCreating && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <label
+                  htmlFor="event-recurrence"
+                  className="text-sm font-medium text-warm-700"
+                >
+                  Repeats
+                </label>
+                <select
+                  id="event-recurrence"
+                  value={formData.recurrence}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    recurrence: e.target.value as RecurrenceFrequency,
+                  })}
+                  disabled={isSaving}
+                  className="px-3 py-1.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white transition-colors"
+                >
+                  <option value="none">Doesn&apos;t repeat</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              {formData.recurrence !== 'none' && (
+                <div className="flex items-center justify-between gap-3 pl-1 text-sm text-warm-600">
+                  <span>Number of occurrences</span>
+                  <input
+                    type="number"
+                    min={2}
+                    max={52}
+                    value={formData.recurrenceCount}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      recurrenceCount: Math.max(2, Math.min(52, Number(e.target.value) || 10)),
+                    })}
+                    disabled={isSaving}
+                    className="w-20 px-2 py-1 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-1 focus:ring-primary-100 text-sm text-warm-900 bg-white tabular-nums text-right"
+                  />
+                </div>
               )}
             </div>
           )}

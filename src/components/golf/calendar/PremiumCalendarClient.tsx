@@ -472,26 +472,53 @@ export function PremiumCalendarClient({
     const timezoneOffset = new Date().getTimezoneOffset();
     try {
       if (isCreatingEvent) {
-        const result = await actionHandlers.createEvent({
-          title: data.title,
-          eventType: data.eventType,
-          startDate: data.startDate,
-          endDate: data.endDate || undefined,
-          startTime: data.allDay ? undefined : (data.startTime || undefined),
-          endTime: data.allDay ? undefined : (data.endTime || undefined),
-          allDay: data.allDay,
-          location: data.location || undefined,
-          courseName: data.courseName || undefined,
-          description: data.description || undefined,
-          isMandatory: data.isMandatory,
-          requiresRsvp: data.requiresRsvp,
-          rsvpDeadline: data.rsvpDeadline || undefined,
-          maxAttendees: data.maxAttendees || undefined,
-          attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
-          timezoneOffset,
-        });
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to create event');
+        if (data.recurrence && data.recurrence !== 'none') {
+          // Build a minimal RRULE; createRecurringEvent expands into one row
+          // per occurrence under the hood since golf_events has no
+          // parent_event_id column.
+          const freq = data.recurrence.toUpperCase();
+          const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
+          const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+          const result = await createRecurringEvent({
+            title: data.title,
+            eventType: data.eventType,
+            startDate: data.startDate,
+            endDate: data.endDate || undefined,
+            startTime: data.allDay ? undefined : (data.startTime || undefined),
+            endTime: data.allDay ? undefined : (data.endTime || undefined),
+            location: data.location || undefined,
+            description: data.description || undefined,
+            recurrenceRule,
+            requiresRsvp: data.requiresRsvp,
+            rsvpDeadline: data.rsvpDeadline || undefined,
+            maxAttendees: data.maxAttendees || undefined,
+            timezoneOffset,
+          });
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to create recurring event');
+          }
+        } else {
+          const result = await actionHandlers.createEvent({
+            title: data.title,
+            eventType: data.eventType,
+            startDate: data.startDate,
+            endDate: data.endDate || undefined,
+            startTime: data.allDay ? undefined : (data.startTime || undefined),
+            endTime: data.allDay ? undefined : (data.endTime || undefined),
+            allDay: data.allDay,
+            location: data.location || undefined,
+            courseName: data.courseName || undefined,
+            description: data.description || undefined,
+            isMandatory: data.isMandatory,
+            requiresRsvp: data.requiresRsvp,
+            rsvpDeadline: data.rsvpDeadline || undefined,
+            maxAttendees: data.maxAttendees || undefined,
+            attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+            timezoneOffset,
+          });
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to create event');
+          }
         }
       } else if (selectedEvent) {
         const result = await actionHandlers.updateEvent(selectedEvent.id, {
