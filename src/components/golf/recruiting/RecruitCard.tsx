@@ -74,7 +74,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-[family-name:var(--font-fraunces)] text-[18px] leading-tight font-semibold text-warm-900 truncate">
+              <h3 className="text-lg md:text-xl font-semibold text-warm-900 truncate">
                 {fullName || 'Unnamed prospect'}
               </h3>
               <div className="flex items-center gap-2 mt-1 text-xs text-warm-500">

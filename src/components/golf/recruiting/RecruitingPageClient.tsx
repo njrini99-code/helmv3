@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   ArrowUpDown,
-  Sparkles,
   GraduationCap,
 } from 'lucide-react';
 import { RecruitCard } from './RecruitCard';
@@ -100,47 +99,12 @@ export function RecruitingPageClient({
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/80 via-warm-50/50 to-primary-50/30 border border-white/50 shadow-glass">
-        <div className="absolute inset-0 pointer-events-none opacity-50" aria-hidden="true">
-          <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary-300/15 blur-3xl" />
-          <div className="absolute -bottom-20 -left-10 w-64 h-64 rounded-full bg-violet-300/10 blur-3xl" />
-        </div>
-        <div className="relative px-6 py-7 sm:px-8 sm:py-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary-700 mb-3">
-              <Sparkles className="w-3 h-3" />
-              Recruiting HQ
-            </span>
-            <h1 className="font-[family-name:var(--font-fraunces)] text-[34px] sm:text-[40px] leading-[1.05] font-semibold text-warm-900">
-              Build the next class.
-            </h1>
-            <p className="text-sm text-warm-500 mt-2 max-w-md">
-              Track prospects from watchlist to commitment. Add high-school golfers,
-              jot down notes after every conversation, and keep contact info close at hand.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-            className={cn(
-              'inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl',
-              'bg-primary-600 text-white text-sm font-semibold',
-              'hover:bg-primary-700 active:scale-[0.99] transition-all',
-              'shadow-[0_4px_18px_rgba(22,163,74,0.28)]',
-            )}
-          >
-            <Plus className="w-4 h-4" />
-            Add prospect
-          </button>
-        </div>
-      </section>
+      {/* Hero block removed — page already gets its <h1> from <LargeTitleHeader>
+          in the parent server component (matches Calendar / Roster / etc.).
+          The "Add prospect" CTA moves into the toolbar below. */}
 
       {loadError && (
-        <div className="mt-4 px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-sm text-rose-700">
+        <div className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-sm text-rose-700">
           Couldn&apos;t load your prospect list — {loadError}. Try refreshing.
         </div>
       )}
@@ -174,7 +138,7 @@ export function RecruitingPageClient({
                 <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle', s.dot)} />
                 {s.label}
               </span>
-              <span className="font-[family-name:var(--font-fraunces)] text-[28px] leading-none font-semibold text-warm-900 tabular-nums">
+              <span className="text-[28px] leading-none font-semibold text-warm-900 tabular-nums">
                 {count}
               </span>
               <span className="text-[11px] text-warm-500">
@@ -186,7 +150,7 @@ export function RecruitingPageClient({
       </section>
 
       {/* Toolbar */}
-      <section className="mt-6 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+      <section className="mt-2 flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
           <input
@@ -235,6 +199,21 @@ export function RecruitingPageClient({
               ))}
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl',
+              'bg-primary-600 text-white text-xs font-semibold',
+              'hover:bg-primary-700 active:scale-[0.99] transition-all',
+            )}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Add prospect
+          </button>
         </div>
       </section>
 
@@ -283,7 +262,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
       <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mx-auto mb-4 shadow-sm">
         <GraduationCap className="w-7 h-7 text-primary-700" />
       </div>
-      <h3 className="font-[family-name:var(--font-fraunces)] text-[22px] leading-tight font-semibold text-warm-900 mb-1.5">
+      <h3 className="text-2xl font-semibold text-warm-900 mb-1.5">
         {isFiltered ? 'No prospects match' : 'Start your prospect list'}
       </h3>
       <p className="text-sm text-warm-500 max-w-sm mx-auto mb-5">
