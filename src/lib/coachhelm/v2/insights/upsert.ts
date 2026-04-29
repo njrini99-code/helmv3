@@ -232,11 +232,23 @@ async function insertNew(
     movement_count: 0,
   };
 
+  // Resolve the player's active team + a coach in that team's org. Without
+  // these the row lands with coach_id=NULL/team_id=NULL and the existing
+  // "Coaches can view their own insights" RLS policy hides it from the
+  // coach UI even though the engine wrote it. This was the root cause of
+  // the player insight + team Deep Analysis tabs showing "0 insights".
+  const { coachId, teamId } = await resolvePlayerOwnership(
+    supabase,
+    input.player_id,
+  );
+
   // `insight_type` is NOT NULL on the legacy table. Fall back to category as
   // the type so we don't violate the pre-existing constraint while we
   // migrate callers.
   const insertPayload = {
     player_id: input.player_id,
+    coach_id: coachId,
+    team_id: teamId,
     category: input.category,
     signature: input.signature,
     title: input.title,
@@ -265,6 +277,56 @@ async function insertNew(
 interface DrillRow {
   id: string;
   tags: string[] | null;
+}
+
+/**
+ * Resolve the team + organization-coach for a player so newly-created
+ * insights carry the FK ownership the existing coach RLS policy expects.
+ * Falls back to nulls if a player has no active team membership — better
+ * to land an orphaned row than throw.
+ */
+async function resolvePlayerOwnership(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<{ coachId: string | null; teamId: string | null }> {
+  try {
+    const { data: membership } = await supabase
+      .from('golf_team_members')
+      .select('team_id, golf_teams(organization_id)')
+      .eq('player_id', playerId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: true, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    const teamId = membership?.team_id ?? null;
+    // PostgREST may return the embedded golf_teams as an array OR an object
+    // depending on the FK shape; narrow defensively rather than trust the
+    // generated types here.
+    const teamRel = membership?.golf_teams as
+      | { organization_id: string | null }
+      | { organization_id: string | null }[]
+      | null
+      | undefined;
+    const orgId = Array.isArray(teamRel)
+      ? teamRel[0]?.organization_id ?? null
+      : teamRel?.organization_id ?? null;
+    if (!teamId || !orgId) {
+      return { coachId: null, teamId };
+    }
+
+    const { data: coach } = await supabase
+      .from('golf_coaches')
+      .select('id')
+      .eq('organization_id', orgId)
+      .order('created_at', { ascending: true, nullsFirst: false })
+      .limit(1)
+      .maybeSingle();
+
+    return { coachId: coach?.id ?? null, teamId };
+  } catch {
+    return { coachId: null, teamId: null };
+  }
 }
 
 /**
