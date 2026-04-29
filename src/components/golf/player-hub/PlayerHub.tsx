@@ -252,24 +252,39 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
         exit={{ y: '100%', opacity: 0 }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto overscroll-contain"
+        className={cn(
+          'rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto overscroll-contain',
+          'bg-cream-50/95 backdrop-blur-2xl ring-1 ring-warm-200/55',
+          'shadow-[0_-12px_48px_rgba(28,25,23,0.16),0_24px_64px_rgba(28,25,23,0.18),inset_0_1px_0_rgba(255,255,255,0.7)]'
+        )}
       >
-        {/* Handle bar (mobile) */}
+        {/* Handle bar (mobile). iOS slides this 3px below the safe-area
+            and uses warm-300 instead of system gray; matches the cream bg. */}
         <div className="sm:hidden flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-warm-300" />
+          <div className="w-10 h-1.5 rounded-full bg-warm-300/80" />
         </div>
 
-        {/* Header */}
-        <div className="p-6 pb-4 border-b border-warm-100">
+        {/* Header — gradient cream band gives the sheet an Apple-style
+            top zone without forcing a hard divider line. */}
+        <div className="relative px-6 pt-6 pb-5 border-b border-warm-200/50 bg-gradient-to-br from-cream-50 via-cream-100/40 to-cream-50">
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-xl bg-warm-100 flex items-center justify-center text-3xl">
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0"
+              style={{
+                background: 'linear-gradient(165deg, #FDF9F3 0%, #F5F0E8 100%)',
+                boxShadow:
+                  'inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(231,229,228,0.5), 0 4px 12px rgba(28,25,23,0.06)',
+              }}
+            >
               {getTransportIcon(trip.transportation_type)}
             </div>
-            <div className="flex-1">
-              <h2 className="text-xl font-semibold text-warm-900">{trip.event_name}</h2>
-              <div className="flex items-center gap-1.5 text-warm-500 mt-1">
-                <IconMapPin size={15} />
-                <span>{trip.destination}</span>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-[family-name:var(--font-fraunces)] text-[22px] leading-tight font-semibold tracking-[-0.01em] text-warm-900">
+                {trip.event_name}
+              </h2>
+              <div className="flex items-center gap-1.5 text-warm-500 mt-1.5 text-sm">
+                <IconMapPin size={14} className="text-warm-400" />
+                <span className="truncate">{trip.destination}</span>
               </div>
             </div>
           </div>

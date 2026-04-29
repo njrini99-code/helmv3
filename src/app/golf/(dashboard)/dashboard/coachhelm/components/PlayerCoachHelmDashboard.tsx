@@ -446,9 +446,11 @@ export function PlayerCoachHelmDashboard({
                       aria-expanded={deepDiveOpen}
                       aria-controls="coachhelm-deep-dive"
                       className={cn(
-                        'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl',
-                        'bg-white/50 backdrop-blur-sm border border-white/30',
-                        'hover:bg-white/70 transition-colors text-left',
+                        'group w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl text-left',
+                        'bg-cream-100/65 backdrop-blur-md ring-1 ring-warm-200/50',
+                        'shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
+                        'hover:bg-cream-100/80 hover:ring-warm-200/70 transition-all',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0">

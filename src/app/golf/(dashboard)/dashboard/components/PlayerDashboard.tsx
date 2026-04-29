@@ -84,36 +84,51 @@ export interface PlayerDashboardData {
 function JoinTeamBanner() {
     return (
         <m.div
-            className="mb-4 md:mb-5"
+            className="mb-5 md:mb-6"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            transition={{ delay: 0.1, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
-            <div className={cn(
-                'relative overflow-hidden rounded-2xl p-4 md:p-5',
-                'bg-gradient-to-r from-primary-600 to-primary-500',
-                'border border-primary-500/50',
-                'shadow-[0_4px_16px_rgba(22,163,74,0.2)]'
-            )}>
-                <div className="absolute right-0 top-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                <div className="relative flex items-center gap-3 md:gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <IconUsers size={20} className="text-white" />
+            {/* Cream-on-cream banner with a primary accent rail.
+                Apple light-mode wouldn't drop a saturated green tile onto a
+                warm cream page — the banner now reads as a section-level
+                advisory, not a billboard. */}
+            <div className="relative overflow-hidden rounded-2xl surface-apple">
+                {/* Soft primary glow in the corner gives the banner identity
+                    without flooding the surface */}
+                <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-10 -top-16 w-48 h-48 rounded-full"
+                    style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.18), transparent 70%)' }}
+                />
+                {/* 3px primary edge gives the eye a clear handle without
+                    fighting the cream body */}
+                <div className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-primary-500 via-primary-600 to-primary-500" />
+
+                <div className="relative flex items-center gap-3 md:gap-4 px-5 py-4 md:px-6 md:py-5 pl-6 md:pl-7">
+                    <div className="w-11 h-11 rounded-xl bg-primary-50 ring-1 ring-primary-100 flex items-center justify-center flex-shrink-0 shadow-[0_2px_6px_rgba(22,163,74,0.15)]">
+                        <IconUsers size={20} className="text-primary-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-sm md:text-base font-bold text-white mb-0.5">Join Your Team</h3>
-                        <p className="text-white/70 text-xs">Get your invite code from your coach to access team features.</p>
+                        <h3 className="font-[family-name:var(--font-fraunces)] text-[18px] leading-tight font-semibold text-warm-900 mb-0.5">
+                            Join your team
+                        </h3>
+                        <p className="text-warm-500 text-[13px] leading-relaxed">
+                            Drop in the invite code from your coach to unlock schedules, qualifiers, and CoachHelm insights.
+                        </p>
                     </div>
                     <Link
                         href="/golf/dashboard/settings"
                         className={cn(
-                            'inline-flex items-center gap-1.5 px-3 py-2 rounded-lg flex-shrink-0',
-                            'bg-white text-primary-700 font-semibold text-xs',
-                            'shadow-sm hover:bg-primary-50 transition-colors active:scale-95'
+                            'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl flex-shrink-0',
+                            'bg-primary-600 text-white font-semibold text-[13px]',
+                            'shadow-[0_4px_14px_rgba(22,163,74,0.28)]',
+                            'hover:bg-primary-700 active:scale-[0.97] transition-all',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2'
                         )}
                     >
                         <IconSettings size={14} />
-                        <span className="hidden sm:inline">Enter Code</span>
+                        <span className="hidden sm:inline">Enter code</span>
                         <span className="sm:hidden">Join</span>
                     </Link>
                 </div>
@@ -188,50 +203,109 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
             >
                 {!team && <JoinTeamBanner />}
 
+                {/* EMPTY STATE — first-time-player welcome moment. The page
+                    background is already cream-warm, so the hero leans on a
+                    single tall surface-apple panel with layered radial primary
+                    glows, a Fraunces oversized headline, and a feature grid
+                    that reads as four distinct iOS-tile previews instead of
+                    one undifferentiated block. */}
                 {stats.roundsPlayed === 0 ? (
-                    /* EMPTY STATE */
                     <>
                         <m.div className="mb-5 md:mb-6" variants={itemVariants}>
-                            <PremiumGlassCard glow className="!p-0 overflow-hidden">
-                                <div className="relative p-6 md:p-10 text-center">
-                                    <div className="absolute right-0 top-0 w-48 h-48 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
-                                    <div className="relative z-10">
-                                        <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-50 flex items-center justify-center shadow-sm">
-                                            <IconGolf size={28} className="text-primary-500 md:hidden" />
-                                            <IconGolf size={32} className="text-primary-500 hidden md:block" />
-                                        </div>
-                                        <h3 className="text-lg font-semibold text-warm-900 mb-2">Ready to Track Your Game</h3>
-                                        <p className="text-sm text-warm-500 max-w-md mx-auto mb-6 leading-relaxed">
-                                            Submit your first round to unlock scoring averages, performance trends, and AI-powered coaching insights.
-                                        </p>
-                                        <Link
-                                            href="/golf/dashboard/rounds/new"
-                                            className={cn(
-                                                'inline-flex items-center gap-2 px-5 py-3 rounded-xl',
-                                                'bg-primary-600 hover:bg-primary-700 text-white font-semibold text-sm',
-                                                'shadow-[0_4px_16px_rgba(22,163,74,0.3)]',
-                                                'transition-colors duration-200 active:scale-[0.97]'
-                                            )}
-                                        >
-                                            <IconPlus size={16} />
-                                            Submit Your First Round
-                                        </Link>
-                                        <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-3">
-                                            {[
-                                                { icon: <IconChartBar size={16} />, label: 'Scoring Average' },
-                                                { icon: <IconTarget size={16} />, label: 'Best Round' },
-                                                { icon: <IconTarget size={16} />, label: 'Performance Trends' },
-                                                { icon: <IconSparkles size={16} />, label: 'AI Coaching' },
-                                            ].map((item) => (
-                                                <div key={item.label} className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-white/40 border border-warm-200/45">
-                                                    <div className="text-warm-400">{item.icon}</div>
-                                                    <span className="text-xs font-medium text-warm-500">{item.label}</span>
-                                                </div>
-                                            ))}
+                            <div className="relative overflow-hidden rounded-3xl surface-apple">
+                                {/* Layered radial glows — primary in the upper-right,
+                                    a softer secondary glow in the lower-left, both
+                                    sized so they bleed into the cream gradient
+                                    background instead of forming hard edges. */}
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full"
+                                    style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.18), transparent 65%)' }}
+                                />
+                                <div
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute -left-32 bottom-0 w-[360px] h-[360px] rounded-full"
+                                    style={{ background: 'radial-gradient(closest-side, rgba(180,83,9,0.10), transparent 65%)' }}
+                                />
+
+                                <div className="relative px-6 py-10 md:px-12 md:py-14 text-center">
+                                    {/* Icon stamp. iOS uses a glassy app-icon shape
+                                        for hero illustrations — gradient body +
+                                        inset highlight + soft drop shadow. */}
+                                    <div
+                                        className="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-[22px]"
+                                        style={{
+                                            background: 'linear-gradient(165deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
+                                            boxShadow:
+                                                '0 12px 32px rgba(22,163,74,0.32), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.12)',
+                                        }}
+                                    >
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <IconGolf size={40} className="text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]" />
                                         </div>
                                     </div>
+
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[11px] font-semibold uppercase tracking-[0.1em] text-primary-700 mb-4">
+                                        <IconSparkles size={12} />
+                                        Day 1
+                                    </span>
+
+                                    <h2 className="font-[family-name:var(--font-fraunces)] text-[32px] md:text-[44px] leading-[1.05] font-semibold tracking-[-0.02em] text-warm-900 mb-3">
+                                        Submit your first round.
+                                    </h2>
+                                    <p className="text-sm md:text-base text-warm-500 max-w-lg mx-auto mb-7 leading-relaxed">
+                                        Strokes-gained, scoring averages, and CoachHelm insights all start with one round logged. Three minutes, hole by hole.
+                                    </p>
+
+                                    <Link
+                                        href="/golf/dashboard/rounds/new"
+                                        className={cn(
+                                            'group inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl',
+                                            'bg-primary-600 hover:bg-primary-700 text-white font-semibold text-[15px]',
+                                            'shadow-[0_8px_24px_rgba(22,163,74,0.32),inset_0_1px_0_rgba(255,255,255,0.18)]',
+                                            'transition-all duration-200 active:scale-[0.97]',
+                                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-50'
+                                        )}
+                                    >
+                                        <IconPlus size={16} className="transition-transform group-hover:rotate-90 duration-300" />
+                                        Submit your first round
+                                    </Link>
+
+                                    <div className="mt-10 md:mt-12 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-2xl mx-auto">
+                                        {[
+                                            { icon: <IconChartBar size={18} />, label: 'Scoring average', tone: 'primary' as const },
+                                            { icon: <IconTarget size={18} />, label: 'Best round', tone: 'amber' as const },
+                                            { icon: <IconTarget size={18} />, label: 'Performance trends', tone: 'blue' as const },
+                                            { icon: <IconSparkles size={18} />, label: 'AI coaching', tone: 'violet' as const },
+                                        ].map((item) => {
+                                            const toneCls = {
+                                                primary: 'bg-primary-50 ring-primary-100 text-primary-700',
+                                                amber: 'bg-amber-50 ring-amber-100 text-amber-700',
+                                                blue: 'bg-blue-50 ring-blue-100 text-blue-700',
+                                                violet: 'bg-violet-50 ring-violet-100 text-violet-700',
+                                            }[item.tone];
+                                            return (
+                                                <div
+                                                    key={item.label}
+                                                    className={cn(
+                                                        'group flex flex-col items-center text-center gap-2 p-4 rounded-2xl',
+                                                        'bg-white/50 backdrop-blur-md ring-1 ring-warm-200/55',
+                                                        'shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]',
+                                                        'transition-transform hover:-translate-y-[1px] duration-200'
+                                                    )}
+                                                >
+                                                    <span className={cn('w-9 h-9 rounded-xl ring-1 flex items-center justify-center', toneCls)}>
+                                                        {item.icon}
+                                                    </span>
+                                                    <span className="text-[12px] font-semibold text-warm-700 leading-tight">
+                                                        {item.label}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </PremiumGlassCard>
+                            </div>
                         </m.div>
 
                         {enhancedData && enhancedData.todayEvents.length > 0 && (
