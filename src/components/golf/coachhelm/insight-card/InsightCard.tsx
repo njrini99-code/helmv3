@@ -170,42 +170,42 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
 const TONE_CONFIG: Record<DerivedTone, ToneConfig> = {
   encouraging: {
     icon: IconTrophy,
-    bgClass: 'bg-primary-50/70',
-    borderClass: 'border-primary-200/60',
-    iconColor: 'text-primary-600',
-    accentBar: 'bg-primary-500',
+    bgClass: 'bg-primary-50/45',
+    borderClass: 'border-primary-200/40',
+    iconColor: 'text-primary-700',
+    accentBar: 'bg-primary-500/80',
     pulse: false,
   },
   neutral: {
     icon: IconInfo,
-    bgClass: 'bg-warm-50/70',
-    borderClass: 'border-warm-200/60',
-    iconColor: 'text-warm-600',
-    accentBar: 'bg-warm-400',
+    bgClass: 'bg-cream-100/55',
+    borderClass: 'border-warm-200/40',
+    iconColor: 'text-warm-700',
+    accentBar: 'bg-warm-400/80',
     pulse: false,
   },
   cautionary: {
     icon: IconWarning,
-    bgClass: 'bg-amber-50/70',
-    borderClass: 'border-amber-200/60',
-    iconColor: 'text-amber-600',
-    accentBar: 'bg-amber-500',
+    bgClass: 'bg-amber-50/55',
+    borderClass: 'border-amber-200/40',
+    iconColor: 'text-amber-700',
+    accentBar: 'bg-amber-500/80',
     pulse: false,
   },
   urgent: {
     icon: IconWarning,
-    bgClass: 'bg-red-50/70',
-    borderClass: 'border-red-200/60',
-    iconColor: 'text-red-600',
-    accentBar: 'bg-red-500',
+    bgClass: 'bg-red-50/55',
+    borderClass: 'border-red-200/40',
+    iconColor: 'text-red-700',
+    accentBar: 'bg-red-500/80',
     pulse: true,
   },
   celebratory: {
     icon: IconSparkles,
-    bgClass: 'bg-purple-50/70',
-    borderClass: 'border-purple-200/60',
-    iconColor: 'text-purple-600',
-    accentBar: 'bg-purple-500',
+    bgClass: 'bg-purple-50/55',
+    borderClass: 'border-purple-200/40',
+    iconColor: 'text-purple-700',
+    accentBar: 'bg-purple-500/80',
     pulse: false,
   },
 };
@@ -389,21 +389,21 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
           />
         )}
 
-        <div className="p-4">
-          <div className="flex items-start gap-3">
+        <div className="p-5 md:p-6">
+          <div className="flex items-start gap-3.5">
             <div
               className={cn(
-                'w-9 h-9 rounded-lg bg-cream-100/82 shadow-sm flex items-center justify-center flex-shrink-0',
+                'w-9 h-9 rounded-2xl bg-cream-50/85 flex items-center justify-center flex-shrink-0',
                 config.iconColor,
               )}
             >
-              <Icon size={18} />
+              <Icon size={17} />
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h4
-                  className="font-semibold text-warm-900 text-sm cursor-pointer hover:text-primary-700 transition-colors"
+                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
                   onClick={() => onClick?.(insight.id)}
                 >
                   {title}
@@ -411,7 +411,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
                 <WhyPopover insight={insight} />
               </div>
 
-              <p className="text-xs text-warm-600 mt-1 line-clamp-2">{content}</p>
+              <p className="text-[12.5px] text-warm-600 mt-1.5 line-clamp-2 leading-relaxed">{content}</p>
 
               <MovementPill insight={insight} className="mt-2" />
 
@@ -525,12 +525,12 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           />
         )}
 
-        <div className="p-6 md:p-8 space-y-5">
+        <div className="p-7 md:p-9 space-y-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  'w-11 h-11 rounded-xl bg-cream-50/92 shadow-sm flex items-center justify-center flex-shrink-0',
+                  'w-12 h-12 rounded-2xl bg-cream-50/85 flex items-center justify-center flex-shrink-0',
                   config.iconColor,
                 )}
               >
@@ -542,11 +542,11 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             <div className="text-right flex-shrink-0">
               <div
                 data-testid="hero-strokes-impact"
-                className="text-3xl md:text-4xl font-semibold text-warm-900 tabular-nums leading-none tracking-tight"
+                className="text-[36px] md:text-[44px] font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
               >
                 ~{impact.toFixed(1)}
               </div>
-              <div className="text-[11px] uppercase tracking-wide text-warm-500 mt-1">
+              <div className="text-[11px] uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
                 strokes/round
               </div>
             </div>
@@ -555,15 +555,15 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           <div>
             <h2
               data-testid="hero-title"
-              className="text-[22px] md:text-[24px] leading-tight font-medium text-warm-900 tracking-tight"
+              className="text-[26px] md:text-[30px] leading-[1.1] font-light text-warm-900 tracking-[-0.022em]"
             >
               {title}
             </h2>
-            <div className="mt-2 flex items-center gap-2 flex-wrap">
+            <div className="mt-3 flex items-center gap-2 flex-wrap">
               <MovementPill insight={insight} />
               <OutcomeBadge insight={insight} />
             </div>
-            <p className="mt-3 text-base text-warm-700 leading-relaxed">{content}</p>
+            <p className="mt-4 text-[14.5px] text-warm-700 leading-relaxed">{content}</p>
           </div>
 
           <EvidencePanel evidence={insight.evidence} compact={false} />
@@ -641,12 +641,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('rate_helpful', startHelpful);
             }}
             className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-              'bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors',
+              'pill-soft pill-soft-primary',
               helpfulPending && 'opacity-60 pointer-events-none',
             )}
           >
-            <IconHelp size={14} />
+            <IconHelp size={13} />
             Helpful
           </button>
           <button
@@ -658,12 +657,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('acknowledged', startAck);
             }}
             className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-              'bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors',
+              'pill-soft',
               ackPending && 'opacity-60 pointer-events-none',
             )}
           >
-            <IconCheck size={14} />
+            <IconCheck size={13} />
             Got it
           </button>
           {promotable && (
@@ -685,12 +683,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
-              'text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 transition-colors',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
-            <IconX size={14} />
+            <IconX size={13} />
             Dismiss
           </button>
         </>
@@ -705,12 +702,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('acknowledged', startAck);
             }}
             className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-              'bg-primary-100 text-primary-700 hover:bg-primary-200 transition-colors',
+              'pill-soft pill-soft-primary',
               ackPending && 'opacity-60 pointer-events-none',
             )}
           >
-            <IconCheck size={14} />
+            <IconCheck size={13} />
             Acknowledge
           </button>
           {promotable ? (
@@ -734,10 +730,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
                 fire('create_focus_area', startFocus);
               }}
               className={cn(
-                'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
-                'bg-primary-500 text-white hover:bg-primary-600 transition-colors',
+                'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+                'bg-primary-600/95 text-white shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
+                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
                 focusPending && 'opacity-60 pointer-events-none',
-                emphasis && 'px-4 py-2 text-sm',
+                emphasis && 'px-6 py-2.5 text-[14px]',
               )}
             >
               Create focus area
@@ -752,12 +749,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs',
-              'text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 transition-colors',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
-            <IconX size={14} />
+            <IconX size={13} />
             Dismiss
           </button>
         </>

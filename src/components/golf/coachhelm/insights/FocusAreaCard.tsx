@@ -47,62 +47,56 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
   return (
     <GlassCard
       className={cn(
-        'group transition-all duration-200',
-        onClick && 'cursor-pointer hover:shadow-md hover:border-primary-200'
+        'group transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        onClick && 'cursor-pointer hover:-translate-y-[1px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_18px_36px_rgba(58,50,40,0.06)]'
       )}
       padding="md"
       onClick={onClick}
     >
-      <div className="flex items-start gap-3">
-        {/* Priority Badge */}
+      <div className="flex items-start gap-4">
         <div
           className={cn(
-            'w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0',
-            focusArea.priority === 1 && 'bg-primary-100 text-primary-700',
-            focusArea.priority === 2 && 'bg-primary-50 text-primary-600',
-            focusArea.priority === 3 && 'bg-warm-100 text-warm-600',
-            focusArea.priority === 4 && 'bg-warm-50 text-warm-500',
-            focusArea.priority === 5 && 'bg-warm-50 text-warm-400'
+            'w-8 h-8 rounded-2xl flex items-center justify-center text-[12.5px] font-medium tabular-nums flex-shrink-0',
+            focusArea.priority === 1 && 'bg-primary-100/80 text-primary-700',
+            focusArea.priority === 2 && 'bg-primary-50/80 text-primary-600',
+            focusArea.priority === 3 && 'bg-warm-100/70 text-warm-700',
+            focusArea.priority === 4 && 'bg-warm-50/65 text-warm-500',
+            focusArea.priority === 5 && 'bg-warm-50/60 text-warm-400'
           )}
         >
           {focusArea.priority}
         </div>
 
-        {/* Icon */}
-        <div className="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
-          <AreaIcon size={18} />
+        <div className="w-9 h-9 rounded-2xl bg-primary-50/65 text-primary-700 flex items-center justify-center flex-shrink-0">
+          <AreaIcon size={17} />
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-warm-900 text-sm mb-1">
+          <h4 className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] mb-1">
             {focusArea.title}
           </h4>
-          <p className="text-xs text-warm-600 leading-relaxed line-clamp-2">
+          <p className="text-[12.5px] text-warm-600 leading-relaxed line-clamp-2">
             {focusArea.description}
           </p>
 
-          {/* Target Improvement */}
           {focusArea.target_improvement && (
-            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-full ring-1 ring-primary-100">
-              <IconTarget size={12} className="text-primary-600" />
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50/65 text-primary-700 text-[11.5px] font-medium rounded-full">
+              <IconTarget size={11} className="text-primary-600" />
               {focusArea.target_improvement}
             </div>
           )}
 
-          {/* Drills Count */}
           {focusArea.specific_drills && focusArea.specific_drills.length > 0 && (
-            <p className="text-xs text-warm-400 mt-2">
+            <p className="text-[11.5px] text-warm-400 mt-2">
               {focusArea.specific_drills.length} recommended drill{focusArea.specific_drills.length !== 1 ? 's' : ''}
             </p>
           )}
         </div>
 
-        {/* Arrow (if clickable) */}
         {onClick && (
           <IconChevronRight
-            size={16}
-            className="text-warm-300 group-hover:text-primary-500 transition-colors flex-shrink-0"
+            size={15}
+            className="text-warm-300 group-hover:text-primary-500 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 mt-1"
           />
         )}
       </div>

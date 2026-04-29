@@ -105,15 +105,15 @@ export function RecruitingPageClient({
           The "Add prospect" CTA moves into the toolbar below. */}
 
       {loadError && (
-        <div className="px-4 py-3 rounded-2xl bg-rose-50 border border-rose-200 text-sm text-rose-700">
+        <div className="px-5 py-3 rounded-2xl bg-rose-50/70 ring-1 ring-rose-200/50 text-[13px] text-rose-700">
           Couldn&apos;t load your prospect list — {loadError}. Try refreshing.
         </div>
       )}
 
-      {/* Stat strip */}
+      {/* Funnel strip — sculptural plates, low chrome */}
       <section
         aria-label="Funnel snapshot"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4 mt-6"
       >
         {RECRUIT_STATUSES.map((s) => {
           const active = filter === s.value;
@@ -124,25 +124,24 @@ export function RecruitingPageClient({
               type="button"
               onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
               className={cn(
-                'group relative flex flex-col items-start gap-1 px-4 py-3.5 rounded-2xl',
-                'bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
-                'transition-all duration-200',
-                'hover:shadow-[0_6px_20px_rgba(16,24,40,0.07)] hover:-translate-y-[1px]',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
-                active && 'ring-2 ring-primary-500/40',
+                'group relative flex flex-col items-start gap-1.5 px-5 py-4 rounded-3xl surface-matte',
+                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
+                active && 'ring-1 ring-primary-500/35',
               )}
             >
               <span className={cn(
-                'text-[10px] font-semibold uppercase tracking-[0.1em]',
+                'inline-flex items-center text-[10px] font-medium uppercase tracking-[0.12em]',
                 s.softText,
               )}>
-                <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-1.5 align-middle', s.dot)} />
+                <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-2', s.dot)} />
                 {s.label}
               </span>
-              <span className="text-[28px] leading-none font-semibold text-warm-900 tabular-nums">
+              <span className="text-[34px] md:text-[40px] leading-none font-light text-warm-900 tabular-nums tracking-[-0.025em]">
                 <AnimatedNumber value={count} />
               </span>
-              <span className="text-[11px] text-warm-500">
+              <span className="text-[11.5px] text-warm-500">
                 {active ? 'Filtering' : s.description}
               </span>
             </button>
@@ -150,49 +149,37 @@ export function RecruitingPageClient({
         })}
       </section>
 
-      {/* Toolbar */}
-      <section className="mt-2 flex flex-col md:flex-row items-stretch md:items-center gap-3">
+      {/* Toolbar — borderless notebook search + soft pill controls */}
+      <section className="mt-7 flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+          <Search className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, hometown, email, or notes…"
-            className={cn(
-              'w-full pl-9 pr-3 py-2.5 rounded-xl',
-              'bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
-              'text-sm text-warm-900 placeholder:text-warm-400',
-              'focus:outline-none focus:ring-2 focus:ring-primary-100 focus:bg-white',
-              'transition-colors',
-            )}
+            className="w-full pl-7 input-notebook"
             aria-label="Search prospects"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => setFilter('all')}
             disabled={filter === 'all'}
             className={cn(
-              'px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
-              filter === 'all'
-                ? 'bg-warm-100 text-warm-500 cursor-default'
-                : 'bg-cream-100/82 text-warm-700 hover:bg-white border border-warm-200/55',
+              'pill-soft',
+              filter === 'all' && 'opacity-50 cursor-default'
             )}
           >
             All ({counts.all})
           </button>
           <div className="relative">
-            <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className={cn(
-                'pl-7 pr-7 py-2 rounded-xl bg-cream-100/82 backdrop-blur-xl border border-warm-200/55 shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
-                'text-xs font-semibold text-warm-700',
-                'focus:outline-none focus:ring-2 focus:ring-primary-100 transition-colors',
-              )}
+              className="pl-8 pr-8 py-2 rounded-full text-[12.5px] font-medium text-warm-700 bg-cream-100/80 ring-1 ring-warm-200/55 hover:ring-warm-300/70 focus:outline-none focus:ring-2 focus:ring-primary-300/45 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] appearance-none"
               aria-label="Sort prospects"
             >
               {SORT_OPTIONS.map((opt) => (
@@ -207,19 +194,19 @@ export function RecruitingPageClient({
               setFormOpen(true);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl',
-              'bg-primary-600 text-white text-xs font-semibold',
-              'hover:bg-primary-700 active:scale-[0.99] transition-all',
+              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+              'bg-primary-600/95 text-white',
+              'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
+              'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
             )}
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />
             Add prospect
           </button>
         </div>
       </section>
 
-      {/* Card grid */}
-      <section className="mt-5" aria-busy={isPending}>
+      <section className="mt-7" aria-busy={isPending}>
         {visible.length === 0 ? (
           <EmptyState
             isFiltered={recruits.length > 0}
@@ -229,7 +216,7 @@ export function RecruitingPageClient({
             }}
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
             {visible.map((r) => (
               <RecruitCard
                 key={r.id}
@@ -259,14 +246,14 @@ export function RecruitingPageClient({
 
 function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => void }) {
   return (
-    <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-warm-200/55 shadow-glass px-6 py-14 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center mx-auto mb-4 shadow-sm">
+    <div className="surface-matte rounded-3xl px-6 py-16 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-5">
         <GraduationCap className="w-7 h-7 text-primary-700" />
       </div>
-      <h3 className="text-2xl font-semibold text-warm-900 mb-1.5">
+      <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-2">
         {isFiltered ? 'No prospects match' : 'Start your prospect list'}
       </h3>
-      <p className="text-sm text-warm-500 max-w-sm mx-auto mb-5">
+      <p className="text-[13.5px] text-warm-500 max-w-md mx-auto mb-7 leading-relaxed">
         {isFiltered
           ? 'Try a different status, sort, or search term.'
           : 'Add high-school golfers you’re tracking. Notes, contact info, and status all live here.'}
@@ -275,9 +262,14 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
         <button
           type="button"
           onClick={onAdd}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 active:scale-[0.99] transition-all shadow-[0_4px_18px_rgba(22,163,74,0.28)]"
+          className={cn(
+            'group inline-flex items-center gap-2 px-6 py-3 rounded-full',
+            'bg-primary-600/95 text-white text-[14px] font-medium tracking-[-0.005em]',
+            'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
+            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
+          )}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 transition-transform duration-500 group-hover:rotate-90" />
           Add your first prospect
         </button>
       )}

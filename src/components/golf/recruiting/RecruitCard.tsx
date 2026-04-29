@@ -21,18 +21,11 @@ function formatLocation(hometown: string | null, state: string | null): string |
   return hometown || state || null;
 }
 
-const STATUS_RING: Record<Recruit['status'], string> = {
-  watched: 'ring-amber-200',
-  recruiting: 'ring-primary-200',
-  offered: 'ring-violet-200',
-  committed: 'ring-blue-200',
-};
-
-const AVATAR_GRAD: Record<Recruit['status'], string> = {
-  watched: 'from-amber-100 to-amber-200 text-amber-800',
-  recruiting: 'from-primary-100 to-primary-200 text-primary-800',
-  offered: 'from-violet-100 to-violet-200 text-violet-800',
-  committed: 'from-blue-100 to-blue-200 text-blue-800',
+const AVATAR_TONE: Record<Recruit['status'], string> = {
+  watched: 'bg-amber-50/80 text-amber-700',
+  recruiting: 'bg-primary-50/80 text-primary-700',
+  offered: 'bg-violet-50/80 text-violet-700',
+  committed: 'bg-blue-50/80 text-blue-700',
 };
 
 export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
@@ -45,46 +38,39 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative w-full text-left',
-        'bg-cream-100/82 backdrop-blur-xl rounded-2xl border border-warm-200/55',
-        'shadow-[0_2px_10px_rgba(16,24,40,0.04)]',
-        'transition-all duration-200',
-        'hover:bg-white hover:shadow-[0_8px_24px_rgba(16,24,40,0.08)] hover:-translate-y-[1px]',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+        'group relative w-full text-left rounded-3xl surface-matte',
+        'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
       )}
       aria-label={`Edit ${fullName}`}
     >
-      <div className="p-5 flex items-start gap-4">
-        {/* Avatar */}
+      <div className="p-6 md:p-7 flex items-start gap-4">
+        {/* Avatar — soft tone disc, no ring, no gradient */}
         <div
           className={cn(
-            'w-12 h-12 rounded-2xl flex-shrink-0',
-            'flex items-center justify-center',
-            'bg-gradient-to-br',
-            AVATAR_GRAD[recruit.status],
-            'ring-2',
-            STATUS_RING[recruit.status],
-            'font-bold text-base shadow-sm',
+            'w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center',
+            'font-medium text-[15px] tracking-[-0.005em]',
+            AVATAR_TONE[recruit.status],
           )}
         >
           {initials}
         </div>
 
-        {/* Body */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-lg md:text-xl font-semibold text-warm-900 truncate">
+              <h3 className="text-[18px] md:text-[20px] font-medium text-warm-900 tracking-[-0.012em] truncate">
                 {fullName || 'Unnamed prospect'}
               </h3>
-              <div className="flex items-center gap-2 mt-1 text-xs text-warm-500">
+              <div className="flex items-center gap-2 mt-1.5 text-[12px] text-warm-500">
                 {recruit.hs_class && (
                   <span className="inline-flex items-center gap-1 tabular-nums">
                     <GraduationCap className="w-3.5 h-3.5" />
                     Class of {recruit.hs_class}
                   </span>
                 )}
-                {recruit.hs_class && location && <span aria-hidden="true">·</span>}
+                {recruit.hs_class && location && <span aria-hidden>·</span>}
                 {location && (
                   <span className="inline-flex items-center gap-1 truncate">
                     <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
@@ -96,23 +82,22 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
             <RecruitStatusChip status={recruit.status} size="sm" />
           </div>
 
-          {/* Contact / notes preview */}
           {(recruit.email || recruit.phone || recruit.notes) && (
-            <div className="mt-3 pt-3 border-t border-warm-200/60 space-y-1.5">
+            <div className="mt-4 pt-4 border-t border-warm-200/35 space-y-2">
               {recruit.email && (
-                <p className="flex items-center gap-1.5 text-xs text-warm-600 truncate">
+                <p className="flex items-center gap-2 text-[12.5px] text-warm-600 truncate">
                   <Mail className="w-3.5 h-3.5 text-warm-400 flex-shrink-0" />
                   <span className="truncate">{recruit.email}</span>
                 </p>
               )}
               {recruit.phone && (
-                <p className="flex items-center gap-1.5 text-xs text-warm-600 tabular-nums">
+                <p className="flex items-center gap-2 text-[12.5px] text-warm-600 tabular-nums">
                   <Phone className="w-3.5 h-3.5 text-warm-400 flex-shrink-0" />
                   {recruit.phone}
                 </p>
               )}
               {recruit.notes && (
-                <p className="text-xs text-warm-500 line-clamp-2 leading-relaxed">
+                <p className="text-[12.5px] text-warm-500 line-clamp-2 leading-relaxed">
                   {recruit.notes}
                 </p>
               )}
@@ -120,10 +105,9 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
           )}
         </div>
 
-        {/* Subtle action affordance */}
         <span
-          aria-hidden="true"
-          className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity text-warm-400"
+          aria-hidden
+          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] text-warm-400"
         >
           <MoreHorizontal className="w-4 h-4" />
         </span>

@@ -47,26 +47,19 @@ export const RosterToolbar = memo(function RosterToolbar({
   const selectedSort = SORT_OPTIONS.find(o => o.value === sortField);
 
   return (
-    <div className="flex items-center justify-between gap-3 mb-4">
-      {/* Sort Controls */}
+    <div className="flex items-center justify-between gap-3 mb-5">
       <div className="relative">
         <button
           onClick={handleToggleMenu}
-          className={cn(
-            'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
-            'bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 text-warm-700',
-            'hover:bg-cream-50/92 hover:border-warm-300',
-            'transition-[color,background-color,transform] duration-150 active:scale-95',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-          )}
+          className="pill-soft"
           aria-label="Sort roster"
           aria-haspopup="menu"
           aria-expanded={showSortMenu}
         >
-          <IconFilter size={14} className="text-warm-400" />
+          <IconFilter size={13} className="text-warm-400" />
           <span>Sort: {selectedSort?.label}</span>
           <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
-          <IconChevronDown size={14} className={cn('text-warm-400 transition-transform', showSortMenu && 'rotate-180')} />
+          <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
         </button>
 
         {showSortMenu && (
@@ -74,13 +67,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
             <div
               role="menu"
-              className={cn(
-                'absolute left-0 top-full mt-1.5 z-40',
-                'bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/50',
-                'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',
-                'py-1.5 min-w-[200px]',
-                'origin-top-left animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180'
-              )}
+              className="absolute left-0 top-full mt-2 z-40 surface-stone rounded-2xl py-2 min-w-[220px] origin-top-left animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-300"
             >
               {SORT_OPTIONS.map((option) => (
                 <button
@@ -88,15 +75,15 @@ export const RosterToolbar = memo(function RosterToolbar({
                   role="menuitem"
                   onClick={() => handleSortChange(option.value)}
                   className={cn(
-                    'w-full text-left px-3 py-2.5 min-h-[44px] text-[15px] transition-colors flex items-center justify-between',
+                    'w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-300 flex items-center justify-between',
                     option.value === sortField
-                      ? 'text-primary-700 bg-primary-50/70 font-semibold'
-                      : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
+                      ? 'text-primary-700 bg-primary-50/55 font-medium'
+                      : 'text-warm-700 hover:bg-cream-50/70'
                   )}
                 >
                   <span>{option.label}</span>
                   {option.value === sortField && (
-                    <span className="text-primary-500 text-base">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+                    <span className="text-primary-500 text-[14px]">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
                   )}
                 </button>
               ))}
@@ -105,23 +92,16 @@ export const RosterToolbar = memo(function RosterToolbar({
         )}
       </div>
 
-      {/* Export Button */}
       {onExport && (
         <button
           onClick={() => {
             void triggerHaptic('light');
             onExport();
           }}
-          className={cn(
-            'flex items-center gap-2 h-11 px-3 rounded-xl text-sm font-medium',
-            'bg-cream-100/75 backdrop-blur-sm border border-warm-200/60 text-warm-700',
-            'hover:bg-cream-50/92 hover:border-warm-300',
-            'transition-[color,background-color,transform] duration-150 active:scale-95',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
-          )}
+          className="pill-soft"
           aria-label={`Export ${playerCount} players as CSV`}
         >
-          <IconDownload size={14} />
+          <IconDownload size={13} />
           <span className="hidden sm:inline">Export</span>
         </button>
       )}
