@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { Webhook } from 'svix';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import {
+  evaluateAutomationsForEvent,
+  type CrmAutomation,
+  type CrmAutomationEvent,
+  type CrmAutomationTrigger,
+} from '@/lib/crm/automations-engine';
 
 // Resend event types we track
 const TRACKED_EVENTS = new Set([
@@ -101,18 +107,26 @@ export async function POST(request: Request) {
       await logServerError(`[Resend Webhook] Failed to store event: ${error instanceof Error ? error.message : String(error)}`, { action: 'route.POST' });
     }
 
-    // ── Coach-level side effects based on event type ──
+    // ── Coach-level side effects ──
+    //
+    // Hardwired safety actions stay here (bounce/complaint MUST suppress
+    // future sends — too risky to defer to a configurable rule). Everything
+    // else (open/click → engaged, etc.) flows through crm_automations so the
+    // operator can edit/disable rules in Settings → Automations without a
+    // deploy. The unsubscribed event is also handled by the database trigger
+    // on email_events that writes to crm_email_suppressions.
     const coachId = contactLog?.coach_id;
 
     if (coachId) {
-      // Bounce/complaint: mark coach email as invalid so future sends skip them
+      // Hardwired: bounce/complaint marks the coach email as bad so future
+      // sends skip them. This is a deliverability invariant, not a tunable
+      // policy — keep it in code.
       if (event.type === 'email.bounced') {
         await adminClient
           .from('crm_coaches')
           .update({ email_status: 'bounced', updated_at: new Date().toISOString() })
           .eq('id', coachId);
       }
-
       if (event.type === 'email.complained') {
         await adminClient
           .from('crm_coaches')
@@ -120,23 +134,120 @@ export async function POST(request: Request) {
           .eq('id', coachId);
       }
 
-      // Opened: if coach is still "contacted", auto-advance to "engaged"
-      // (they opened our email — that's engagement signal)
-      if (event.type === 'email.opened') {
-        await adminClient
-          .from('crm_coaches')
-          .update({ status: 'engaged', updated_at: new Date().toISOString() })
-          .eq('id', coachId)
-          .eq('status', 'contacted');
-      }
+      // Configurable rules: load active automations matching this trigger
+      // event, evaluate against the coach + event metadata, execute the
+      // resulting actions. Seeded rules in 20260429T2_crm_automations.sql
+      // mirror the previous hardcoded open/click → 'engaged' behavior.
+      try {
+        const trigger = event.type as CrmAutomationTrigger;
+        const { data: rulesData } = await adminClient
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('crm_automations' as any)
+          .select('*')
+          .eq('trigger_event', trigger)
+          .eq('is_active', true);
 
-      // Clicked: also advance to engaged (stronger signal)
-      if (event.type === 'email.clicked') {
-        await adminClient
-          .from('crm_coaches')
-          .update({ status: 'engaged', updated_at: new Date().toISOString() })
-          .eq('id', coachId)
-          .eq('status', 'contacted');
+        if (rulesData && rulesData.length > 0) {
+          // Pull the coach snapshot so conditions like coach.status work.
+          const { data: coach } = await adminClient
+            .from('crm_coaches')
+            .select('id, status, email_status, priority, division, conference, tags')
+            .eq('id', coachId)
+            .maybeSingle();
+
+          const evalEvent: CrmAutomationEvent = {
+            trigger_event: trigger,
+            coach: coach ?? null,
+            metadata: {
+              email_id: event.data.email_id,
+              recipient_email: recipientEmail,
+              event_type: event.type,
+            },
+          };
+
+          const { actions } = evaluateAutomationsForEvent(
+            evalEvent,
+            rulesData as unknown as CrmAutomation[],
+          );
+
+          for (const action of actions) {
+            try {
+              if (action.kind === 'set_coach_status') {
+                const value = (action.params as { value?: string }).value;
+                if (value) {
+                  await adminClient
+                    .from('crm_coaches')
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .update({ status: value as any, updated_at: new Date().toISOString() })
+                    .eq('id', coachId);
+                }
+              } else if (action.kind === 'add_tag') {
+                const tag = (action.params as { tag?: string }).tag;
+                if (tag && coach) {
+                  // Append to tags[] array; dedupe in TS since SQL array_append
+                  // doesn't dedupe.
+                  const existing = Array.isArray(coach.tags) ? coach.tags : [];
+                  if (!existing.includes(tag)) {
+                    await adminClient
+                      .from('crm_coaches')
+                      .update({ tags: [...existing, tag], updated_at: new Date().toISOString() })
+                      .eq('id', coachId);
+                  }
+                }
+              } else if (action.kind === 'create_task') {
+                const params = action.params as {
+                  title?: string;
+                  due_in_hours?: number;
+                  priority?: string;
+                  kind?: string;
+                };
+                if (params.title) {
+                  const dueAt = params.due_in_hours
+                    ? new Date(Date.now() + params.due_in_hours * 3600_000).toISOString()
+                    : null;
+                  await adminClient
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .from('crm_tasks' as any)
+                    .insert({
+                      coach_id: coachId,
+                      title: params.title,
+                      due_at: dueAt,
+                      priority: params.priority ?? 'normal',
+                      kind: params.kind ?? 'follow_up',
+                      source: 'automation',
+                      // FK-required: use the rule's created_by as the task author.
+                      created_by: (rulesData[0] as unknown as { created_by: string }).created_by,
+                    });
+                }
+              } else if (action.kind === 'enroll_in_sequence') {
+                const sequenceId = (action.params as { sequence_id?: string }).sequence_id;
+                if (sequenceId) {
+                  await adminClient
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    .from('crm_sequence_enrollments' as any)
+                    .insert({
+                      sequence_id: sequenceId,
+                      coach_id: coachId,
+                      enrolled_by: (rulesData[0] as unknown as { created_by: string }).created_by,
+                      next_send_at: new Date().toISOString(),
+                    })
+                    .select()
+                    .maybeSingle();
+                }
+              }
+            } catch (actionErr) {
+              await logServerError(
+                `[Resend Webhook] Automation action ${action.kind} failed: ${actionErr instanceof Error ? actionErr.message : String(actionErr)}`,
+                { action: 'route.POST', metadata: { coachId, event: event.type, action } },
+              );
+            }
+          }
+        }
+      } catch (autoErr) {
+        await logServerError(
+          `[Resend Webhook] Automation evaluation failed: ${autoErr instanceof Error ? autoErr.message : String(autoErr)}`,
+          { action: 'route.POST', metadata: { coachId, event: event.type } },
+        );
       }
     }
   } catch (err) {

@@ -22,6 +22,7 @@ import {
   IconArrowLeft as ArrowLeft,
   IconChevronLeft as ChevronLeft,
   IconBuilding as Building2,
+  IconBolt,
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import {
@@ -50,6 +51,12 @@ import { QuickActionsPanel } from './components/QuickActionsPanel';
 import { ScheduleEventModal } from './components/ScheduleEventModal';
 import { EventDetailModal } from './components/EventDetailModal';
 import { SavedSegmentsRail } from './components/segments/SavedSegmentsRail';
+import { InboxView } from './components/replies/InboxView';
+import { SequencesList } from './components/sequences/SequencesList';
+import { SequenceBuilder } from './components/sequences/SequenceBuilder';
+import { InsightsDashboard } from './components/insights/InsightsDashboard';
+import { AutomationsList } from './components/automations/AutomationsList';
+import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAdminPanel';
 import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import type { CoachEngagement } from './types/foundations';
@@ -58,13 +65,17 @@ import type { CoachEngagement } from './types/foundations';
 // SIDEBAR TABS
 // ============================================================================
 const TABS = [
-  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '1', description: 'Pipeline overview & quick actions' },
-  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '2', description: 'All coaches in table view' },
-  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '3', description: 'Kanban sales pipeline' },
-  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '4', description: 'Grouped by conference' },
-  { id: 'email', label: 'Email', Icon: IconMail, shortcut: '5', description: 'Email tracking & analytics' },
-  { id: 'resend', label: 'Resend', Icon: IconActivity, shortcut: '6', description: 'Live email deliverability from Resend' },
-  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '7', description: 'Demo requests & inbound leads' },
+  { id: 'inbox', label: 'Inbox', Icon: IconMail, shortcut: '1', description: 'Replies + tasks due today' },
+  { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard, shortcut: '2', description: 'Pipeline overview & quick actions' },
+  { id: 'list', label: 'Coaches', Icon: ClipboardList, shortcut: '3', description: 'All coaches in table view' },
+  { id: 'pipeline', label: 'Pipeline', Icon: IconChartBar, shortcut: '4', description: 'Kanban sales pipeline' },
+  { id: 'sequences', label: 'Sequences', Icon: IconActivity, shortcut: '5', description: 'Drip campaigns & enrollments' },
+  { id: 'insights', label: 'Insights', Icon: IconChartBar, shortcut: '6', description: 'Deliverability + per-template performance' },
+  { id: 'conferences', label: 'Conferences', Icon: Building2, shortcut: '7', description: 'Grouped by conference' },
+  { id: 'email', label: 'Email', Icon: IconMail, shortcut: '8', description: 'Email tracking & analytics' },
+  { id: 'resend', label: 'Resend', Icon: IconActivity, shortcut: '9', description: 'Live email deliverability from Resend' },
+  { id: 'inbound', label: 'Inbound', Icon: IconMail, shortcut: '0', description: 'Demo requests & inbound leads' },
+  { id: 'settings', label: 'Settings', Icon: IconBolt, shortcut: 'S', description: 'Automations & suppressions' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -866,6 +877,24 @@ export default function CRMPage() {
 
           {/* ── Inbound Tab ── */}
           {activeTab === 'inbound' && <InboundLeadsView />}
+
+          {/* ── Inbox Tab (NEW — Phase 3 P3-A) ── */}
+          {activeTab === 'inbox' && <InboxView />}
+
+          {/* ── Sequences Tab (NEW — Phase 2) ── */}
+          {activeTab === 'sequences' && <SequencesTabWrapper />}
+
+          {/* ── Insights Tab (NEW — Phase 3 P3-B) ── */}
+          {activeTab === 'insights' && <InsightsDashboard />}
+
+          {/* ── Settings Tab (NEW — Phase 1.5 + Phase 4) ──
+              Two-section settings page: automations rules + suppression list. */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <AutomationsList />
+              <SuppressionsAdminPanel />
+            </div>
+          )}
         </div>
       </main>
 
@@ -946,6 +975,32 @@ export default function CRMPage() {
             setFollowupRecipients([]);
           }}
           onSuccess={() => { setSelectedIds(new Set()); refreshData(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// SequencesTabWrapper — local state holder for the Sequences tab. Mirrors the
+// layout of /golf/admin/crm/sequences/page.tsx (selectable list + inline
+// builder) without forcing a separate route. The dedicated /sequences route
+// stays as a deep-link target.
+// ============================================================================
+function SequencesTabWrapper() {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  return (
+    <div className="space-y-6">
+      <SequencesList
+        selectedId={selectedId}
+        onSelect={setSelectedId}
+        refreshKey={refreshKey}
+      />
+      {selectedId && (
+        <SequenceBuilder
+          sequenceId={selectedId}
+          onChange={() => setRefreshKey((k) => k + 1)}
         />
       )}
     </div>

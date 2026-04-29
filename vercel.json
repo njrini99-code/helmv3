@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/refresh-engagement",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/process-sequences",
+      "schedule": "*/10 * * * *"
     }
   ]
 }

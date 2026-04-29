@@ -27,6 +27,8 @@ import type { Coach, CoachStatus } from '../crm-config';
 import { STATUS_COLORS } from '../crm-config';
 import { ToastProvider, useToast } from './Toast';
 import { CoachTimeline } from './timeline/CoachTimeline';
+import { NotesPanel } from './notes/NotesPanel';
+import { TasksPanel } from './tasks/TasksPanel';
 
 // ============================================================================
 // TYPES
@@ -491,6 +493,24 @@ function CoachDetailPanelInner({
               </div>
             </div>
           )}
+        </div>
+
+        {/* ================================================================
+            3.5 STRUCTURED NOTES (crm_notes — Phase 1.5)
+            Lives between Quick Info and Outreach Timeline. NotesPanel is
+            self-contained: fetches via listCoachNotes, handles add/edit/
+            delete + pinning + kind selector internally.
+            ================================================================ */}
+        <div className="px-5 pt-3 border-t border-white/30">
+          <NotesPanel coachId={coach.id} />
+        </div>
+
+        {/* ================================================================
+            3.6 TASKS (crm_tasks — Phase 1.5)
+            Same surface treatment as Notes — self-contained panel.
+            ================================================================ */}
+        <div className="px-5 pt-3 border-t border-white/30">
+          <TasksPanel coachId={coach.id} />
         </div>
 
         {/* ================================================================
