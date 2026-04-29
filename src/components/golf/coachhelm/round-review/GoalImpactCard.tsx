@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { GoalImpact } from '@/lib/coachhelm/types';
+import { IconTarget } from '@/components/icons';
 
 interface GoalImpactCardProps {
   impacts: GoalImpact[];
@@ -16,7 +17,9 @@ export function GoalImpactCard({ impacts }: GoalImpactCardProps) {
       style={{ animation: 'fadeInUp 0.5s ease-out 0.1s both' }}
     >
       <h3 className="text-sm font-semibold text-warm-900 mb-3 flex items-center gap-2">
-        <span className="text-lg">🎯</span>
+        <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-primary-50 ring-1 ring-primary-100">
+          <IconTarget size={14} className="text-primary-600" />
+        </span>
         Goal Impact
       </h3>
 

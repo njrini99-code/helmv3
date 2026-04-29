@@ -84,8 +84,9 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
 
           {/* Target Improvement */}
           {focusArea.target_improvement && (
-            <div className="mt-2 inline-flex items-center gap-2 px-2 py-1 bg-primary-50 text-primary-700 text-xs font-medium rounded-full">
-              🎯 {focusArea.target_improvement}
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-full ring-1 ring-primary-100">
+              <IconTarget size={12} className="text-primary-600" />
+              {focusArea.target_improvement}
             </div>
           )}
 
