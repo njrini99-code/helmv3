@@ -10,9 +10,15 @@
  * - Expanding recurring events for display
  * - Managing event exclusions and academic exclusions
  *
- * NOTE: The golf_events table does NOT have recurrence_rule or parent_event_id columns.
- * Recurring events are implemented by creating individual event rows for each occurrence.
- * The recurrence logic lives in the client/lib layer for expansion, but storage is flat.
+ * SERIES MODEL: golf_events has `recurrence_rule` (text) and `parent_event_id`
+ * (uuid) columns. A series root has `recurrence_rule` populated and
+ * `parent_event_id = NULL`. Sibling occurrences have `parent_event_id =
+ * <root.id>` and `recurrence_rule = NULL`. The pre-existing
+ * idx_golf_events_parent_event_id partial index makes sibling lookups cheap.
+ *
+ * Legacy recurring events created before this columns existed had neither
+ * field set; series matching for those falls through to a title/team/type
+ * heuristic for backward compatibility.
  */
 
 import { createClient } from '@/lib/supabase/server';
@@ -183,16 +189,20 @@ export async function createRecurringEvent(
       return { success: false, error: 'No occurrences generated from recurrence rule' };
     }
 
-    // Create individual events for each occurrence
-    // golf_events schema: start_time (required), end_time (nullable), no start_date/end_date
+    // Create the series root first so we can stamp parent_event_id on the
+    // remaining occurrences. Two queries instead of one buys a clean,
+    // queryable series identity (`WHERE parent_event_id = root.id OR id =
+    // root.id`) that the edit + delete scope dialogs lean on.
     const teamId = input.teamId || coachTeamId;
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
-    const events = occurrenceDates.map(date => ({
+
+    const rootDate = occurrenceDates[0]!;
+    const rootRow = {
       title: input.title,
       description: input.description || null,
       event_type: input.eventType,
-      start_time: input.startTime ? `${date}T${input.startTime}${tz}` : `${date}T00:00:00${tz}`,
-      end_time: input.endTime ? `${date}T${input.endTime}${tz}` : null,
+      start_time: input.startTime ? `${rootDate}T${input.startTime}${tz}` : `${rootDate}T00:00:00${tz}`,
+      end_time: input.endTime ? `${rootDate}T${input.endTime}${tz}` : null,
       location: input.location || null,
       created_by: coach.id,
       team_id: teamId,
@@ -200,21 +210,57 @@ export async function createRecurringEvent(
       requires_rsvp: input.requiresRsvp || false,
       rsvp_deadline: input.rsvpDeadline || null,
       max_attendees: input.maxAttendees || null,
-    }));
+      recurrence_rule: input.recurrenceRule,
+      parent_event_id: null,
+    };
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: createdEvents, error: eventError } = await (supabase as any)
+    const { data: rootInsert, error: rootError } = await (supabase as any)
       .from('golf_events')
-      .insert(events)
-      .select('id');
+      .insert(rootRow)
+      .select('id')
+      .single();
 
-    if (eventError) {
-      await logServerError(`[createRecurringEvent Error]: ${eventError instanceof Error ? eventError.message : String(eventError)}`, { action: 'recurring_events.createRecurringEvent' });
+    if (rootError || !rootInsert?.id) {
+      await logServerError(`[createRecurringEvent Error]: ${rootError instanceof Error ? rootError.message : String(rootError)}`, { action: 'recurring_events.createRecurringEvent' });
       return { success: false, error: 'Failed to create recurring event. Please try again.' };
     }
 
+    const rootId = rootInsert.id as string;
+
+    if (occurrenceDates.length > 1) {
+      const childRows = occurrenceDates.slice(1).map((date) => ({
+        title: input.title,
+        description: input.description || null,
+        event_type: input.eventType,
+        start_time: input.startTime ? `${date}T${input.startTime}${tz}` : `${date}T00:00:00${tz}`,
+        end_time: input.endTime ? `${date}T${input.endTime}${tz}` : null,
+        location: input.location || null,
+        created_by: coach.id,
+        team_id: teamId,
+        status: 'confirmed',
+        requires_rsvp: input.requiresRsvp || false,
+        rsvp_deadline: input.rsvpDeadline || null,
+        max_attendees: input.maxAttendees || null,
+        recurrence_rule: null,
+        parent_event_id: rootId,
+      }));
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: childError } = await (supabase as any)
+        .from('golf_events')
+        .insert(childRows);
+
+      if (childError) {
+        // Roll back the root so we don't leave a half-built series.
+        await supabase.from('golf_events').delete().eq('id', rootId);
+        await logServerError(`[createRecurringEvent child Error]: ${childError instanceof Error ? childError.message : String(childError)}`, { action: 'recurring_events.createRecurringEvent' });
+        return { success: false, error: 'Failed to create recurring event. Please try again.' };
+      }
+    }
+
     revalidatePath('/golf/dashboard/calendar');
-    return { success: true, data: { eventId: createdEvents?.[0]?.id || '' } };
+    return { success: true, data: { eventId: rootId } };
   } catch (error) {
     await logServerError(`[createRecurringEvent Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'recurring_events.createRecurringEvent' });
     return formatSafeErrorResponse(error);
@@ -263,6 +309,12 @@ export async function editRecurringEvent(
       return { success: false, error: 'Not authorized' };
     }
 
+    // Resolve the series root id. Modern recurring rows have either
+    // recurrence_rule (root) or parent_event_id (child). Legacy rows have
+    // neither — those fall back to the title/team/type heuristic below.
+    const rootId: string | null =
+      targetEvent.parent_event_id ?? (targetEvent.recurrence_rule ? targetEvent.id : null);
+
     // Build update object from provided fields
     // golf_events uses start_time/end_time (ISO timestamps), no start_date/end_date
     const tz = input.timezoneOffset !== undefined ? formatTimezoneOffset(input.timezoneOffset) : '';
@@ -297,14 +349,22 @@ export async function editRecurringEvent(
       }
 
       case 'thisAndFuture': {
-        // Update this event and all future events with the same title/team
-        const { error: updateError } = await supabase
-          .from('golf_events')
-          .update(updates)
-          .eq('team_id', targetEvent.team_id)
-          .eq('title', targetEvent.title)
-          .eq('event_type', targetEvent.event_type)
-          .gte('start_time', input.originalStartDate);
+        let query = supabase.from('golf_events').update(updates);
+        if (rootId) {
+          // New series: walk by parent_event_id, including the root if its
+          // start_time is also future.
+          query = query
+            .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`)
+            .gte('start_time', input.originalStartDate);
+        } else {
+          // Legacy fallback for rows created before parent_event_id existed.
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .eq('title', targetEvent.title)
+            .eq('event_type', targetEvent.event_type)
+            .gte('start_time', input.originalStartDate);
+        }
+        const { error: updateError } = await query;
 
         if (updateError) {
           await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
@@ -314,13 +374,16 @@ export async function editRecurringEvent(
       }
 
       case 'all': {
-        // Update all events with the same title/team/type
-        const { error: updateError } = await supabase
-          .from('golf_events')
-          .update(updates)
-          .eq('team_id', targetEvent.team_id)
-          .eq('title', targetEvent.title)
-          .eq('event_type', targetEvent.event_type);
+        let query = supabase.from('golf_events').update(updates);
+        if (rootId) {
+          query = query.or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
+        } else {
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .eq('title', targetEvent.title)
+            .eq('event_type', targetEvent.event_type);
+        }
+        const { error: updateError } = await query;
 
         if (updateError) {
           await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
@@ -382,9 +445,11 @@ export async function deleteRecurringEvent(
       return { success: false, error: 'Not authorized' };
     }
 
+    const rootId: string | null =
+      targetEvent.parent_event_id ?? (targetEvent.recurrence_rule ? targetEvent.id : null);
+
     switch (scope) {
       case 'this': {
-        // Delete just this single event
         const { error: deleteError } = await supabase
           .from('golf_events')
           .delete()
@@ -398,14 +463,19 @@ export async function deleteRecurringEvent(
       }
 
       case 'thisAndFuture': {
-        // Delete this and all future events with same title/team/type
-        const { error: deleteError } = await supabase
-          .from('golf_events')
-          .delete()
-          .eq('team_id', targetEvent.team_id)
-          .eq('title', targetEvent.title)
-          .eq('event_type', targetEvent.event_type)
-          .gte('start_time', originalStartDate);
+        let query = supabase.from('golf_events').delete();
+        if (rootId) {
+          query = query
+            .or(`parent_event_id.eq.${rootId},id.eq.${rootId}`)
+            .gte('start_time', originalStartDate);
+        } else {
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .eq('title', targetEvent.title)
+            .eq('event_type', targetEvent.event_type)
+            .gte('start_time', originalStartDate);
+        }
+        const { error: deleteError } = await query;
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
@@ -415,13 +485,16 @@ export async function deleteRecurringEvent(
       }
 
       case 'all': {
-        // Delete all events with same title/team/type
-        const { error: deleteError } = await supabase
-          .from('golf_events')
-          .delete()
-          .eq('team_id', targetEvent.team_id)
-          .eq('title', targetEvent.title)
-          .eq('event_type', targetEvent.event_type);
+        let query = supabase.from('golf_events').delete();
+        if (rootId) {
+          query = query.or(`parent_event_id.eq.${rootId},id.eq.${rootId}`);
+        } else {
+          query = query
+            .eq('team_id', targetEvent.team_id)
+            .eq('title', targetEvent.title)
+            .eq('event_type', targetEvent.event_type);
+        }
+        const { error: deleteError } = await query;
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });

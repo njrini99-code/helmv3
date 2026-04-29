@@ -26,6 +26,11 @@ export interface CalendarEvent {
   rsvp_declined_count?: number;
   rsvp_pending_count?: number;
   rsvp_total_count?: number;
+  // Recurring-series identity. Series root has recurrence_rule populated and
+  // parent_event_id null; sibling occurrences carry parent_event_id pointing
+  // back to the root.
+  parent_event_id?: string | null;
+  recurrence_rule?: string | null;
 }
 
 interface UseCalendarEventsOptions {

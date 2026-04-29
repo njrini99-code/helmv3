@@ -22,6 +22,7 @@ function getTodayDate(): string {
 }
 
 export type RecurrenceFrequency = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RecurringEditScope = 'this' | 'thisAndFuture' | 'all';
 
 export interface GolfEventFormData {
   title: string;
@@ -41,6 +42,12 @@ export interface GolfEventFormData {
   attendeeIds: string[];
   recurrence: RecurrenceFrequency;
   recurrenceCount: number;
+  /**
+   * For edits to events that are part of a recurring series, the scope picker
+   * sets this so the parent can route to editRecurringEvent. 'this' means the
+   * single occurrence (regular update path).
+   */
+  editScope?: RecurringEditScope;
 }
 
 interface TeamPlayer {
@@ -116,7 +123,7 @@ interface EventDetailModalProps {
   isCreating: boolean;
   isCoach: boolean;
   onSave: (data: GolfEventFormData) => Promise<void>;
-  onDelete?: () => Promise<void>;
+  onDelete?: (scope?: RecurringEditScope) => Promise<void>;
   isSaving: boolean;
   teamPlayers?: TeamPlayer[]; // Available for RSVP invitations
   currentUserId?: string; // Current user's player/coach ID to exclude from attendee list
@@ -401,12 +408,41 @@ export function EventDetailModal({
     return () => clearTimeout(debounce);
   }, [formData.attendeeIds, formData.startDate, formData.startTime, formData.endTime, formData.endDate, formData.allDay]);
 
+  // Series detection: an event is part of a recurring series if it has a
+  // recurrence_rule (root) or a parent_event_id (child). Edit + delete then
+  // surface a scope picker so the change can apply to one occurrence,
+  // future occurrences, or the full series.
+  const isInSeries = !isCreating && Boolean(
+    event && (event.parent_event_id || event.recurrence_rule),
+  );
+  const [pendingScopeAction, setPendingScopeAction] = useState<null | 'edit' | 'delete'>(null);
+
+  const submitWithScope = async (scope: RecurringEditScope) => {
+    setError(null);
+    try {
+      if (pendingScopeAction === 'edit') {
+        await onSave({ ...formData, editScope: scope });
+      } else if (pendingScopeAction === 'delete' && onDelete) {
+        await onDelete(scope);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update');
+    } finally {
+      setPendingScopeAction(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (!formData.title.trim()) {
       setError('Event title is required');
+      return;
+    }
+
+    if (isInSeries) {
+      setPendingScopeAction('edit');
       return;
     }
 
@@ -420,6 +456,10 @@ export function EventDetailModal({
   const handleDelete = async () => {
     if (!onDelete) return;
     setError(null);
+    if (isInSeries) {
+      setPendingScopeAction('delete');
+      return;
+    }
     try {
       await onDelete();
     } catch (err) {
@@ -1036,6 +1076,101 @@ export function EventDetailModal({
           </div>
         </form>
       </m.div>
+
+      {pendingScopeAction && (
+        <SeriesScopeDialog
+          action={pendingScopeAction}
+          onCancel={() => setPendingScopeAction(null)}
+          onConfirm={submitWithScope}
+        />
+      )}
+    </div>
+  );
+}
+
+interface SeriesScopeDialogProps {
+  action: 'edit' | 'delete';
+  onCancel: () => void;
+  onConfirm: (scope: RecurringEditScope) => void;
+}
+
+function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogProps) {
+  const verb = action === 'edit' ? 'Update' : 'Delete';
+  const danger = action === 'delete';
+  const options: Array<{ value: RecurringEditScope; label: string; sub: string }> = [
+    {
+      value: 'this',
+      label: 'This event only',
+      sub: action === 'edit' ? 'Other occurrences keep their current details.' : 'Other occurrences stay on the calendar.',
+    },
+    {
+      value: 'thisAndFuture',
+      label: 'This and following events',
+      sub: action === 'edit' ? 'Past occurrences are left alone.' : 'Past occurrences are left alone.',
+    },
+    {
+      value: 'all',
+      label: 'All events in the series',
+      sub: action === 'edit' ? 'Every occurrence picks up the change.' : 'The whole series is removed.',
+    },
+  ];
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="series-scope-title"
+      className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl border border-white/40 shadow-glass overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
+          <h3
+            id="series-scope-title"
+            className="font-[family-name:var(--font-fraunces)] text-xl font-semibold text-warm-900"
+          >
+            {verb} recurring event
+          </h3>
+          <p className="text-sm text-warm-500 mt-0.5">
+            This event is part of a series. Choose how the change should apply.
+          </p>
+        </div>
+        <ul className="p-2">
+          {options.map((opt) => (
+            <li key={opt.value}>
+              <button
+                type="button"
+                onClick={() => onConfirm(opt.value)}
+                className={cn(
+                  'w-full text-left px-4 py-3 rounded-xl transition-colors',
+                  'hover:bg-warm-50 active:bg-warm-100',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
+                )}
+              >
+                <p className="text-sm font-semibold text-warm-900">{opt.label}</p>
+                <p className="text-xs text-warm-500 mt-0.5">{opt.sub}</p>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="px-4 py-3 border-t border-warm-200/60 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+        {danger && (
+          <p className="px-5 pb-4 text-[11px] text-rose-600/80">
+            Deletion is permanent — this can&apos;t be undone.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

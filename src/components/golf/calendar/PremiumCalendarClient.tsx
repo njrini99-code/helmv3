@@ -521,28 +521,53 @@ export function PremiumCalendarClient({
           }
         }
       } else if (selectedEvent) {
-        const result = await actionHandlers.updateEvent(selectedEvent.id, {
-          title: data.title,
-          eventType: data.eventType,
-          startDate: data.startDate,
-          // Always send endDate so the server preserves the date range.
-          // Default to startDate for single-day events (when end date field is empty).
-          endDate: data.endDate || data.startDate,
-          startTime: data.allDay ? undefined : (data.startTime || undefined),
-          endTime: data.allDay ? undefined : (data.endTime || undefined),
-          allDay: data.allDay,
-          location: data.location || undefined,
-          courseName: data.courseName || undefined,
-          description: data.description || undefined,
-          isMandatory: data.isMandatory,
-          requiresRsvp: data.requiresRsvp,
-          rsvpDeadline: data.rsvpDeadline || undefined,
-          maxAttendees: data.maxAttendees || undefined,
-          attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
-          timezoneOffset,
-        });
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to update event');
+        // Series-scoped edits route to editRecurringEvent so siblings are
+        // updated together. 'this' (or no scope) takes the regular update
+        // path so the action's existing logic for attendees / RSVP / etc.
+        // continues to apply.
+        if (data.editScope && data.editScope !== 'this') {
+          const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+          const result = await editRecurringEvent({
+            eventId: selectedEvent.id,
+            originalStartDate: selectedEvent.start_date,
+            scope: data.editScope,
+            timezoneOffset,
+            updates: {
+              title: data.title,
+              description: data.description || undefined,
+              startDate: data.startDate,
+              endDate: data.endDate || data.startDate,
+              startTime: data.allDay ? undefined : (data.startTime || undefined),
+              endTime: data.allDay ? undefined : (data.endTime || undefined),
+              location: data.location || undefined,
+            },
+          });
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to update recurring event');
+          }
+        } else {
+          const result = await actionHandlers.updateEvent(selectedEvent.id, {
+            title: data.title,
+            eventType: data.eventType,
+            startDate: data.startDate,
+            // Always send endDate so the server preserves the date range.
+            endDate: data.endDate || data.startDate,
+            startTime: data.allDay ? undefined : (data.startTime || undefined),
+            endTime: data.allDay ? undefined : (data.endTime || undefined),
+            allDay: data.allDay,
+            location: data.location || undefined,
+            courseName: data.courseName || undefined,
+            description: data.description || undefined,
+            isMandatory: data.isMandatory,
+            requiresRsvp: data.requiresRsvp,
+            rsvpDeadline: data.rsvpDeadline || undefined,
+            maxAttendees: data.maxAttendees || undefined,
+            attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+            timezoneOffset,
+          });
+          if (!result.success) {
+            throw new Error(result.error || 'Failed to update event');
+          }
         }
       }
       setIsEventModalOpen(false);
@@ -561,14 +586,28 @@ export function PremiumCalendarClient({
     }
   };
 
-  // Delete event
-  const handleDeleteEvent = async () => {
+  // Delete event. When the modal hands us a scope (this/future/all), the
+  // event is part of a recurring series and we route to deleteRecurringEvent
+  // so siblings get the same treatment.
+  const handleDeleteEvent = async (scope?: 'this' | 'thisAndFuture' | 'all') => {
     if (!selectedEvent) return;
     setIsSavingEvent(true);
     try {
-      const result = await actionHandlers.deleteEvent(selectedEvent.id);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to delete event');
+      if (scope && scope !== 'this') {
+        const { deleteRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+        const result = await deleteRecurringEvent(
+          selectedEvent.id,
+          selectedEvent.start_date,
+          scope,
+        );
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to delete recurring event');
+        }
+      } else {
+        const result = await actionHandlers.deleteEvent(selectedEvent.id);
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to delete event');
+        }
       }
       setIsEventModalOpen(false);
       setSelectedEvent(null);
