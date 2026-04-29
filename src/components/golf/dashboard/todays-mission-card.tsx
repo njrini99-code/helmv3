@@ -154,7 +154,7 @@ export function TodaysMissionCard({
             </span>
           </div>
           <h3
-            className="text-[26px] md:text-[28px] leading-[1.15] font-semibold text-warm-900 tracking-[-0.02em] mb-3"
+            className="text-[26px] md:text-[28px] leading-[1.1] font-medium text-warm-900 tracking-[-0.02em] mb-3"
             style={{ fontFamily: 'var(--font-fraunces), Georgia, serif' }}
           >
             Lock in your baseline.
@@ -207,7 +207,7 @@ export function TodaysMissionCard({
 
         {/* Hero line */}
         <h3
-          className="text-[26px] md:text-[30px] leading-[1.1] font-semibold text-warm-900 tracking-[-0.025em] mb-2"
+          className="text-[26px] md:text-[30px] leading-[1.05] font-medium text-warm-900 tracking-[-0.025em] mb-2"
           style={{ fontFamily: 'var(--font-fraunces), Georgia, serif' }}
         >
           {topArea.title}

@@ -555,7 +555,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           <div>
             <h2
               data-testid="hero-title"
-              className="text-[22px] md:text-[24px] leading-tight font-semibold text-warm-900 tracking-tight"
+              className="text-[22px] md:text-[24px] leading-tight font-medium text-warm-900 tracking-tight"
             >
               {title}
             </h2>

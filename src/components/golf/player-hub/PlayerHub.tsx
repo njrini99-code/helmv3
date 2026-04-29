@@ -290,7 +290,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
               {getTransportIcon(trip.transportation_type)}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-[22px] leading-tight font-semibold tracking-[-0.01em] text-warm-900">
+              <h2 className="text-[22px] leading-tight font-medium tracking-[-0.01em] text-warm-900">
                 {trip.event_name}
               </h2>
               <div className="flex items-center gap-1.5 text-warm-500 mt-1.5 text-sm">
@@ -665,7 +665,7 @@ function OverviewSection({
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-warm-100/80 ring-1 ring-warm-200/60 text-warm-600 flex-shrink-0">
             {icon}
           </span>
-          <h2 className="text-[20px] leading-tight font-semibold tracking-[-0.01em] text-warm-900 truncate">
+          <h2 className="text-[20px] leading-tight font-medium tracking-[-0.01em] text-warm-900 truncate">
             {title}
           </h2>
           <StatusPill tone="warm" size="xs" className="flex-shrink-0">
