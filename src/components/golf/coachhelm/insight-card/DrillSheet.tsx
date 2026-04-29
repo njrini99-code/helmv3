@@ -130,7 +130,7 @@ export function DrillSheet({
         <header className="space-y-2">
           <h2
             data-testid="drill-sheet-title"
-            className="font-[family-name:var(--font-fraunces)] text-[24px] md:text-[28px] leading-tight font-semibold text-warm-900"
+            className="text-[24px] md:text-[28px] leading-tight font-semibold text-warm-900"
           >
             {drill.title}
           </h2>

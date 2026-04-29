@@ -99,33 +99,35 @@
 
   /* Premium Glass Material System - Dashboard Glassmorphism */
   /* Glass Level 1: Subtle — for large surfaces, filter panels */
-  /* Cream-tinted glass — picks up the warm cream gradient underneath
-     instead of reading as cool white. Tints derived from cream-100
-     (#FDF9F3 → 253, 249, 243). Borders use warm-200 (#e7e5e4) so they
-     don't fight the warm hue, and shadows are tinted with warm-900
-     (28,25,23) instead of pure black. The result is the "soft cream
-     glass" Apple uses on light-mode surfaces. */
-  --glass-subtle-bg: rgba(253, 249, 243, 0.55);
-  --glass-subtle-border: rgba(231, 229, 228, 0.5);
-  --glass-subtle-blur: 14px;
+  /* California-modern matte surfaces — Apr 2026 brief pivot. Less blur,
+     no saturation bump (was 180-190%), softer borders. The look is
+     "linen and stone, not glass" — backdrop-filter is dialed back so
+     surfaces read as soft matte material rather than aggressive
+     glassmorphism. Tints derived from cream-100 (#F7F5F2 → 247, 245, 242)
+     so every surface picks up the new linen base. */
+  --glass-subtle-bg: rgba(247, 245, 242, 0.62);
+  --glass-subtle-border: rgba(207, 200, 184, 0.40);
+  --glass-subtle-blur: 12px;
 
   /* Glass Level 2: Standard — for cards, panels, metrics */
-  --glass-standard-bg: rgba(253, 249, 243, 0.72);
-  --glass-standard-border: rgba(231, 229, 228, 0.55);
-  --glass-standard-blur: 18px;
+  --glass-standard-bg: rgba(247, 245, 242, 0.78);
+  --glass-standard-border: rgba(207, 200, 184, 0.45);
+  --glass-standard-blur: 14px;
 
   /* Glass Level 3: Prominent — for navigation, overlays, modals */
-  --glass-prominent-bg: rgba(255, 254, 250, 0.86);
-  --glass-prominent-border: rgba(231, 229, 228, 0.65);
-  --glass-prominent-blur: 24px;
+  --glass-prominent-bg: rgba(251, 250, 247, 0.92);
+  --glass-prominent-border: rgba(207, 200, 184, 0.55);
+  --glass-prominent-blur: 18px;
 
   /* Premium shadows for glass surfaces */
-  /* Tinted shadows (warm-900 instead of pure black) — pure-black shadows
-     read cold on cream backgrounds. Each level pairs a soft ambient
-     blur with a tighter shadow for crisp edge definition. */
-  --glass-shadow-sm: 0 2px 8px rgba(28, 25, 23, 0.05), 0 1px 2px rgba(28, 25, 23, 0.03);
-  --glass-shadow-md: 0 6px 20px rgba(28, 25, 23, 0.07), 0 2px 4px rgba(28, 25, 23, 0.04);
-  --glass-shadow-lg: 0 12px 36px rgba(28, 25, 23, 0.10), 0 4px 10px rgba(28, 25, 23, 0.05);
+  /* Diffused natural-light shadows — California-modern brief: shadows
+     should feel "like sunlight, not drop shadow presets." Tightened
+     ambient blur, lower opacity, slightly cooler tint to mimic
+     architectural daylight rather than the iOS-style elevation recipe
+     that was here before. */
+  --glass-shadow-sm: 0 1px 3px rgba(58, 50, 40, 0.04), 0 6px 18px rgba(58, 50, 40, 0.04);
+  --glass-shadow-md: 0 1px 4px rgba(58, 50, 40, 0.05), 0 12px 28px rgba(58, 50, 40, 0.06);
+  --glass-shadow-lg: 0 2px 6px rgba(58, 50, 40, 0.06), 0 24px 48px rgba(58, 50, 40, 0.08);
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
@@ -603,47 +605,74 @@
     box-shadow: var(--glass-shadow-md);
   }
 
-  /* Glass Level 2.5: Premium — Apple light-mode surface treatment.
-     Cream-tinted background + saturation bump (vibrancy), warm-200
-     border, and a TWO-line inset highlight: a 1px white top stroke
-     that catches light like Apple's macOS toolbars, plus a tinted
-     warm shadow underneath. */
+  /* Glass Level 2.5: Premium — California-modern matte surface (Apr
+     2026 brief). Replaces the iOS-vibrancy treatment with a soft matte
+     panel: subdued blur, no saturation push, a single faint top-edge
+     highlight for "catching daylight." Borders use cream-400 so the
+     edge feels like sand inset, not a hairline rule. Hover lifts the
+     surface ~2px with a slightly stronger ambient shadow — the
+     "settling" motion the brief calls for. */
   .glass-premium {
-    background: rgba(253, 249, 243, 0.62);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(231, 229, 228, 0.55);
+    background: rgba(247, 245, 242, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(207, 200, 184, 0.45);
     box-shadow:
-      0 1px 2px rgba(28, 25, 23, 0.04),
-      0 8px 28px rgba(28, 25, 23, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    transition: background-color 0.2s ease-out, box-shadow 0.2s ease-out, transform 0.2s ease-out;
+      0 1px 2px rgba(58, 50, 40, 0.04),
+      0 12px 28px rgba(58, 50, 40, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    transition: background-color 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .glass-premium:hover {
-    background: rgba(253, 249, 243, 0.78);
+    background: rgba(247, 245, 242, 0.88);
     box-shadow:
-      0 2px 6px rgba(28, 25, 23, 0.06),
-      0 16px 40px rgba(28, 25, 23, 0.09),
-      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      0 2px 4px rgba(58, 50, 40, 0.05),
+      0 24px 44px rgba(58, 50, 40, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.65);
   }
 
-  /* Apple-style depth — adds a subtle inner highlight + tinted shadow
-     to any surface. Layer on top of glass-premium when you want a
-     surface that reads "elevated" (hero stat cards, KPI tiles, etc.).
-     Keeps the cream warmth — never reverts to cold white. */
-  .surface-apple {
+  /* surface-apple — DEPRECATED naming retained as a synonym for
+     surface-matte while we migrate callers. The brief explicitly
+     pivots away from "Apple light-mode" toward California-modern matte;
+     this class now resolves to the same matte recipe so existing usage
+     reads correct without per-file edits. */
+  .surface-apple,
+  .surface-matte {
     background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.55) 0%, rgba(253, 249, 243, 0.32) 100%),
-      rgba(253, 249, 243, 0.82);
-    backdrop-filter: blur(22px) saturate(190%);
-    -webkit-backdrop-filter: blur(22px) saturate(190%);
-    border: 1px solid rgba(231, 229, 228, 0.6);
+      linear-gradient(180deg, rgba(251, 250, 247, 0.45) 0%, rgba(247, 245, 242, 0.62) 100%),
+      rgba(247, 245, 242, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(207, 200, 184, 0.50);
     box-shadow:
-      0 1px 2px rgba(28, 25, 23, 0.04),
-      0 12px 36px rgba(28, 25, 23, 0.07),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8),
-      inset 0 -1px 0 rgba(231, 229, 228, 0.35);
+      0 1px 3px rgba(58, 50, 40, 0.04),
+      0 16px 32px rgba(58, 50, 40, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  }
+
+  /* surface-linen — softest California-modern surface. No backdrop
+     blur, just the linen-base fill + a hairline cream-300 ring. Use
+     for "rooms" — full-bleed sections that should feel architectural,
+     not card-like. */
+  .surface-linen {
+    background: #F7F5F2;
+    border: 1px solid rgba(207, 200, 184, 0.32);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.40);
+  }
+
+  /* surface-stone — slightly weightier matte, for hero panels that
+     need to feel like a sculpted block. Adds a faint sand-bottom
+     inset to suggest the stone is sitting on the page, not floating. */
+  .surface-stone {
+    background:
+      linear-gradient(180deg, rgba(251, 250, 247, 0.85) 0%, rgba(240, 235, 227, 0.92) 100%);
+    border: 1px solid rgba(207, 200, 184, 0.55);
+    box-shadow:
+      0 1px 2px rgba(58, 50, 40, 0.04),
+      0 18px 40px rgba(58, 50, 40, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(207, 200, 184, 0.35);
   }
 
   /* Glass Level 3: Prominent - Navigation, modals, overlays */

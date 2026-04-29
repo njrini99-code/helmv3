@@ -135,7 +135,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               </p>
               <h2
                 id="recruit-form-title"
-                className="font-[family-name:var(--font-fraunces)] text-[26px] leading-tight font-semibold text-warm-900"
+                className="text-[26px] leading-tight font-semibold text-warm-900"
               >
                 {isEditing
                   ? `${form.first_name} ${form.last_name ?? ''}`.trim() || 'Prospect'

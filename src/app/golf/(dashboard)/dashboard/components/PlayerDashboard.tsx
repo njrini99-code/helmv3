@@ -110,7 +110,7 @@ function JoinTeamBanner() {
                         <IconUsers size={20} className="text-primary-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="font-[family-name:var(--font-fraunces)] text-[18px] leading-tight font-semibold text-warm-900 mb-0.5">
+                        <h3 className="text-[18px] leading-tight font-semibold text-warm-900 mb-0.5">
                             Join your team
                         </h3>
                         <p className="text-warm-500 text-[13px] leading-relaxed">
@@ -250,7 +250,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         Day 1
                                     </span>
 
-                                    <h2 className="font-[family-name:var(--font-fraunces)] text-[32px] md:text-[44px] leading-[1.05] font-semibold tracking-[-0.02em] text-warm-900 mb-3">
+                                    <h2 className="text-[38px] md:text-[56px] leading-[1.02] font-light tracking-[-0.035em] text-warm-900 mb-5">
                                         Submit your first round.
                                     </h2>
                                     <p className="text-sm md:text-base text-warm-500 max-w-lg mx-auto mb-7 leading-relaxed">

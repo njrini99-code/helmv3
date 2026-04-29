@@ -538,7 +538,7 @@ export function PlayerInsightClient({
               <div className="bg-cream-50/88 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-glass overflow-hidden">
                 <div className="px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-[family-name:var(--font-fraunces)] text-[20px] leading-tight font-semibold text-warm-900">
+                    <h3 className="text-[20px] leading-tight font-semibold text-warm-900">
                       Active Patterns
                     </h3>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-semibold ring-1 ring-primary-100 tabular-nums">

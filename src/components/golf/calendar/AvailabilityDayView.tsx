@@ -121,7 +121,7 @@ export function AvailabilityDayView({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h3 className="font-[family-name:var(--font-fraunces)] text-[26px] leading-tight font-semibold text-warm-900">
+              <h3 className="text-[26px] leading-tight font-semibold text-warm-900">
                 {date.toLocaleDateString('en-US', { weekday: 'long' })}
               </h3>
               {isToday && (

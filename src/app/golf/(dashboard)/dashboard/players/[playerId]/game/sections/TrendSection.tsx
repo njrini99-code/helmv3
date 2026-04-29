@@ -63,7 +63,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
           </p>
           <h2
             data-testid="section-heading-trend"
-            className="font-[family-name:var(--font-fraunces)] text-xl md:text-2xl font-semibold text-warm-900 mt-0.5"
+            className="text-xl md:text-2xl font-semibold text-warm-900 mt-0.5"
           >
             Last {withData.length || 0} rounds
           </h2>

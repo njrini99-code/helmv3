@@ -62,13 +62,37 @@ const config: Config = {
           900: '#1c1917',
         },
 
-        // CREAM BACKGROUND (warm off-white scale)
+        // CREAM / LINEN BACKGROUND
+        // Updated per Apr 2026 California-modern brief: base shifts from
+        // pure off-white (#FFFEFA) toward a warmer "linen" #F7F5F2 — the
+        // California-modern off-white. The 50/100/200/300 scale stays so
+        // existing classnames continue to read warm but slightly more
+        // nuanced. Add cream-500 (the linen base) so we can target it
+        // explicitly for matte surfaces.
         cream: {
-          DEFAULT: '#FFFEFA',
-          50: '#FFFEFA',      // Lightest — same as DEFAULT, subtle bg tint
-          100: '#FDF9F3',     // Light cream — hover states, tab backgrounds
-          200: '#F5F0E8',     // Visible cream — table rows, message bubbles
-          300: '#EDE8DD',     // Warm divider tone
+          DEFAULT: '#F7F5F2',
+          50: '#FBFAF7',      // Lightest — for inset highlights
+          100: '#F7F5F2',     // California linen — primary page backdrop
+          200: '#F0EBE3',     // Tab backgrounds, soft separators
+          300: '#E5DFD3',     // Warm divider tone, table-row alternation
+          400: '#CFC8B8',     // Sand inset, subtle borders
+        },
+
+        // SAGE / OLIVE — the muted accent that replaces saturated brand
+        // green where the brief wants "muted sage or deep olive." Brand
+        // primary stays the kelly green for hard CTAs; sage is for
+        // hover-secondary, accent rails, and quiet status pills.
+        sage: {
+          50: '#F4F6F1',
+          100: '#E7ECDF',
+          200: '#D0D9C1',
+          300: '#B1BFA0',
+          400: '#94A586',
+          500: '#7D8F6E',
+          600: '#6F7E5B',     // Deep olive (the brushed-metal-adjacent accent)
+          700: '#5A6849',
+          800: '#48543C',
+          900: '#3A4530',
         },
 
         // SEMANTIC COLORS
@@ -278,7 +302,8 @@ const config: Config = {
         'gradient-dark': 'linear-gradient(to bottom, #0f172a, #020617)',
         'hero-glow': 'radial-gradient(ellipse at center, rgba(22, 163, 74, 0.15), transparent 70%)',
         // BATCH 5: Premium Dashboard Background
-        'cream-gradient': 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 35%, #F5F0E6 70%, #EDE8DD 100%)',
+        'cream-gradient': 'linear-gradient(180deg, #FBFAF7 0%, #F7F5F2 35%, #F0EBE3 70%, #E5DFD3 100%)',
+        'linen-gradient': 'linear-gradient(180deg, #FBFAF7 0%, #F7F5F2 100%)',
       },
       animation: {
         // ═══════════════════════════════════════════════════════════════

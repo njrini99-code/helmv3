@@ -285,7 +285,7 @@ function DocumentPickerDialog({
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <h3
             id="event-doc-picker-title"
-            className="font-[family-name:var(--font-fraunces)] text-xl font-semibold text-warm-900"
+            className="text-xl font-semibold text-warm-900"
           >
             Attach a document
           </h3>

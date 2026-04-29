@@ -1144,7 +1144,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <h3
             id="series-scope-title"
-            className="font-[family-name:var(--font-fraunces)] text-xl font-semibold text-warm-900"
+            className="text-xl font-semibold text-warm-900"
           >
             {verb} recurring event
           </h3>

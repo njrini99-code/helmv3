@@ -231,7 +231,7 @@ export function LargeTitleHeader({
                 so headers read as one product. */}
             <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
               <div className="min-w-0 flex-1">
-                <h1 className="font-[family-name:var(--font-fraunces)] text-[26px] leading-tight font-semibold tracking-[-0.015em] text-warm-900 truncate">
+                <h1 className="text-[28px] leading-[1.1] font-medium tracking-[-0.022em] text-warm-900 truncate">
                   {title}
                 </h1>
                 {subtitle && (
@@ -257,7 +257,7 @@ export function LargeTitleHeader({
       {/* ===== Large title — part of scrollable content (mobile only) =====
           Not sticky. Scrolls away naturally. Zero flicker. */}
       <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-2">
-        <h1 className="font-[family-name:var(--font-fraunces)] text-[32px] leading-[1.05] font-semibold tracking-[-0.02em] text-warm-900 truncate">
+        <h1 className="text-[34px] leading-[1.05] font-medium tracking-[-0.025em] text-warm-900 truncate">
           {title}
         </h1>
         {subtitle && (

@@ -53,7 +53,7 @@ export default async function PlayerGamePrintPage({
             Coach scouting report
           </p>
           <h1
-            className="font-[family-name:var(--font-fraunces)] text-3xl font-semibold text-warm-900 mt-1"
+            className="text-3xl font-semibold text-warm-900 mt-1"
             data-testid="print-player-name"
           >
             {fullName}
@@ -90,7 +90,7 @@ export default async function PlayerGamePrintPage({
                   <p className="text-[10px] uppercase tracking-[0.14em] text-warm-500 font-medium">
                     {String(idx + 1).padStart(2, '0')}
                   </p>
-                  <h2 className="font-[family-name:var(--font-fraunces)] text-lg font-semibold text-warm-900">
+                  <h2 className="text-lg font-semibold text-warm-900">
                     {section.category}
                   </h2>
                 </div>
@@ -176,7 +176,7 @@ export default async function PlayerGamePrintPage({
               <p className="text-[10px] uppercase tracking-[0.14em] text-warm-500 font-medium">
                 07
               </p>
-              <h2 className="font-[family-name:var(--font-fraunces)] text-lg font-semibold text-warm-900">
+              <h2 className="text-lg font-semibold text-warm-900">
                 Recent trend
               </h2>
             </div>

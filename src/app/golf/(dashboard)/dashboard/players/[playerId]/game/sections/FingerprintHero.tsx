@@ -85,7 +85,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
             </p>
             <h1
               data-testid="fingerprint-hero-name"
-              className="font-[family-name:var(--font-fraunces)] text-3xl md:text-4xl font-semibold text-warm-900 leading-tight mt-1"
+              className="text-3xl md:text-4xl font-semibold text-warm-900 leading-tight mt-1"
             >
               {fullName}
             </h1>
@@ -106,7 +106,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
               <div
                 data-testid="fingerprint-composite-rating"
                 className={cn(
-                  'font-[family-name:var(--font-fraunces)] leading-none tabular-nums font-semibold',
+                  'leading-none tabular-nums font-semibold',
                   'text-5xl md:text-6xl',
                   ratingColor(composite.rating),
                 )}
@@ -238,7 +238,7 @@ export function SectionBand({
             )}
             <h2
               data-testid={`section-heading-${section.key}`}
-              className="font-[family-name:var(--font-fraunces)] text-xl md:text-2xl font-semibold text-warm-900 mt-0.5"
+              className="text-xl md:text-2xl font-semibold text-warm-900 mt-0.5"
             >
               {section.category}
             </h2>
