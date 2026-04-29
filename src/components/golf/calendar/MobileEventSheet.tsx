@@ -35,6 +35,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
+import { EventDocumentsSection } from './EventDocumentsSection';
 import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 
@@ -610,6 +611,20 @@ export function MobileEventSheet({
                     />
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Document attachments — practice plans and other team files. */}
+          {!isCreating && event && (
+            <div className="px-5 pb-4">
+              <div className="bg-warm-50 rounded-2xl p-4">
+                <EventDocumentsSection
+                  eventId={event.id}
+                  teamId={event.team_id}
+                  isCoach={isCoach}
+                  compact
+                />
               </div>
             </div>
           )}

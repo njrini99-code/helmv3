@@ -11,6 +11,7 @@ import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 import { toast } from '@/components/ui/toast';
+import { EventDocumentsSection } from './EventDocumentsSection';
 import { m, useReducedMotion } from 'framer-motion';
 import { calendarSpring } from '@/lib/motion';
 
@@ -762,6 +763,17 @@ export function EventDetailModal({
               className="w-full bg-transparent border-none focus:ring-0 focus:outline-none text-sm text-warm-900 placeholder:text-warm-400 resize-none disabled:text-warm-500"
             />
           </div>
+
+          {/* Document attachments — surfaces practice plans / scouting reports
+              to attendees. Only renders for saved events; for new events the
+              picker would have nothing to attach to. */}
+          {!isCreating && event && (
+            <EventDocumentsSection
+              eventId={event.id}
+              teamId={event.team_id}
+              isCoach={isCoach}
+            />
+          )}
 
           {/* Attendees Section (coaches) */}
           {canEdit && (
