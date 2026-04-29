@@ -214,8 +214,8 @@ function WelcomeContent() {
             onClick={onSkip}
             aria-label="Skip welcome animation and continue to dashboard"
             className="absolute z-20 bottom-6 right-6 px-4 py-2 rounded-full text-sm font-medium
-                       bg-white/70 backdrop-blur-md border border-black/5
-                       text-stone-700 hover:text-stone-900 hover:bg-white/90
+                       bg-cream-100/75 backdrop-blur-md border border-black/5
+                       text-stone-700 hover:text-stone-900 hover:bg-cream-50/92
                        transition-colors duration-150
                        focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2"
             style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}

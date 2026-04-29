@@ -108,7 +108,7 @@ export function GolfJoinTeamClient({
           >
             <div className="auth-glass-card rounded-3xl overflow-hidden">
               {/* Header */}
-              <div className="bg-gradient-to-br from-primary-50/80 to-white/50 border-b border-white/30 p-6 sm:p-8 text-center">
+              <div className="bg-gradient-to-br from-primary-50/80 to-white/50 border-b border-warm-200/45 p-6 sm:p-8 text-center">
                 {team.organization?.logoUrl ? (
                   <Image
                     src={team.organization.logoUrl}
@@ -223,7 +223,7 @@ export function GolfJoinTeamClient({
                   <button
                     onClick={() => router.push('/golf/dashboard')}
                     disabled={success}
-                    className="w-full px-6 py-3 bg-white/60 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-white/80 active:bg-warm-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
