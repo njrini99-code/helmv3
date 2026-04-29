@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   Plus,
   Search,
@@ -139,7 +140,7 @@ export function RecruitingPageClient({
                 {s.label}
               </span>
               <span className="text-[28px] leading-none font-semibold text-warm-900 tabular-nums">
-                {count}
+                <AnimatedNumber value={count} />
               </span>
               <span className="text-[11px] text-warm-500">
                 {active ? 'Filtering' : s.description}
