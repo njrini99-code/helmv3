@@ -145,7 +145,7 @@ export function StatsIntelligenceStrip({
 
   if (loading) {
     return (
-      <div className="glass-premium rounded-2xl p-5 animate-pulse">
+      <div className="surface-matte rounded-3xl p-5 animate-pulse">
         <div className="flex items-center gap-3 mb-4">
           <div className="h-9 w-9 rounded-xl bg-warm-100" />
           <div className="h-4 w-48 bg-warm-100 rounded" />
@@ -161,7 +161,7 @@ export function StatsIntelligenceStrip({
 
   if (error) {
     return (
-      <div className="glass-premium rounded-2xl p-5 border border-red-100/60">
+      <div className="surface-matte rounded-3xl p-5 border border-red-100/60">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
             <IconSparkles size={18} className="text-red-500" />
@@ -177,7 +177,7 @@ export function StatsIntelligenceStrip({
 
   if (!hasRatings && !hasInsights) {
     return (
-      <div className="glass-premium rounded-2xl p-5">
+      <div className="surface-matte rounded-3xl p-5">
         <div className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
             <IconSparkles size={18} className="text-primary-600" />
@@ -196,7 +196,7 @@ export function StatsIntelligenceStrip({
   }
 
   return (
-    <div className="glass-premium rounded-2xl p-5 md:p-6 space-y-5">
+    <div className="surface-matte rounded-3xl p-5 md:p-6 space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3 min-w-0">

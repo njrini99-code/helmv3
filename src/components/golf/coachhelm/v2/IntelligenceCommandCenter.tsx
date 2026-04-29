@@ -1298,7 +1298,7 @@ export function IntelligenceCommandCenter({
       isPage ? 'space-y-6 p-6 md:p-8 max-w-6xl mx-auto' : 'space-y-2.5 p-3 md:p-4'
     )}>
       {/* Deep Analysis Header */}
-      <div className="glass-premium rounded-2xl p-5">
+      <div className="surface-matte rounded-3xl p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">

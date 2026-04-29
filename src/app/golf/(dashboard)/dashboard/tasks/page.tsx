@@ -138,7 +138,7 @@ export default function GolfTasksPage() {
             ))}
           </div>
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="glass-premium rounded-2xl p-4 space-y-3">
+            <div key={i} className="surface-matte rounded-3xl p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="h-4 w-48 skeleton-shimmer rounded" />
                 <div className="h-5 w-16 skeleton-shimmer rounded-full" />
@@ -274,7 +274,7 @@ export default function GolfTasksPage() {
                 className="sticky top-6"
               >
                 {/* Templates Section */}
-                <div className="glass-premium rounded-2xl overflow-clip">
+                <div className="surface-matte rounded-3xl overflow-clip">
                   <button
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
@@ -315,7 +315,7 @@ export default function GolfTasksPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
-                  className="mt-4 glass-premium rounded-2xl p-4"
+                  className="mt-4 surface-matte rounded-3xl p-4"
                 >
                   <h3 className="text-sm font-semibold text-warm-400 uppercase tracking-wider mb-3">
                     Quick Stats

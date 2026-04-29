@@ -19,7 +19,7 @@ export default function Loading() {
           {/* Left column skeleton */}
           <div className="lg:col-span-5 space-y-6">
             {/* Player header card */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="flex items-start gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-warm-100/60 skeleton-shimmer flex-shrink-0" />
                 <div className="flex-1 space-y-2">
@@ -32,7 +32,7 @@ export default function Loading() {
             </div>
 
             {/* Category breakdown */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-40 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -46,7 +46,7 @@ export default function Loading() {
             </div>
 
             {/* Trend summary */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-32 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="grid grid-cols-3 gap-3">
                 {[1, 2, 3].map((i) => (
@@ -59,7 +59,7 @@ export default function Loading() {
             </div>
 
             {/* Patterns */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-32 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="space-y-3">
                 {[1, 2].map((i) => (
@@ -79,7 +79,7 @@ export default function Loading() {
           {/* Right column skeleton */}
           <div className="lg:col-span-7 space-y-6">
             {/* Insights */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-24 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
@@ -96,7 +96,7 @@ export default function Loading() {
             </div>
 
             {/* Focus areas */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-28 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="space-y-3">
                 {[1, 2].map((i) => (
@@ -110,7 +110,7 @@ export default function Loading() {
             </div>
 
             {/* Rounds */}
-            <div className="glass-premium rounded-2xl p-6">
+            <div className="surface-matte rounded-3xl p-6">
               <div className="h-5 w-32 bg-warm-200/60 rounded skeleton-shimmer mb-4" />
               <div className="space-y-2">
                 {[1, 2, 3].map((i) => (

@@ -68,7 +68,7 @@ export function CategoryDrillDown({
 
   if (sortedPlayers.length === 0) {
     return (
-      <div className="glass-premium rounded-2xl p-6">
+      <div className="surface-matte rounded-3xl p-6">
         <p className="text-xs font-semibold uppercase tracking-wider text-warm-400 mb-3">
           Player Breakdown
         </p>
@@ -82,7 +82,7 @@ export function CategoryDrillDown({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
-      className="glass-premium rounded-2xl overflow-hidden"
+      className="surface-matte rounded-3xl overflow-hidden"
     >
       {/* Section title */}
       <div className="px-6 pt-5 pb-3">

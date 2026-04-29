@@ -383,7 +383,7 @@ export function PrescribedPracticePlanCard({
   );
 
   return (
-    <div className="glass-premium rounded-2xl p-6" data-testid="prescribed-practice-plan">
+    <div className="surface-matte rounded-3xl p-6" data-testid="prescribed-practice-plan">
       <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
         <div className="flex items-start gap-3 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">

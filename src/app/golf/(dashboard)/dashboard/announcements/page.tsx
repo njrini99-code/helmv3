@@ -116,7 +116,7 @@ export default async function GolfAnnouncementsPage() {
       {/* Content */}
       <AnimatedItem className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {announcements.length === 0 ? (
-          <div className="glass-premium rounded-2xl p-8 md:p-16 text-center">
+          <div className="surface-matte rounded-3xl p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>
@@ -136,7 +136,7 @@ export default async function GolfAnnouncementsPage() {
         ) : isCoach ? (
           <AnnouncementsCoachView announcements={announcements} />
         ) : !playerId ? (
-          <div className="glass-premium rounded-2xl p-8 md:p-16 text-center">
+          <div className="surface-matte rounded-3xl p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBell size={28} className="text-warm-400" />
             </div>

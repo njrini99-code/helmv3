@@ -5,7 +5,6 @@ import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { fadeUp, staggerContainer } from '@/lib/motion';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -186,9 +185,8 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
     <m.div
       variants={fadeUp}
       onClick={onExpand}
-      className="group relative glass-premium rounded-2xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
+      className="group relative surface-matte rounded-3xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
-      <ShineEffect />
       {/* Colored top accent based on trip proximity */}
       <div className={cn(
         'h-1',
@@ -305,8 +303,8 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
         <div className="p-6 space-y-5">
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-4 bg-warm-50 rounded-xl">
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Depart</p>
+            <div className="p-4 bg-cream-50/55 rounded-2xl">
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
               <p className="font-semibold text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
@@ -316,8 +314,8 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
               )}
             </div>
             {trip.return_date && (
-              <div className="p-4 bg-warm-50 rounded-xl">
-                <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Return</p>
+              <div className="p-4 bg-cream-50/55 rounded-2xl">
+                <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
                 <p className="font-semibold text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
@@ -342,7 +340,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Room Assignments */}
           {trip.room_assignments && (
             <div>
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Room Assignment</p>
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Room Assignment</p>
               <p className="text-sm text-warm-700">{trip.room_assignments}</p>
             </div>
           )}
@@ -350,13 +348,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Uniform & Gear */}
           {trip.uniform_requirements && (
             <div>
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Uniform</p>
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Uniform</p>
               <p className="text-sm text-warm-700">{trip.uniform_requirements}</p>
             </div>
           )}
           {trip.gear_list && (
             <div>
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Gear List</p>
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Gear List</p>
               <p className="text-sm text-warm-700">{trip.gear_list}</p>
             </div>
           )}
@@ -364,7 +362,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Flight */}
           {trip.flight_info && (
             <div>
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Flight Info</p>
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Flight Info</p>
               <p className="text-sm text-warm-700">{trip.flight_info}</p>
             </div>
           )}
@@ -372,7 +370,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Notes */}
           {trip.notes && (
             <div>
-              <p className="text-micro font-bold text-warm-400 uppercase tracking-widest mb-1.5">Notes</p>
+              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Notes</p>
               <p className="text-sm text-warm-700">{trip.notes}</p>
             </div>
           )}
@@ -425,12 +423,11 @@ const PlayerTaskCard = memo(function PlayerTaskCard({
     <m.div
       variants={fadeUp}
       className={cn(
-        'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
+        'relative surface-matte rounded-3xl overflow-clip transition-[transform,box-shadow] duration-300',
         isCompleted && 'opacity-60',
         !isCompleted && 'hover:shadow-lg hover:-translate-y-0.5',
       )}
     >
-      <ShineEffect />
       {/* Urgency accent */}
       {isOverdue && <div className="h-1 bg-red-500" />}
 
@@ -533,12 +530,11 @@ const EventRSVPCard = memo(function EventRSVPCard({
     <m.div
       variants={fadeUp}
       className={cn(
-        'relative glass-premium rounded-2xl overflow-clip transition-[transform,box-shadow] duration-300',
+        'relative surface-matte rounded-3xl overflow-clip transition-[transform,box-shadow] duration-300',
         !isPast && 'hover:shadow-lg hover:-translate-y-0.5',
         isPast && 'opacity-60',
       )}
     >
-      <ShineEffect />
       <div className="p-5">
         <div className="flex items-start gap-4">
           {/* Event type indicator */}
@@ -741,7 +737,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       />
 
       {/* Tab navigation */}
-      <div className="sticky top-[var(--golf-mobile-header-offset)] z-[9] border-b border-warm-100 bg-cream-100/82 backdrop-blur-sm md:top-[73px] md:backdrop-blur-xl">
+      <div className="sticky top-[var(--golf-mobile-header-offset)] z-[9] border-b border-warm-200/30 bg-cream-50/85 backdrop-blur-xl md:top-[73px]">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <GolfTabBar
             tabs={tabs.map((tab) => ({
@@ -776,22 +772,23 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               {/* Urgent alert */}
               {overdueTasks.length > 0 && (
                 <m.div
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-100"
+                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-red-50/65 ring-1 ring-red-200/40"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <IconClipboardList size={16} className="text-red-500" />
+                  <div className="w-9 h-9 rounded-2xl bg-red-100/80 flex items-center justify-center flex-shrink-0">
+                    <IconClipboardList size={16} className="text-red-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-red-800">
+                    <p className="text-[14px] font-medium tracking-[-0.005em] text-red-800">
                       {overdueTasks.length} overdue task{overdueTasks.length !== 1 ? 's' : ''}
                     </p>
-                    <p className="text-xs text-red-600">Please complete these as soon as possible</p>
+                    <p className="text-[12px] text-red-600">Please complete these as soon as possible</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('tasks')}
-                    className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
+                    className="text-[12px] font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </button>
@@ -801,22 +798,23 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               {/* New travel itinerary alert */}
               {badges.travel > 0 && (
                 <m.div
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-50 border border-blue-100"
+                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-blue-50/65 ring-1 ring-blue-200/40"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <IconAirplane size={16} className="text-blue-500" />
+                  <div className="w-9 h-9 rounded-2xl bg-blue-100/80 flex items-center justify-center flex-shrink-0">
+                    <IconAirplane size={16} className="text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-blue-800">
+                    <p className="text-[14px] font-medium tracking-[-0.005em] text-blue-800">
                       {badges.travel} new travel itinerar{badges.travel !== 1 ? 'ies' : 'y'} posted
                     </p>
-                    <p className="text-xs text-blue-600">Check your upcoming trip details</p>
+                    <p className="text-[12px] text-blue-600">Check your upcoming trip details</p>
                   </div>
                   <a
                     href="/golf/dashboard/travel"
-                    className="text-xs font-medium text-blue-700 hover:text-blue-800 px-2 py-1 rounded-md hover:bg-blue-100 transition-colors flex-shrink-0"
+                    className="text-[12px] font-medium text-blue-700 hover:text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </a>
@@ -935,7 +933,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   {/* Pending tasks */}
                   {pendingTasks.length > 0 && (
                     <div>
-                      <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
+                      <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         To Do ({pendingTasks.length})
                       </h2>
                       <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -954,7 +952,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   {/* Completed tasks */}
                   {completedTasks.length > 0 && (
                     <div>
-                      <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
+                      <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         Completed ({completedTasks.length})
                       </h2>
                       <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -994,7 +992,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     const upcoming = events.filter(e => now ? new Date(e.start_time) >= now : true);
                     return upcoming.length > 0 ? (
                       <div>
-                        <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
+                        <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Upcoming ({upcoming.length})
                         </h2>
                         <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -1016,7 +1014,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     const past = now ? events.filter(e => new Date(e.start_time) < now) : [];
                     return past.length > 0 ? (
                       <div>
-                        <h2 className="text-xs font-bold text-warm-400 uppercase tracking-widest mb-3">
+                        <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Past ({past.length})
                         </h2>
                         <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">

@@ -239,7 +239,7 @@ export default async function RoundsPage() {
           {roundStats && rounds.length >= 3 && (
             <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-2">
               {/* Total Rounds */}
-              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -247,13 +247,13 @@ export default async function RoundsPage() {
                       <IconGolf size={14} className="text-warm-500" />
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-warm-900 tabular-nums">{roundStats.totalRounds}</p>
+                  <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{roundStats.totalRounds}</p>
                   <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Rounds</p>
                 </div>
               </div>
 
               {/* Avg Score */}
-              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -261,13 +261,13 @@ export default async function RoundsPage() {
                       <IconFlag size={14} className="text-warm-500" />
                     </div>
                   </div>
-                  <p className="text-2xl font-bold text-warm-900 tabular-nums">{roundStats.avg.toFixed(1)}</p>
+                  <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{roundStats.avg.toFixed(1)}</p>
                   <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Avg Score</p>
                 </div>
               </div>
 
               {/* Best Round */}
-              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -276,7 +276,7 @@ export default async function RoundsPage() {
                     </div>
                   </div>
                   <p className={cn(
-                    'text-2xl font-bold tabular-nums',
+                    'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
                     roundStats.best < 72 ? 'text-primary-600' : 'text-warm-900'
                   )}>{roundStats.best}</p>
                   <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Best Round</p>
@@ -284,7 +284,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Avg to Par */}
-              <div className="relative glass-premium rounded-2xl overflow-clip p-3">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -299,7 +299,7 @@ export default async function RoundsPage() {
                     </div>
                   </div>
                   <p className={cn(
-                    'text-2xl font-bold tabular-nums',
+                    'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
                     roundStats.avgToPar !== null && roundStats.avgToPar < 0 ? 'text-primary-600' : 'text-warm-900'
                   )}>
                     {roundStats.avgToPar !== null
@@ -312,7 +312,7 @@ export default async function RoundsPage() {
               </div>
 
               {/* Under Par % + Trend */}
-              <div className="relative glass-premium rounded-2xl overflow-clip p-3 col-span-2 md:col-span-1">
+              <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5 col-span-2 md:col-span-1">
                 <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -329,7 +329,7 @@ export default async function RoundsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-2xl font-bold tabular-nums text-warm-900">
+                  <p className="text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em] text-warm-900">
                     {roundStats.underParPct}%
                   </p>
                   <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mt-0.5">Under Par</p>
@@ -340,13 +340,13 @@ export default async function RoundsPage() {
 
           {rounds.length === 0 && inProgressRounds.length === 0 ? (
             /* Empty State */
-            <div className="relative glass-premium rounded-2xl overflow-clip py-20 px-8 text-center">
+            <div className="relative surface-matte rounded-3xl overflow-clip py-20 px-8 text-center">
               <ShineEffect />
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
                   <IconGolf size={28} className="text-primary-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-warm-900 mb-2">No Rounds Yet</h3>
+                <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-2.5">No rounds yet</h3>
                 <p className="text-warm-500 mb-8 max-w-sm mx-auto leading-relaxed">
                   {userRole === 'coach'
                     ? "Your players haven't submitted any rounds yet. Rounds will appear here as they're recorded."

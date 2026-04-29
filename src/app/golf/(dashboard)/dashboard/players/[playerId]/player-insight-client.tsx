@@ -432,22 +432,22 @@ export function PlayerInsightClient({
             {/* ============================================================= */}
             <div className="lg:col-span-5 space-y-6">
               {/* Player Header Card */}
-              <div className="glass-premium rounded-2xl p-6">
-                <div className="flex items-start gap-4">
+              <div className="surface-matte rounded-3xl p-6 md:p-7">
+                <div className="flex items-start gap-5">
                   <div className="relative flex-shrink-0">
                     {player.avatar_url ? (
-                      <div className="w-14 h-14 rounded-2xl overflow-hidden ring-1 ring-warm-200 shadow-sm">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden">
                         <Image
                           src={player.avatar_url}
                           alt={playerName}
-                          width={56}
-                          height={56}
+                          width={64}
+                          height={64}
                           className="w-full h-full object-cover"
                         />
                       </div>
                     ) : (
-                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200">
-                        <span className="text-xl font-semibold text-warm-500">
+                      <div className="w-16 h-16 rounded-2xl bg-warm-100/65 flex items-center justify-center">
+                        <span className="text-[18px] font-medium text-warm-500 tracking-[-0.005em]">
                           {(player.first_name?.[0] ?? '')}{(player.last_name?.[0] ?? '')}
                         </span>
                       </div>
@@ -455,18 +455,18 @@ export function PlayerInsightClient({
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900 truncate">
+                    <h2 className="text-[22px] md:text-[28px] font-medium tracking-[-0.022em] text-warm-900 truncate">
                       {playerName}
                     </h2>
-                    <p className="text-sm text-warm-500 mt-0.5">
+                    <p className="text-[13px] text-warm-500 mt-1">
                       {player.graduation_year ? `Class ${player.graduation_year}` : 'No class year'}
                       {' · '}
                       {formatHandicap(player.handicap)} Handicap
                     </p>
-                    <div className="mt-2">
+                    <div className="mt-2.5">
                       <span
                         className={cn(
-                          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border',
+                          'inline-flex items-center px-3 py-0.5 rounded-full text-[11px] font-medium',
                           statusBadgeStyles(playerStatus),
                         )}
                       >
@@ -480,8 +480,8 @@ export function PlayerInsightClient({
               </div>
 
               {/* Category Breakdown Card */}
-              <div className="glass-premium rounded-2xl p-6">
-                <h3 className="text-base font-semibold text-warm-900 mb-4">Category Breakdown</h3>
+              <div className="surface-matte rounded-3xl p-6 md:p-7">
+                <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Category Breakdown</h3>
                 <div className="space-y-3">
                   <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
                   <CategoryBar label="Approach" value={categoryBreakdown.approach} />
@@ -492,22 +492,22 @@ export function PlayerInsightClient({
               </div>
 
               {/* Trend Summary Card */}
-              <div className="glass-premium rounded-2xl p-6">
-                <h3 className="text-base font-semibold text-warm-900 mb-4">Trend Summary</h3>
+              <div className="surface-matte rounded-3xl p-6 md:p-7">
+                <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Trend Summary</h3>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-warm-50/80 rounded-xl p-3 text-center">
+                  <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Recent Avg</p>
-                    <p className="text-lg font-bold text-warm-900 tabular-nums">
+                    <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">
                       {trendSummary.recentAvg !== 0 ? (trendSummary.recentAvg > 0 ? '+' : '') + trendSummary.recentAvg.toFixed(1) : '--'}
                     </p>
                   </div>
-                  <div className="bg-warm-50/80 rounded-xl p-3 text-center">
+                  <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Previous Avg</p>
-                    <p className="text-lg font-bold text-warm-900 tabular-nums">
+                    <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">
                       {trendSummary.previousAvg !== 0 ? (trendSummary.previousAvg > 0 ? '+' : '') + trendSummary.previousAvg.toFixed(1) : '--'}
                     </p>
                   </div>
-                  <div className="bg-warm-50/80 rounded-xl p-3 text-center">
+                  <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Streak</p>
                     <p className={cn(
                       'text-lg font-bold tabular-nums',
@@ -535,43 +535,43 @@ export function PlayerInsightClient({
               </div>
 
               {/* Active Patterns Card — premium */}
-              <div className="bg-cream-50/88 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-glass overflow-hidden">
-                <div className="px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
+              <div className="surface-matte rounded-3xl overflow-hidden">
+                <div className="px-6 md:px-7 pt-6 pb-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-[20px] leading-tight font-semibold text-warm-900">
+                    <h3 className="text-[17px] md:text-[20px] font-medium tracking-[-0.012em] text-warm-700">
                       Active Patterns
                     </h3>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-semibold ring-1 ring-primary-100 tabular-nums">
+                    <span className="text-[12px] font-medium text-warm-400 tabular-nums">
                       {patterns.length}
                     </span>
                   </div>
                 </div>
                 {patterns.length === 0 ? (
-                  <p className="text-sm text-warm-400 text-center py-8 px-6">No active patterns detected</p>
+                  <p className="text-[13px] text-warm-400 text-center pb-8 px-6">No active patterns detected</p>
                 ) : (
-                  <ul className="divide-y divide-warm-200/60">
+                  <ul className="divide-y divide-warm-200/30">
                     {patterns.map((pattern) => (
-                      <li key={pattern.id} className="px-6 py-4 hover:bg-warm-50/50 transition-colors">
+                      <li key={pattern.id} className="px-6 md:px-7 py-4 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                         <div className="flex items-start justify-between gap-3 mb-1.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', severityDotColor(pattern.severity))} aria-hidden="true" />
-                            <span className="text-sm font-semibold text-warm-900 truncate">
+                            <span className="text-[14px] font-medium tracking-[-0.005em] text-warm-900 truncate">
                               {pattern.name ?? 'Pattern'}
                             </span>
                           </div>
                           {pattern.stroke_impact !== null && (
                             <span className={cn(
-                              'text-xs font-semibold tabular-nums flex-shrink-0 px-1.5 py-0.5 rounded-md',
+                              'text-[11px] font-medium tabular-nums flex-shrink-0 px-2 py-0.5 rounded-full',
                               pattern.stroke_impact < 0
-                                ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-100'
-                                : 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100',
+                                ? 'bg-rose-50/65 text-rose-700'
+                                : 'bg-emerald-50/65 text-emerald-700',
                             )}>
                               {pattern.stroke_impact > 0 ? '+' : ''}{pattern.stroke_impact.toFixed(1)}/rd
                             </span>
                           )}
                         </div>
                         {pattern.description && (
-                          <p className="text-xs text-warm-500 line-clamp-2 leading-relaxed mb-2 pl-3.5">
+                          <p className="text-[12px] text-warm-500 line-clamp-2 leading-relaxed mb-2 pl-3.5">
                             {pattern.description}
                           </p>
                         )}
@@ -580,22 +580,22 @@ export function PlayerInsightClient({
                             <span className="capitalize">{pattern.lifecycle_state ?? 'detected'}</span>
                             {pattern.first_detected && (
                               <>
-                                <span aria-hidden="true">·</span>
+                                <span aria-hidden>·</span>
                                 <span>{formatRelativeDate(pattern.first_detected)}</span>
                               </>
                             )}
                           </div>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <Link
                               href={`/golf/dashboard/patterns?pattern=${pattern.id}`}
-                              className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                              className="text-[11px] font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
                             >
                               Details
                             </Link>
-                            <span className="text-warm-200" aria-hidden="true">·</span>
+                            <span className="text-warm-200" aria-hidden>·</span>
                             <Link
                               href={`/golf/dashboard/development?player=${player.id}`}
-                              className="text-[11px] font-semibold text-primary-700 hover:text-primary-800 transition-colors"
+                              className="text-[11px] font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
                             >
                               Focus
                             </Link>
@@ -613,10 +613,10 @@ export function PlayerInsightClient({
             {/* ============================================================= */}
             <div className="lg:col-span-7 space-y-6">
               {/* AI Insights — migrated to the unified primitive. */}
-              <div className="glass-premium rounded-2xl p-6" data-testid="player-insight-section">
+              <div className="surface-matte rounded-3xl p-6 md:p-7" data-testid="player-insight-section">
                 <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-base font-semibold text-warm-900">AI Insights</h3>
+                    <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">AI Insights</h3>
                     <span className="text-xs text-warm-400 font-medium">
                       {insights.length} insight{insights.length !== 1 ? 's' : ''}
                     </span>
@@ -711,9 +711,9 @@ export function PlayerInsightClient({
               />
 
               {/* Focus Areas Card */}
-              <div className="glass-premium rounded-2xl p-6">
+              <div className="surface-matte rounded-3xl p-6 md:p-7">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-semibold text-warm-900">Focus Areas</h3>
+                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">Focus Areas</h3>
                   <Link
                     href={`/golf/dashboard/development?player=${player.id}`}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
@@ -742,7 +742,7 @@ export function PlayerInsightClient({
                         ? Math.min(100, Math.round((fa.current_value / fa.target_value) * 100))
                         : 0;
                       return (
-                        <div key={fa.id} className="bg-warm-50/60 rounded-xl p-4 space-y-2">
+                        <div key={fa.id} className="bg-cream-50/55 rounded-2xl p-4 space-y-2">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               <IconTarget size={14} className="text-warm-400 flex-shrink-0" />
@@ -783,11 +783,11 @@ export function PlayerInsightClient({
 
               {/* Predictions Card */}
               {predictions.length > 0 && (
-                <div className="glass-premium rounded-2xl p-6">
-                  <h3 className="text-base font-semibold text-warm-900 mb-4">Predictions</h3>
+                <div className="surface-matte rounded-3xl p-6 md:p-7">
+                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Predictions</h3>
                   <div className="space-y-3">
                     {predictions.map((pred) => (
-                      <div key={pred.id} className="bg-warm-50/60 rounded-xl p-4 flex items-center justify-between gap-3">
+                      <div key={pred.id} className="bg-cream-50/55 rounded-2xl p-4 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-warm-900 truncate">{formatMetricLabel(pred.metric)}</p>
                           {pred.due_date && (
@@ -796,7 +796,7 @@ export function PlayerInsightClient({
                         </div>
                         <div className="text-right flex-shrink-0">
                           {pred.predicted_value !== null && (
-                            <p className="text-lg font-bold text-warm-900 tabular-nums">{pred.predicted_value.toFixed(1)}</p>
+                            <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">{pred.predicted_value.toFixed(1)}</p>
                           )}
                           {pred.confidence !== null && (
                             <p className="text-[11px] text-warm-400 tabular-nums">{Math.round(pred.confidence * 100)}% conf</p>
@@ -809,9 +809,9 @@ export function PlayerInsightClient({
               )}
 
               {/* Recent Rounds Card */}
-              <div className="glass-premium rounded-2xl p-6">
+              <div className="surface-matte rounded-3xl p-6 md:p-7">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-base font-semibold text-warm-900">Recent Rounds</h3>
+                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">Recent Rounds</h3>
                   <Link
                     href={`/golf/dashboard/stats?player=${player.id}`}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
@@ -846,7 +846,7 @@ export function PlayerInsightClient({
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-lg font-bold text-warm-900 tabular-nums">{round.total_score ?? '--'}</p>
+                            <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">{round.total_score ?? '--'}</p>
                             {diff !== null && (
                               <p className={cn(
                                 'text-xs font-medium tabular-nums',

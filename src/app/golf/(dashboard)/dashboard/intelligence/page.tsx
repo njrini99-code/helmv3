@@ -89,7 +89,7 @@ export default async function IntelligenceDashboardPage() {
             lastAnalyzed={result.data.lastAnalyzed}
           />
         ) : (
-          <div className="glass-premium rounded-2xl p-8 text-center">
+          <div className="surface-matte rounded-3xl p-8 text-center">
             <p className="text-warm-500">
               {result.error || 'Unable to load team intelligence. Make sure your team has players with round data.'}
             </p>

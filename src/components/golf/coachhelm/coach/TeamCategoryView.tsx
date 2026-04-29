@@ -84,7 +84,7 @@ export function TeamCategoryView({
 
   if (categories.length === 0) {
     return (
-      <div className="glass-premium rounded-2xl p-8 text-center space-y-2">
+      <div className="surface-matte rounded-3xl p-8 text-center space-y-2">
         <IconActivity size={32} className="mx-auto text-warm-300" />
         <p className="text-warm-900 font-medium">No category data yet</p>
         <p className="text-sm text-warm-500">

@@ -163,7 +163,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-clip glass-premium rounded-2xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
+    <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -215,7 +215,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group glass-premium rounded-2xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
+      className="w-full group surface-matte rounded-3xl p-4 hover:shadow-glass-md hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -256,7 +256,7 @@ function PlayerCard({
         {/* Stats block */}
         <div className="flex items-center gap-3 md:gap-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-warm-900 tabular-nums">
+            <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
               {scoringAvg?.toFixed(1) || '--'}
             </p>
             <p className="text-xs text-warm-500 uppercase tracking-wide">Avg</p>
@@ -991,7 +991,7 @@ export default function StatsClient({
 
           {/* Player Cards */}
           {filteredPlayers.length === 0 ? (
-            <div className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center">
+            <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
               <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-warm-400" />
@@ -1129,7 +1129,7 @@ export default function StatsClient({
       ) : statsError ? (
         /* Error state when server action fails */
         <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
-          <div className="relative glass-premium rounded-2xl border border-red-200/50 p-8 md:p-12 text-center">
+          <div className="relative surface-matte rounded-3xl border border-red-200/50 p-8 md:p-12 text-center">
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-red-300" />
             </div>
@@ -1152,7 +1152,7 @@ export default function StatsClient({
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="relative glass-premium rounded-2xl p-10 md:p-16 text-center overflow-clip"
+              className="relative surface-matte rounded-3xl p-10 md:p-16 text-center overflow-clip"
             >
               <ShineEffect />
               <m.div

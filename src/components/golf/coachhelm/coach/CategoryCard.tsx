@@ -64,7 +64,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
 
   if (!category) {
     return (
-      <div className="glass-premium rounded-2xl p-6">
+      <div className="surface-matte rounded-3xl p-6">
         <p className="text-warm-500 text-sm">No category data available.</p>
       </div>
     );
@@ -75,7 +75,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className="glass-premium rounded-2xl p-6 space-y-5"
+      className="surface-matte rounded-3xl p-6 space-y-5"
     >
       {/* Header: Team average + trend */}
       <div className="flex items-start justify-between gap-4">

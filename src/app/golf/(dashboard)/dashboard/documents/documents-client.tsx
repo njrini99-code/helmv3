@@ -766,7 +766,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         {/* Content */}
         {documents.length === 0 && currentFolder === null ? (
           <div
-            className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center"
+            className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -794,7 +794,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           </div>
         ) : filteredDocuments.length === 0 ? (
           <div
-            className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-12 text-center"
+            className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-12 text-center"
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
@@ -839,7 +839,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             {filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="group relative glass-premium rounded-2xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
+                className="group relative surface-matte rounded-3xl overflow-clip hover:shadow-md hover:bg-cream-100/82 transition-colors duration-200 cursor-pointer active:scale-[0.98]"
                 onClick={() => openPreview(doc)}
               >
                 {/* Color accent bar */}

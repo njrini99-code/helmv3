@@ -399,7 +399,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {itineraries.length === 0 ? (
-          <div className="relative glass-premium rounded-2xl overflow-clip p-8 md:p-16 text-center">
+          <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
             <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-warm-400" />
@@ -476,7 +476,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             {/* Selected Itinerary Details / Expenses */}
             <div className="lg:col-span-2">
               {selectedItinerary ? (
-                <div className="glass-premium rounded-2xl overflow-clip">
+                <div className="surface-matte rounded-3xl overflow-clip">
                   {/* Itinerary Header */}
                   <div className="p-6 border-b border-warm-200">
                     <div className="flex items-start justify-between mb-4">
@@ -704,7 +704,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                   </div>
                 </div>
               ) : (
-                <div className="glass-premium rounded-2xl p-8 md:p-12 text-center">
+                <div className="surface-matte rounded-3xl p-8 md:p-12 text-center">
                   <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                     <IconAirplane size={28} className="text-warm-400" />
                   </div>
