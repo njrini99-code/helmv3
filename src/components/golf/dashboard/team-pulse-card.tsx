@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconActivity } from '@/components/icons';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import type { TeamPulseData } from '@/app/golf/actions/dashboard-data';
 
 // ============================================================================
@@ -43,7 +44,7 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         </h3>
                     </div>
                     <span className="text-xs text-warm-400 tabular-nums">
-                        {roundsThisWeek} rounds this week
+                        <AnimatedNumber value={roundsThisWeek} /> rounds this week
                     </span>
                 </div>
 
@@ -80,19 +81,19 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                             <div className="flex items-center gap-1.5">
                                 <div className="w-2.5 h-2.5 rounded-full bg-primary-500" />
                                 <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums">{improving}</span> improving
+                                    <span className="font-bold tabular-nums"><AnimatedNumber value={improving} /></span> improving
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-2.5 h-2.5 rounded-full bg-warm-300" />
                                 <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums">{stable}</span> stable
+                                    <span className="font-bold tabular-nums"><AnimatedNumber value={stable} /></span> stable
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
                                 <span className="text-xs text-warm-600">
-                                    <span className="font-bold tabular-nums">{declining}</span> declining
+                                    <span className="font-bold tabular-nums"><AnimatedNumber value={declining} /></span> declining
                                 </span>
                             </div>
                         </div>
