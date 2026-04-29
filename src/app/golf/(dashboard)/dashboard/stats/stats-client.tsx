@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import {
@@ -107,7 +106,7 @@ function AvatarWithRing({
           <Image src={avatarUrl} alt="" fill className="object-cover" unoptimized />
         </div>
       ) : (
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200">
+        <div className="w-12 h-12 rounded-2xl bg-warm-100/65 flex items-center justify-center">
           <span className="text-lg font-semibold text-warm-500">{initials}</span>
         </div>
       )}
@@ -164,7 +163,6 @@ function KPICard({
 }) {
   return (
     <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:shadow-glass-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
-      <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-warm-500 font-medium">{label}</p>
@@ -992,7 +990,6 @@ export default function StatsClient({
           {/* Player Cards */}
           {filteredPlayers.length === 0 ? (
             <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
-              <ShineEffect />
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
                 <IconUser size={28} className="text-warm-400" />
               </div>
@@ -1154,7 +1151,6 @@ export default function StatsClient({
               transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
               className="relative surface-matte rounded-3xl p-10 md:p-16 text-center overflow-clip"
             >
-              <ShineEffect />
               <m.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}

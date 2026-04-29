@@ -154,7 +154,7 @@ function CompositeRatingCardImpl({
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-5xl font-bold tabular-nums leading-none', getRatingColor(displayComposite))}>
+            <span className={cn('text-[44px] md:text-[52px] font-light tabular-nums tracking-[-0.025em] leading-none', getRatingColor(displayComposite))}>
               {Math.round(displayComposite)}
             </span>
             <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-warm-400">

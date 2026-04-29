@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { Avatar } from '@/components/ui/avatar';
@@ -240,7 +239,6 @@ export default async function RoundsPage() {
             <div className="mb-6 grid grid-cols-2 md:grid-cols-5 gap-2">
               {/* Total Rounds */}
               <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
-                <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-6 h-6 rounded-md bg-warm-100 flex items-center justify-center">
@@ -254,7 +252,6 @@ export default async function RoundsPage() {
 
               {/* Avg Score */}
               <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
-                <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-6 h-6 rounded-md bg-warm-100 flex items-center justify-center">
@@ -268,7 +265,6 @@ export default async function RoundsPage() {
 
               {/* Best Round */}
               <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
-                <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-6 h-6 rounded-md bg-primary-50 flex items-center justify-center">
@@ -285,7 +281,6 @@ export default async function RoundsPage() {
 
               {/* Avg to Par */}
               <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5">
-                <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className={cn(
@@ -313,7 +308,6 @@ export default async function RoundsPage() {
 
               {/* Under Par % + Trend */}
               <div className="relative surface-matte rounded-3xl overflow-clip p-4 md:p-5 col-span-2 md:col-span-1">
-                <ShineEffect />
                 <div className="relative z-10">
                   <div className="flex items-center gap-2 mb-1.5">
                     {roundStats.trend && (
@@ -341,10 +335,9 @@ export default async function RoundsPage() {
           {rounds.length === 0 && inProgressRounds.length === 0 ? (
             /* Empty State */
             <div className="relative surface-matte rounded-3xl overflow-clip py-20 px-8 text-center">
-              <ShineEffect />
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
-                  <IconGolf size={28} className="text-primary-400" />
+                <div className="w-16 h-16 rounded-2xl bg-primary-50/65 flex items-center justify-center mx-auto mb-6">
+                  <IconGolf size={26} className="text-primary-700" />
                 </div>
                 <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-2.5">No rounds yet</h3>
                 <p className="text-warm-500 mb-8 max-w-sm mx-auto leading-relaxed">
@@ -466,7 +459,7 @@ export default async function RoundsPage() {
                                     ) : (
                                       <div className="flex items-baseline gap-2 mb-1.5">
                                         <p className={cn(
-                                          'text-3xl font-bold tabular-nums leading-none',
+                                          'text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em] leading-none',
                                           scoreToPar < 0 ? 'text-primary-600' : 'text-warm-800'
                                         )}>
                                           {round.total_score || '--'}

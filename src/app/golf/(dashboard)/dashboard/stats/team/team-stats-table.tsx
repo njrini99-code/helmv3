@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { Avatar } from '@/components/ui/avatar';
 import {
   IconChevronUp,
@@ -223,7 +222,6 @@ export function TeamStatsTable({
       </div>
 
     <div className="relative glass-standard rounded-2xl overflow-clip">
-      <ShineEffect />
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>

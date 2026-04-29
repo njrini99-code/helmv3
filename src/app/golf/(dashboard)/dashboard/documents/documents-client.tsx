@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconFolder, IconFolderPlus, IconDownload, IconTrash, IconUpload, IconX,
   IconSearch, IconEdit, IconClock, IconEye, IconLayers, IconPlus,
@@ -770,7 +769,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
-            <ShineEffect />
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
                 <IconFolder size={28} className="text-warm-400" />
@@ -798,7 +796,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             onDragOver={isCoach ? handleDragOver : undefined}
             onDrop={isCoach ? handleDrop : undefined}
           >
-            <ShineEffect />
             <div className="relative">
               {currentFolder && currentFolder !== '' && !searchQuery && !categoryFilter ? (
                 <>

@@ -90,7 +90,7 @@ function PlayerEffectivenessCardImpl({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            <span className="text-5xl font-bold tabular-nums leading-none text-primary-600">
+            <span className="text-[44px] md:text-[52px] font-light tabular-nums tracking-[-0.025em] leading-none text-primary-600">
               {strokesSavedDisplay}
             </span>
             <span className="mt-2 text-xs text-warm-500 text-center">

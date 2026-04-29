@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -260,7 +259,6 @@ export default function GolfSettingsPage() {
         {/* Profile Card */}
         <AnimatedItem>
           <div className="relative surface-matte rounded-3xl overflow-clip p-5">
-            <ShineEffect />
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
               <div className="flex-1 min-w-0">
@@ -283,7 +281,6 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Account</SectionHeader>
           <div className="surface-matte rounded-3xl overflow-clip relative">
-            <ShineEffect />
             <SettingsExpandableRow
               icon={<IconUser size={18} />}
               label="Personal Information"
@@ -321,7 +318,6 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Preferences</SectionHeader>
           <div className="surface-matte rounded-3xl overflow-clip relative">
-            <ShineEffect />
             <SettingsExpandableRow
               icon={<IconBell size={18} />}
               label="Notifications"
@@ -360,7 +356,6 @@ export default function GolfSettingsPage() {
           <AnimatedItem>
             <SectionHeader>Golf Settings</SectionHeader>
             <div className="surface-matte rounded-3xl overflow-clip relative">
-              <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
                 label="Scoring & Format"
@@ -380,7 +375,6 @@ export default function GolfSettingsPage() {
           <AnimatedItem>
             <SectionHeader>Golf Profile</SectionHeader>
             <div className="surface-matte rounded-3xl overflow-clip relative">
-              <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconSettings size={18} />}
                 label="Golf Details"
@@ -404,7 +398,6 @@ export default function GolfSettingsPage() {
           <AnimatedItem>
             <SectionHeader>AI Features</SectionHeader>
             <div className="surface-matte rounded-3xl overflow-clip p-4 relative">
-              <ShineEffect />
               <CoachHelmToggle coachId={profile.coachId} />
             </div>
           </AnimatedItem>
@@ -415,7 +408,6 @@ export default function GolfSettingsPage() {
           <SectionHeader>Team</SectionHeader>
           {profile.role === 'coach' && (
             <div className="surface-matte rounded-3xl overflow-clip relative">
-              <ShineEffect />
               <SettingsExpandableRow
                 icon={<IconUsers size={18} />}
                 label="Team Settings"
@@ -449,7 +441,6 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Legal</SectionHeader>
           <div className="surface-matte rounded-3xl overflow-clip relative">
-            <ShineEffect />
             <SettingsLinkRow
               icon={<IconShield size={18} />}
               label="Privacy Policy"
@@ -470,7 +461,6 @@ export default function GolfSettingsPage() {
         <AnimatedItem>
           <SectionHeader>Danger Zone</SectionHeader>
           <div className="surface-matte rounded-3xl overflow-clip p-5 relative">
-            <ShineEffect />
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <p className="font-medium text-warm-900">Delete account</p>
@@ -491,7 +481,6 @@ export default function GolfSettingsPage() {
             onClick={handleSignOut}
             className="relative w-full surface-matte rounded-3xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group" aria-label="Sign out of your account"
           >
-            <ShineEffect />
             <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center group-hover:bg-red-100 transition-colors">
               <IconLogout size={18} className="text-red-600" />
             </div>

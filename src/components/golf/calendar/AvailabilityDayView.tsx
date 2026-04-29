@@ -115,7 +115,7 @@ export function AvailabilityDayView({
   }
 
   return (
-    <div className="bg-cream-50/88 backdrop-blur-2xl rounded-2xl border border-warm-200/60 shadow-glass overflow-hidden">
+    <div className="surface-matte rounded-3xl overflow-hidden">
       {/* Premium header */}
       <header className="relative px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/20">
         <div className="flex flex-wrap items-end justify-between gap-4">

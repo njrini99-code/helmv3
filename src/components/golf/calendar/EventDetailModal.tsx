@@ -1138,7 +1138,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
     >
       <div
         ref={modalRef}
-        className="w-full max-w-md bg-cream-50/95 backdrop-blur-xl rounded-2xl border border-warm-200/55 shadow-glass overflow-hidden"
+        className="w-full max-w-md surface-stone rounded-3xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">

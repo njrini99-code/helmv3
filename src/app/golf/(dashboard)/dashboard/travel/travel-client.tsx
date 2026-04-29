@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
-import { ShineEffect } from '@/components/ui/shine-effect';
 
 import {
   IconAirplane,
@@ -400,7 +399,6 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {itineraries.length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
-            <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconAirplane size={28} className="text-warm-400" />
             </div>

@@ -112,7 +112,7 @@ export function OverviewStats({
                 className="w-20 h-20 rounded-2xl object-cover ring-1 ring-warm-200 shadow-lg"
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200 shadow-lg">
+              <div className="w-20 h-20 rounded-2xl bg-warm-100/65 flex items-center justify-center">
                 <span className="text-warm-500 font-bold text-2xl">
                   {playerName?.split(' ').map(n => n[0]).join('').toUpperCase() || '?'}
                 </span>

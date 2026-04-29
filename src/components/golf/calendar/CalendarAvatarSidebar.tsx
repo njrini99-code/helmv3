@@ -126,7 +126,7 @@ export function CalendarAvatarSidebar({
     .filter((m): m is TeamMember => m !== undefined);
 
   return (
-    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 bg-cream-50/92 backdrop-blur-xl border border-warm-200/55 rounded-2xl shadow-glass flex-shrink-0 relative overflow-visible z-20 min-h-0">
+    <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 surface-matte rounded-3xl flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
       <button
         onClick={() => setIsCollapsed(true)}

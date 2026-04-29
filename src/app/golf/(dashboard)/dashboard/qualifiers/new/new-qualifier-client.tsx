@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { IconFlag, IconCalendar, IconMapPin, IconUsers, IconCheck } from '@/components/icons';
 import { createGolfQualifier } from '@/app/golf/actions/golf';
@@ -95,7 +94,6 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
 
           {/* Basic Information */}
           <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
-            <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
                 <IconFlag size={20} className="text-primary-600" />
@@ -126,7 +124,6 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
 
           {/* Schedule */}
           <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
-            <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
                 <IconCalendar size={20} className="text-primary-600" />
@@ -168,7 +165,6 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
 
           {/* Location & Spots */}
           <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
-            <ShineEffect />
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
                 <IconMapPin size={20} className="text-primary-600" />
@@ -200,7 +196,6 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
 
           {/* Player Selection */}
           <section className="relative glass-standard rounded-2xl p-6 overflow-clip">
-            <ShineEffect />
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">

@@ -126,8 +126,8 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <p className="text-xs text-warm-500 uppercase tracking-wide mb-1">Estimated Score</p>
           <div className="flex items-center justify-center gap-3">
             <span className={cn(
-              'text-5xl font-bold tracking-tight',
-              isPositive ? 'text-primary-600' : isNeutral ? 'text-warm-700' : 'text-red-600'
+              'text-[44px] md:text-[52px] font-light tabular-nums tracking-[-0.025em]',
+              isPositive ? 'text-primary-700' : isNeutral ? 'text-warm-800' : 'text-red-600'
             )}>
               {formatScore(predictedValue)}
             </span>

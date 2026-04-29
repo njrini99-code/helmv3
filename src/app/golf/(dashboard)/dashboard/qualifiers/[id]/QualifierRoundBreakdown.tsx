@@ -1,6 +1,5 @@
 'use client';
 
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { IconChartBar } from '@/components/icons';
 
 interface RoundScore {
@@ -41,7 +40,6 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
 
   return (
     <div className="relative glass-standard rounded-2xl overflow-clip p-6">
-      <ShineEffect />
       <div className="flex items-center gap-2 mb-4">
         <IconChartBar size={20} className="text-warm-500" />
         <h2 className="text-lg font-semibold text-warm-900">Round-by-Round Scores</h2>

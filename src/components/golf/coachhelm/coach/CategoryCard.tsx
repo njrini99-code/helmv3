@@ -80,7 +80,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       {/* Header: Team average + trend */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-3xl font-bold tabular-nums text-warm-900">
+          <p className="text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em] text-warm-900">
             {category.teamAvgLabel}
           </p>
         </div>

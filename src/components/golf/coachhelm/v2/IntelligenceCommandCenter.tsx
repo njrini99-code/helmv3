@@ -249,7 +249,7 @@ const OverviewSummary = memo(function OverviewSummary({
               <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Patterns</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold tabular-nums text-warm-900">{patterns.length}</span>
+              <span className="text-[36px] md:text-[42px] font-light tabular-nums tracking-[-0.025em] text-warm-900">{patterns.length}</span>
             </div>
             <span className="text-sm text-warm-400">
               {highImpactPatterns} high-impact
@@ -263,7 +263,7 @@ const OverviewSummary = memo(function OverviewSummary({
               <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Insights</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold tabular-nums text-warm-900">{insights.length}</span>
+              <span className="text-[36px] md:text-[42px] font-light tabular-nums tracking-[-0.025em] text-warm-900">{insights.length}</span>
             </div>
             <span className="text-sm text-warm-400">total active</span>
           </div>

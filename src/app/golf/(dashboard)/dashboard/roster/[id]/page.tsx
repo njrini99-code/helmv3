@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
@@ -179,7 +178,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Profile Header Card - Compact */}
         <div className="relative glass-standard rounded-2xl overflow-clip mb-8">
-          <ShineEffect />
           <div className="relative p-6">
             <div className="flex flex-col sm:flex-row gap-5">
               {/* Avatar */}
@@ -294,7 +292,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
           {totalRounds === 0 ? (
             <div className="relative glass-standard rounded-2xl overflow-clip p-8 md:p-12 text-center">
-              <ShineEffect />
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
                   <IconFlag size={20} className="text-warm-400" />
@@ -316,7 +313,6 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                   }}
                 >
                   <div className="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
-                    <ShineEffect />
                   </div>
                   <div className="relative p-4">
                     <div className="flex items-start justify-between gap-3">

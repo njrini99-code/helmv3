@@ -2,7 +2,6 @@
 
 import { useState, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { Button } from '@/components/ui/button';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import Image from 'next/image';
@@ -895,7 +894,6 @@ export function DevelopmentPlansClient({
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
-            <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconUser size={24} className="text-warm-400" />
             </div>
@@ -906,7 +904,6 @@ export function DevelopmentPlansClient({
           </div>
         ) : filteredFocusAreas.length === 0 ? (
           <div className="relative glass-standard rounded-2xl overflow-clip p-16 text-center">
-            <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={24} className="text-primary-600" />
             </div>

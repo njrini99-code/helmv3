@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import {
   IconTarget,
@@ -154,7 +153,6 @@ export default async function MyDevelopmentPage() {
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {(focusAreas || []).length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
-            <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={28} className="text-warm-400" />
             </div>
@@ -193,7 +191,6 @@ export default async function MyDevelopmentPage() {
                         key={fa.id}
                         className="relative surface-matte rounded-3xl overflow-clip hover:shadow-md transition-shadow"
                       >
-                        <ShineEffect />
                         {/* Colored top accent */}
                         <div className={cn('h-1', areaConfig.bgColor)} />
                         <div className="p-6">
@@ -338,7 +335,6 @@ export default async function MyDevelopmentPage() {
                         key={fa.id}
                         className="relative bg-cream-100/60 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip"
                       >
-                        <ShineEffect />
                         <div className="p-5">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center flex-shrink-0">

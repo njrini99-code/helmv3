@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { redirect, notFound } from 'next/navigation';
@@ -181,7 +180,6 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         {/* Qualifier Header */}
         <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-clip p-6 mb-6">
-          <ShineEffect />
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-warm-900 mb-2 truncate">
@@ -252,7 +250,6 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         {/* Real-time Leaderboard */}
         <AnimatedItem>
         <div className="relative glass-standard rounded-2xl overflow-clip p-6 mb-6">
-          <ShineEffect />
           <div className="flex items-center gap-2 mb-4">
             <IconTrophy size={20} className="text-amber-500" />
             <h2 className="text-lg font-semibold text-warm-900">Leaderboard</h2>

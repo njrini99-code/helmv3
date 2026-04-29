@@ -123,7 +123,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
     >
       <div
         ref={modalRef}
-        className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col bg-cream-50/95 backdrop-blur-xl rounded-t-3xl sm:rounded-2xl border border-warm-200/55 shadow-glass overflow-hidden"
+        className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col surface-stone rounded-t-3xl sm:rounded-3xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Premium gradient header */}

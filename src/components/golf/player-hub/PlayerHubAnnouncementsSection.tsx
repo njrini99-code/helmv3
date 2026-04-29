@@ -6,7 +6,6 @@ import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { useToast } from '@/components/ui/toast';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
@@ -133,7 +132,6 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                   : 'hover:shadow-sm'
               )}
             >
-              <ShineEffect />
               {/* Urgency accent bar */}
               <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-xl', urg.dot)} />
 

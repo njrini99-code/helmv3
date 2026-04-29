@@ -1,7 +1,6 @@
 'use client';
 
 import { startTransition, useState, useEffect, useCallback, useRef } from 'react';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { useRouter, useSearchParams } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
@@ -1422,7 +1421,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="relative glass-standard rounded-2xl overflow-clip p-6 sm:p-8 text-center">
-            <ShineEffect />
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
               <IconFlag size={24} className="text-primary-500" />
             </div>
@@ -1466,7 +1464,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
           <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
-            <ShineEffect />
             <StepProgressBar />
             <h1 className="text-2xl font-semibold tracking-tight text-warm-900 mb-2">
               New Round
@@ -2159,7 +2156,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
         <div className="w-full max-w-2xl">
           <div className="relative glass-standard rounded-2xl overflow-clip p-5 sm:p-8">
-            <ShineEffect />
             <StepProgressBar />
             <HoleConfigurationForm
               courseName={setupData.courseName}

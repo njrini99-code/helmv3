@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
@@ -61,7 +60,6 @@ export function TaskCard({ task }: TaskCardProps) {
       layout
       className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
     >
-      <ShineEffect />
 
       <div className="p-5">
         {/* Header */}

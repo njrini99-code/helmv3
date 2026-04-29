@@ -394,7 +394,7 @@ export default async function GolfRosterPage() {
                           />
                         </div>
                       ) : (
-                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-gradient-to-br from-warm-100 to-warm-200 flex items-center justify-center ring-1 ring-warm-200">
+                        <div className="w-[72px] h-[72px] md:w-20 md:h-20 rounded-2xl bg-warm-100/65 flex items-center justify-center">
                           <span className="text-2xl font-semibold text-warm-500">
                             {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
                           </span>
@@ -457,7 +457,7 @@ export default async function GolfRosterPage() {
                     <div className="w-px h-12 bg-warm-200/80" />
                     <div className="text-center flex-1">
                       <p className={cn(
-                        'text-2xl md:text-3xl font-bold tabular-nums leading-none',
+                        'text-2xl md:text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em] leading-none',
                         player.handicap !== null && player.handicap <= 0 ? 'text-primary-600' : 'text-warm-900'
                       )}>
                         {formatHandicap(player.handicap)}

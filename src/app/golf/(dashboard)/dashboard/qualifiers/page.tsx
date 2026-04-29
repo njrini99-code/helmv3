@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { ShineEffect } from '@/components/ui/shine-effect';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
@@ -95,7 +94,6 @@ export default async function GolfQualifiersPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
         {qualifiers.length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
-            <ShineEffect />
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconFlag size={28} className="text-warm-400" />
             </div>
@@ -124,7 +122,6 @@ export default async function GolfQualifiersPage() {
                   }}
                 >
                   <div className="relative surface-matte rounded-3xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-200">
-                    <ShineEffect />
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">
