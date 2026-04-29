@@ -63,7 +63,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             onClick={() => setShowSortMenu(!showSortMenu)}
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-              'bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-600',
+              'bg-cream-100/75 backdrop-blur-sm border border-slate-200 text-slate-600',
               'hover:bg-white hover:border-slate-300',
               'transition-all duration-150 active:scale-95'
             )}
@@ -122,7 +122,7 @@ export const RosterToolbar = memo(function RosterToolbar({
         </div>
 
         {/* View Toggle - Desktop only */}
-        <div className="hidden lg:flex items-center bg-white/70 backdrop-blur-sm border border-slate-200 rounded-xl p-1">
+        <div className="hidden lg:flex items-center bg-cream-100/75 backdrop-blur-sm border border-slate-200 rounded-xl p-1">
           <button
             onClick={() => onViewModeChange('compact')}
             className={cn(
@@ -158,7 +158,7 @@ export const RosterToolbar = memo(function RosterToolbar({
           onClick={onExport}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-white/70 backdrop-blur-sm border border-slate-200 text-slate-600',
+            'bg-cream-100/75 backdrop-blur-sm border border-slate-200 text-slate-600',
             'hover:bg-white hover:border-slate-300',
             'transition-all duration-150 active:scale-95'
           )}

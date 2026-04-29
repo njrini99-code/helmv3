@@ -30,7 +30,7 @@ function VideoThumbnail({ featured, small }: { featured?: boolean; small?: boole
         "bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"
       )}>
         <div className={cn(
-          "w-6 h-6 rounded-full bg-white/90 flex items-center justify-center",
+          "w-6 h-6 rounded-full bg-cream-50/92 flex items-center justify-center",
           "shadow-lg"
         )}>
           <Play className="w-3 h-3 text-slate-700 ml-0.5" fill="currentColor" />

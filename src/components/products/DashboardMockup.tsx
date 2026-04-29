@@ -62,7 +62,7 @@ export function DashboardMockup() {
               {/* App Content */}
               <div className="absolute inset-0 pt-14 bg-gradient-to-b from-[#FAFAF9] to-[#F5F5F4]">
                 {/* App Header */}
-                <div className="px-4 py-3 bg-white/80 backdrop-blur-xl border-b border-slate-100">
+                <div className="px-4 py-3 bg-cream-100/82 backdrop-blur-xl border-b border-slate-100">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

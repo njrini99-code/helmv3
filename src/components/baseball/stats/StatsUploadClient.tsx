@@ -499,7 +499,7 @@ export function StatsUploadClient({
         {/* Step: Upload */}
         {step === 'upload' && (
           <div
-            className={`bg-white/70 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
+            className={`bg-cream-100/75 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
               isDragging
                 ? 'border-primary-500 bg-primary-50/50'
                 : 'border-slate-200'

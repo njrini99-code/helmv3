@@ -165,7 +165,7 @@ export function SeasonStatsTable({
           <select
             value={seasonYear}
             onChange={(e) => onYearChange?.(Number(e.target.value))}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white/70 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             {availableYears.map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -174,7 +174,7 @@ export function SeasonStatsTable({
 
           <button
             onClick={() => exportToCSV(stats, activeTab)}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5 bg-white/70 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 transition-colors"
           >
             <IconDownload size={14} />
             Export
@@ -184,13 +184,13 @@ export function SeasonStatsTable({
 
       {/* Stats table */}
       {sorted.length === 0 ? (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
           <p className="text-sm text-slate-400">
             No {activeTab} stats for {seasonYear}. Enter game box scores to populate stats.
           </p>
         </div>
       ) : (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -229,7 +229,7 @@ export function SeasonStatsTable({
                   const pos = s.player?.primary_position ?? '';
                   return (
                     <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-4 py-2.5 sticky left-0 bg-white/90">
+                      <td className="px-4 py-2.5 sticky left-0 bg-cream-50/92">
                         <Link
                           href={`/baseball/dashboard/players/${s.player_id}/stats`}
                           className="flex items-center gap-2 group"

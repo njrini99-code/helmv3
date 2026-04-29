@@ -125,7 +125,7 @@ function PlayerRosterCard({
   return (
     <button
       onClick={onClick}
-      className="w-full text-left bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4
+      className="w-full text-left bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4
                  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
     >
       <div className="flex items-start gap-3">
@@ -181,7 +181,7 @@ function PlayerRosterCard({
 
 function TeamStatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
-    <div className={`rounded-2xl p-4 ${accent ? 'bg-primary-600 text-white' : 'bg-white/70 backdrop-blur-xl border border-white/20 shadow-sm'}`}>
+    <div className={`rounded-2xl p-4 ${accent ? 'bg-primary-600 text-white' : 'bg-cream-100/75 backdrop-blur-xl border border-white/20 shadow-sm'}`}>
       <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-slate-400'}`}>{label}</p>
       <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-slate-900'}`}>{value}</p>
       {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-slate-400'}`}>{sub}</p>}
@@ -351,7 +351,7 @@ export function CommandCenterClient({
                 />
               )}
               <Link href="/baseball/dashboard/stats/upload">
-                <button className="flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm
+                <button className="flex items-center gap-2 px-4 py-2 bg-cream-100/75 backdrop-blur-sm
                                    border border-white/20 rounded-xl text-sm font-medium text-slate-700
                                    hover:bg-white hover:shadow-sm transition-[background-color,box-shadow]">
                   <IconUpload size={16} />
@@ -362,7 +362,7 @@ export function CommandCenterClient({
           </div>
 
           {/* ── Mini Week Calendar Strip ────────────────────────────────── */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4 mb-5">
+          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4 mb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <IconCalendar size={15} className="text-slate-400" />
@@ -413,7 +413,7 @@ export function CommandCenterClient({
           </div>
 
           {/* ── Tab Toggle ─────────────────────────────────────────────── */}
-          <div className="flex bg-white/70 backdrop-blur-sm border border-white/30 rounded-2xl p-1 gap-1 shadow-sm mb-6 w-fit">
+          <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-2xl p-1 gap-1 shadow-sm mb-6 w-fit">
             {([
               { id: 'roster' as const, label: 'Roster', icon: <IconUsers size={15} /> },
               { id: 'stats' as const, label: 'Stats', icon: <IconChartBar size={15} /> },
@@ -449,7 +449,7 @@ export function CommandCenterClient({
                     placeholder="Search players…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-white/80 border border-slate-200/80 rounded-xl
+                    className="w-full pl-9 pr-4 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl
                                text-sm text-slate-900 placeholder:text-slate-400
                                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                   />
@@ -459,7 +459,7 @@ export function CommandCenterClient({
                 <select
                   value={positionFilter}
                   onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
-                  className="px-3 py-2.5 bg-white/80 border border-slate-200/80 rounded-xl text-sm text-slate-700
+                  className="px-3 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl text-sm text-slate-700
                              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                 >
                   {positions.map((p) => (
@@ -471,7 +471,7 @@ export function CommandCenterClient({
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="px-3 py-2.5 bg-white/80 border border-slate-200/80 rounded-xl text-sm text-slate-700
+                  className="px-3 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl text-sm text-slate-700
                              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                 >
                   <option value="name">Sort: Name</option>
@@ -482,7 +482,7 @@ export function CommandCenterClient({
                 {/* Upload stats */}
                 <Link href="/baseball/dashboard/stats/upload" className="sm:ml-auto">
                   <button className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-500
-                                     bg-white/60 border border-slate-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
+                                     bg-cream-100/68 border border-slate-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
                     <IconUpload size={14} />
                     Upload Stats
                   </button>
@@ -491,7 +491,7 @@ export function CommandCenterClient({
 
               {/* Empty state */}
               {players.length === 0 ? (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-14 text-center">
+                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-14 text-center">
                   <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
                     <IconUsers size={24} className="text-slate-400" />
                   </div>
@@ -508,7 +508,7 @@ export function CommandCenterClient({
                   )}
                 </div>
               ) : filteredPlayers.length === 0 ? (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
+                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
                   <p className="text-slate-500">No players match your search.</p>
                   <button
                     onClick={() => { setSearchQuery(''); setPositionFilter('all'); }}
@@ -565,7 +565,7 @@ export function CommandCenterClient({
                       ? withData.reduce((s, p) => s + (isGame ? (p.aggregates?.game_avg ?? 0) : (p.aggregates?.practice_avg ?? 0)), 0) / withData.length
                       : null;
                     return (
-                      <div key={type} className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
+                      <div key={type} className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
                         <div className="flex items-center gap-2 mb-3">
                           <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-blue-400'}`} />
                           <span className="text-sm font-semibold text-slate-900">
@@ -591,7 +591,7 @@ export function CommandCenterClient({
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Player Performance</h3>
                   <div className="flex items-center gap-2 sm:ml-auto">
                     {/* Stat type filter */}
-                    <div className="flex bg-white/70 border border-slate-200/60 rounded-xl p-0.5 gap-0.5">
+                    <div className="flex bg-cream-100/75 border border-slate-200/60 rounded-xl p-0.5 gap-0.5">
                       {(['all', 'game', 'scrimmage'] as const).map((t) => (
                         <button
                           key={t}
@@ -610,7 +610,7 @@ export function CommandCenterClient({
                     <select
                       value={positionFilter}
                       onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
-                      className="px-2.5 py-1.5 bg-white/80 border border-slate-200/60 rounded-xl text-xs text-slate-700
+                      className="px-2.5 py-1.5 bg-cream-100/82 border border-slate-200/60 rounded-xl text-xs text-slate-700
                                  focus:outline-none focus:border-primary-400 transition-colors"
                     >
                       {positions.map((p) => (
@@ -621,11 +621,11 @@ export function CommandCenterClient({
                 </div>
 
                 {players.length === 0 ? (
-                  <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
+                  <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
                     <p className="text-slate-500 text-sm">No player data available yet.</p>
                   </div>
                 ) : (
-                  <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+                  <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>

@@ -11,7 +11,7 @@ export function ProgressTracker({ completed, total }: ProgressTrackerProps) {
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+    <div className="rounded-xl border border-slate-200 bg-cream-100/75 p-4">
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>Overall Progress</span>
         <span className="font-medium text-slate-900">{percent}%</span>

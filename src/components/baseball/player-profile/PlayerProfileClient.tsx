@@ -108,7 +108,7 @@ function formatShortDate(iso: string): string {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/30 rounded-2xl p-4 shadow-sm">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-sm">
       <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-1">{label}</p>
       <p className="text-2xl font-bold text-slate-900 tabular-nums leading-none">{value}</p>
       {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
@@ -157,7 +157,7 @@ function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
   if (!active || !payload?.length) return null;
   const data = payload[0];
   return (
-    <div className="bg-white/95 backdrop-blur-xl border border-slate-200/80 rounded-xl shadow-lg px-3 py-2.5 text-xs">
+    <div className="bg-cream-50/95 backdrop-blur-xl border border-slate-200/80 rounded-xl shadow-lg px-3 py-2.5 text-xs">
       <p className="font-medium text-slate-700 mb-1">{label}</p>
       <p className="text-slate-900 font-bold">{formatAvg(data?.value)}</p>
       <p className="text-slate-400 mt-0.5">
@@ -340,7 +340,7 @@ export function PlayerProfileClient({
             href="/baseball/dashboard/command-center"
             className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
           >
-            <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/80 border border-slate-200/80 shadow-sm group-hover:shadow transition-shadow">
+            <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-cream-100/82 border border-slate-200/80 shadow-sm group-hover:shadow transition-shadow">
               <IconArrowLeft size={16} />
             </span>
             <span className="text-sm font-medium hidden sm:inline">Back to Command Center</span>
@@ -350,7 +350,7 @@ export function PlayerProfileClient({
         </div>
 
         {/* ── Hero card ────────────────────────────────────────────────── */}
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-clip">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm mb-6 overflow-clip">
           {/* gradient accent bar */}
           <div className="h-1.5 w-full bg-gradient-to-r from-primary-500 via-primary-400 to-emerald-400" />
 
@@ -494,7 +494,7 @@ export function PlayerProfileClient({
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white/70 backdrop-blur-sm text-slate-600 hover:bg-white border border-white/20 hover:shadow-sm'
+                  : 'bg-cream-100/75 backdrop-blur-sm text-slate-600 hover:bg-white border border-white/20 hover:shadow-sm'
               }`}
             >
               {tab.icon}
@@ -513,7 +513,7 @@ export function PlayerProfileClient({
             <div className="lg:col-span-2 space-y-6">
 
               {/* Career stats grid */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Career Statistics</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
                   <StatCard label="Career AVG" value={formatAvg(aggregates?.career_avg)} />
@@ -539,7 +539,7 @@ export function PlayerProfileClient({
 
               {/* Trend chart */}
               {trendData.length > 0 && (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="font-semibold text-slate-900">Performance Trend</h3>
@@ -599,7 +599,7 @@ export function PlayerProfileClient({
 
               {/* Advanced metrics */}
               {(pressureIndex ?? aggregates?.trend_magnitude) && (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <h3 className="font-semibold text-slate-900 mb-4">Advanced Metrics</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {pressureIndex && (
@@ -656,7 +656,7 @@ export function PlayerProfileClient({
 
               {/* Recent videos preview */}
               {videos.length > 0 && (
-                <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+                <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-slate-900">Videos</h3>
                     <button
@@ -681,7 +681,7 @@ export function PlayerProfileClient({
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
-                          <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform]">
+                          <div className="w-9 h-9 rounded-full bg-cream-50/92 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform]">
                             <IconPlay size={16} className="text-slate-900 ml-0.5" />
                           </div>
                         </div>
@@ -696,7 +696,7 @@ export function PlayerProfileClient({
             <div className="space-y-6">
 
               {/* AI Insights */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-4">
                   <IconSparkles size={16} className="text-purple-500" />
                   AI Insights
@@ -715,7 +715,7 @@ export function PlayerProfileClient({
               </div>
 
               {/* Notes */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900 flex items-center gap-2">
                     <IconNote size={15} className="text-slate-400" />
@@ -730,7 +730,7 @@ export function PlayerProfileClient({
               </div>
 
               {/* Session breakdown */}
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <h3 className="font-semibold text-slate-900 mb-4">Sessions</h3>
                 <div className="space-y-3">
                   {[
@@ -789,7 +789,7 @@ export function PlayerProfileClient({
 
             {/* Filter toggle */}
             <div className="flex items-center gap-2">
-              <div className="flex bg-white/70 backdrop-blur-sm border border-white/30 rounded-xl p-1 gap-1 shadow-sm">
+              <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
                 {(['all', 'game', 'practice'] as const).map((f) => (
                   <button
                     key={f}
@@ -809,7 +809,7 @@ export function PlayerProfileClient({
 
             {/* Summary row */}
             {filteredStats.length > 0 && (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
                 <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">
                   Totals — {statFilter === 'all' ? 'All Sessions' : statFilter === 'game' ? 'Game Sessions' : 'Scrimmage Sessions'}
                 </p>
@@ -834,13 +834,13 @@ export function PlayerProfileClient({
 
             {/* Stats table */}
             {filteredStats.length === 0 ? (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
                 <IconActivity size={32} className="mx-auto text-slate-300 mb-3" />
                 <p className="text-slate-500 font-medium">No stats for this filter</p>
                 <p className="text-sm text-slate-400 mt-1">Try switching to "All" to see all sessions.</p>
               </div>
             ) : (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -910,7 +910,7 @@ export function PlayerProfileClient({
             {/* Sub-tabs */}
             {videoTabs.length > 1 && (
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                <div className="flex bg-white/70 backdrop-blur-sm border border-white/30 rounded-xl p-1 gap-1 shadow-sm">
+                <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
                   {videoTabs.map(({ key, label }) => (
                     <button
                       key={key}
@@ -944,7 +944,7 @@ export function PlayerProfileClient({
 
             {/* Video grid / empty state */}
             {videosByFilter.length === 0 ? (
-              <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
+              <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
                 <IconVideo size={36} className="mx-auto text-slate-300 mb-3" />
                 <p className="text-slate-500 font-medium">No videos uploaded yet</p>
                 <p className="text-sm text-slate-400 mt-1">
@@ -975,7 +975,7 @@ export function PlayerProfileClient({
 
                     {/* Hover overlay */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center
+                      <div className="w-12 h-12 rounded-full bg-cream-50/92 flex items-center justify-center
                                       opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform] duration-200">
                         <IconPlay size={20} className="text-slate-900 ml-0.5" />
                       </div>

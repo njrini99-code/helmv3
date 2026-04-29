@@ -154,7 +154,7 @@ export function GlassStatCard({ label, value, icon, suffix, trend }: GlassStatCa
           )}
         </div>
         {icon && (
-          <div className="p-2.5 bg-white/50 rounded-lg text-warm-600 group-hover:scale-105 transition-transform duration-200">
+          <div className="p-2.5 bg-cream-100/60 rounded-lg text-warm-600 group-hover:scale-105 transition-transform duration-200">
             {icon}
           </div>
         )}

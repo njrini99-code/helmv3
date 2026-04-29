@@ -294,7 +294,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                   {savedSearches.map((savedSearch) => (
                     <div
                       key={savedSearch.id}
-                      className="group flex items-start justify-between p-3 rounded-xl bg-white/50 
+                      className="group flex items-start justify-between p-3 rounded-xl bg-cream-100/60 
                                  border border-slate-200/50 hover:border-primary-200 hover:bg-primary-50/30
                                  transition-all duration-200 cursor-pointer"
                       onClick={() => handleLoadSearch(savedSearch.filters)}
@@ -355,7 +355,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                     className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200
                       ${currentFilters.gradYear === year
                         ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-white/50 text-slate-700 hover:bg-white/80 hover:shadow-sm border border-slate-200/50'
+                        : 'bg-cream-100/60 text-slate-700 hover:bg-cream-100/82 hover:shadow-sm border border-slate-200/50'
                       }`}
                   >
                     {year}
@@ -536,7 +536,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                     className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-200
                       ${currentFilters.teamType === type.value
                         ? 'bg-slate-900 text-white shadow-sm'
-                        : 'bg-white/50 text-slate-700 hover:bg-white/80 hover:shadow-sm border border-slate-200/50'
+                        : 'bg-cream-100/60 text-slate-700 hover:bg-cream-100/82 hover:shadow-sm border border-slate-200/50'
                       }`}
                   >
                     {type.label}

@@ -140,7 +140,7 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
 
   if (stats.playersWithData === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
         <h3 className="font-semibold text-slate-900 mb-2">Team Batting</h3>
         <p className="text-sm text-slate-500">
           No batting data available yet. Upload stats to see team performance.
@@ -150,7 +150,7 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-slate-900">Team Batting</h3>
         <span className="text-xs text-slate-500">
@@ -183,7 +183,7 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
 
 export function TeamBattingOverviewSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="h-5 w-28 bg-slate-200 rounded animate-pulse" />
         <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />

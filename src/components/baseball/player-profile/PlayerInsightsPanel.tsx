@@ -103,7 +103,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                 )}
 
                 {insight.data && typeof insight.data === 'object' && (
-                  <div className="bg-white/50 rounded-lg p-3 mb-3">
+                  <div className="bg-cream-100/60 rounded-lg p-3 mb-3">
                     <p className="text-xs font-medium text-slate-500 mb-2">Key Metrics</p>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(insight.data as Record<string, string | number>).slice(0, 4).map(([key, value]) => (
@@ -119,13 +119,13 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                 )}
 
                 {insight.recommended_action && (
-                  <div className="bg-white/50 rounded-lg p-3">
+                  <div className="bg-cream-100/60 rounded-lg p-3">
                     <p className="text-xs font-medium text-slate-500 mb-1">Recommended Action</p>
                     <p className="text-sm text-slate-700">{insight.recommended_action}</p>
                   </div>
                 )}
 
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/50">
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-warm-200/60">
                   <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors">
                     <IconCheck size={14} />
                     Mark Addressed

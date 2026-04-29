@@ -185,7 +185,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
       {activeTab === 'csv' && (
         <div className="space-y-5">
           {/* CSV type + template download */}
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
+          <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-800">Upload Stats CSV</h3>
@@ -259,7 +259,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                 ? 'Paste your batting CSV here or choose a file above...'
                 : 'Paste your pitching CSV here or choose a file above...'}
               rows={6}
-              className="w-full text-xs font-mono border border-slate-200 rounded-xl p-3 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y placeholder:text-slate-300"
+              className="w-full text-xs font-mono border border-slate-200 rounded-xl p-3 bg-cream-100/82 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y placeholder:text-slate-300"
             />
 
             {uploadError && (
@@ -289,7 +289,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
           {/* Results */}
           {(matched.length > 0 || unmatched.length > 0) && (
-            <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-800">Player Matching Results</h3>
                 {allMatched && (
@@ -376,7 +376,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
 
       {/* PDF upload tab */}
       {activeTab === 'pdf' && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center space-y-4">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto">
             <IconUpload size={24} className="text-slate-400" />
           </div>

@@ -31,8 +31,8 @@ export function CalendarMockup() {
 
   return (
     <div className={cn(
-      "bg-white/45 backdrop-blur-xl rounded-lg p-2",
-      "border border-white/30"
+      "bg-cream-100/55 backdrop-blur-xl rounded-lg p-2",
+      "border border-warm-200/45"
     )}>
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">

@@ -28,8 +28,8 @@ export function PipelineMockup() {
 
           {/* Cards */}
           <div className={cn(
-            "bg-white/45 backdrop-blur-xl rounded-b-lg p-1.5 space-y-1.5",
-            "border border-white/30 border-t-0 min-h-[80px]"
+            "bg-cream-100/55 backdrop-blur-xl rounded-b-lg p-1.5 space-y-1.5",
+            "border border-warm-200/45 border-t-0 min-h-[80px]"
           )}>
             {Array.from({ length: Math.min(stage.count, 3) }).map((_, ci) => (
               <PipelineCard

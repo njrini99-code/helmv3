@@ -450,7 +450,7 @@ export function GameVsPracticeComparison({
   // Empty state
   if (comparisonData.length === 0) {
     return (
-      <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
+      <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Game vs Practice Comparison</h3>
           {onClose && (
@@ -476,7 +476,7 @@ export function GameVsPracticeComparison({
   }
 
   return (
-    <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl', className)}>
+    <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl', className)}>
       {/* Header */}
       <div className="p-4 border-b border-warm-100">
         <div className="flex items-start justify-between gap-4 mb-4">
@@ -645,7 +645,7 @@ export function GameVsPracticeComparison({
 
 export function GameVsPracticeComparisonSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl">
       {/* Header skeleton */}
       <div className="p-4 border-b border-warm-100">
         <div className="flex items-center justify-between mb-4">

@@ -308,14 +308,14 @@ export function PhilosophySettingsClient({
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'up')}
                       disabled={index === 0}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'down')}
                       disabled={index === sortedPriorities.length - 1}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↓
                     </button>

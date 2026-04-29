@@ -16,8 +16,8 @@ export function CompareMockup() {
 
       {/* Stat comparison bars */}
       <div className={cn(
-        "bg-white/45 backdrop-blur-xl rounded-lg p-2",
-        "border border-white/30 space-y-2"
+        "bg-cream-100/55 backdrop-blur-xl rounded-lg p-2",
+        "border border-warm-200/45 space-y-2"
       )}>
         <CompareStatRow label="Velo" values={[88, 85]} max={95} />
         <CompareStatRow label="Exit" values={[92, 95]} max={100} />
@@ -37,7 +37,7 @@ function ComparePlayerHeader({ name, color }: { name: 'wide' | 'medium'; color: 
   return (
     <div className={cn(
       "flex-1 flex items-center gap-1.5 p-1.5 rounded",
-      "bg-white/45 border-b-2",
+      "bg-cream-100/55 border-b-2",
       colors[color]
     )}>
       <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-300" />

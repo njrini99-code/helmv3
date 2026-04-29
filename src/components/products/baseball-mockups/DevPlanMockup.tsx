@@ -9,8 +9,8 @@ import { Check, Circle } from 'lucide-react';
 export function DevPlanMockup() {
   return (
     <div className={cn(
-      "bg-white/45 backdrop-blur-xl rounded-lg p-2",
-      "border border-white/30 space-y-2"
+      "bg-cream-100/55 backdrop-blur-xl rounded-lg p-2",
+      "border border-warm-200/45 space-y-2"
     )}>
       {/* Progress header */}
       <div className="flex items-center justify-between">

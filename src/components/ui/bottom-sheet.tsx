@@ -198,9 +198,9 @@ export function BottomSheet({
             className={cn(
               'absolute bottom-0 left-0 right-0 mx-auto w-full max-w-2xl',
               'flex flex-col',
-              'bg-white/95 backdrop-blur-xl',
+              'bg-cream-50/95 backdrop-blur-xl',
               'rounded-t-3xl shadow-2xl',
-              'border-t border-white/40',
+              'border-t border-warm-200/55',
               className,
             )}
             style={{ maxHeight: maxHeightStyle }}
@@ -300,7 +300,7 @@ export function BottomSheet({
                 itself so the home indicator never overlaps buttons. */}
             {footer && (
               <div
-                className="flex-shrink-0 px-6 pt-3 bg-white/95 backdrop-blur-xl border-t border-warm-100/80"
+                className="flex-shrink-0 px-6 pt-3 bg-cream-50/95 backdrop-blur-xl border-t border-warm-100/80"
                 style={{
                   paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
                 }}

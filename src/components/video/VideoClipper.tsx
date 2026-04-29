@@ -256,7 +256,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           onClick={handlePlayPause}
           className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
         >
-          <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full bg-cream-50/92 flex items-center justify-center">
             {isPlaying ? (
               <svg className="w-6 h-6 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
                 <rect x="6" y="4" width="4" height="16" />

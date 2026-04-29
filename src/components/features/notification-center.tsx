@@ -232,7 +232,7 @@ export function NotificationCenter({
                             {!notification.read && (
                               <button
                                 onClick={() => onMarkAsRead(notification.id)}
-                                className="p-1 hover:bg-white active:bg-white/70 rounded transition-colors"
+                                className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
                                 title="Mark as read"
                               >
                                 <IconCheck size={14} className="text-slate-400 hover:text-slate-600" />
@@ -240,7 +240,7 @@ export function NotificationCenter({
                             )}
                             <button
                               onClick={() => onDelete(notification.id)}
-                              className="p-1 hover:bg-white active:bg-white/70 rounded transition-colors"
+                              className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
                               title="Delete"
                             >
                               <IconX size={14} className="text-slate-400 hover:text-red-600" />

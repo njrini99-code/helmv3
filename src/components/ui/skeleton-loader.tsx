@@ -199,7 +199,7 @@ export function SkeletonDashboard({ className }: { className?: string }) {
       {/* Bento Stats Grid */}
       <div className="grid grid-cols-4 gap-4">
         {[1, 2, 3, 4].map(i => (
-          <div key={i} className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 p-6 animate-pulse">
+          <div key={i} className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-6 animate-pulse">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <Skeleton variant="text" width="50%" height={12} className="mb-3" />

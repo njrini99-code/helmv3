@@ -6,7 +6,7 @@ import type { BaseballPlayerSeasonStats } from '@/lib/types';
 
 function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
-    <div className={`rounded-2xl p-4 text-center border ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-white/70 backdrop-blur-xl border-white/20'} shadow-sm`}>
+    <div className={`rounded-2xl p-4 text-center border ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-cream-100/75 backdrop-blur-xl border-white/20'} shadow-sm`}>
       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
       <p className={`text-2xl font-black tabular-nums ${highlight ? 'text-primary-700' : 'text-slate-900'}`}>{value}</p>
     </div>
@@ -36,7 +36,7 @@ export function MySeasonStats() {
 
   if (!stats || (stats.ab === 0 && stats.ip === 0)) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
         <p className="text-sm text-slate-400">
           No season stats yet. Your coach will enter them from game box scores.
         </p>

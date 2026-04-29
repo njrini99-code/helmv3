@@ -32,10 +32,10 @@ export function VideoMockup() {
               <div className="relative w-24 h-24 rotate-45">
                 <div className="absolute inset-0 border border-white/20" />
                 {/* Base markers as simple squares */}
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white/60" />
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-white/60" />
-                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-white/60" />
-                <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-white/60" />
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-cream-100/68" />
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-cream-100/68" />
+                <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-cream-100/68" />
+                <div className="absolute top-1/2 -right-1 -translate-y-1/2 w-2 h-2 bg-cream-100/68" />
               </div>
             </div>
 
@@ -147,7 +147,7 @@ function VideoThumb({ color, label, duration, isNew }: {
 
         {/* Hover play indicator - simple circle with triangle */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-cream-50/92 flex items-center justify-center">
             <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[9px] border-l-slate-900 border-b-[5px] border-b-transparent ml-0.5" />
           </div>
         </div>

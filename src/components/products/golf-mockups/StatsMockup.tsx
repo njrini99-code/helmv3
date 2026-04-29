@@ -10,8 +10,8 @@ export function StatsMockup() {
     <div className="space-y-3">
       {/* Mini sparkline chart */}
       <div className={cn(
-        "bg-white/45 backdrop-blur-xl rounded-lg p-2",
-        "border border-white/30"
+        "bg-cream-100/55 backdrop-blur-xl rounded-lg p-2",
+        "border border-warm-200/45"
       )}>
         <svg className="w-full h-8" viewBox="0 0 100 32">
           <polyline
@@ -39,8 +39,8 @@ export function StatsMockup() {
 function StatBadge({ label, value, trend }: { label: string; value: string; trend: 'up' | 'down' }) {
   return (
     <div className={cn(
-      "flex-1 bg-white/45 backdrop-blur-xl rounded-md px-2 py-1.5",
-      "border border-white/30 text-center"
+      "flex-1 bg-cream-100/55 backdrop-blur-xl rounded-md px-2 py-1.5",
+      "border border-warm-200/45 text-center"
     )}>
       <p className="text-[9px] text-slate-500 uppercase tracking-wide">{label}</p>
       <div className="flex items-center justify-center gap-1 mt-0.5">

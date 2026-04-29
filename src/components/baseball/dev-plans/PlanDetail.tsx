@@ -71,7 +71,7 @@ export function PlanDetail({ plan }: PlanDetailProps) {
           <ProgressTracker completed={completedGoals} total={goals.length} />
 
           {plan.description && (
-            <div className="rounded-xl border border-slate-200 bg-white/70 p-4">
+            <div className="rounded-xl border border-slate-200 bg-cream-100/75 p-4">
               <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <IconNote size={16} />
                 <span>Plan Overview</span>

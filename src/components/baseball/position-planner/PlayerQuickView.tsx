@@ -75,10 +75,10 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             className={cn(
               'absolute top-4 right-4 z-10',
               'p-2.5 rounded-xl',
-              'bg-white/80 backdrop-blur-sm',
+              'bg-cream-100/82 backdrop-blur-sm',
               'border border-warm-200/50',
               'text-warm-400 hover:text-warm-600',
-              'hover:bg-white active:bg-white/70 hover:shadow-md',
+              'hover:bg-white active:bg-cream-100/75 hover:shadow-md',
               'transition-all duration-200'
             )}
           >

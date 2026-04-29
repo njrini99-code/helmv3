@@ -49,8 +49,8 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
           <div
             key={stat.label}
             className={cn(
-              'bg-white/60 backdrop-blur-sm rounded-xl p-3 text-center',
-              'border border-white/30',
+              'bg-cream-100/68 backdrop-blur-sm rounded-xl p-3 text-center',
+              'border border-warm-200/45',
               stat.highlight && 'ring-2 ring-primary-200 bg-primary-50/50'
             )}
           >

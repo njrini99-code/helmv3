@@ -248,10 +248,10 @@ export function PositionPlayerStack({
         'pointer-events-auto',
         expanded && [
           'gap-2 p-3',
-          'bg-white/95 backdrop-blur-xl',
+          'bg-cream-50/95 backdrop-blur-xl',
           'rounded-2xl',
           'shadow-glass-lg',
-          'border border-white/60',
+          'border border-warm-200/55',
           // Ambient glow when expanded
           'before:absolute before:inset-0 before:-z-10',
           'before:rounded-2xl before:blur-xl',

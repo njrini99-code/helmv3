@@ -84,7 +84,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
   if (trendData.all.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
         <h3 className="font-semibold text-slate-900 mb-2">Trend Analysis</h3>
         <p className="text-sm text-slate-500">
           Need more session data to analyze player trends. Keep tracking
@@ -95,7 +95,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <h3 className="font-semibold text-slate-900 mb-4">Trend Analysis</h3>
 
       {/* Summary Stats */}
@@ -271,7 +271,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
 export function TrendAnalysisPanelSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <div className="h-5 w-32 bg-slate-200 rounded animate-pulse mb-4" />
 
       {/* Summary Stats */}

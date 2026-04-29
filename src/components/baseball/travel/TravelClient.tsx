@@ -263,7 +263,7 @@ function ItineraryCard({
     <div className="glass-standard rounded-2xl overflow-clip">
       {/* Header Row */}
       <div
-        className="p-5 flex items-center gap-4 cursor-pointer hover:bg-white/80 transition-colors"
+        className="p-5 flex items-center gap-4 cursor-pointer hover:bg-cream-100/82 transition-colors"
         onClick={onToggleExpand}
       >
         <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">

@@ -81,10 +81,10 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
 
               {!compact && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-white/70 transition-colors">
+                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconEdit size={14} />
                   </button>
-                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white active:bg-white/70 transition-colors">
+                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconTrash size={14} />
                   </button>
                 </div>

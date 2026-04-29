@@ -64,7 +64,7 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
     <div
       className={cn(
         'relative flex items-start gap-3 p-4 rounded-xl border shadow-xl min-w-[320px] max-w-md overflow-hidden',
-        'bg-white/80 backdrop-blur-xl saturate-150',
+        'bg-cream-100/82 backdrop-blur-xl saturate-150',
         'transition-all duration-300 ease-out',
         toastStyles[toast.type],
         isExiting

@@ -306,7 +306,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.first_name || ''}
                     onChange={(e) => handleInputChange('first_name', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     required
                   />
                 </div>
@@ -317,7 +317,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.last_name || ''}
                     onChange={(e) => handleInputChange('last_name', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     required
                   />
                 </div>
@@ -335,7 +335,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="text"
                     value={formData.city || ''}
                     onChange={(e) => handleInputChange('city', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                   />
                 </div>
 
@@ -344,7 +344,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <select
                     value={formData.state || ''}
                     onChange={(e) => handleInputChange('state', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     required
                   >
                     <option value="">Select State</option>
@@ -361,7 +361,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   value={formData.about_me || ''}
                   onChange={(e) => handleInputChange('about_me', e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 resize-none"
+                  className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 resize-none"
                   placeholder="Share your story, goals, and what drives you as a player..."
                 />
                 <p className="text-xs text-slate-500 mt-1">This appears on your public profile</p>
@@ -382,7 +382,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <select
                     value={formData.primary_position || ''}
                     onChange={(e) => handleInputChange('primary_position', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     required
                   >
                     <option value="">Select Position</option>
@@ -397,7 +397,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <select
                     value={formData.secondary_position || ''}
                     onChange={(e) => handleInputChange('secondary_position', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                   >
                     <option value="">Select Position</option>
                     {POSITIONS.map((pos) => (
@@ -413,7 +413,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <select
                     value={formData.bats || ''}
                     onChange={(e) => handleInputChange('bats', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                   >
                     <option value="">-</option>
                     <option value="R">Right</option>
@@ -427,7 +427,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   <select
                     value={formData.throws || ''}
                     onChange={(e) => handleInputChange('throws', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                   >
                     <option value="">-</option>
                     <option value="R">Right</option>
@@ -445,7 +445,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       max="7"
                       value={formData.height_feet || ''}
                       onChange={(e) => handleInputChange('height_feet', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 text-center"
+                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 text-center"
                     />
                     <input
                       type="number"
@@ -454,7 +454,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       max="11"
                       value={formData.height_inches || ''}
                       onChange={(e) => handleInputChange('height_inches', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 text-center"
+                      className="w-1/2 px-2 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 text-center"
                     />
                   </div>
                 </div>
@@ -466,7 +466,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="number"
                       value={formData.weight_lbs || ''}
                       onChange={(e) => handleInputChange('weight_lbs', e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 pr-10"
+                      className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                       placeholder="185"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">lbs</span>
@@ -484,7 +484,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         type="number"
                         value={formData.pitch_velo || ''}
                         onChange={(e) => handleInputChange('pitch_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 pr-12"
+                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="85"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">mph</span>
@@ -498,7 +498,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         type="number"
                         value={formData.exit_velo || ''}
                         onChange={(e) => handleInputChange('exit_velo', e.target.value ? parseInt(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 pr-12"
+                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="90"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">mph</span>
@@ -513,7 +513,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         step="0.01"
                         value={formData.sixty_time || ''}
                         onChange={(e) => handleInputChange('sixty_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 pr-10"
+                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="7.2"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sec</span>
@@ -528,7 +528,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         step="0.01"
                         value={formData.pop_time || ''}
                         onChange={(e) => handleInputChange('pop_time', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50 pr-10"
+                        className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="2.0"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sec</span>
@@ -556,7 +556,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     max="4.0"
                     value={formData.gpa || ''}
                     onChange={(e) => handleInputChange('gpa', e.target.value ? parseFloat(e.target.value) : null)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     placeholder="3.50"
                   />
                   <p className="text-xs text-slate-500 mt-1">Current cumulative GPA</p>
@@ -568,7 +568,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="number"
                     value={formData.grad_year || ''}
                     onChange={(e) => handleInputChange('grad_year', e.target.value ? parseInt(e.target.value) : null)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     placeholder={String(new Date().getFullYear() + 1)}
                     min={new Date().getFullYear()}
                     max={new Date().getFullYear() + 6}
@@ -610,7 +610,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="email"
                     value={formData.email || ''}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     required
                   />
                 </div>
@@ -626,7 +626,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     type="tel"
                     value={formData.phone || ''}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                    className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -646,7 +646,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="text"
                       value={formData.twitter || ''}
                       onChange={(e) => handleInputChange('twitter', e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                       placeholder="username"
                     />
                   </div>
@@ -665,7 +665,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       type="text"
                       value={formData.instagram || ''}
                       onChange={(e) => handleInputChange('instagram', e.target.value)}
-                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-white/50"
+                      className="flex-1 px-3 py-2.5 border border-border rounded-r-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                       placeholder="username"
                     />
                   </div>

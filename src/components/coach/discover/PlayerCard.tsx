@@ -91,9 +91,9 @@ const PlayerCardComponent = function PlayerCard({
         onClick={handleClick}
         className={cn(
           "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
-          "bg-white/70 backdrop-blur-md border border-white/40",
+          "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
-          "hover:-translate-y-0.5 hover:shadow-md hover:border-white/60",
+          "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
           isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
         )}
@@ -140,9 +140,9 @@ const PlayerCardComponent = function PlayerCard({
     return (
       <div className={cn(
         "relative overflow-hidden rounded-[20px]",
-        "bg-white/70 backdrop-blur-md border border-white/40",
+        "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
         "transition-[transform,box-shadow,border-color] duration-200",
-        "hover:-translate-y-1 hover:shadow-xl hover:border-white/60",
+        "hover:-translate-y-1 hover:shadow-xl hover:border-warm-200/55",
         isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
@@ -158,7 +158,7 @@ const PlayerCardComponent = function PlayerCard({
                 'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
                 isSelected
                   ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                  : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
+                  : 'border-slate-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
               )}
             >
               {isSelected && <IconCheck size={14} />}
@@ -261,9 +261,9 @@ const PlayerCardComponent = function PlayerCard({
   return (
     <div className={cn(
       "relative overflow-hidden rounded-[20px]",
-      "bg-white/70 backdrop-blur-md border border-white/40",
+      "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
       "transition-[transform,box-shadow,border-color] duration-200",
-      "hover:-translate-y-1 hover:shadow-lg hover:border-white/60",
+      "hover:-translate-y-1 hover:shadow-lg hover:border-warm-200/55",
       "group",
       isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
       isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
@@ -280,7 +280,7 @@ const PlayerCardComponent = function PlayerCard({
               'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                : 'border-slate-300 hover:border-primary-500 bg-white/90 backdrop-blur-sm'
+                : 'border-slate-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
             )}
           >
             {isSelected && <IconCheck size={14} />}
@@ -491,8 +491,8 @@ const ActionButton = memo(function ActionButton({
         onClick?.();
       }}
       className={cn(
-        "rounded-lg bg-white/90 backdrop-blur-sm text-slate-600",
-        "hover:bg-white active:bg-white/70 hover:text-slate-900",
+        "rounded-lg bg-cream-50/92 backdrop-blur-sm text-slate-600",
+        "hover:bg-white active:bg-cream-100/75 hover:text-slate-900",
         "transition-[color,background-color,transform] duration-200",
         "active:scale-95",
         sizeClasses[size],

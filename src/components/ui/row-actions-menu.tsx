@@ -63,7 +63,7 @@ export function RowActionsMenu({ actions }: RowActionsMenuProps) {
           className="
             absolute right-0 top-full mt-1.5 z-20
             min-w-[180px]
-            bg-white/95 backdrop-blur-xl
+            bg-cream-50/95 backdrop-blur-xl
             border border-warm-200/50
             rounded-2xl
             shadow-[0_12px_40px_rgba(16,24,40,0.14)]

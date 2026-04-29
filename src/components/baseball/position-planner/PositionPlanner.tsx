@@ -162,7 +162,7 @@ export function PositionPlanner({
                 'bg-gradient-to-br from-white/90 to-warm-50/70',
                 'backdrop-blur-md',
                 'rounded-xl',
-                'border border-white/60',
+                'border border-warm-200/55',
                 'shadow-glass-sm',
                 // Inner highlight
                 'before:absolute before:inset-0 before:rounded-xl',
@@ -189,7 +189,7 @@ export function PositionPlanner({
                 'bg-gradient-to-br from-white/90 to-warm-50/70',
                 'backdrop-blur-md',
                 'rounded-xl',
-                'border border-white/60',
+                'border border-warm-200/55',
                 'shadow-glass-sm',
                 'relative'
               )}
@@ -226,8 +226,8 @@ export function PositionPlanner({
                 : [
                     'bg-gradient-to-br from-white/90 to-warm-50/70',
                     'text-warm-600',
-                    'border-white/60',
-                    'hover:bg-white active:bg-white/70 hover:shadow-md'
+                    'border-warm-200/55',
+                    'hover:bg-white active:bg-cream-100/75 hover:shadow-md'
                   ]
             )}
           >
@@ -264,7 +264,7 @@ export function PositionPlanner({
                 'bg-gradient-to-br from-white/95 to-warm-50/80',
                 'backdrop-blur-xl',
                 'rounded-2xl',
-                'border border-white/60',
+                'border border-warm-200/55',
                 'shadow-glass'
               )}>
                 <div className="flex items-center gap-3">
@@ -451,7 +451,7 @@ function PositionEmptyMarker({
               'bg-white/40 backdrop-blur-sm',
               'text-warm-400',
               'border-warm-200/60',
-              'hover:bg-white/60',
+              'hover:bg-cream-100/68',
               'hover:border-warm-300',
               'hover:text-warm-500'
             ]

@@ -81,7 +81,7 @@ export function ConfirmDialog({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Sheet body: title + message + destructive action */}
-          <div className="overflow-hidden rounded-2xl bg-white/95 backdrop-blur-xl shadow-xl">
+          <div className="overflow-hidden rounded-2xl bg-cream-50/95 backdrop-blur-xl shadow-xl">
             <div className="px-5 pt-4 pb-3 text-center border-b border-warm-200/70">
               <h2 className="text-[13px] font-semibold text-warm-900">{title}</h2>
               <p className="mt-1 text-[12px] leading-snug text-warm-600">{message}</p>
@@ -100,7 +100,7 @@ export function ConfirmDialog({
             type="button"
             onClick={onCancel}
             disabled={isLoading}
-            className="w-full rounded-2xl bg-white/95 backdrop-blur-xl px-5 py-3.5 text-[17px] font-semibold text-warm-900 shadow-xl active:bg-warm-100/80 transition-colors disabled:opacity-50"
+            className="w-full rounded-2xl bg-cream-50/95 backdrop-blur-xl px-5 py-3.5 text-[17px] font-semibold text-warm-900 shadow-xl active:bg-warm-100/80 transition-colors disabled:opacity-50"
           >
             {cancelLabel}
           </button>

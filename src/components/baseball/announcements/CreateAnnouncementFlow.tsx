@@ -168,7 +168,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 mt-5 border-t border-slate-200 sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-1 -mb-6">
+          <div className="flex items-center justify-between pt-4 mt-5 border-t border-slate-200 sticky bottom-0 bg-cream-50/95 backdrop-blur-sm -mx-6 px-6 pb-1 -mb-6">
             <div className="flex items-center gap-2 text-xs text-slate-400">
               {recipientPlayerIds === null ? (
                 <span>Sending to all {players.length} players</span>

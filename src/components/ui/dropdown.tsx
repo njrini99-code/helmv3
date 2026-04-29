@@ -107,7 +107,7 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
             'absolute z-50 mt-2',
             alignClasses[align],
             'min-w-[220px]',
-            'bg-white/95 backdrop-blur-xl',
+            'bg-cream-50/95 backdrop-blur-xl',
             'border border-warm-200/50',
             'rounded-2xl',
             'shadow-[0_12px_40px_rgba(16,24,40,0.14)]',

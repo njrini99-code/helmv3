@@ -319,7 +319,7 @@ export function GameVsPracticePanel({
   // Empty state
   if (!pressureData || pressureData.length === 0) {
     return (
-      <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
+      <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6', className)}>
         <h3 className="font-semibold text-warm-900 mb-2">
           Practice vs Game Performance
         </h3>
@@ -340,7 +340,7 @@ export function GameVsPracticePanel({
   }
 
   return (
-    <div className={cn('bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6', className)}>
+    <div className={cn('bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6', className)}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div>
@@ -474,7 +474,7 @@ export function GameVsPracticePanel({
 
 export function GameVsPracticePanelSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4 sm:p-6">
       {/* Header skeleton */}
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-1">

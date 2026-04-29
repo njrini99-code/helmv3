@@ -30,7 +30,7 @@ function FilterPill({ label, active }: { label: string; active?: boolean }) {
       "px-2 py-0.5 rounded text-[9px] font-medium",
       active
         ? "bg-primary-100 text-primary-700 border border-primary-200"
-        : "bg-white/60 text-slate-600 border border-white/40"
+        : "bg-cream-100/68 text-slate-600 border border-warm-200/55"
     )}>
       {label}
     </div>
@@ -41,7 +41,7 @@ function DiscoveryPlayerCard({ featured }: { featured?: boolean }) {
   return (
     <div className={cn(
       "flex items-center gap-2 p-2 rounded-lg",
-      "bg-white/45 backdrop-blur-xl border border-white/30",
+      "bg-cream-100/55 backdrop-blur-xl border border-warm-200/45",
       featured && "ring-1 ring-primary-200"
     )}>
       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0" />

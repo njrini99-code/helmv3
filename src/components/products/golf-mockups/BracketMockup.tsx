@@ -42,8 +42,8 @@ function BracketSlot({ position, active }: { position: number; active?: boolean 
   return (
     <div className={cn(
       "flex items-center gap-1.5 px-1.5 py-1 rounded",
-      "bg-white/45 border",
-      active ? "border-primary-300 bg-primary-50/50" : "border-white/30"
+      "bg-cream-100/55 border",
+      active ? "border-primary-300 bg-primary-50/50" : "border-warm-200/45"
     )}>
       <span className={cn(
         "text-micro font-semibold",

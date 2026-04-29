@@ -36,7 +36,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
       className={cn(
         'fixed bottom-0 left-0 right-0 z-40',
         'lg:hidden', // Hide on desktop
-        'bg-white/95 backdrop-blur-xl',
+        'bg-cream-50/95 backdrop-blur-xl',
         'border-t border-warm-200',
         'shadow-lg',
         'safe-area-pb', // iOS safe area padding

@@ -34,7 +34,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           aria-required={props.required || props['aria-required']}
           aria-describedby={errorId || props['aria-describedby']}
           className={cn(
-            'w-full px-4 py-3 rounded-xl border bg-white/90 text-warm-900 text-base lg:text-sm',
+            'w-full px-4 py-3 rounded-xl border bg-cream-50/92 text-warm-900 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'transition-all duration-200 resize-none',
             'focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/30',

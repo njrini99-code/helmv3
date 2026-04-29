@@ -150,7 +150,7 @@ export function Modal({
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-describedby={description ? 'modal-description' : undefined}
         className={cn(
-          'relative z-10 w-full bg-white/95 backdrop-blur-xl border border-white/40 rounded-[24px] shadow-2xl',
+          'relative z-10 w-full bg-cream-50/95 backdrop-blur-xl border border-warm-200/55 rounded-[24px] shadow-2xl',
           'transition-all duration-200 ease-out',
           'max-h-[calc(100vh-2rem)] flex flex-col',
           isAnimating

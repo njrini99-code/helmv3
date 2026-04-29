@@ -89,7 +89,7 @@ export function ChatWindow({
   return (
     <div className={cn('flex flex-col bg-[#FFFEFA]', className)}>
       {/* Header — iOS-native chat title bar with back chevron on mobile */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-white/90 backdrop-blur-xl sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-cream-50/92 backdrop-blur-xl sticky top-0 z-10">
         {onBack && (
           <button
             onClick={onBack}
@@ -171,7 +171,7 @@ export function ChatWindow({
       {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="px-4 pt-3 border-t border-warm-200/70 bg-white/90 backdrop-blur-xl"
+        className="px-4 pt-3 border-t border-warm-200/70 bg-cream-50/92 backdrop-blur-xl"
         style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-center gap-2">

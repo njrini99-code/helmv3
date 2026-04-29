@@ -201,7 +201,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
       {/* Overlay on hover */}
       <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-100 group-hover:opacity-100 transition-opacity">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+          <div className="w-12 h-12 rounded-full bg-cream-50/92 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
             <IconPlay size={20} className="text-slate-900 ml-0.5" />
           </div>
         </div>
@@ -229,7 +229,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
 
         {/* Primary Badge */}
         {video.is_primary && (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-sm">
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-slate-200/60 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
             <span className="text-xs font-medium text-slate-700">Primary</span>
           </div>

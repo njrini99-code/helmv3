@@ -51,7 +51,7 @@ function CustomTooltip({ active, payload, label }: {
   if (!data) return null;
 
   return (
-    <div className="bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-lg px-4 py-3 min-w-[180px]">
+    <div className="bg-cream-50/92 backdrop-blur-xl border border-warm-200/45 rounded-xl shadow-lg px-4 py-3 min-w-[180px]">
       <p className="text-sm font-medium text-warm-900 mb-2">{label}</p>
       <div className="space-y-1.5">
         {data.practiceAB > 0 && (

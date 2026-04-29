@@ -184,7 +184,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
 
             {/* User Dropdown */}
             {showUserMenu && (
-              <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-white/30 overflow-clip z-50 animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-64 glass-standard rounded-2xl shadow-xl border border-warm-200/45 overflow-clip z-50 animate-fade-in">
                 {/* User info */}
                 <div className="p-4 border-b border-white/20 bg-white/30">
                   <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                 <div className="p-2 border-t border-white/20">
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-white/50 active:bg-warm-50 rounded-lg transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-cream-100/60 active:bg-warm-50 rounded-lg transition-colors"
                   >
                     <IconLogOut size={16} />
                     Sign out
@@ -252,7 +252,7 @@ function UserMenuItem({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-3 px-3 py-2 text-sm text-warm-700 hover:bg-white/50 active:bg-warm-50 rounded-lg transition-colors"
+      className="flex items-center gap-3 px-3 py-2 text-sm text-warm-700 hover:bg-cream-100/60 active:bg-warm-50 rounded-lg transition-colors"
     >
       <Icon size={16} className="text-warm-400" />
       {label}

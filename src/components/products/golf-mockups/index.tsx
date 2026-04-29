@@ -117,7 +117,7 @@ export function LiveRoundMockup() {
 
             {/* Shot Result */}
             <div className="mx-2.5 mt-2">
-              <div className="bg-white/70 backdrop-blur rounded-xl p-3 border border-warm-200/60 shadow-sm">
+              <div className="bg-cream-100/75 backdrop-blur rounded-xl p-3 border border-warm-200/60 shadow-sm">
                 <p className="text-[8px] font-bold text-warm-500 uppercase tracking-wider mb-2">Shot Result</p>
                 <div className="grid grid-cols-3 gap-1">
                   {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (
@@ -211,7 +211,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Leaderboard */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-warm-200/60 ring-1 ring-black/[0.02]">
+      <div className="bg-cream-100/82 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-warm-200/60 ring-1 ring-black/[0.02]">
         <div className="px-5 py-3.5 border-b border-warm-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-bold text-warm-900 tracking-tight">Leaderboard</span>

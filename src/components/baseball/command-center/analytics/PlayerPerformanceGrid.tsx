@@ -141,7 +141,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
 
   if (players.length === 0) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
         <h3 className="font-semibold text-slate-900 mb-2">Performance Grid</h3>
         <p className="text-sm text-slate-500">
           No player data available.
@@ -151,7 +151,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
   }
 
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
       <div className="p-4 border-b border-white/20">
         <h3 className="font-semibold text-slate-900">Performance Grid</h3>
         <p className="text-xs text-slate-500 mt-1">
@@ -194,7 +194,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
                   key={player.id}
                   className="border-t border-slate-100 hover:bg-slate-50/50 transition-colors"
                 >
-                  <td className="px-4 py-2 sticky left-0 bg-white/50 backdrop-blur-sm">
+                  <td className="px-4 py-2 sticky left-0 bg-cream-100/60 backdrop-blur-sm">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-slate-900 truncate max-w-32">
                         {name}
@@ -263,7 +263,7 @@ export function PlayerPerformanceGrid({ players }: PlayerPerformanceGridProps) {
 
 export function PlayerPerformanceGridSkeleton() {
   return (
-    <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
+    <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl overflow-clip">
       <div className="p-4 border-b border-white/20">
         <div className="h-5 w-32 bg-slate-200 rounded animate-pulse" />
         <div className="h-3 w-48 bg-slate-200 rounded animate-pulse mt-2" />

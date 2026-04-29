@@ -39,9 +39,9 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
     return (
       <div
         className={cn(
-          'bg-white/70 backdrop-blur-glass border border-white/30 rounded-2xl',
+          'bg-cream-100/75 backdrop-blur-glass border border-warm-200/45 rounded-2xl',
           'shadow-glass transition-[background-color,box-shadow] duration-200 ease-out',
-          'hover:bg-white/75 hover:shadow-glass-hover',
+          'hover:bg-cream-100/80 hover:shadow-glass-hover',
           paddingClasses[padding],
           className
         )}

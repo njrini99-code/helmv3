@@ -112,7 +112,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const variants = {
       default: cn(
-        'bg-white/90 border border-warm-200',
+        'bg-cream-50/92 border border-warm-200',
         error
           ? 'border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
           : success
@@ -120,10 +120,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           : 'hover:border-warm-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30'
       ),
       glass: cn(
-        'bg-white/60 backdrop-blur-sm border border-white/30',
+        'bg-cream-100/68 backdrop-blur-sm border border-warm-200/45',
         error
-          ? 'focus:bg-white/80 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
-          : 'focus:bg-white/80 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30'
+          ? 'focus:bg-cream-100/82 focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+          : 'focus:bg-cream-100/82 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30'
       ),
     };
 
@@ -308,7 +308,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             props.onBlur?.(e);
           }}
           className={cn(
-            'w-full px-4 py-3 rounded-xl border bg-white/90 text-warm-900 text-base lg:text-sm',
+            'w-full px-4 py-3 rounded-xl border bg-cream-50/92 text-warm-900 text-base lg:text-sm',
             'placeholder:text-warm-400',
             'transition-all duration-200 resize-none',
             'focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/30',

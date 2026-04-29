@@ -134,7 +134,7 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
             className={cn(
               'fixed top-0 right-0 z-50',
               'h-full w-full max-w-[400px]',
-              'bg-white/95 backdrop-blur-xl',
+              'bg-cream-50/95 backdrop-blur-xl',
               'shadow-2xl shadow-black/10',
               'border-l border-warm-200/50',
               'flex flex-col',

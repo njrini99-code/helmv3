@@ -198,19 +198,19 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                   {(height ?? player.weight_lbs ?? player.bats ?? player.throws ?? player.gpa) != null && (
                     <div className="grid grid-cols-3 gap-2">
                       {height && (
-                        <div className="bg-white/70 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
+                        <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
                           <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">Height</p>
                           <p className="text-sm font-semibold text-slate-900">{height}</p>
                         </div>
                       )}
                       {player.weight_lbs && (
-                        <div className="bg-white/70 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
+                        <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
                           <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">Weight</p>
                           <p className="text-sm font-semibold text-slate-900">{player.weight_lbs} lbs</p>
                         </div>
                       )}
                       {player.bats && (
-                        <div className="bg-white/70 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
+                        <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
                           <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">Bats/Throws</p>
                           <p className="text-sm font-semibold text-slate-900">
                             {player.bats}/{player.throws ?? '?'}
@@ -218,7 +218,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                         </div>
                       )}
                       {player.gpa && (
-                        <div className="bg-white/70 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
+                        <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
                           <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">GPA</p>
                           <p className="text-sm font-semibold text-slate-900">{player.gpa.toFixed(2)}</p>
                         </div>
@@ -242,7 +242,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                       ].map(({ label, value }) => (
                         <div
                           key={label}
-                          className="bg-white/70 border border-white/20 backdrop-blur-xl rounded-xl p-3 shadow-sm"
+                          className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-3 shadow-sm"
                         >
                           <p className="text-[10px] text-slate-400 uppercase tracking-wide mb-0.5">{label}</p>
                           <p className="text-lg font-bold text-slate-900 tabular-nums">{value}</p>
@@ -286,7 +286,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
 
             {/* Footer CTA */}
             {player && (
-              <div className="p-4 border-t border-slate-200/80 bg-white/60 backdrop-blur-sm">
+              <div className="p-4 border-t border-slate-200/80 bg-cream-100/68 backdrop-blur-sm">
                 <Link
                   href={`/baseball/dashboard/players/${player.id}`}
                   className="flex items-center justify-center w-full py-3 px-4

@@ -118,7 +118,7 @@ export function LiveRoundMockup() {
                 </div>
                 <div className="flex justify-between mt-1.5 text-[9px] text-emerald-100">
                   <span className="flex items-center gap-1 font-medium">
-                    <span className="w-1 h-1 rounded-full border border-white/60" />
+                    <span className="w-1 h-1 rounded-full border border-warm-200/55" />
                     Tee
                   </span>
                   <span className="font-bold text-[10px]">156 yds left</span>
@@ -133,7 +133,7 @@ export function LiveRoundMockup() {
 
           {/* Shot Result Card */}
           <div className="mx-3 mt-2.5">
-            <div className="bg-white/70 backdrop-blur rounded-xl p-4 border border-warm-200/60 shadow-sm">
+            <div className="bg-cream-100/75 backdrop-blur rounded-xl p-4 border border-warm-200/60 shadow-sm">
               <p className="text-[9px] font-bold text-warm-500 uppercase tracking-wider mb-2.5">Shot Result</p>
               <div className="grid grid-cols-3 gap-1.5">
                 {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (

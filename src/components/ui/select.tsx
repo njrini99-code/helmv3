@@ -171,7 +171,7 @@ export function Select({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           className={cn(
-            'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-base lg:text-sm text-left',
+            'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
@@ -391,7 +391,7 @@ export function MultiSelect({
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           className={cn(
-            'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-base lg:text-sm text-left',
+            'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-base lg:text-sm text-left',
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
@@ -534,7 +534,7 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
       <select
         ref={ref}
         className={cn(
-          'w-full min-h-[48px] px-4 rounded-xl border bg-white/90 text-warm-900 text-base lg:text-sm',
+          'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-warm-900 text-base lg:text-sm',
           'transition-all duration-200 appearance-none cursor-pointer',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
           'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',

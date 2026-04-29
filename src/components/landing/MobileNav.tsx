@@ -287,7 +287,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="you@example.com"
                             required
-                            className="w-full px-4 py-3.5 rounded-xl border border-warm-200/80 bg-white/80
+                            className="w-full px-4 py-3.5 rounded-xl border border-warm-200/80 bg-cream-100/82
                                      text-warm-900 placeholder:text-warm-300 text-[15px]
                                      focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600/30
                                      transition-all duration-200"

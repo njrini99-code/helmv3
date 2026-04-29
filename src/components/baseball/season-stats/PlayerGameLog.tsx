@@ -72,7 +72,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
   if (!hasBatting && !hasPitching) {
     return (
-      <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
+      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
         <p className="text-sm text-slate-400">No game log yet. Stats will appear here after box scores are entered.</p>
       </div>
     );
@@ -122,7 +122,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Batting log */}
       {activeTab === 'batting' && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -151,7 +151,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
                   return (
                     <tr key={row.id} className="hover:bg-slate-50/40 transition-colors">
-                      <td className="px-4 py-2 sticky left-0 bg-white/90">
+                      <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                         <div className="flex items-center gap-1.5">
                           <IconCalendar size={11} className="text-slate-300 shrink-0" />
                           <span className="text-slate-600">{fmtDate(row.game?.game_date)}</span>
@@ -220,7 +220,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
 
       {/* Pitching log */}
       {activeTab === 'pitching' && (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -243,7 +243,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                   </tr>
                 ) : filteredPitching.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50/40 transition-colors">
-                    <td className="px-4 py-2 sticky left-0 bg-white/90">
+                    <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                       <div className="flex items-center gap-1.5">
                         <IconCalendar size={11} className="text-slate-300 shrink-0" />
                         <span className="text-slate-600">{fmtDate(row.game?.game_date)}</span>

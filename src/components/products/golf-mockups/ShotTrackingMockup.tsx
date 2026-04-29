@@ -52,8 +52,8 @@ export function ShotTrackingMockup() {
       {/* Club selector mockup */}
       <div className="absolute bottom-3 left-3 right-3">
         <div className={cn(
-          "bg-white/60 backdrop-blur-xl rounded-lg p-2",
-          "border border-white/40",
+          "bg-cream-100/68 backdrop-blur-xl rounded-lg p-2",
+          "border border-warm-200/55",
           "shadow-[0_1px_3px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
         )}>
           <div className="flex items-center gap-2">
@@ -83,8 +83,8 @@ export function ShotTrackingMockup() {
 function ShotDataBadge({ label, value }: { label: string; value: string }) {
   return (
     <div className={cn(
-      "bg-white/70 backdrop-blur-xl rounded-md px-2 py-1",
-      "border border-white/40",
+      "bg-cream-100/75 backdrop-blur-xl rounded-md px-2 py-1",
+      "border border-warm-200/55",
       "shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
     )}>
       <p className="text-micro text-slate-500">{label}</p>

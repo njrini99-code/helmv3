@@ -22,7 +22,7 @@ function PlayerRow({ name, status }: { name: 'wide' | 'medium' | 'short'; status
   return (
     <div className={cn(
       "flex items-center gap-2 p-2 rounded-lg",
-      "bg-white/45 backdrop-blur-xl border border-white/30",
+      "bg-cream-100/55 backdrop-blur-xl border border-warm-200/45",
       "shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
     )}>
       {/* Avatar */}

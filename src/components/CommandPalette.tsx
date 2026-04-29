@@ -199,10 +199,10 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       {/* Dialog */}
       <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
         <div className={cn(
-          'bg-white/60 backdrop-blur-[24px]',
+          'bg-cream-100/68 backdrop-blur-[24px]',
           'rounded-2xl',
           'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]',
-          'border border-white/30',
+          'border border-warm-200/45',
           'overflow-hidden'
         )}>
           {/* Search Input */}
@@ -221,7 +221,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               aria-label="Search commands"
               className="flex-1 outline-none text-slate-900 placeholder:text-slate-400 bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-white/60 backdrop-blur-sm rounded-lg border border-white/30">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-cream-100/68 backdrop-blur-sm rounded-lg border border-warm-200/45">
               ESC
             </kbd>
           </div>
@@ -258,7 +258,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   <div
                     className={cn(
                       'w-8 h-8 rounded-lg flex items-center justify-center',
-                      index === selectedIndex ? 'bg-primary-100' : 'bg-white/60 backdrop-blur-sm'
+                      index === selectedIndex ? 'bg-primary-100' : 'bg-cream-100/68 backdrop-blur-sm'
                     )}
                     aria-hidden="true"
                   >
@@ -279,12 +279,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
           {/* Footer */}
           <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-slate-500">
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↑</kbd>
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↓</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↑</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↓</kbd>
               <span>Navigate</span>
             </div>
             <div className="flex items-center gap-2">
-              <kbd className="px-1.5 py-0.5 bg-white/60 backdrop-blur-sm rounded border border-white/30">↵</kbd>
+              <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↵</kbd>
               <span>Select</span>
             </div>
           </div>

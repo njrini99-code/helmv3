@@ -176,7 +176,7 @@ export function PlayerHoverPreview({
               </div>
             )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="w-10 h-10 rounded-full bg-cream-50/92 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <IconPlay size={16} className="text-slate-900 ml-0.5" />
               </div>
             </div>

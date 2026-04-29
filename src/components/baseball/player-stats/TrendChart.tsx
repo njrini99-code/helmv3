@@ -68,7 +68,7 @@ function CustomTooltip({ active, payload }: {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15 }}
-        className="bg-white/90 backdrop-blur-xl border border-white/30 rounded-xl shadow-lg px-4 py-3 min-w-[160px]"
+        className="bg-cream-50/92 backdrop-blur-xl border border-warm-200/45 rounded-xl shadow-lg px-4 py-3 min-w-[160px]"
       >
         <p className="text-sm font-medium text-warm-900 mb-2">
           {new Date(data.dateRaw).toLocaleDateString('en-US', {

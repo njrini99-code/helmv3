@@ -36,7 +36,7 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg p-3">
+    <div className="bg-cream-50/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg p-3">
       <p className="text-xs text-slate-500 mb-2">{label}</p>
       {payload.map((entry: any) => {
         const metric = metrics.find(m => m.key === entry.dataKey);

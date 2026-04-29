@@ -94,7 +94,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
           <select
             value={seasonYear}
             onChange={(e) => setSeasonYear(Number(e.target.value))}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white/70 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             {SEASON_YEARS.map((y) => (
               <option key={y} value={y}>
@@ -160,7 +160,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
           </button>
         </div>
       ) : games.length === 0 ? (
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
+        <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
           <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
             <IconPlus size={24} className="text-slate-400" />
           </div>
@@ -184,7 +184,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
             <div key={game.id} className="relative">
               <GameCard game={game} />
               {deletingId === game.id && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
                   <span className="text-sm text-slate-500">Deleting...</span>
                 </div>
               )}

@@ -36,7 +36,7 @@ function RosterRow({ jersey, recruiting }: { jersey: number; recruiting?: boolea
   return (
     <div className={cn(
       "flex items-center gap-2 p-1.5 rounded",
-      "bg-white/45 border border-white/30"
+      "bg-cream-100/55 border border-warm-200/45"
     )}>
       {/* Jersey number */}
       <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center">
