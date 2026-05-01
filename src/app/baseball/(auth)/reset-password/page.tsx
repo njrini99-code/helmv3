@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -16,7 +16,8 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [sessionValid, setSessionValid] = useState<boolean | null>(null);
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     // Check if user has a valid session (from email link)
@@ -43,7 +44,7 @@ export default function ResetPasswordPage() {
     }
 
     checkSession();
-  }, [supabase]);
+  }, [supabase]); // supabase is stable via useRef — no re-fire risk
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

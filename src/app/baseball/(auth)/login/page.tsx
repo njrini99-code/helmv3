@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -30,7 +30,8 @@ function LoginContent() {
   // Defer native detection to useEffect to avoid hydration mismatch:
   // isNativeApp() returns false on server (no window) but may return true on client.
   const [isNative, setIsNative] = useState(false);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
+  const supabase = supabaseRef.current;
 
   useEffect(() => {
     setIsNative(isNativeApp());
@@ -43,7 +44,7 @@ function LoginContent() {
       setCheckingAuth(false);
     }
     checkAuth();
-  }, [supabase, supabase.auth]);
+  }, [supabase]);
 
   async function handleSignOut() {
     setIsLoggingOut(true);
