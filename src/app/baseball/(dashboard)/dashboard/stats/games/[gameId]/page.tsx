@@ -75,12 +75,12 @@ export default async function GameDetailPage({ params }: PageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-slate-400">
-        <Link href="/baseball/dashboard/stats/games" className="hover:text-slate-600 transition-colors">
+      <div className="flex items-center gap-2 text-sm text-warm-400">
+        <Link href="/baseball/dashboard/stats/games" className="hover:text-warm-600 transition-colors">
           Games
         </Link>
         <span>›</span>
-        <span className="text-slate-600">
+        <span className="text-warm-600">
           {game.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs {game.opponent_name ?? 'TBD'}
         </span>
       </div>
@@ -95,7 +95,7 @@ export default async function GameDetailPage({ params }: PageProps) {
           />
           {/* Option to re-enter stats */}
           <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-700 mb-3">Update Box Score</h3>
+            <h3 className="text-sm font-semibold text-warm-700 mb-3">Update Box Score</h3>
             <BoxScoreUpload game={game as BaseballGame} teamPlayers={teamPlayers} />
           </div>
         </div>

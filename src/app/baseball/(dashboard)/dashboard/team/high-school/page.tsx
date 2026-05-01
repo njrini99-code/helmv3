@@ -289,7 +289,7 @@ export default function HSCoachDashboardPage() {
             {/* Quick Actions */}
             <Card variant="glass">
               <CardHeader>
-                <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+                <h2 className="font-semibold text-warm-900">Quick Actions</h2>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Link href="/baseball/dashboard/roster" className="block">

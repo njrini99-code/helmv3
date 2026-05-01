@@ -224,7 +224,7 @@ export function PlayerProfileClient({
   ];
 
   return (
-    <div className="min-h-dvh bg-gradient-to-br from-slate-50 via-white to-primary-50/30">
+    <div className="min-h-dvh bg-gradient-to-br from-warm-50 via-white to-primary-50/30">
       {/* Hero Header */}
       <div className="relative">
         {/* Background banner - custom image or premium gradient */}
@@ -244,11 +244,11 @@ export function PlayerProfileClient({
           ) : (
             <>
               {/* Premium gradient fallback */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-primary-900 to-emerald-800" />
+              <div className="absolute inset-0 bg-gradient-to-br from-warm-900 via-primary-900 to-emerald-800" />
               <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-[0.07]" />
               {/* Accent glow effects */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+              <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -tranwarm-y-1/2 tranwarm-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl tranwarm-y-1/2 -tranwarm-x-1/2" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </>
           )}
@@ -300,7 +300,7 @@ export function PlayerProfileClient({
 
         {/* Profile card overlapping banner */}
         <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-28 md:-mt-32 relative z-10">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200/50 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-warm-200/50 overflow-hidden">
             <div className="p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Avatar */}
@@ -324,7 +324,7 @@ export function PlayerProfileClient({
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div>
-                      <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+                      <h1 className="text-3xl md:text-4xl font-bold text-warm-900 tracking-tight">
                         {fullName}
                       </h1>
                       <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -334,7 +334,7 @@ export function PlayerProfileClient({
                           </span>
                         )}
                         {player.secondary_position && (
-                          <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm font-medium">
+                          <span className="px-3 py-1 bg-warm-100 text-warm-700 rounded-full text-sm font-medium">
                             {player.secondary_position}
                           </span>
                         )}
@@ -349,36 +349,36 @@ export function PlayerProfileClient({
                     {/* Quick stats */}
                     <div className="flex items-center gap-6 text-center">
                       <div>
-                        <div className="text-2xl font-bold text-slate-900">{profileViewCount}</div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Views</div>
+                        <div className="text-2xl font-bold text-warm-900">{profileViewCount}</div>
+                        <div className="text-xs text-warm-500 uppercase tracking-wide">Views</div>
                       </div>
-                      <div className="w-px h-10 bg-slate-200" />
+                      <div className="w-px h-10 bg-warm-200" />
                       <div>
-                        <div className="text-2xl font-bold text-slate-900">{watchlistCount}</div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Watchlists</div>
+                        <div className="text-2xl font-bold text-warm-900">{watchlistCount}</div>
+                        <div className="text-xs text-warm-500 uppercase tracking-wide">Watchlists</div>
                       </div>
-                      <div className="w-px h-10 bg-slate-200" />
+                      <div className="w-px h-10 bg-warm-200" />
                       <div>
-                        <div className="text-2xl font-bold text-slate-900">{player.videos?.length || 0}</div>
-                        <div className="text-xs text-slate-500 uppercase tracking-wide">Videos</div>
+                        <div className="text-2xl font-bold text-warm-900">{player.videos?.length || 0}</div>
+                        <div className="text-xs text-warm-500 uppercase tracking-wide">Videos</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Location, School & Teams */}
-                  <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-slate-600">
+                  <div className="flex flex-wrap items-center gap-4 mt-4 text-sm text-warm-600">
                     {/* High School - either from org or plain text */}
                     {player.high_school_org ? (
                       <Link
                         href={`/baseball/program/${player.high_school_org.id}`}
                         className="flex items-center gap-2 hover:text-primary-600 transition-colors"
                       >
-                        <IconSchool size={16} className="text-slate-400" />
+                        <IconSchool size={16} className="text-warm-400" />
                         <span className="hover:underline">{player.high_school_org.name}</span>
                       </Link>
                     ) : player.high_school_name && (
                       <div className="flex items-center gap-2">
-                        <IconSchool size={16} className="text-slate-400" />
+                        <IconSchool size={16} className="text-warm-400" />
                         <span>{player.high_school_name}</span>
                       </div>
                     )}
@@ -392,13 +392,13 @@ export function PlayerProfileClient({
                           href={`/baseball/program/${tm.team!.organization!.id}`}
                           className="flex items-center gap-2 hover:text-primary-600 transition-colors"
                         >
-                          <IconUsers size={16} className="text-slate-400" />
+                          <IconUsers size={16} className="text-warm-400" />
                           <span className="hover:underline">{tm.team!.organization!.name}</span>
                         </Link>
                       ))}
                     {player.city && player.state && (
                       <div className="flex items-center gap-2">
-                        <IconMapPin size={16} className="text-slate-400" />
+                        <IconMapPin size={16} className="text-warm-400" />
                         <span>{player.city}, {player.state}</span>
                       </div>
                     )}
@@ -422,7 +422,7 @@ export function PlayerProfileClient({
             </div>
 
             {/* Tabs */}
-            <div className="border-t border-slate-200 bg-slate-50/50">
+            <div className="border-t border-warm-200 bg-warm-50/50">
               <div className="flex overflow-x-auto">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -435,7 +435,7 @@ export function PlayerProfileClient({
                         "flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
                         isActive
                           ? "border-primary-600 text-primary-600 bg-white"
-                          : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-white/50 active:bg-slate-50"
+                          : "border-transparent text-warm-600 hover:text-warm-900 hover:bg-white/50 active:bg-warm-50"
                       )}
                     >
                       <Icon size={18} />
@@ -443,7 +443,7 @@ export function PlayerProfileClient({
                       {tab.count !== undefined && tab.count > 0 && (
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-xs",
-                          isActive ? "bg-primary-100 text-primary-700" : "bg-slate-200 text-slate-600"
+                          isActive ? "bg-primary-100 text-primary-700" : "bg-warm-200 text-warm-600"
                         )}>
                           {tab.count}
                         </span>
@@ -518,17 +518,17 @@ function OverviewTab({
       <div className="lg:col-span-2 space-y-6">
         {/* About */}
         {player.about_me && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">About</h2>
-            <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+            <h2 className="text-lg font-semibold text-warm-900 mb-4">About</h2>
+            <p className="text-warm-600 leading-relaxed whitespace-pre-wrap">
               {player.about_me}
             </p>
           </div>
         )}
 
         {/* Physical & Metrics */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
             <IconActivity size={20} className="text-primary-600" />
             Physical & Metrics
           </h2>
@@ -568,9 +568,9 @@ function OverviewTab({
 
         {/* Featured Videos Preview */}
         {player.videos && player.videos.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconVideo size={20} className="text-primary-600" />
                 Featured Videos
               </h2>
@@ -591,26 +591,26 @@ function OverviewTab({
       <div className="space-y-6">
         {/* Contact Card */}
         {(showContactEmail || showPhone || showSocial) && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
+          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
               Contact
             </h3>
             <div className="space-y-3">
               {showContactEmail && player.email && (
                 <a
                   href={`mailto:${player.email}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl text-sm text-warm-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
                 >
-                  <IconMail size={18} className="text-slate-400" />
+                  <IconMail size={18} className="text-warm-400" />
                   <span className="truncate">{player.email}</span>
                 </a>
               )}
               {showPhone && player.phone && (
                 <a
                   href={`tel:${player.phone}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl text-sm text-warm-600 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700 transition-colors"
                 >
-                  <IconPhone size={18} className="text-slate-400" />
+                  <IconPhone size={18} className="text-warm-400" />
                   <span>{player.phone}</span>
                 </a>
               )}
@@ -621,7 +621,7 @@ function OverviewTab({
                       href={`https://twitter.com/${player.twitter}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-warm-50 rounded-xl text-sm text-warm-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                     >
                       <IconBrandTwitter size={18} />
                     </a>
@@ -631,7 +631,7 @@ function OverviewTab({
                       href={`https://instagram.com/${player.instagram}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-slate-50 rounded-xl text-sm text-slate-600 hover:bg-pink-50 hover:text-pink-600 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 p-3 bg-warm-50 rounded-xl text-sm text-warm-600 hover:bg-pink-50 hover:text-pink-600 transition-colors"
                     >
                       <IconBrandInstagram size={18} />
                     </a>
@@ -644,8 +644,8 @@ function OverviewTab({
 
         {/* Schools of Interest */}
         {showDreamSchools && recruitingInterests.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4 flex items-center gap-2">
               <IconTarget size={16} className="text-primary-600" />
               Schools of Interest
             </h3>
@@ -653,7 +653,7 @@ function OverviewTab({
               {recruitingInterests.map((interest, idx) => (
                 <div
                   key={interest.id}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 >
                   <div className="w-7 h-7 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
                     <span className="text-xs font-bold text-white">{idx + 1}</span>
@@ -668,16 +668,16 @@ function OverviewTab({
                       unoptimized
                     />
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-slate-200 flex items-center justify-center">
-                      <IconSchool size={16} className="text-slate-400" />
+                    <div className="w-8 h-8 rounded-lg bg-warm-200 flex items-center justify-center">
+                      <IconSchool size={16} className="text-warm-400" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
+                    <p className="text-sm font-medium text-warm-900 truncate">
                       {interest.organization?.name}
                     </p>
                     {interest.organization?.division && (
-                      <p className="text-xs text-slate-500">{interest.organization.division}</p>
+                      <p className="text-xs text-warm-500">{interest.organization.division}</p>
                     )}
                   </div>
                 </div>
@@ -727,12 +727,12 @@ function OverviewTab({
 function VideosTab({ videos }: { videos: PlayerVideo[] }) {
   if (videos.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <IconVideo size={32} className="text-slate-400" />
+      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+          <IconVideo size={32} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-medium text-slate-900 mb-2">No Videos Yet</h3>
-        <p className="text-slate-500">This player hasn&apos;t uploaded any videos.</p>
+        <h3 className="text-lg font-medium text-warm-900 mb-2">No Videos Yet</h3>
+        <p className="text-warm-500">This player hasn&apos;t uploaded any videos.</p>
       </div>
     );
   }
@@ -751,8 +751,8 @@ function StatsTab({ player }: { player: PlayerData }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Physical Stats */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconTrendingUp size={20} className="text-primary-600" />
           Physical Profile
         </h2>
@@ -765,8 +765,8 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Performance Metrics */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconActivity size={20} className="text-blue-600" />
           Performance Metrics
         </h2>
@@ -790,8 +790,8 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Academics */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconSchool size={20} className="text-purple-600" />
           Academics
         </h2>
@@ -803,8 +803,8 @@ function StatsTab({ player }: { player: PlayerData }) {
       </div>
 
       {/* Player Info */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-900 mb-6 flex items-center gap-2">
+      <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-warm-900 mb-6 flex items-center gap-2">
           <IconUser size={20} className="text-orange-600" />
           Player Info
         </h2>
@@ -823,25 +823,25 @@ function StatsTab({ player }: { player: PlayerData }) {
 function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
   if (teamHistory.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <IconUsers size={32} className="text-slate-400" />
+      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+          <IconUsers size={32} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-medium text-slate-900 mb-2">No Team History</h3>
-        <p className="text-slate-500">This player hasn&apos;t added any team history.</p>
+        <h3 className="text-lg font-medium text-warm-900 mb-2">No Team History</h3>
+        <p className="text-warm-500">This player hasn&apos;t added any team history.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-      <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-        <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+    <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden shadow-sm">
+      <div className="p-6 border-b border-warm-200 bg-warm-50/50">
+        <h2 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
           <IconUsers size={20} className="text-primary-600" />
           Team History
         </h2>
       </div>
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-warm-100">
         {teamHistory.map((membership) => {
           const org = membership.team?.organization;
           if (!org) return null;
@@ -857,43 +857,43 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
             <Link
               key={membership.id}
               href={`/baseball/program/${org.id}`}
-              className="block p-6 hover:bg-slate-50/50 transition-colors group"
+              className="block p-6 hover:bg-warm-50/50 transition-colors group"
             >
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-14 h-14 rounded-xl flex items-center justify-center",
-                  membership.status === 'active' ? "bg-primary-100" : "bg-slate-100"
+                  membership.status === 'active' ? "bg-primary-100" : "bg-warm-100"
                 )}>
                   {org.logo_url ? (
                     <Image src={org.logo_url} alt={org.name} width={40} height={40} className="w-10 h-10 rounded-lg object-cover" unoptimized />
                   ) : (
-                    <IconUsers size={24} className={membership.status === 'active' ? "text-primary-600" : "text-slate-400"} />
+                    <IconUsers size={24} className={membership.status === 'active' ? "text-primary-600" : "text-warm-400"} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-slate-900 group-hover:text-primary-600 transition-colors">
+                    <p className="font-semibold text-warm-900 group-hover:text-primary-600 transition-colors">
                       {membership.team?.name || org.name}
                     </p>
                     {membership.status === 'active' && (
                       <Badge className="bg-primary-100 text-primary-700 border-0 text-xs">Current</Badge>
                     )}
                   </div>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     {org.name}
                     {org.location_city && org.location_state && ` • ${org.location_city}, ${org.location_state}`}
                   </p>
                   <div className="flex flex-wrap items-center gap-3 mt-2">
                     {membership.position && (
-                      <span className="text-xs px-2 py-1 bg-slate-100 rounded-full text-slate-600 font-medium">
+                      <span className="text-xs px-2 py-1 bg-warm-100 rounded-full text-warm-600 font-medium">
                         {membership.position}
                       </span>
                     )}
                     {membership.jersey_number && (
-                      <span className="text-xs text-slate-500">#{membership.jersey_number}</span>
+                      <span className="text-xs text-warm-500">#{membership.jersey_number}</span>
                     )}
                     {joinDate && (
-                      <span className="text-xs text-slate-500 flex items-center gap-1">
+                      <span className="text-xs text-warm-500 flex items-center gap-1">
                         <IconCalendar size={12} />
                         {joinDate} - {leftDate}
                       </span>
@@ -913,12 +913,12 @@ function TeamsTab({ teamHistory }: { teamHistory: TeamMembership[] }) {
 function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }) {
   if (achievements.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-          <IconTrophy size={32} className="text-slate-400" />
+      <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+          <IconTrophy size={32} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-medium text-slate-900 mb-2">No Awards Yet</h3>
-        <p className="text-slate-500">This player hasn&apos;t added any awards or achievements.</p>
+        <h3 className="text-lg font-medium text-warm-900 mb-2">No Awards Yet</h3>
+        <p className="text-warm-500">This player hasn&apos;t added any awards or achievements.</p>
       </div>
     );
   }
@@ -935,7 +935,7 @@ function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }
               <IconTrophy size={24} className="text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-slate-900">{achievement.achievement_text}</p>
+              <p className="font-semibold text-warm-900">{achievement.achievement_text}</p>
               <div className="flex items-center gap-2 mt-2">
                 {achievement.achievement_type && (
                   <span className="text-xs px-2 py-1 bg-amber-100 rounded-full text-amber-700 font-medium">
@@ -943,7 +943,7 @@ function AchievementsTab({ achievements }: { achievements: PlayerAchievement[] }
                   </span>
                 )}
                 {achievement.achievement_date && (
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-warm-500">
                     {new Date(achievement.achievement_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>
                 )}
@@ -973,14 +973,14 @@ function MetricCard({ label, value, highlight }: { label: string; value: string;
   return (
     <div className={cn(
       "p-4 rounded-xl border",
-      highlight ? highlightClasses[highlight] : "bg-slate-50 border-slate-200"
+      highlight ? highlightClasses[highlight] : "bg-warm-50 border-warm-200"
     )}>
-      <p className="text-label font-semibold uppercase tracking-wider text-slate-500 mb-1">
+      <p className="text-label font-semibold uppercase tracking-wider text-warm-500 mb-1">
         {label}
       </p>
       <p className={cn(
         "text-xl font-bold",
-        highlight ? valueClasses[highlight] : "text-slate-900"
+        highlight ? valueClasses[highlight] : "text-warm-900"
       )}>
         {value}
       </p>
@@ -996,9 +996,9 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
   };
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-      <span className="text-sm text-slate-600">{label}</span>
-      <span className={cn("text-sm font-semibold text-slate-900", highlight && highlightClasses[highlight])}>
+    <div className="flex items-center justify-between py-2 border-b border-warm-100 last:border-0">
+      <span className="text-sm text-warm-600">{label}</span>
+      <span className={cn("text-sm font-semibold text-warm-900", highlight && highlightClasses[highlight])}>
         {value}
       </span>
     </div>
@@ -1011,7 +1011,7 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
       href={video.url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300"
+      className="group relative bg-white rounded-xl border border-warm-200 overflow-hidden hover:border-primary-300 hover:shadow-lg transition-all duration-300"
     >
       {video.thumbnail_url ? (
         <div className={cn("relative", large ? "aspect-video" : "aspect-[16/10]")}>
@@ -1035,18 +1035,18 @@ function VideoCard({ video, large }: { video: PlayerVideo; large?: boolean }) {
           )}
         </div>
       ) : (
-        <div className={cn("bg-slate-100 flex items-center justify-center", large ? "aspect-video" : "aspect-[16/10]")}>
-          <IconVideo size={40} className="text-slate-300" />
+        <div className={cn("bg-warm-100 flex items-center justify-center", large ? "aspect-video" : "aspect-[16/10]")}>
+          <IconVideo size={40} className="text-warm-300" />
         </div>
       )}
       <div className="p-4">
-        <p className="font-medium text-slate-900 truncate">{video.title}</p>
+        <p className="font-medium text-warm-900 truncate">{video.title}</p>
         <div className="flex items-center justify-between mt-1">
           {video.video_type && (
-            <span className="text-xs text-slate-500">{video.video_type}</span>
+            <span className="text-xs text-warm-500">{video.video_type}</span>
           )}
           {video.duration && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-warm-400">
               {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
             </span>
           )}

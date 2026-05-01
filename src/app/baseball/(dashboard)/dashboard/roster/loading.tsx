@@ -9,12 +9,12 @@ export default function RosterLoading() {
         {/* Toolbar skeleton */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
           <div className="relative flex-1 max-w-md">
-            <div className="h-10 bg-slate-200 rounded-lg animate-pulse" />
+            <div className="h-10 bg-warm-200 rounded-lg animate-pulse" />
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-10 w-24 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-10 w-24 bg-slate-200 rounded-lg animate-pulse" />
-            <div className="h-10 w-32 bg-slate-200 rounded-lg animate-pulse" />
+            <div className="h-10 w-24 bg-warm-200 rounded-lg animate-pulse" />
+            <div className="h-10 w-24 bg-warm-200 rounded-lg animate-pulse" />
+            <div className="h-10 w-32 bg-warm-200 rounded-lg animate-pulse" />
           </div>
         </div>
 

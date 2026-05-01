@@ -41,7 +41,7 @@ const academicStandingColors = {
 const eligibilityColors = {
   eligible: 'bg-primary-100 text-primary-700',
   ineligible: 'bg-red-100 text-red-700',
-  pending: 'bg-slate-100 text-slate-700',
+  pending: 'bg-warm-100 text-warm-700',
 };
 
 export default function AcademicsPage() {
@@ -251,12 +251,12 @@ export default function AcademicsPage() {
           <Card variant="glass">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center">
-                  <IconUsers size={20} className="text-slate-600" />
+                <div className="w-10 h-10 rounded-xl bg-warm-100 flex items-center justify-center">
+                  <IconUsers size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-sm leading-relaxed text-slate-500">Total Athletes</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{students.length}</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Total Athletes</p>
+                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{students.length}</p>
                 </div>
               </div>
             </CardContent>
@@ -269,8 +269,8 @@ export default function AcademicsPage() {
                   <IconGraduationCap size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-sm leading-relaxed text-slate-500">Team GPA</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{avgGpa.toFixed(2)}</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Team GPA</p>
+                  <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{avgGpa.toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>
@@ -283,8 +283,8 @@ export default function AcademicsPage() {
                   <IconCheck size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-sm leading-relaxed text-slate-500">Eligible</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{eligibleCount}</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Eligible</p>
+                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{eligibleCount}</p>
                 </div>
               </div>
             </CardContent>
@@ -297,8 +297,8 @@ export default function AcademicsPage() {
                   <IconGraduationCap size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm leading-relaxed text-slate-500">At Risk</p>
-                  <p className="text-2xl font-semibold tracking-tight text-slate-900">{atRiskCount}</p>
+                  <p className="text-sm leading-relaxed text-warm-500">At Risk</p>
+                  <p className="text-2xl font-semibold tracking-tight text-warm-900">{atRiskCount}</p>
                 </div>
               </div>
             </CardContent>
@@ -308,13 +308,13 @@ export default function AcademicsPage() {
         {/* Student Table */}
         <Card variant="glass">
           <CardHeader>
-            <h2 className="font-semibold text-slate-900">Student-Athletes</h2>
+            <h2 className="font-semibold text-warm-900">Student-Athletes</h2>
           </CardHeader>
           <CardContent className="p-0 lg:p-0">
             {/* Mobile card view */}
             <div className="lg:hidden p-4 space-y-4">
               {students.map((student) => (
-                <div key={student.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div key={student.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
                   {/* Student header */}
                   <div className="flex items-start gap-3 mb-3">
                     <Avatar
@@ -323,10 +323,10 @@ export default function AcademicsPage() {
                       size="md"
                     />
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-slate-900 truncate">
+                      <h3 className="font-semibold text-warm-900 truncate">
                         {getFullName(student.first_name, student.last_name)}
                       </h3>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-warm-500">
                         {student.primary_position || 'N/A'} {student.grad_year ? `\u2022 Class of ${student.grad_year}` : ''}
                       </p>
                     </div>
@@ -334,8 +334,8 @@ export default function AcademicsPage() {
 
                   {/* Stats grid */}
                   <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="bg-slate-50 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold text-slate-900">
+                    <div className="bg-warm-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold text-warm-900">
                         {editingId === student.id ? (
                           <Input
                             type="number"
@@ -350,10 +350,10 @@ export default function AcademicsPage() {
                           student.gpa?.toFixed(2) || 'N/A'
                         )}
                       </p>
-                      <p className="text-label font-medium uppercase tracking-wide text-slate-500 mt-1">GPA</p>
+                      <p className="text-label font-medium uppercase tracking-wide text-warm-500 mt-1">GPA</p>
                     </div>
-                    <div className="bg-slate-50 rounded-lg p-3 text-center">
-                      <p className="text-lg font-semibold text-slate-900">
+                    <div className="bg-warm-50 rounded-lg p-3 text-center">
+                      <p className="text-lg font-semibold text-warm-900">
                         {editingId === student.id ? (
                           <Input
                             type="number"
@@ -366,7 +366,7 @@ export default function AcademicsPage() {
                           `${student.credits_completed || 0}/${student.credits_required || 60}`
                         )}
                       </p>
-                      <p className="text-label font-medium uppercase tracking-wide text-slate-500 mt-1">Credits</p>
+                      <p className="text-label font-medium uppercase tracking-wide text-warm-500 mt-1">Credits</p>
                     </div>
                   </div>
 
@@ -435,19 +435,19 @@ export default function AcademicsPage() {
             <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">GPA</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Credits</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Standing</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Eligibility</th>
-                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                  <tr className="border-b border-warm-200 bg-warm-50">
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Player</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Position</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">GPA</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Credits</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Standing</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Eligibility</th>
+                    <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-warm-200">
                   {students.map((student) => (
-                    <tr key={student.id} className="hover:bg-slate-50 transition-colors active:bg-slate-100">
+                    <tr key={student.id} className="hover:bg-warm-50 transition-colors active:bg-warm-100">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <Avatar
@@ -456,10 +456,10 @@ export default function AcademicsPage() {
                             size="sm"
                           />
                           <div>
-                            <p className="font-medium text-slate-900">
+                            <p className="font-medium text-warm-900">
                               {getFullName(student.first_name, student.last_name)}
                             </p>
-                            <p className="text-sm leading-relaxed text-slate-500">Class of {student.grad_year}</p>
+                            <p className="text-sm leading-relaxed text-warm-500">Class of {student.grad_year}</p>
                           </div>
                         </div>
                       </td>
@@ -491,7 +491,7 @@ export default function AcademicsPage() {
                             className="w-20"
                           />
                         ) : (
-                          <span className="text-slate-600">
+                          <span className="text-warm-600">
                             {student.credits_completed || 0}/{student.credits_required || 60}
                           </span>
                         )}

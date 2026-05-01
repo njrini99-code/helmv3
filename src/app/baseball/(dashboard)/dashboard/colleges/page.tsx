@@ -60,7 +60,7 @@ export default function CollegesPage() {
           <ShineEffect />
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3">
             <div className="relative flex-1 min-w-[200px] sm:max-w-md">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}

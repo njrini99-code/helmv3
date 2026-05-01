@@ -10,10 +10,10 @@ export default function Error({
   return (
     <div className="min-h-[400px] flex items-center justify-center">
       <div className="text-center p-8">
-        <h2 className="text-lg font-semibold text-slate-900 mb-2">
+        <h2 className="text-lg font-semibold text-warm-900 mb-2">
           Something went wrong
         </h2>
-        <p className="text-slate-600 mb-4">{error.message}</p>
+        <p className="text-warm-600 mb-4">{error.message}</p>
         <button
           onClick={reset}
           aria-label="Try again"

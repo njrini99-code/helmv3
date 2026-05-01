@@ -21,7 +21,7 @@ export default function DashboardError({
 
   return (
     <div className="min-h-dvh bg-[#FAF6F1] flex items-center justify-center p-6">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8 max-w-md w-full text-center">
+      <div className="bg-white rounded-2xl border border-warm-200 shadow-lg p-8 max-w-md w-full text-center">
         {/* Error Icon */}
         <div className="w-16 h-16 mx-auto rounded-2xl bg-red-100 flex items-center justify-center mb-4">
           <svg
@@ -40,20 +40,20 @@ export default function DashboardError({
         </div>
 
         {/* Error Message */}
-        <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
+        <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
           Something went wrong
         </h2>
-        <p className="text-sm leading-relaxed text-slate-600 mb-6">
+        <p className="text-sm leading-relaxed text-warm-600 mb-6">
           {error.message || 'An unexpected error occurred. Please try refreshing the page.'}
         </p>
 
         {/* Error Details (Development Only) */}
         {process.env.NODE_ENV === 'development' && (
           <details className="mb-6 text-left">
-            <summary className="text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-700 mb-2">
+            <summary className="text-xs font-medium text-warm-500 cursor-pointer hover:text-warm-700 mb-2">
               Error Details
             </summary>
-            <pre className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
+            <pre className="text-xs bg-warm-50 border border-warm-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600">
               {error.message}
               {error.stack && `\n\n${error.stack}`}
               {error.digest && `\n\nDigest: ${error.digest}`}

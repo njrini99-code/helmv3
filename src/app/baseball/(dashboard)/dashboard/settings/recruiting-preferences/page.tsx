@@ -70,8 +70,8 @@ export default async function RecruitingPreferencesPage() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900">Recruiting Preferences</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-warm-900">Recruiting Preferences</h1>
+          <p className="text-warm-500 mt-1">
             Configure how players are matched and ranked in your Discover feed
           </p>
         </div>
@@ -96,11 +96,11 @@ function LoadingSkeleton() {
     <div className="space-y-6">
       {[1, 2, 3].map((i) => (
         <div key={i} className="bg-white/70 rounded-2xl p-6 animate-pulse">
-          <div className="h-6 w-48 bg-slate-200 rounded mb-4" />
+          <div className="h-6 w-48 bg-warm-200 rounded mb-4" />
           <div className="space-y-3">
-            <div className="h-4 w-full bg-slate-100 rounded" />
-            <div className="h-4 w-3/4 bg-slate-100 rounded" />
-            <div className="h-4 w-1/2 bg-slate-100 rounded" />
+            <div className="h-4 w-full bg-warm-100 rounded" />
+            <div className="h-4 w-3/4 bg-warm-100 rounded" />
+            <div className="h-4 w-1/2 bg-warm-100 rounded" />
           </div>
         </div>
       ))}

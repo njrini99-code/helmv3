@@ -329,7 +329,7 @@ export default function VideosPage() {
             <CardContent className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <div className="flex-1 relative">
-                  <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <IconSearch size={18} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
                   <Input
                     type="text"
                     placeholder={isCoach ? "Search by player name or video title..." : "Search videos..."}
@@ -362,10 +362,10 @@ export default function VideosPage() {
                 <IconVideo size={32} className="sm:hidden text-primary-600" />
                 <IconVideo size={40} className="hidden sm:block text-primary-600" />
               </div>
-              <h3 className="text-base sm:text-lg font-semibold tracking-tight text-slate-900 mb-2">
+              <h3 className="text-base sm:text-lg font-semibold tracking-tight text-warm-900 mb-2">
                 {isCoach ? "No videos from your team yet" : "No videos yet"}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+              <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
                 {isCoach
                   ? "Videos uploaded by your players will appear here. Encourage your athletes to upload highlight reels and at-bat footage."
                   : "Upload your first highlight video to showcase your skills. Great videos include game highlights, batting practice, and fielding drills."}
@@ -384,7 +384,7 @@ export default function VideosPage() {
             {filteredMyVideos.length > 0 && (
               <section>
                 {isCollegePlayer && teamVideos.length > 0 && (
-                  <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
                     <IconVideo size={20} className="text-primary-600" />
                     My Videos
                   </h2>
@@ -409,7 +409,7 @@ export default function VideosPage() {
             {/* Team Videos Section (College Players Only) */}
             {isCollegePlayer && filteredTeamVideos.length > 0 && (
               <section>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-warm-900 mb-4 flex items-center gap-2">
                   <IconUsers size={20} className="text-primary-600" />
                   Team Videos
                 </h2>
@@ -432,13 +432,13 @@ export default function VideosPage() {
             {filteredMyVideos.length === 0 && filteredTeamVideos.length === 0 && searchQuery && (
               <Card variant="glass">
                 <CardContent className="p-8 sm:p-12 text-center">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconSearch size={28} className="text-slate-400" />
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                    <IconSearch size={28} className="text-warm-400" />
                   </div>
-                  <h3 className="text-base sm:text-lg font-semibold tracking-tight text-slate-900 mb-2">
+                  <h3 className="text-base sm:text-lg font-semibold tracking-tight text-warm-900 mb-2">
                     No videos match &quot;{searchQuery}&quot;
                   </h3>
-                  <p className="text-sm leading-relaxed text-slate-500 mb-4">
+                  <p className="text-sm leading-relaxed text-warm-500 mb-4">
                     Try adjusting your search terms.
                   </p>
                   <Button variant="secondary" onClick={() => setSearchQuery('')}>
@@ -491,7 +491,7 @@ export default function VideosPage() {
             placeholder="Add context about this video..."
             rows={3}
           />
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-4 border-t border-warm-100">
             <Button variant="secondary" onClick={() => setEditingVideo(null)} disabled={saving}>
               Cancel
             </Button>
@@ -520,27 +520,27 @@ export default function VideosPage() {
               />
             )}
             {viewingVideo.player && (
-              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
                 <Avatar
                   name={getFullName(viewingVideo.player.first_name, viewingVideo.player.last_name)}
                   src={viewingVideo.player.avatar_url || undefined}
                   size="sm"
                 />
                 <div>
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-warm-900">
                     {getFullName(viewingVideo.player.first_name, viewingVideo.player.last_name)}
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     {viewingVideo.player.primary_position} {viewingVideo.player.grad_year && `• Class of ${viewingVideo.player.grad_year}`}
                   </p>
                 </div>
               </div>
             )}
             {viewingVideo.description && (
-              <p className="text-sm text-slate-600 leading-relaxed">{viewingVideo.description}</p>
+              <p className="text-sm text-warm-600 leading-relaxed">{viewingVideo.description}</p>
             )}
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 text-sm text-slate-500 flex-wrap">
+              <div className="flex items-center gap-4 text-sm text-warm-500 flex-wrap">
                 {viewingVideo.video_type && (
                   <Badge variant="secondary" className="capitalize">
                     {viewingVideo.video_type.replace(/_/g, ' ')}
@@ -606,7 +606,7 @@ function VideoCard({
           {video.url && (
             <div className="relative">
               {video.thumbnail_url ? (
-                <div className="aspect-video rounded-xl overflow-hidden bg-slate-100">
+                <div className="aspect-video rounded-xl overflow-hidden bg-warm-100">
                   <img 
                     src={video.thumbnail_url} 
                     alt={video.title}
@@ -619,7 +619,7 @@ function VideoCard({
               {/* Play overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl">
                 <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
-                  <IconPlay size={24} className="text-slate-900 ml-1" />
+                  <IconPlay size={24} className="text-warm-900 ml-1" />
                 </div>
               </div>
             </div>
@@ -635,17 +635,17 @@ function VideoCard({
         <div className="mt-3 sm:mt-4 space-y-2 sm:space-y-3">
           {/* Show player info for coach view or team videos */}
           {(isCoach || showPlayer) && video.player && (
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+            <div className="flex items-center gap-2 pb-2 border-b border-warm-200">
               <Avatar
                 name={getFullName(video.player.first_name, video.player.last_name)}
                 src={video.player.avatar_url || undefined}
                 size="xs"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
+                <p className="text-sm font-medium text-warm-900 truncate">
                   {getFullName(video.player.first_name, video.player.last_name)}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-warm-500">
                   {video.player.primary_position} {video.player.grad_year && `• ${video.player.grad_year}`}
                 </p>
               </div>
@@ -655,7 +655,7 @@ function VideoCard({
           <div className="flex items-start justify-between gap-2 sm:gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 mb-1 flex-wrap">
-                <h3 className="font-semibold text-slate-900 truncate text-sm sm:text-base">{video.title}</h3>
+                <h3 className="font-semibold text-warm-900 truncate text-sm sm:text-base">{video.title}</h3>
                 {video.is_primary && (
                   <Badge variant="success" className="flex items-center gap-1 text-xs">
                     <IconStar size={10} />
@@ -676,11 +676,11 @@ function VideoCard({
                 )}
               </div>
               {video.description && (
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-600 line-clamp-2 mt-1">
+                <p className="text-xs sm:text-sm leading-relaxed text-warm-600 line-clamp-2 mt-1">
                   {video.description}
                 </p>
               )}
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-warm-500 mt-1">
                 {video.created_at && formatRelativeTime(video.created_at)} • {video.view_count || 0} views
               </p>
             </div>

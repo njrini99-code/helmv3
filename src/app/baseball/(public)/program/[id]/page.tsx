@@ -162,14 +162,14 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200">
+      <div className="bg-white border-b border-warm-200">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <a href="/" className="flex items-center gap-2 group">
               <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">H</span>
               </div>
-              <span className="font-semibold text-slate-900">Helm</span>
+              <span className="font-semibold text-warm-900">Helm</span>
             </a>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Program Header */}
             <Card className="overflow-hidden">
-              <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-slate-200">
+              <div className="bg-gradient-to-br from-primary-50 to-white p-8 border-b border-warm-200">
                 <div className="flex items-start gap-6">
                   {organization.logo_url ? (
                     <Image
@@ -199,7 +199,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                     </div>
                   )}
                   <div className="flex-1">
-                    <h1 className="text-3xl font-bold text-slate-900 mb-2">
+                    <h1 className="text-3xl font-bold text-warm-900 mb-2">
                       {organization.name}
                     </h1>
                     <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -211,7 +211,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                       )}
                       <Badge>{organization.type}</Badge>
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600">
+                    <div className="flex items-center gap-2 text-warm-600">
                       <IconMapPin size={16} />
                       <span className="text-sm">
                         {organization.location_city}, {organization.location_state}
@@ -223,8 +223,8 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
 
               {showDescription && organization.description && (
                 <div className="p-6 bg-white">
-                  <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-3">About</h2>
-                  <p className="text-slate-600 leading-relaxed whitespace-pre-line">
+                  <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-3">About</h2>
+                  <p className="text-warm-600 leading-relaxed whitespace-pre-line">
                     {organization.description}
                   </p>
                 </div>
@@ -239,18 +239,18 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                   {/* Coaching Staff */}
                   {staff.length > 0 && (
                     <Card className="overflow-hidden">
-                      <div className="p-6 border-b border-slate-200 bg-white">
+                      <div className="p-6 border-b border-warm-200 bg-white">
                         <div className="flex items-center gap-2">
                           <IconUsers size={20} className="text-primary-600" />
-                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">Coaching Staff</h2>
+                          <h2 className="text-lg font-semibold tracking-tight text-warm-900">Coaching Staff</h2>
                         </div>
                       </div>
-                      <div className="p-6 bg-slate-50">
+                      <div className="p-6 bg-warm-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {staff.map((member: CoachStaffMember) => (
                             <div
                               key={member.id}
-                              className="bg-white rounded-lg border border-slate-200 p-4"
+                              className="bg-white rounded-lg border border-warm-200 p-4"
                             >
                               <div className="flex items-start gap-4">
                                 {member.headshot_url ? (
@@ -270,12 +270,12 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                                   />
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <h3 className="font-semibold text-slate-900 truncate">
+                                  <h3 className="font-semibold text-warm-900 truncate">
                                     {member.name}
                                   </h3>
                                   <p className="text-sm leading-relaxed text-primary-600 mb-2">{member.title}</p>
                                   {member.bio && (
-                                    <p className="text-xs text-slate-600 line-clamp-3">
+                                    <p className="text-xs text-warm-600 line-clamp-3">
                                       {member.bio}
                                     </p>
                                   )}
@@ -291,15 +291,15 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                   {/* Facilities */}
                   {facilities.length > 0 && (
                     <Card className="overflow-hidden">
-                      <div className="p-6 border-b border-slate-200 bg-white">
-                        <h2 className="text-lg font-semibold tracking-tight text-slate-900">Facilities</h2>
+                      <div className="p-6 border-b border-warm-200 bg-white">
+                        <h2 className="text-lg font-semibold tracking-tight text-warm-900">Facilities</h2>
                       </div>
-                      <div className="p-6 bg-slate-50">
+                      <div className="p-6 bg-warm-50">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {facilities.map((facility) => (
                             <div
                               key={facility.id}
-                              className="bg-white rounded-lg border border-slate-200 overflow-hidden"
+                              className="bg-white rounded-lg border border-warm-200 overflow-hidden"
                             >
                               {facility.image_url ? (
                                 <Image
@@ -311,21 +311,21 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                                   unoptimized
                                 />
                               ) : (
-                                <div className="w-full h-40 bg-slate-100 flex items-center justify-center">
-                                  <IconBuilding size={32} className="text-slate-400" />
+                                <div className="w-full h-40 bg-warm-100 flex items-center justify-center">
+                                  <IconBuilding size={32} className="text-warm-400" />
                                 </div>
                               )}
                               <div className="p-4">
-                                <h3 className="font-semibold text-slate-900 mb-1">
+                                <h3 className="font-semibold text-warm-900 mb-1">
                                   {facility.name}
                                 </h3>
                                 {facility.capacity && (
-                                  <p className="text-xs text-slate-500 mb-2">
+                                  <p className="text-xs text-warm-500 mb-2">
                                     Capacity: {facility.capacity}
                                   </p>
                                 )}
                                 {facility.description && (
-                                  <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">
+                                  <p className="text-sm leading-relaxed text-warm-600 line-clamp-2">
                                     {facility.description}
                                   </p>
                                 )}
@@ -340,25 +340,25 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                   {/* Commitments */}
                   {commitments.length > 0 && (
                     <Card className="overflow-hidden">
-                      <div className="p-6 border-b border-slate-200 bg-white">
+                      <div className="p-6 border-b border-warm-200 bg-white">
                         <div className="flex items-center gap-2">
                           <IconStar size={20} className="text-primary-600" />
-                          <h2 className="text-lg font-semibold tracking-tight text-slate-900">
+                          <h2 className="text-lg font-semibold tracking-tight text-warm-900">
                             Class of {new Date().getFullYear()} Commits
                           </h2>
                         </div>
                       </div>
                       <div className="p-6 bg-white">
-                        <div className="divide-y divide-slate-200">
+                        <div className="divide-y divide-warm-200">
                           {commitments.slice(0, 10).map((commit) => (
                             <div key={commit.id} className="py-3 first:pt-0 last:pb-0">
                               <div className="flex items-center justify-between">
                                 <div>
-                                  <p className="font-medium text-slate-900">{commit.player_name}</p>
-                                  <p className="text-sm leading-relaxed text-slate-600">
+                                  <p className="font-medium text-warm-900">{commit.player_name}</p>
+                                  <p className="text-sm leading-relaxed text-warm-600">
                                     {commit.position} • {commit.high_school}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-warm-500">
                                     {commit.city}, {commit.state}
                                   </p>
                                 </div>
@@ -376,7 +376,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
                   {/* Empty state when no additional info */}
                   {staff.length === 0 && facilities.length === 0 && commitments.length === 0 && (
                     <Card className="p-8 text-center">
-                      <p className="text-slate-500">No additional program information available.</p>
+                      <p className="text-warm-500">No additional program information available.</p>
                     </Card>
                   )}
                 </div>
@@ -395,7 +395,7 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
           <div className="space-y-6">
             {/* Contact Card */}
             <Card className="p-6">
-              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
+              <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
                 Contact
               </h3>
               {organization.website_url && (
@@ -418,38 +418,38 @@ export default async function PublicProgramProfilePage({ params }: PageProps) {
 
             {/* Quick Facts */}
             <Card className="p-6 bg-gradient-to-br from-primary-50 to-white">
-              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
+              <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
                 Quick Facts
               </h3>
               <div className="space-y-3">
                 {organization.division && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-slate-600">Division</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm leading-relaxed text-warm-600">Division</span>
+                    <span className="text-sm font-semibold text-warm-900">
                       {organization.division}
                     </span>
                   </div>
                 )}
                 {organization.conference && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-slate-600">Conference</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm leading-relaxed text-warm-600">Conference</span>
+                    <span className="text-sm font-semibold text-warm-900">
                       {organization.conference}
                     </span>
                   </div>
                 )}
                 {staff.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-slate-600">Coaching Staff</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm leading-relaxed text-warm-600">Coaching Staff</span>
+                    <span className="text-sm font-semibold text-warm-900">
                       {staff.length}
                     </span>
                   </div>
                 )}
                 {commitments.length > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm leading-relaxed text-slate-600">Commits</span>
-                    <span className="text-sm font-semibold text-slate-900">
+                    <span className="text-sm leading-relaxed text-warm-600">Commits</span>
+                    <span className="text-sm font-semibold text-warm-900">
                       {commitments.length}
                     </span>
                   </div>

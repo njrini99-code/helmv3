@@ -345,7 +345,7 @@ export default function RosterPage() {
       <div className="p-8">
         <Card variant="glass">
           <CardContent className="p-12 text-center">
-            <p className="text-slate-500">Only coaches can access roster management.</p>
+            <p className="text-warm-500">Only coaches can access roster management.</p>
           </CardContent>
         </Card>
       </div>
@@ -372,7 +372,7 @@ export default function RosterPage() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'roster'
                 ? 'bg-primary-50 text-primary-700'
-                : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
+                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -385,7 +385,7 @@ export default function RosterPage() {
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'lineup'
                 ? 'bg-primary-50 text-primary-700'
-                : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
+                : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -402,15 +402,15 @@ export default function RosterPage() {
             {!loading && roster.length > 0 && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
                     Total Players
                   </p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
                     {rosterStats.total}
                   </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
                     Active
                   </p>
                   <p className="text-2xl font-semibold text-primary-600 mt-1 tabular-nums">
@@ -418,18 +418,18 @@ export default function RosterPage() {
                   </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
                     Positions
                   </p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
                     {rosterStats.positions}
                   </p>
                 </div>
                 <div className="glass-standard rounded-xl p-4">
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">
+                  <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
                     With Stats
                   </p>
-                  <p className="text-2xl font-semibold text-slate-900 mt-1 tabular-nums">
+                  <p className="text-2xl font-semibold text-warm-900 mt-1 tabular-nums">
                     {rosterStats.withStats}
                   </p>
                 </div>
@@ -445,7 +445,7 @@ export default function RosterPage() {
                     <div className="flex-1 relative">
                       <IconSearch
                         size={18}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                        className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400"
                       />
                       <Input
                         type="text"
@@ -475,14 +475,14 @@ export default function RosterPage() {
 
                   {/* Filter Row */}
                   {showFilters && (
-                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-slate-200">
+                    <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-warm-200">
                       {/* Position Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-slate-500">Position</label>
+                        <label className="text-xs font-medium text-warm-500">Position</label>
                         <select
                           value={positionFilter}
                           onChange={(e) => setPositionFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Positions</option>
                           {POSITIONS.map((pos) => (
@@ -495,11 +495,11 @@ export default function RosterPage() {
 
                       {/* Grad Year Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-slate-500">Grad Year</label>
+                        <label className="text-xs font-medium text-warm-500">Grad Year</label>
                         <select
                           value={gradYearFilter}
                           onChange={(e) => setGradYearFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Years</option>
                           {GRAD_YEARS.map((year) => (
@@ -512,11 +512,11 @@ export default function RosterPage() {
 
                       {/* Status Filter */}
                       <div className="flex flex-col gap-1">
-                        <label className="text-xs font-medium text-slate-500">Status</label>
+                        <label className="text-xs font-medium text-warm-500">Status</label>
                         <select
                           value={statusFilter}
                           onChange={(e) => setStatusFilter(e.target.value)}
-                          className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-3 py-2 bg-white border border-warm-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
                           <option value="">All Status</option>
                           <option value="active">Active</option>
@@ -531,7 +531,7 @@ export default function RosterPage() {
                       {activeFilterCount > 0 && (
                         <button
                           onClick={clearFilters}
-                          className="flex items-center gap-1 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors mt-auto"
+                          className="flex items-center gap-1 px-3 py-2 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors mt-auto"
                         >
                           <IconX size={14} />
                           Clear filters
@@ -563,11 +563,11 @@ export default function RosterPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="font-semibold text-slate-900">Team Roster</h2>
-                    <p className="text-sm leading-relaxed text-slate-500 mt-1">
+                    <h2 className="font-semibold text-warm-900">Team Roster</h2>
+                    <p className="text-sm leading-relaxed text-warm-500 mt-1">
                       {filteredRoster.length} {filteredRoster.length === 1 ? 'player' : 'players'}
                       {(searchQuery || activeFilterCount > 0) && roster.length !== filteredRoster.length && (
-                        <span className="text-slate-400"> of {roster.length}</span>
+                        <span className="text-warm-400"> of {roster.length}</span>
                       )}
                     </p>
                   </div>
@@ -581,23 +581,23 @@ export default function RosterPage() {
                       {Array.from({ length: 3 }).map((_, i) => (
                         <div
                           key={i}
-                          className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse"
+                          className="bg-white rounded-xl border border-warm-200 p-4 animate-pulse"
                         >
                           <div className="flex items-start gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-slate-200" />
+                            <div className="w-10 h-10 rounded-full bg-warm-200" />
                             <div className="flex-1">
-                              <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
-                              <div className="h-3 bg-slate-200 rounded w-1/3" />
+                              <div className="h-4 bg-warm-200 rounded w-2/3 mb-2" />
+                              <div className="h-3 bg-warm-200 rounded w-1/3" />
                             </div>
                           </div>
                           <div className="grid grid-cols-4 gap-2 mb-3">
                             {Array.from({ length: 4 }).map((_, j) => (
-                              <div key={j} className="h-16 bg-slate-100 rounded-lg" />
+                              <div key={j} className="h-16 bg-warm-100 rounded-lg" />
                             ))}
                           </div>
                           <div className="flex gap-2">
-                            <div className="h-11 bg-slate-200 rounded-lg flex-1" />
-                            <div className="h-11 bg-slate-200 rounded-lg flex-1" />
+                            <div className="h-11 bg-warm-200 rounded-lg flex-1" />
+                            <div className="h-11 bg-warm-200 rounded-lg flex-1" />
                           </div>
                         </div>
                       ))}
@@ -610,11 +610,11 @@ export default function RosterPage() {
                 ) : roster.length === 0 ? (
                   /* Empty State */
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <IconUsers size={32} className="text-slate-400" />
+                    <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                      <IconUsers size={32} className="text-warm-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">Build your roster</h3>
-                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+                    <h3 className="text-lg font-medium text-warm-900 mb-2">Build your roster</h3>
+                    <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
                       Invite players to join your team by generating a team invite link. Players
                       can use this link to join and complete their profiles.
                     </p>
@@ -626,11 +626,11 @@ export default function RosterPage() {
                 ) : filteredRoster.length === 0 ? (
                   /* No Results */
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <IconSearch size={32} className="text-slate-400" />
+                    <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                      <IconSearch size={32} className="text-warm-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">No players found</h3>
-                    <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+                    <h3 className="text-lg font-medium text-warm-900 mb-2">No players found</h3>
+                    <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
                       Try adjusting your search or filters to find what you&apos;re looking for.
                     </p>
                     <Button variant="secondary" onClick={clearFilters}>
@@ -656,50 +656,50 @@ export default function RosterPage() {
                     <div className="hidden lg:block overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-slate-200">
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                          <tr className="border-b border-warm-200">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               Player
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               Position
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               Class
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               AVG
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               OBP
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               SLG
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               OPS
                             </th>
                             {viewMode === 'expanded' && (
                               <>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                                   Last 5
                                 </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                                   Exit Velo
                                 </th>
-                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                                <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                                   Sessions
                                 </th>
                               </>
                             )}
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               Status
                             </th>
-                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-slate-400">
+                            <th className="text-left py-3 px-4 text-label font-medium uppercase tracking-wider text-warm-400">
                               Actions
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-warm-200">
                           {filteredRoster.map((member) => (
                             <PlayerRow
                               key={member.id}
@@ -723,17 +723,17 @@ export default function RosterPage() {
             {roster.length === 0 && (
               <Card variant="glass" className="mt-6">
                 <CardHeader>
-                  <h2 className="font-semibold text-slate-900">How to add players</h2>
+                  <h2 className="font-semibold text-warm-900">How to add players</h2>
                 </CardHeader>
                 <CardContent>
-                  <ol className="space-y-3 text-sm text-slate-600">
+                  <ol className="space-y-3 text-sm text-warm-600">
                     <li className="flex gap-3">
                       <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                         1
                       </span>
                       <div>
-                        <span className="font-medium text-slate-900">Generate an invite link</span>
-                        <p className="text-slate-500 mt-1">
+                        <span className="font-medium text-warm-900">Generate an invite link</span>
+                        <p className="text-warm-500 mt-1">
                           Create a unique link that players can use to join your team.
                         </p>
                       </div>
@@ -743,8 +743,8 @@ export default function RosterPage() {
                         2
                       </span>
                       <div>
-                        <span className="font-medium text-slate-900">Share with your players</span>
-                        <p className="text-slate-500 mt-1">
+                        <span className="font-medium text-warm-900">Share with your players</span>
+                        <p className="text-warm-500 mt-1">
                           Send the link via email, text, or team messaging platform.
                         </p>
                       </div>
@@ -754,10 +754,10 @@ export default function RosterPage() {
                         3
                       </span>
                       <div>
-                        <span className="font-medium text-slate-900">
+                        <span className="font-medium text-warm-900">
                           Players join automatically
                         </span>
-                        <p className="text-slate-500 mt-1">
+                        <p className="text-warm-500 mt-1">
                           When players sign up using your link, they&apos;ll be added to your roster.
                         </p>
                       </div>

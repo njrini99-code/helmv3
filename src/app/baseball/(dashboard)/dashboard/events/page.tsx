@@ -49,8 +49,8 @@ const eventTypeColors: Record<string, string> = {
   showcase: 'bg-purple-50 text-purple-700',
   tryout: 'bg-amber-50 text-amber-700',
   tournament: 'bg-red-50 text-red-700',
-  meeting: 'bg-slate-100 text-slate-700',
-  other: 'bg-slate-100 text-slate-600',
+  meeting: 'bg-warm-100 text-warm-700',
+  other: 'bg-warm-100 text-warm-600',
 };
 
 const eventTypeOptions = [
@@ -222,8 +222,8 @@ export default function EventsPage() {
       <>
         <Header title="Events" subtitle="Showcase coach access required" />
         <div className="p-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500">Please log in as a showcase coach to manage events.</p>
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+            <p className="text-warm-500">Please log in as a showcase coach to manage events.</p>
           </div>
         </div>
       </>
@@ -270,12 +270,12 @@ export default function EventsPage() {
         </div>
 
         {filteredEvents.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <IconCalendar size={24} className="text-slate-400" />
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
+              <IconCalendar size={24} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-medium text-warm-900 mb-2">No upcoming events</h3>
+            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               Create events to manage your team schedules, showcases, and tryouts.
             </p>
             <Button onClick={() => setShowCreateModal(true)}>
@@ -287,14 +287,14 @@ export default function EventsPage() {
           <div className="space-y-6">
             {Object.entries(groupedEvents).map(([date, dateEvents]) => (
               <div key={date}>
-                <h3 className="text-sm font-medium text-slate-500 mb-3">
+                <h3 className="text-sm font-medium text-warm-500 mb-3">
                   {format(new Date(date), 'EEEE, MMMM d, yyyy')}
                 </h3>
                 <div className="space-y-3">
                   {dateEvents.map((event) => (
                     <div
                       key={event.id}
-                      className="bg-white rounded-xl border border-slate-200 p-4 hover:border-slate-300 hover:shadow-sm transition-all"
+                      className="bg-white rounded-xl border border-warm-200 p-4 hover:border-warm-300 hover:shadow-sm transition-all"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
@@ -305,8 +305,8 @@ export default function EventsPage() {
                             {event.team?.name?.charAt(0) || 'E'}
                           </div>
                           <div>
-                            <h4 className="font-medium text-slate-900">{event.title}</h4>
-                            <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
+                            <h4 className="font-medium text-warm-900">{event.title}</h4>
+                            <div className="flex items-center gap-3 mt-1 text-sm text-warm-500">
                               <span className="flex items-center gap-1">
                                 <IconClock size={14} />
                                 {format(new Date(event.start_time), 'h:mm a')}
@@ -330,7 +330,7 @@ export default function EventsPage() {
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleDeleteEvent(event.id)}
-                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                            className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                             aria-label="Delete event"
                           >
                             <IconTrash size={16} aria-hidden="true" />
@@ -350,12 +350,12 @@ export default function EventsPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
             onClick={() => setShowCreateModal(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-slate-100 sticky top-0 bg-white">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Create New Event</h2>
+            <div className="px-6 py-4 border-b border-warm-100 sticky top-0 bg-white">
+              <h2 className="text-lg font-semibold tracking-tight text-warm-900">Create New Event</h2>
             </div>
             <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
               <Select
@@ -380,26 +380,26 @@ export default function EventsPage() {
               />
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     Start Time
                   </label>
                   <input
                     type="datetime-local"
                     value={newEvent.start_time}
                     onChange={(e) => setNewEvent({ ...newEvent, start_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     End Time
                   </label>
                   <input
                     type="datetime-local"
                     value={newEvent.end_time}
                     onChange={(e) => setNewEvent({ ...newEvent, end_time: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
                   />
                 </div>
               </div>
@@ -410,7 +410,7 @@ export default function EventsPage() {
                 onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
               />
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-warm-700 mb-1.5">
                   Description (Optional)
                 </label>
                 <textarea
@@ -418,7 +418,7 @@ export default function EventsPage() {
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
                   placeholder="Add notes or details about this event..."
                   rows={3}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 resize-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-warm-200 text-base lg:text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 resize-none"
                 />
               </div>
               <div className="flex items-center gap-3 pt-4">

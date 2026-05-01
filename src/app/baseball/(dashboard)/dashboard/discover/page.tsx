@@ -343,8 +343,8 @@ function DiscoverContent() {
       <>
         <Header title="Discover" subtitle="Coach access required" />
         <div className="p-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500">
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+            <p className="text-warm-500">
               Please log in as a coach to access discovery.
             </p>
           </div>
@@ -444,13 +444,13 @@ function DiscoverContent() {
         {mobileFiltersOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div
-              className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm animate-fade-in"
+              className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm animate-fade-in"
               onClick={() => setMobileFiltersOpen(false)}
             />
             <div className="absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-xl overflow-y-auto animate-slide-in-left">
-              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white">
+              <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 border-b border-warm-200 bg-white">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+                  <h2 className="text-lg font-semibold text-warm-900">Filters</h2>
                   {activeFilterCount > 0 && (
                     <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold text-primary-700 bg-primary-100 rounded-full">
                       {activeFilterCount} active
@@ -459,17 +459,17 @@ function DiscoverContent() {
                 </div>
                 <button
                   onClick={() => setMobileFiltersOpen(false)}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   aria-label="Close filters"
                 >
-                  <IconX size={20} className="text-slate-500" />
+                  <IconX size={20} className="text-warm-500" />
                 </button>
               </div>
               <div className="p-6">
                 <FilterPanel currentFilters={filters} mode={filters.mode} />
               </div>
               {/* Apply button at the bottom of filter sheet */}
-              <div className="sticky bottom-0 p-4 bg-white border-t border-slate-200">
+              <div className="sticky bottom-0 p-4 bg-white border-t border-warm-200">
                 <Button
                   onClick={() => setMobileFiltersOpen(false)}
                   className="w-full min-h-[44px]"

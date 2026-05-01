@@ -247,8 +247,8 @@ export default function TeamsPage() {
       <>
         <Header title="Teams" subtitle="Showcase coach access required" />
         <div className="p-6">
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <p className="text-slate-500">Please log in as a showcase coach to manage teams.</p>
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+            <p className="text-warm-500">Please log in as a showcase coach to manage teams.</p>
           </div>
         </div>
       </>
@@ -269,12 +269,12 @@ export default function TeamsPage() {
 
       <div className="p-6">
         {teams.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-              <IconUsers size={24} className="text-slate-400" />
+          <div className="bg-white rounded-2xl border border-warm-200 p-12 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
+              <IconUsers size={24} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No teams yet</h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <h3 className="text-lg font-medium text-warm-900 mb-2">No teams yet</h3>
+            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               Create your first team to start managing rosters, videos, and development plans.
             </p>
             <Button onClick={() => setShowCreateModal(true)}>
@@ -289,7 +289,7 @@ export default function TeamsPage() {
               return (
                 <div
                   key={team.id}
-                  className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-slate-300 hover:shadow-md transition-all"
+                  className="bg-white rounded-2xl border border-warm-200 overflow-hidden hover:border-warm-300 hover:shadow-md transition-all"
                 >
                   {/* Team Header */}
                   <div
@@ -319,8 +319,8 @@ export default function TeamsPage() {
 
                   {/* Team Info */}
                   <div className="pt-10 px-4 pb-4">
-                    <h3 className="text-lg font-semibold tracking-tight text-slate-900">{team.name}</h3>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
+                    <h3 className="text-lg font-semibold tracking-tight text-warm-900">{team.name}</h3>
+                    <div className="flex items-center gap-2 mt-1 text-sm text-warm-500">
                       <Badge variant="secondary">{team.team_type}</Badge>
                       {team.description && (
                         <span className="truncate max-w-[200px]">
@@ -330,36 +330,36 @@ export default function TeamsPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="flex items-center gap-4 mt-4 py-3 border-t border-slate-100">
-                      <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                        <IconUsers size={16} className="text-slate-400" />
+                    <div className="flex items-center gap-4 mt-4 py-3 border-t border-warm-100">
+                      <div className="flex items-center gap-1.5 text-sm text-warm-600">
+                        <IconUsers size={16} className="text-warm-400" />
                         <span>{team.member_count || 0} players</span>
                       </div>
                       {team.join_code && (
-                        <div className="flex items-center gap-1.5 text-sm text-slate-600">
-                          <IconCalendar size={16} className="text-slate-400" />
+                        <div className="flex items-center gap-1.5 text-sm text-warm-600">
+                          <IconCalendar size={16} className="text-warm-400" />
                           <span>Code: {team.join_code}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Invite Link */}
-                    <div className="mt-3 p-3 rounded-xl bg-slate-50">
-                      <p className="text-xs font-medium text-slate-500 mb-2">Invite Link</p>
+                    <div className="mt-3 p-3 rounded-xl bg-warm-50">
+                      <p className="text-xs font-medium text-warm-500 mb-2">Invite Link</p>
                       {invite ? (
                         <div className="flex items-center gap-2">
-                          <code className="flex-1 text-sm font-mono text-slate-700 truncate">
+                          <code className="flex-1 text-sm font-mono text-warm-700 truncate">
                             {invite.code}
                           </code>
                           <button
                             onClick={() => handleCopyInvite(invite.code)}
-                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-slate-200 active:bg-slate-300 transition-colors flex items-center justify-center"
+                            className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors flex items-center justify-center"
                             title="Copy invite link"
                           >
                             {copiedCode === invite.code ? (
                               <IconCheck size={16} className="text-primary-600" />
                             ) : (
-                              <IconCopy size={16} className="text-slate-500" />
+                              <IconCopy size={16} className="text-warm-500" />
                             )}
                           </button>
                         </div>
@@ -408,12 +408,12 @@ export default function TeamsPage() {
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
             onClick={() => setShowCreateModal(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100">
-              <h2 className="text-lg font-semibold tracking-tight text-slate-900">Create New Team</h2>
+            <div className="px-6 py-4 border-b border-warm-100">
+              <h2 className="text-lg font-semibold tracking-tight text-warm-900">Create New Team</h2>
             </div>
             <form onSubmit={handleCreateTeam} className="p-6 space-y-4">
               <Input
@@ -424,20 +424,20 @@ export default function TeamsPage() {
                 required
               />
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                <label className="block text-sm font-medium text-warm-700 mb-1.5">
                   Description
                 </label>
                 <textarea
                   placeholder="Brief description of your team..."
                   value={newTeam.description}
                   onChange={(e) => setNewTeam({ ...newTeam, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-warm-200 rounded-lg text-base lg:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   rows={3}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     Primary Color
                   </label>
                   <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function TeamsPage() {
                       type="color"
                       value={newTeam.primary_color}
                       onChange={(e) => setNewTeam({ ...newTeam, primary_color: e.target.value })}
-                      className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
                     />
                     <Input
                       value={newTeam.primary_color}
@@ -455,7 +455,7 @@ export default function TeamsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     Secondary Color
                   </label>
                   <div className="flex items-center gap-2">
@@ -463,7 +463,7 @@ export default function TeamsPage() {
                       type="color"
                       value={newTeam.secondary_color}
                       onChange={(e) => setNewTeam({ ...newTeam, secondary_color: e.target.value })}
-                      className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
                     />
                     <Input
                       value={newTeam.secondary_color}

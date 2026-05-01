@@ -110,7 +110,7 @@ export function RecruitingPreferencesClient({
               'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors',
               activeSection === section.id
                 ? 'bg-primary-500 text-white'
-                : 'bg-white/70 text-slate-600 hover:bg-white active:bg-white/70'
+                : 'bg-white/70 text-warm-600 hover:bg-white active:bg-white/70'
             )}
           >
             <span>{section.icon}</span>
@@ -159,18 +159,18 @@ export function RecruitingPreferencesClient({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconMapPin size={20} className="text-primary-600" />
                 Geographic Preferences
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-warm-500 mt-1">
                 Players from these states get a +5 point bonus
               </p>
             </div>
             {preferredStates.length > 0 && (
               <button
                 onClick={() => setPreferredStates([])}
-                className="text-sm text-slate-500 hover:text-slate-700 underline"
+                className="text-sm text-warm-500 hover:text-warm-700 underline"
               >
                 Clear all
               </button>
@@ -186,7 +186,7 @@ export function RecruitingPreferencesClient({
                   'px-3 py-1.5 rounded-lg text-sm font-medium transition-colors',
                   preferredStates.includes(state)
                     ? 'bg-primary-500 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
+                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
                 )}
               >
                 {state}
@@ -212,18 +212,18 @@ export function RecruitingPreferencesClient({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
                 <IconGraduationCap size={20} className="text-primary-600" />
                 Target Graduation Years
               </h3>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-warm-500 mt-1">
                 Focus your Discover feed on specific graduating classes
               </p>
             </div>
             {targetGradYears.length > 0 && (
               <button
                 onClick={() => setTargetGradYears([])}
-                className="text-sm text-slate-500 hover:text-slate-700 underline"
+                className="text-sm text-warm-500 hover:text-warm-700 underline"
               >
                 Clear all
               </button>
@@ -239,7 +239,7 @@ export function RecruitingPreferencesClient({
                   'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                   targetGradYears.includes(year)
                     ? 'bg-primary-500 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
+                    : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
                 )}
               >
                 Class of {year}
@@ -248,7 +248,7 @@ export function RecruitingPreferencesClient({
           </div>
 
           {targetGradYears.length === 0 && (
-            <p className="text-sm text-slate-500 italic">
+            <p className="text-sm text-warm-500 italic">
               No filter applied - all graduation years will be shown
             </p>
           )}
@@ -257,9 +257,9 @@ export function RecruitingPreferencesClient({
 
       {/* Save button - sticky on mobile */}
       <div className="sticky bottom-4 z-10">
-        <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-slate-200 p-4 shadow-lg">
+        <div className="bg-white/90 backdrop-blur-xl rounded-2xl border border-warm-200 p-4 shadow-lg">
           <div className="flex items-center justify-between gap-4">
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-warm-600">
               {saved ? (
                 <span className="text-primary-600 flex items-center gap-1">
                   <IconCheck size={16} />
@@ -278,7 +278,7 @@ export function RecruitingPreferencesClient({
               className={cn(
                 'flex items-center gap-2 px-6 py-2.5 rounded-xl font-medium transition-all',
                 isPending
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                  ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                   : 'bg-primary-500 hover:bg-primary-600 text-white shadow-sm'
               )}
             >

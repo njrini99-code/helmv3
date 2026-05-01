@@ -44,9 +44,9 @@ export default function AnalyticsPage() {
             <CardContent className="p-12 text-center">
               {isCoach ? (
                 <>
-                  <IconChart size={48} className="mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Recruiting Analytics</h3>
-                  <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                  <IconChart size={48} className="mx-auto text-warm-300 mb-4" />
+                  <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">Recruiting Analytics</h3>
+                  <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
                     Your outreach metrics, pipeline conversion rates, and engagement trends are available in{' '}
                     <a href="/baseball/dashboard/command-center" className="text-primary-600 hover:underline font-medium">
                       Command Center
@@ -56,9 +56,9 @@ export default function AnalyticsPage() {
                 </>
               ) : (
                 <>
-                  <IconEye size={48} className="mx-auto text-slate-300 mb-4" />
-                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Analytics Data Yet</h3>
-                  <p className="text-sm leading-relaxed text-slate-500">
+                  <IconEye size={48} className="mx-auto text-warm-300 mb-4" />
+                  <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No Analytics Data Yet</h3>
+                  <p className="text-sm leading-relaxed text-warm-500">
                     Analytics will appear once coaches start viewing your profile.
                     Make sure recruiting is activated to get discovered.
                   </p>
@@ -88,10 +88,10 @@ export default function AnalyticsPage() {
                 <div className="p-2 rounded-lg bg-primary-50">
                   <IconEye size={20} className="text-primary-600" />
                 </div>
-                <p className="text-sm font-medium text-slate-500">Profile Views</p>
+                <p className="text-sm font-medium text-warm-500">Profile Views</p>
               </div>
-              <p className="text-3xl font-semibold text-slate-900 tabular-nums">{stats.profileViews.toLocaleString()}</p>
-              <p className="text-xs text-slate-400 mt-1">Last 30 days</p>
+              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.profileViews.toLocaleString()}</p>
+              <p className="text-xs text-warm-400 mt-1">Last 30 days</p>
             </CardContent>
           </Card>
 
@@ -101,10 +101,10 @@ export default function AnalyticsPage() {
                 <div className="p-2 rounded-lg bg-blue-50">
                   <IconStar size={20} className="text-blue-600" />
                 </div>
-                <p className="text-sm font-medium text-slate-500">Watchlist Adds</p>
+                <p className="text-sm font-medium text-warm-500">Watchlist Adds</p>
               </div>
-              <p className="text-3xl font-semibold text-slate-900 tabular-nums">{stats.watchlistAdds.toLocaleString()}</p>
-              <p className="text-xs text-slate-400 mt-1">Coaches interested</p>
+              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.watchlistAdds.toLocaleString()}</p>
+              <p className="text-xs text-warm-400 mt-1">Coaches interested</p>
             </CardContent>
           </Card>
 
@@ -114,10 +114,10 @@ export default function AnalyticsPage() {
                 <div className="p-2 rounded-lg bg-purple-50">
                   <IconVideo size={20} className="text-purple-600" />
                 </div>
-                <p className="text-sm font-medium text-slate-500">Video Views</p>
+                <p className="text-sm font-medium text-warm-500">Video Views</p>
               </div>
-              <p className="text-3xl font-semibold text-slate-900 tabular-nums">{stats.videoViews.toLocaleString()}</p>
-              <p className="text-xs text-slate-400 mt-1">Highlight reel views</p>
+              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.videoViews.toLocaleString()}</p>
+              <p className="text-xs text-warm-400 mt-1">Highlight reel views</p>
             </CardContent>
           </Card>
 
@@ -127,22 +127,22 @@ export default function AnalyticsPage() {
                 <div className="p-2 rounded-lg bg-amber-50">
                   <IconMessage size={20} className="text-amber-600" />
                 </div>
-                <p className="text-sm font-medium text-slate-500">Messages</p>
+                <p className="text-sm font-medium text-warm-500">Messages</p>
               </div>
-              <p className="text-3xl font-semibold text-slate-900 tabular-nums">{stats.messagesSent.toLocaleString()}</p>
-              <p className="text-xs text-slate-400 mt-1">Coach messages</p>
+              <p className="text-3xl font-semibold text-warm-900 tabular-nums">{stats.messagesSent.toLocaleString()}</p>
+              <p className="text-xs text-warm-400 mt-1">Coach messages</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Views Over Time Chart */}
         <Card variant="glass">
-          <CardHeader className="border-b border-slate-200">
+          <CardHeader className="border-b border-warm-200">
             <div className="flex items-center gap-2">
               <IconTrendingUp size={20} className="text-primary-600" />
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900">Profile Views Over Time</h3>
+              <h3 className="text-lg font-semibold tracking-tight text-warm-900">Profile Views Over Time</h3>
             </div>
-            <p className="text-sm leading-relaxed text-slate-500 mt-1">Daily profile views for the last 30 days</p>
+            <p className="text-sm leading-relaxed text-warm-500 mt-1">Daily profile views for the last 30 days</p>
           </CardHeader>
           <CardContent className="p-6">
             {viewsOverTime.length > 0 ? (
@@ -187,8 +187,8 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             ) : (
               <div className="text-center py-12">
-                <IconCalendar size={48} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-sm leading-relaxed text-slate-500">No profile views yet</p>
+                <IconCalendar size={48} className="mx-auto text-warm-300 mb-3" />
+                <p className="text-sm leading-relaxed text-warm-500">No profile views yet</p>
               </div>
             )}
           </CardContent>
@@ -196,9 +196,9 @@ export default function AnalyticsPage() {
 
         {/* Top Schools Viewing */}
         <Card variant="glass">
-          <CardHeader className="border-b border-slate-200">
-            <h3 className="text-lg font-semibold tracking-tight text-slate-900">Top Schools Viewing Your Profile</h3>
-            <p className="text-sm leading-relaxed text-slate-500 mt-1">Schools that have shown the most interest</p>
+          <CardHeader className="border-b border-warm-200">
+            <h3 className="text-lg font-semibold tracking-tight text-warm-900">Top Schools Viewing Your Profile</h3>
+            <p className="text-sm leading-relaxed text-warm-500 mt-1">Schools that have shown the most interest</p>
           </CardHeader>
           <CardContent className="p-6">
             {topSchools.length > 0 ? (
@@ -206,22 +206,22 @@ export default function AnalyticsPage() {
                 {topSchools.map((school, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                    className="flex items-center gap-4 p-4 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 font-semibold">
+                      <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center text-warm-600 font-semibold">
                         #{idx + 1}
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-slate-900">{school.school_name}</p>
+                        <p className="font-medium text-warm-900">{school.school_name}</p>
                         {school.division && (
-                          <p className="text-xs text-slate-500 mt-0.5">{school.division}</p>
+                          <p className="text-xs text-warm-500 mt-0.5">{school.division}</p>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">{school.view_count.toLocaleString()}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-lg font-semibold tracking-tight text-warm-900 tabular-nums">{school.view_count.toLocaleString()}</p>
+                      <p className="text-xs text-warm-500">
                         {school.view_count === 1 ? 'view' : 'views'}
                       </p>
                     </div>
@@ -230,9 +230,9 @@ export default function AnalyticsPage() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <IconEye size={48} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-sm leading-relaxed text-slate-500">No school views yet</p>
-                <p className="text-xs text-slate-400 mt-1">
+                <IconEye size={48} className="mx-auto text-warm-300 mb-3" />
+                <p className="text-sm leading-relaxed text-warm-500">No school views yet</p>
+                <p className="text-xs text-warm-400 mt-1">
                   Make sure your profile is complete and recruiting is activated
                 </p>
               </div>

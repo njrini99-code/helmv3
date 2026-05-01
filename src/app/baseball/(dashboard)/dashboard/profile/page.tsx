@@ -19,7 +19,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-[50vh] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-600">This page is only available to players</p>
+          <p className="text-warm-600">This page is only available to players</p>
         </div>
       </div>
     );

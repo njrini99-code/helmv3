@@ -18,7 +18,7 @@ export default function Loading() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-slate-200 p-6 animate-pulse"
+              className="bg-white rounded-2xl border border-warm-200 p-6 animate-pulse"
               style={{ animationDelay: `${i * 50}ms` }}
             >
               {/* Header */}
@@ -31,7 +31,7 @@ export default function Loading() {
               </div>
 
               {/* Player info */}
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-100 mb-4">
+              <div className="flex items-center gap-3 pt-4 border-t border-warm-100 mb-4">
                 <Skeleton variant="circular" width={32} height={32} />
                 <div className="flex-1">
                   <Skeleton variant="text" width="60%" className="mb-1" />
@@ -50,7 +50,7 @@ export default function Loading() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between pt-4 border-t border-warm-100">
                 <Skeleton variant="text" width={80} height={12} />
                 <Skeleton variant="rectangular" width={80} height={32} className="rounded-lg" />
               </div>

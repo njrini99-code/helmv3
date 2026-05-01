@@ -190,7 +190,7 @@ export default function BaseballTasksPage() {
                 className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
                   filter === f.value
                     ? 'bg-primary-100 text-primary-700 border-primary-200'
-                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                    : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
                 }`}
               >
                 {f.label}
@@ -204,11 +204,11 @@ export default function BaseballTasksPage() {
         ) : !selectedTeamId ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <IconClipboardList size={28} className="text-slate-400" />
+              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                <IconClipboardList size={28} className="text-warm-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Team Selected</h3>
-              <p className="text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Team Selected</h3>
+              <p className="text-warm-500 max-w-sm mx-auto">
                 Please select a team from the sidebar to view tasks.
               </p>
             </CardContent>

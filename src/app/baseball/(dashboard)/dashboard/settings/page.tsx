@@ -126,11 +126,11 @@ export default function SettingsPage() {
                       <IconBuilding size={24} className="text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-1">Program Profile</h3>
-                      <p className="text-sm leading-relaxed text-slate-500">Customize your public program page for recruits</p>
+                      <h3 className="font-semibold text-warm-900 mb-1">Program Profile</h3>
+                      <p className="text-sm leading-relaxed text-warm-500">Customize your public program page for recruits</p>
                     </div>
                   </div>
-                  <IconChevronRight size={20} className="text-slate-400" />
+                  <IconChevronRight size={20} className="text-warm-400" />
                 </div>
               </CardContent>
             </Card>
@@ -148,11 +148,11 @@ export default function SettingsPage() {
                       <IconShield size={24} className="text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900 mb-1">Privacy Settings</h3>
-                      <p className="text-sm leading-relaxed text-slate-500">Control what appears on your public profile</p>
+                      <h3 className="font-semibold text-warm-900 mb-1">Privacy Settings</h3>
+                      <p className="text-sm leading-relaxed text-warm-500">Control what appears on your public profile</p>
                     </div>
                   </div>
-                  <IconChevronRight size={20} className="text-slate-400" />
+                  <IconChevronRight size={20} className="text-warm-400" />
                 </div>
               </CardContent>
             </Card>
@@ -164,15 +164,15 @@ export default function SettingsPage() {
           <Card variant="glass">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <IconBell size={20} className="text-slate-600" />
-                <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
+                <IconBell size={20} className="text-warm-600" />
+                <h2 className="font-semibold text-warm-900">Notification Preferences</h2>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
-                  <p className="font-medium text-slate-900">New Player Alerts</p>
-                  <p className="text-sm leading-relaxed text-slate-500">Get notified when new players match your criteria</p>
+                  <p className="font-medium text-warm-900">New Player Alerts</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Get notified when new players match your criteria</p>
                 </div>
                 <input
                   type="checkbox"
@@ -181,14 +181,14 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailNewPlayer: e.target.checked }));
                     showToast(e.target.checked ? 'Player alerts enabled' : 'Player alerts disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
-                  <p className="font-medium text-slate-900">Message Notifications</p>
-                  <p className="text-sm leading-relaxed text-slate-500">Email me when I receive new messages</p>
+                  <p className="font-medium text-warm-900">Message Notifications</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Email me when I receive new messages</p>
                 </div>
                 <input
                   type="checkbox"
@@ -197,14 +197,14 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailMessages: e.target.checked }));
                     showToast(e.target.checked ? 'Message notifications enabled' : 'Message notifications disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
 
-              <label className="flex items-center justify-between p-3 bg-slate-50 rounded-lg cursor-pointer hover:bg-slate-100 active:bg-slate-200 transition-colors group">
+              <label className="flex items-center justify-between p-3 bg-warm-50 rounded-lg cursor-pointer hover:bg-warm-100 active:bg-warm-200 transition-colors group">
                 <div>
-                  <p className="font-medium text-slate-900">Weekly Recruiting Digest</p>
-                  <p className="text-sm leading-relaxed text-slate-500">Get a weekly summary of new prospects</p>
+                  <p className="font-medium text-warm-900">Weekly Recruiting Digest</p>
+                  <p className="text-sm leading-relaxed text-warm-500">Get a weekly summary of new prospects</p>
                 </div>
                 <input
                   type="checkbox"
@@ -213,7 +213,7 @@ export default function SettingsPage() {
                     setNotificationSettings(prev => ({ ...prev, emailWeeklyDigest: e.target.checked }));
                     showToast(e.target.checked ? 'Weekly digest enabled' : 'Weekly digest disabled', 'success');
                   }}
-                  className="w-5 h-5 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  className="w-5 h-5 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                 />
               </label>
             </CardContent>
@@ -223,8 +223,8 @@ export default function SettingsPage() {
         <Card variant="glass">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <IconMail size={20} className="text-slate-600" />
-              <h2 className="font-semibold text-slate-900">Account Information</h2>
+              <IconMail size={20} className="text-warm-600" />
+              <h2 className="font-semibold text-warm-900">Account Information</h2>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -234,7 +234,7 @@ export default function SettingsPage() {
         </Card>
 
         <Card variant="glass">
-          <CardHeader><h2 className="font-semibold text-slate-900">Change Password</h2></CardHeader>
+          <CardHeader><h2 className="font-semibold text-warm-900">Change Password</h2></CardHeader>
           <CardContent>
             <form onSubmit={handlePasswordChange} className="space-y-4">
               <Input
@@ -263,10 +263,10 @@ export default function SettingsPage() {
                         passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-primary-500'
                       }`} />
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-slate-200'
+                        passwordStrength === 'medium' ? 'bg-amber-400' : passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-warm-200'
                       }`} />
                       <div className={`h-1.5 rounded-full flex-1 transition-colors ${
-                        passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-slate-200'
+                        passwordStrength === 'strong' ? 'bg-primary-500' : 'bg-warm-200'
                       }`} />
                     </div>
                     <span className={`text-xs font-medium ${
@@ -294,20 +294,20 @@ export default function SettingsPage() {
         </Card>
 
         <Card variant="glass">
-          <CardHeader><h2 className="font-semibold text-slate-900">Legal & Data</h2></CardHeader>
+          <CardHeader><h2 className="font-semibold text-warm-900">Legal & Data</h2></CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-3 text-sm">
-              <Link href="/privacy" className="text-slate-600 hover:text-slate-900 transition-colors">
+              <Link href="/privacy" className="text-warm-600 hover:text-warm-900 transition-colors">
                 Privacy Policy
               </Link>
-              <Link href="/terms" className="text-slate-600 hover:text-slate-900 transition-colors">
+              <Link href="/terms" className="text-warm-600 hover:text-warm-900 transition-colors">
                 Terms of Service
               </Link>
             </div>
-            <div className="pt-2 border-t border-slate-200/60">
+            <div className="pt-2 border-t border-warm-200/60">
               {!showDeleteConfirm ? (
                 <>
-                  <p className="text-sm text-slate-500 mb-3">
+                  <p className="text-sm text-warm-500 mb-3">
                     You can permanently delete your account and personal data. This action is irreversible.
                   </p>
                   <Button

@@ -17,7 +17,7 @@ export default function PlayersLoading() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-slate-50 rounded-lg p-3 text-center">
+              <div key={i} className="bg-warm-50 rounded-lg p-3 text-center">
                 <Skeleton className="h-3 w-16 mx-auto mb-2" />
                 <Skeleton className="h-6 w-12 mx-auto" />
               </div>

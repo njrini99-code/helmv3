@@ -44,8 +44,8 @@ export default async function SeasonStatsPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{team.name} — Stats</h1>
-        <p className="text-slate-500 mt-1 text-sm">
+        <h1 className="text-2xl font-bold text-warm-900">{team.name} — Stats</h1>
+        <p className="text-warm-500 mt-1 text-sm">
           Season stats auto-calculated from game and scrimmage box scores.
         </p>
       </div>
@@ -59,7 +59,7 @@ export default async function SeasonStatsPage() {
 
       {/* Recent games */}
       <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Recent Games</h2>
+        <h2 className="text-lg font-bold text-warm-900 mb-4">Recent Games</h2>
         <GamesList teamId={team.id} showAddButton={true} limit={5} title="" />
       </div>
     </div>

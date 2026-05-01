@@ -147,13 +147,13 @@ function GoalCard({
               <h4
                 className={cn(
                   'font-medium text-sm',
-                  isCompleted ? 'text-primary-700 line-through' : 'text-slate-900'
+                  isCompleted ? 'text-primary-700 line-through' : 'text-warm-900'
                 )}
               >
                 {goal.title}
               </h4>
               {goal.category && (
-                <span className="text-xs text-slate-500 mt-0.5 inline-block">
+                <span className="text-xs text-warm-500 mt-0.5 inline-block">
                   {goal.category}
                 </span>
               )}
@@ -170,7 +170,7 @@ function GoalCard({
                     ? 'bg-amber-100 text-amber-700'
                     : dueInfo.isUpcoming
                     ? 'bg-blue-50 text-blue-600'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-warm-100 text-warm-600'
                 )}
               >
                 {dueInfo.label}
@@ -181,7 +181,7 @@ function GoalCard({
           {/* Progress bar */}
           {!isCompleted && (
             <div className="mt-3">
-              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <div className="flex items-center justify-between text-xs text-warm-500 mb-1">
                 <span>Progress</span>
                 <span className="font-medium">{goal.progress}%</span>
               </div>
@@ -209,7 +209,7 @@ function GoalCard({
           {(goal.description || goal.coach_notes) && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="mt-2 flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+              className="mt-2 flex items-center gap-1 text-xs text-warm-500 hover:text-warm-700 transition-colors"
             >
               {isExpanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
               {isExpanded ? 'Show less' : 'Show more'}
@@ -227,7 +227,7 @@ function GoalCard({
               >
                 <div className="pt-3 space-y-3">
                   {goal.description && (
-                    <p className="text-sm text-slate-600">{goal.description}</p>
+                    <p className="text-sm text-warm-600">{goal.description}</p>
                   )}
                   {goal.coach_notes && (
                     <div className="flex items-start gap-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -309,10 +309,10 @@ function EmptyState() {
         <div className="w-20 h-20 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-6">
           <IconNote size={40} className="text-primary-400" />
         </div>
-        <h3 className="text-xl font-semibold text-slate-900 mb-2">
+        <h3 className="text-xl font-semibold text-warm-900 mb-2">
           No development plan yet
         </h3>
-        <p className="text-sm leading-relaxed text-slate-500 max-w-md mx-auto mb-6">
+        <p className="text-sm leading-relaxed text-warm-500 max-w-md mx-auto mb-6">
           Your coach hasn't assigned a development plan yet. Once they create one, you'll see your goals and track your progress here.
         </p>
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-50 text-primary-700 text-sm font-medium">
@@ -491,7 +491,7 @@ export default function PlayerDevPlanPage() {
       <div className="p-8">
         <Card variant="glass">
           <CardContent className="p-12 text-center">
-            <p className="text-slate-500">Only players can access this page.</p>
+            <p className="text-warm-500">Only players can access this page.</p>
           </CardContent>
         </Card>
       </div>
@@ -523,17 +523,17 @@ export default function PlayerDevPlanPage() {
             {/* How it works card */}
             <Card className="mt-6">
               <CardHeader>
-                <h2 className="font-semibold text-slate-900">How Development Plans Work</h2>
+                <h2 className="font-semibold text-warm-900">How Development Plans Work</h2>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-3 text-sm text-slate-600">
+                <ul className="space-y-3 text-sm text-warm-600">
                   <li className="flex gap-3">
                     <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 font-medium flex items-center justify-center text-xs">
                       1
                     </span>
                     <div>
-                      <span className="font-medium text-slate-900">Coach creates your plan</span>
-                      <p className="text-slate-500 mt-0.5">
+                      <span className="font-medium text-warm-900">Coach creates your plan</span>
+                      <p className="text-warm-500 mt-0.5">
                         Your coach will set specific goals and drills tailored to your needs
                       </p>
                     </div>
@@ -543,8 +543,8 @@ export default function PlayerDevPlanPage() {
                       2
                     </span>
                     <div>
-                      <span className="font-medium text-slate-900">Work on your goals</span>
-                      <p className="text-slate-500 mt-0.5">
+                      <span className="font-medium text-warm-900">Work on your goals</span>
+                      <p className="text-warm-500 mt-0.5">
                         Follow the drills and practice routines to improve your skills
                       </p>
                     </div>
@@ -554,8 +554,8 @@ export default function PlayerDevPlanPage() {
                       3
                     </span>
                     <div>
-                      <span className="font-medium text-slate-900">Track your progress</span>
-                      <p className="text-slate-500 mt-0.5">
+                      <span className="font-medium text-warm-900">Track your progress</span>
+                      <p className="text-warm-500 mt-0.5">
                         Mark goals as complete and see how far you've come
                       </p>
                     </div>
@@ -565,8 +565,8 @@ export default function PlayerDevPlanPage() {
                       4
                     </span>
                     <div>
-                      <span className="font-medium text-slate-900">Celebrate achievements</span>
-                      <p className="text-slate-500 mt-0.5">
+                      <span className="font-medium text-warm-900">Celebrate achievements</span>
+                      <p className="text-warm-500 mt-0.5">
                         Your coach will review your progress and set new goals
                       </p>
                     </div>
@@ -594,24 +594,24 @@ export default function PlayerDevPlanPage() {
                   {/* Stats grid */}
                   <div className="flex-1 grid grid-cols-3 gap-4 w-full">
                     <div className="text-center sm:text-left">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Active</p>
-                      <p className="text-2xl font-semibold text-slate-900 mt-1">{activeCount}</p>
+                      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">Active</p>
+                      <p className="text-2xl font-semibold text-warm-900 mt-1">{activeCount}</p>
                       {avgProgress > 0 && (
-                        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1 justify-center sm:justify-start">
+                        <p className="text-xs text-warm-500 mt-0.5 flex items-center gap-1 justify-center sm:justify-start">
                           <IconTrendingUp size={12} className="text-primary-500" />
                           {avgProgress}% avg progress
                         </p>
                       )}
                     </div>
                     <div className="text-center sm:text-left">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Upcoming</p>
-                      <p className="text-2xl font-semibold text-slate-900 mt-1">{upcomingCount}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">goals queued</p>
+                      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">Upcoming</p>
+                      <p className="text-2xl font-semibold text-warm-900 mt-1">{upcomingCount}</p>
+                      <p className="text-xs text-warm-500 mt-0.5">goals queued</p>
                     </div>
                     <div className="text-center sm:text-left">
-                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Done</p>
+                      <p className="text-xs font-medium text-warm-500 uppercase tracking-wide">Done</p>
                       <p className="text-2xl font-semibold text-primary-600 mt-1">{completedCount}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">of {totalGoals} goals</p>
+                      <p className="text-xs text-warm-500 mt-0.5">of {totalGoals} goals</p>
                     </div>
                   </div>
                 </div>
@@ -627,10 +627,10 @@ export default function PlayerDevPlanPage() {
                       <IconTarget size={20} className="text-primary-600" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900">{plan.title}</h3>
-                      <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
+                      <h3 className="font-semibold text-warm-900">{plan.title}</h3>
+                      <p className="text-sm text-warm-600 mt-1">{plan.description}</p>
                       {(plan.start_date || plan.end_date) && (
-                        <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                        <div className="flex items-center gap-2 mt-2 text-xs text-warm-500">
                           <IconCalendar size={14} />
                           {plan.start_date && (
                             <span>Started {new Date(plan.start_date).toLocaleDateString()}</span>

@@ -141,8 +141,8 @@ export default async function JoinTeamPage({ params }: PageProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <h1 className="text-xl font-semibold text-slate-900 mb-2">Already a Member</h1>
-            <p className="text-slate-600 mb-6">
+            <h1 className="text-xl font-semibold text-warm-900 mb-2">Already a Member</h1>
+            <p className="text-warm-600 mb-6">
               You&apos;re already a member of <span className="font-medium">{team.name}</span>.
             </p>
             <Link
@@ -166,8 +166,8 @@ export default async function JoinTeamPage({ params }: PageProps) {
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconX size={32} className="text-red-600" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">Invalid Invite Code</h1>
-          <p className="text-slate-600 mb-6">
+          <h1 className="text-xl font-semibold text-warm-900 mb-2">Invalid Invite Code</h1>
+          <p className="text-warm-600 mb-6">
             This team invitation code is invalid or has expired.
           </p>
           <Link
@@ -190,10 +190,10 @@ export default async function JoinTeamPage({ params }: PageProps) {
           <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <IconWarning size={32} className="text-amber-600" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 mb-2">
+          <h1 className="text-xl font-semibold text-warm-900 mb-2">
             Invitation {isExpired ? 'Expired' : 'Inactive'}
           </h1>
-          <p className="text-slate-600 mb-6">
+          <p className="text-warm-600 mb-6">
             This team invitation is no longer {isExpired ? 'valid' : 'active'}. Please contact your coach for a new invite link.
           </p>
           <Link

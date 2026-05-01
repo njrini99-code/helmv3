@@ -204,7 +204,7 @@ export default function ProgramPage() {
         <div className="p-6">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <p className="text-slate-500">This page is only available to coaches.</p>
+              <p className="text-warm-500">This page is only available to coaches.</p>
             </CardContent>
           </Card>
         </div>
@@ -219,9 +219,9 @@ export default function ProgramPage() {
         <div className="p-6">
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <IconBuilding size={48} className="mx-auto text-slate-300 mb-4" />
-              <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No Program Found</h3>
-              <p className="text-slate-500 mb-4">Your account is not associated with a program yet.</p>
+              <IconBuilding size={48} className="mx-auto text-warm-300 mb-4" />
+              <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No Program Found</h3>
+              <p className="text-warm-500 mb-4">Your account is not associated with a program yet.</p>
             </CardContent>
           </Card>
         </div>
@@ -248,14 +248,14 @@ export default function ProgramPage() {
           <CardContent className="p-6">
             <div className="space-y-6">
               <div>
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Program Information</h3>
-                <p className="text-sm leading-relaxed text-slate-500">
+                <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">Program Information</h3>
+                <p className="text-sm leading-relaxed text-warm-500">
                   This information appears on your public program page that recruits can view.
                 </p>
               </div>
 
               {/* Logo Preview */}
-              <div className="flex items-start gap-6 p-4 bg-slate-50 rounded-xl">
+              <div className="flex items-start gap-6 p-4 bg-warm-50 rounded-xl">
                 {formData.logo_url ? (
                   <Image
                     src={formData.logo_url}
@@ -271,8 +271,8 @@ export default function ProgramPage() {
                   </div>
                 )}
                 <div>
-                  <h4 className="font-medium text-slate-900 mb-1">Program Logo</h4>
-                  <p className="text-sm leading-relaxed text-slate-500 mb-3">Upload a logo for your program page (max 2MB).</p>
+                  <h4 className="font-medium text-warm-900 mb-1">Program Logo</h4>
+                  <p className="text-sm leading-relaxed text-warm-500 mb-3">Upload a logo for your program page (max 2MB).</p>
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -311,11 +311,11 @@ export default function ProgramPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Division</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Division</label>
                   <select
                     value={formData.division || ''}
                     onChange={(e) => handleInputChange('division', e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-slate-900 bg-white"
+                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-warm-900 bg-white"
                   >
                     <option value="">Select Division</option>
                     {DIVISIONS.map(div => (
@@ -349,12 +349,12 @@ export default function ProgramPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">About Your Program</label>
+                <label className="block text-sm font-medium text-warm-700 mb-2">About Your Program</label>
                 <textarea
                   value={formData.description || ''}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={5}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-slate-900 placeholder:text-slate-400"
+                  className="w-full px-4 py-3 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-base lg:text-sm text-warm-900 placeholder:text-warm-400"
                   placeholder="Tell recruits about your program, culture, and what makes it special..."
                 />
               </div>
@@ -362,38 +362,38 @@ export default function ProgramPage() {
               {/* Color Settings */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Primary Color</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Primary Color</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={formData.primary_color || '#16A34A'}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
                     />
                     <input
                       type="text"
                       value={formData.primary_color || '#16A34A'}
                       onChange={(e) => handleInputChange('primary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
                       placeholder="#16A34A"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Secondary Color</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-2">Secondary Color</label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
                       value={formData.secondary_color || '#FFFFFF'}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer"
+                      className="w-10 h-10 rounded-lg border border-warm-200 cursor-pointer"
                     />
                     <input
                       type="text"
                       value={formData.secondary_color || '#FFFFFF'}
                       onChange={(e) => handleInputChange('secondary_color', e.target.value)}
-                      className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900"
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900"
                       placeholder="#FFFFFF"
                     />
                   </div>
@@ -401,7 +401,7 @@ export default function ProgramPage() {
               </div>
 
               {/* Save Button */}
-              <div className="flex items-center justify-between pt-4 border-t border-slate-200">
+              <div className="flex items-center justify-between pt-4 border-t border-warm-200">
                 {saveMessage && (
                   <p className={cn(
                     'text-sm font-medium flex items-center gap-2',

@@ -37,19 +37,19 @@ export default function DiscoverError({
         </svg>
       </div>
 
-      <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
+      <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">
         Failed to load players
       </h3>
-      <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-md">
+      <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-md">
         We couldn't load the player list. This might be a temporary connection issue or a problem with the filters you've applied.
       </p>
 
       {process.env.NODE_ENV === 'development' && error && (
         <details className="mb-4 max-w-md w-full">
-          <summary className="text-xs font-medium text-slate-500 cursor-pointer hover:text-slate-700 mb-2">
+          <summary className="text-xs font-medium text-warm-500 cursor-pointer hover:text-warm-700 mb-2">
             Error Details
           </summary>
-          <pre className="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600 text-left">
+          <pre className="text-xs bg-warm-50 border border-warm-200 rounded-lg p-3 overflow-auto max-h-32 text-red-600 text-left">
             {error.message}
             {error.stack && `\n\n${error.stack}`}
             {error.digest && `\n\nDigest: ${error.digest}`}

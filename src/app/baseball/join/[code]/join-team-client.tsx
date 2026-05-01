@@ -164,13 +164,13 @@ export function JoinTeamClient({
                   <IconCheck size={32} className="text-white animate-in slide-in-from-bottom-2 duration-300 delay-300" />
                 </div>
               </div>
-              <h1 className="text-2xl font-semibold text-slate-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
+              <h1 className="text-2xl font-semibold text-warm-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-150">
                 Welcome to {team.name}! 🎉
               </h1>
-              <p className="text-slate-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
+              <p className="text-warm-600 animate-in fade-in slide-in-from-bottom-2 duration-300 delay-200">
                 You&apos;re now officially part of the team
               </p>
-              <p className="text-sm text-slate-500 mt-4 animate-in fade-in duration-300 delay-300">
+              <p className="text-sm text-warm-500 mt-4 animate-in fade-in duration-300 delay-300">
                 Redirecting to your team dashboard...
               </p>
             </div>
@@ -199,19 +199,19 @@ export function JoinTeamClient({
               <IconUsers size={32} className="text-primary-600" />
             </div>
           )}
-          <h1 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+          <h1 className="text-xl sm:text-2xl font-semibold text-warm-900 mb-2">
             Join {team.name}
           </h1>
           {team.organization && (
-            <p className="text-slate-600 text-sm sm:text-base">
+            <p className="text-warm-600 text-sm sm:text-base">
               {team.organization.name}
               {team.organization.city && team.organization.state && (
-                <span className="text-slate-400"> • {team.organization.city}, {team.organization.state}</span>
+                <span className="text-warm-400"> • {team.organization.city}, {team.organization.state}</span>
               )}
             </p>
           )}
           {team.season && (
-            <p className="text-sm text-slate-500 mt-1">{team.season}</p>
+            <p className="text-sm text-warm-500 mt-1">{team.season}</p>
           )}
           {/* Team type badge */}
           <div className="mt-3">
@@ -230,14 +230,14 @@ export function JoinTeamClient({
         {/* Body */}
         <div className="p-6 sm:p-8">
           <div className="mb-6">
-            <div className="flex items-center gap-3 p-4 bg-slate-50/80 rounded-lg border border-slate-200/50">
+            <div className="flex items-center gap-3 p-4 bg-warm-50/80 rounded-lg border border-warm-200/50">
               <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                 <IconUser size={20} className="text-primary-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-slate-500">Joining as</p>
-                <p className="font-semibold text-slate-900 truncate">{playerName}</p>
-                <p className="text-xs text-slate-500 capitalize">{playerType.replace('_', ' ')} Player</p>
+                <p className="text-sm text-warm-500">Joining as</p>
+                <p className="font-semibold text-warm-900 truncate">{playerName}</p>
+                <p className="text-xs text-warm-500 capitalize">{playerType.replace('_', ' ')} Player</p>
               </div>
             </div>
           </div>
@@ -279,15 +279,15 @@ export function JoinTeamClient({
             <button
               onClick={() => router.push('/baseball/dashboard')}
               disabled={state === 'loading'}
-              className="w-full px-6 py-3 bg-white text-slate-700 font-medium rounded-lg border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-white text-warm-700 font-medium rounded-lg border border-warm-200 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <IconArrowLeft size={18} />
               <span>Cancel</span>
             </button>
           </div>
 
-          <div className="mt-6 pt-6 border-t border-slate-200/50">
-            <p className="text-xs text-slate-500 text-center">
+          <div className="mt-6 pt-6 border-t border-warm-200/50">
+            <p className="text-xs text-warm-500 text-center">
               By joining this team, you&apos;ll have access to team schedules, messages, and other team features.
             </p>
           </div>

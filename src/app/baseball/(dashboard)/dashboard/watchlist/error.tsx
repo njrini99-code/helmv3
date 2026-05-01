@@ -29,10 +29,10 @@ export default function WatchlistError({ error, reset }: ErrorProps) {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <IconAlertCircle size={32} className="text-red-600" />
               </div>
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
+              <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
                 Failed to load watchlist
               </h2>
-              <p className="text-sm leading-relaxed text-slate-600 mb-6">
+              <p className="text-sm leading-relaxed text-warm-600 mb-6">
                 We couldn&apos;t load your watchlist. This might be a temporary issue. 
                 Please try again or refresh the page.
               </p>
@@ -49,7 +49,7 @@ export default function WatchlistError({ error, reset }: ErrorProps) {
                 </Button>
               </div>
               {error.digest && (
-                <p className="text-xs text-slate-400 mt-4">
+                <p className="text-xs text-warm-400 mt-4">
                   Error ID: {error.digest}
                 </p>
               )}

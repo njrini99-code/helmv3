@@ -238,7 +238,7 @@ export default function CollegeInterestClient() {
       <div className="p-8">
         <Card variant="glass">
           <CardContent className="p-12 text-center">
-            <p className="text-slate-500">Only coaches can access college interest tracking.</p>
+            <p className="text-warm-500">Only coaches can access college interest tracking.</p>
           </CardContent>
         </Card>
       </div>
@@ -254,7 +254,7 @@ export default function CollegeInterestClient() {
       case 'watchlist_add':
         return <IconStar size={14} className="text-amber-600" />;
       default:
-        return <IconEye size={14} className="text-slate-400" />;
+        return <IconEye size={14} className="text-warm-400" />;
     }
   };
 
@@ -293,8 +293,8 @@ export default function CollegeInterestClient() {
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Players Tracked</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.totalPlayers}</p>
+                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Players Tracked</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.totalPlayers}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconEye size={20} className="text-blue-600 lg:hidden" />
@@ -308,8 +308,8 @@ export default function CollegeInterestClient() {
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">High Interest</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.highInterest}</p>
+                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">High Interest</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.highInterest}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-amber-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconStar size={20} className="text-amber-600 lg:hidden" />
@@ -323,8 +323,8 @@ export default function CollegeInterestClient() {
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Total Views</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.totalViews}</p>
+                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Total Views</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.totalViews}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-purple-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconEye size={20} className="text-purple-600 lg:hidden" />
@@ -338,8 +338,8 @@ export default function CollegeInterestClient() {
             <CardContent className="p-4 lg:p-6">
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
-                  <p className="text-xs lg:text-sm font-medium text-slate-500 truncate">Avg Coaches</p>
-                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stats.avgCoachesPerPlayer}</p>
+                  <p className="text-xs lg:text-sm font-medium text-warm-500 truncate">Avg Coaches</p>
+                  <p className="text-xl lg:text-2xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stats.avgCoachesPerPlayer}</p>
                 </div>
                 <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0 ml-2">
                   <IconTrendingUp size={20} className="text-primary-600 lg:hidden" />
@@ -355,8 +355,8 @@ export default function CollegeInterestClient() {
           <CardHeader>
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <div>
-                <h2 className="font-semibold text-slate-900">Player Interest Activity</h2>
-                <p className="text-sm leading-relaxed text-slate-500 mt-1 hidden lg:block">
+                <h2 className="font-semibold text-warm-900">Player Interest Activity</h2>
+                <p className="text-sm leading-relaxed text-warm-500 mt-1 hidden lg:block">
                   See which colleges are viewing and tracking your players
                 </p>
               </div>
@@ -396,11 +396,11 @@ export default function CollegeInterestClient() {
             ) : interests.length === 0 ? (
               /* Empty State */
               <div className="text-center py-12">
-                <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                  <IconEye size={32} className="text-slate-400" />
+                <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                  <IconEye size={32} className="text-warm-400" />
                 </div>
-                <h3 className="text-lg font-medium text-slate-900 mb-2">No college interest yet</h3>
-                <p className="text-sm leading-relaxed text-slate-500 mb-6 max-w-md mx-auto">
+                <h3 className="text-lg font-medium text-warm-900 mb-2">No college interest yet</h3>
+                <p className="text-sm leading-relaxed text-warm-500 mb-6 max-w-md mx-auto">
                   When college coaches view your players' profiles or add them to watchlists, you'll see the activity here.
                 </p>
               </div>
@@ -410,7 +410,7 @@ export default function CollegeInterestClient() {
                 {interests.map((interest) => (
                   <div
                     key={interest.player_id}
-                    className="border border-slate-200 rounded-lg p-3 lg:p-4"
+                    className="border border-warm-200 rounded-lg p-3 lg:p-4"
                   >
                     <div className="flex items-start gap-3 lg:gap-4 mb-3 lg:mb-4">
                       <Avatar
@@ -420,17 +420,17 @@ export default function CollegeInterestClient() {
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-slate-900 text-sm lg:text-base">{interest.player_name}</h3>
+                          <h3 className="font-semibold text-warm-900 text-sm lg:text-base">{interest.player_name}</h3>
                           {interest.watchlist_adds > 0 && (
                             <Badge variant="default" className="text-xs">
                               {interest.watchlist_adds} watchlist{interest.watchlist_adds > 1 ? 's' : ''}
                             </Badge>
                           )}
                         </div>
-                        <p className="text-xs lg:text-sm leading-relaxed text-slate-600">
+                        <p className="text-xs lg:text-sm leading-relaxed text-warm-600">
                           {interest.player_position} • {interest.player_grad_year}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-2 text-xs lg:text-sm text-slate-500">
+                        <div className="flex flex-wrap items-center gap-2 lg:gap-4 mt-2 text-xs lg:text-sm text-warm-500">
                           <span>{interest.total_views} views</span>
                           <span className="hidden lg:inline">•</span>
                           <span>{interest.unique_coaches} college{interest.unique_coaches !== 1 ? 's' : ''}</span>
@@ -440,8 +440,8 @@ export default function CollegeInterestClient() {
 
                     {/* Recent Activity */}
                     {interest.recent_activity.length > 0 && (
-                      <div className="border-t border-slate-200 pt-3 space-y-2">
-                        <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-2">Recent Activity</p>
+                      <div className="border-t border-warm-200 pt-3 space-y-2">
+                        <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-2">Recent Activity</p>
                         {interest.recent_activity.slice(0, 5).map((activity) => (
                           <div
                             key={activity.id}
@@ -452,29 +452,29 @@ export default function CollegeInterestClient() {
                             </div>
                             <div className="flex-1 min-w-0">
                               {!activity.coach_name ? (
-                                <p className="text-slate-600">
+                                <p className="text-warm-600">
                                   <span className="font-medium">A college coach</span>{' '}
                                   <span className="hidden lg:inline">{getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
                                   <span className="lg:hidden">viewed</span>
                                   {activity.coach_division && (
-                                    <span className="text-slate-500"> • {activity.coach_division}</span>
+                                    <span className="text-warm-500"> • {activity.coach_division}</span>
                                   )}
                                 </p>
                               ) : (
-                                <p className="text-slate-600">
+                                <p className="text-warm-600">
                                   <span className="font-medium">{activity.coach_name}</span>
                                   <span className="hidden lg:inline"> from <span className="font-medium">{activity.coach_school}</span> {getEngagementLabel(activity.engagement_type).toLowerCase()}</span>
-                                  <span className="lg:hidden block text-slate-500">{activity.coach_school}</span>
+                                  <span className="lg:hidden block text-warm-500">{activity.coach_school}</span>
                                   {activity.coach_division && (
-                                    <span className="text-slate-500 hidden lg:inline"> • {activity.coach_division}</span>
+                                    <span className="text-warm-500 hidden lg:inline"> • {activity.coach_division}</span>
                                   )}
                                 </p>
                               )}
-                              <span className="text-micro lg:hidden text-slate-400 block mt-0.5">
+                              <span className="text-micro lg:hidden text-warm-400 block mt-0.5">
                                 {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
                               </span>
                             </div>
-                            <div className="flex-shrink-0 text-xs text-slate-400 hidden lg:block">
+                            <div className="flex-shrink-0 text-xs text-warm-400 hidden lg:block">
                               {activity.created_at ? formatRelativeTime(activity.created_at) : ''}
                             </div>
                           </div>

@@ -75,7 +75,7 @@ function formatDate(dateString: string): string {
 }
 
 const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-  interested: { label: 'Interested', color: 'text-slate-600', bg: 'bg-slate-100' },
+  interested: { label: 'Interested', color: 'text-warm-600', bg: 'bg-warm-100' },
   registered: { label: 'Registered', color: 'text-blue-600', bg: 'bg-blue-100' },
   confirmed: { label: 'Confirmed', color: 'text-primary-600', bg: 'bg-primary-100' },
   attended: { label: 'Checked In', color: 'text-green-600', bg: 'bg-green-100' },
@@ -268,13 +268,13 @@ export default function CampDetailPage() {
         <div className="relative glass-standard rounded-2xl p-6 overflow-clip">
           <ShineEffect />
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-            <div className="flex items-center gap-3 text-slate-600">
+            <div className="flex items-center gap-3 text-warm-600">
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                 <IconCalendar size={20} className="text-primary-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Date</p>
-                <p className="font-medium text-slate-900">
+                <p className="text-sm text-warm-500">Date</p>
+                <p className="font-medium text-warm-900">
                   {formatDate(camp.start_date)}
                   {camp.end_date !== camp.start_date && ` - ${formatDate(camp.end_date)}`}
                 </p>
@@ -282,24 +282,24 @@ export default function CampDetailPage() {
             </div>
             
             {camp.location && (
-              <div className="flex items-center gap-3 text-slate-600">
+              <div className="flex items-center gap-3 text-warm-600">
                 <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
                   <IconMapPin size={20} className="text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-slate-500">Location</p>
-                  <p className="font-medium text-slate-900">{camp.location}</p>
+                  <p className="text-sm text-warm-500">Location</p>
+                  <p className="font-medium text-warm-900">{camp.location}</p>
                 </div>
               </div>
             )}
 
-            <div className="flex items-center gap-3 text-slate-600">
+            <div className="flex items-center gap-3 text-warm-600">
               <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
                 <IconUsers size={20} className="text-purple-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Capacity</p>
-                <p className="font-medium text-slate-900">
+                <p className="text-sm text-warm-500">Capacity</p>
+                <p className="font-medium text-warm-900">
                   {stats.total}{camp.capacity ? ` / ${camp.capacity}` : ''} registered
                 </p>
               </div>
@@ -310,19 +310,19 @@ export default function CampDetailPage() {
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card variant="glass" className="p-4">
-            <p className="text-sm text-slate-500">Total</p>
-            <p className="text-2xl font-semibold text-slate-900 tabular-nums">{stats.total}</p>
+            <p className="text-sm text-warm-500">Total</p>
+            <p className="text-2xl font-semibold text-warm-900 tabular-nums">{stats.total}</p>
           </Card>
           <Card variant="glass" className="p-4">
-            <p className="text-sm text-slate-500">Checked In</p>
+            <p className="text-sm text-warm-500">Checked In</p>
             <p className="text-2xl font-semibold text-green-600 tabular-nums">{stats.attended}</p>
           </Card>
           <Card variant="glass" className="p-4">
-            <p className="text-sm text-slate-500">Pending</p>
+            <p className="text-sm text-warm-500">Pending</p>
             <p className="text-2xl font-semibold text-blue-600 tabular-nums">{stats.pending}</p>
           </Card>
           <Card variant="glass" className="p-4">
-            <p className="text-sm text-slate-500">No Show</p>
+            <p className="text-sm text-warm-500">No Show</p>
             <p className="text-2xl font-semibold text-amber-600 tabular-nums">{stats.noShow}</p>
           </Card>
         </div>
@@ -330,11 +330,11 @@ export default function CampDetailPage() {
         {/* Roster */}
         <div className="relative glass-standard rounded-2xl overflow-clip">
           <ShineEffect />
-          <div className="px-6 py-4 border-b border-slate-100/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="font-semibold text-slate-900">Roster ({filteredRegistrations.length})</h2>
+          <div className="px-6 py-4 border-b border-warm-100/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h2 className="font-semibold text-warm-900">Roster ({filteredRegistrations.length})</h2>
             
             {/* Filter Tabs */}
-            <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+            <div className="flex gap-1 p-1 bg-warm-100 rounded-lg">
               {(['all', 'registered', 'attended', 'no_show'] as const).map(f => (
                 <button
                   key={f}
@@ -342,8 +342,8 @@ export default function CampDetailPage() {
                   className={cn(
                     'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
                     filter === f
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white text-warm-900 shadow-sm'
+                      : 'text-warm-600 hover:text-warm-900'
                   )}
                 >
                   {f === 'all' ? 'All' : f === 'registered' ? 'Pending' : f === 'attended' ? 'Checked In' : 'No Show'}
@@ -354,15 +354,15 @@ export default function CampDetailPage() {
 
           {filteredRegistrations.length === 0 ? (
             <div className="p-8 text-center">
-              <IconUsers size={32} className="text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-500">No registrations yet</p>
+              <IconUsers size={32} className="text-warm-300 mx-auto mb-3" />
+              <p className="text-warm-500">No registrations yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-100/50">
+            <div className="divide-y divide-warm-100/50">
               {filteredRegistrations.map(reg => (
                 <div
                   key={reg.id}
-                  className="px-6 py-4 flex items-center gap-4 hover:bg-slate-50/50 transition-colors"
+                  className="px-6 py-4 flex items-center gap-4 hover:bg-warm-50/50 transition-colors"
                 >
                   <Avatar
                     name={getFullName(reg.player?.first_name, reg.player?.last_name)}
@@ -372,7 +372,7 @@ export default function CampDetailPage() {
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-slate-900 truncate">
+                      <p className="font-medium text-warm-900 truncate">
                         {getFullName(reg.player?.first_name, reg.player?.last_name)}
                       </p>
                       {reg.player?.primary_position && (
@@ -381,7 +381,7 @@ export default function CampDetailPage() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500 truncate">
+                    <p className="text-sm text-warm-500 truncate">
                       {reg.player?.high_school_name && `${reg.player.high_school_name} • `}
                       {reg.player?.grad_year && `Class of ${reg.player.grad_year}`}
                       {reg.player?.city && reg.player?.state && ` • ${reg.player.city}, ${reg.player.state}`}
@@ -395,7 +395,7 @@ export default function CampDetailPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Badge className={cn(statusConfig[reg.status]?.bg ?? 'bg-slate-100', statusConfig[reg.status]?.color ?? 'text-slate-600')}>
+                    <Badge className={cn(statusConfig[reg.status]?.bg ?? 'bg-warm-100', statusConfig[reg.status]?.color ?? 'text-warm-600')}>
                       {statusConfig[reg.status]?.label ?? reg.status}
                     </Badge>
                     

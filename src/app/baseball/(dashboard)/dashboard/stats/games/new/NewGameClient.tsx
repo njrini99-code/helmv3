@@ -56,15 +56,15 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Add Game / Scrimmage</h1>
-        <p className="text-slate-500 mt-1 text-sm">{teamName}</p>
+        <h1 className="text-2xl font-bold text-warm-900">Add Game / Scrimmage</h1>
+        <p className="text-warm-500 mt-1 text-sm">{teamName}</p>
       </div>
 
       <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Game type */}
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-2">Type</label>
+            <label className="text-sm font-medium text-warm-700 block mb-2">Type</label>
             <div className="flex gap-3">
               {(['game', 'scrimmage'] as BaseballGameType[]).map((t) => (
                 <button
@@ -76,7 +76,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                       ? t === 'scrimmage'
                         ? 'bg-purple-600 text-white border-purple-600'
                         : 'bg-primary-600 text-white border-primary-600'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {t}
@@ -87,34 +87,34 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Date */}
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1.5">Date</label>
+            <label className="text-sm font-medium text-warm-700 block mb-1.5">Date</label>
             <input
               type="date"
               value={gameDate}
               onChange={(e) => setGameDate(e.target.value)}
               required
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
           {/* Opponent */}
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1.5">
+            <label className="text-sm font-medium text-warm-700 block mb-1.5">
               Opponent Name
-              <span className="ml-1 text-slate-400 font-normal">(optional)</span>
+              <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={opponentName}
               onChange={(e) => setOpponentName(e.target.value)}
               placeholder="e.g. State University"
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-slate-300"
+              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-warm-300"
             />
           </div>
 
           {/* Home/Away */}
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-2">Location</label>
+            <label className="text-sm font-medium text-warm-700 block mb-2">Location</label>
             <div className="flex gap-2">
               {(['home', 'away', 'neutral'] as BaseballHomeAway[]).map((ha) => (
                 <button
@@ -123,8 +123,8 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                   onClick={() => setHomeAway(ha)}
                   className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all capitalize ${
                     homeAway === ha
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'
+                      ? 'bg-warm-800 text-white border-warm-800'
+                      : 'bg-white text-warm-500 border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   {ha}
@@ -135,29 +135,29 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
 
           {/* Venue */}
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1.5">
+            <label className="text-sm font-medium text-warm-700 block mb-1.5">
               Venue / Field
-              <span className="ml-1 text-slate-400 font-normal">(optional)</span>
+              <span className="ml-1 text-warm-400 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g. Alumni Field"
-              className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-slate-300"
+              className="w-full border border-warm-200 rounded-xl px-4 py-2.5 text-sm text-warm-900 bg-white/80 focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-warm-300"
             />
           </div>
 
           {/* Calendar event option */}
-          <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+          <div className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
             <input
               type="checkbox"
               id="createCalendar"
               checked={createCalendarEvent}
               onChange={(e) => setCreateCalendarEvent(e.target.checked)}
-              className="w-4 h-4 rounded text-primary-600 border-slate-300 focus:ring-primary-500"
+              className="w-4 h-4 rounded text-primary-600 border-warm-300 focus:ring-primary-500"
             />
-            <label htmlFor="createCalendar" className="text-sm text-slate-600 cursor-pointer flex-1">
+            <label htmlFor="createCalendar" className="text-sm text-warm-600 cursor-pointer flex-1">
               Also add to team calendar
             </label>
             {createCalendarEvent && (
@@ -165,7 +165,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                 type="time"
                 value={eventTime}
                 onChange={(e) => setEventTime(e.target.value)}
-                className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 placeholder="Start time"
               />
             )}

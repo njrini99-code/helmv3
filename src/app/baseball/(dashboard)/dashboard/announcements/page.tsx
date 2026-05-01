@@ -119,11 +119,11 @@ export default function BaseballAnnouncementsPage() {
             {Array.from({ length: 3 }).map((_, i) => (
               <div key={i} className="glass-standard rounded-2xl p-6 animate-pulse">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-slate-200" />
+                  <div className="w-10 h-10 rounded-full bg-warm-200" />
                   <div className="flex-1">
-                    <div className="h-4 bg-slate-200 rounded w-1/3 mb-3" />
-                    <div className="h-3 bg-slate-200 rounded w-2/3 mb-2" />
-                    <div className="h-3 bg-slate-200 rounded w-1/2" />
+                    <div className="h-4 bg-warm-200 rounded w-1/3 mb-3" />
+                    <div className="h-3 bg-warm-200 rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-warm-200 rounded w-1/2" />
                   </div>
                 </div>
               </div>
@@ -132,11 +132,11 @@ export default function BaseballAnnouncementsPage() {
         ) : !selectedTeamId ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <IconBell size={28} className="text-slate-400" />
+              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                <IconBell size={28} className="text-warm-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Team Selected</h3>
-              <p className="text-slate-500 max-w-sm mx-auto">
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Team Selected</h3>
+              <p className="text-warm-500 max-w-sm mx-auto">
                 Please select a team from the sidebar to view announcements.
               </p>
             </CardContent>
@@ -144,11 +144,11 @@ export default function BaseballAnnouncementsPage() {
         ) : announcements.length === 0 ? (
           <Card variant="glass">
             <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <IconBell size={28} className="text-slate-400" />
+              <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                <IconBell size={28} className="text-warm-400" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">No Announcements</h3>
-              <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+              <h3 className="text-lg font-semibold text-warm-900 mb-2">No Announcements</h3>
+              <p className="text-warm-500 mb-6 max-w-sm mx-auto">
                 {isCoach
                   ? 'Create announcements to keep your team informed about schedule changes, game updates, and important news.'
                   : 'No announcements have been posted yet. Check back later for team updates.'}

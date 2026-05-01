@@ -16,11 +16,11 @@ export default function Error({
         <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
           <IconWarning size={32} className="text-amber-600" />
         </div>
-        <h2 className="text-xl font-semibold text-slate-900 mb-2">
+        <h2 className="text-xl font-semibold text-warm-900 mb-2">
           Unable to Join Team
         </h2>
-        <p className="text-slate-600 mb-4">{error.message}</p>
-        <p className="text-sm text-slate-500 mb-6">
+        <p className="text-warm-600 mb-4">{error.message}</p>
+        <p className="text-sm text-warm-500 mb-6">
           This invite link may be invalid, expired, or already used.
           Please contact your coach for a new invite link.
         </p>
@@ -35,7 +35,7 @@ export default function Error({
           </button>
           <Link
             href="/baseball/dashboard"
-            className="flex items-center justify-center gap-2 px-4 py-2.5 text-slate-600 hover:text-slate-900 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 text-warm-600 hover:text-warm-900 transition-colors"
           >
             <IconArrowLeft size={18} />
             Go to Dashboard

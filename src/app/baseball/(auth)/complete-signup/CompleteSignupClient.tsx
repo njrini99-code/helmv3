@@ -108,14 +108,14 @@ export default function CompleteSignupClient() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-slate-900">Email Verified!</h1>
-          <p className="text-slate-500 mt-1">Just one more step to complete your account</p>
+          <h1 className="text-2xl font-semibold text-warm-900">Email Verified!</h1>
+          <p className="text-warm-500 mt-1">Just one more step to complete your account</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+        <div className="bg-white rounded-2xl border border-warm-200 p-6 shadow-sm space-y-6">
           {/* Role Selection */}
           <div>
-            <label className="text-sm font-medium text-slate-700 mb-3 block">I am a...</label>
+            <label className="text-sm font-medium text-warm-700 mb-3 block">I am a...</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => { setRole('coach'); setPlayerType(null); }}
@@ -123,7 +123,7 @@ export default function CompleteSignupClient() {
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
                   role === 'coach'
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-warm-200 hover:border-warm-300'
                 )}
               >
                 <IconUsers size={20} className="text-primary-600" />
@@ -135,7 +135,7 @@ export default function CompleteSignupClient() {
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
                   role === 'player'
                     ? 'border-primary-500 bg-primary-50'
-                    : 'border-slate-200 hover:border-slate-300'
+                    : 'border-warm-200 hover:border-warm-300'
                 )}
               >
                 <IconUser size={20} className="text-primary-600" />
@@ -147,7 +147,7 @@ export default function CompleteSignupClient() {
           {/* Type Selection */}
           {role && (
             <div>
-              <label className="text-sm font-medium text-slate-700 mb-3 block">
+              <label className="text-sm font-medium text-warm-700 mb-3 block">
                 {role === 'coach' ? 'Program Type' : 'Player Type'}
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -166,7 +166,7 @@ export default function CompleteSignupClient() {
                           'p-3 border-2 rounded-xl text-sm font-medium transition-all',
                           coachType === type.value
                             ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-slate-200 hover:border-slate-300'
+                            : 'border-warm-200 hover:border-warm-300'
                         )}
                       >
                         {type.label}
@@ -188,7 +188,7 @@ export default function CompleteSignupClient() {
                           'p-3 border-2 rounded-xl text-sm font-medium transition-all',
                           playerType === type.value
                             ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-slate-200 hover:border-slate-300'
+                            : 'border-warm-200 hover:border-warm-300'
                         )}
                       >
                         {type.label}

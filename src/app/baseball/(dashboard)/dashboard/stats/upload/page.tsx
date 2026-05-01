@@ -50,8 +50,8 @@ export default async function StatsUploadPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-2">No Team Found</h2>
-          <p className="text-slate-500 mb-8 max-w-sm mx-auto">
+          <h2 className="text-xl font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <p className="text-warm-500 mb-8 max-w-sm mx-auto">
             You need to set up your team before you can upload stats. Create your team first, then come back here.
           </p>
           <a

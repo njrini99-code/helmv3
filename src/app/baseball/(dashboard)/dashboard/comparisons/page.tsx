@@ -16,9 +16,9 @@ export default async function SavedComparisonsPage() {
               <div className="p-2 rounded-lg bg-primary-50">
                 <IconBookmark size={24} className="text-primary-600" />
               </div>
-              <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Saved Comparisons</h1>
+              <h1 className="text-2xl font-semibold tracking-tight text-warm-900">Saved Comparisons</h1>
             </div>
-            <p className="text-slate-500">
+            <p className="text-warm-500">
               View and manage your saved player comparisons
             </p>
           </div>
@@ -46,13 +46,13 @@ function ComparisonsLoadingSkeleton() {
       {[1, 2, 3, 4, 5, 6].map((i) => (
         <div
           key={i}
-          className="bg-white rounded-xl border border-slate-200 p-6 animate-pulse"
+          className="bg-white rounded-xl border border-warm-200 p-6 animate-pulse"
         >
-          <div className="h-4 bg-slate-200 rounded w-3/4 mb-3" />
-          <div className="h-3 bg-slate-200 rounded w-1/2 mb-4" />
+          <div className="h-4 bg-warm-200 rounded w-3/4 mb-3" />
+          <div className="h-3 bg-warm-200 rounded w-1/2 mb-4" />
           <div className="space-y-2">
-            <div className="h-3 bg-slate-200 rounded w-full" />
-            <div className="h-3 bg-slate-200 rounded w-5/6" />
+            <div className="h-3 bg-warm-200 rounded w-full" />
+            <div className="h-3 bg-warm-200 rounded w-5/6" />
           </div>
         </div>
       ))}

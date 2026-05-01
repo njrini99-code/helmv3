@@ -5,15 +5,15 @@ export default function CalendarLoading() {
     }}>
       <div className="glass-standard rounded-2xl overflow-clip h-full animate-pulse">
         {/* Calendar header skeleton */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-slate-200" />
-            <div className="h-5 w-32 rounded bg-slate-200" />
+            <div className="h-8 w-8 rounded-lg bg-warm-200" />
+            <div className="h-5 w-32 rounded bg-warm-200" />
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-9 w-20 rounded-lg bg-slate-200" />
-            <div className="h-9 w-9 rounded-lg bg-slate-200" />
-            <div className="h-9 w-9 rounded-lg bg-slate-200" />
+            <div className="h-9 w-20 rounded-lg bg-warm-200" />
+            <div className="h-9 w-9 rounded-lg bg-warm-200" />
+            <div className="h-9 w-9 rounded-lg bg-warm-200" />
           </div>
         </div>
 
@@ -23,7 +23,7 @@ export default function CalendarLoading() {
           <div className="grid grid-cols-7 gap-1 mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((_day, i) => (
               <div key={i} className="text-center py-2">
-                <div className="h-3 w-6 rounded bg-slate-200 mx-auto" />
+                <div className="h-3 w-6 rounded bg-warm-200 mx-auto" />
               </div>
             ))}
           </div>
@@ -36,7 +36,7 @@ export default function CalendarLoading() {
                   key={colIndex}
                   className="aspect-square rounded-lg p-2"
                 >
-                  <div className="h-4 w-6 rounded bg-slate-100 mb-1" />
+                  <div className="h-4 w-6 rounded bg-warm-100 mb-1" />
                   {(rowIndex === 1 && colIndex === 2) || (rowIndex === 2 && colIndex === 4) || (rowIndex === 3 && colIndex === 1) ? (
                     <div className="h-3 w-full rounded bg-primary-100 mt-1" />
                   ) : null}

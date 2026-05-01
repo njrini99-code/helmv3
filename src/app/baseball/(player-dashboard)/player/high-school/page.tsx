@@ -27,11 +27,11 @@ function BentoStatSkeleton() {
     <div className="glass-standard rounded-2xl overflow-clip animate-pulse p-5">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <div className="h-3.5 bg-slate-200 rounded w-20 mb-3" />
-          <div className="h-7 bg-slate-200 rounded w-16 mb-2" />
-          <div className="h-3 bg-slate-100 rounded w-28" />
+          <div className="h-3.5 bg-warm-200 rounded w-20 mb-3" />
+          <div className="h-7 bg-warm-200 rounded w-16 mb-2" />
+          <div className="h-3 bg-warm-100 rounded w-28" />
         </div>
-        <div className="w-11 h-11 rounded-xl bg-slate-100" />
+        <div className="w-11 h-11 rounded-xl bg-warm-100" />
       </div>
     </div>
   );
@@ -42,8 +42,8 @@ function BentoStatCard({
   value,
   change,
   icon: Icon,
-  iconBg = 'bg-slate-100',
-  iconColor = 'text-slate-600',
+  iconBg = 'bg-warm-100',
+  iconColor = 'text-warm-600',
   href,
 }: {
   label: string;
@@ -55,16 +55,16 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className="relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 p-5">
+    <div className="relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5 p-5">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm leading-relaxed text-slate-500 font-medium">{label}</p>
-          <p className="font-semibold text-slate-900 mt-1 text-2xl">
+          <p className="text-sm leading-relaxed text-warm-500 font-medium">{label}</p>
+          <p className="font-semibold text-warm-900 mt-1 text-2xl">
             <span className="tabular-nums">{typeof value === 'number' ? value.toLocaleString() : value}</span>
           </p>
           {change && (
-            <p className="text-xs text-slate-400 mt-1.5">{change}</p>
+            <p className="text-xs text-warm-400 mt-1.5">{change}</p>
           )}
         </div>
         <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform duration-300`}>
@@ -73,7 +73,7 @@ function BentoStatCard({
       </div>
       {href && (
         <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <IconChevronRight size={16} className="text-slate-400" />
+          <IconChevronRight size={16} className="text-warm-400" />
         </div>
       )}
     </div>
@@ -97,8 +97,8 @@ export default function HSPlayerDashboardPage() {
       <div className="p-6 lg:p-8 space-y-6">
         {/* Recruiting Activation Banner */}
         {!player?.recruiting_activated && (
-          <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 p-6 overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-slate-700/20 rounded-full blur-3xl" />
+          <div className="relative bg-gradient-to-r from-warm-900 via-warm-800 to-warm-900 rounded-2xl border border-warm-700/50 p-6 overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-warm-700/20 rounded-full blur-3xl" />
             <div className="relative z-10 flex items-center gap-6">
               <div className="w-14 h-14 rounded-2xl glass-subtle flex items-center justify-center flex-shrink-0">
                 <IconTarget size={28} className="text-white" strokeWidth={1.5} />
@@ -107,12 +107,12 @@ export default function HSPlayerDashboardPage() {
                 <h3 className="text-xl font-semibold tracking-tight text-white mb-1">
                   Ready to get recruited?
                 </h3>
-                <p className="text-slate-300">
+                <p className="text-warm-300">
                   Activate recruiting to make your profile visible to college coaches and unlock powerful features.
                 </p>
               </div>
               <Link href="/baseball/dashboard/activate">
-                <Button size="lg" className="bg-white text-slate-900 hover:bg-slate-100 transition-colors active:bg-slate-200 shadow-xl px-6">
+                <Button size="lg" className="bg-white text-warm-900 hover:bg-warm-100 transition-colors active:bg-warm-200 shadow-xl px-6">
                   Activate Now <IconArrowRight size={16} className="ml-2" />
                 </Button>
               </Link>
@@ -128,9 +128,9 @@ export default function HSPlayerDashboardPage() {
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl font-semibold tracking-tight text-slate-900">{player?.first_name} {player?.last_name}</h2>
-                  <p className="text-slate-500">{player?.primary_position} • Class of {player?.grad_year}</p>
-                  <p className="text-sm leading-relaxed text-slate-400 mt-1">{player?.high_school_name} • {player?.city}, {player?.state}</p>
+                  <h2 className="text-2xl font-semibold tracking-tight text-warm-900">{player?.first_name} {player?.last_name}</h2>
+                  <p className="text-warm-500">{player?.primary_position} • Class of {player?.grad_year}</p>
+                  <p className="text-sm leading-relaxed text-warm-400 mt-1">{player?.high_school_name} • {player?.city}, {player?.state}</p>
                 </div>
                 <Link href="/baseball/dashboard/profile">
                   <Button variant="secondary" size="sm" className="gap-2">
@@ -205,8 +205,8 @@ export default function HSPlayerDashboardPage() {
           {/* Your Stats */}
           <div className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
-            <div className="px-6 py-4 border-b border-slate-100/50">
-              <h2 className="font-semibold text-slate-900 tracking-tight">Your Stats</h2>
+            <div className="px-6 py-4 border-b border-warm-100/50">
+              <h2 className="font-semibold text-warm-900 tracking-tight">Your Stats</h2>
             </div>
             <div className="p-6">
               <div className="grid grid-cols-2 gap-3">
@@ -216,9 +216,9 @@ export default function HSPlayerDashboardPage() {
                   { label: player?.pitch_velo ? 'Pitch Velo' : 'Exit Velo', value: `${player?.pitch_velo || player?.exit_velo || '—'}${(player?.pitch_velo || player?.exit_velo) ? ' mph' : ''}` },
                   { label: 'GPA', value: player?.gpa?.toFixed(2) || '—' },
                 ].map((stat) => (
-                  <div key={stat.label} className="p-4 bg-slate-50/80 rounded-xl border border-slate-100/50 hover:bg-slate-100/80 hover:scale-[1.02] hover:shadow-sm transition-all duration-200">
-                    <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">{stat.label}</p>
-                    <p className="text-xl font-semibold tracking-tight text-slate-900 mt-1 tabular-nums">{stat.value}</p>
+                  <div key={stat.label} className="p-4 bg-warm-50/80 rounded-xl border border-warm-100/50 hover:bg-warm-100/80 hover:scale-[1.02] hover:shadow-sm transition-all duration-200">
+                    <p className="text-xs text-warm-500 uppercase tracking-wide font-medium">{stat.label}</p>
+                    <p className="text-xl font-semibold tracking-tight text-warm-900 mt-1 tabular-nums">{stat.value}</p>
                   </div>
                 ))}
               </div>
@@ -228,8 +228,8 @@ export default function HSPlayerDashboardPage() {
           {/* Quick Actions */}
           <div className="relative glass-standard rounded-2xl overflow-clip">
             <ShineEffect />
-            <div className="px-6 py-4 border-b border-slate-100/50">
-              <h2 className="font-semibold text-slate-900 tracking-tight">Quick Actions</h2>
+            <div className="px-6 py-4 border-b border-warm-100/50">
+              <h2 className="font-semibold text-warm-900 tracking-tight">Quick Actions</h2>
             </div>
             <div className="p-6 space-y-3">
               {[
@@ -238,15 +238,15 @@ export default function HSPlayerDashboardPage() {
                 { href: '/baseball/dashboard/messages', icon: IconMessage, label: 'Check messages', description: 'Stay connected with coaches' },
               ].map((action) => (
                 <Link key={action.href} href={action.href}>
-                  <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50/80 border border-slate-100/50 hover:bg-slate-100/80 hover:border-slate-200/50 transition-all duration-200 group cursor-pointer">
+                  <div className="flex items-center gap-4 p-4 rounded-xl bg-warm-50/80 border border-warm-100/50 hover:bg-warm-100/80 hover:border-warm-200/50 transition-all duration-200 group cursor-pointer">
                     <div className="w-10 h-10 rounded-lg bg-white flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-                      <action.icon size={18} className="text-slate-600" />
+                      <action.icon size={18} className="text-warm-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">{action.label}</p>
-                      <p className="text-xs text-slate-500">{action.description}</p>
+                      <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">{action.label}</p>
+                      <p className="text-xs text-warm-500">{action.description}</p>
                     </div>
-                    <IconChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 group-hover:translate-x-0.5 transition-all" />
+                    <IconChevronRight size={16} className="text-warm-300 group-hover:text-warm-500 group-hover:tranwarm-x-0.5 transition-all" />
                   </div>
                 </Link>
               ))}

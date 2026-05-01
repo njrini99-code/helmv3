@@ -56,10 +56,10 @@ export default async function CommandCenterPage() {
       <div className="min-h-dvh bg-[#FFFEFA]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
           <div className="glass-standard rounded-2xl p-8 text-center">
-            <h1 className="text-2xl font-semibold text-slate-900 mb-4">
+            <h1 className="text-2xl font-semibold text-warm-900 mb-4">
               Set Up Your Program
             </h1>
-            <p className="text-slate-600 mb-6">
+            <p className="text-warm-600 mb-6">
               Before you can use the Command Center, you need to complete your program setup.
             </p>
             <a
@@ -90,8 +90,8 @@ export default async function CommandCenterPage() {
         <div className="min-h-dvh bg-[#FFFEFA]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
             <div className="glass-standard rounded-2xl p-8 text-center">
-              <h1 className="text-2xl font-semibold text-slate-900 mb-4">Create Your Team</h1>
-              <p className="text-slate-600 mb-6">
+              <h1 className="text-2xl font-semibold text-warm-900 mb-4">Create Your Team</h1>
+              <p className="text-warm-600 mb-6">
                 You need to create a team before you can start managing players.
               </p>
               <a

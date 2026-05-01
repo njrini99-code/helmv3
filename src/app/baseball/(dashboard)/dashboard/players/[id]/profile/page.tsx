@@ -100,9 +100,9 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
             {/* Season Stats Card */}
             {hasStats ? (
-              <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="bg-white rounded-2xl border border-warm-200 p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide">
+                  <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide">
                     {new Date().getFullYear()} Stats
                   </h3>
                   {teamId && (
@@ -118,7 +118,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
                 {hasBatting && seasonStats && (
                   <div className="mb-4">
-                    <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-2">Batting</p>
+                    <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mb-2">Batting</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                       {[
                         { label: 'AVG', value: seasonStats.avg != null ? seasonStats.avg.toFixed(3).replace(/^0/, '') : '—' },
@@ -131,8 +131,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                         { label: 'G', value: String(seasonStats.g) },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex justify-between items-baseline">
-                          <span className="text-xs text-slate-400">{label}</span>
-                          <span className="text-sm font-bold text-slate-900 tabular-nums">{value}</span>
+                          <span className="text-xs text-warm-400">{label}</span>
+                          <span className="text-sm font-bold text-warm-900 tabular-nums">{value}</span>
                         </div>
                       ))}
                     </div>
@@ -140,12 +140,12 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 )}
 
                 {hasBatting && hasPitching && (
-                  <div className="border-t border-slate-100 my-3" />
+                  <div className="border-t border-warm-100 my-3" />
                 )}
 
                 {hasPitching && seasonStats && (
                   <div>
-                    <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-2">Pitching</p>
+                    <p className="text-xs text-warm-400 font-medium uppercase tracking-wider mb-2">Pitching</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                       {[
                         { label: 'ERA', value: seasonStats.era != null ? seasonStats.era.toFixed(2) : '—' },
@@ -156,8 +156,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                         { label: 'K', value: String(seasonStats.k_thrown) },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex justify-between items-baseline">
-                          <span className="text-xs text-slate-400">{label}</span>
-                          <span className="text-sm font-bold text-slate-900 tabular-nums">{value}</span>
+                          <span className="text-xs text-warm-400">{label}</span>
+                          <span className="text-sm font-bold text-warm-900 tabular-nums">{value}</span>
                         </div>
                       ))}
                     </div>
@@ -166,22 +166,22 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               </div>
             ) : (
               /* Fallback: profile engagement stats when no box score data */
-              <div className="bg-white rounded-2xl border border-slate-200 p-5">
-                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-4">
+              <div className="bg-white rounded-2xl border border-warm-200 p-5">
+                <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-4">
                   Quick Stats
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-slate-500">Profile Views</span>
-                    <span className="text-sm font-bold text-slate-900">127</span>
+                    <span className="text-xs text-warm-500">Profile Views</span>
+                    <span className="text-sm font-bold text-warm-900">127</span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-slate-500">Watchlists</span>
-                    <span className="text-sm font-bold text-slate-900">8</span>
+                    <span className="text-xs text-warm-500">Watchlists</span>
+                    <span className="text-sm font-bold text-warm-900">8</span>
                   </div>
                   <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-slate-500">Last Active</span>
-                    <span className="text-sm font-bold text-slate-900">2h ago</span>
+                    <span className="text-xs text-warm-500">Last Active</span>
+                    <span className="text-sm font-bold text-warm-900">2h ago</span>
                   </div>
                   {teamId && (
                     <Link

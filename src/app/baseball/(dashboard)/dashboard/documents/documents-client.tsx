@@ -64,13 +64,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search documents..."
-            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-slate-200 rounded-lg placeholder:text-slate-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
+            className="w-full pl-9 pr-4 py-2.5 text-sm bg-white border border-warm-200 rounded-lg placeholder:text-warm-400 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50"
           />
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -82,7 +82,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
                 'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap',
                 category === cat.value
                   ? 'bg-primary-100 text-primary-700 border-primary-200'
-                  : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                  : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
               )}
             >
               {cat.label}
@@ -95,13 +95,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
       {filtered.length === 0 ? (
         <Card variant="glass">
           <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconFile size={28} className="text-slate-400" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconFile size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            <h3 className="text-lg font-semibold text-warm-900 mb-2">
               {documents.length === 0 ? 'No Documents' : 'No Results'}
             </h3>
-            <p className="text-slate-500 mb-6 max-w-sm mx-auto">
+            <p className="text-warm-500 mb-6 max-w-sm mx-auto">
               {documents.length === 0
                 ? isCoach
                   ? 'Upload playbooks, practice plans, waivers, and other team documents.'

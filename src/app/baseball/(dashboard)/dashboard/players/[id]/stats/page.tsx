@@ -64,17 +64,17 @@ export default async function PlayerStatsPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
-            <Link href={`/baseball/dashboard/players/${playerId}/profile`} className="hover:text-slate-600">
+          <div className="flex items-center gap-2 text-sm text-warm-400 mb-2">
+            <Link href={`/baseball/dashboard/players/${playerId}/profile`} className="hover:text-warm-600">
               {player.first_name} {player.last_name}
             </Link>
             <span>›</span>
-            <span className="text-slate-600">Stats</span>
+            <span className="text-warm-600">Stats</span>
           </div>
-          <h1 className="text-2xl font-bold text-slate-900">
+          <h1 className="text-2xl font-bold text-warm-900">
             {player.first_name} {player.last_name}
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-warm-500 mt-0.5">
             {player.primary_position && <span>{player.primary_position}</span>}
             {membership.jersey_number && <span className="ml-2">#{membership.jersey_number}</span>}
             {player.grad_year && <span className="ml-2">Class of {player.grad_year}</span>}
@@ -119,13 +119,13 @@ export default async function PlayerStatsPage({ params }: PageProps) {
         />
       ) : (
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
-          <p className="text-sm text-slate-400">No season stats yet. Stats populate automatically from box scores.</p>
+          <p className="text-sm text-warm-400">No season stats yet. Stats populate automatically from box scores.</p>
         </div>
       )}
 
       {/* Game log */}
       <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4">{currentYear} Game Log</h2>
+        <h2 className="text-lg font-bold text-warm-900 mb-4">{currentYear} Game Log</h2>
         <PlayerGameLog
           batting={(statsResult.gameLog ?? []) as Array<BaseballBoxScoreBatting & { game: Partial<BaseballGame> }>}
           pitching={(statsResult.pitchingLog ?? []) as Array<BaseballBoxScorePitching & { game: Partial<BaseballGame> }>}
@@ -138,8 +138,8 @@ export default async function PlayerStatsPage({ params }: PageProps) {
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-4 shadow-sm text-center">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className="text-2xl font-black text-slate-900 tabular-nums">{value}</p>
+      <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-2xl font-black text-warm-900 tabular-nums">{value}</p>
     </div>
   );
 }

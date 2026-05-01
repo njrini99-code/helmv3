@@ -34,7 +34,7 @@ function getStatusColor(status: string): string {
   switch (status) {
     case 'interested':
     case 'researching':
-      return 'bg-slate-100 text-slate-700';
+      return 'bg-warm-100 text-warm-700';
     case 'contacted':
       return 'bg-blue-100 text-blue-700';
     case 'visited':
@@ -44,7 +44,7 @@ function getStatusColor(status: string): string {
     case 'committed':
       return 'bg-primary-100 text-primary-700';
     default:
-      return 'bg-slate-100 text-slate-700';
+      return 'bg-warm-100 text-warm-700';
   }
 }
 
@@ -61,9 +61,9 @@ function getEventIcon(type: JourneyEvent['type']) {
     case 'added_interest':
       return <IconPlus size={16} className="text-primary-600" />;
     case 'status_change':
-      return <IconTarget size={16} className="text-slate-600" />;
+      return <IconTarget size={16} className="text-warm-600" />;
     default:
-      return <IconEye size={16} className="text-slate-600" />;
+      return <IconEye size={16} className="text-warm-600" />;
   }
 }
 
@@ -112,12 +112,12 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-slate-900 truncate">{school.school_name}</h3>
+              <h3 className="font-semibold text-warm-900 truncate">{school.school_name}</h3>
               <Badge className={cn('text-xs', getStatusColor(school.status))}>
                 {statusOptions.find(s => s.value === school.status)?.label || school.status}
               </Badge>
             </div>
-            <div className="flex items-center gap-3 text-sm text-slate-500">
+            <div className="flex items-center gap-3 text-sm text-warm-500">
               {school.division && <span>{school.division}</span>}
               {school.conference && <span>• {school.conference}</span>}
             </div>
@@ -131,30 +131,30 @@ function SchoolCard({ school, onStatusChange }: { school: JourneySchool; onStatu
         </div>
 
         {/* Engagement Stats */}
-        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-slate-100">
+        <div className="flex items-center gap-4 mt-4 pt-4 border-t border-warm-100">
           <div className="flex items-center gap-1.5 text-sm">
-            <IconEye size={14} className="text-slate-400" />
-            <span className="text-slate-600">{school.profile_views} views</span>
+            <IconEye size={14} className="text-warm-400" />
+            <span className="text-warm-600">{school.profile_views} views</span>
           </div>
           {school.watchlist_added && (
             <div className="flex items-center gap-1.5 text-sm">
               <IconStar size={14} className="text-amber-500" />
-              <span className="text-slate-600">On watchlist</span>
+              <span className="text-warm-600">On watchlist</span>
             </div>
           )}
           {school.coach_name && (
-            <div className="text-sm leading-relaxed text-slate-500">
+            <div className="text-sm leading-relaxed text-warm-500">
               Contact: {school.coach_name}
             </div>
           )}
         </div>
 
         {school.notes && (
-          <p className="text-sm leading-relaxed text-slate-500 mt-3 italic">"{school.notes}"</p>
+          <p className="text-sm leading-relaxed text-warm-500 mt-3 italic">"{school.notes}"</p>
         )}
 
         <div className="flex items-center justify-between mt-4">
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-warm-400">
             Added {formatDate(school.created_at)}
           </span>
           {school.organization_id && (
@@ -175,14 +175,14 @@ function TimelineEvent({ event }: { event: JourneyEvent }) {
   return (
     <div className="flex gap-3">
       <div className="flex flex-col items-center">
-        <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-full bg-warm-100 flex items-center justify-center">
           {getEventIcon(event.type)}
         </div>
-        <div className="w-0.5 flex-1 bg-slate-100 mt-2" />
+        <div className="w-0.5 flex-1 bg-warm-100 mt-2" />
       </div>
       <div className="flex-1 pb-6">
-        <p className="text-sm leading-relaxed text-slate-900">{event.description}</p>
-        <p className="text-xs text-slate-400 mt-1">{formatRelativeTime(event.timestamp)}</p>
+        <p className="text-sm leading-relaxed text-warm-900">{event.description}</p>
+        <p className="text-xs text-warm-400 mt-1">{formatRelativeTime(event.timestamp)}</p>
       </div>
     </div>
   );
@@ -234,32 +234,32 @@ export default function JourneyPage() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{stats.total_interests}</p>
-                <p className="text-xs text-slate-500">Total Schools</p>
+                <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{stats.total_interests}</p>
+                <p className="text-xs text-warm-500">Total Schools</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
-                <p className="text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">{stats.schools_interested}</p>
-                <p className="text-xs text-slate-500">Interested</p>
+                <p className="text-2xl font-semibold tracking-tight text-warm-900 tabular-nums">{stats.schools_interested}</p>
+                <p className="text-xs text-warm-500">Interested</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-blue-600 tabular-nums">{stats.schools_contacted}</p>
-                <p className="text-xs text-slate-500">Contacted</p>
+                <p className="text-xs text-warm-500">Contacted</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-purple-600 tabular-nums">{stats.schools_visited}</p>
-                <p className="text-xs text-slate-500">Visited</p>
+                <p className="text-xs text-warm-500">Visited</p>
               </CardContent>
             </Card>
             <Card variant="glass">
               <CardContent className="p-4 text-center">
                 <p className="text-2xl font-semibold tracking-tight text-amber-600 tabular-nums">{stats.schools_offered}</p>
-                <p className="text-xs text-slate-500">Offers</p>
+                <p className="text-xs text-warm-500">Offers</p>
               </CardContent>
             </Card>
           </div>
@@ -268,13 +268,13 @@ export default function JourneyPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Schools List */}
           <div className="lg:col-span-2 space-y-4">
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Your Schools</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-4">Your Schools</h2>
             {displaySchools.length === 0 ? (
               <Card variant="glass">
                 <CardContent className="p-8 text-center">
-                  <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
-                  <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">No schools in your journey</h3>
-                  <p className="text-sm leading-relaxed text-slate-600 mb-6">
+                  <IconTarget size={40} className="mx-auto mb-4 text-warm-400" />
+                  <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">No schools in your journey</h3>
+                  <p className="text-sm leading-relaxed text-warm-600 mb-6">
                     Start by adding schools you're interested in from the Discover Colleges page.
                   </p>
                   <Link href="/baseball/dashboard/colleges">
@@ -287,14 +287,14 @@ export default function JourneyPage() {
                   {/* Visual Preview - Empty Journey Cards */}
                   <div className="mt-8 space-y-3 opacity-30">
                     {[1, 2, 3].map((slot) => (
-                      <div key={slot} className="border-2 border-dashed border-slate-300 rounded-xl p-4 text-left">
+                      <div key={slot} className="border-2 border-dashed border-warm-300 rounded-xl p-4 text-left">
                         <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-lg bg-slate-200" />
+                          <div className="w-12 h-12 rounded-lg bg-warm-200" />
                           <div className="flex-1">
-                            <div className="h-4 bg-slate-200 rounded mb-2 w-2/3" />
-                            <div className="h-3 bg-slate-200 rounded w-1/2" />
+                            <div className="h-4 bg-warm-200 rounded mb-2 w-2/3" />
+                            <div className="h-3 bg-warm-200 rounded w-1/2" />
                           </div>
-                          <div className="w-20 h-6 bg-slate-200 rounded-full" />
+                          <div className="w-20 h-6 bg-warm-200 rounded-full" />
                         </div>
                       </div>
                     ))}
@@ -314,14 +314,14 @@ export default function JourneyPage() {
 
           {/* Activity Timeline */}
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900 mb-4">Recent Activity</h2>
+            <h2 className="text-lg font-semibold tracking-tight text-warm-900 mb-4">Recent Activity</h2>
             <Card variant="glass">
               <CardContent className="p-5">
                 {events.length === 0 ? (
                   <div className="text-center py-8">
-                    <IconCalendar size={32} className="mx-auto text-slate-300 mb-2" />
-                    <p className="text-sm leading-relaxed text-slate-500">No activity yet</p>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <IconCalendar size={32} className="mx-auto text-warm-300 mb-2" />
+                    <p className="text-sm leading-relaxed text-warm-500">No activity yet</p>
+                    <p className="text-xs text-warm-400 mt-1">
                       Activity from coaches will appear here
                     </p>
                   </div>
@@ -331,7 +331,7 @@ export default function JourneyPage() {
                       <TimelineEvent key={event.id} event={event} />
                     ))}
                     {events.length > 10 && (
-                      <p className="text-sm leading-relaxed text-slate-500 text-center pt-4">
+                      <p className="text-sm leading-relaxed text-warm-500 text-center pt-4">
                         + {events.length - 10} more events
                       </p>
                     )}

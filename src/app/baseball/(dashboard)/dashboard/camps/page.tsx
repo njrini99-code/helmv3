@@ -75,11 +75,11 @@ function CampCard({
       <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-slate-900 mb-1">{camp.name}</h3>
+            <h3 className="font-semibold text-warm-900 mb-1">{camp.name}</h3>
             {camp.organization && (
-              <p className="text-sm leading-relaxed text-slate-600 mb-2">{camp.organization.name}</p>
+              <p className="text-sm leading-relaxed text-warm-600 mb-2">{camp.organization.name}</p>
             )}
-            <div className="flex flex-col gap-1.5 text-sm text-slate-500">
+            <div className="flex flex-col gap-1.5 text-sm text-warm-500">
               <div className="flex items-center gap-1.5">
                 <IconCalendar size={14} />
                 <span>
@@ -108,7 +108,7 @@ function CampCard({
               {camp.status === 'active' ? 'Open' : camp.status || 'Pending'}
             </Badge>
             {camp.price_cents && !camp.is_free && (
-              <p className="text-lg font-semibold tracking-tight text-slate-900">
+              <p className="text-lg font-semibold tracking-tight text-warm-900">
                 ${(camp.price_cents / 100).toFixed(0)}
               </p>
             )}
@@ -121,12 +121,12 @@ function CampCard({
         </div>
 
         {camp.description && (
-          <p className="text-sm leading-relaxed text-slate-600 mt-3 line-clamp-2">{camp.description}</p>
+          <p className="text-sm leading-relaxed text-warm-600 mt-3 line-clamp-2">{camp.description}</p>
         )}
 
         {/* Player Actions */}
         {isPlayer && (
-          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end">
+          <div className="mt-4 pt-4 border-t border-warm-100 flex justify-end">
             {isRegistered ? (
               <Button
                 variant="secondary"
@@ -154,7 +154,7 @@ function CampCard({
 
         {/* Coach Actions */}
         {isCoach && (
-          <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-2">
+          <div className="mt-4 pt-4 border-t border-warm-100 flex justify-end gap-2">
             <Link href={`/baseball/dashboard/camps/${camp.id}`}>
               <Button
                 variant="secondary"

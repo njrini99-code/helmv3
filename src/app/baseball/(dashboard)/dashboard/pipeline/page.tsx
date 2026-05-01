@@ -90,13 +90,13 @@ function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
-        <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center">
-          <IconUsers size={18} className="text-slate-600" />
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-warm-50 border border-warm-200">
+        <div className="w-9 h-9 rounded-lg bg-warm-200 flex items-center justify-center">
+          <IconUsers size={18} className="text-warm-600" />
         </div>
         <div>
-          <p className="text-lg font-semibold text-slate-900">{stats.total}</p>
-          <p className="text-xs text-slate-500">Total</p>
+          <p className="text-lg font-semibold text-warm-900">{stats.total}</p>
+          <p className="text-xs text-warm-500">Total</p>
         </div>
       </div>
 
@@ -140,13 +140,13 @@ function PipelineStatsSummary({ watchlist }: { watchlist: Array<{ pipeline_stage
         </div>
       </div>
 
-      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 border border-slate-200">
-        <div className="w-9 h-9 rounded-lg bg-slate-200 flex items-center justify-center">
-          <IconXCircle size={18} className="text-slate-500" />
+      <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-warm-50 border border-warm-200">
+        <div className="w-9 h-9 rounded-lg bg-warm-200 flex items-center justify-center">
+          <IconXCircle size={18} className="text-warm-500" />
         </div>
         <div>
-          <p className="text-lg font-semibold text-slate-700">{stats.uninterested}</p>
-          <p className="text-xs text-slate-500">Not Interested</p>
+          <p className="text-lg font-semibold text-warm-700">{stats.uninterested}</p>
+          <p className="text-xs text-warm-500">Not Interested</p>
         </div>
       </div>
     </div>
@@ -470,14 +470,14 @@ export default function PipelinePage() {
 
         {/* View Toggle Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-1 p-1 bg-warm-100 rounded-lg overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setViewMode('pipeline')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'pipeline'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               <IconLayoutGrid size={16} />
@@ -488,8 +488,8 @@ export default function PipelinePage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'position'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               <IconTarget size={16} />
@@ -501,8 +501,8 @@ export default function PipelinePage() {
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
                 viewMode === 'list'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-white text-warm-900 shadow-sm'
+                  : 'text-warm-600 hover:text-warm-900'
               )}
             >
               <IconList size={16} />
@@ -512,7 +512,7 @@ export default function PipelinePage() {
 
           {/* Grad Year Filter (shared) */}
           <div className="flex items-center gap-3">
-            <label className="text-sm font-medium text-slate-700 whitespace-nowrap">Grad Year:</label>
+            <label className="text-sm font-medium text-warm-700 whitespace-nowrap">Grad Year:</label>
             <Select
               options={gradYearOptions}
               value={gradYearFilter}
@@ -537,8 +537,8 @@ export default function PipelinePage() {
           <div className="relative glass-standard rounded-2xl p-8 mb-6 text-center overflow-clip">
             <ShineEffect />
             <IconUsers size={32} className="mx-auto mb-3 text-primary-600" />
-            <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">Your pipeline is empty</h3>
-            <p className="text-sm leading-relaxed text-slate-600 mb-4">
+            <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">Your pipeline is empty</h3>
+            <p className="text-sm leading-relaxed text-warm-600 mb-4">
               Start by adding players to your watchlist from the Discover page.
             </p>
             <Link href="/baseball/dashboard/discover">
@@ -588,7 +588,7 @@ export default function PipelinePage() {
         {viewMode === 'list' && watchlist.length > 0 && (
           <>
             {/* Status Filter Tabs with count badges */}
-            <div className="flex items-center gap-2 mb-6 border-b border-slate-200 overflow-x-auto scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0" role="tablist" aria-label="Filter by status">
+            <div className="flex items-center gap-2 mb-6 border-b border-warm-200 overflow-x-auto scrollbar-hide -mx-6 px-6 lg:mx-0 lg:px-0" role="tablist" aria-label="Filter by status">
               {filterTabs.map(tab => {
                 const count = tab.value === 'all'
                   ? watchlist.length
@@ -602,7 +602,7 @@ export default function PipelinePage() {
                     className={`px-4 py-2 font-medium transition-colors border-b-2 -mb-px whitespace-nowrap flex-shrink-0 min-h-[44px] flex items-center gap-1.5 ${
                       filterTab === tab.value
                         ? 'border-primary-600 text-primary-700'
-                        : 'border-transparent text-slate-600 hover:text-slate-900'
+                        : 'border-transparent text-warm-600 hover:text-warm-900'
                     }`}
                   >
                     {tab.label}
@@ -610,7 +610,7 @@ export default function PipelinePage() {
                       <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold rounded-full ${
                         filterTab === tab.value
                           ? 'bg-primary-100 text-primary-700'
-                          : 'bg-slate-100 text-slate-500'
+                          : 'bg-warm-100 text-warm-500'
                       }`}>
                         {count}
                       </span>
@@ -623,7 +623,7 @@ export default function PipelinePage() {
             {/* Additional Filters */}
             <div className="flex items-center gap-4 mb-6">
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-slate-700">Position:</label>
+                <label className="text-sm font-medium text-warm-700">Position:</label>
                 <Select
                   options={[
                     { value: 'all', label: 'All Positions' },
@@ -637,7 +637,7 @@ export default function PipelinePage() {
               {positionFilter !== 'all' && (
                 <button
                   onClick={() => setPositionFilter('all')}
-                  className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
+                  className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
                 >
                   Clear position filter
                 </button>
@@ -673,7 +673,7 @@ export default function PipelinePage() {
                     </Button>
                     <button
                       onClick={() => setSelectedPlayers(new Set())}
-                      className="text-sm leading-relaxed text-slate-600 hover:text-slate-900 underline"
+                      className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
                     >
                       Clear selection
                     </button>
@@ -693,14 +693,14 @@ export default function PipelinePage() {
                 {/* Mobile card view */}
                 <div className="lg:hidden space-y-4">
                   {filteredWatchlist.map((item) => (
-                    <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                    <div key={item.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
                       {/* Player header */}
                       <div className="flex items-start gap-3 mb-3">
                         <input
                           type="checkbox"
                           checked={selectedPlayers.has(item.id)}
                           onChange={() => togglePlayerSelection(item.id)}
-                          className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
+                          className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
                         <div
                           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -712,10 +712,10 @@ export default function PipelinePage() {
                             size="md"
                           />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-900 truncate">
+                            <h3 className="font-semibold text-warm-900 truncate">
                               {getFullName(item.player?.first_name, item.player?.last_name)}
                             </h3>
-                            <p className="text-sm text-slate-500">
+                            <p className="text-sm text-warm-500">
                               {item.player?.primary_position || 'N/A'} {item.player?.grad_year ? `\u2022 ${item.player.grad_year}` : ''}
                             </p>
                           </div>
@@ -736,20 +736,20 @@ export default function PipelinePage() {
                       {/* Quick stats */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mb-3 text-sm">
                         <div>
-                          <span className="text-slate-500">Location:</span>
-                          <span className="ml-1 text-slate-900">
+                          <span className="text-warm-500">Location:</span>
+                          <span className="ml-1 text-warm-900">
                             {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-500">Updated:</span>
-                          <span className="ml-1 text-slate-900">{formatDate(item.updated_at)}</span>
+                          <span className="text-warm-500">Updated:</span>
+                          <span className="ml-1 text-warm-900">{formatDate(item.updated_at)}</span>
                         </div>
                       </div>
 
                       {/* Notes preview */}
                       {item.notes && (
-                        <p className="text-sm text-slate-600 line-clamp-2 mb-3 bg-slate-50 rounded-lg px-3 py-2">
+                        <p className="text-sm text-warm-600 line-clamp-2 mb-3 bg-warm-50 rounded-lg px-3 py-2">
                           {item.notes}
                         </p>
                       )}
@@ -761,7 +761,7 @@ export default function PipelinePage() {
                             value={noteValue}
                             onChange={(e) => setNoteValue(e.target.value)}
                             placeholder="Add notes about this player..."
-                            className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none text-base"
+                            className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none text-base"
                             rows={3}
                           />
                           <div className="flex gap-2">
@@ -800,7 +800,7 @@ export default function PipelinePage() {
                         </Button>
                         <button
                           onClick={() => setRemoveConfirm(item.id)}
-                          className="min-h-[44px] min-w-[44px] rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
+                          className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                           aria-label="Remove from pipeline"
                         >
                           <IconTrash size={18} />
@@ -812,42 +812,42 @@ export default function PipelinePage() {
 
                 {/* Keyboard shortcuts hint */}
                 {viewMode === 'list' && (
-                  <p className="text-xs text-slate-400 mb-3">
+                  <p className="text-xs text-warm-400 mb-3">
                     <span className="hidden lg:inline">
-                      <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">j</kbd>/<kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">k</kbd> navigate • <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">Enter</kbd> view • <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-600 font-mono">x</kbd> select
+                      <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">j</kbd>/<kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">k</kbd> navigate • <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">Enter</kbd> view • <kbd className="px-1.5 py-0.5 bg-warm-100 rounded text-warm-600 font-mono">x</kbd> select
                     </span>
                   </p>
                 )}
 
                 {/* Desktop table view */}
-                <div ref={listContainerRef} className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div ref={listContainerRef} className="hidden lg:block bg-white rounded-2xl border border-warm-200 overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-200 bg-slate-50">
+                      <tr className="border-b border-warm-200 bg-warm-50">
                         <th className="px-4 py-3 w-12">
                           <input
                             type="checkbox"
                             checked={selectedPlayers.size === filteredWatchlist.length && filteredWatchlist.length > 0}
                             onChange={toggleSelectAll}
-                            className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                            className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                           />
                         </th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Player</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Position</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Grad Year</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Location</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Status</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Updated</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Notes</th>
-                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-400">Actions</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Player</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Position</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Grad Year</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Location</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Status</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Updated</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Notes</th>
+                        <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-400">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200">
+                    <tbody className="divide-y divide-warm-200">
                       {filteredWatchlist.map((item, index) => (
                         <React.Fragment key={item.id}>
                           <tr 
                             className={cn(
-                              'hover:bg-slate-50 active:bg-slate-100 transition-colors',
+                              'hover:bg-warm-50 active:bg-warm-100 transition-colors',
                               focusedIndex === index && 'bg-primary-50 ring-2 ring-inset ring-primary-500'
                             )}
                             onClick={() => setFocusedIndex(index)}
@@ -857,7 +857,7 @@ export default function PipelinePage() {
                                 type="checkbox"
                                 checked={selectedPlayers.has(item.id)}
                                 onChange={() => togglePlayerSelection(item.id)}
-                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                               />
                             </td>
                             <td className="px-6 py-4">
@@ -871,22 +871,22 @@ export default function PipelinePage() {
                                   size="md"
                                 />
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">
+                                  <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">
                                     {getFullName(item.player?.first_name, item.player?.last_name)}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-warm-500">
                                     {item.player?.high_school_name || 'No school'}
                                   </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.primary_position}
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.grad_year}
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.city && item.player?.state ? `${item.player.city}, ${item.player.state}` : 'N/A'}
                             </td>
                             <td className="px-6 py-4">
@@ -897,13 +897,13 @@ export default function PipelinePage() {
                                 className="w-44 text-sm"
                               />
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-500">
+                            <td className="px-6 py-4 text-sm text-warm-500">
                               {formatDate(item.updated_at)}
                             </td>
                             <td className="px-6 py-4">
                               <button
                                 onClick={() => startEditingNote(item.id, item.notes)}
-                                className="text-xs text-slate-600 hover:text-slate-900 underline max-w-[120px] truncate block"
+                                className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
                                 title={item.notes || 'Add note'}
                               >
                                 {item.notes ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes) : 'Add note'}
@@ -920,7 +920,7 @@ export default function PipelinePage() {
                                 </Button>
                                 <button
                                   onClick={() => setRemoveConfirm(item.id)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
+                                  className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                                   aria-label="Remove from watchlist"
                                 >
                                   <IconTrash size={16} />
@@ -930,13 +930,13 @@ export default function PipelinePage() {
                           </tr>
                           {editingNote === item.id && (
                             <tr>
-                              <td colSpan={9} className="px-6 py-4 bg-slate-50">
+                              <td colSpan={9} className="px-6 py-4 bg-warm-50">
                                 <div className="flex items-start gap-3">
                                   <textarea
                                     value={noteValue}
                                     onChange={(e) => setNoteValue(e.target.value)}
                                     placeholder="Add notes about this player..."
-                                    className="flex-1 px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
+                                    className="flex-1 px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
                                     rows={3}
                                   />
                                   <div className="flex gap-2">

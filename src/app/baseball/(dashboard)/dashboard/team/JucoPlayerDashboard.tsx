@@ -37,13 +37,13 @@ interface JucoPlayerDashboardProps {
 
 function SchoolInterestCard({ school }: { school: SchoolInterest }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all">
-      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-        <IconBuilding size={16} className="text-slate-500" />
+    <div className="flex items-center gap-3 p-3 rounded-xl border border-warm-100 bg-white hover:border-warm-200 hover:shadow-sm transition-all">
+      <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center shrink-0">
+        <IconBuilding size={16} className="text-warm-500" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-slate-900 truncate">{school.schoolName}</p>
+          <p className="text-sm font-medium text-warm-900 truncate">{school.schoolName}</p>
           {school.isOnWatchlist && (
             <Badge variant="success" className="text-[10px] px-1.5 py-0">
               <IconStar size={8} className="mr-0.5" />
@@ -51,7 +51,7 @@ function SchoolInterestCard({ school }: { school: SchoolInterest }) {
             </Badge>
           )}
         </div>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-warm-500">
           {school.division} • {school.state} • {school.engagementCount} {school.engagementCount === 1 ? 'view' : 'views'}
         </p>
       </div>
@@ -76,7 +76,7 @@ function RecruitingSnapshotCard({
     return (
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="px-6 py-4 border-b border-slate-100/50">
+        <div className="px-6 py-4 border-b border-warm-100/50">
           <Skeleton variant="text" width={180} height={20} />
         </div>
         <div className="p-6">
@@ -104,30 +104,30 @@ function RecruitingSnapshotCard({
       <ShineEffect />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-purple-50 flex items-center justify-center">
             <IconEye size={18} className="text-purple-600" />
           </div>
           <div>
-            <h2 className="font-semibold text-slate-900 tracking-tight">Recruiting Activity</h2>
-            <p className="text-xs text-slate-500">Who's looking at you</p>
+            <h2 className="font-semibold text-warm-900 tracking-tight">Recruiting Activity</h2>
+            <p className="text-xs text-warm-500">Who's looking at you</p>
           </div>
         </div>
         <Link 
           href="/baseball/dashboard/analytics" 
-          className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group"
+          className="text-xs text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group"
         >
-          View All <IconChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+          View All <IconChevronRight size={12} className="group-hover:tranwarm-x-0.5 transition-transform" />
         </Link>
       </div>
 
       <div className="p-6">
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-4 pb-6 border-b border-slate-100">
+        <div className="grid grid-cols-3 gap-4 pb-6 border-b border-warm-100">
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{profileViews}</p>
-            <p className="text-xs text-slate-500">Profile Views</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">{profileViews}</p>
+            <p className="text-xs text-warm-500">Profile Views</p>
             {profileViewsChange !== 0 && (
               <div className={`flex items-center justify-center gap-0.5 mt-1 text-xs ${
                 profileViewsChange > 0 ? 'text-green-600' : 'text-red-600'
@@ -138,19 +138,19 @@ function RecruitingSnapshotCard({
             )}
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{watchlistCount}</p>
-            <p className="text-xs text-slate-500">On Watchlists</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">{watchlistCount}</p>
+            <p className="text-xs text-warm-500">On Watchlists</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-slate-900 tabular-nums">{schoolsInterested.length}</p>
-            <p className="text-xs text-slate-500">Schools</p>
+            <p className="text-2xl font-bold text-warm-900 tabular-nums">{schoolsInterested.length}</p>
+            <p className="text-xs text-warm-500">Schools</p>
           </div>
         </div>
 
         {/* Schools List */}
         {schoolsInterested.length > 0 ? (
           <div className="pt-4">
-            <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-3">
+            <h4 className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-3">
               Schools Looking at You
             </h4>
             <div className="space-y-2">
@@ -166,11 +166,11 @@ function RecruitingSnapshotCard({
           </div>
         ) : (
           <div className="pt-4 text-center py-6">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
-              <IconEye size={20} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mx-auto mb-3">
+              <IconEye size={20} className="text-warm-400" />
             </div>
-            <h4 className="text-sm font-medium text-slate-900 mb-1">No activity yet</h4>
-            <p className="text-xs text-slate-500 max-w-[200px] mx-auto">
+            <h4 className="text-sm font-medium text-warm-900 mb-1">No activity yet</h4>
+            <p className="text-xs text-warm-500 max-w-[200px] mx-auto">
               When coaches view your profile, you'll see them here
             </p>
             <Link href="/baseball/dashboard/colleges">
@@ -273,7 +273,7 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
             {/* Announcements */}
             <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Team Announcements</h2>
+                <h2 className="font-semibold text-warm-900">Team Announcements</h2>
                 <Link href="/baseball/dashboard/announcements" className="text-sm text-primary-600 hover:underline flex items-center gap-1">
                   View all <IconChevronRight size={14} />
                 </Link>
@@ -287,11 +287,11 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                   </div>
                 ) : data?.recentAnnouncements.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <IconBell size={24} className="text-slate-400" />
+                    <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                      <IconBell size={24} className="text-warm-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">No announcements</h3>
-                    <p className="text-sm text-slate-500 max-w-sm mx-auto">
+                    <h3 className="text-lg font-medium text-warm-900 mb-2">No announcements</h3>
+                    <p className="text-sm text-warm-500 max-w-sm mx-auto">
                       Team announcements from your coach will appear here.
                     </p>
                   </div>
@@ -301,7 +301,7 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                       <Link
                         key={announcement.id}
                         href="/baseball/dashboard/announcements"
-                        className="block p-4 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                        className="block p-4 border border-warm-200 rounded-lg hover:border-warm-300 hover:bg-warm-50/50 transition-colors"
                       >
                         <div className="flex items-start gap-3">
                           <div className={`w-1 h-full min-h-[40px] rounded-full ${
@@ -309,8 +309,8 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                             announcement.urgency === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
                           }`} />
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-slate-900">{announcement.title}</p>
-                            <p className="text-xs text-slate-400 mt-1">
+                            <p className="font-medium text-warm-900">{announcement.title}</p>
+                            <p className="text-xs text-warm-400 mt-1">
                               {announcement.publishedAt ? formatRelativeTime(announcement.publishedAt) : ''}
                             </p>
                           </div>
@@ -325,7 +325,7 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
             {/* Upcoming Events */}
             <Card variant="glass">
               <CardHeader className="flex flex-row items-center justify-between">
-                <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
+                <h2 className="font-semibold text-warm-900">Upcoming Events</h2>
                 <Link href="/baseball/dashboard/calendar" className="text-sm text-primary-600 hover:underline flex items-center gap-1">
                   Calendar <IconChevronRight size={14} />
                 </Link>
@@ -339,11 +339,11 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                   </div>
                 ) : data?.upcomingEvents.length === 0 ? (
                   <div className="text-center py-8">
-                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                      <IconCalendar size={24} className="text-slate-400" />
+                    <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                      <IconCalendar size={24} className="text-warm-400" />
                     </div>
-                    <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
-                    <p className="text-sm text-slate-500">
+                    <h3 className="text-lg font-medium text-warm-900 mb-2">No upcoming events</h3>
+                    <p className="text-sm text-warm-500">
                       Team practices and games will appear here.
                     </p>
                   </div>
@@ -352,15 +352,15 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                     {data?.upcomingEvents.map((event) => (
                       <div
                         key={event.id}
-                        className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg"
+                        className="flex items-center gap-3 p-3 border border-warm-200 rounded-lg"
                       >
                         <div className={`w-3 h-3 rounded-full shrink-0 ${
                           event.eventType === 'game' ? 'bg-blue-500' :
-                          event.eventType === 'practice' ? 'bg-green-500' : 'bg-slate-400'
+                          event.eventType === 'practice' ? 'bg-green-500' : 'bg-warm-400'
                         }`} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-slate-900 truncate">{event.title}</p>
-                          <p className="text-sm text-slate-500">
+                          <p className="font-medium text-warm-900 truncate">{event.title}</p>
+                          <p className="text-sm text-warm-500">
                             {new Date(event.startTime).toLocaleDateString('en-US', {
                               weekday: 'short',
                               month: 'short',
@@ -385,25 +385,25 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
               <Link href="/baseball/dashboard/my-stats" className="block">
                 <div className="glass-standard rounded-xl p-4 text-center hover:shadow-md transition-shadow">
                   <IconChart size={24} className="text-blue-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-900">My Stats</p>
+                  <p className="text-sm font-medium text-warm-900">My Stats</p>
                 </div>
               </Link>
               <Link href="/baseball/dashboard/dev-plan" className="block">
                 <div className="glass-standard rounded-xl p-4 text-center hover:shadow-md transition-shadow">
                   <IconNote size={24} className="text-amber-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-900">Dev Plan</p>
+                  <p className="text-sm font-medium text-warm-900">Dev Plan</p>
                 </div>
               </Link>
               <Link href="/baseball/dashboard/videos" className="block">
                 <div className="glass-standard rounded-xl p-4 text-center hover:shadow-md transition-shadow">
                   <IconVideo size={24} className="text-purple-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-900">Videos</p>
+                  <p className="text-sm font-medium text-warm-900">Videos</p>
                 </div>
               </Link>
               <Link href="/baseball/dashboard/profile" className="block">
                 <div className="glass-standard rounded-xl p-4 text-center hover:shadow-md transition-shadow">
                   <IconUsers size={24} className="text-primary-500 mx-auto mb-2" />
-                  <p className="text-sm font-medium text-slate-900">Profile</p>
+                  <p className="text-sm font-medium text-warm-900">Profile</p>
                 </div>
               </Link>
             </div>
@@ -423,21 +423,21 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
             {data?.team.teamId && (
               <Card variant="glass">
                 <CardHeader>
-                  <h2 className="font-semibold text-slate-900">Your Team</h2>
+                  <h2 className="font-semibold text-warm-900">Your Team</h2>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Team</span>
-                      <span className="text-sm font-medium text-slate-900">{data.team.teamName}</span>
+                      <span className="text-sm text-warm-500">Team</span>
+                      <span className="text-sm font-medium text-warm-900">{data.team.teamName}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Coach</span>
-                      <span className="text-sm font-medium text-slate-900">{data.team.coachName || '—'}</span>
+                      <span className="text-sm text-warm-500">Coach</span>
+                      <span className="text-sm font-medium text-warm-900">{data.team.coachName || '—'}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Roster</span>
-                      <span className="text-sm font-medium text-slate-900">{data.team.rosterCount} players</span>
+                      <span className="text-sm text-warm-500">Roster</span>
+                      <span className="text-sm font-medium text-warm-900">{data.team.rosterCount} players</span>
                     </div>
                   </div>
                 </CardContent>
@@ -451,8 +451,8 @@ export function JucoPlayerDashboard({ playerName, playerId }: JucoPlayerDashboar
                   <IconTarget size={24} className="text-primary-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-slate-900">Explore Colleges</h3>
-                  <p className="text-sm text-slate-600">Find programs that fit you</p>
+                  <h3 className="font-semibold text-warm-900">Explore Colleges</h3>
+                  <p className="text-sm text-warm-600">Find programs that fit you</p>
                 </div>
               </div>
               <Link href="/baseball/dashboard/colleges">

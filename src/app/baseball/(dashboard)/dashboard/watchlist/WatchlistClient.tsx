@@ -388,7 +388,7 @@ export function WatchlistClient() {
   const SortableHeader = ({ label, sortKeyValue }: { label: string; sortKeyValue: SortKey }) => (
     <button
       onClick={() => handleSort(sortKeyValue)}
-      className="flex items-center gap-1 text-left text-label font-medium uppercase tracking-wider text-slate-500 hover:text-slate-700 transition-colors"
+      className="flex items-center gap-1 text-left text-label font-medium uppercase tracking-wider text-warm-500 hover:text-warm-700 transition-colors"
     >
       {label}
       {sortKey === sortKeyValue && (
@@ -431,10 +431,10 @@ export function WatchlistClient() {
                 <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <IconUsers size={32} className="text-primary-600" />
                 </div>
-                <h2 className="text-xl font-semibold tracking-tight text-slate-900 mb-2">
+                <h2 className="text-xl font-semibold tracking-tight text-warm-900 mb-2">
                   Your watchlist is empty
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-600 mb-6">
+                <p className="text-sm leading-relaxed text-warm-600 mb-6">
                   Start building your recruiting pipeline by adding players from the Discover page 
                   or search for players below.
                 </p>
@@ -455,7 +455,7 @@ export function WatchlistClient() {
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <div className="relative flex-1 min-w-[200px] max-w-md">
-                <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -557,7 +557,7 @@ export function WatchlistClient() {
                     </Button>
                     <button
                       onClick={() => setSelectedIds(new Set())}
-                      className="text-sm text-slate-600 hover:text-slate-900 underline"
+                      className="text-sm text-warm-600 hover:text-warm-900 underline"
                     >
                       Clear
                     </button>
@@ -583,13 +583,13 @@ export function WatchlistClient() {
                 {/* Mobile Card View */}
                 <div className="lg:hidden space-y-4">
                   {filteredWatchlist.map(item => (
-                    <div key={item.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                    <div key={item.id} className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm">
                       <div className="flex items-start gap-3 mb-3">
                         <input
                           type="checkbox"
                           checked={selectedIds.has(item.id)}
                           onChange={() => toggleSelection(item.id)}
-                          className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
+                          className="mt-1 rounded border-warm-300 text-primary-600 focus:ring-primary-500 w-5 h-5"
                         />
                         <div
                           className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
@@ -601,10 +601,10 @@ export function WatchlistClient() {
                             size="md"
                           />
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-900 truncate">
+                            <h3 className="font-semibold text-warm-900 truncate">
                               {getFullName(item.player?.first_name, item.player?.last_name)}
                             </h3>
-                            <p className="text-sm text-slate-500 truncate">
+                            <p className="text-sm text-warm-500 truncate">
                               {item.player?.primary_position} • {item.player?.grad_year}
                             </p>
                           </div>
@@ -624,21 +624,21 @@ export function WatchlistClient() {
 
                       <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
                         <div>
-                          <span className="text-slate-500">Location:</span>
-                          <span className="ml-1 text-slate-900">
+                          <span className="text-warm-500">Location:</span>
+                          <span className="ml-1 text-warm-900">
                             {item.player?.state || 'N/A'}
                           </span>
                         </div>
                         <div>
-                          <span className="text-slate-500">Added:</span>
-                          <span className="ml-1 text-slate-900">
+                          <span className="text-warm-500">Added:</span>
+                          <span className="ml-1 text-warm-900">
                             {formatDate(item.added_at || item.created_at)}
                           </span>
                         </div>
                       </div>
 
                       {item.notes && (
-                        <p className="text-sm text-slate-600 line-clamp-2 mb-3 bg-slate-50 rounded-lg px-3 py-2">
+                        <p className="text-sm text-warm-600 line-clamp-2 mb-3 bg-warm-50 rounded-lg px-3 py-2">
                           {item.notes}
                         </p>
                       )}
@@ -672,7 +672,7 @@ export function WatchlistClient() {
                         </Button>
                         <button
                           onClick={() => setRemoveConfirm(item.id)}
-                          className="min-h-[44px] min-w-[44px] rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center"
+                          className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center"
                         >
                           <IconTrash size={18} />
                         </button>
@@ -682,17 +682,17 @@ export function WatchlistClient() {
                 </div>
 
                 {/* Desktop Table View */}
-                <div className="hidden lg:block bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                <div className="hidden lg:block bg-white rounded-2xl border border-warm-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-slate-200 bg-slate-50">
+                        <tr className="border-b border-warm-200 bg-warm-50">
                           <th className="px-4 py-3 w-12">
                             <input
                               type="checkbox"
                               checked={selectedIds.size === filteredWatchlist.length && filteredWatchlist.length > 0}
                               onChange={toggleSelectAll}
-                              className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                              className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                             />
                           </th>
                           <th className="px-6 py-3 text-left">
@@ -713,23 +713,23 @@ export function WatchlistClient() {
                           <th className="px-6 py-3 text-left">
                             <SortableHeader label="Date Added" sortKeyValue="dateAdded" />
                           </th>
-                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-500">
+                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-500">
                             Notes
                           </th>
-                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-slate-500">
+                          <th className="px-6 py-3 text-left text-label font-medium uppercase tracking-wider text-warm-500">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-warm-100">
                         {filteredWatchlist.map(item => (
-                          <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                          <tr key={item.id} className="hover:bg-warm-50 transition-colors">
                             <td className="px-4 py-4">
                               <input
                                 type="checkbox"
                                 checked={selectedIds.has(item.id)}
                                 onChange={() => toggleSelection(item.id)}
-                                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                                className="rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                               />
                             </td>
                             <td className="px-6 py-4">
@@ -743,22 +743,22 @@ export function WatchlistClient() {
                                   size="md"
                                 />
                                 <div>
-                                  <p className="text-sm font-medium text-slate-900 group-hover:text-primary-600 transition-colors">
+                                  <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">
                                     {getFullName(item.player?.first_name, item.player?.last_name)}
                                   </p>
-                                  <p className="text-xs text-slate-500">
+                                  <p className="text-xs text-warm-500">
                                     {item.player?.high_school_name || 'No school'}
                                   </p>
                                 </div>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.primary_position || '—'}
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.state || '—'}
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-600">
+                            <td className="px-6 py-4 text-sm text-warm-600">
                               {item.player?.grad_year || '—'}
                             </td>
                             <td className="px-6 py-4">
@@ -769,13 +769,13 @@ export function WatchlistClient() {
                                 className="w-40 text-sm"
                               />
                             </td>
-                            <td className="px-6 py-4 text-sm text-slate-500">
+                            <td className="px-6 py-4 text-sm text-warm-500">
                               {formatDate(item.added_at || item.created_at)}
                             </td>
                             <td className="px-6 py-4">
                               <button
                                 onClick={() => setNoteModal({ id: item.id, note: item.notes || '' })}
-                                className="text-xs text-slate-600 hover:text-slate-900 underline max-w-[120px] truncate block"
+                                className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
                                 title={item.notes || 'Add note'}
                               >
                                 {item.notes 
@@ -796,7 +796,7 @@ export function WatchlistClient() {
                                 </Button>
                                 <button
                                   onClick={() => setRemoveConfirm(item.id)}
-                                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                                  className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                 >
                                   <IconTrash size={16} />
                                 </button>
@@ -810,7 +810,7 @@ export function WatchlistClient() {
                 </div>
 
                 {/* Results count */}
-                <div className="mt-4 text-sm text-slate-500 text-center">
+                <div className="mt-4 text-sm text-warm-500 text-center">
                   Showing {filteredWatchlist.length} of {watchlist.length} players
                 </div>
               </>
@@ -832,7 +832,7 @@ export function WatchlistClient() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
             <Input
               value={playerSearchQuery}
               onChange={(e) => {
@@ -846,17 +846,17 @@ export function WatchlistClient() {
           </div>
 
           {searchingPlayers && (
-            <p className="text-sm text-slate-500">Searching...</p>
+            <p className="text-sm text-warm-500">Searching...</p>
           )}
 
           {playerSearchResults.length > 0 && (
-            <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
+            <div className="border border-warm-200 rounded-lg divide-y divide-warm-100 max-h-64 overflow-y-auto">
               {playerSearchResults.map(player => (
                 <button
                   key={player.id}
                   onClick={() => handleAddPlayer(player)}
                   disabled={addingPlayer}
-                  className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 transition-colors text-left disabled:opacity-50"
+                  className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 transition-colors text-left disabled:opacity-50"
                 >
                   <Avatar
                     name={getFullName(player.first_name, player.last_name)}
@@ -864,10 +864,10 @@ export function WatchlistClient() {
                     size="sm"
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">
+                    <p className="text-sm font-medium text-warm-900 truncate">
                       {getFullName(player.first_name, player.last_name)}
                     </p>
-                    <p className="text-xs text-slate-500 truncate">
+                    <p className="text-xs text-warm-500 truncate">
                       {player.primary_position} • {player.grad_year} • {player.high_school_name}
                     </p>
                   </div>
@@ -878,13 +878,13 @@ export function WatchlistClient() {
           )}
 
           {playerSearchQuery.length >= 2 && playerSearchResults.length === 0 && !searchingPlayers && (
-            <p className="text-sm text-slate-500 text-center py-4">
+            <p className="text-sm text-warm-500 text-center py-4">
               No players found matching &quot;{playerSearchQuery}&quot;
             </p>
           )}
 
-          <div className="pt-4 border-t border-slate-200">
-            <p className="text-xs text-slate-500 text-center">
+          <div className="pt-4 border-t border-warm-200">
+            <p className="text-xs text-warm-500 text-center">
               Or <button onClick={() => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); }} className="text-primary-600 hover:underline">browse all players</button>
             </p>
           </div>
@@ -926,14 +926,14 @@ export function WatchlistClient() {
         size="sm"
       >
         <div className="space-y-3">
-          <p className="text-sm text-slate-600 mb-4">
+          <p className="text-sm text-warm-600 mb-4">
             Move {selectedIds.size} player{selectedIds.size !== 1 ? 's' : ''} to:
           </p>
           {stageOptions.filter(s => s.value !== '').map(option => (
             <button
               key={option.value}
               onClick={() => handleBulkStageChange(option.value as PipelineStage)}
-              className="w-full text-left px-4 py-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-200"
+              className="w-full text-left px-4 py-3 rounded-lg hover:bg-warm-50 transition-colors border border-warm-200"
             >
               {option.label}
             </button>

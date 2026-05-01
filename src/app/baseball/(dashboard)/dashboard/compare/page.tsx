@@ -130,8 +130,8 @@ function CompareContent() {
           <Card variant="glass">
             <CardContent className="p-5">
               <div className="animate-pulse space-y-3">
-                <div className="h-4 bg-slate-200 rounded w-40" />
-                <div className="h-10 bg-slate-200 rounded w-full" />
+                <div className="h-4 bg-warm-200 rounded w-40" />
+                <div className="h-10 bg-warm-200 rounded w-full" />
               </div>
             </CardContent>
           </Card>
@@ -139,12 +139,12 @@ function CompareContent() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {playerIds.map((id) => (
               <div key={id} className="glass-standard rounded-2xl p-6 animate-pulse">
-                <div className="w-16 h-16 rounded-full bg-slate-200 mx-auto mb-3" />
-                <div className="h-4 bg-slate-200 rounded w-3/4 mx-auto mb-2" />
-                <div className="h-3 bg-slate-200 rounded w-1/2 mx-auto mb-4" />
+                <div className="w-16 h-16 rounded-full bg-warm-200 mx-auto mb-3" />
+                <div className="h-4 bg-warm-200 rounded w-3/4 mx-auto mb-2" />
+                <div className="h-3 bg-warm-200 rounded w-1/2 mx-auto mb-4" />
                 <div className="space-y-2">
                   {[1,2,3,4].map(i => (
-                    <div key={i} className="h-3 bg-slate-100 rounded" />
+                    <div key={i} className="h-3 bg-warm-100 rounded" />
                   ))}
                 </div>
               </div>
@@ -168,17 +168,17 @@ function CompareContent() {
             <div className="flex items-start gap-4">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-slate-700">Add Players to Compare</h3>
+                  <h3 className="text-sm font-medium text-warm-700">Add Players to Compare</h3>
                   <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                     playerIds.length >= MAX_PLAYERS
                       ? 'bg-amber-100 text-amber-700'
-                      : 'bg-slate-100 text-slate-600'
+                      : 'bg-warm-100 text-warm-600'
                   }`}>
                     {playerIds.length} / {MAX_PLAYERS} players
                   </span>
                 </div>
                 <div className="relative">
-                  <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
                   <Input
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
@@ -198,19 +198,19 @@ function CompareContent() {
 
                 {/* Search Results */}
                 {searchResults.length > 0 && (
-                  <div className="mt-2 border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
+                  <div className="mt-2 border border-warm-200 rounded-lg divide-y divide-warm-100 max-h-64 overflow-y-auto">
                     {searchResults.map((player) => {
                       const name = getFullName(player.first_name, player.last_name);
                       return (
                         <button
                           key={player.id}
                           onClick={() => addPlayer(player)}
-                          className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 active:bg-slate-100 transition-colors text-left"
+                          className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left"
                         >
                           <Avatar name={name} src={player.avatar_url} size="sm" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-slate-900 truncate">{name}</p>
-                            <p className="text-xs text-slate-500 truncate">
+                            <p className="text-sm font-medium text-warm-900 truncate">{name}</p>
+                            <p className="text-xs text-warm-500 truncate">
                               {player.primary_position} • {player.grad_year} • {player.high_school_name}
                             </p>
                           </div>
@@ -222,7 +222,7 @@ function CompareContent() {
                 )}
 
                 {searching && (
-                  <p className="text-sm leading-relaxed text-slate-500 mt-2">Searching...</p>
+                  <p className="text-sm leading-relaxed text-warm-500 mt-2">Searching...</p>
                 )}
               </div>
 
@@ -257,11 +257,11 @@ function CompareContent() {
           <Card variant="glass">
             <CardContent className="p-8 text-center">
               <div className="max-w-lg mx-auto">
-                <IconTarget size={40} className="mx-auto mb-4 text-slate-400" />
-                <h3 className="text-lg font-semibold tracking-tight text-slate-900 mb-2">
+                <IconTarget size={40} className="mx-auto mb-4 text-warm-400" />
+                <h3 className="text-lg font-semibold tracking-tight text-warm-900 mb-2">
                   {players.length === 0 ? 'No players selected' : 'Add one more player'}
                 </h3>
-                <p className="text-sm leading-relaxed text-slate-600 mb-6">
+                <p className="text-sm leading-relaxed text-warm-600 mb-6">
                   {players.length === 0
                     ? 'Search and add at least 2 players above to start comparing them side by side.'
                     : 'Add at least one more player to start comparing.'}
@@ -276,10 +276,10 @@ function CompareContent() {
                 {/* Visual Preview - Empty Comparison Slots */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 opacity-40">
                   {[1, 2, 3, 4].map((slot) => (
-                    <div key={slot} className="border-2 border-dashed border-slate-300 rounded-xl p-6">
-                      <div className="w-16 h-16 rounded-full bg-slate-200 mx-auto mb-3" />
-                      <div className="h-3 bg-slate-200 rounded mb-2" />
-                      <div className="h-2 bg-slate-200 rounded w-2/3 mx-auto" />
+                    <div key={slot} className="border-2 border-dashed border-warm-300 rounded-xl p-6">
+                      <div className="w-16 h-16 rounded-full bg-warm-200 mx-auto mb-3" />
+                      <div className="h-3 bg-warm-200 rounded mb-2" />
+                      <div className="h-2 bg-warm-200 rounded w-2/3 mx-auto" />
                     </div>
                   ))}
                 </div>

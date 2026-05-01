@@ -114,19 +114,19 @@ function MessagesContent() {
     return (
       <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
         {/* Conversation list skeleton */}
-        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200 bg-white">
-          <div className="p-4 border-b border-slate-200">
-            <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+        <div className="w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200 bg-white">
+          <div className="p-4 border-b border-warm-200">
+            <div className="h-10 bg-warm-100 rounded-lg animate-pulse" />
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-warm-100">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="px-4 py-3 flex items-center gap-3 animate-pulse">
-                <div className="w-10 h-10 rounded-full bg-slate-200 flex-shrink-0" />
+                <div className="w-10 h-10 rounded-full bg-warm-200 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="h-4 bg-slate-200 rounded w-2/3 mb-2" />
-                  <div className="h-3 bg-slate-100 rounded w-4/5" />
+                  <div className="h-4 bg-warm-200 rounded w-2/3 mb-2" />
+                  <div className="h-3 bg-warm-100 rounded w-4/5" />
                 </div>
-                <div className="h-3 bg-slate-100 rounded w-10" />
+                <div className="h-3 bg-warm-100 rounded w-10" />
               </div>
             ))}
           </div>
@@ -143,7 +143,7 @@ function MessagesContent() {
     <div className="h-[calc(100dvh-64px)] flex bg-[#FAF6F1]">
       {/* Conversation List - Hidden on mobile when viewing chat */}
       <div className={cn(
-        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-slate-200',
+        'w-full lg:w-80 xl:w-96 flex-shrink-0 border-r border-warm-200',
         'transition-transform duration-300',
         mobileShowChat && 'hidden lg:block'
       )}>

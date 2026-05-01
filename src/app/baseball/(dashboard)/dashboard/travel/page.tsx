@@ -107,8 +107,8 @@ export default function BaseballTravelPage() {
       <>
         <Header title="Travel" subtitle="Team travel and expense tracking" />
         <div className="p-8 text-center">
-          <h2 className="text-lg font-semibold text-slate-900 mb-2">No Team Found</h2>
-          <p className="text-slate-500">You must be on a team to access travel itineraries.</p>
+          <h2 className="text-lg font-semibold text-warm-900 mb-2">No Team Found</h2>
+          <p className="text-warm-500">You must be on a team to access travel itineraries.</p>
         </div>
       </>
     );

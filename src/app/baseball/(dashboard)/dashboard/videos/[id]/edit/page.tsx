@@ -48,15 +48,15 @@ export default async function VideoEditPage({ params }: PageProps) {
         <div className="mb-6">
           <a
             href="/baseball/dashboard/videos"
-            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 mb-4"
+            className="inline-flex items-center gap-2 text-sm text-warm-500 hover:text-warm-700 mb-4"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Videos
           </a>
-          <h1 className="text-2xl font-semibold text-slate-900">Create Clip</h1>
-          <p className="text-slate-500 mt-1">
+          <h1 className="text-2xl font-semibold text-warm-900">Create Clip</h1>
+          <p className="text-warm-500 mt-1">
             Select a portion of &quot;{video.title}&quot; to create a highlight clip
           </p>
         </div>

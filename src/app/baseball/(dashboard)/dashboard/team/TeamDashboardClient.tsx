@@ -138,7 +138,7 @@ function StatCardSkeleton() {
 
 function AnnouncementSkeleton() {
   return (
-    <div className="p-4 border border-slate-200 rounded-lg animate-pulse">
+    <div className="p-4 border border-warm-200 rounded-lg animate-pulse">
       <div className="flex items-start gap-3">
         <Skeleton variant="rectangular" width={4} height={40} className="rounded-full" />
         <div className="flex-1">
@@ -153,7 +153,7 @@ function AnnouncementSkeleton() {
 
 function EventSkeleton() {
   return (
-    <div className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+    <div className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg animate-pulse">
       <Skeleton variant="circular" width={12} height={12} />
       <div className="flex-1">
         <Skeleton variant="text" width="70%" height={14} className="mb-2" />
@@ -165,7 +165,7 @@ function EventSkeleton() {
 
 function TaskSkeleton() {
   return (
-    <div className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+    <div className="flex items-center gap-3 p-3 border border-warm-200 rounded-lg animate-pulse">
       <Skeleton variant="circular" width={20} height={20} />
       <div className="flex-1">
         <Skeleton variant="text" width="60%" height={14} className="mb-1" />
@@ -184,7 +184,7 @@ function QuickActionSkeleton() {
 
 function VideoSkeleton() {
   return (
-    <div className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+    <div className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg animate-pulse">
       <Skeleton variant="rectangular" width={80} height={48} className="rounded-lg shrink-0" />
       <div className="flex-1 min-w-0">
         <Skeleton variant="text" width="70%" height={14} className="mb-2" />
@@ -266,10 +266,10 @@ function NoTeamCard({ playerId }: { playerId?: string }) {
             <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <IconUsers size={32} className="text-primary-600" />
             </div>
-            <h2 className="text-xl sm:text-2xl font-semibold text-slate-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-semibold text-warm-900 mb-2">
               Join Your Team
             </h2>
-            <p className="text-slate-600 max-w-sm mx-auto">
+            <p className="text-warm-600 max-w-sm mx-auto">
               Enter the invite code from your coach to join your team and access team features.
             </p>
           </div>
@@ -310,8 +310,8 @@ function NoTeamCard({ playerId }: { playerId?: string }) {
           </form>
 
           {/* Alternative Actions */}
-          <div className="mt-8 pt-6 border-t border-slate-200">
-            <p className="text-sm text-slate-500 text-center mb-4">
+          <div className="mt-8 pt-6 border-t border-warm-200">
+            <p className="text-sm text-warm-500 text-center mb-4">
               Don't have an invite code?
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
@@ -328,7 +328,7 @@ function NoTeamCard({ playerId }: { playerId?: string }) {
                 </Button>
               </Link>
             </div>
-            <p className="text-xs text-slate-400 text-center mt-4">
+            <p className="text-xs text-warm-400 text-center mt-4">
               Contact your coach for an invite code to join their team.
             </p>
           </div>
@@ -679,7 +679,7 @@ export default function TeamDashboardClient() {
       case 'game': return 'bg-primary-500';
       case 'tournament': return 'bg-purple-500';
       case 'meeting': return 'bg-amber-500';
-      default: return 'bg-slate-400';
+      default: return 'bg-warm-400';
     }
   };
 
@@ -698,7 +698,7 @@ export default function TeamDashboardClient() {
       case 'urgent': return 'bg-red-500';
       case 'high': return 'bg-orange-500';
       case 'normal': return 'bg-blue-500';
-      case 'low': return 'bg-slate-400';
+      case 'low': return 'bg-warm-400';
       default: return 'bg-blue-500';
     }
   };
@@ -808,7 +808,7 @@ export default function TeamDashboardClient() {
                     <CardHeader><Skeleton variant="text" width={180} height={20} /></CardHeader>
                     <CardContent className="space-y-3">
                       {[1, 2, 3, 4, 5].map(i => (
-                        <div key={i} className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg animate-pulse">
+                        <div key={i} className="flex items-center gap-3 p-3 border border-warm-200 rounded-lg animate-pulse">
                           <Skeleton variant="circular" width={40} height={40} />
                           <div className="flex-1">
                             <Skeleton variant="text" width="60%" className="mb-2" />
@@ -869,7 +869,7 @@ export default function TeamDashboardClient() {
                 <div className="lg:col-span-2">
                   <Card variant="glass">
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <h2 className="font-semibold text-slate-900">Recent Roster Activity</h2>
+                      <h2 className="font-semibold text-warm-900">Recent Roster Activity</h2>
                       <Link href="/baseball/dashboard/roster" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                         View roster <IconChevronRight size={14} />
                       </Link>
@@ -877,11 +877,11 @@ export default function TeamDashboardClient() {
                     <CardContent>
                       {recentMembers.length === 0 ? (
                         <div className="text-center py-12">
-                          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                            <IconUsers size={24} className="text-slate-400" />
+                          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                            <IconUsers size={24} className="text-warm-400" />
                           </div>
-                          <h3 className="text-lg font-medium text-slate-900 mb-2">No players yet</h3>
-                          <p className="text-sm leading-relaxed text-slate-500 mb-4 max-w-sm mx-auto">
+                          <h3 className="text-lg font-medium text-warm-900 mb-2">No players yet</h3>
+                          <p className="text-sm leading-relaxed text-warm-500 mb-4 max-w-sm mx-auto">
                             Start building your roster by inviting players to join your team.
                           </p>
                           <Link href="/baseball/dashboard/roster">
@@ -893,7 +893,7 @@ export default function TeamDashboardClient() {
                           {recentMembers.map((member) => (
                             <div
                               key={member.id}
-                              className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors"
+                              className="flex items-center gap-3 p-3 border border-warm-200 rounded-lg hover:border-warm-300 transition-colors"
                             >
                               <Avatar
                                 name={getFullName(member.player?.first_name, member.player?.last_name)}
@@ -901,10 +901,10 @@ export default function TeamDashboardClient() {
                                 size="sm"
                               />
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-slate-900 truncate">
+                                <p className="font-medium text-warm-900 truncate">
                                   {getFullName(member.player?.first_name, member.player?.last_name)}
                                 </p>
-                                <p className="text-sm leading-relaxed text-slate-500 truncate">
+                                <p className="text-sm leading-relaxed text-warm-500 truncate">
                                   {member.player?.primary_position} • Joined {member.joined_at ? formatRelativeTime(member.joined_at) : 'recently'}
                                 </p>
                               </div>
@@ -920,7 +920,7 @@ export default function TeamDashboardClient() {
                 <div className="space-y-6">
                   <Card variant="glass">
                     <CardHeader className="flex flex-row items-center justify-between">
-                      <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+                      <h2 className="font-semibold text-warm-900">Quick Actions</h2>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <Link href="/baseball/dashboard/roster" className="block">
@@ -953,13 +953,13 @@ export default function TeamDashboardClient() {
 
                   <Card variant="glass">
                     <CardHeader>
-                      <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
+                      <h2 className="font-semibold text-warm-900">Upcoming Events</h2>
                     </CardHeader>
                     <CardContent>
                       {upcomingEvents.length === 0 ? (
                         <div className="text-center py-8">
-                          <IconCalendar size={32} className="text-slate-300 mx-auto mb-2" />
-                          <p className="text-sm leading-relaxed text-slate-500">No upcoming events</p>
+                          <IconCalendar size={32} className="text-warm-300 mx-auto mb-2" />
+                          <p className="text-sm leading-relaxed text-warm-500">No upcoming events</p>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -967,8 +967,8 @@ export default function TeamDashboardClient() {
                             <div key={event.id} className="flex items-start gap-2">
                               <div className={`w-2 h-2 rounded-full mt-1.5 ${getEventColor(event.event_type)}`}></div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-slate-900 truncate">{event.title}</p>
-                                <p className="text-xs text-slate-500">{formatEventDate(event.start_time)}</p>
+                                <p className="text-sm font-medium text-warm-900 truncate">{event.title}</p>
+                                <p className="text-xs text-warm-500">{formatEventDate(event.start_time)}</p>
                               </div>
                             </div>
                           ))}
@@ -1068,13 +1068,13 @@ export default function TeamDashboardClient() {
                   <div className="flex-1 w-full">
                     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                       <div>
-                        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                        <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-warm-900">
                           {player?.first_name} {player?.last_name}
                         </h2>
-                        <p className="text-slate-500">
+                        <p className="text-warm-500">
                           {player?.primary_position} • Class of {player?.grad_year}
                         </p>
-                        <p className="text-sm leading-relaxed text-slate-400 mt-1">
+                        <p className="text-sm leading-relaxed text-warm-400 mt-1">
                           {player?.high_school_name}
                         </p>
                       </div>
@@ -1171,7 +1171,7 @@ export default function TeamDashboardClient() {
                 {/* Recent Announcements */}
                 <Card variant="glass">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">Team Announcements</h2>
+                    <h2 className="font-semibold text-warm-900">Team Announcements</h2>
                     <Link href="/baseball/dashboard/announcements" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       View all <IconChevronRight size={14} />
                     </Link>
@@ -1179,11 +1179,11 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {announcements.length === 0 ? (
                       <div className="text-center py-8">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                          <IconBell size={24} className="text-slate-400" />
+                        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                          <IconBell size={24} className="text-warm-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No announcements</h3>
-                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                        <h3 className="text-lg font-medium text-warm-900 mb-2">No announcements</h3>
+                        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
                           Team announcements from your coach will appear here.
                         </p>
                       </div>
@@ -1193,21 +1193,21 @@ export default function TeamDashboardClient() {
                           <Link
                             key={announcement.id}
                             href={`/baseball/dashboard/announcements`}
-                            className="block p-3 sm:p-4 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                            className="block p-3 sm:p-4 border border-warm-200 rounded-lg hover:border-warm-300 hover:bg-warm-50/50 transition-colors"
                           >
                             <div className="flex items-start gap-3">
                               <div className={`w-1 h-full min-h-[40px] rounded-full ${getUrgencyColor(announcement.urgency)}`}></div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2">
-                                  <p className="font-medium text-slate-900 truncate">{announcement.title}</p>
+                                  <p className="font-medium text-warm-900 truncate">{announcement.title}</p>
                                   {announcement.is_pinned && (
                                     <Badge variant="warning" className="shrink-0 text-xs">Pinned</Badge>
                                   )}
                                 </div>
-                                <p className="text-sm text-slate-600 line-clamp-2 mt-1">
+                                <p className="text-sm text-warm-600 line-clamp-2 mt-1">
                                   {announcement.content}
                                 </p>
-                                <p className="text-xs text-slate-400 mt-2">
+                                <p className="text-xs text-warm-400 mt-2">
                                   {announcement.published_at ? formatRelativeTime(announcement.published_at) : ''}
                                 </p>
                               </div>
@@ -1222,7 +1222,7 @@ export default function TeamDashboardClient() {
                 {/* Upcoming Events */}
                 <Card variant="glass">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">Upcoming Events</h2>
+                    <h2 className="font-semibold text-warm-900">Upcoming Events</h2>
                     <Link href="/baseball/dashboard/calendar" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       Full calendar <IconChevronRight size={14} />
                     </Link>
@@ -1230,11 +1230,11 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {upcomingEvents.length === 0 ? (
                       <div className="text-center py-8">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                          <IconCalendar size={24} className="text-slate-400" />
+                        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                          <IconCalendar size={24} className="text-warm-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No upcoming events</h3>
-                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                        <h3 className="text-lg font-medium text-warm-900 mb-2">No upcoming events</h3>
+                        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
                           Team practices and games will appear here.
                         </p>
                       </div>
@@ -1243,12 +1243,12 @@ export default function TeamDashboardClient() {
                         {upcomingEvents.map((event) => (
                           <div
                             key={event.id}
-                            className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg"
+                            className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg"
                           >
                             <div className={`w-3 h-3 rounded-full mt-1 shrink-0 ${getEventColor(event.event_type)}`}></div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-slate-900 truncate">{event.title}</p>
-                              <p className="text-sm leading-relaxed text-slate-500">{formatEventDate(event.start_time)}</p>
+                              <p className="font-medium text-warm-900 truncate">{event.title}</p>
+                              <p className="text-sm leading-relaxed text-warm-500">{formatEventDate(event.start_time)}</p>
                             </div>
                             <Badge variant="secondary" className="shrink-0 text-xs capitalize">
                               {event.event_type}
@@ -1263,7 +1263,7 @@ export default function TeamDashboardClient() {
                 {/* Recent Team Videos */}
                 <Card variant="glass">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">Recent Team Videos</h2>
+                    <h2 className="font-semibold text-warm-900">Recent Team Videos</h2>
                     <Link href="/baseball/dashboard/videos" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       All videos <IconChevronRight size={14} />
                     </Link>
@@ -1271,11 +1271,11 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {recentTeamVideos.length === 0 ? (
                       <div className="text-center py-8">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                          <IconVideo size={24} className="text-slate-400" />
+                        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                          <IconVideo size={24} className="text-warm-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No team videos</h3>
-                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                        <h3 className="text-lg font-medium text-warm-900 mb-2">No team videos</h3>
+                        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
                           Team videos and highlights will appear here.
                         </p>
                       </div>
@@ -1285,9 +1285,9 @@ export default function TeamDashboardClient() {
                           <Link
                             key={video.id}
                             href={`/baseball/dashboard/videos/${video.id}`}
-                            className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                            className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg hover:border-warm-300 hover:bg-warm-50/50 transition-colors"
                           >
-                            <div className="w-20 h-12 bg-slate-200 rounded-lg shrink-0 flex items-center justify-center overflow-hidden">
+                            <div className="w-20 h-12 bg-warm-200 rounded-lg shrink-0 flex items-center justify-center overflow-hidden">
                               {video.thumbnail_url ? (
                                 <img
                                   src={video.thumbnail_url}
@@ -1295,24 +1295,24 @@ export default function TeamDashboardClient() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <IconVideo size={20} className="text-slate-400" />
+                                <IconVideo size={20} className="text-warm-400" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-slate-900 truncate">{video.title}</p>
+                              <p className="font-medium text-warm-900 truncate">{video.title}</p>
                               <div className="flex items-center gap-2 mt-1">
                                 {video.player && (
-                                  <span className="text-xs text-slate-500">
+                                  <span className="text-xs text-warm-500">
                                     {getFullName(video.player.first_name, video.player.last_name)}
                                   </span>
                                 )}
                                 {video.duration && (
-                                  <span className="text-xs text-slate-400">
+                                  <span className="text-xs text-warm-400">
                                     {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-slate-400 mt-1">
+                              <p className="text-xs text-warm-400 mt-1">
                                 {video.created_at ? formatRelativeTime(video.created_at) : ''}
                               </p>
                             </div>
@@ -1329,7 +1329,7 @@ export default function TeamDashboardClient() {
                 {/* Dev Plan Progress (Mobile: shows here, Desktop: in sidebar) */}
                 <Card variant="glass" className="lg:hidden">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">My Development Plan</h2>
+                    <h2 className="font-semibold text-warm-900">My Development Plan</h2>
                     <Link href="/baseball/dashboard/dev-plan" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       View plan <IconChevronRight size={14} />
                     </Link>
@@ -1337,11 +1337,11 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {!playerDevPlan ? (
                       <div className="text-center py-8">
-                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                          <IconNote size={24} className="text-slate-400" />
+                        <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                          <IconNote size={24} className="text-warm-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-slate-900 mb-2">No active plan</h3>
-                        <p className="text-sm leading-relaxed text-slate-500 max-w-sm mx-auto">
+                        <h3 className="text-lg font-medium text-warm-900 mb-2">No active plan</h3>
+                        <p className="text-sm leading-relaxed text-warm-500 max-w-sm mx-auto">
                           Your coach will create a personalized development plan for you.
                         </p>
                       </div>
@@ -1350,10 +1350,10 @@ export default function TeamDashboardClient() {
                         {/* Progress Bar */}
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-slate-700">Progress</span>
+                            <span className="text-sm font-medium text-warm-700">Progress</span>
                             <span className="text-sm font-semibold text-primary-600">{devPlanProgress}%</span>
                           </div>
-                          <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-2 bg-warm-200 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary-500 rounded-full transition-all duration-500"
                               style={{ width: `${devPlanProgress}%` }}
@@ -1365,9 +1365,9 @@ export default function TeamDashboardClient() {
                         {nextGoal && (
                           <div className="p-3 bg-primary-50 rounded-lg border border-primary-100">
                             <p className="text-xs font-medium text-primary-600 uppercase tracking-wide mb-1">Next Goal</p>
-                            <p className="font-medium text-slate-900">{nextGoal.title}</p>
+                            <p className="font-medium text-warm-900">{nextGoal.title}</p>
                             {nextGoal.target_date && (
-                              <p className="text-xs text-slate-500 mt-1">
+                              <p className="text-xs text-warm-500 mt-1">
                                 Target: {new Date(nextGoal.target_date).toLocaleDateString()}
                               </p>
                             )}
@@ -1375,12 +1375,12 @@ export default function TeamDashboardClient() {
                         )}
 
                         {/* Goal Stats */}
-                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <div className="flex items-center justify-between mt-4 pt-4 border-t border-warm-200">
+                          <div className="flex items-center gap-2 text-sm text-warm-600">
                             <IconCheck size={16} className="text-primary-600" />
                             <span>{playerDevPlan.goals?.filter(g => g.status === 'completed').length || 0} completed</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <div className="flex items-center gap-2 text-sm text-warm-600">
                             <IconClock size={16} className="text-amber-600" />
                             <span>{playerDevPlan.goals?.filter(g => g.status !== 'completed').length || 0} remaining</span>
                           </div>
@@ -1396,7 +1396,7 @@ export default function TeamDashboardClient() {
                 {/* My Tasks Due */}
                 <Card variant="glass">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">My Tasks</h2>
+                    <h2 className="font-semibold text-warm-900">My Tasks</h2>
                     <Link href="/baseball/dashboard/tasks" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       All tasks <IconChevronRight size={14} />
                     </Link>
@@ -1404,10 +1404,10 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {playerTasks.length === 0 ? (
                       <div className="text-center py-6">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                          <IconClipboardList size={20} className="text-slate-400" />
+                        <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+                          <IconClipboardList size={20} className="text-warm-400" />
                         </div>
-                        <p className="text-sm text-slate-500">No pending tasks</p>
+                        <p className="text-sm text-warm-500">No pending tasks</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
@@ -1415,18 +1415,18 @@ export default function TeamDashboardClient() {
                           <Link
                             key={task.id}
                             href="/baseball/dashboard/tasks"
-                            className="flex items-center gap-3 p-2.5 border border-slate-200 rounded-lg hover:border-slate-300 hover:bg-slate-50/50 transition-colors"
+                            className="flex items-center gap-3 p-2.5 border border-warm-200 rounded-lg hover:border-warm-300 hover:bg-warm-50/50 transition-colors"
                           >
-                            <div className="w-5 h-5 rounded-full border-2 border-slate-300 shrink-0" />
+                            <div className="w-5 h-5 rounded-full border-2 border-warm-300 shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-slate-900 truncate">{task.title}</p>
+                              <p className="text-sm font-medium text-warm-900 truncate">{task.title}</p>
                               {task.due_date && (
                                 <p className={`text-xs ${
                                   formatDueDate(task.due_date) === 'Overdue' 
                                     ? 'text-red-500' 
                                     : formatDueDate(task.due_date) === 'Due today'
                                     ? 'text-amber-600'
-                                    : 'text-slate-400'
+                                    : 'text-warm-400'
                                 }`}>
                                   {formatDueDate(task.due_date)}
                                 </p>
@@ -1443,7 +1443,7 @@ export default function TeamDashboardClient() {
                 {/* Dev Plan Progress (Desktop only) */}
                 <Card variant="glass" className="hidden lg:block">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="font-semibold text-slate-900">Dev Plan</h2>
+                    <h2 className="font-semibold text-warm-900">Dev Plan</h2>
                     <Link href="/baseball/dashboard/dev-plan" className="text-sm leading-relaxed text-primary-600 hover:underline flex items-center gap-1">
                       View <IconChevronRight size={14} />
                     </Link>
@@ -1451,20 +1451,20 @@ export default function TeamDashboardClient() {
                   <CardContent>
                     {!playerDevPlan ? (
                       <div className="text-center py-6">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                          <IconNote size={20} className="text-slate-400" />
+                        <div className="w-10 h-10 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
+                          <IconNote size={20} className="text-warm-400" />
                         </div>
-                        <p className="text-sm text-slate-500">No active plan</p>
+                        <p className="text-sm text-warm-500">No active plan</p>
                       </div>
                     ) : (
                       <div>
                         {/* Progress Bar */}
                         <div className="mb-3">
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium text-slate-600">Progress</span>
+                            <span className="text-xs font-medium text-warm-600">Progress</span>
                             <span className="text-xs font-semibold text-primary-600">{devPlanProgress}%</span>
                           </div>
-                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                          <div className="h-1.5 bg-warm-200 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-primary-500 rounded-full transition-all duration-500"
                               style={{ width: `${devPlanProgress}%` }}
@@ -1476,12 +1476,12 @@ export default function TeamDashboardClient() {
                         {nextGoal && (
                           <div className="p-2.5 bg-primary-50 rounded-lg border border-primary-100">
                             <p className="text-xs font-medium text-primary-600 uppercase tracking-wide mb-0.5">Next</p>
-                            <p className="text-sm font-medium text-slate-900 truncate">{nextGoal.title}</p>
+                            <p className="text-sm font-medium text-warm-900 truncate">{nextGoal.title}</p>
                           </div>
                         )}
 
                         {/* Goal Stats */}
-                        <div className="flex items-center gap-4 mt-3 text-xs text-slate-600">
+                        <div className="flex items-center gap-4 mt-3 text-xs text-warm-600">
                           <span className="flex items-center gap-1">
                             <IconCheck size={12} className="text-primary-600" />
                             {playerDevPlan.goals?.filter(g => g.status === 'completed').length || 0} done
@@ -1499,7 +1499,7 @@ export default function TeamDashboardClient() {
                 {/* Quick Actions */}
                 <Card variant="glass">
                   <CardHeader>
-                    <h2 className="font-semibold text-slate-900">Quick Actions</h2>
+                    <h2 className="font-semibold text-warm-900">Quick Actions</h2>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <Link href="/baseball/dashboard/videos" className="block">
