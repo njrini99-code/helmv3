@@ -92,7 +92,7 @@ async function dispatchReminders(
     .select('id, title, start_time, location')
     .gt('start_time', nowIso)
     .lte('start_time', horizon)
-    .eq('is_cancelled', false)
+    .is('cancelled_at', null)
     .limit(500);
 
   if (eventsErr) {
