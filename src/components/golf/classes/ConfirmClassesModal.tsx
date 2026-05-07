@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 interface ConfirmClassesModalProps {
   isOpen: boolean;
@@ -25,7 +29,6 @@ const DAYS = [
 ];
 
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -50,8 +53,6 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
     const withTime = classes.filter(c => c.start_time).length;
     return { totalCredits, daysPerWeek: uniqueDays.size, withTime };
   }, [classes]);
-
-  if (!isOpen) return null;
 
   const handleEdit = (index: number) => {
     setEditingIndex(index);
@@ -102,33 +103,30 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-warm-900/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="confirm-classes-title" className="relative w-full max-w-[calc(100vw-2rem)] sm:max-w-2xl glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-clip flex flex-col">
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-2xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
+        aria-labelledby="confirm-classes-title"
+      >
         {/* Top accent bar */}
         <div className="h-1 bg-gradient-to-r from-primary-500 via-primary-400 to-teal-500" />
 
-        {/* Shine effect */}
-        <div
-          className="absolute inset-x-0 top-1 h-px pointer-events-none z-10"
-          style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)' }}
-        />
-
         {/* Header */}
-        <div className="px-6 pt-5 pb-4">
+        <div className="px-6 pt-3 pb-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
                 <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 id="confirm-classes-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Review Your Schedule</h2>
+                <DrawerTitle id="confirm-classes-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+                  Review Your Schedule
+                </DrawerTitle>
                 <p className="text-sm text-warm-500 mt-0.5">
                   We found {classes.length} class{classes.length !== 1 ? 'es' : ''} — review and confirm
                 </p>
@@ -440,7 +438,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import { useToast } from '@/components/ui/toast';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import { useToast } from '@/components/ui/sonner';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ReminderPicker } from './ReminderPicker';
@@ -21,7 +25,6 @@ interface CreateTaskModalProps {
 }
 
 export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, players }: CreateTaskModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -125,8 +128,20 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
   }
 
   return (
-    <BottomSheet open={isOpen} onClose={onClose} title="Create New Task">
-      <div ref={modalRef}>
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create New Task</DrawerTitle>
+        </DrawerHeader>
+      <div
+        className="px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           label="Task Title"
@@ -249,6 +264,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         </div>
       </form>
       </div>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

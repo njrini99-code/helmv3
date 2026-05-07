@@ -6,13 +6,17 @@ import { Button } from '@/components/ui/button';
 import { IconBook, IconPlus, IconUpload, IconClock, IconMapPin, IconCalendar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { AddClassModal, type ClassFormData } from '@/components/golf/classes/AddClassModal';
 import { UploadScheduleModal } from '@/components/golf/classes/UploadScheduleModal';
 import { ConfirmClassesModal } from '@/components/golf/classes/ConfirmClassesModal';
 import { ClassDetailModal } from '@/components/golf/classes/ClassDetailModal';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
 
@@ -53,6 +57,8 @@ export default function GolfClassesPage() {
   const [parsedClasses, setParsedClasses] = useState<ParsedClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<PlayerClass | null>(null);
   const [editingClass, setEditingClass] = useState<ClassFormData | null>(null);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const supabase = createClient();
 
@@ -307,15 +313,14 @@ export default function GolfClassesPage() {
     setShowAddModal(true);
   };
 
-  const handleDeleteAllClasses = async () => {
+  const handleDeleteAllClasses = () => {
+    if (!playerId || classes.length === 0) return;
+    setShowDeleteAllConfirm(true);
+  };
+
+  const confirmDeleteAllClasses = async () => {
     if (!playerId) return;
-
-    const confirmDelete = confirm(
-      `Are you sure you want to delete all ${classes.length} classes? This will also remove them from your calendar. This action cannot be undone.`
-    );
-
-    if (!confirmDelete) return;
-
+    setDeletingAll(true);
     try {
       // Delete all calendar events for these classes
       const classIds = classes.map(c => c.id);
@@ -332,8 +337,11 @@ export default function GolfClassesPage() {
       if (error) throw error;
 
       await fetchClasses();
+      setShowDeleteAllConfirm(false);
     } catch (err) {
       showToast('Error deleting classes. Please try again.', 'error');
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -450,6 +458,21 @@ export default function GolfClassesPage() {
 
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
 
+      <Reveal>
+        <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+          <PageHeader
+            eyebrow="Academic Schedule"
+            eyebrowAccent="primary"
+            title="Your classes this semester."
+            subtitle={
+              classes.length > 0
+                ? `${classes.length} class${classes.length === 1 ? '' : 'es'} · ${totalCredits} credit${totalCredits === 1 ? '' : 's'}`
+                : 'Add your schedule so coaches plan around your academics.'
+            }
+          />
+        </div>
+      </Reveal>
+
       <AnimatedItem>
       {loading ? (
         <Card variant="glass">
@@ -498,7 +521,12 @@ export default function GolfClassesPage() {
                   <IconBook size={20} className="text-primary-600" />
                 </div>
                 <div>
-                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">{classes.length}</p>
+                  <AnimatedNumber
+                    value={classes.length}
+                    decimals={0}
+                    staggerIndex={0}
+                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                  />
                   <p className="text-xs text-warm-500">Classes</p>
                 </div>
               </div>
@@ -509,7 +537,12 @@ export default function GolfClassesPage() {
                   <IconCalendar size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">{totalCredits}</p>
+                  <AnimatedNumber
+                    value={totalCredits}
+                    decimals={0}
+                    staggerIndex={1}
+                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                  />
                   <p className="text-xs text-warm-500">Credits</p>
                 </div>
               </div>
@@ -520,9 +553,12 @@ export default function GolfClassesPage() {
                   <IconClock size={20} className="text-warm-600" />
                 </div>
                 <div>
-                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">
-                    {Object.keys(classesByDay).length}
-                  </p>
+                  <AnimatedNumber
+                    value={Object.keys(classesByDay).length}
+                    decimals={0}
+                    staggerIndex={2}
+                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                  />
                   <p className="text-xs text-warm-500">Days/Week</p>
                 </div>
               </div>
@@ -533,11 +569,16 @@ export default function GolfClassesPage() {
                   <IconMapPin size={20} className="text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900">
-                    {classes && classes.length > 0
-                      ? new Set(classes.map(c => c.building).filter(Boolean)).size
-                      : 0}
-                  </p>
+                  <AnimatedNumber
+                    value={
+                      classes && classes.length > 0
+                        ? new Set(classes.map(c => c.building).filter(Boolean)).size
+                        : 0
+                    }
+                    decimals={0}
+                    staggerIndex={3}
+                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                  />
                   <p className="text-xs text-warm-500">Buildings</p>
                 </div>
               </div>
@@ -709,6 +750,18 @@ export default function GolfClassesPage() {
         onClose={() => { setShowConfirmModal(false); setParsedClasses([]); }}
         onConfirm={handleConfirmClasses}
         parsedClasses={parsedClasses}
+      />
+
+      <ConfirmDialog
+        open={showDeleteAllConfirm}
+        title="Delete all classes?"
+        message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}
+        confirmLabel="Delete All"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deletingAll}
+        onConfirm={confirmDeleteAllClasses}
+        onCancel={() => setShowDeleteAllConfirm(false)}
       />
 
       <ClassDetailModal

@@ -22,6 +22,7 @@ import {
   IconChevronRight,
 } from '@/components/icons';
 import { InsightCard } from '@/components/golf/coachhelm/insight-card';
+import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
 import {
   getPlayerStatsIntelligence,
   type PlayerStatsIntelligence,
@@ -145,17 +146,17 @@ export function StatsIntelligenceStrip({
 
   if (loading) {
     return (
-      <div className="surface-matte rounded-3xl p-5 animate-pulse">
+      <ShimmerCard className="rounded-3xl p-5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-9 w-9 rounded-xl bg-warm-100" />
-          <div className="h-4 w-48 bg-warm-100 rounded" />
+          <Shimmer className="h-9 w-9 rounded-xl" />
+          <Shimmer className="h-4 w-48" />
         </div>
         <div className="space-y-2">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-2.5 rounded-full bg-warm-100" />
+            <Shimmer key={i} staggerIndex={i} className="h-2.5 rounded-full" />
           ))}
         </div>
-      </div>
+      </ShimmerCard>
     );
   }
 

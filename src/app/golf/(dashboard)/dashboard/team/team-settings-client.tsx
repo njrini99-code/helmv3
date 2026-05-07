@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconCopy, IconCheck, IconRefresh } from '@/components/icons';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import {
   createTeam,
   updateTeam,
@@ -170,6 +172,23 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         subtitle="Manage your team details and invite players."
       />
       <div className="max-w-2xl mx-auto px-6 py-8">
+
+      {/* Editorial hero band — frames the program identity beneath the
+          sticky title header in the magazine-cover rhythm. */}
+      <Reveal>
+        <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+          <PageHeader
+            eyebrow="Team"
+            eyebrowAccent="primary"
+            title="Your program."
+            subtitle={
+              team.season
+                ? `${team.name} · ${team.season}.`
+                : `${team.name} — roster, schedule, and program identity.`
+            }
+          />
+        </div>
+      </Reveal>
 
       {/* Team Info */}
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-6 mb-6">

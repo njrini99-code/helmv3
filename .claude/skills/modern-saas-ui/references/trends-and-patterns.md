@@ -190,10 +190,10 @@ Across high-quality SaaS examples, shared traits are more structural than stylis
 - Restrained palette, consistent radii, consistent spacing
 
 **Common pattern bundles**:
-- **Stripe**: Editorial typography + atmospheric gradients
-- **Linear**: Spacing discipline + subtle lighting
-- **Vercel**: Technical clarity + contrast-heavy CTAs
-- **Framer**: Motion-forward examples and galleries
+- **Editorial marketing**: Editorial typography + atmospheric gradients
+- **Editorial dashboard**: Spacing discipline + subtle lighting
+- **Technical clarity**: High contrast + decisive CTAs
+- **Motion-forward**: Cinematic transitions and galleries
 
 The key is a recognizable system—premium because everything obeys the same rules.
 

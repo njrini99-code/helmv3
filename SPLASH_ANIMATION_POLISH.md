@@ -52,7 +52,7 @@
 - Changed from `clamp(2rem, 8vw, 3.5rem)` → `clamp(2rem, 6vw + 0.5rem, 3.5rem)`
 - Old formula too aggressive on mobile (31px on iPhone 12)
 - New formula provides better legibility: ~38px on iPhone 12
-- Matches premium SaaS standards (Apple, Linear, Vercel)
+- Matches premium Apple-grade typographic standards
 - **Files**: FlipCard line 109, Final lockup line 342
 
 ---

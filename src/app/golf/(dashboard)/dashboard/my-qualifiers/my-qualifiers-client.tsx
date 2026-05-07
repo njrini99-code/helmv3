@@ -6,6 +6,8 @@ import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { IconTrophy, IconChevronRight, IconCalendar, IconMapPin, IconGolf } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 
 interface MyQualifiersClientProps {
   qualifiers: PlayerQualifierInfo[];
@@ -47,6 +49,12 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
     return toPar > 0 ? `+${toPar}` : toPar.toString();
   };
 
+  // Subtitle stats — active vs concluded for the editorial hero
+  const activeCount = qualifiers.filter(
+    q => q.status === 'in_progress' || q.status === 'upcoming',
+  ).length;
+  const concludedCount = qualifiers.filter(q => q.status === 'completed').length;
+
   return (
     <AnimatedPage className="min-h-full bg-transparent">
       {/* Header */}
@@ -58,6 +66,23 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
       </AnimatedItem>
 
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+
+        {/* Editorial hero band — frames the qualifier scorecard list beneath
+            the sticky title header in the magazine-cover rhythm. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="My Qualifiers"
+              eyebrowAccent="primary"
+              title="Your qualifier scorecard."
+              subtitle={
+                qualifiers.length === 0
+                  ? 'Qualifier entries posted by your coach will appear here.'
+                  : `${activeCount} active · ${concludedCount} concluded.`
+              }
+            />
+          </div>
+        </Reveal>
 
         <AnimatedItem>
         {error ? (

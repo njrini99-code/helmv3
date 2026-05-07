@@ -9,7 +9,7 @@
 
 **Overall Grade: B+ (85/100)**
 
-Both dashboards show strong premium foundations with excellent glassmorphism implementation, consistent spacing, and thoughtful animations. However, several areas need refinement to reach **Linear/Stripe/Vercel-level premium** standards.
+Both dashboards show strong premium foundations with excellent glassmorphism implementation, consistent spacing, and thoughtful animations. However, several areas need refinement to reach **Apple-grade premium** standards.
 
 ### Strengths ✅
 - Excellent glass material system (3-tier: subtle/standard/prominent)
@@ -335,15 +335,15 @@ className="bg-white border border-slate-200"  // Solid for readability
 
 ## Benchmark Comparison
 
-| Feature | Linear | Stripe | Vercel | Helm (Current) | Target |
-|---------|--------|--------|--------|----------------|--------|
-| Spacing discipline | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Consistent radii | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Typography scale | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Glass on chrome only | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| Command palette | ✅ | ✅ | ✅ | ❌ | ✅ |
-| Motion budget | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Reduced motion | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feature | Premium SaaS Standard | Helm (Current) | Target |
+|---------|-----------------------|----------------|--------|
+| Spacing discipline | ✅ | ✅ | ✅ |
+| Consistent radii | ✅ | ⚠️ | ✅ |
+| Typography scale | ✅ | ⚠️ | ✅ |
+| Glass on chrome only | ✅ | ⚠️ | ✅ |
+| Command palette | ✅ | ❌ | ✅ |
+| Motion budget | ✅ | ✅ | ✅ |
+| Reduced motion | ✅ | ✅ | ✅ |
 
 ---
 

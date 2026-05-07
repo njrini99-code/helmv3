@@ -15,8 +15,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 
@@ -350,155 +355,146 @@ export function OfflineSyncStatus({
           initial={{ opacity: 0, y: 10, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
-          className="relative"
         >
-          {/* Main button */}
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            aria-expanded={isExpanded}
-            aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
-            className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
-              statusDisplay.bgColor,
-              'hover:shadow-xl'
-            )}
-          >
-            <span className={statusDisplay.color}>{statusDisplay.icon}</span>
-            <span className={cn('text-sm font-medium', statusDisplay.color)}>
-              {statusDisplay.label}
-            </span>
-            <ChevronDownIcon
-              className={cn(
-                'w-4 h-4 transition-transform',
-                statusDisplay.color,
-                isExpanded && 'rotate-180'
-              )}
-            />
-          </button>
-
-          {/* Expanded details */}
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="absolute bottom-full right-0 mb-2 w-72"
+          <Popover open={isExpanded} onOpenChange={setIsExpanded}>
+            <PopoverTrigger asChild>
+              <button
+                aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
+                  statusDisplay.bgColor,
+                  'hover:shadow-xl'
+                )}
               >
-                <div className="bg-white rounded-xl border border-warm-200 shadow-xl p-4 space-y-3">
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-warm-900">Sync Status</span>
-                    <button
-                      onClick={handleDismiss}
-                      aria-label="Dismiss sync status"
-                      className="p-1 text-warm-400 hover:text-warm-600 rounded transition-colors"
-                    >
-                      <XIcon className="w-4 h-4" />
-                    </button>
-                  </div>
+                <span className={statusDisplay.color}>{statusDisplay.icon}</span>
+                <span className={cn('text-sm font-medium', statusDisplay.color)}>
+                  {statusDisplay.label}
+                </span>
+                <ChevronDownIcon
+                  className={cn(
+                    'w-4 h-4 transition-transform',
+                    statusDisplay.color,
+                    isExpanded && 'rotate-180'
+                  )}
+                />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="end"
+              side="top"
+              sideOffset={8}
+              className="w-72 bg-white border border-warm-200 p-4 space-y-3"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-warm-900">Sync Status</span>
+                <button
+                  onClick={handleDismiss}
+                  aria-label="Dismiss sync status"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
+                >
+                  <XIcon className="w-4 h-4" />
+                </button>
+              </div>
 
-                  {/* Connection status */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-warm-500">Connection</span>
-                    <span className={cn('font-medium', isOnline ? 'text-primary-600' : 'text-amber-600')}>
-                      {isOnline ? (
-                        <span className="flex items-center gap-1">
-                          <WifiIcon className="w-4 h-4" />
-                          {connectionStatus.isSlowConnection ? 'Slow' : 'Online'}
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <WifiOffIcon className="w-4 h-4" />
-                          Offline
-                        </span>
-                      )}
+              {/* Connection status */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-warm-500">Connection</span>
+                <span className={cn('font-medium', isOnline ? 'text-primary-600' : 'text-amber-600')}>
+                  {isOnline ? (
+                    <span className="flex items-center gap-1">
+                      <WifiIcon className="w-4 h-4" />
+                      {connectionStatus.isSlowConnection ? 'Slow' : 'Online'}
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <WifiOffIcon className="w-4 h-4" />
+                      Offline
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              {/* Pending items */}
+              {pendingCount.total > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-warm-500">Pending</span>
+                  <span className="text-warm-900 font-medium">
+                    {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
+                    {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
+                    {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
+                    {pendingCount.total === 0 && 'None'}
+                  </span>
+                </div>
+              )}
+
+              {/* Last sync */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-warm-500">Last sync</span>
+                <span className="text-warm-700">{lastSyncText}</span>
+              </div>
+
+              {/* Sync progress */}
+              {isSyncing && syncProgress && (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-warm-500 capitalize">{syncProgress.phase}</span>
+                    <span className="text-warm-700">
+                      {syncProgress.current}/{syncProgress.total}
                     </span>
                   </div>
-
-                  {/* Pending items */}
-                  {pendingCount.total > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-warm-500">Pending</span>
-                      <span className="text-warm-900 font-medium">
-                        {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
-                        {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
-                        {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
-                        {pendingCount.total === 0 && 'None'}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Last sync */}
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-warm-500">Last sync</span>
-                    <span className="text-warm-700">{lastSyncText}</span>
-                  </div>
-
-                  {/* Sync progress */}
-                  {isSyncing && syncProgress && (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-warm-500 capitalize">{syncProgress.phase}</span>
-                        <span className="text-warm-700">
-                          {syncProgress.current}/{syncProgress.total}
-                        </span>
-                      </div>
-                      <div
-                        className="w-full h-1.5 bg-warm-100 rounded-full overflow-hidden"
-                        role="progressbar"
-                        aria-valuenow={syncProgress.percentComplete}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
-                      >
-                        <div
-                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                          style={{ width: `${syncProgress.percentComplete}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Error message */}
-                  {syncError && (
-                    <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-xs text-red-600">{syncError}</p>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-2 border-t border-warm-100">
-                    {isOnline && pendingCount.total > 0 && !isSyncing && (
-                      <button
-                        onClick={handleSyncNow}
-                        className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
-                      >
-                        Sync Now
-                      </button>
-                    )}
-                    {syncError && (
-                      <button
-                        onClick={handleRetry}
-                        className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                      >
-                        Retry
-                      </button>
-                    )}
-                    {!syncError && pendingCount.total === 0 && isOnline && (
-                      <button
-                        onClick={handleDismiss}
-                        className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
-                      >
-                        Dismiss
-                      </button>
-                    )}
+                  <div
+                    className="w-full h-1.5 bg-warm-100 rounded-full overflow-hidden"
+                    role="progressbar"
+                    aria-valuenow={syncProgress.percentComplete}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Sync progress: ${syncProgress.percentComplete}%`}
+                  >
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      style={{ width: `${syncProgress.percentComplete}%` }}
+                    />
                   </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              )}
+
+              {/* Error message */}
+              {syncError && (
+                <div className="p-2 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-xs text-red-600">{syncError}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2 border-t border-warm-100">
+                {isOnline && pendingCount.total > 0 && !isSyncing && (
+                  <button
+                    onClick={handleSyncNow}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                  >
+                    Sync Now
+                  </button>
+                )}
+                {syncError && (
+                  <button
+                    onClick={handleRetry}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
+                {!syncError && pendingCount.total === 0 && isOnline && (
+                  <button
+                    onClick={handleDismiss}
+                    className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
         </motion.div>
       </div>
     );
@@ -632,7 +628,7 @@ export function OfflineSyncStatus({
             {syncError && (
               <button
                 onClick={handleRetry}
-                className="px-3 py-1.5 text-xs font-medium text-red-600 bg-red-100 hover:bg-red-200 rounded-lg transition-colors"
+                className="inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-red-600 bg-red-100 hover:bg-red-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 Retry
               </button>
@@ -640,7 +636,7 @@ export function OfflineSyncStatus({
             <button
               onClick={handleDismiss}
               aria-label="Dismiss sync status"
-              className="p-1.5 text-warm-400 hover:text-warm-600 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <XIcon className="w-4 h-4" />
             </button>

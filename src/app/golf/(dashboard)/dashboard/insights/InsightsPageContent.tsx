@@ -28,6 +28,8 @@ import {
   IconX,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { InsightSearchBar } from '@/components/golf/coachhelm/insights/InsightSearchBar';
 import { InsightFiltersPanel, type InsightFilters } from '@/components/golf/coachhelm/insights/InsightFiltersPanel';
 import { InsightListView } from '@/components/golf/coachhelm/insights/InsightListView';
@@ -598,6 +600,29 @@ export function InsightsPageContent({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        {/* Editorial hero plinth — magazine-cover framing for the
+            coach insights feed beneath the sticky LargeTitleHeader. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Coach Insights"
+              eyebrowAccent="primary"
+              title="What's happening on your team."
+              subtitle={
+                stats && stats.total > 0
+                  ? `${stats.total} insight${stats.total === 1 ? '' : 's'} surfaced${
+                      stats.active > 0 ? ` · ${stats.active} active` : ''
+                    }${
+                      stats.byPriority?.urgent
+                        ? ` · ${stats.byPriority.urgent} urgent`
+                        : ''
+                    }.`
+                  : 'AI-generated coaching insights will appear here as your players log rounds and patterns mature.'
+              }
+            />
+          </div>
+        </Reveal>
+
         {/* Stats Cards */}
         {stats && (
           <m.div

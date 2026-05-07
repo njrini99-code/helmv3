@@ -11,7 +11,7 @@ import type { Player } from '@/lib/types';
 import dynamic from 'next/dynamic';
 import { SaveComparisonModal } from './save-comparison-modal';
 import { saveComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 

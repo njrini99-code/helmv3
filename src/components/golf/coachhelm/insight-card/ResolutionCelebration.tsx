@@ -22,6 +22,7 @@
  * `lifecycle_state === 'resolved'` AND `audience === 'player'`.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles } from '@/components/icons';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -92,11 +93,19 @@ export function ResolutionCelebration({
     return typeof shown === 'string' && shown.length > 0;
   }, [insight.metadata]);
 
-  const [showConfetti, setShowConfetti] = useState(
-    !alreadyShown && !disableConfetti,
-  );
+  const reduce = useReducedMotion() ?? false;
+
+  // Initialize to `false` so the first SSR render and the first client render
+  // produce identical markup (no confetti). We then enable confetti in an
+  // effect once we know we're on the client AND the user hasn't asked for
+  // reduced motion. This guarantees:
+  //   1. No hydration mismatch (`Math.random()` only runs after mount).
+  //   2. Reduced-motion users never see the particle layer.
+  const [showConfetti, setShowConfetti] = useState(false);
 
   // Build particles once per mount so re-renders don't re-randomize positions.
+  // Gated on `showConfetti` — when the layer is off, this stays an empty list
+  // and `Math.random()` is never invoked (so SSR + initial CSR match exactly).
   const particles = useMemo(
     () => (showConfetti ? buildParticles() : []),
     [showConfetti],
@@ -106,7 +115,9 @@ export function ResolutionCelebration({
   // the confetti layer. We do NOT block render on the server roundtrip —
   // the UI celebrates immediately and the flag lands asynchronously.
   useEffect(() => {
-    if (alreadyShown || disableConfetti) return;
+    if (alreadyShown || disableConfetti || reduce) return;
+
+    setShowConfetti(true);
 
     let cancelled = false;
     void Promise.resolve(onMarkShown(insight.id)).catch(() => {
@@ -123,12 +134,12 @@ export function ResolutionCelebration({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [alreadyShown, disableConfetti, insight.id, onMarkShown]);
+  }, [alreadyShown, disableConfetti, reduce, insight.id, onMarkShown]);
 
   return (
     <div
       data-testid="resolution-celebration"
-      data-celebration-first-view={!alreadyShown && !disableConfetti}
+      data-celebration-first-view={!alreadyShown && !disableConfetti && !reduce}
       className="relative"
     >
       {/* Celebration header — replaces the "Last updated" framing on the

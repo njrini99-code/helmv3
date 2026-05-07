@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconLink, IconCheck, IconCopy, IconX } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface InviteModalProps {
   teamId: string;

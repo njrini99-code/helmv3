@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   IconChevronDown,
   IconTrendingUp,
@@ -243,7 +244,11 @@ export function PatternCard({
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-warm-500">Stroke Impact</span>
                     <span className={cn('text-sm font-medium', impactColor)}>
-                      {isNegative ? '+' : '-'}{strokeImpactAbs.toFixed(1)}
+                      <AnimatedNumber
+                        value={strokeImpactAbs}
+                        decimals={1}
+                        prefix={isNegative ? '+' : '-'}
+                      />
                     </span>
                   </div>
                   <div className="h-2 bg-warm-100 rounded-full overflow-hidden relative">
@@ -380,7 +385,7 @@ export function PatternCard({
                     </div>
                     <div className="text-center p-2 bg-warm-50 rounded-lg">
                       <div className="text-lg font-medium text-warm-800">
-                        {pattern.lift.toFixed(1)}x
+                        <AnimatedNumber value={pattern.lift} decimals={1} suffix="x" />
                       </div>
                       <div className="text-xs text-warm-500">Lift</div>
                     </div>

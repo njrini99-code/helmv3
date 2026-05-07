@@ -32,7 +32,7 @@ import { formatRelativeTime, getFullName } from '@/lib/utils';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonVideos } from '@/components/ui/skeleton-loader';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 // Video type based on baseball_videos table schema
 interface BaseballVideo {

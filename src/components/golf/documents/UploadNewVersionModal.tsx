@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 interface UploadNewVersionModalProps {
   open: boolean;
@@ -30,14 +34,11 @@ export function UploadNewVersionModal({
   currentFileType,
   onUpload,
 }: UploadNewVersionModalProps) {
-  const { modalRef } = useFocusTrap(open, onClose);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [changeNotes, setChangeNotes] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-
-  if (!open) return null;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,19 +96,22 @@ export function UploadNewVersionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={handleClose}
-      />
-
-      {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-version-title" className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
+    <Drawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next && !uploading) handleClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
+        aria-labelledby="upload-version-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>
-            <h2 id="upload-version-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Upload New Version</h2>
+            <DrawerTitle id="upload-version-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+              Upload New Version
+            </DrawerTitle>
             <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
           </div>
           <button
@@ -245,7 +249,7 @@ export function UploadNewVersionModal({
             )}
           </button>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

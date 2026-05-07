@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 type PdfJsTextItem = { str: string; transform?: number[] };
 type PdfJsPage = { getTextContent: () => Promise<{ items: PdfJsTextItem[] }> };
@@ -52,15 +56,12 @@ const loadPdfJs = async () => {
 };
 
 export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadScheduleModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [pasteMode, setPasteMode] = useState(false);
   const [pastedText, setPastedText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -213,22 +214,16 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="upload-schedule-title" className="relative w-full max-w-xl mx-4 glass-prominent rounded-2xl shadow-2xl overflow-clip">
-        {/* Shine effect */}
-        <div
-          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
+        aria-labelledby="upload-schedule-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
           <div className="flex items-center gap-3">
@@ -236,7 +231,9 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <IconSparkles size={20} className="text-primary-600" />
             </div>
             <div>
-              <h2 id="upload-schedule-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Import Schedule</h2>
+              <DrawerTitle id="upload-schedule-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+                Import Schedule
+              </DrawerTitle>
               <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
             </div>
           </div>
@@ -369,7 +366,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
             </ul>
           </div>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

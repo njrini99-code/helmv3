@@ -11,7 +11,7 @@
 - **GolfHelm**: College golf team management + CoachHelm AI layer
 
 **Stack**: Next.js 16 (App Router) • TypeScript strict • Supabase • Tailwind
-**Design**: Linear/Vercel-inspired, glassmorphism, premium aesthetics
+**Design**: California-modern × neo-futurism — warm cream + helm green, matte surfaces, editorial typography, slow cinematic motion
 
 ---
 
@@ -150,7 +150,7 @@ Status:     #16A34A success, #DC2626 error, #F59E0B warning
 ```
 
 ### Quality Bar
-Premium SaaS quality — think Linear, Stripe, Vercel:
+Apple-grade premium polish:
 - Skeleton loaders (not spinners), helpful empty states, user-friendly errors
 - Subtle framer-motion animations, proper accessibility, server components by default
 

@@ -12,6 +12,8 @@ import {
   IconActivity,
 } from '@/components/icons';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EmptyState } from '@/components/ui/empty-state';
 import { CategoryCard } from './CategoryCard';
 import { CategoryDrillDown } from './CategoryDrillDown';
 
@@ -84,18 +86,21 @@ export function TeamCategoryView({
 
   if (categories.length === 0) {
     return (
-      <div className="surface-matte rounded-3xl p-8 text-center space-y-2">
-        <IconActivity size={32} className="mx-auto text-warm-300" />
-        <p className="text-warm-900 font-medium">No category data yet</p>
-        <p className="text-sm text-warm-500">
-          Category intelligence will appear here once your team has logged enough rounds.
-        </p>
-      </div>
+      <EmptyState
+        variant="card"
+        icon={<IconActivity size={28} />}
+        title="No category data yet"
+        description="Category intelligence will appear here once your team has logged enough rounds."
+      />
     );
   }
 
   return (
-    <div className="space-y-5">
+    <Tabs
+      value={activeTabId}
+      onChange={setActiveTabId}
+      className="space-y-5"
+    >
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div className="flex items-center gap-3">
@@ -116,24 +121,19 @@ export function TeamCategoryView({
       </div>
 
       {/* Category tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+      <TabsList
+        className="flex w-fit max-w-full gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+      >
         {categories.map((cat) => {
           const Icon = getCategoryIcon(cat.id);
-          const isActive = cat.id === activeTabId;
 
           return (
-            <button
+            <TabsTrigger
               key={cat.id}
-              type="button"
-              onClick={() => setActiveTabId(cat.id)}
-              className={cn(
-                'relative flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium transition-all duration-200 shrink-0 cursor-pointer',
-                isActive
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'text-warm-500 hover:bg-warm-50'
-              )}
+              value={cat.id}
+              className="shrink-0"
+              icon={<Icon size={16} />}
             >
-              <Icon size={16} />
               <span>{cat.label}</span>
 
               {/* Attention dot */}
@@ -141,19 +141,19 @@ export function TeamCategoryView({
                 <span
                   className={cn(
                     'absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2',
-                    isActive
-                      ? 'bg-red-400 border-primary-600'
-                      : 'bg-red-500 border-white'
+                    'bg-red-500 border-white',
+                    'group-data-[state=active]:bg-red-400 group-data-[state=active]:border-primary-600'
                   )}
                 />
               )}
-            </button>
+            </TabsTrigger>
           );
         })}
-      </div>
+      </TabsList>
 
-      {/* Active category content */}
-      {/* mode="wait" — tab switch crossfade; popLayout was re-measuring on every frame */}
+      {/* Active category content — kept outside TabsContent so the existing
+          AnimatePresence crossfade works the same way it did before. The
+          Tabs root still drives `activeTabId` for keyboard nav and ARIA. */}
       <AnimatePresence mode="wait">
         {activeCategory && (
           <motion.div
@@ -175,6 +175,6 @@ export function TeamCategoryView({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </Tabs>
   );
 }

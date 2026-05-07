@@ -3,7 +3,12 @@
 import { useState, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import {
@@ -28,6 +33,11 @@ import {
   IconChevronDown,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { toast } from '@/components/ui/sonner';
 import { createFocusArea, updateFocusArea, deleteFocusArea } from '@/app/golf/actions/development';
 
 // ============================================================================
@@ -279,6 +289,8 @@ export function DevelopmentPlansClient({
   const [editingFocusArea, setEditingFocusArea] = useState<FocusArea | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedCardId, setExpandedCardId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -408,13 +420,22 @@ export function DevelopmentPlansClient({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this focus area?')) return;
+  const handleDelete = (id: string) => {
+    setPendingDeleteId(id);
+  };
+
+  const confirmDeleteFocusArea = async () => {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setIsDeleting(true);
     try {
       await deleteFocusArea(id);
       router.refresh();
     } catch {
-      // Error handled by server action
+      toast.error('Failed to delete focus area');
+    } finally {
+      setIsDeleting(false);
+      setPendingDeleteId(null);
     }
   };
 
@@ -846,10 +867,32 @@ export function DevelopmentPlansClient({
         </Button>
       </LargeTitleHeader>
 
+      {/* Editorial hero plinth — magazine-cover framing for the
+          development plans surface. Sits beneath the sticky
+          LargeTitleHeader and anchors the active-plan context. */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Development"
+              eyebrowAccent="primary"
+              title="Player development plans."
+              subtitle={
+                focusAreas.length === 0
+                  ? players.length === 0
+                    ? 'Add players to your roster to start building development plans.'
+                    : 'Create focus areas to guide each player’s development this season.'
+                  : `${summaryStats.activeCount} active plan${summaryStats.activeCount === 1 ? '' : 's'} · ${summaryStats.playersWithAreas} ${summaryStats.playersWithAreas === 1 ? 'player' : 'players'} covered${summaryStats.completedCount > 0 ? ` · ${summaryStats.completedCount} completed` : ''}.`
+              }
+            />
+          </div>
+        </Reveal>
+      </div>
+
       {/* Summary stats */}
       {focusAreas.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <Reveal staggerIndex={1} className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconActivity size={14} className="text-primary-600" />
@@ -886,45 +929,41 @@ export function DevelopmentPlansClient({
               <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{summaryStats.total}</p>
               <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
             </div>
-          </div>
+          </Reveal>
         </div>
       )}
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+      <Reveal staggerIndex={2} className="max-w-7xl mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
-          <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-              <IconUser size={24} className="text-warm-400" />
-            </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Players Yet</h3>
-            <p className="text-warm-500 text-sm max-w-sm mx-auto">
-              Add players to your roster to create development plans and focus areas.
-            </p>
+          <div className="relative surface-matte rounded-3xl overflow-clip">
+            <EmptyState
+              icon={<IconUser size={32} />}
+              title="No Players Yet"
+              description="Add players to your roster to create development plans and focus areas."
+            />
           </div>
         ) : filteredFocusAreas.length === 0 ? (
-          <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-4">
-              <IconTarget size={24} className="text-primary-600" />
-            </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Focus Areas</h3>
-            <p className="text-warm-500 text-sm mb-6 max-w-sm mx-auto">
-              {selectedPlayerId
-                ? 'Create a focus area for this player to help guide their development.'
-                : 'Start creating focus areas for your players to track their progress.'}
-            </p>
-            <Button
-              onClick={() => {
-                resetForm();
-                if (selectedPlayerId) {
-                  setFormData(prev => ({ ...prev, player_id: selectedPlayerId }));
-                }
-                setIsCreateModalOpen(true);
+          <div className="relative surface-matte rounded-3xl overflow-clip">
+            <EmptyState
+              icon={<IconTarget size={32} />}
+              title="No Focus Areas"
+              description={
+                selectedPlayerId
+                  ? 'Create a focus area for this player to help guide their development.'
+                  : 'Start creating focus areas for your players to track their progress.'
+              }
+              action={{
+                label: 'Create First Focus Area',
+                onClick: () => {
+                  resetForm();
+                  if (selectedPlayerId) {
+                    setFormData(prev => ({ ...prev, player_id: selectedPlayerId }));
+                  }
+                  setIsCreateModalOpen(true);
+                },
               }}
-            >
-              <IconPlus size={16} className="mr-1.5" />
-              Create First Focus Area
-            </Button>
+            />
           </div>
         ) : selectedPlayerId ? (
           /* Single player view */
@@ -1061,25 +1100,65 @@ export function DevelopmentPlansClient({
             ))}
           </div>
         )}
-      </div>
+      </Reveal>
 
       {/* Create Sheet */}
-      <BottomSheet
+      <Drawer
         open={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="New Focus Area"
+        onOpenChange={(next) => {
+          if (!next) setIsCreateModalOpen(false);
+        }}
       >
-        {renderFormContent(false)}
-      </BottomSheet>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>New Focus Area</DrawerTitle>
+          </DrawerHeader>
+          <div
+            className="px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
+            {renderFormContent(false)}
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {/* Edit Sheet */}
-      <BottomSheet
+      <Drawer
         open={isEditModalOpen}
-        onClose={() => { setIsEditModalOpen(false); setEditingFocusArea(null); }}
-        title="Edit Focus Area"
+        onOpenChange={(next) => {
+          if (!next) {
+            setIsEditModalOpen(false);
+            setEditingFocusArea(null);
+          }
+        }}
       >
-        {renderFormContent(true)}
-      </BottomSheet>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Edit Focus Area</DrawerTitle>
+          </DrawerHeader>
+          <div
+            className="px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
+            {renderFormContent(true)}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Delete focus area?"
+        message="Are you sure you want to delete this focus area? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={() => { void confirmDeleteFocusArea(); }}
+        onCancel={() => {
+          if (!isDeleting) setPendingDeleteId(null);
+        }}
+      />
 
       <style jsx>{`
         @keyframes fadeInUp {

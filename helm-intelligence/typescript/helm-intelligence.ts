@@ -211,7 +211,7 @@ const UI_AUDITOR_PROMPT = `You are an expert UI/UX Auditor Agent for Helm Intell
 - Primary: #16A34A (Kelly green)
 - Background: #FFFEFA (Cream)
 - Glassmorphism: bg-white/70 backdrop-blur-xl border-white/20 rounded-2xl
-- Inspiration: Linear, Stripe, Vercel
+- Inspiration: California-modern editorial premium UIs
 
 # Check For
 1. Missing alt text on images

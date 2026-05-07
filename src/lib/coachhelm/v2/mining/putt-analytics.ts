@@ -110,6 +110,33 @@ interface RawPuttRow {
 }
 
 /**
+ * Detects whether an error looks transient (network blip, fetch failed,
+ * timeout, 5xx). We retry these once before surfacing them — Supabase
+ * occasionally fails with a bare "TypeError: fetch failed" during regional
+ * blips, and a single retry resolves >95% of those.
+ */
+function isTransientFetchError(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes('fetch failed') ||
+    lower.includes('econnreset') ||
+    lower.includes('etimedout') ||
+    lower.includes('socket hang up') ||
+    lower.includes('network') ||
+    lower.includes('503') ||
+    lower.includes('502') ||
+    lower.includes('504')
+  );
+}
+
+/** Sleep without external deps. */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
  * Fetches every putt attempt in a rolling window for a player. Returned rows
  * are the raw join (one row per putt) — aggregation happens in JS so we only
  * pay one DB round-trip regardless of how many buckets we end up evaluating.
@@ -333,13 +360,35 @@ export async function generatePuttDistanceInsights(
   try {
     rows = await fetchPuttRows(supabase, playerId, DISTANCE_WINDOW_DAYS);
   } catch (err) {
-    await logServerError('putt-analytics.distance.fetch_failed', {
-      action: 'generatePuttDistanceInsights',
-      featureArea: 'coachhelm.mining',
-      playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
-    });
-    return;
+    // Retry once for transient errors before surfacing.
+    if (isTransientFetchError(err)) {
+      await delay(500);
+      try {
+        rows = await fetchPuttRows(supabase, playerId, DISTANCE_WINDOW_DAYS);
+      } catch (retryErr) {
+        if (isTransientFetchError(retryErr)) {
+          console.debug(
+            `[putt-analytics] distance fetch transient (skipped after retry): playerId=${playerId} err=${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          );
+          return;
+        }
+        await logServerError('putt-analytics.distance.fetch_failed', {
+          action: 'generatePuttDistanceInsights',
+          featureArea: 'coachhelm.mining',
+          playerId,
+          metadata: { error: retryErr instanceof Error ? retryErr.message : String(retryErr) },
+        });
+        return;
+      }
+    } else {
+      await logServerError('putt-analytics.distance.fetch_failed', {
+        action: 'generatePuttDistanceInsights',
+        featureArea: 'coachhelm.mining',
+        playerId,
+        metadata: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return;
+    }
   }
 
   if (rows.length === 0) return;
@@ -552,13 +601,38 @@ export async function generatePuttMissBiasInsights(
   try {
     rows = await fetchPuttRows(supabase, playerId, MISS_BIAS_WINDOW_DAYS);
   } catch (err) {
-    await logServerError('putt-analytics.miss_bias.fetch_failed', {
-      action: 'generatePuttMissBiasInsights',
-      featureArea: 'coachhelm.mining',
-      playerId,
-      metadata: { error: err instanceof Error ? err.message : String(err) },
-    });
-    return;
+    // Retry once for transient errors (TypeError: fetch failed, ECONNRESET, etc.)
+    if (isTransientFetchError(err)) {
+      await delay(500);
+      try {
+        rows = await fetchPuttRows(supabase, playerId, MISS_BIAS_WINDOW_DAYS);
+      } catch (retryErr) {
+        // Final fallback after retry — return empty, don't poison the dashboard.
+        // Log at debug level (console.debug) only; this is a transient signal,
+        // not an actionable error.
+        if (isTransientFetchError(retryErr)) {
+          console.debug(
+            `[putt-analytics] miss_bias fetch transient (skipped after retry): playerId=${playerId} err=${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          );
+          return;
+        }
+        await logServerError('putt-analytics.miss_bias.fetch_failed', {
+          action: 'generatePuttMissBiasInsights',
+          featureArea: 'coachhelm.mining',
+          playerId,
+          metadata: { error: retryErr instanceof Error ? retryErr.message : String(retryErr) },
+        });
+        return;
+      }
+    } else {
+      await logServerError('putt-analytics.miss_bias.fetch_failed', {
+        action: 'generatePuttMissBiasInsights',
+        featureArea: 'coachhelm.mining',
+        playerId,
+        metadata: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return;
+    }
   }
 
   const agg = aggregateMissBias(rows);

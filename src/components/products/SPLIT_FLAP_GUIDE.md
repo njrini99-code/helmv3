@@ -123,8 +123,8 @@ When someone loads `/products`:
 ## 🎬 Inspiration
 
 - **Solari boards** (Italian flip displays in airports)
-- **Linear's intro** (premium, not gimmicky)
-- **Stripe's motion** (smooth, purposeful)
+- **Premium product intros** (purposeful, never gimmicky)
+- **Cinematic motion** (smooth, intentional)
 - **Apple keynotes** (build anticipation)
 
 ---

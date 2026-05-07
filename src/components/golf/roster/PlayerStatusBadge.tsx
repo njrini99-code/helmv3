@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconChevronDown } from '@/components/icons';
 
 interface PlayerStatusBadgeProps {

@@ -2,10 +2,28 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { IconUpload, IconX } from '@/components/icons';
+import {
+  IconUpload,
+  IconX,
+  IconHome,
+  IconAirplane,
+  IconClipboardList,
+  IconAward,
+  IconFlag,
+  IconLayers,
+  IconPaperclip,
+} from '@/components/icons';
+import type { ComponentType, SVGAttributes } from 'react';
+
+type ExpenseIcon = ComponentType<SVGAttributes<SVGElement> & { size?: number }>;
 import {
   createTravelExpense,
   updateTravelExpense,
@@ -24,13 +42,13 @@ interface ExpenseFormProps {
   expense?: TravelExpense | null;
 }
 
-const CATEGORIES: { value: ExpenseCategory; label: string; icon: string }[] = [
-  { value: 'lodging', label: 'Lodging', icon: '🏨' },
-  { value: 'transportation', label: 'Transportation', icon: '🚗' },
-  { value: 'meals', label: 'Meals', icon: '🍽️' },
-  { value: 'entry_fees', label: 'Entry Fees', icon: '🎟️' },
-  { value: 'equipment', label: 'Equipment', icon: '⛳' },
-  { value: 'other', label: 'Other', icon: '📦' },
+const CATEGORIES: { value: ExpenseCategory; label: string; icon: ExpenseIcon }[] = [
+  { value: 'lodging', label: 'Lodging', icon: IconHome },
+  { value: 'transportation', label: 'Transportation', icon: IconAirplane },
+  { value: 'meals', label: 'Meals', icon: IconClipboardList },
+  { value: 'entry_fees', label: 'Entry Fees', icon: IconAward },
+  { value: 'equipment', label: 'Equipment', icon: IconFlag },
+  { value: 'other', label: 'Other', icon: IconLayers },
 ];
 
 const PAID_BY_OPTIONS: { value: ExpensePaidBy; label: string }[] = [
@@ -190,8 +208,21 @@ export function ExpenseForm({
   }
 
   return (
-    <BottomSheet open={isOpen} onClose={onClose} title={expense ? 'Edit Expense' : 'Add Expense'}>
-      <form onSubmit={handleSubmit} className="space-y-5">
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>{expense ? 'Edit Expense' : 'Add Expense'}</DrawerTitle>
+        </DrawerHeader>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -206,23 +237,31 @@ export function ExpenseForm({
         <div>
           <label className="text-sm font-medium text-warm-700 block mb-2">Category</label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {CATEGORIES.map((cat) => (
-              <motion.button
-                key={cat.value}
-                type="button"
-                onClick={() => setCategory(cat.value)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`p-3 rounded-xl border-2 text-left transition-all ${
-                  category === cat.value
-                    ? 'border-primary-600 bg-primary-50 shadow-sm'
-                    : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
-                }`}
-              >
-                <span className="text-xl block mb-1">{cat.icon}</span>
-                <span className="text-sm font-medium text-warm-900">{cat.label}</span>
-              </motion.button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const CatIcon = cat.icon;
+              return (
+                <motion.button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => setCategory(cat.value)}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    category === cat.value
+                      ? 'border-primary-600 bg-primary-50 shadow-sm'
+                      : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
+                  }`}
+                >
+                  <CatIcon
+                    size={20}
+                    className={`block mb-1 ${
+                      category === cat.value ? 'text-primary-600' : 'text-warm-500'
+                    }`}
+                  />
+                  <span className="text-sm font-medium text-warm-900">{cat.label}</span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
 
@@ -298,7 +337,7 @@ export function ExpenseForm({
                 className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg"
               >
                 <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
-                  <span className="text-lg">📎</span>
+                  <IconPaperclip size={18} className="text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-warm-900 truncate">
@@ -365,6 +404,7 @@ export function ExpenseForm({
           </Button>
         </div>
       </form>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

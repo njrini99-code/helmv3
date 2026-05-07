@@ -123,6 +123,24 @@ function enrichErrorContext(error: Error, context?: ErrorContext): ErrorContext 
 }
 
 /**
+ * Detects the specific Next.js stale-server-action error that surfaces when a
+ * client tab references an action ID from a previous deployment. Not actionable
+ * in error tracking — the fix is a single page reload to pick up the new
+ * action map. We suppress server-side capture and rely on the client error
+ * boundary's reload-once logic to recover.
+ */
+function isStaleServerActionError(error: Error): boolean {
+  const msg = error?.message ?? '';
+  return (
+    /Server Action ".*" was not found on the server/.test(msg) ||
+    msg.includes('was not found on the server')
+  );
+}
+
+/** Track suppressed stale-action warnings so we still emit one per session. */
+let staleActionWarnedThisSession = false;
+
+/**
  * Main error logging function
  * Logs errors to console in development and sends to monitoring service in production
  */
@@ -131,6 +149,18 @@ export function logError(
   context?: ErrorContext,
   severity: ErrorLogEntry['severity'] = 'medium'
 ): void {
+  // Stale-server-action errors are deployment artifacts, not bugs. Downgrade
+  // to a single per-session warning instead of paging error tracking 18 times
+  // for one user with an open tab.
+  if (isStaleServerActionError(error)) {
+    if (!staleActionWarnedThisSession) {
+      staleActionWarnedThisSession = true;
+      // eslint-disable-next-line no-console
+      console.warn('[error-logging] stale server action detected — client will reload to pick up the new bundle');
+    }
+    return;
+  }
+
   const enrichedContext = enrichErrorContext(error, context);
   const logEntry: ErrorLogEntry = {
     error,
@@ -203,18 +233,75 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
 }
 
 /**
+ * Storage key + flag used to ensure we only auto-reload once per session
+ * after detecting a stale-server-action error. Prevents an infinite reload
+ * loop if for some reason the new bundle is still broken.
+ */
+const STALE_ACTION_RELOAD_KEY = 'stale-action-auto-reload';
+
+/**
+ * Reload the page once per session after a stale-server-action error,
+ * showing a toast to explain what's happening if a toast system is mounted.
+ * Falls back to a silent reload if `sonner` isn't loaded yet.
+ */
+function softReloadForStaleServerAction(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const already = window.sessionStorage.getItem(STALE_ACTION_RELOAD_KEY);
+    if (already) return;
+    window.sessionStorage.setItem(STALE_ACTION_RELOAD_KEY, Date.now().toString());
+  } catch {
+    // sessionStorage may be unavailable (SSR / private mode) — proceed anyway.
+  }
+
+  // Best-effort toast. Dynamic import keeps this file framework-agnostic and
+  // avoids pulling sonner into the server bundle.
+  void import('sonner')
+    .then(({ toast }) => {
+      try {
+        toast('Updating to latest version…');
+      } catch {
+        /* noop */
+      }
+    })
+    .catch(() => {
+      /* sonner not available — silent reload is fine */
+    })
+    .finally(() => {
+      // Small delay so the toast has a chance to render before reload.
+      setTimeout(() => {
+        window.location.reload();
+      }, 250);
+    });
+}
+
+/**
  * Capture and log unhandled promise rejections
  */
 export function setupGlobalErrorHandlers(): void {
   if (typeof window !== 'undefined') {
     // Unhandled promise rejections
     window.addEventListener('unhandledrejection', (event) => {
+      const reason = event.reason;
+      const reasonMessage =
+        (reason && typeof reason === 'object' && 'message' in reason ? String(reason.message) : '') ||
+        (typeof reason === 'string' ? reason : '');
+
+      // Stale server action — soft-reload once per session and don't log.
+      if (
+        /Server Action ".*" was not found on the server/.test(reasonMessage) ||
+        reasonMessage.includes('was not found on the server')
+      ) {
+        softReloadForStaleServerAction();
+        return;
+      }
+
       logError(
-        new Error(event.reason?.message || 'Unhandled Promise Rejection'),
+        new Error(reasonMessage || 'Unhandled Promise Rejection'),
         {
           component: 'GlobalErrorHandler',
           action: 'unhandledrejection',
-          reason: event.reason,
+          reason,
         },
         'high'
       );
@@ -222,8 +309,13 @@ export function setupGlobalErrorHandlers(): void {
 
     // Global error handler
     window.addEventListener('error', (event) => {
+      const err = event.error || new Error(event.message);
+      if (err && err.message && err.message.includes('was not found on the server')) {
+        softReloadForStaleServerAction();
+        return;
+      }
       logError(
-        event.error || new Error(event.message),
+        err,
         {
           component: 'GlobalErrorHandler',
           action: 'error',

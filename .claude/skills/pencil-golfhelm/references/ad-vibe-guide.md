@@ -292,7 +292,7 @@ badge1Text=I(badge1, {type: "text", content: "AI-Powered", fontFamily: "DM Sans"
 
 The GolfHelm ad aesthetic is the intersection of:
 - **Rapha cycling brand** (premium sport, editorial photography, muted earth tones)
-- **Linear app marketing** (product-as-hero, dark mode elegance, confident typography)
+- **Premium SaaS marketing** (product-as-hero, dark mode elegance, confident typography)
 - **Kinfolk magazine** (scattered editorial layouts, organic textures, breathing room)
 - **Augusta National** (deep green, tradition meets innovation, quiet confidence)
 

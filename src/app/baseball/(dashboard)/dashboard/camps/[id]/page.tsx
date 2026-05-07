@@ -23,7 +23,7 @@ import {
 } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName, formatRelativeTime } from '@/lib/utils';
 
 interface CampRegistration {

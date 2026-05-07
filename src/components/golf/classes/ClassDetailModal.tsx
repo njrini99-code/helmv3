@@ -1,11 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 interface ClassDetailModalProps {
   isOpen: boolean;
@@ -31,11 +35,10 @@ interface ClassDetailModalProps {
 }
 
 export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData }: ClassDetailModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  if (!isOpen || !classData) return null;
+  if (!classData) return null;
 
   const handleDeleteClick = () => {
     setShowDeleteConfirm(true);
@@ -59,38 +62,32 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="class-detail-title" className="relative w-full max-w-md mx-4 glass-prominent rounded-2xl shadow-2xl overflow-clip">
-        {/* Shine effect */}
-        <div
-          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
+        aria-labelledby="class-detail-title"
+      >
         {/* Color header */}
-        <div 
+        <div
           className="h-3"
           style={{ backgroundColor: classData.color || '#16A34A' }}
         />
-        
+
         {/* Header */}
-        <div className="px-6 pt-5 pb-4">
+        <div className="px-6 pt-3 pb-4">
           <div className="flex items-start justify-between">
             <div>
               <span className="font-mono text-sm font-medium text-primary-600">
                 {classData.course_code}
               </span>
-              <h2 id="class-detail-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mt-1">
+              <DrawerTitle id="class-detail-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
-              </h2>
+              </DrawerTitle>
               <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>
             </div>
             <button
@@ -182,20 +179,20 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
             Edit Class
           </Button>
         </div>
-      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={showDeleteConfirm}
-        title="Delete Class"
-        message={`Are you sure you want to delete ${classData.course_code}? This will remove the class and all associated calendar events. This action cannot be undone.`}
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="danger"
-        isLoading={deleting}
-        onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-      />
-    </div>
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          open={showDeleteConfirm}
+          title="Delete Class"
+          message={`Are you sure you want to delete ${classData.course_code}? This will remove the class and all associated calendar events. This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="danger"
+          isLoading={deleting}
+          onConfirm={handleDeleteConfirm}
+          onCancel={handleDeleteCancel}
+        />
+      </DrawerContent>
+    </Drawer>
   );
 }

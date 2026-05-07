@@ -4,7 +4,6 @@ import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { GolfSidebar } from '@/components/golf/layout/GolfSidebar';
 import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
-import { ToastProvider } from '@/components/ui/toast';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
@@ -249,24 +248,22 @@ export function GolfDashboardShell({
   return (
     <MobileNavProvider>
       <SidebarProvider>
-        <ToastProvider>
-          <SessionActivityProvider>
-            <GolfUserProvider userData={userData}>
-              <NotificationBadgeProvider>
-                <LazyMotion features={domAnimation}>
-                  <AppearanceMotionConfig>
-                    <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
-                      <LastSeenUpdater />
-                      <GolfDashboardContent userData={userData}>
-                        {children}
-                      </GolfDashboardContent>
-                    </OfflineProvider>
-                  </AppearanceMotionConfig>
-                </LazyMotion>
-              </NotificationBadgeProvider>
-            </GolfUserProvider>
-          </SessionActivityProvider>
-        </ToastProvider>
+        <SessionActivityProvider>
+          <GolfUserProvider userData={userData}>
+            <NotificationBadgeProvider>
+              <LazyMotion features={domAnimation}>
+                <AppearanceMotionConfig>
+                  <OfflineProvider showSyncStatus={false} showWarningBanner={false}>
+                    <LastSeenUpdater />
+                    <GolfDashboardContent userData={userData}>
+                      {children}
+                    </GolfDashboardContent>
+                  </OfflineProvider>
+                </AppearanceMotionConfig>
+              </LazyMotion>
+            </NotificationBadgeProvider>
+          </GolfUserProvider>
+        </SessionActivityProvider>
       </SidebarProvider>
     </MobileNavProvider>
   );

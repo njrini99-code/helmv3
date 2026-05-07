@@ -14,7 +14,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import {
   Paperclip,
   FileText,
@@ -26,7 +25,7 @@ import {
   ExternalLink,
   Loader2,
 } from 'lucide-react';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/sonner';
 import {
   attachDocumentToEvent,
   detachDocumentFromEvent,
@@ -35,6 +34,14 @@ import {
 } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
 import type { GolfDocument } from '@/lib/types/golf';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 
 interface EventDocumentsSectionProps {
   eventId: string | null;
@@ -211,8 +218,9 @@ export function EventDocumentsSection({
         </ul>
       )}
 
-      {showPicker && teamId && (
+      {teamId && (
         <DocumentPickerDialog
+          open={showPicker}
           teamId={teamId}
           alreadyAttachedIds={new Set(attached.map((r) => r.document.id))}
           onCancel={() => setShowPicker(false)}
@@ -225,6 +233,7 @@ export function EventDocumentsSection({
 }
 
 interface DocumentPickerDialogProps {
+  open: boolean;
   teamId: string;
   alreadyAttachedIds: Set<string>;
   onCancel: () => void;
@@ -233,18 +242,19 @@ interface DocumentPickerDialogProps {
 }
 
 function DocumentPickerDialog({
+  open,
   teamId,
   alreadyAttachedIds,
   onCancel,
   onPick,
   pendingAction,
 }: DocumentPickerDialogProps) {
-  const { modalRef } = useFocusTrap(true, onCancel);
   const [docs, setDocs] = useState<GolfDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
+    if (!open) return;
     let cancelled = false;
     setLoading(true);
     getDocuments(teamId).then((res) => {
@@ -255,7 +265,7 @@ function DocumentPickerDialog({
     return () => {
       cancelled = true;
     };
-  }, [teamId]);
+  }, [teamId, open]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -270,29 +280,19 @@ function DocumentPickerDialog({
   }, [docs, query]);
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="event-doc-picker-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
-      onClick={onCancel}
+    <Drawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onCancel();
+      }}
     >
-      <div
-        ref={modalRef}
-        className="w-full max-w-lg max-h-[80vh] flex flex-col surface-stone rounded-3xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
-          <h3
-            id="event-doc-picker-title"
-            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]"
-          >
-            Attach a document
-          </h3>
-          <p className="text-sm text-warm-500 mt-0.5">
+      <DrawerContent className="sm:max-w-lg sm:mx-auto sm:rounded-3xl">
+        <DrawerHeader>
+          <DrawerTitle>Attach a document</DrawerTitle>
+          <DrawerDescription>
             Pick from your team library. New uploads happen on the Documents page.
-          </p>
-        </div>
+          </DrawerDescription>
+        </DrawerHeader>
 
         <div className="px-4 py-3 border-b border-warm-200/60">
           <div className="relative">
@@ -308,7 +308,7 @@ function DocumentPickerDialog({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-2 max-h-[55vh]">
           {loading ? (
             <div className="flex items-center justify-center py-12 text-warm-400 text-sm">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -373,7 +373,7 @@ function DocumentPickerDialog({
           )}
         </div>
 
-        <div className="px-4 py-3 border-t border-warm-200/60 flex justify-end">
+        <DrawerFooter className="border-t border-warm-200/60 flex-row justify-end">
           <button
             type="button"
             onClick={onCancel}
@@ -381,8 +381,8 @@ function DocumentPickerDialog({
           >
             Done
           </button>
-        </div>
-      </div>
-    </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

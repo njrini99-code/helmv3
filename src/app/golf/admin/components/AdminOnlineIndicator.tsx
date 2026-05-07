@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
 import { IconUsers } from '@/components/icons';
 import { type AdminPresenceInfo, getAdminInitials, getAdminColor } from '@/hooks/useAdminPresence';
 
@@ -30,142 +33,118 @@ export function AdminOnlineIndicator({
   currentUserId,
   className,
 }: AdminOnlineIndicatorProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   // Filter out current user for "others online"
   const otherAdmins = activeAdmins.filter((a) => a.id !== currentUserId);
   const displayCount = currentUserId ? otherAdmins.length : onlineCount;
 
   return (
-    <div className={cn('relative', className)}>
-      {/* Trigger button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className={cn(
-          'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
-          'bg-white/50 hover:bg-white/70 border border-white/20',
-          isExpanded && 'bg-white/70'
-        )}
-      >
-        {/* Status indicator */}
-        <div className="relative">
-          <div
+    <div className={className}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
             className={cn(
-              'w-2 h-2 rounded-full',
-              isConnected ? 'bg-primary-500' : 'bg-warm-300'
+              'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
+              'bg-white/50 hover:bg-white/70 border border-white/20',
+              'data-[state=open]:bg-white/70'
             )}
-          />
-          {isConnected && (
-            <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
-          )}
-        </div>
-
-        {/* Count */}
-        <span className="text-warm-600 tabular-nums">
-          {displayCount > 0 ? (
-            <>
-              <span className="font-semibold text-warm-800">{displayCount}</span>
-              {' admin'}
-              {displayCount !== 1 ? 's' : ''} online
-            </>
-          ) : (
-            <span className="text-warm-500">Only you online</span>
-          )}
-        </span>
-
-        {/* Avatar stack */}
-        {otherAdmins.length > 0 && (
-          <div className="flex -space-x-2">
-            {otherAdmins.slice(0, 3).map((admin) => (
+          >
+            {/* Status indicator */}
+            <div className="relative">
               <div
-                key={admin.id}
                 className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center text-white text-micro font-semibold ring-2 ring-white',
-                  getAdminColor(admin.id)
+                  'w-2 h-2 rounded-full',
+                  isConnected ? 'bg-primary-500' : 'bg-warm-300'
                 )}
-                title={admin.name || admin.email || 'Unknown'}
-              >
-                {getAdminInitials(admin)}
+              />
+              {isConnected && (
+                <div className="absolute inset-0 w-2 h-2 rounded-full bg-primary-500 animate-ping opacity-75" />
+              )}
+            </div>
+
+            {/* Count */}
+            <span className="text-warm-600 tabular-nums">
+              {displayCount > 0 ? (
+                <>
+                  <span className="font-semibold text-warm-800">{displayCount}</span>
+                  {' admin'}
+                  {displayCount !== 1 ? 's' : ''} online
+                </>
+              ) : (
+                <span className="text-warm-500">Only you online</span>
+              )}
+            </span>
+
+            {/* Avatar stack */}
+            {otherAdmins.length > 0 && (
+              <div className="flex -space-x-2">
+                {otherAdmins.slice(0, 3).map((admin) => (
+                  <div
+                    key={admin.id}
+                    className={cn(
+                      'w-6 h-6 rounded-full flex items-center justify-center text-white text-micro font-semibold ring-2 ring-white',
+                      getAdminColor(admin.id)
+                    )}
+                    title={admin.name || admin.email || 'Unknown'}
+                  >
+                    {getAdminInitials(admin)}
+                  </div>
+                ))}
+                {otherAdmins.length > 3 && (
+                  <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 text-micro font-semibold ring-2 ring-white">
+                    +{otherAdmins.length - 3}
+                  </div>
+                )}
               </div>
-            ))}
-            {otherAdmins.length > 3 && (
-              <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-warm-600 text-micro font-semibold ring-2 ring-white">
-                +{otherAdmins.length - 3}
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" sideOffset={8} className="w-80 p-0 overflow-clip">
+          {/* Header */}
+          <div className="px-4 py-3 border-b border-warm-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <IconUsers size={16} className="text-warm-500" />
+              <span className="font-semibold text-warm-900">Active Admins</span>
+            </div>
+            <span className="text-xs text-warm-500 tabular-nums">
+              {onlineCount} total
+            </span>
+          </div>
+
+          {/* Admin list */}
+          <div className="max-h-64 overflow-y-auto">
+            {activeAdmins.length === 0 ? (
+              <div className="px-4 py-6 text-center text-warm-500 text-sm">
+                No admins online
+              </div>
+            ) : (
+              <div className="py-2">
+                {activeAdmins.map((admin) => (
+                  <AdminListItem
+                    key={admin.id}
+                    admin={admin}
+                    isCurrentUser={admin.id === currentUserId}
+                  />
+                ))}
               </div>
             )}
           </div>
-        )}
-      </button>
 
-      {/* Expanded dropdown */}
-      <AnimatePresence>
-        {isExpanded && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setIsExpanded(false)}
-            />
-
-            {/* Dropdown */}
-            <motion.div
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          {/* Connection status */}
+          <div className="px-4 py-2 border-t border-warm-100 flex items-center justify-between">
+            <span className="text-micro text-warm-400 uppercase tracking-wider">
+              Connection
+            </span>
+            <span
               className={cn(
-                'absolute top-full right-0 mt-2 z-50',
-                'w-80 bg-white/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-xl overflow-clip'
+                'text-xs font-medium',
+                isConnected ? 'text-primary-600' : 'text-amber-600'
               )}
             >
-              {/* Header */}
-              <div className="px-4 py-3 border-b border-warm-100 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <IconUsers size={16} className="text-warm-500" />
-                  <span className="font-semibold text-warm-900">Active Admins</span>
-                </div>
-                <span className="text-xs text-warm-500 tabular-nums">
-                  {onlineCount} total
-                </span>
-              </div>
-
-              {/* Admin list */}
-              <div className="max-h-64 overflow-y-auto">
-                {activeAdmins.length === 0 ? (
-                  <div className="px-4 py-6 text-center text-warm-500 text-sm">
-                    No admins online
-                  </div>
-                ) : (
-                  <div className="py-2">
-                    {activeAdmins.map((admin) => (
-                      <AdminListItem
-                        key={admin.id}
-                        admin={admin}
-                        isCurrentUser={admin.id === currentUserId}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Connection status */}
-              <div className="px-4 py-2 border-t border-warm-100 flex items-center justify-between">
-                <span className="text-micro text-warm-400 uppercase tracking-wider">
-                  Connection
-                </span>
-                <span
-                  className={cn(
-                    'text-xs font-medium',
-                    isConnected ? 'text-primary-600' : 'text-amber-600'
-                  )}
-                >
-                  {isConnected ? '● Connected' : '○ Disconnected'}
-                </span>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+              {isConnected ? '● Connected' : '○ Disconnected'}
+            </span>
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

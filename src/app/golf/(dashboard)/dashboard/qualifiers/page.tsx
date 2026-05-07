@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -76,6 +78,7 @@ export default async function GolfQualifiersPage() {
   };
 
   const activeCount = qualifiers.filter(q => q.status === 'in_progress' || q.status === 'upcoming').length;
+  const concludedCount = qualifiers.filter(q => q.status === 'completed').length;
 
   return (
     <AnimatedPage className="min-h-full">
@@ -92,6 +95,25 @@ export default async function GolfQualifiersPage() {
       {/* Main Content */}
       <AnimatedItem>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — anchors the qualifier grid beneath the
+            sticky title header in the magazine-cover rhythm. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Qualifiers"
+              eyebrowAccent="primary"
+              title="Lineup decisions."
+              subtitle={
+                qualifiers.length === 0
+                  ? isCoach
+                    ? 'Run head-to-head qualifiers to decide who plays this week.'
+                    : 'Qualifiers your coach posts will appear here.'
+                  : `${activeCount} active · ${concludedCount} concluded.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {qualifiers.length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">

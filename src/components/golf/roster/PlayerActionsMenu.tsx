@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { removePlayerFromTeam } from '@/app/golf/actions/roster';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
@@ -62,7 +69,6 @@ interface PlayerActionsMenuProps {
 export function PlayerActionsMenu({ playerId, playerName, currentStatus }: PlayerActionsMenuProps) {
   const router = useRouter();
   const { showToast } = useToast();
-  const [showMenu, setShowMenu] = useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -77,7 +83,6 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       if (result.success) {
         showToast(`${playerName} removed from team`, 'success');
         setShowRemoveConfirm(false);
-        setShowMenu(false);
         router.refresh();
       } else {
         showToast(result.error || 'Failed to remove player', 'error');
@@ -128,82 +133,60 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
       setSelectedStatus('active');
     }
     setShowStatusModal(true);
-    setShowMenu(false);
   }
 
   return (
     <div className="relative">
-      {/* Three-dot menu button */}
-      <button
-        onClick={() => {
-          void triggerHaptic('light');
-          setShowMenu(!showMenu);
-        }}
-        className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 transition-[color,background-color,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-        aria-label="Player actions"
-        aria-haspopup="menu"
-        aria-expanded={showMenu}
-      >
-        <IconMoreVertical size={18} />
-      </button>
-
-      {/* Dropdown menu */}
-      {showMenu && (
-        <>
-          {/* Backdrop to close menu */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setShowMenu(false)}
-          />
-
-          {/* Menu */}
-          <div
-            role="menu"
-            className="absolute right-0 top-full mt-1.5 w-52 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 z-20 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            onClick={() => {
+              void triggerHaptic('light');
+            }}
+            className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 transition-[color,background-color,transform] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+            aria-label="Player actions"
           >
-            <button
-              role="menuitem"
-              onClick={() => {
-                void triggerHaptic('light');
-                router.push(`/golf/dashboard/players/${playerId}`);
-                setShowMenu(false);
-              }}
-              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors flex items-center gap-3 text-warm-800"
-            >
-              <IconChevronRight size={18} className="text-warm-500" />
-              View Profile
-            </button>
+            <IconMoreVertical size={18} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem
+            onSelect={() => {
+              void triggerHaptic('light');
+              router.push(`/golf/dashboard/players/${playerId}`);
+            }}
+            className="gap-3"
+          >
+            <IconChevronRight size={18} className="text-warm-500" />
+            View Profile
+          </DropdownMenuItem>
 
-            <button
-              role="menuitem"
-              onClick={() => {
-                void triggerHaptic('light');
-                openStatusModal();
-              }}
-              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors flex items-center gap-3 text-warm-800"
-            >
-              <IconUser size={18} className="text-warm-500" />
-              Change Status
-            </button>
+          <DropdownMenuItem
+            onSelect={() => {
+              void triggerHaptic('light');
+              openStatusModal();
+            }}
+            className="gap-3"
+          >
+            <IconUser size={18} className="text-warm-500" />
+            Change Status
+          </DropdownMenuItem>
 
-            <div className="h-px bg-warm-200/50 my-1" />
+          <DropdownMenuSeparator />
 
-            <button
-              role="menuitem"
-              onClick={() => {
-                void triggerHaptic('light');
-                setShowRemoveConfirm(true);
-                setShowMenu(false);
-              }}
-              className="w-full px-3 py-2.5 min-h-[44px] text-left text-[15px] font-medium hover:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12 transition-colors flex items-center gap-3"
-              style={{ color: '#FF3B30' }}
-            >
-              <IconUsers size={18} />
-              Remove from Team
-            </button>
-          </div>
-        </>
-      )}
+          <DropdownMenuItem
+            onSelect={() => {
+              void triggerHaptic('light');
+              setShowRemoveConfirm(true);
+            }}
+            className="gap-3 hover:bg-red-500/8 data-[highlighted]:bg-red-500/8"
+            style={{ color: '#FF3B30' }}
+          >
+            <IconUsers size={18} />
+            Remove from Team
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Remove confirmation modal */}
       {showRemoveConfirm && (

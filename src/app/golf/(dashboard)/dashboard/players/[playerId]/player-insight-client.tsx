@@ -19,6 +19,9 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   IconMessage,
   IconTarget,
@@ -26,7 +29,6 @@ import {
   IconTrendingUp,
   IconActivity,
   IconEye,
-  IconPlus,
 } from '@/components/icons';
 import {
   InsightCard,
@@ -44,6 +46,7 @@ import {
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ---------------------------------------------------------------------------
 // Types (preserved from previous shape — the non-insight sections depend on
@@ -256,7 +259,11 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', ratingColor(rating))}>{rating}</span>
+        <AnimatedNumber
+          value={rating}
+          decimals={0}
+          className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', ratingColor(rating))}
+        />
         <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">Rating</span>
       </div>
     </div>
@@ -426,6 +433,22 @@ export function PlayerInsightClient({
 
       <AnimatedItem>
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+          <Reveal>
+            <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+              <PageHeader
+                eyebrow="Player Profile"
+                eyebrowAccent="primary"
+                title={`${playerName}.`}
+                subtitle={[
+                  player.graduation_year ? `Class ${player.graduation_year}` : null,
+                  `${formatHandicap(player.handicap)} handicap`,
+                  `${rounds.length} round${rounds.length === 1 ? '' : 's'}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              />
+            </div>
+          </Reveal>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* ============================================================= */}
             {/* LEFT COLUMN */}
@@ -497,25 +520,48 @@ export function PlayerInsightClient({
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Recent Avg</p>
-                    <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">
-                      {trendSummary.recentAvg !== 0 ? (trendSummary.recentAvg > 0 ? '+' : '') + trendSummary.recentAvg.toFixed(1) : '--'}
-                    </p>
+                    {trendSummary.recentAvg !== 0 ? (
+                      <AnimatedNumber
+                        value={trendSummary.recentAvg}
+                        decimals={1}
+                        prefix={trendSummary.recentAvg > 0 ? '+' : ''}
+                        staggerIndex={0}
+                        className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                      />
+                    ) : (
+                      <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                    )}
                   </div>
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Previous Avg</p>
-                    <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">
-                      {trendSummary.previousAvg !== 0 ? (trendSummary.previousAvg > 0 ? '+' : '') + trendSummary.previousAvg.toFixed(1) : '--'}
-                    </p>
+                    {trendSummary.previousAvg !== 0 ? (
+                      <AnimatedNumber
+                        value={trendSummary.previousAvg}
+                        decimals={1}
+                        prefix={trendSummary.previousAvg > 0 ? '+' : ''}
+                        staggerIndex={1}
+                        className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                      />
+                    ) : (
+                      <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                    )}
                   </div>
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Streak</p>
-                    <p className={cn(
-                      'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
-                      trendSummary.streakType === 'positive' ? 'text-emerald-600' :
-                      trendSummary.streakType === 'negative' ? 'text-red-500' : 'text-warm-900',
-                    )}>
-                      {trendSummary.streakCount > 0 ? trendSummary.streakCount : '--'}
-                    </p>
+                    {trendSummary.streakCount > 0 ? (
+                      <AnimatedNumber
+                        value={trendSummary.streakCount}
+                        decimals={0}
+                        staggerIndex={2}
+                        className={cn(
+                          'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
+                          trendSummary.streakType === 'positive' ? 'text-emerald-600' :
+                          trendSummary.streakType === 'negative' ? 'text-red-500' : 'text-warm-900',
+                        )}
+                      />
+                    ) : (
+                      <p className="text-[17px] font-medium tracking-[-0.005em] tabular-nums text-warm-900">--</p>
+                    )}
                   </div>
                 </div>
                 {trendSummary.trend !== 'stable' && (
@@ -658,15 +704,12 @@ export function PlayerInsightClient({
                     ))}
                   </div>
                 ) : insights.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="w-12 h-12 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
-                      <IconActivity size={24} className="text-warm-300" />
-                    </div>
-                    <p className="text-sm text-warm-400">No insights generated yet</p>
-                    <p className="text-xs text-warm-300 mt-1">
-                      Click <span className="font-medium">Refresh Analysis</span> above to run the engine for this player
-                    </p>
-                  </div>
+                  <EmptyState
+                    variant="compact"
+                    icon={<IconActivity size={24} />}
+                    title="No insights generated yet"
+                    description="Click Refresh Analysis above to run the engine for this player."
+                  />
                 ) : (
                   <div className="space-y-4">
                     {heroInsight && (
@@ -722,19 +765,16 @@ export function PlayerInsightClient({
                   </Link>
                 </div>
                 {focusAreas.length === 0 ? (
-                  <div className="text-center py-6">
-                    <div className="w-12 h-12 rounded-xl bg-warm-50 flex items-center justify-center mx-auto mb-3">
-                      <IconTarget size={24} className="text-warm-300" />
-                    </div>
-                    <p className="text-sm text-warm-400">No focus areas set</p>
-                    <Link
-                      href={`/golf/dashboard/development?player=${player.id}`}
-                      className="inline-flex items-center gap-1.5 mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                    >
-                      <IconPlus size={14} />
-                      Create Focus Area
-                    </Link>
-                  </div>
+                  <EmptyState
+                    variant="compact"
+                    icon={<IconTarget size={24} />}
+                    title="No focus areas set"
+                    description="Set focus areas to track this player's development priorities."
+                    action={{
+                      label: 'Create Focus Area',
+                      href: `/golf/dashboard/development?player=${player.id}`,
+                    }}
+                  />
                 ) : (
                   <div className="space-y-3">
                     {focusAreas.map((fa) => {
@@ -796,7 +836,11 @@ export function PlayerInsightClient({
                         </div>
                         <div className="text-right flex-shrink-0">
                           {pred.predicted_value !== null && (
-                            <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">{pred.predicted_value.toFixed(1)}</p>
+                            <AnimatedNumber
+                              value={pred.predicted_value}
+                              decimals={1}
+                              className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                            />
                           )}
                           {pred.confidence !== null && (
                             <p className="text-[11px] text-warm-400 tabular-nums">{Math.round(pred.confidence * 100)}% conf</p>
@@ -846,7 +890,15 @@ export function PlayerInsightClient({
                             </p>
                           </div>
                           <div className="text-right flex-shrink-0">
-                            <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">{round.total_score ?? '--'}</p>
+                            {round.total_score !== null ? (
+                              <AnimatedNumber
+                                value={round.total_score}
+                                decimals={0}
+                                className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                              />
+                            ) : (
+                              <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                            )}
                             {diff !== null && (
                               <p className={cn(
                                 'text-xs font-medium tabular-nums',

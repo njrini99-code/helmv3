@@ -7,6 +7,8 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
@@ -59,27 +61,29 @@ function StatsSectionSkeleton() {
     <div className="space-y-6">
       {/* Section header skeleton */}
       <div className="flex items-center justify-between">
-        <div>
-          <div className="h-6 bg-warm-200 rounded w-40 animate-pulse" />
-          <div className="h-4 bg-warm-200 rounded w-60 mt-2 animate-pulse" />
+        <div className="space-y-2">
+          <Shimmer className="h-6 w-40" />
+          <Shimmer className="h-4 w-60" />
         </div>
-        <div className="h-10 bg-warm-200 rounded w-32 animate-pulse" />
+        <Shimmer className="h-10 w-32" />
       </div>
 
       {/* Metrics grid skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="surface-matte rounded-3xl p-4 animate-pulse">
-            <div className="h-7 bg-warm-200 rounded w-16 mx-auto mb-2" />
-            <div className="h-4 bg-warm-200 rounded w-12 mx-auto" />
-          </div>
+          <ShimmerCard key={i} staggerIndex={i} className="p-4">
+            <div className="space-y-2">
+              <Shimmer className="h-7 w-16 mx-auto" />
+              <Shimmer className="h-4 w-12 mx-auto" />
+            </div>
+          </ShimmerCard>
         ))}
       </div>
 
       {/* Charts skeleton */}
-      <div className="surface-matte rounded-3xl p-6 animate-pulse">
-        <div className="h-48 bg-warm-100 rounded-xl" />
-      </div>
+      <ShimmerCard className="p-6">
+        <Shimmer className="h-48 w-full rounded-xl" />
+      </ShimmerCard>
     </div>
   );
 }
@@ -291,14 +295,13 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           </div>
 
           {totalRounds === 0 ? (
-            <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-12 text-center">
-              <div className="relative">
-                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
-                  <IconFlag size={20} className="text-warm-400" />
-                </div>
-                <p className="text-warm-500">No rounds recorded yet</p>
-              </div>
-            </div>
+            <EmptyState
+              variant="card"
+              glass
+              icon={<IconFlag size={28} />}
+              title="No rounds recorded yet"
+              description="Submitted rounds will appear here as this player logs them."
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {recentRounds?.map((round, index) => (

@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconFile, IconCheck, IconDownload, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { AnnouncementTaskItem } from './AnnouncementTaskItem';
 import { AcknowledgementTracker } from './AcknowledgementTracker';
 import { getAnnouncementDetail } from '@/app/golf/actions/announcements';

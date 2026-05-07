@@ -9,6 +9,8 @@ import { AnnouncementsCoachView } from '@/components/golf/announcements/Announce
 import { AnnouncementsPlayerView } from '@/components/golf/announcements/AnnouncementsPlayerView';
 import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAnnouncementFlow';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -115,6 +117,27 @@ export default async function GolfAnnouncementsPage() {
 
       {/* Content */}
       <AnimatedItem className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — frames the announcements feed beneath the
+            sticky title header in the magazine-cover rhythm. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Announcements"
+              eyebrowAccent="primary"
+              title="What's new."
+              subtitle={
+                announcements.length === 0
+                  ? isCoach
+                    ? 'Share schedule changes, news, and important updates with your team.'
+                    : 'The latest from the coaching staff.'
+                  : recentCount > 0
+                    ? `${recentCount} this week · ${announcements.length} total.`
+                    : `${announcements.length} posted.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {announcements.length === 0 ? (
           <div className="surface-matte rounded-3xl p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">

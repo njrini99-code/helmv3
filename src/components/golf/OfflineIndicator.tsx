@@ -8,7 +8,13 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 // ============================================================================
 // TYPES
@@ -76,7 +82,7 @@ export function OfflineIndicator({
   variant = 'compact',
   position = 'header',
 }: OfflineIndicatorProps) {
-  const [showDetails, setShowDetails] = useState(false);
+  const [open, setOpen] = useState(false);
   const [lastSyncText, setLastSyncText] = useState('');
 
   // Update relative time text periodically
@@ -94,7 +100,7 @@ export function OfflineIndicator({
   // Auto-show details when offline or has errors
   useEffect(() => {
     if (!isOnline || syncError) {
-      setShowDetails(true);
+      setOpen(true);
     }
   }, [isOnline, syncError]);
 
@@ -104,133 +110,118 @@ export function OfflineIndicator({
 
   if (variant === 'compact') {
     return (
-      <div className="relative">
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className={`
-            flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium
-            transition-all duration-200
-            ${!isOnline
-              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-              : isSyncing
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                : syncError
-                  ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                  : pendingCount.total > 0
-                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                    : 'bg-warm-500/20 text-warm-400 border border-warm-500/30'
-            }
-          `}
-        >
-          {/* Status Icon */}
-          {!isOnline ? (
-            <WifiOffIcon className="w-3.5 h-3.5" />
-          ) : isSyncing ? (
-            <SyncingIcon className="w-3.5 h-3.5 animate-spin" />
-          ) : syncError ? (
-            <AlertIcon className="w-3.5 h-3.5" />
-          ) : pendingCount.total > 0 ? (
-            <CloudQueueIcon className="w-3.5 h-3.5" />
-          ) : (
-            <CloudDoneIcon className="w-3.5 h-3.5" />
-          )}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            className={cn(
+              'flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200',
+              !isOnline
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                : isSyncing
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : syncError
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : pendingCount.total > 0
+                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                      : 'bg-warm-500/20 text-warm-400 border border-warm-500/30',
+            )}
+          >
+            {/* Status Icon */}
+            {!isOnline ? (
+              <WifiOffIcon className="w-3.5 h-3.5" />
+            ) : isSyncing ? (
+              <SyncingIcon className="w-3.5 h-3.5 animate-spin" />
+            ) : syncError ? (
+              <AlertIcon className="w-3.5 h-3.5" />
+            ) : pendingCount.total > 0 ? (
+              <CloudQueueIcon className="w-3.5 h-3.5" />
+            ) : (
+              <CloudDoneIcon className="w-3.5 h-3.5" />
+            )}
 
-          {/* Status Text */}
-          <span className="hidden sm:inline">
-            {!isOnline
-              ? 'Offline'
-              : isSyncing
-                ? 'Syncing...'
-                : syncError
-                  ? 'Sync Error'
-                  : pendingCount.total > 0
-                    ? `${pendingCount.total} pending`
-                    : 'Synced'
-            }
-          </span>
-
-          {/* Pending count badge */}
-          {pendingCount.total > 0 && !isSyncing && (
-            <span className="flex items-center justify-center w-4 h-4 rounded-full bg-current/20 text-[11px] font-medium">
-              {pendingCount.total}
+            {/* Status Text */}
+            <span className="hidden sm:inline">
+              {!isOnline
+                ? 'Offline'
+                : isSyncing
+                  ? 'Syncing...'
+                  : syncError
+                    ? 'Sync Error'
+                    : pendingCount.total > 0
+                      ? `${pendingCount.total} pending`
+                      : 'Synced'
+              }
             </span>
-          )}
-        </button>
 
-        {/* Dropdown Details */}
-        <AnimatePresence>
-          {showDetails && (
-            <motion.div
-              initial={{ opacity: 0, y: -4, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -4, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute top-full right-0 mt-2 w-64 z-50"
+            {/* Pending count badge */}
+            {pendingCount.total > 0 && !isSyncing && (
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-current/20 text-[11px] font-medium">
+                {pendingCount.total}
+              </span>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" sideOffset={8} className="w-64 bg-warm-800/95 border border-warm-700 p-3 space-y-3">
+          {/* Connection Status */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-warm-500">Connection</span>
+            <span className={`text-xs font-medium ${isOnline ? 'text-primary-400' : 'text-amber-400'}`}>
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+          </div>
+
+          {/* Pending Items */}
+          {pendingCount.total > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-warm-500">Pending</span>
+              <span className="text-xs font-medium text-warm-200">
+                {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
+                {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
+                {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
+              </span>
+            </div>
+          )}
+
+          {/* Last Sync */}
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-warm-500">Last sync</span>
+            <span className="text-xs font-medium text-warm-200">{lastSyncText}</span>
+          </div>
+
+          {/* Error Message */}
+          {syncError && (
+            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-md">
+              <p className="text-xs text-red-400">{syncError}</p>
+              {onRetrySync && (
+                <button
+                  onClick={onRetrySync}
+                  className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
+                >
+                  Retry sync
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-2 pt-1 border-t border-warm-700">
+            {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
+              <button
+                onClick={onSyncNow}
+                className="flex-1 px-3 py-1.5 text-xs font-medium text-primary-400 bg-primary-500/10 hover:bg-primary-500/20 rounded transition-colors"
+              >
+                Sync Now
+              </button>
+            )}
+            <button
+              onClick={() => setOpen(false)}
+              className="flex-1 inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-warm-500 hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
             >
-              <div className="bg-warm-800/95 backdrop-blur-xl rounded-lg border border-warm-700 shadow-xl p-3 space-y-3">
-                {/* Connection Status */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-warm-400">Connection</span>
-                  <span className={`text-xs font-medium ${isOnline ? 'text-primary-400' : 'text-amber-400'}`}>
-                    {isOnline ? 'Online' : 'Offline'}
-                  </span>
-                </div>
-
-                {/* Pending Items */}
-                {pendingCount.total > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-warm-400">Pending</span>
-                    <span className="text-xs font-medium text-warm-200">
-                      {pendingCount.rounds > 0 && `${pendingCount.rounds} round${pendingCount.rounds !== 1 ? 's' : ''}`}
-                      {pendingCount.rounds > 0 && pendingCount.shots > 0 && ', '}
-                      {pendingCount.shots > 0 && `${pendingCount.shots} shot${pendingCount.shots !== 1 ? 's' : ''}`}
-                    </span>
-                  </div>
-                )}
-
-                {/* Last Sync */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-warm-400">Last sync</span>
-                  <span className="text-xs font-medium text-warm-200">{lastSyncText}</span>
-                </div>
-
-                {/* Error Message */}
-                {syncError && (
-                  <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-md">
-                    <p className="text-xs text-red-400">{syncError}</p>
-                    {onRetrySync && (
-                      <button
-                        onClick={onRetrySync}
-                        className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
-                      >
-                        Retry sync
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-1 border-t border-warm-700">
-                  {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
-                    <button
-                      onClick={onSyncNow}
-                      className="flex-1 px-3 py-1.5 text-xs font-medium text-primary-400 bg-primary-500/10 hover:bg-primary-500/20 rounded transition-colors"
-                    >
-                      Sync Now
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowDetails(false)}
-                    className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-400 hover:text-warm-300 transition-colors"
-                  >
-                    Dismiss
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              Dismiss
+            </button>
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   }
 

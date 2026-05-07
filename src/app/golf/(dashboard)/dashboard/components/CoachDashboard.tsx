@@ -27,6 +27,8 @@ import {
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import {
     PremiumGlassCard,
     SectionHeader,
@@ -41,11 +43,12 @@ import {
     itemVariants
 } from '@/components/golf/dashboard';
 import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
+import { ShimmerCard } from '@/components/ui/shimmer';
 import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData, DashboardDateRange } from '@/app/golf/actions/dashboard-data';
 import type { CalendarEvent } from '@/lib/types/calendar';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
-    loading: () => <div className="h-[200px] bg-cream-100/55 backdrop-blur-[20px] rounded-2xl border border-warm-200/45 animate-pulse" />,
+    loading: () => <ShimmerCard className="h-[200px] rounded-2xl" />,
     ssr: false
 });
 
@@ -326,6 +329,31 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                         Invite code is hidden because your roster has reached the 20-player limit.
                     </div>
                 )}
+
+                {/* Editorial hero plinth — magazine-cover framing for the
+                    coach's daily landing page. Sits beneath the sticky
+                    LargeTitleHeader so the editorial copy gets a sculpted-
+                    matte foundation that anchors the page's first read. */}
+                <Reveal>
+                    <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+                        <PageHeader
+                            eyebrow="Coach Dashboard"
+                            eyebrowAccent="primary"
+                            title="Your team today."
+                            subtitle={
+                                stats.rosterSize === 0
+                                    ? 'Invite players to start tracking rounds, qualifiers, and team performance.'
+                                    : `${stats.rosterSize} ${stats.rosterSize === 1 ? 'player' : 'players'} on the roster${
+                                          (enhancedData?.actionItems?.length ?? 0) > 0
+                                              ? ` · ${enhancedData?.actionItems?.length} ${
+                                                    enhancedData?.actionItems?.length === 1 ? 'action item' : 'action items'
+                                                } waiting`
+                                              : ''
+                                      }${stats.upcomingEvents > 0 ? ` · ${stats.upcomingEvents} upcoming ${stats.upcomingEvents === 1 ? 'event' : 'events'}` : ''}.`
+                            }
+                        />
+                    </div>
+                </Reveal>
 
                 {/* ROW 1: Horizontal Day Timeline (full width) */}
                 <m.div className="mb-7 md:mb-10" variants={itemVariants}>

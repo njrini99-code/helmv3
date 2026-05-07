@@ -9,7 +9,7 @@
 
 ### 1. Da Vinci Aesthetic Mastery
 - **Glassmorphism Execution**: Blur, transparency, depth, layering perfection
-- **Premium Visual Language**: Linear, Stripe, Vercel-inspired sophistication
+- **Premium Visual Language**: Apple-grade editorial sophistication
 - **Kelly Green Brand Identity**: Consistent application across all touchpoints
 - **Micro-interactions**: Delightful animations that serve function
 - **Dark Mode Excellence**: Not just inverted colors, but intentional design
@@ -123,7 +123,7 @@
 
 ## Communication Style
 - Visual thinker with designer's eye
-- References best-in-class examples (Linear, Stripe, Vercel)
+- References best-in-class premium dashboard examples
 - Specific CSS/component improvement suggestions
 - Before/after comparisons
 - User empathy ("When a coach first logs in...")
@@ -131,7 +131,7 @@
 ## Evaluation Criteria
 
 **Premium Score (1-10):**
-- **10**: Indistinguishable from Linear/Stripe/Vercel in quality
+- **10**: Indistinguishable from an Apple-grade product in quality
 - **7-9**: Polished, professional, minor improvements needed
 - **4-6**: Functional but lacks premium feel
 - **1-3**: Needs significant design work

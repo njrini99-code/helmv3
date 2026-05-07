@@ -2,7 +2,12 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -102,8 +107,21 @@ export function ExpenseForm({
   }
 
   return (
-    <BottomSheet open={isOpen} onClose={onClose} title="Add Expense">
-      <form onSubmit={handleSubmit} className="space-y-5">
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Add Expense</DrawerTitle>
+        </DrawerHeader>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -221,6 +239,7 @@ export function ExpenseForm({
           </Button>
         </div>
       </form>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -4,6 +4,7 @@ import { useState, memo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { IconChevronDown, IconChevronUp, IconTrendingUp, IconTrendingDown } from '@/components/icons';
+import { Shimmer } from '@/components/ui/shimmer';
 
 // Dynamic imports for recharts - reduces initial bundle size by ~150KB
 const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false });
@@ -20,8 +21,11 @@ const ComposedChart = dynamic(() => import('recharts').then(mod => mod.ComposedC
 // Chart loading skeleton
 function ChartSkeleton() {
   return (
-    <div className="h-64 bg-warm-100/50 rounded-xl animate-pulse flex items-center justify-center">
-      <span className="text-warm-400 text-sm">Loading chart...</span>
+    <div className="relative h-64">
+      <Shimmer className="absolute inset-0 h-full rounded-xl" />
+      <div className="relative h-full flex items-center justify-center">
+        <span className="text-warm-400 text-sm">Loading chart...</span>
+      </div>
     </div>
   );
 }

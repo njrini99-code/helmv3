@@ -1,6 +1,41 @@
 import { describe, it, expect, vi } from 'vitest';
-import { computeConvictionSafe, PatternMiner } from '@/lib/coachhelm/v2/mining/pattern-miner';
+import {
+  computeConvictionSafe,
+  effectiveMinSampleSize,
+  PatternMiner,
+} from '@/lib/coachhelm/v2/mining/pattern-miner';
 import type { MinedPattern } from '@/lib/coachhelm/v2/types';
+
+describe('effectiveMinSampleSize (threshold scaling for low-round players)', () => {
+  it('uses the full minSampleSize (6) when roundCount >= 16', () => {
+    expect(effectiveMinSampleSize(16)).toBe(6);
+    expect(effectiveMinSampleSize(28)).toBe(6);
+    expect(effectiveMinSampleSize(100)).toBe(6);
+  });
+
+  it('scales down to a floor of 3 for very-low-round players', () => {
+    // Player A: 11 rounds → 3 (was 6, which required >50% of all rounds)
+    expect(effectiveMinSampleSize(11)).toBe(3);
+    // Player B: 12 rounds → 3
+    expect(effectiveMinSampleSize(12)).toBe(3);
+    // Edge: 8 rounds → 3 (ceil(2) = 2, clamped to 3)
+    expect(effectiveMinSampleSize(8)).toBe(3);
+    // Edge: 6 rounds → 3 (ceil(1.5) = 2, clamped to 3)
+    expect(effectiveMinSampleSize(6)).toBe(3);
+  });
+
+  it('scales linearly between the floor and the full bar', () => {
+    // 14 → ceil(3.5) = 4
+    expect(effectiveMinSampleSize(14)).toBe(4);
+    // 15 → ceil(3.75) = 4
+    expect(effectiveMinSampleSize(15)).toBe(4);
+  });
+
+  it('never exceeds the configured ceiling of 6', () => {
+    expect(effectiveMinSampleSize(50)).toBeLessThanOrEqual(6);
+    expect(effectiveMinSampleSize(500)).toBeLessThanOrEqual(6);
+  });
+});
 
 describe('computeConvictionSafe (LIVE-16)', () => {
   it('returns the closed-form conviction when confidence < 1', () => {

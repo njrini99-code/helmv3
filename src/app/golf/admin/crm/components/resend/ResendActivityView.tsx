@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
 import {
@@ -12,6 +11,8 @@ import {
   IconChartBar,
   IconExternalLink,
 } from '@/components/icons';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type {
   ActivityWindow,
   ResendActivityStats,
@@ -102,7 +103,11 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
   useVisibilityAwareInterval(loadStats, 60_000);
 
   return (
-    <div className="space-y-5">
+    <Tabs
+      value={activeTab}
+      onChange={(v) => setActiveTab(v as SubTab)}
+      className="space-y-5"
+    >
       {/* ── Header: title + window selector + sub-tabs ── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -131,63 +136,53 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex items-center gap-1 border-b border-warm-200/60 -mx-1 px-1 overflow-x-auto scrollbar-hide">
-        {SUB_TABS.map((t) => {
-          const isActive = activeTab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={cn(
-                'group relative flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors whitespace-nowrap',
-                isActive
-                  ? 'text-warm-900'
-                  : 'text-warm-500 hover:text-warm-800'
-              )}
-            >
-              <t.Icon size={15} />
-              {t.label}
-              {isActive && (
-                <motion.div
-                  layoutId="resend-tab-underline"
-                  className="absolute bottom-0 left-1 right-1 h-[2px] bg-primary-500 rounded-full"
-                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <TabsList
+        variant="underline"
+        className="-mx-1 overflow-x-auto px-1 scrollbar-hide"
+      >
+        {SUB_TABS.map((t) => (
+          <TabsTrigger
+            key={t.id}
+            value={t.id}
+            variant="underline"
+            icon={<t.Icon size={15} />}
+          >
+            {t.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
       {/* ── Tab content ── */}
-      <div>
-        {activeTab === 'overview' && (
-          <div className="space-y-5">
-            <KPIGrid stats={stats} loading={statsLoading} />
-            <DailyTrendChart data={stats?.by_day ?? null} />
-            <SourceBreakdown bySource={stats?.by_source ?? null} />
-          </div>
-        )}
+      <TabsContent value="overview" className="mt-0">
+        <div className="space-y-5">
+          <KPIGrid stats={stats} loading={statsLoading} />
+          <DailyTrendChart data={stats?.by_day ?? null} />
+          <SourceBreakdown bySource={stats?.by_source ?? null} />
+        </div>
+      </TabsContent>
 
-        {activeTab === 'activity' && (
-          <LiveActivityFeed
-            initialLimit={100}
-            onSelectMessage={setSelectedMessageId}
-          />
-        )}
+      <TabsContent value="activity" className="mt-0">
+        <LiveActivityFeed
+          initialLimit={100}
+          onSelectMessage={setSelectedMessageId}
+        />
+      </TabsContent>
 
-        {activeTab === 'emails' && (
-          <EmailsTable
-            onSelectEmail={setSelectedMessageId}
-            selectedMessageId={selectedMessageId}
-            since={stats?.since}
-          />
-        )}
+      <TabsContent value="emails" className="mt-0">
+        <EmailsTable
+          onSelectEmail={setSelectedMessageId}
+          selectedMessageId={selectedMessageId}
+          since={stats?.since}
+        />
+      </TabsContent>
 
-        {activeTab === 'failed' && <FailedEmailsView onSelect={setSelectedMessageId} />}
+      <TabsContent value="failed" className="mt-0">
+        <FailedEmailsView onSelect={setSelectedMessageId} />
+      </TabsContent>
 
-        {activeTab === 'domains' && <DomainBreakdown window={windowSel} />}
-      </div>
+      <TabsContent value="domains" className="mt-0">
+        <DomainBreakdown window={windowSel} />
+      </TabsContent>
 
       {/* Shared detail panel */}
       <EmailDetailPanel
@@ -195,7 +190,7 @@ export function ResendActivityView({ onSendFollowup }: ResendActivityViewProps =
         onClose={() => setSelectedMessageId(null)}
         onSendFollowup={onSendFollowup}
       />
-    </div>
+    </Tabs>
   );
 }
 
@@ -210,22 +205,20 @@ function WindowSelector({
   onChange: (w: ActivityWindow) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 p-1 bg-white/60 border border-warm-200/60 rounded-xl">
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(v) => {
+        if (v) onChange(v as ActivityWindow);
+      }}
+      aria-label="Activity window"
+    >
       {WINDOW_OPTIONS.map((opt) => (
-        <button
-          key={opt.id}
-          onClick={() => onChange(opt.id)}
-          className={cn(
-            'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-            value === opt.id
-              ? 'bg-warm-900 text-white shadow-sm'
-              : 'text-warm-600 hover:text-warm-900'
-          )}
-        >
+        <ToggleGroupItem key={opt.id} value={opt.id}>
           {opt.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 

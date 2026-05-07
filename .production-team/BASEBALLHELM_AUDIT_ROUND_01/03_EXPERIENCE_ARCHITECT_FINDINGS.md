@@ -7,13 +7,13 @@
 
 | Dimension | Score | Benchmark |
 |-----------|-------|-----------|
-| Glassmorphism Execution | 9/10 | Linear |
-| Kelly Green Brand | 9/10 | Stripe |
-| Animation Quality | 8/10 | Vercel |
-| Component Consistency | 8/10 | Linear |
-| Loading States | 7/10 | Linear |
+| Glassmorphism Execution | 9/10 | Premium SaaS |
+| Kelly Green Brand | 9/10 | Premium SaaS |
+| Animation Quality | 8/10 | Premium SaaS |
+| Component Consistency | 8/10 | Premium SaaS |
+| Loading States | 7/10 | Premium SaaS |
 | **Accessibility** | **3/10** | WCAG 2.1 AA |
-| Mobile Responsiveness | 7/10 | Vercel |
+| Mobile Responsiveness | 7/10 | Premium SaaS |
 | Overall Polish | 7.8/10 | Premium SaaS |
 
 ---
@@ -148,7 +148,7 @@ className="glass-standard rounded-2xl p-8"
 >
 ```
 
-This rivals Linear and Stripe in glass effect quality.
+This rivals Apple-grade premium UIs in glass effect quality.
 
 ---
 
@@ -326,25 +326,25 @@ Consistent scale usage observed. ✅
 
 ## Comparison to Benchmarks
 
-### vs Linear
-| Aspect | Linear | BaseballHelm |
-|--------|--------|--------------|
+### vs Premium Dashboard Standard
+| Aspect | Premium Standard | BaseballHelm |
+|--------|------------------|--------------|
 | Glass effects | 10/10 | 9/10 |
 | Animations | 10/10 | 8/10 |
 | Dark mode | 10/10 | N/A (light only) |
 | Accessibility | 10/10 | 3/10 ❌ |
 
-### vs Stripe
-| Aspect | Stripe | BaseballHelm |
-|--------|--------|--------------|
+### vs Premium Brand Standard
+| Aspect | Premium Standard | BaseballHelm |
+|--------|------------------|--------------|
 | Brand consistency | 10/10 | 9/10 |
 | Form design | 10/10 | 8/10 |
 | Error states | 10/10 | 7/10 |
 | Documentation | 10/10 | N/A |
 
-### vs Vercel
-| Aspect | Vercel | BaseballHelm |
-|--------|--------|--------------|
+### vs Premium Performance Standard
+| Aspect | Premium Standard | BaseballHelm |
+|--------|------------------|--------------|
 | Performance feel | 10/10 | 8/10 |
 | Loading states | 10/10 | 7/10 |
 | Onboarding | 10/10 | 7/10 |

@@ -5,7 +5,7 @@ description: Generate premium Instagram creatives, social media ads, and marketi
 
 # GolfHelm Creative Engine
 
-Generate premium Instagram creatives that look like they were designed by a senior product designer at Vercel, not an AI. Every creative is built from GolfHelm's real design tokens, real UI patterns, and real product features.
+Generate premium Instagram creatives that look like they were designed by a senior product designer at a premium SaaS studio, not an AI. Every creative is built from GolfHelm's real design tokens, real UI patterns, and real product features.
 
 ## Before You Start
 

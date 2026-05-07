@@ -15,6 +15,9 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -94,15 +97,11 @@ export default async function GolfRosterPage() {
     if (!teamMember?.team_id) {
       return (
         <div className="min-h-full flex items-center justify-center">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-              <IconUsers size={32} className="text-amber-500" />
-            </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
-            <p className="text-warm-500 mb-6">
-              You haven't joined a team yet. Ask your coach for a join code.
-            </p>
-          </div>
+          <EmptyState
+            icon={<IconUsers size={36} />}
+            title="No Team Found"
+            description="You haven't joined a team yet. Ask your coach for a join code."
+          />
         </div>
       );
     }
@@ -166,18 +165,12 @@ export default async function GolfRosterPage() {
   if (!teamId) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-            <IconUsers size={32} className="text-amber-500" />
-          </div>
-          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Assigned</h2>
-          <p className="text-warm-500 mb-6">
-            You haven't created or joined a team yet. Create a team to start building your roster.
-          </p>
-          <Link href="/golf/dashboard/team">
-            <Button>Go to Team Settings</Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={<IconUsers size={36} />}
+          title="No Team Assigned"
+          description="You haven't created or joined a team yet. Create a team to start building your roster."
+          action={{ label: 'Go to Team Settings', href: '/golf/dashboard/team' }}
+        />
       </div>
     );
   }
@@ -319,6 +312,9 @@ export default async function GolfRosterPage() {
 
   const teamName = team?.name || 'Team';
   const inviteCode = team?.join_code || null;
+  const activeCount = playersWithStats.filter(
+    (p) => p.status === 'active' || p.status === null,
+  ).length;
 
   return (
     <RosterPageClient players={playersWithStats}>
@@ -336,6 +332,25 @@ export default async function GolfRosterPage() {
       {/* Main Content */}
       <AnimatedItem>
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero plinth — magazine-cover framing for the
+            roster, sitting beneath the sticky LargeTitleHeader. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Roster"
+              eyebrowAccent="primary"
+              title="Your players."
+              subtitle={
+                playersWithStats.length === 0
+                  ? `Build your roster on ${teamName} by inviting players to join.`
+                  : `${playersWithStats.length} ${playersWithStats.length === 1 ? 'player' : 'players'}${
+                      activeCount !== playersWithStats.length ? ` · ${activeCount} active` : ''
+                    } on ${teamName}.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {/* Pending Join Requests */}
         <PendingJoinRequests />
 
@@ -372,7 +387,7 @@ export default async function GolfRosterPage() {
           </div>
         ) : (
           /* Player Cards Grid - 1 column on mobile, 2 columns on desktop */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          <Reveal staggerIndex={1} className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
@@ -484,7 +499,7 @@ export default async function GolfRosterPage() {
                 </div>
               </div>
             ))}
-          </div>
+          </Reveal>
         )}
       </div>
       </AnimatedItem>

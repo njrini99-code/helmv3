@@ -1,5 +1,30 @@
 'use client';
 
+/**
+ * GolfTabBar — editorial tab navigation.
+ *
+ * Redesigned May 2026 (audited through impeccable + ui-ux-pro-max).
+ * The previous treatment was an iOS UISegmentedControl: cream-100 tray,
+ * white sticker-shadow active pill, cramped count badges. That pattern
+ * clashed with the California-modern matte vocabulary and stacked four
+ * colors into a tiny strip.
+ *
+ * The new treatment matches the Eyebrow + hairline-rule language used
+ * by PageHeader and the Round Library period headers:
+ *   - No tray. Tabs sit on the page surface, separated by a single
+ *     hairline rule below.
+ *   - Active state = warm-900 text + 2px primary-accent underline that
+ *     animates in on cubic-bezier(0.16, 1, 0.3, 1) — same easing as
+ *     every other transition in the system.
+ *   - Inactive state = warm-400 text. Hover = warm-700.
+ *   - Count is plain tabular-nums text after the label — no badge shell.
+ *   - Urgent dot = small primary-500 pip top-right of the label, only
+ *     when not active (active state already implies focus).
+ *
+ * Compact mode drops the vertical padding for tight toolbars; default
+ * keeps editorial breath.
+ */
+
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -35,10 +60,10 @@ export function GolfTabBar<T extends string>({
   scrollable = false,
   compact = false,
 }: GolfTabBarProps<T>) {
-  // iOS UISegmentedControl sizing: ~32pt compact / ~40pt regular
-  const sizeClasses = compact
-    ? 'min-h-[32px] px-3 py-1 text-xs'
-    : 'min-h-[40px] px-3.5 py-1.5 text-footnote';
+  // Vertical breath: compact = tight (toolbars), default = editorial.
+  // 44px touch target preserved either way (UX rule #2).
+  const verticalPad = compact ? 'py-2.5' : 'py-3';
+  const fontSize = compact ? 'text-[13px]' : 'text-[14px]';
 
   return (
     <div
@@ -52,10 +77,8 @@ export function GolfTabBar<T extends string>({
         role="tablist"
         aria-label={ariaLabel}
         className={cn(
-          // iOS segmented control: fully rounded pill with subtle inset background
-          'inline-flex items-center gap-0.5 rounded-full bg-warm-100 p-1',
-          'shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.04)]',
-          stretch ? 'w-full' : 'w-max',
+          'flex items-center border-b border-warm-200/45',
+          stretch ? 'w-full justify-between gap-3 sm:gap-5' : 'w-max gap-5 sm:gap-7 md:gap-9',
           listClassName,
         )}
       >
@@ -72,37 +95,45 @@ export function GolfTabBar<T extends string>({
                 onChange(tab.id);
               }}
               className={cn(
-                // iOS: active pill slides with spring via transform-friendly shadow/bg
-                'relative flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full font-medium',
-                'transition-[background-color,box-shadow,color,transform] duration-200 ease-out',
-                sizeClasses,
+                'group relative inline-flex items-center justify-center gap-1.5 whitespace-nowrap',
+                verticalPad,
+                fontSize,
+                'font-medium tracking-[-0.005em]',
+                'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'min-h-[44px]', // touch target — UX rule #2
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded-sm',
                 stretch && 'flex-1',
+                // Animated underline — anchored to the bottom hairline rule.
+                'before:absolute before:left-0 before:right-0 before:bottom-[-1px] before:h-[2px]',
+                'before:bg-primary-500 before:origin-left before:scale-x-0',
+                'before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.16,1,0.3,1)]',
                 isActive
-                  ? 'bg-white text-warm-900 shadow-[0_1px_2px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]'
-                  : 'text-warm-500 hover:text-warm-700 active:scale-[0.97]',
+                  ? 'text-warm-900 before:scale-x-100'
+                  : 'text-warm-400 hover:text-warm-700 active:scale-[0.97]',
               )}
             >
-              {tab.icon}
-              <span>{tab.label}</span>
+              {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
+              <span className="relative">
+                {tab.label}
+                {/* Urgent indicator — small primary pip at top-right of the
+                    label, only when not already active. Inset slightly so
+                    it doesn't crowd descenders. */}
+                {tab.dot && !isActive && (
+                  <span
+                    aria-hidden
+                    className="absolute -right-1.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-primary-500"
+                  />
+                )}
+              </span>
               {tab.count !== undefined && tab.count > 0 && (
                 <span
                   className={cn(
-                    'rounded-full px-1.5 py-0.5 text-[10px] font-medium tabular-nums',
-                    isActive
-                      ? 'bg-primary-100 text-primary-700'
-                      : 'bg-warm-200/80 text-warm-500',
+                    'tabular-nums text-[12px] font-medium transition-colors duration-200',
+                    isActive ? 'text-warm-600' : 'text-warm-400 group-hover:text-warm-500',
                   )}
                 >
                   {tab.count}
                 </span>
-              )}
-              {tab.dot && (
-                <span
-                  className={cn(
-                    'h-1.5 w-1.5 rounded-full',
-                    isActive ? 'bg-primary-500' : 'bg-red-500',
-                  )}
-                />
               )}
             </button>
           );

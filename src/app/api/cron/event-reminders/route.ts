@@ -87,12 +87,16 @@ async function dispatchReminders(
   const horizon = new Date(now.getTime() + windowMs).toISOString();
   const nowIso = now.toISOString();
 
+  // Skip cancelled events. Schema uses cancelled_at (timestamp set when an
+  // event is cancelled) plus a status enum that includes 'cancelled'. Both
+  // are checked so we don't remind on either signal.
   const { data: events, error: eventsErr } = await supabase
     .from('golf_events')
-    .select('id, title, start_time, location')
+    .select('id, title, start_time, location, cancelled_at, status')
     .gt('start_time', nowIso)
     .lte('start_time', horizon)
-    .eq('is_cancelled', false)
+    .is('cancelled_at', null)
+    .neq('status', 'cancelled')
     .limit(500);
 
   if (eventsErr) {

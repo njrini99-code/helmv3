@@ -12,6 +12,7 @@
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 interface KeyMetricsGridProps {
@@ -105,15 +106,10 @@ function MetricCard({ label, value, subtext, colorClass = 'text-warm-900', index
 // Skeleton card for loading state
 function MetricCardSkeleton({ index }: { index: number }) {
   return (
-    <div
-      className="relative surface-matte rounded-xl overflow-clip p-4 animate-pulse"
-      style={{
-        animationDelay: `${index * 50}ms`,
-      }}
-    >
-      <div className="h-7 bg-warm-200 rounded w-16 mx-auto mb-2" />
-      <div className="h-4 bg-warm-200 rounded w-12 mx-auto" />
-    </div>
+    <ShimmerCard staggerIndex={index} className="rounded-xl p-4">
+      <Shimmer className="h-7 w-16 mx-auto mb-2" />
+      <Shimmer className="h-4 w-12 mx-auto" />
+    </ShimmerCard>
   );
 }
 

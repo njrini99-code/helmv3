@@ -4,6 +4,9 @@ import { m } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 
 interface TeamInfoPlayerProps {
   team: {
@@ -66,6 +69,23 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
         subtitle={`Season: ${team.season || 'Current'}`}
       />
       <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+      {/* Editorial hero band — frames the program identity beneath the
+          sticky title header in the magazine-cover rhythm. */}
+      <Reveal>
+        <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+          <PageHeader
+            eyebrow="Team"
+            eyebrowAccent="primary"
+            title="Your program."
+            subtitle={
+              team.season
+                ? `${team.name} · ${team.season} · ${roster.length} player${roster.length === 1 ? '' : 's'}.`
+                : `${team.name} — roster, schedule, and program identity.`
+            }
+          />
+        </div>
+      </Reveal>
+
       <m.div
         variants={containerVariants}
         initial="hidden"
@@ -100,7 +120,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           <div className="mt-3 space-y-3">
             {announcements.length === 0 ? (
               <PremiumGlassCard>
-                <p className="text-warm-500 text-sm text-center py-4">No announcements yet</p>
+                <EmptyState
+                  variant="minimal"
+                  icon={<IconMail size={20} />}
+                  description="No announcements yet"
+                />
               </PremiumGlassCard>
             ) : (
               announcements.slice(0, 3).map((announcement) => (
@@ -126,7 +150,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           <div className="mt-3 space-y-2">
             {pendingTasks.length === 0 && completedTasks.length === 0 ? (
               <PremiumGlassCard>
-                <p className="text-warm-500 text-sm text-center py-4">No tasks assigned yet</p>
+                <EmptyState
+                  variant="minimal"
+                  icon={<IconClipboardList size={20} />}
+                  description="No tasks assigned yet"
+                />
               </PremiumGlassCard>
             ) : pendingTasks.length === 0 ? (
               <PremiumGlassCard>
@@ -184,7 +212,11 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           <PremiumGlassCard className="mt-3" noPadding>
             <div className="divide-y divide-white/20">
               {roster.length === 0 ? (
-                <p className="text-warm-500 text-sm text-center py-6">No players on the roster yet</p>
+                <EmptyState
+                  variant="minimal"
+                  icon={<IconUsers size={20} />}
+                  description="No players on the roster yet"
+                />
               ) : (
                 roster.slice(0, 5).map((player) => (
                   <div key={player.id} className="flex items-center gap-3 p-4">

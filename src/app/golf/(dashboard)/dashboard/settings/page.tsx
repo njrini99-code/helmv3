@@ -12,7 +12,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   IconSettings,
@@ -35,6 +35,7 @@ import { triggerHaptic, isNativeApp } from '@/lib/utils/capacitor';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { JoinTeamSection } from '@/components/golf/settings/JoinTeamSection';
 import { CoachHelmToggle } from '@/components/golf/coachhelm/v2';
+import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import {
   getNotificationPreferences,
@@ -221,25 +222,25 @@ export default function GolfSettingsPage() {
       <AnimatedPage className="min-h-full">
         <LargeTitleHeader title="Settings" subtitle="Manage your account and preferences" />
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
-          <div className="surface-matte rounded-3xl p-5 animate-pulse">
+          <ShimmerCard className="rounded-3xl p-5">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-warm-200" />
+              <Shimmer variant="circle" className="w-14" />
               <div className="flex-1">
-                <div className="h-5 w-40 bg-warm-200 rounded mb-2" />
-                <div className="h-4 w-24 bg-warm-100 rounded" />
+                <Shimmer className="h-5 w-40 mb-2" />
+                <Shimmer variant="line" className="w-24" />
               </div>
             </div>
-          </div>
+          </ShimmerCard>
           {[1, 2, 3].map((i) => (
-            <div key={i} className="surface-matte rounded-3xl p-4 animate-pulse">
+            <ShimmerCard key={i} staggerIndex={i} className="rounded-3xl p-4">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-warm-200" />
+                <Shimmer className="w-10 h-10 rounded-xl" />
                 <div className="flex-1">
-                  <div className="h-4 w-36 bg-warm-200 rounded mb-2" />
-                  <div className="h-3 w-48 bg-warm-100 rounded" />
+                  <Shimmer className="h-4 w-36 mb-2" />
+                  <Shimmer variant="line" className="w-48" />
                 </div>
               </div>
-            </div>
+            </ShimmerCard>
           ))}
         </div>
       </AnimatedPage>
@@ -657,7 +658,7 @@ function ToggleSwitch({
         className={cn(
           'relative flex-shrink-0 rounded-full transition-colors duration-200 ease-out',
           'w-[51px] h-[31px]',
-          checked ? 'bg-[#34C759]' : 'bg-warm-200'
+          checked ? 'bg-primary-500' : 'bg-warm-200'
         )}
       >
         <div

@@ -11,6 +11,7 @@
  * - Actionability score
  */
 
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import {
   IconTrendingUp,
@@ -18,6 +19,7 @@ import {
   IconMinus,
   IconTarget,
 } from '@/components/icons';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import type { MinedPattern, PatternCondition, ConditionOperator } from '@/lib/coachhelm/v2/types';
 
 interface PatternDetailsViewProps {
@@ -82,8 +84,12 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
                 isPositiveImpact ? 'text-primary-600' : 'text-red-600'
               )}
             >
-              {isPositiveImpact ? '' : '+'}
-              {pattern.strokeImpact.toFixed(1)} strokes
+              <AnimatedNumber
+                value={pattern.strokeImpact}
+                decimals={1}
+                prefix={isPositiveImpact ? '' : '+'}
+                suffix=" strokes"
+              />
             </span>
           </div>
         </div>
@@ -144,23 +150,31 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
         <div className="grid grid-cols-2 gap-4">
           <MetricCard
             label="Support"
-            value={`${(pattern.support * 100).toFixed(1)}%`}
+            value={
+              <AnimatedNumber value={pattern.support * 100} decimals={1} suffix="%" />
+            }
             description="How often conditions occur"
           />
           <MetricCard
             label="Confidence"
-            value={`${Math.round(pattern.confidence * 100)}%`}
+            value={
+              <AnimatedNumber
+                value={Math.round(pattern.confidence * 100)}
+                decimals={0}
+                suffix="%"
+              />
+            }
             description="When conditions occur, outcome happens"
           />
           <MetricCard
             label="Lift"
-            value={pattern.lift.toFixed(2)}
+            value={<AnimatedNumber value={pattern.lift} decimals={2} />}
             description="How much more likely than random"
             highlight={pattern.lift > 2}
           />
           <MetricCard
             label="Conviction"
-            value={pattern.conviction.toFixed(2)}
+            value={<AnimatedNumber value={pattern.conviction} decimals={2} />}
             description="Strength of implication"
           />
         </div>
@@ -277,7 +291,7 @@ function MetricCard({
   highlight = false,
 }: {
   label: string;
-  value: string;
+  value: ReactNode;
   description: string;
   highlight?: boolean;
 }) {

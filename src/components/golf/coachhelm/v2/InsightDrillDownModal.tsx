@@ -12,10 +12,12 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+} from '@/components/ui/drawer';
 import { cn } from '@/lib/utils';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   IconSparkles,
   IconTarget,
@@ -99,7 +101,6 @@ export function InsightDrillDownModal({
   causalRelationship,
   onAction,
 }: InsightDrillDownModalProps) {
-  const { modalRef } = useFocusTrap(open, onClose);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const toneStyle = toneColors[insight.tone] || toneColors.neutral;
 
@@ -111,8 +112,18 @@ export function InsightDrillDownModal({
   };
 
   return (
-    <BottomSheet open={open} onClose={onClose}>
-      <div ref={modalRef} className="min-h-[500px] flex flex-col -mx-6 -mb-6">
+    <Drawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+      <Tabs
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as TabId)}
+        className="min-h-[500px] flex flex-col"
+      >
         {/* Header with tone accent */}
         <div className={cn('px-6 pt-4 pb-3 border-b', toneStyle.bg, toneStyle.border)}>
           {/* Tone indicator */}
@@ -157,13 +168,13 @@ export function InsightDrillDownModal({
 
         {/* Tab navigation */}
         <div className="px-6 pt-4 pb-0">
-          <GolfTabBar
-            tabs={tabs}
-            value={activeTab}
-            onChange={setActiveTab}
-            ariaLabel="Insight drill-down sections"
-            compact
-          />
+          <TabsList aria-label="Insight drill-down sections" className="grid w-full grid-cols-4">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.id} value={t.id} icon={t.icon}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
 
         {/* Tab content */}
@@ -295,8 +306,9 @@ export function InsightDrillDownModal({
             )}
           </AnimatePresence>
         </div>
-      </div>
-    </BottomSheet>
+      </Tabs>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

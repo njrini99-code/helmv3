@@ -14,12 +14,20 @@ import { useState, useEffect, useRef, memo, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   getPlayerProfileStats,
   type RoundOption,
 } from '@/app/golf/actions/player-profile-stats';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { KeyMetricsGrid } from './KeyMetricsGrid';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Shimmer } from '@/components/ui/shimmer';
 import {
   IconChevronDown,
   IconTrendingUp,
@@ -83,8 +91,11 @@ function formatScoreToPar(score: number | null): string {
 
 function ChartSkeleton() {
   return (
-    <div className="h-48 bg-warm-100/50 rounded-xl animate-pulse flex items-center justify-center">
-      <span className="text-warm-400 text-sm">Loading chart...</span>
+    <div className="relative h-48">
+      <Shimmer className="absolute inset-0 h-full rounded-xl" />
+      <div className="relative h-full flex items-center justify-center">
+        <span className="text-warm-400 text-sm">Loading chart...</span>
+      </div>
     </div>
   );
 }
@@ -390,7 +401,6 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
   const [selectedRoundId, setSelectedRoundId] = useState<string | 'overall'>('overall');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Cache stats by round ID
   const statsCache = useRef<Map<string, GolfStats>>(new Map());
@@ -456,62 +466,41 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
 
         {/* Round Selector Dropdown */}
         {rounds.length > 0 && (
-          <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
-              aria-haspopup="listbox"
-              aria-expanded={dropdownOpen}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
-            >
-              {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
-              <IconChevronDown size={16} className={cn('transition-transform', dropdownOpen && 'rotate-180')} />
-            </button>
-
-            {dropdownOpen && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
-                <div
-                  role="listbox"
-                  aria-label="Select round"
-                  onKeyDown={(e) => { if (e.key === 'Escape') setDropdownOpen(false); }}
-                  className="absolute right-0 mt-2 w-64 bg-white rounded-xl border border-warm-200 shadow-lg z-20 py-2 max-h-80 overflow-auto"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors data-[state=open]:bg-warm-50"
+                aria-label="Select round"
+              >
+                {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
+                <IconChevronDown size={16} className="transition-transform data-[state=open]:rotate-180" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-auto">
+              <DropdownMenuItem
+                selected={selectedRoundId === 'overall'}
+                onSelect={() => setSelectedRoundId('overall')}
+              >
+                Overall (All Rounds)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {rounds.slice(0, 15).map(round => (
+                <DropdownMenuItem
+                  key={round.id}
+                  selected={selectedRoundId === round.id}
+                  onSelect={() => setSelectedRoundId(round.id)}
+                  className="flex-col items-start gap-0.5"
                 >
-                  <button
-                    role="option"
-                    aria-selected={selectedRoundId === 'overall'}
-                    onClick={() => { setSelectedRoundId('overall'); setDropdownOpen(false); }}
-                    className={cn(
-                      'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors',
-                      selectedRoundId === 'overall' && 'bg-primary-50 text-primary-700 font-medium'
-                    )}
-                  >
-                    Overall (All Rounds)
-                  </button>
-                  <div className="border-t border-warm-100 my-1" />
-                  {rounds.slice(0, 15).map(round => (
-                    <button
-                      key={round.id}
-                      role="option"
-                      aria-selected={selectedRoundId === round.id}
-                      onClick={() => { setSelectedRoundId(round.id); setDropdownOpen(false); }}
-                      className={cn(
-                        'w-full px-4 py-2.5 text-left text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors',
-                        selectedRoundId === round.id && 'bg-primary-50 text-primary-700 font-medium'
-                      )}
-                    >
-                      <div className="font-medium">{round.course_name || 'Round'}</div>
-                      <div className="text-xs text-warm-500 flex items-center gap-2">
-                        <span>{new Date(round.round_date).toLocaleDateString()}</span>
-                        <span>•</span>
-                        <span>{round.total_score} ({formatScoreToPar(round.score_to_par)})</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+                  <div className="font-medium">{round.course_name || 'Round'}</div>
+                  <div className="text-xs text-warm-500 flex items-center gap-2">
+                    <span>{new Date(round.round_date).toLocaleDateString()}</span>
+                    <span>•</span>
+                    <span>{round.total_score} ({formatScoreToPar(round.score_to_par)})</span>
+                  </div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 

@@ -21,6 +21,8 @@ import {
   IconCalendar,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { AnalyticsSummaryCards } from './AnalyticsSummaryCards';
 import { InsightEffectivenessPanel } from './InsightEffectivenessPanel';
 import { PredictionAccuracyPanel } from './PredictionAccuracyPanel';
@@ -35,7 +37,8 @@ import {
   type PredictionPerformanceData,
   type PatternImpactData,
 } from '@/app/golf/actions/coachhelm-analytics';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 interface CoachHelmAnalyticsDashboardProps {
   teamId: string;
@@ -132,18 +135,23 @@ export function CoachHelmAnalyticsDashboard({
       >
         <div className="flex items-center gap-2">
           <IconCalendar size={16} className="text-warm-400" />
-          <select
+          {/* Date range — small finite set of windows, perfect for a
+              segmented control instead of a select. */}
+          <ToggleGroup
+            type="single"
             value={selectedRange}
-            onChange={(e) => handleDateRangeChange(e.target.value as DateRangeType)}
+            onValueChange={(v) => {
+              if (v) handleDateRangeChange(v as DateRangeType);
+            }}
             disabled={isPending}
-            className="text-base md:text-sm px-3 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            aria-label="Analytics date range"
           >
             {dateRanges.map((range) => (
-              <option key={range.id} value={range.id}>
-                Last {range.label}
-              </option>
+              <ToggleGroupItem key={range.id} value={range.id}>
+                {range.id}
+              </ToggleGroupItem>
             ))}
-          </select>
+          </ToggleGroup>
         </div>
         <button
           onClick={handleRefresh}
@@ -176,6 +184,30 @@ export function CoachHelmAnalyticsDashboard({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero plinth — magazine-cover framing for the
+            CoachHelm analytics surface. Sits beneath the sticky
+            LargeTitleHeader and anchors the timeframe context. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="CoachHelm Analytics"
+              eyebrowAccent="primary"
+              title="How your coaching is landing."
+              subtitle={
+                overview && overview.totalInsights > 0
+                  ? `Last ${
+                      dateRanges.find((r) => r.id === selectedRange)?.days ?? 30
+                    } days · ${overview.totalInsights} insight${
+                      overview.totalInsights === 1 ? '' : 's'
+                    } surfaced.`
+                  : `Last ${
+                      dateRanges.find((r) => r.id === selectedRange)?.days ?? 30
+                    } days · insight effectiveness and prediction accuracy will appear once data accrues.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {/* Summary Cards */}
         {overview && (
           <motion.div
@@ -189,21 +221,26 @@ export function CoachHelmAnalyticsDashboard({
         )}
 
         {/* Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
+        <Tabs
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as TabType)}
         >
-          <GolfTabBar
-            tabs={tabs}
-            value={activeTab}
-            onChange={setActiveTab}
-            ariaLabel="CoachHelm analytics sections"
-          />
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <TabsList aria-label="CoachHelm analytics sections" variant="underline" className="w-full">
+              {tabs.map((t) => (
+                <TabsTrigger key={t.id} value={t.id} variant="underline" icon={t.icon}>
+                  {t.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </motion.div>
 
-        {/* Tab Content */}
-          <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
+          {/* Tab Content */}
+          <TabsContent value="overview" className="mt-0">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Insight Effectiveness Summary */}
               {effectiveness && (
@@ -244,9 +281,9 @@ export function CoachHelmAnalyticsDashboard({
                 </GlassCard>
               )}
             </div>
-          </div>
+          </TabsContent>
 
-          <div className={activeTab === 'insights' ? 'block' : 'hidden'}>
+          <TabsContent value="insights" className="mt-0">
             {effectiveness && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
@@ -260,9 +297,9 @@ export function CoachHelmAnalyticsDashboard({
                 </div>
               </GlassCard>
             )}
-          </div>
+          </TabsContent>
 
-          <div className={activeTab === 'predictions' ? 'block' : 'hidden'}>
+          <TabsContent value="predictions" className="mt-0">
             {performance && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
@@ -276,9 +313,9 @@ export function CoachHelmAnalyticsDashboard({
                 </div>
               </GlassCard>
             )}
-          </div>
+          </TabsContent>
 
-          <div className={activeTab === 'patterns' ? 'block' : 'hidden'}>
+          <TabsContent value="patterns" className="mt-0">
             {patternImpact && (
               <GlassCard className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
@@ -292,7 +329,8 @@ export function CoachHelmAnalyticsDashboard({
                 </div>
               </GlassCard>
             )}
-          </div>
+          </TabsContent>
+        </Tabs>
 
         {/* Empty State */}
         {!overview && !effectiveness && !performance && !patternImpact && (

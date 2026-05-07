@@ -1,12 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { generateClassColor, detectSemester } from '@/lib/utils/schedule-parser';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 interface ExistingClass {
   id?: string;
@@ -144,7 +148,6 @@ function detectConflicts(
 }
 
 export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingClasses = [] }: AddClassModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [conflicts, setConflicts] = useState<ClassConflict[]>([]);
   const [showConflictWarning, setShowConflictWarning] = useState(false);
@@ -171,8 +174,6 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
     setConflicts([]);
     setShowConflictWarning(false);
   };
-
-  if (!isOpen) return null;
 
   const handleDayToggle = (day: string) => {
     setFormData(prev => ({
@@ -252,27 +253,21 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
   const hasExactDuplicate = conflicts.some(c => c.isExactDuplicate);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="add-class-title" className="relative w-full max-w-lg mx-4 glass-prominent rounded-2xl shadow-2xl max-h-[90vh] overflow-clip flex flex-col">
-        {/* Shine effect */}
-        <div
-          className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
+        aria-labelledby="add-class-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <h2 id="add-class-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+          <DrawerTitle id="add-class-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
-          </h2>
+          </DrawerTitle>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -570,7 +565,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             )}
           </Button>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

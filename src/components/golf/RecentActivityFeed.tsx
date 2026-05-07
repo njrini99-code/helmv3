@@ -8,6 +8,7 @@ import {
   IconGolf, IconFlag, IconBook, IconCalendar, IconUser,
   IconAward
 } from '@/components/icons';
+import { Shimmer } from '@/components/ui/shimmer';
 
 interface ActivityItem {
   id: string;
@@ -26,14 +27,23 @@ interface RecentActivityFeedProps {
 }
 
 export function RecentActivityFeed({
-  teamId, 
-  playerId, 
+  teamId,
+  playerId,
   limit = 10,
-  className 
+  className
 }: RecentActivityFeedProps) {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState<Date | null>(null);
   const fmtDate = useFormatDate();
+
+  // Initialize `now` on the client to avoid SSR/CSR mismatch when rendering
+  // relative timestamps ("Today", "Yesterday", "N days ago").
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const loadActivities = useCallback(async () => {
     const supabase = createClient();
@@ -198,7 +208,10 @@ export function RecentActivityFeed({
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
-    const now = new Date();
+    if (!now) {
+      // Pre-hydration: fall back to absolute date so SSR + first paint match.
+      return fmtDate(date);
+    }
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
@@ -217,11 +230,11 @@ export function RecentActivityFeed({
     return (
       <div className={cn('space-y-3', className)}>
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="flex items-center gap-3 animate-pulse">
-            <div className="w-9 h-9 rounded-lg bg-warm-200" />
+          <div key={i} className="flex items-center gap-3">
+            <Shimmer staggerIndex={i} className="w-9 h-9 rounded-lg" />
             <div className="flex-1 space-y-2">
-              <div className="h-4 bg-warm-200 rounded w-1/3" />
-              <div className="h-3 bg-warm-200 rounded w-2/3" />
+              <Shimmer staggerIndex={i} className="h-4 w-1/3" />
+              <Shimmer staggerIndex={i} variant="line" className="w-2/3" />
             </div>
           </div>
         ))}
@@ -245,8 +258,11 @@ export function RecentActivityFeed({
       {activities.map((activity, index) => (
         <div
           key={activity.id}
+          tabIndex={0}
+          role="button"
           className={cn(
             'flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors cursor-pointer',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
             'animate-slide-in-up'
           )}
           style={{ animationDelay: `${index * 50}ms` }}
@@ -267,7 +283,7 @@ export function RecentActivityFeed({
               </p>
             )}
           </div>
-          <span className="text-xs text-warm-400 flex-shrink-0">
+          <span className="text-xs text-warm-500 flex-shrink-0" suppressHydrationWarning>
             {formatTimestamp(activity.timestamp)}
           </span>
         </div>

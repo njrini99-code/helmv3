@@ -2,7 +2,22 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconEdit, IconTrash, IconEye, IconChevronDown, IconChevronUp } from '@/components/icons';
+import {
+  IconEdit,
+  IconTrash,
+  IconEye,
+  IconChevronDown,
+  IconChevronUp,
+  IconHome,
+  IconAirplane,
+  IconClipboardList,
+  IconAward,
+  IconFlag,
+  IconLayers,
+} from '@/components/icons';
+import type { ComponentType, SVGAttributes } from 'react';
+import { toast } from '@/components/ui/sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   deleteTravelExpense,
   type TravelExpense,
@@ -16,13 +31,15 @@ interface ExpenseListProps {
   isCoach: boolean;
 }
 
-const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: string; label: string; color: string }> = {
-  lodging: { icon: '🏨', label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
-  transportation: { icon: '🚗', label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
-  meals: { icon: '🍽️', label: 'Meals', color: 'bg-orange-100 text-orange-700' },
-  entry_fees: { icon: '🎟️', label: 'Entry Fees', color: 'bg-primary-100 text-primary-700' },
-  equipment: { icon: '⛳', label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
-  other: { icon: '📦', label: 'Other', color: 'bg-warm-100 text-warm-700' },
+type ExpenseIcon = ComponentType<SVGAttributes<SVGElement> & { size?: number }>;
+
+const CATEGORY_CONFIG: Record<ExpenseCategory, { icon: ExpenseIcon; label: string; color: string }> = {
+  lodging: { icon: IconHome, label: 'Lodging', color: 'bg-blue-100 text-blue-700' },
+  transportation: { icon: IconAirplane, label: 'Transportation', color: 'bg-purple-100 text-purple-700' },
+  meals: { icon: IconClipboardList, label: 'Meals', color: 'bg-orange-100 text-orange-700' },
+  entry_fees: { icon: IconAward, label: 'Entry Fees', color: 'bg-primary-100 text-primary-700' },
+  equipment: { icon: IconFlag, label: 'Equipment', color: 'bg-teal-100 text-teal-700' },
+  other: { icon: IconLayers, label: 'Other', color: 'bg-warm-100 text-warm-700' },
 };
 
 const PAID_BY_LABELS: Record<string, string> = {
@@ -36,9 +53,15 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
-  async function handleDelete(id: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  function handleDelete(id: string) {
+    setPendingDeleteId(id);
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
 
     setDeleting(id);
     const result = await deleteTravelExpense(id);
@@ -46,9 +69,10 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
     if (result.success) {
       onRefresh();
     } else {
-      alert(result.error || 'Failed to delete expense');
+      toast.error(result.error || 'Failed to delete expense');
     }
     setDeleting(null);
+    setPendingDeleteId(null);
   }
 
   function formatDate(dateStr: string | null) {
@@ -87,6 +111,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
     <div className="space-y-3">
       {expenses.map((expense, index) => {
         const config = CATEGORY_CONFIG[expense.category] || CATEGORY_CONFIG.other;
+        const CategoryIcon = config.icon;
         const isExpanded = expandedId === expense.id;
 
         return (
@@ -104,7 +129,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             >
               {/* Category Icon */}
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${config.color}`}>
-                <span className="text-lg">{config.icon}</span>
+                <CategoryIcon size={18} />
               </div>
 
               {/* Description */}
@@ -227,6 +252,21 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
           </motion.div>
         );
       })}
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Delete expense?"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleting !== null}
+        onConfirm={() => { void confirmDelete(); }}
+        onCancel={() => {
+          if (deleting === null) setPendingDeleteId(null);
+        }}
+      />
 
       {/* Receipt Viewer Modal */}
       {viewingReceipt && (

@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { FeedCard, type CalendarFeed } from './FeedCard';
 import { CreateFeedSection } from './CreateFeedSection';
 import { Calendar, Plus, Search, Filter } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
 import '@/styles/calendar-tokens.css';
 
 interface CalendarFeedManagerProps {
@@ -182,44 +183,25 @@ export function CalendarFeedManager({
       {/* Feeds list */}
       <div className="p-6">
         {filteredFeeds.length === 0 ? (
-          <div className="text-center py-12">
-            {feeds.length === 0 ? (
-              // Empty state - no feeds at all
-              <>
-                <div className="w-16 h-16 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
-                  <Calendar className="w-8 h-8 text-primary-600" />
-                </div>
-                <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
-                  No calendar feeds yet
-                </h3>
-                <p className="text-sm text-warm-500 mb-6 max-w-md mx-auto">
-                  Create a calendar feed to subscribe to your events in your favorite calendar app.
-                  Your calendar will automatically update when events change.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateSection(true)}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
-                           bg-primary-600 hover:bg-primary-700 text-white font-medium
-                           transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create Your First Feed
-                </button>
-              </>
-            ) : (
-              // Empty state - no matching filters
-              <>
-                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
-                  <Search className="w-6 h-6 text-warm-400" />
-                </div>
-                <h3 className="text-base font-medium text-warm-900 mb-2">No matching feeds</h3>
-                <p className="text-sm text-warm-500">
-                  Try adjusting your search or filter
-                </p>
-              </>
-            )}
-          </div>
+          feeds.length === 0 ? (
+            <EmptyState
+              variant="compact"
+              icon={<Calendar className="w-8 h-8" />}
+              title="No calendar feeds yet"
+              description="Create a calendar feed to subscribe to your events in your favorite calendar app. Your calendar will automatically update when events change."
+              action={{
+                label: 'Create Your First Feed',
+                onClick: () => setShowCreateSection(true),
+              }}
+            />
+          ) : (
+            <EmptyState
+              variant="compact"
+              icon={<Search className="w-6 h-6" />}
+              title="No matching feeds"
+              description="Try adjusting your search or filter."
+            />
+          )
         ) : (
           <div className="space-y-4">
             {filteredFeeds.map((feed) => (

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { format, startOfWeek as startOfWeekFn, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/sonner';
 import { useMobileDetection } from '@/hooks/use-mobile-detection';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
@@ -83,6 +83,17 @@ interface PremiumCalendarClientProps {
   actionHandlers?: CalendarActionHandlers;
   teamTimezone?: string | null;
   teamId?: string;
+  /**
+   * Optional initial view to seed the legacy grid with — used by the new
+   * EditorialCalendarSurface so picking "Month" in the editorial tab bar
+   * actually renders a month grid (rather than the legacy default of week).
+   */
+  initialView?: CalendarView;
+  /**
+   * Optional initial focus date — used by the editorial surface to land on
+   * the week the user navigated to via the day strip.
+   */
+  initialDate?: Date;
 }
 
 export function PremiumCalendarClient({
@@ -94,6 +105,8 @@ export function PremiumCalendarClient({
   actionHandlers = defaultActionHandlers,
   teamTimezone,
   teamId: teamIdProp,
+  initialView,
+  initialDate,
 }: PremiumCalendarClientProps) {
   const router = useRouter();
   const isMobileQuery = useMediaQuery('(max-width: 768px)');
@@ -104,10 +117,13 @@ export function PremiumCalendarClient({
   const showMobileUI = isMobile || (isTablet && preferMobileUI);
   const prefersReducedMotion = useReducedMotion();
 
-  const [view, setView] = useState<CalendarView>('week');
+  const [view, setView] = useState<CalendarView>(initialView ?? 'week');
   // Initialize to midnight today so server and client produce identical HTML
   // during hydration (avoids React error #418 when SSR timestamp differs).
   const [currentDate, setCurrentDate] = useState(() => {
+    if (initialDate) {
+      return new Date(initialDate.getFullYear(), initialDate.getMonth(), initialDate.getDate());
+    }
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
   });

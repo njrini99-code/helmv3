@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { IconList, IconTarget } from '@/components/icons';
+import { IconList, IconTarget, IconFlag } from '@/components/icons';
 import { QualifierBracket } from '@/components/golf/qualifiers/QualifierBracket';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface LeaderboardEntry {
   playerId: string;
@@ -53,7 +54,12 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
 
       {/* Content */}
       {!leaderboard || leaderboard.length === 0 ? (
-        <p className="text-center text-warm-400 py-8">No entries yet</p>
+        <EmptyState
+          variant="compact"
+          icon={<IconFlag size={28} />}
+          title="No entries yet"
+          description="Players will appear here once they're added to the qualifier."
+        />
       ) : viewMode === 'bracket' ? (
         <QualifierBracket
           leaderboard={leaderboard}

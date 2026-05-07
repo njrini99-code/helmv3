@@ -6,7 +6,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { IconUsers, IconTrash, IconCalendar, IconNote, IconLayoutGrid } from '@/components/icons';
 import { deleteComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { format } from 'date-fns';
 
 // Use the actual type returned from getSavedComparisons
@@ -27,6 +28,7 @@ interface SavedComparisonsListProps {
 export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const handleViewComparison = (comparison: SavedComparison) => {
     // Navigate to comparison page with player IDs
@@ -34,13 +36,14 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
     router.push(`/baseball/dashboard/compare?players=${playerIds}`);
   };
 
-  const handleDelete = async (comparisonId: string, e: React.MouseEvent) => {
+  const handleDelete = (comparisonId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
+    setPendingDeleteId(comparisonId);
+  };
 
-    if (!confirm('Are you sure you want to delete this comparison?')) {
-      return;
-    }
-
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    const comparisonId = pendingDeleteId;
     setDeletingId(comparisonId);
 
     try {
@@ -52,38 +55,58 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
         toast.success('Comparison deleted successfully');
         router.refresh(); // Refresh to show updated list
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete comparison');
-      console.error('Delete error:', error);
     } finally {
       setDeletingId(null);
+      setPendingDeleteId(null);
     }
   };
+
+  const deleteDialog = (
+    <ConfirmDialog
+      open={pendingDeleteId !== null}
+      title="Delete comparison?"
+      message="Are you sure you want to delete this comparison? This action cannot be undone."
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      variant="danger"
+      isLoading={deletingId !== null}
+      onConfirm={() => { void confirmDelete(); }}
+      onCancel={() => {
+        if (deletingId === null) setPendingDeleteId(null);
+      }}
+    />
+  );
 
   // Empty State
   if (!comparisons || comparisons.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-          <IconLayoutGrid size={32} className="text-slate-400" />
+      <>
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+            <IconLayoutGrid size={32} className="text-slate-400" />
+          </div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            No saved comparisons yet
+          </h3>
+          <p className="text-slate-500 mb-6 max-w-md">
+            Compare players and save them for future reference. Your saved comparisons will appear here.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => router.push('/baseball/dashboard/compare')}
+          >
+            Compare Players
+          </Button>
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
-          No saved comparisons yet
-        </h3>
-        <p className="text-slate-500 mb-6 max-w-md">
-          Compare players and save them for future reference. Your saved comparisons will appear here.
-        </p>
-        <Button
-          variant="primary"
-          onClick={() => router.push('/baseball/dashboard/compare')}
-        >
-          Compare Players
-        </Button>
-      </div>
+        {deleteDialog}
+      </>
     );
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {comparisons.map((comparison) => (
         <Card
@@ -143,5 +166,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
         </Card>
       ))}
     </div>
+    {deleteDialog}
+    </>
   );
 }

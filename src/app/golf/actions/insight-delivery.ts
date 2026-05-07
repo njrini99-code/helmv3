@@ -155,6 +155,27 @@ const INSIGHT_SELECT = `
   )
 ` as const;
 
+/**
+ * Detect transient fetch failures (TypeError: fetch failed, ECONNRESET, etc.)
+ * thrown by the supabase client's underlying `fetch`. Used to decide whether
+ * to retry once before logging an error.
+ */
+function isTransientFetchErrorLocal(err: unknown): boolean {
+  if (!err) return false;
+  const msg = err instanceof Error ? err.message : String(err);
+  const lower = msg.toLowerCase();
+  return (
+    lower.includes('fetch failed') ||
+    lower.includes('econnreset') ||
+    lower.includes('etimedout') ||
+    lower.includes('socket hang up') ||
+    lower.includes('network') ||
+    lower.includes('503') ||
+    lower.includes('502') ||
+    lower.includes('504')
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -241,6 +262,11 @@ export async function getTopInsightForPlayer(
 /**
  * Returns the full list of evidence-backed insights for a player, newest
  * first. Used by the CoachHelm dashboard feed and `My Insights` redirects.
+ *
+ * Resilience: wraps the Supabase fetch in a single retry on transient
+ * network errors (`TypeError: fetch failed`, ECONNRESET, etc.) and
+ * returns `[]` on final failure so the dashboard renders an empty feed
+ * instead of throwing.
  */
 export async function getInsightsForPlayer(
   playerId: string,
@@ -249,30 +275,86 @@ export async function getInsightsForPlayer(
 ): Promise<EvidenceInsight[]> {
   if (!playerId) return [];
 
-  const supabase = supabaseOverride ?? (await createClient());
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) return [];
+  let supabase: SupabaseClient;
+  try {
+    supabase = supabaseOverride ?? (await createClient());
+  } catch (err) {
+    await logServerError(
+      `getInsightsForPlayer client init failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
+    );
+    return [];
+  }
+
+  let user;
+  try {
+    const { data, error: authError } = await supabase.auth.getUser();
+    if (authError || !data.user) return [];
+    user = data.user;
+  } catch (err) {
+    // Auth-call fetch failures shouldn't poison the dashboard.
+    if (isTransientFetchErrorLocal(err)) {
+      console.debug(
+        `[insight-delivery] auth.getUser transient: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return [];
+    }
+    throw err;
+  }
 
   const access = await verifyPlayerAccess(playerId, user.id, supabase);
   if (!access.allowed) return [];
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
 
-  let query = supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .eq('player_id', playerId)
-    .not('evidence', 'is', null)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
-    .order('created_at', { ascending: false })
-    .limit(limit);
+  const runQuery = () => {
+    let query = supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .neq('status', 'dismissed')
+      .order('created_at', { ascending: false })
+      .limit(limit);
 
-  if (opts.categories && opts.categories.length > 0) {
-    query = query.in('category', opts.categories);
+    if (opts.categories && opts.categories.length > 0) {
+      query = query.in('category', opts.categories);
+    }
+    return query;
+  };
+
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  try {
+    const result = await runQuery();
+    data = result.data;
+    error = result.error;
+  } catch (err) {
+    // The supabase client's underlying fetch can throw before returning a
+    // typed { data, error } pair (e.g. TypeError: fetch failed). Retry
+    // once for transient errors, otherwise return [] so callers don't crash.
+    if (isTransientFetchErrorLocal(err)) {
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        const result = await runQuery();
+        data = result.data;
+        error = result.error;
+      } catch (retryErr) {
+        await logServerError(
+          `getInsightsForPlayer fetch failed: ${retryErr instanceof Error ? retryErr.message : String(retryErr)}`,
+          { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
+        );
+        return [];
+      }
+    } else {
+      await logServerError(
+        `getInsightsForPlayer failed: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'insight-delivery.getInsightsForPlayer', featureArea: 'insights', playerId },
+      );
+      return [];
+    }
   }
-
-  const { data, error } = await query;
 
   if (error) {
     await logServerError(

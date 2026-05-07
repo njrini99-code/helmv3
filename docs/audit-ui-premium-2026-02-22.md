@@ -75,7 +75,7 @@ The college coach dashboard has a genuinely premium foundation — glass cards, 
 - `text-emerald-600` hover color on player names in default/featured card variants — should be `primary-600`
 - `DiscoverView` uses two `animate-spin` mini spinners for the "fetching new results" state (when filters change and old results are still visible). Replace with a subtle `opacity-60 pointer-events-none` transition on the grid + a thin progress bar at top
 - `FilterPanel` has an `animate-spin` spinner in the map/heatmap section — replace with skeleton pulse
-- Pagination: not read in detail — verify it looks like Stripe (numbered buttons, prev/next with arrows) not a raw `<div>Page 1 of N</div>`
+- Pagination: not read in detail — verify it follows premium pagination patterns (numbered buttons, prev/next with arrows) not a raw `<div>Page 1 of N</div>`
 - Team type badges in `TeamCard` use blue/emerald literals — see violations table
 
 ---
@@ -104,7 +104,7 @@ The college coach dashboard has a genuinely premium foundation — glass cards, 
 
 ### Pipeline Page: B
 
-**What works:** Kanban DnD with `@dnd-kit` — smooth drag with rotation/scale on `DragOverlay` ✅. List view with proper tab filters + count badges ✅. Empty state uses `glass-standard + ShineEffect` ✅. Bulk actions bar uses `glass-standard + ShineEffect` ✅. Keyboard navigation (j/k/Enter/x) with kbd hint display is Linear-level ✅. Mobile card view. Position Planner view.
+**What works:** Kanban DnD with `@dnd-kit` — smooth drag with rotation/scale on `DragOverlay` ✅. List view with proper tab filters + count badges ✅. Empty state uses `glass-standard + ShineEffect` ✅. Bulk actions bar uses `glass-standard + ShineEffect` ✅. Keyboard navigation (j/k/Enter/x) with kbd hint display is editorial-grade ✅. Mobile card view. Position Planner view.
 
 **Needs fixing:**
 - `PipelineStatsSummary` — the 6 stat cards at top are a **major design system violation**: `bg-blue-50`, `bg-green-50`, `bg-purple-50` raw colors instead of `primary-*/warm-*`. These are the first thing a coach sees. Fix immediately.
@@ -164,7 +164,7 @@ The college coach dashboard has a genuinely premium foundation — glass cards, 
 
 ### Player Profile Page: B+
 
-**What works:** Hero banner with custom image OR premium gradient fallback with glow effects ✅. Profile card overlapping banner (negative margin) is a Stripe-level pattern ✅. Avatar with recruiting-activated badge (green checkmark) ✅. Tab navigation with icons + count badges ✅. `MetricCard` with highlight colors for key metrics ✅. `VideoCard` with hover overlay play button — premium ✅. Profile Activity gradient card (primary-500 to emerald-600) ✅. Schools of Interest with numbered rank + org logo ✅. `TeamsTab` grouped timeline with active badge ✅. `AchievementsTab` with amber gradient cards ✅.
+**What works:** Hero banner with custom image OR premium gradient fallback with glow effects ✅. Profile card overlapping banner (negative margin) is a premium editorial pattern ✅. Avatar with recruiting-activated badge (green checkmark) ✅. Tab navigation with icons + count badges ✅. `MetricCard` with highlight colors for key metrics ✅. `VideoCard` with hover overlay play button — premium ✅. Profile Activity gradient card (primary-500 to emerald-600) ✅. Schools of Interest with numbered rank + org logo ✅. `TeamsTab` grouped timeline with active badge ✅. `AchievementsTab` with amber gradient cards ✅.
 
 **Needs fixing:**
 - **Spinner violation:** Line 282 — `<div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />` inside the watchlist button loading state. Replace with `disabled + opacity-50` on the button
@@ -210,14 +210,14 @@ The college coach dashboard has a genuinely premium foundation — glass cards, 
 - **Command Center player roster cards** — perfect glass card spec, avatar with jersey badge, trend indicator, stat chips — this is the benchmark the rest of the app should match
 - **Team Peek Panel** — best-structured component in the codebase: logo with brand color tinting, clean header, black-pill tab toggle, roster grouped by grad year, skeleton matches exactly
 - **Player Profile hero + banner** — the negative-margin profile card overlapping the hero banner is a genuinely premium pattern; gradient fallback with glow blobs is tasteful
-- **Pipeline keyboard navigation** — j/k/Enter/x keyboard shortcuts with `<kbd>` hint display is Linear-quality UX
+- **Pipeline keyboard navigation** — j/k/Enter/x keyboard shortcuts with `<kbd>` hint display is editorial-grade UX
 - **Pipeline empty state** — `glass-standard + ShineEffect + CTAButton` pattern is exactly right
 - **Drag and drop with DragOverlay rotation** — the `rotate-[2deg] scale-105 shadow-xl` on the drag overlay is a professional touch
 - **Mobile filter drawer** — slide-in animation, sticky apply button with result count, proper backdrop blur — better than most native apps
 - **Discover active filter count badge** on the mobile filter button — small detail, big usability win
 - **PlayerCard hover actions** — heart/message buttons appearing on hover with `opacity-0 group-hover:opacity-100` is clean and doesn't clutter the default state
 - **TeamPeekPanel coaching staff** — "Head" pill badge with `text-primary-600 bg-primary-50 border border-primary-100 rounded-full` is premium
-- **Compare selected-players pill chips** — Avatar + name + accessible X button in `bg-primary-50 border border-primary-200 rounded-full` — clean Stripe-style pattern
+- **Compare selected-players pill chips** — Avatar + name + accessible X button in `bg-primary-50 border border-primary-200 rounded-full` — clean editorial pattern
 - **Sidebar collapse/expand** with icon-to-logo crossfade is polished
 - **Skeleton loaders across the board** — the team commitment to no-spinner/no-loading-text is almost fully honored; only 4 violations found
 

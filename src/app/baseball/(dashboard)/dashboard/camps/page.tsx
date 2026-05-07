@@ -13,7 +13,7 @@ import { IconCalendar, IconMapPin, IconUsers, IconPlus, IconHeart, IconHeartFill
 import { CreateCampModal } from '@/components/coach/CreateCampModal';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface Camp {
   id: string;

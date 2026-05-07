@@ -3,7 +3,7 @@
 /**
  * PromoteToFocusAreaButton — promotes a round-review takeaway or a CoachHelm
  * insight into a player focus area. Self-contained: renders a primary CTA
- * that opens a BottomSheet with editable title/description, a read-only
+ * that opens a Drawer with editable title/description, a read-only
  * area-type chip, and optional target metric/value inputs.
  *
  * Wires into the locked A4 actions:
@@ -15,10 +15,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 import { IconTarget } from '@/components/icons';
 import {
@@ -171,10 +177,11 @@ export function PromoteToFocusAreaButton({
           setOpen(true);
         }}
         className={cn(
-          'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg',
+          'inline-flex items-center justify-center gap-1.5 px-3 py-2.5 min-h-[44px] rounded-lg',
           'bg-primary-600 text-white text-xs font-medium',
           'hover:bg-primary-700 active:scale-95 transition-all',
           'shadow-sm',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
           className,
         )}
       >
@@ -182,13 +189,22 @@ export function PromoteToFocusAreaButton({
         {label}
       </button>
 
-      <BottomSheet
+      <Drawer
         open={open}
-        onClose={handleClose}
-        title="Add to focus areas"
-        description="Build a coachable focus from this insight."
+        onOpenChange={(next) => {
+          if (!next) handleClose();
+        }}
       >
-        <form onSubmit={handleSubmit} className="space-y-5 pb-2">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Add to focus areas</DrawerTitle>
+            <DrawerDescription>Build a coachable focus from this insight.</DrawerDescription>
+          </DrawerHeader>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
           {/* Read-only area-type chip */}
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-1.5">
@@ -260,7 +276,8 @@ export function PromoteToFocusAreaButton({
             </Button>
           </div>
         </form>
-      </BottomSheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

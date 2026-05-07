@@ -11,12 +11,14 @@ import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { Shimmer } from '@/components/ui/shimmer';
 import { IconSparkles, IconRefresh, IconTarget, IconChartRadar, IconChart, IconTrendingUp } from '@/components/icons';
 import { MissPatternChart } from './MissPatternChart';
 import { ShotTypeBreakdown } from './ShotTypeBreakdown';
 import { TrendSummary } from './TrendIndicator';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 async function loadShotAnalyticsAction() {
   const { getPlayerShotAnalytics } = await import('@/app/golf/actions/shot-analytics');
@@ -81,7 +83,11 @@ export function ShotAnalyticsPanel({
   ];
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <Tabs
+      value={activeTab}
+      onChange={(v) => setActiveTab(v as TabType)}
+      className={cn('space-y-4', className)}
+    >
       {/* Header — slim control strip. The "Shot Analytics" label lives on
           the outer section tab, so we don't repeat it here; this row is
           just period + refresh so it reads as sub-navigation, not a new
@@ -92,19 +98,23 @@ export function ShotAnalyticsPanel({
         </p>
 
         <div className="flex items-center gap-2">
-          {/* Period selector */}
-          <select
-            value={selectedPeriod}
-            onChange={(e) => handlePeriodChange(Number(e.target.value))}
+          {/* Period selector — segmented control for the small set of windows
+              we actually support. Replaces a legacy <select>. */}
+          <ToggleGroup
+            type="single"
+            value={String(selectedPeriod)}
+            onValueChange={(v) => {
+              if (v) handlePeriodChange(Number(v));
+            }}
             disabled={isPending}
-            className="text-xs px-2 py-1.5 rounded-lg border border-warm-200 bg-white text-warm-600 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+            aria-label="Analytics window in days"
           >
-            <option value={7}>7 days</option>
-            <option value={14}>14 days</option>
-            <option value={30}>30 days</option>
-            <option value={60}>60 days</option>
-            <option value={90}>90 days</option>
-          </select>
+            <ToggleGroupItem value="7">7d</ToggleGroupItem>
+            <ToggleGroupItem value="14">14d</ToggleGroupItem>
+            <ToggleGroupItem value="30">30d</ToggleGroupItem>
+            <ToggleGroupItem value="60">60d</ToggleGroupItem>
+            <ToggleGroupItem value="90">90d</ToggleGroupItem>
+          </ToggleGroup>
 
           {/* Refresh button */}
           <button
@@ -145,14 +155,13 @@ export function ShotAnalyticsPanel({
       )}
 
       {/* Tabs */}
-      <GolfTabBar
-        tabs={tabs}
-        value={activeTab}
-        onChange={setActiveTab}
-        ariaLabel="Shot analytics sections"
-        stretch
-        compact
-      />
+      <TabsList aria-label="Shot analytics sections" className="grid w-full grid-cols-4">
+        {tabs.map((t) => (
+          <TabsTrigger key={t.id} value={t.id} icon={t.icon}>
+            {t.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
       {/* Content */}
       <GlassCard className="p-0" padding="none">
@@ -390,7 +399,7 @@ export function ShotAnalyticsPanel({
           )}
         </AnimatePresence>
       </GlassCard>
-    </div>
+    </Tabs>
   );
 }
 
@@ -430,17 +439,17 @@ function StatCard({
 // Loading skeleton
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4 animate-pulse">
+    <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[1, 2, 3, 4].map(i => (
-          <div key={i} className="h-20 bg-warm-100 rounded-xl" />
+        {[1, 2, 3, 4].map((i, idx) => (
+          <Shimmer key={i} staggerIndex={idx} className="h-20 rounded-xl" />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="h-32 bg-warm-100 rounded-xl" />
-        <div className="h-32 bg-warm-100 rounded-xl" />
+        <Shimmer className="h-32 rounded-xl" />
+        <Shimmer staggerIndex={1} className="h-32 rounded-xl" />
       </div>
-      <div className="h-24 bg-warm-100 rounded-xl" />
+      <Shimmer className="h-24 rounded-xl" />
     </div>
   );
 }

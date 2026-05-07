@@ -10,6 +10,7 @@ import type {
   SprayChartShotGroup,
 } from '@/app/golf/actions/stats-data-types';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Shimmer } from '@/components/ui/shimmer';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 
 const FAMILY_LABELS: Record<SprayChartShotFamily, string> = {
@@ -77,10 +78,10 @@ function LoadingState() {
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="h-24 animate-pulse rounded-xl bg-warm-100/70" />
+          <Shimmer key={index} staggerIndex={index} className="h-24 rounded-xl" />
         ))}
       </div>
-      <div className="h-[22rem] animate-pulse rounded-2xl bg-warm-100/70" />
+      <Shimmer className="h-[22rem] rounded-2xl" />
     </div>
   );
 }

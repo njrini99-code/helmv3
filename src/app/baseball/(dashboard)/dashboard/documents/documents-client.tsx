@@ -9,7 +9,7 @@ import { DocumentPreview } from '@/components/baseball/documents/DocumentPreview
 import { UploadNewVersionModal } from '@/components/baseball/documents/UploadNewVersionModal';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
 import { deleteBaseballDocument } from '@/app/baseball/actions/documents';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { cn } from '@/lib/utils';
 
 const CATEGORIES = [

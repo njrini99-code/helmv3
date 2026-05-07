@@ -2,20 +2,34 @@
 
 /**
  * WhyPopover — the always-visible `[ Why? ]` chip that sits on the collapsed
- * default + hero cards. Taps open a bottom sheet (mobile) / popover (desktop)
- * with the reasoning chain when present, otherwise a generated explanation
- * built from the evidence shape.
+ * default + hero cards. Taps open a vaul-backed Drawer (mobile) or a Radix
+ * Popover (desktop) with the reasoning chain when present, otherwise a
+ * generated explanation built from the evidence shape.
  *
  * Rule 5 of the Insight Delivery design contract.
  *
- * We reuse the existing `BottomSheet` primitive for mobile presentation. On
- * desktop viewports we render a tap-anchored inline popover — simpler and
- * avoids portal overhead for a one-breath explanation.
+ * Mobile (≤ md): `<Drawer>` for one-breath bottom-sheet presentation.
+ * Desktop (md+): `<Popover>` anchored to the trigger chip.
+ *
+ * The viewport split happens on mount via `matchMedia` — the user can't
+ * resize a browser while tapping a popover in practice, so we keep the
+ * subscribe-to-changes wiring lean.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconHelp } from '@/components/icons';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 
 export interface WhyPopoverProps {
@@ -34,12 +48,9 @@ const DESKTOP_QUERY = '(min-width: 768px)';
 export function WhyPopover({ insight, className }: WhyPopoverProps) {
   const [open, setOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const anchorRef = useRef<HTMLButtonElement>(null);
-  const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Media-query-only decision for mobile vs desktop. We don't need the
-  // reactive variant (`matchMedia.addListener`) because the user can't
-  // resize a browser while tapping a popover in practice.
+  // Media-query split for mobile vs desktop. We subscribe to changes so the
+  // surface re-mounts cleanly when devtools toggles between viewports.
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
     const mq = window.matchMedia(DESKTOP_QUERY);
@@ -49,77 +60,71 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Desktop popover: dismiss on outside click / Escape. Bottom sheet
-  // handles its own dismissal on mobile.
-  useEffect(() => {
-    if (!open || !isDesktop) return;
-    const onDocMouseDown = (event: MouseEvent) => {
-      if (!popoverRef.current || !anchorRef.current) return;
-      const target = event.target as Node;
-      if (popoverRef.current.contains(target) || anchorRef.current.contains(target)) return;
-      setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
-    };
-    document.addEventListener('mousedown', onDocMouseDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocMouseDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open, isDesktop]);
-
   const explanation = useMemo(() => buildExplanation(insight), [insight]);
+
+  const triggerClassName = cn(
+    'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
+    'text-[11px] font-medium text-warm-600',
+    'bg-cream-100/75 border border-warm-200/55 hover:bg-cream-50/92',
+    'transition-colors',
+    className,
+  );
+
+  if (isDesktop) {
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            data-testid="why-popover-trigger"
+            onClick={(event) => event.stopPropagation()}
+            className={triggerClassName}
+          >
+            <IconHelp size={12} aria-hidden />
+            Why?
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          sideOffset={8}
+          data-testid="why-popover-desktop"
+          aria-label="Why this insight fired"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ExplanationBody insight={insight} explanation={explanation} />
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <>
       <button
-        ref={anchorRef}
         type="button"
         data-testid="why-popover-trigger"
         onClick={(event) => {
           event.stopPropagation();
-          setOpen((current) => !current);
+          setOpen(true);
         }}
-        className={cn(
-          'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
-          'text-[11px] font-medium text-warm-600',
-          'bg-cream-100/75 border border-warm-200/55 hover:bg-cream-50/92',
-          'transition-colors',
-          className,
-        )}
+        className={triggerClassName}
       >
         <IconHelp size={12} aria-hidden />
         Why?
       </button>
-
-      {isDesktop && open && (
-        <div
-          ref={popoverRef}
-          role="dialog"
-          aria-label="Why this insight fired"
-          data-testid="why-popover-desktop"
-          className={cn(
-            'absolute z-30 mt-2 w-72 p-3',
-            'bg-cream-50/95 backdrop-blur-xl border border-warm-200/55',
-            'rounded-xl shadow-lg',
-          )}
-        >
-          <ExplanationBody insight={insight} explanation={explanation} />
-        </div>
-      )}
-
-      {!isDesktop && (
-        <BottomSheet
-          open={open}
-          onClose={() => setOpen(false)}
-          title="Why this insight fired"
-          description="The evidence behind this recommendation"
-        >
-          <ExplanationBody insight={insight} explanation={explanation} />
-        </BottomSheet>
-      )}
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Why this insight fired</DrawerTitle>
+            <DrawerDescription>The evidence behind this recommendation</DrawerDescription>
+          </DrawerHeader>
+          <div
+            className="px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
+            <ExplanationBody insight={insight} explanation={explanation} />
+          </div>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

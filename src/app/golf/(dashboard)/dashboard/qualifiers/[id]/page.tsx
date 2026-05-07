@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { IconTrophy } from '@/components/icons';
@@ -177,75 +180,96 @@ export default async function QualifierDetailPage({ params }: PageProps) {
       </AnimatedItem>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
-        {/* Qualifier Header */}
-        <AnimatedItem>
-        <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
-          <div className="flex items-start justify-between gap-3 mb-4">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-medium text-warm-900 mb-2 truncate">
-                {qualifierData.name}
-              </h1>
-              {qualifierData.description && (
-                <p className="text-warm-600">{qualifierData.description}</p>
+        {/* Qualifier Header — editorial plinth */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Qualifier"
+              eyebrowAccent="primary"
+              title={qualifierData.name}
+              subtitle={
+                qualifierData.description
+                  ? qualifierData.description
+                  : `${formatDate(qualifierData.start_date)}${
+                      qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date
+                        ? ` – ${formatDate(qualifierData.end_date)}`
+                        : ''
+                    } · ${qualifierData.entries.length} player${qualifierData.entries.length === 1 ? '' : 's'}`
+              }
+              actions={
+                <span
+                  className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full ${statusBadge.className}`}
+                >
+                  {statusBadge.label}
+                </span>
+              }
+            />
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-warm-200/60">
+              <div>
+                <p className="text-sm text-warm-500 mb-1">Dates</p>
+                <p className="font-medium text-warm-900">
+                  {formatDate(qualifierData.start_date)}
+                  {qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date && (
+                    <> - {formatDate(qualifierData.end_date)}</>
+                  )}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-sm text-warm-500 mb-1">Players</p>
+                <AnimatedNumber
+                  value={qualifierData.entries.length}
+                  decimals={0}
+                  staggerIndex={0}
+                  className="font-medium text-warm-900 tabular-nums"
+                />
+              </div>
+
+              <div>
+                <p className="text-sm text-warm-500 mb-1">Rounds Submitted</p>
+                <AnimatedNumber
+                  value={totalRoundsSubmitted}
+                  decimals={0}
+                  staggerIndex={1}
+                  className="font-medium text-warm-900 tabular-nums"
+                />
+              </div>
+
+              {qualifierData.spots_available && (
+                <div>
+                  <p className="text-sm text-warm-500 mb-1">Spots</p>
+                  <AnimatedNumber
+                    value={qualifierData.spots_available}
+                    decimals={0}
+                    staggerIndex={2}
+                    className="font-medium text-warm-900 tabular-nums"
+                  />
+                </div>
               )}
             </div>
-            <span
-              className={`shrink-0 px-3 py-1.5 text-sm font-medium rounded-full ${statusBadge.className}`}
-            >
-              {statusBadge.label}
-            </span>
-          </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-warm-200">
-            <div>
-              <p className="text-sm text-warm-500 mb-1">Dates</p>
-              <p className="font-medium text-warm-900">
-                {formatDate(qualifierData.start_date)}
-                {qualifierData.end_date && qualifierData.end_date !== qualifierData.start_date && (
-                  <> - {formatDate(qualifierData.end_date)}</>
-                )}
-              </p>
-            </div>
+            {qualifierData.course_name && (
+              <div className="mt-4 pt-4 border-t border-warm-200/60">
+                <p className="text-sm text-warm-500">Course</p>
+                <p className="font-medium text-warm-900">{qualifierData.course_name}</p>
+              </div>
+            )}
 
-            <div>
-              <p className="text-sm text-warm-500 mb-1">Players</p>
-              <p className="font-medium text-warm-900">{qualifierData.entries.length}</p>
-            </div>
-
-            <div>
-              <p className="text-sm text-warm-500 mb-1">Rounds Submitted</p>
-              <p className="font-medium text-warm-900">{totalRoundsSubmitted}</p>
-            </div>
-
-            {qualifierData.spots_available && (
-              <div>
-                <p className="text-sm text-warm-500 mb-1">Spots</p>
-                <p className="font-medium text-warm-900">{qualifierData.spots_available}</p>
+            {/* Player: Play Round CTA */}
+            {canPlayRound && (
+              <div className="mt-4 pt-4 border-t border-warm-200/60">
+                <Link
+                  href={`/golf/dashboard/rounds/new?qualifier=${id}`}
+                  className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <IconTrophy size={16} />
+                  Play Qualifier Round
+                </Link>
               </div>
             )}
           </div>
-
-          {qualifierData.course_name && (
-            <div className="mt-4 pt-4 border-t border-warm-200">
-              <p className="text-sm text-warm-500">Course</p>
-              <p className="font-medium text-warm-900">{qualifierData.course_name}</p>
-            </div>
-          )}
-
-          {/* Player: Play Round CTA */}
-          {canPlayRound && (
-            <div className="mt-4 pt-4 border-t border-warm-200">
-              <Link
-                href={`/golf/dashboard/rounds/new?qualifier=${id}`}
-                className="inline-flex items-center gap-2 px-5 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200"
-              >
-                <IconTrophy size={16} />
-                Play Qualifier Round
-              </Link>
-            </div>
-          )}
-        </div>
-        </AnimatedItem>
+        </Reveal>
 
         {/* Real-time Leaderboard */}
         <AnimatedItem>

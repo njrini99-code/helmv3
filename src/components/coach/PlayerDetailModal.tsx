@@ -11,7 +11,7 @@ import { IconX, IconStar, IconMapPin, IconCalendar, IconMail } from '@/component
 import { getFullName } from '@/lib/utils';
 import { addToWatchlist } from '@/app/baseball/actions/watchlist';
 import { createConversation } from '@/app/baseball/actions/messages';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface PlayerDetailModalProps {
   player: Player;

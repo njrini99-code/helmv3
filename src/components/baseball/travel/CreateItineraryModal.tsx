@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -115,12 +120,21 @@ export function CreateItineraryModal({
   }
 
   return (
-    <BottomSheet
+    <Drawer
       open={isOpen}
-      onClose={onClose}
-      title={itinerary ? 'Edit Trip' : 'Create Trip'}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>{itinerary ? 'Edit Trip' : 'Create Trip'}</DrawerTitle>
+        </DrawerHeader>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         {error && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -197,6 +211,7 @@ export function CreateItineraryModal({
           </Button>
         </div>
       </form>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -65,7 +65,7 @@ Audits:
 - ✓ Dark mode excellence
 - ✓ Accessibility (WCAG 2.1 AA compliance)
 - ✓ Mobile responsiveness & touch interactions
-- ✓ Premium UI polish (Linear/Stripe/Vercel level)
+- ✓ Premium UI polish (Apple-grade level)
 
 Output: `03_EXPERIENCE_ARCHITECT_FINDINGS.md`
 

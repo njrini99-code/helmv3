@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/baseball/actions/announcements';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';
 

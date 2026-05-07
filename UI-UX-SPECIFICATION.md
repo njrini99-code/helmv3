@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Date:** February 16, 2026  
 **Author:** UI/UX Design Review  
-**Benchmarks:** Linear, Stripe Dashboard, Vercel Dashboard, PostHog  
+**Benchmarks:** Apple-grade dashboard UX, editorial data-density, California-modern surfaces  
 
 ---
 
@@ -66,8 +66,8 @@ Content fade:    opacity 0→1, y 12→0, duration 0.35s, ease [0.16, 1, 0.3, 1]
 
 | Current | Proposed | Rationale |
 |---------|----------|-----------|
-| Command | Overview | "Command" sounds military. "Overview" is universally understood (Linear, Stripe, Vercel all use "Overview"). |
-| Users | People | Warmer, more human. Covers users + teams + coaches. Linear uses "Members". |
+| Command | Overview | "Command" sounds military. "Overview" is universally understood as the landing label for a dashboard. |
+| Users | People | Warmer, more human. Covers users + teams + coaches. |
 | Health | System | "Health" is ambiguous — could be golf health. "System" is precise. |
 | Analytics | Growth | More action-oriented. What admins actually care about is growth, not abstract "analytics". |
 
@@ -299,7 +299,7 @@ This is the most important tab. The current implementation is dense but function
 
 #### User Directory — TABLE format, not cards
 
-**Rationale:** With 37 users (scaling to 500+), a table is the right pattern. Cards waste vertical space. Linear uses tables for member lists. Stripe uses tables for customer lists.
+**Rationale:** With 37 users (scaling to 500+), a table is the right pattern. Cards waste vertical space at this density.
 
 **Table design:**
 ```tsx
@@ -735,7 +735,7 @@ className={cn(
 
 | Current | Proposed | Rationale |
 |---------|----------|-----------|
-| List | Coaches | More descriptive. Linear calls it by entity name. |
+| List | Coaches | More descriptive. Label tabs by the entity they contain, not the view shape. |
 | Pipeline | Pipeline | Keep as-is. Clear. |
 | Calendar | Dashboard | Calendar has 0 events and 0 Google tokens. Replace with a CRM overview that shows pipeline stats, follow-up reminders, and activity metrics. |
 
@@ -883,7 +883,7 @@ Cancelled:    spring animation back to origin, 300ms
 
 #### TABLE format, not card grid
 
-**Rationale:** 354 coaches. A card grid at this scale wastes space and makes scanning impossible. Tables are the correct pattern for large datasets. Linear, Stripe, and PostHog all use tables for entity lists.
+**Rationale:** 354 coaches. A card grid at this scale wastes space and makes scanning impossible. Tables are the correct pattern for large datasets.
 
 #### Table Columns
 
@@ -1035,7 +1035,7 @@ className="bg-primary-50/50 border-l-2 border-l-primary-500"
 
 #### Detail Panel — Slide-in from Right
 
-**Use a slide-over panel, not a modal or replace.** This is the Linear/Stripe pattern. User can still see the list behind the panel.
+**Use a slide-over panel, not a modal or replace.** Lets the user keep context — the list stays visible behind the panel.
 
 ```tsx
 // Panel overlay
@@ -1152,7 +1152,7 @@ The panel is 480px max-width. Single column is correct.
 
 ### 3.5 Quick Actions
 
-#### Bulk Actions Bar — Floating Bottom Bar (Linear Style)
+#### Bulk Actions Bar — Floating Bottom Bar
 
 **Position:** Fixed to bottom of viewport, centered, appears when `selectedIds.size > 0`.
 
@@ -1463,7 +1463,7 @@ Auto-dismiss after 4 seconds. Click to dismiss immediately.
 
 #### Illustration Style
 
-**Icon only.** No SVG illustrations. The warm-100 background container + lucide icon is sufficient. Illustrations add visual noise in a data-dense admin tool. Linear and Stripe both use icon-only empty states.
+**Icon only.** No SVG illustrations. The warm-100 background container + lucide icon is sufficient. Illustrations add visual noise in a data-dense admin tool.
 
 #### CTA Wording
 
@@ -1660,7 +1660,7 @@ Desktop (≥lg):
 
 ### Phase 3 (Interaction Quality)
 11. Toast notification system
-12. Linear-style floating bulk actions bar
+12. Floating bulk actions bar
 13. Keyboard navigation for tables (arrow keys, enter to open)
 14. Chart tooltip improvements
 15. Skeleton loading state audit (correct counts, correct layouts)

@@ -24,7 +24,13 @@ import {
   Shield,
   Loader2,
 } from 'lucide-react';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { Tooltip } from '@/components/ui/tooltip';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 
@@ -195,13 +201,21 @@ export function CalendarSyncButton({
       )}
 
       {/* Sheet */}
-      <BottomSheet
+      <Drawer
         open={isOpen}
-        onClose={() => setIsOpen(false)}
-        title="Subscribe to Calendar"
-        description="Add GolfHelm events to your calendar"
+        onOpenChange={(next) => {
+          if (!next) setIsOpen(false);
+        }}
       >
-        <div className="space-y-5">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Subscribe to Calendar</DrawerTitle>
+            <DrawerDescription>Add GolfHelm events to your calendar</DrawerDescription>
+          </DrawerHeader>
+        <div
+          className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        >
             {/* Loading State */}
             {loading && (
               <div className="flex items-center justify-center py-8">
@@ -356,7 +370,8 @@ export function CalendarSyncButton({
               </>
             )}
         </div>
-      </BottomSheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

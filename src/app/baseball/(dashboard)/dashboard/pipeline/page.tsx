@@ -22,7 +22,7 @@ import { IconUsers, IconTrash, IconUser, IconLayoutGrid, IconList, IconTarget, I
 import { useWatchlist } from '@/hooks/use-watchlist';
 import { useRecruitingRouteProtection } from '@/hooks/use-route-protection';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { getFullName, cn } from '@/lib/utils';
 import {
   removeFromWatchlist,

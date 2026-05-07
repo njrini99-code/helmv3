@@ -40,6 +40,7 @@ import { WhyPopover } from './WhyPopover';
 import { DrillChips } from './DrillChips';
 import { ResolutionCelebration } from './ResolutionCelebration';
 import { PromoteToFocusAreaButton } from '../PromoteToFocusAreaButton';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 
 export type InsightAction =
   | 'rate_helpful'
@@ -317,6 +318,7 @@ const CompactInsightRow = forwardRef<HTMLButtonElement, CompactInsightRowProps>(
           config.bgClass,
           config.borderClass,
           'hover:bg-cream-100/82',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
           className,
         )}
       >
@@ -434,7 +436,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               type="button"
               aria-label={expanded ? 'Collapse insight' : 'Expand insight'}
               onClick={() => setExpanded((s) => !s)}
-              className="flex-shrink-0 p-1 text-warm-400 hover:text-warm-700 transition-colors"
+              className="flex-shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <m.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="block">
                 <IconChevronDown size={18} />
@@ -544,7 +546,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
                 data-testid="hero-strokes-impact"
                 className="text-[36px] md:text-[44px] font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
               >
-                ~{impact.toFixed(1)}
+                <AnimatedNumber value={impact} decimals={1} prefix="~" />
               </div>
               <div className="text-[11px] uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
                 strokes/round
@@ -641,7 +643,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('rate_helpful', startHelpful);
             }}
             className={cn(
-              'pill-soft pill-soft-primary',
+              'pill-soft pill-soft-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               helpfulPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -657,7 +659,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('acknowledged', startAck);
             }}
             className={cn(
-              'pill-soft',
+              'pill-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               ackPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -683,7 +685,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -702,7 +704,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('acknowledged', startAck);
             }}
             className={cn(
-              'pill-soft pill-soft-primary',
+              'pill-soft pill-soft-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               ackPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -733,6 +735,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
                 'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
                 'bg-primary-600/95 text-white shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
                 'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                 focusPending && 'opacity-60 pointer-events-none',
                 emphasis && 'px-6 py-2.5 text-[14px]',
               )}
@@ -749,7 +752,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >

@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { CreateTaskModal } from '@/components/golf/tasks/CreateTaskModal';
 import { TasksList } from '@/components/golf/tasks/TasksList';
 import { TaskTemplateList } from '@/components/golf/tasks/TaskTemplateList';
@@ -122,6 +124,12 @@ export default function GolfTasksPage() {
 
   const activeCount = tasks.filter(t => t.status === 'active').length;
   const completedCount = tasks.filter(t => t.status === 'completed').length;
+  const dueTodayCount = tasks.filter(t => {
+    if (t.status !== 'active' || !t.due_date) return false;
+    const due = new Date(t.due_date);
+    const now = new Date();
+    return due.toDateString() === now.toDateString();
+  }).length;
   const loading = initialLoading || tasksLoading;
 
   if (loading) {
@@ -176,6 +184,25 @@ export default function GolfTasksPage() {
 
       <PullToRefresh onRefresh={handleRefresh}>
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+
+        {/* Editorial hero band — frames the task list beneath the sticky
+            LargeTitleHeader so the surface reads with magazine rhythm. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Tasks"
+              eyebrowAccent="primary"
+              title={userRole === 'coach' ? "Team to-dos." : "Your to-dos."}
+              subtitle={
+                tasks.length === 0
+                  ? userRole === 'coach'
+                    ? 'Assign and track player tasks.'
+                    : 'View and complete your assigned tasks.'
+                  : `${dueTodayCount} due today · ${activeCount} open.`
+              }
+            />
+          </div>
+        </Reveal>
 
         {/* Due Date Alert Banner */}
         {stats.overdue_tasks > 0 && (

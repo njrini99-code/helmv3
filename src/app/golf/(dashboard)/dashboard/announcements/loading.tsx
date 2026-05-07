@@ -1,4 +1,5 @@
 import { AnnouncementCardSkeleton } from '@/components/golf/GolfSkeletons';
+import { Shimmer } from '@/components/ui/shimmer';
 
 export default function Loading() {
   return (
@@ -8,10 +9,10 @@ export default function Loading() {
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <div className="h-7 w-48 bg-warm-200/60 rounded animate-pulse" />
-              <div className="h-4 w-32 bg-warm-100/60 rounded animate-pulse" />
+              <Shimmer className="h-7 w-48" />
+              <Shimmer variant="line" className="w-32" />
             </div>
-            <div className="h-10 w-44 bg-warm-200/60 rounded-lg animate-pulse" />
+            <Shimmer className="h-10 w-44 rounded-lg" />
           </div>
         </div>
       </div>

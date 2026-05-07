@@ -1,10 +1,25 @@
 'use client';
 
+/**
+ * SaveRoundModal — vaul-backed exit-round confirmation drawer.
+ *
+ * Migrated Apr 2026 from a hand-rolled fixed-overlay modal with manual
+ * backdrop, focus trap, and onClick stopPropagation plumbing → the
+ * shared <Drawer> primitive. We inherit drag-to-dismiss, focus trap,
+ * scroll-lock, ESC-to-close, and the iOS handle bar for free.
+ */
+
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { IconX, IconClock, IconTrash, IconAlertCircle } from '@/components/icons';
+import { IconClock, IconTrash, IconAlertCircle } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 
 interface SaveRoundModalProps {
   isOpen: boolean;
@@ -27,17 +42,14 @@ export function SaveRoundModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const { modalRef } = useFocusTrap(isOpen, onClose);
 
-  // Show nav when modal closes (after save or delete)
+  // Show nav when drawer closes (after save or delete)
   useEffect(() => {
     if (!isOpen) {
       show();
       setConfirmingDelete(false);
     }
   }, [isOpen, show]);
-
-  if (!isOpen) return null;
 
   const handleSaveForLater = async (e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -51,14 +63,12 @@ export function SaveRoundModal({
       setSaving(true);
       setError(null);
       await onSaveForLater();
-      // Show nav after save
       show();
-      // Modal will be closed by parent component after successful save
     } catch (err) {
-      const errorMessage = err instanceof Error 
-        ? err.message 
-        : typeof err === 'string' 
-        ? err 
+      const errorMessage = err instanceof Error
+        ? err.message
+        : typeof err === 'string'
+        ? err
         : 'Failed to save round. Please check your connection and try again.';
       setError(errorMessage);
       setSaving(false);
@@ -70,49 +80,24 @@ export function SaveRoundModal({
       setConfirmingDelete(true);
       return;
     }
-    // Show nav after delete
     show();
     onDelete();
-    // Modal will be closed by parent component
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl">
+        <DrawerHeader>
+          <DrawerTitle>Exit Round</DrawerTitle>
+        </DrawerHeader>
 
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="save-round-modal-title"
-        className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[calc(100vh-4rem)] overflow-y-auto pb-[env(safe-area-inset-bottom,0px)] sm:pb-0"
-        onClick={(e) => {
-          // Prevent clicks inside modal from closing it
-          e.stopPropagation();
-        }}
-      >
-          {/* Header */}
-          <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
-            <h2 id="save-round-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
-              Exit Round
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-2.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
-              disabled={saving}
-              aria-label="Close dialog"
-            >
-              <IconX size={20} className="text-warm-400" aria-hidden="true" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="px-6 py-6 space-y-4">
+        <div className="px-6 pb-2 space-y-4 overflow-y-auto overscroll-contain">
+            {/* Content */}
             {/* Info banner */}
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
               <IconAlertCircle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
@@ -204,8 +189,7 @@ export function SaveRoundModal({
             </p>
           </div>
 
-          {/* Footer */}
-          <div className="px-6 py-4 bg-warm-50 border-t border-warm-200">
+        <DrawerFooter className="bg-warm-50 border-t border-warm-200">
             <button
               onClick={onClose}
               disabled={saving}
@@ -213,8 +197,8 @@ export function SaveRoundModal({
             >
               Cancel & Continue Playing
             </button>
-          </div>
-        </div>
-    </div>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

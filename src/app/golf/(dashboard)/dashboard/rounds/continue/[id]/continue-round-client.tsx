@@ -16,11 +16,16 @@ import {
 } from '@/lib/utils/emergency-save';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
 import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { IconFlag } from '@/components/icons';
 
@@ -943,29 +948,33 @@ export default function ContinueRoundClient({
       />
 
       {/* Emergency Save Recovery Dialog */}
-      {showRecoveryDialog && recoveryData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" />
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+      <Drawer
+        open={Boolean(showRecoveryDialog && recoveryData)}
+        onOpenChange={(next) => {
+          if (!next) setShowRecoveryDialog(false);
+        }}
+      >
+        <DrawerContent className="sm:max-w-sm sm:mx-auto sm:rounded-3xl">
+          <div className="px-6 pb-6 pt-4">
             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
+            <DrawerTitle className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
               Recover Unsaved Progress?
-            </h3>
+            </DrawerTitle>
             <p className="text-sm text-warm-500 text-center mb-1">
               Found locally saved data from{' '}
-              {(() => {
+              {recoveryData ? (() => {
                 const seconds = Math.floor((Date.now() - recoveryData.timestamp) / 1000);
                 if (seconds < 60) return 'just now';
                 if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
                 return `${Math.floor(seconds / 3600)}h ago`;
-              })()}
+              })() : ''}
             </p>
             <p className="text-sm text-warm-500 text-center mb-6">
-              {recoveryData.completedHoleStats.filter(h => h != null).length} completed holes found in local backup.
+              {recoveryData?.completedHoleStats.filter(h => h != null).length ?? 0} completed holes found in local backup.
             </p>
             <div className="flex gap-3">
               <button
@@ -981,6 +990,7 @@ export default function ContinueRoundClient({
               <button
                 onClick={() => {
                   // Restore data from emergency save
+                  if (!recoveryData) return;
                   if (recoveryData.completedHoleStats) {
                     setCompletedHoleStats(recoveryData.completedHoleStats);
                   }
@@ -1004,8 +1014,8 @@ export default function ContinueRoundClient({
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Finish Round — Premium Round Summary */}
       <LazyMotion features={domAnimation}>
@@ -1038,22 +1048,20 @@ export default function ContinueRoundClient({
             const toParLabel = toPar === 0 ? 'E' : `${toPar > 0 ? '+' : ''}${toPar}`;
 
             return (
-              <m.div
+              <Drawer
                 key="round-summary-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                open={true}
+                onOpenChange={(next) => {
+                  if (!next) setShowFinishConfirm(false);
+                }}
               >
-                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />
-                <m.div
-                  initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-                >
+                <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-y-auto">
+                  <DrawerTitle className="sr-only">Round Complete</DrawerTitle>
+                  <m.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
                   {/* Celebration Header */}
                   <div className="relative overflow-hidden rounded-t-2xl bg-primary-600 px-6 pt-6 pb-5 text-center">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
@@ -1191,8 +1199,9 @@ export default function ContinueRoundClient({
                       </button>
                     </m.div>
                   </div>
-                </m.div>
-              </m.div>
+                  </m.div>
+                </DrawerContent>
+              </Drawer>
             );
           })()}
         </AnimatePresence>

@@ -220,7 +220,7 @@ When you click "Scan All":
 - **Screenshot-first**: See what users see
 - **AI-powered**: Claude Vision finds issues humans miss
 - **Learning**: System gets smarter with every fix
-- **Premium UI**: Linear-inspired glassmorphism
+- **Premium UI**: editorial-grade glassmorphism
 - **Click-to-action**: Suggestions become fixes
 
 ## 📝 API

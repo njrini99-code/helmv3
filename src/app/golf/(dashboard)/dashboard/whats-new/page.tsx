@@ -11,6 +11,9 @@ import {
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { GlassCard } from '@/components/ui/glass-card';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   getWhatsNewForCoach,
   type WhatsNewItem,
@@ -212,6 +215,7 @@ export default async function WhatsNewPage() {
     }
   }
   const dayKeys = Array.from(grouped.keys()).sort((a, b) => (a < b ? 1 : -1));
+  const totalItems = result.success && result.items ? result.items.length : 0;
 
   return (
     <div className="min-h-full bg-transparent">
@@ -221,6 +225,20 @@ export default async function WhatsNewPage() {
       />
 
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="This Week"
+              eyebrowAccent="primary"
+              title="What's new across your team."
+              subtitle={
+                totalItems > 0
+                  ? `${totalItems} update${totalItems === 1 ? '' : 's'} in the past 7 days.`
+                  : 'CoachHelm activity will appear here as your team plays more rounds.'
+              }
+            />
+          </div>
+        </Reveal>
         {!result.success ? (
           <ErrorState error={result.error ?? 'Failed to load activity'} />
         ) : dayKeys.length === 0 ? (
@@ -234,9 +252,13 @@ export default async function WhatsNewPage() {
                 <section key={key}>
                   <div className="flex items-baseline gap-2 mb-2 px-1">
                     <h2 className="text-sm font-medium text-warm-900">{label}</h2>
-                    <span className="text-xs text-warm-500">
-                      ({items.length})
-                    </span>
+                    <AnimatedNumber
+                      value={items.length}
+                      decimals={0}
+                      prefix="("
+                      suffix=")"
+                      className="text-xs text-warm-500 tabular-nums"
+                    />
                   </div>
                   <GlassCard className="px-5 py-1 divide-y divide-warm-100">
                     {items.map((item, idx) => (

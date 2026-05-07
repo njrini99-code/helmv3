@@ -1,6 +1,7 @@
 'use client';
 
 import { IconChartBar } from '@/components/icons';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface RoundScore {
   roundNumber: number;
@@ -117,9 +118,11 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
       </div>
 
       {breakdown.length === 0 && (
-        <p className="text-center text-warm-400 py-6 text-sm">
-          No rounds have been submitted yet.
-        </p>
+        <EmptyState
+          variant="minimal"
+          icon={<IconChartBar size={20} />}
+          description="No rounds have been submitted yet."
+        />
       )}
     </div>
   );

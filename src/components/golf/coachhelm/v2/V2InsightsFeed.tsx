@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { GlassCard } from '@/components/ui/glass-card';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InsightCard } from './V2InsightCard';
 import { PatternCard } from './PatternCard';
 import { PredictionCard } from './PredictionCard';
@@ -116,7 +116,11 @@ export function InsightsFeed({
   ];
 
   return (
-    <div className="space-y-3 overflow-hidden">
+    <Tabs
+      value={activeTab}
+      onChange={(v) => setActiveTab(v as TabType)}
+      className="space-y-3 overflow-hidden"
+    >
       {/* Header - Compact for narrow dashboard column */}
       <div className="relative overflow-clip rounded-xl border border-white/70 bg-cream-100/75 px-3 py-3 backdrop-blur-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-white/0 to-primary-400/10 pointer-events-none" />
@@ -181,14 +185,13 @@ export function InsightsFeed({
       )}
 
       {/* Tabs - Compact */}
-      <GolfTabBar
-        tabs={tabs}
-        value={activeTab}
-        onChange={setActiveTab}
-        ariaLabel="CoachHelm feed sections"
-        stretch
-        compact
-      />
+      <TabsList aria-label="CoachHelm feed sections" className="grid w-full grid-cols-3">
+        {tabs.map((t) => (
+          <TabsTrigger key={t.id} value={t.id} badge={t.count}>
+            {t.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
       {/* Content */}
       <GlassCard className="p-3" glow="subtle" variant="secondary">
@@ -275,7 +278,7 @@ export function InsightsFeed({
           Last analyzed: {lastGenerated.toLocaleTimeString()}
         </p>
       )}
-    </div>
+    </Tabs>
   );
 }
 

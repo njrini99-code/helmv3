@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconPlus, IconTrash, IconEdit, IconCheck, IconX } from '@/components/icons';
+import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Shimmer } from '@/components/ui/shimmer';
 import { cn } from '@/lib/utils';
 import {
   getTaskTemplates,
@@ -45,6 +48,8 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
   const [formPriority, setFormPriority] = useState('normal');
   const [formAssigneeType, setFormAssigneeType] = useState('all_players');
   const [submitting, setSubmitting] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadTemplates = useCallback(async () => {
     setLoading(true);
@@ -141,15 +146,25 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
     }
   }
 
-  async function handleDelete(templateId: string) {
-    if (!confirm('Are you sure you want to delete this template?')) return;
+  function handleDelete(templateId: string) {
+    setPendingDeleteId(templateId);
+  }
 
-    const result = await deleteTaskTemplate(templateId);
-    if (result.success) {
-      showToast('Template deleted', 'success');
-      loadTemplates();
-    } else {
-      showToast(result.error || 'Failed to delete template', 'error');
+  async function confirmDeleteTemplate() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    setIsDeleting(true);
+    try {
+      const result = await deleteTaskTemplate(id);
+      if (result.success) {
+        showToast('Template deleted', 'success');
+        loadTemplates();
+      } else {
+        showToast(result.error || 'Failed to delete template', 'error');
+      }
+    } finally {
+      setIsDeleting(false);
+      setPendingDeleteId(null);
     }
   }
 
@@ -165,7 +180,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
     return (
       <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-16 bg-warm-100 rounded-lg animate-pulse" />
+          <Shimmer key={i} staggerIndex={i - 1} className="h-16 rounded-lg" />
         ))}
       </div>
     );
@@ -337,12 +352,12 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
 
       {/* Templates List */}
       {Object.keys(groupedTemplates).length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-warm-500 text-sm">No templates yet</p>
-          <p className="text-warm-400 text-xs mt-1">
-            Create templates to quickly add common tasks
-          </p>
-        </div>
+        <EmptyState
+          variant="compact"
+          icon={<IconClipboardList size={28} />}
+          title="No templates yet"
+          description="Create templates to quickly add common tasks."
+        />
       ) : (
         <div className="space-y-4">
           {Object.entries(groupedTemplates).map(([category, categoryTemplates]) => (
@@ -434,6 +449,21 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
           ))}
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Delete template?"
+        message="Are you sure you want to delete this template? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={() => { void confirmDeleteTemplate(); }}
+        onCancel={() => {
+          if (!isDeleting) setPendingDeleteId(null);
+        }}
+      />
     </div>
   );
 }

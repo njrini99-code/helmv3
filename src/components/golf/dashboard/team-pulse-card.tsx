@@ -5,6 +5,7 @@ import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconActivity } from '@/components/icons';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { TeamPulseData } from '@/app/golf/actions/dashboard-data';
 
 // ============================================================================
@@ -113,13 +114,12 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         )}
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center text-center py-7">
-                        <div className="w-14 h-14 rounded-2xl bg-primary-50/60 flex items-center justify-center mb-4">
-                            <IconActivity size={22} className="text-primary-600/70" />
-                        </div>
-                        <p className="text-[15px] font-medium tracking-[-0.005em] text-warm-900 mb-1.5">No player trends yet</p>
-                        <p className="text-[12px] leading-relaxed text-warm-500 max-w-[240px]">Trends appear after players submit 6+ rounds</p>
-                    </div>
+                    <EmptyState
+                        variant="compact"
+                        icon={<IconActivity size={24} />}
+                        title="No player trends yet"
+                        description="Trends appear after players submit 6+ rounds."
+                    />
                 )}
             </div>
         </div>

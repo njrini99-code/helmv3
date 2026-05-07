@@ -70,7 +70,7 @@ npm run dev
 ## 💡 Design Philosophy
 
 **Warm & Inviting**: Cream backgrounds feel friendly, not sterile
-**Premium SaaS**: Linear/Stripe aesthetic with sports warmth
+**Premium SaaS**: California-modern editorial aesthetic with sports warmth
 **Helm Green**: Your brand color takes center stage
 **Ultra Readable**: Coaches can skim and understand quickly
 

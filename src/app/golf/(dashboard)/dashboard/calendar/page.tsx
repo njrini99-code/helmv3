@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
-import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrapper';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { EditorialCalendarSurface } from '@/components/golf/calendar/editorial/EditorialCalendarSurface';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { Metadata } from 'next';
 
@@ -161,58 +161,31 @@ export default async function GolfCalendarPage() {
     ];
   }
 
-  // Calculate event type summary for the header
-  const eventTypeCounts = events.reduce((acc, event) => {
-    const type = event.event_type || 'other';
-    acc[type] = (acc[type] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  // Count upcoming events using a stable server timestamp to avoid hydration mismatch
+  // Count upcoming events using a stable server timestamp to avoid hydration mismatch.
+  // Used by the editorial hero subtitle.
   const serverNow = new Date().toISOString();
-  const upcomingEvents = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
-
-  const eventTypeConfig: Record<string, { label: string; dot: string }> = {
-    practice: { label: 'Practice', dot: 'bg-primary-500' },
-    tournament: { label: 'Tournament', dot: 'bg-blue-500' },
-    qualifying: { label: 'Qualifying', dot: 'bg-purple-500' },
-    meeting: { label: 'Meeting', dot: 'bg-amber-500' },
-    travel: { label: 'Travel', dot: 'bg-warm-500' },
-    other: { label: 'Other', dot: 'bg-warm-400' },
-  };
+  const upcomingCount = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
 
   return (
     <AnimatedPage>
       <AnimatedItem>
         <div className="min-h-full flex flex-col">
           <LargeTitleHeader title="Calendar" />
-          {events.length > 0 && (
-            <div className="flex-shrink-0 px-4 md:px-6 pb-2">
-              <div className="flex items-center gap-4 overflow-x-auto scrollbar-hide">
-                <span className="text-sm font-medium text-warm-600 whitespace-nowrap" suppressHydrationWarning>
-                  {upcomingEvents} upcoming event{upcomingEvents !== 1 ? 's' : ''}
-                </span>
-                <span className="text-warm-300">|</span>
-                {Object.entries(eventTypeCounts).map(([type, count]) => {
-                  const fallback = { label: type, dot: 'bg-warm-400' };
-                  const config = eventTypeConfig[type] ?? fallback;
-                  return (
-                    <span key={type} className="flex items-center gap-1.5 text-xs text-warm-600 whitespace-nowrap">
-                      <span className={`w-2 h-2 rounded-full ${config.dot}`} />
-                      {count} {config.label}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
-          <div className="flex-1 p-4 md:p-6 pt-2 md:pt-2 min-h-0">
-            <GolfCalendarWrapper
-              initialEvents={events}
+          {/* Editorial calendar surface — hero plinth + day strip + view
+              toggle + agenda/grid body + detail drawer.
+              We pass `serverNow` so the surface seeds its initial focus date
+              from a server-stable timestamp. Without this, both server and
+              client invoke `new Date()` independently and produce divergent
+              "today" markup → React hydration error #418. */}
+          <div className="flex-1 px-4 md:px-6 pt-2 pb-6 min-h-0">
+            <EditorialCalendarSurface
+              events={events}
               teamMembers={teamMembers}
               isCoach={isCoach}
               teamTimezone={teamTimezone}
+              upcomingCount={upcomingCount}
+              serverNow={serverNow}
             />
           </div>
         </div>

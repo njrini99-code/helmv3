@@ -3,32 +3,31 @@
 /**
  * DrillSheet — full-detail drill presentation opened from a `<DrillChips>` tap.
  *
- * Reuses the shared `<BottomSheet>` primitive so we inherit safe-area handling,
- * focus trap, ESC close, backdrop dismiss, and the iOS motion curve. Desktop
- * viewports get the same sheet centered at the bottom with a max-width clamp —
- * we decided against a bespoke right-rail drawer because the product already
- * leans on bottom sheets elsewhere (`<WhyPopover>`, drill-attachment bodies)
- * and consistency beats micro-optimization here.
- *
- * Rule 10 motion budget:
- *   - Sheet slide / backdrop fade are handled by `BottomSheet` (iOS curve,
- *     ~400ms). No extra animation inside the body.
- *   - Primary + secondary CTAs use the existing tap-scale affordance.
+ * Built on the shared vaul-backed `<Drawer>` so we inherit safe-area handling,
+ * focus trap, ESC close, backdrop dismiss, and the iOS spring drag motion.
+ * Desktop viewports get the same sheet rendered at the bottom with a
+ * max-width clamp — we decided against a bespoke right-rail drawer because
+ * the product already leans on bottom sheets elsewhere (`<WhyPopover>`,
+ * drill-attachment bodies) and consistency beats micro-optimization here.
  *
  * Wiring:
- *   - Primary "Add to my practice plan" logs a dev warning + surfaces a
- *     "Coming soon" toast. We intentionally do NOT create a task-assignment
- *     row here — that ships in a follow-up plan. The hook point lives where
- *     it's easiest to rewire when the backing action arrives.
+ *   - Primary "Add to my practice plan" calls `recordDrillAddedToPlan` so
+ *     plan attachment lands in admin events.
  *   - Secondary "Done — log this drill" calls the existing `recordDrillView`
  *     server action so drill engagement continues to land in admin events.
  *   - A video url renders a non-autoplay iframe below the description.
  */
 import { useTransition } from 'react';
 import { cn } from '@/lib/utils';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { IconPlay, IconCheck } from '@/components/icons';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/sonner';
 import {
   recordDrillView as defaultRecordDrillView,
   recordDrillAddedToPlan,
@@ -118,22 +117,25 @@ export function DrillSheet({
   };
 
   return (
-    <BottomSheet
+    <Drawer
       open={open}
-      onClose={onClose}
-      // We render our own hero header inside `children` so the title uses the
-      // Fraunces-stamped display family. Keep the sheet's built-in header off.
-      showHandle
-      description={insightContext ? 'Drill detail' : undefined}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div className="space-y-4" data-testid="drill-sheet">
-        <header className="space-y-2">
-          <h2
-            data-testid="drill-sheet-title"
-            className="text-[24px] md:text-[28px] leading-tight font-medium text-warm-900"
-          >
-            {drill.title}
-          </h2>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle data-testid="drill-sheet-title">{drill.title}</DrawerTitle>
+          {insightContext && (
+            <DrawerDescription>Drill detail</DrawerDescription>
+          )}
+        </DrawerHeader>
+
+        <div
+          className="px-6 pb-6 space-y-4 overflow-y-auto overscroll-contain"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          data-testid="drill-sheet"
+        >
           <div className="flex items-center gap-2 text-xs">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-warm-100 text-warm-700 font-medium">
               {difficulty}
@@ -157,65 +159,65 @@ export function DrillSheet({
               </span>
             </p>
           )}
-        </header>
 
-        <section className="space-y-3">
-          <p className="text-sm text-warm-700 leading-relaxed whitespace-pre-line">
-            {drill.description}
-          </p>
+          <section className="space-y-3">
+            <p className="text-sm text-warm-700 leading-relaxed whitespace-pre-line">
+              {drill.description}
+            </p>
 
-          {drill.video_url && (
-            <div
-              data-testid="drill-sheet-video"
-              className="relative w-full overflow-hidden rounded-2xl border border-warm-200 bg-warm-50 aspect-video"
+            {drill.video_url && (
+              <div
+                data-testid="drill-sheet-video"
+                className="relative w-full overflow-hidden rounded-2xl border border-warm-200 bg-warm-50 aspect-video"
+              >
+                <iframe
+                  src={drill.video_url}
+                  title={`${drill.title} — demonstration`}
+                  loading="lazy"
+                  // No autoplay (Rule 10: no background motion). The user taps
+                  // play themselves if they want to watch.
+                  allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            )}
+          </section>
+
+          <footer className="flex flex-col gap-2 pt-2">
+            <button
+              type="button"
+              data-testid="drill-sheet-add-to-plan"
+              disabled={addPending}
+              onClick={handleAddToPlan}
+              className={cn(
+                'inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl',
+                'bg-primary-500 text-white text-sm font-medium',
+                'hover:bg-primary-600 active:scale-[0.99] transition-all',
+                addPending && 'opacity-60 pointer-events-none',
+              )}
             >
-              <iframe
-                src={drill.video_url}
-                title={`${drill.title} — demonstration`}
-                loading="lazy"
-                // No autoplay (Rule 10: no background motion). The user taps
-                // play themselves if they want to watch.
-                allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="absolute inset-0 w-full h-full"
-              />
-            </div>
-          )}
-        </section>
-
-        <footer className="flex flex-col gap-2 pt-2">
-          <button
-            type="button"
-            data-testid="drill-sheet-add-to-plan"
-            disabled={addPending}
-            onClick={handleAddToPlan}
-            className={cn(
-              'inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-xl',
-              'bg-primary-500 text-white text-sm font-medium',
-              'hover:bg-primary-600 active:scale-[0.99] transition-all',
-              addPending && 'opacity-60 pointer-events-none',
-            )}
-          >
-            <IconPlay size={16} aria-hidden />
-            Add to my practice plan
-          </button>
-          <button
-            type="button"
-            data-testid="drill-sheet-log-drill"
-            disabled={logPending}
-            onClick={handleLogDrill}
-            className={cn(
-              'inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl',
-              'bg-cream-100/82 border border-warm-200 text-sm font-medium text-warm-800',
-              'hover:bg-white hover:border-primary-200 active:scale-[0.99] transition-all',
-              logPending && 'opacity-60 pointer-events-none',
-            )}
-          >
-            <IconCheck size={16} aria-hidden />
-            Done — log this drill
-          </button>
-        </footer>
-      </div>
-    </BottomSheet>
+              <IconPlay size={16} aria-hidden />
+              Add to my practice plan
+            </button>
+            <button
+              type="button"
+              data-testid="drill-sheet-log-drill"
+              disabled={logPending}
+              onClick={handleLogDrill}
+              className={cn(
+                'inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl',
+                'bg-cream-100/82 border border-warm-200 text-sm font-medium text-warm-800',
+                'hover:bg-white hover:border-primary-200 active:scale-[0.99] transition-all',
+                logPending && 'opacity-60 pointer-events-none',
+              )}
+            >
+              <IconCheck size={16} aria-hidden />
+              Done — log this drill
+            </button>
+          </footer>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

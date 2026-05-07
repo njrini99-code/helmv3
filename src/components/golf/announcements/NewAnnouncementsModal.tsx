@@ -6,18 +6,22 @@ import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
-import { useToast } from '@/components/ui/toast';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+} from '@/components/ui/drawer';
+import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ─── Urgency config ─────────────────────────────────────────────────────────
 
-// iOS semantic colors — SF Blue (info), SF Orange (warning), SF Red (destructive),
+// Brand semantic colors — primary (info/normal), helm-amber (high), red (urgent),
 // neutral warm for low priority. Accent bar color is kept very soft so it reads
 // as a subtle stripe rather than a loud alert rail.
 type UrgencyStyle = {
-  bar: string;     // left accent bar background (hex)
+  bar: string;     // left accent bar background (Tailwind class)
   badgeBg: string; // badge surface
   badgeText: string;
   badgeDot: string; // tiny dot inside badge
@@ -25,31 +29,31 @@ type UrgencyStyle = {
 };
 const urgencyConfig: Record<string, UrgencyStyle> = {
   low: {
-    bar: '#D6D3D1',
+    bar: 'bg-warm-300',
     badgeBg: 'bg-warm-100/80',
     badgeText: 'text-warm-600',
     badgeDot: 'bg-warm-400',
     label: 'Low',
   },
   normal: {
-    bar: '#007AFF',
-    badgeBg: 'bg-[#007AFF]/10',
-    badgeText: 'text-[#0A6CDC]',
-    badgeDot: 'bg-[#007AFF]',
+    bar: 'bg-primary-600',
+    badgeBg: 'bg-primary-600/10',
+    badgeText: 'text-primary-700',
+    badgeDot: 'bg-primary-600',
     label: 'Normal',
   },
   high: {
-    bar: '#FF9500',
-    badgeBg: 'bg-[#FF9500]/10',
-    badgeText: 'text-[#B26A00]',
-    badgeDot: 'bg-[#FF9500]',
+    bar: 'bg-helm-amber-500',
+    badgeBg: 'bg-helm-amber-500/10',
+    badgeText: 'text-helm-amber-700',
+    badgeDot: 'bg-helm-amber-500',
     label: 'High',
   },
   urgent: {
-    bar: '#FF3B30',
-    badgeBg: 'bg-[#FF3B30]/10',
-    badgeText: 'text-[#C7291F]',
-    badgeDot: 'bg-[#FF3B30]',
+    bar: 'bg-red-500',
+    badgeBg: 'bg-red-500/10',
+    badgeText: 'text-red-700',
+    badgeDot: 'bg-red-500',
     label: 'Urgent',
   },
 };
@@ -77,7 +81,7 @@ interface NewAnnouncementsModalProps {
 /**
  * Shown to players when unseen announcements exist.
  *
- * Uses the shared BottomSheet primitive so it inherits iOS-native behaviors:
+ * Uses the shared Drawer primitive so it inherits iOS-native behaviors:
  * swipe-to-close, drag handle, safe-area padding, haptics, focus trap, and
  * Escape key handling — keeping this modal visually consistent with the
  * rest of the app (command palette, event sheets, etc.).
@@ -109,34 +113,16 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
   const title = count === 1 ? 'New Announcement' : `${count} New Announcements`;
 
   return (
-    <BottomSheet
+    <Drawer
       open={announcements.length > 0}
-      onClose={onDismiss}
-      snapPoints={[0.85]}
-      showHandle
-      swipeToClose
-      footer={
-        <div className="flex items-center gap-3">
-          <Button
-            variant="primary"
-            className="flex-1"
-            onClick={onDismiss}
-          >
-            Got it
-          </Button>
-          {count > 1 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleViewAll}
-              rightIcon={<IconChevronRight size={14} />}
-            >
-              View all
-            </Button>
-          )}
-        </div>
-      }
+      onOpenChange={(next) => {
+        if (!next) onDismiss();
+      }}
     >
+      <DrawerContent>
+      <div
+        className="px-6 pb-4 overflow-y-auto overscroll-contain"
+      >
       {/* Header */}
       <div className="flex items-center gap-3 pb-4">
         <div className="w-11 h-11 rounded-2xl bg-primary-50 border border-primary-200/60 flex items-center justify-center flex-shrink-0">
@@ -175,10 +161,9 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     : 'border-warm-200/70 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]',
               )}
             >
-              {/* Urgency accent bar — soft, narrow, matches SF semantic color */}
+              {/* Urgency accent bar — soft, narrow, matches brand semantic color */}
               <div
-                className="absolute left-0 top-0 bottom-0 w-[3px]"
-                style={{ backgroundColor: urg.bar, opacity: 0.65 }}
+                className={cn('absolute left-0 top-0 bottom-0 w-[3px] opacity-65', urg.bar)}
                 aria-hidden="true"
               />
 
@@ -237,6 +222,29 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
           );
         })}
       </div>
-    </BottomSheet>
+      </div>
+      <DrawerFooter>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="primary"
+            className="flex-1"
+            onClick={onDismiss}
+          >
+            Got it
+          </Button>
+          {count > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleViewAll}
+              rightIcon={<IconChevronRight size={14} />}
+            >
+              View all
+            </Button>
+          )}
+        </div>
+      </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

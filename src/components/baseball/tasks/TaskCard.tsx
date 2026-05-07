@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
 import { ReminderBadge } from './ReminderBadge';
 import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions/tasks';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 const categoryColors: Record<string, string> = {
   general: 'bg-slate-100 text-slate-600',

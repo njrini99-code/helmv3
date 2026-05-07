@@ -8,7 +8,16 @@ import {
   IconFile, IconFileText, IconImage, IconVideo, IconFileSpreadsheet,
   IconCheck, IconMoreVertical, IconArrowLeft, IconChevronDown,
 } from '@/components/icons';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
@@ -21,7 +30,7 @@ import {
   getVersionHistory,
 } from '@/app/golf/actions/documents';
 import type { DocumentVersion, GolfDocument } from '@/lib/types/golf';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
@@ -152,7 +161,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name' | 'size'>('newest');
-  const [showSortMenu, setShowSortMenu] = useState(false);
 
   // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -175,8 +183,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const [uploadVersionDocument, setUploadVersionDocument] = useState<Document | null>(null);
   const [showUploadVersionModal, setShowUploadVersionModal] = useState(false);
 
-  // Active dropdown
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<Document | null>(null);
   const { showToast } = useToast();
 
@@ -368,7 +374,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     setMovingDocument(doc);
     setMoveTargetFolder(doc.folder || '');
     setShowMoveModal(true);
-    setActiveDropdown(null);
   };
 
   const handleMoveToFolder = async () => {
@@ -411,7 +416,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     });
     setEditError(null);
     setShowEditModal(true);
-    setActiveDropdown(null);
   };
 
   const handleUpdate = async () => {
@@ -458,7 +462,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
     setVersionHistoryDocument(doc);
     setLoadingVersions(true);
     setShowVersionHistory(true);
-    setActiveDropdown(null);
     const result = await getVersionHistory(doc.id);
     setVersions(result.success && result.versions ? result.versions : []);
     setLoadingVersions(false);
@@ -475,7 +478,6 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
   const openUploadVersionModal = (doc: Document) => {
     setUploadVersionDocument(doc);
     setShowUploadVersionModal(true);
-    setActiveDropdown(null);
   };
 
   const handleUploadNewVersion = async (file: File, changeNotes: string) => {
@@ -556,6 +558,28 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
       </LargeTitleHeader>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — frames the document grid beneath the sticky
+            title header. Skipped while inside a sub-folder so the back-nav
+            controls stay close to the file list. */}
+        {currentFolder === null && (
+          <Reveal>
+            <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+              <PageHeader
+                eyebrow="Documents"
+                eyebrowAccent="primary"
+                title="Team documents."
+                subtitle={
+                  documents.length === 0
+                    ? 'Plans, releases, and forms — all in one place.'
+                    : `${documents.length} file${documents.length === 1 ? '' : 's'} shared${
+                        folders.length > 0 ? ` across ${folders.length} folder${folders.length === 1 ? '' : 's'}` : ''
+                      }.`
+                }
+              />
+            </div>
+          </Reveal>
+        )}
+
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -715,42 +739,31 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             </div>
 
             {/* Sort dropdown */}
-            <div className="relative flex-shrink-0">
-              <button
-                onClick={() => { void triggerHaptic('light'); setShowSortMenu(!showSortMenu); }}
-                className="flex items-center gap-1.5 h-11 px-3 text-xs font-medium text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-                aria-haspopup="menu"
-                aria-expanded={showSortMenu}
-              >
-                {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
-                <IconChevronDown size={12} className={cn('transition-transform', showSortMenu && 'rotate-180')} />
-              </button>
-              {showSortMenu && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
-                  <div
-                    role="menu"
-                    className="absolute right-0 top-full mt-1.5 z-40 w-44 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
+            <div className="flex-shrink-0">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    onClick={() => { void triggerHaptic('light'); }}
+                    className="flex items-center gap-1.5 h-11 px-3 text-xs font-medium text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                   >
-                    {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
-                      <button
-                        key={value}
-                        role="menuitem"
-                        onClick={() => { void triggerHaptic('light'); setSortBy(value); setShowSortMenu(false); }}
-                        className={cn(
-                          'flex items-center gap-2 w-full px-3 py-2.5 min-h-[44px] text-[15px] transition-colors',
-                          sortBy === value
-                            ? 'text-primary-700 bg-primary-50/70 font-medium'
-                            : 'text-warm-800 font-medium hover:bg-warm-100/60 active:bg-warm-100/80'
-                        )}
-                      >
-                        {sortBy === value ? <IconCheck size={14} className="text-primary-600" /> : <span className="w-[14px]" />}
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
+                    {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
+                    <IconChevronDown size={12} className="transition-transform data-[state=open]:rotate-180" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
+                    <DropdownMenuItem
+                      key={value}
+                      selected={sortBy === value}
+                      onSelect={() => { void triggerHaptic('light'); setSortBy(value); }}
+                      className="gap-2"
+                    >
+                      {sortBy === value ? <IconCheck size={14} className="text-primary-600" /> : <span className="w-[14px]" />}
+                      <span>{label}</span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         )}
@@ -866,76 +879,64 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       )}
 
                       {isCoach && (
-                        <div className="relative">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void triggerHaptic('light');
-                              setActiveDropdown(activeDropdown === doc.id ? null : doc.id);
-                            }}
-                            className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-[color,background-color,transform,opacity] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
-                            aria-label="Document actions"
-                            aria-haspopup="menu"
-                            aria-expanded={activeDropdown === doc.id}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                void triggerHaptic('light');
+                              }}
+                              className="w-11 h-11 flex items-center justify-center rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/60 active:bg-warm-200/60 active:scale-95 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-[color,background-color,transform,opacity] duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+                              aria-label="Document actions"
+                            >
+                              <IconMoreVertical size={16} />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="w-56"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            <IconMoreVertical size={16} />
-                          </button>
-
-                          {activeDropdown === doc.id && (
-                            <>
-                              <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setActiveDropdown(null); }} />
-                              <div
-                                role="menu"
-                                className="absolute right-0 top-full mt-1.5 z-40 w-56 bg-cream-50/95 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(16,24,40,0.14)] border border-warm-200/50 py-1.5 origin-top-right animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-180"
-                              >
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openPreview(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
-                                >
-                                  <IconEye size={18} className="text-warm-500" /> Preview
-                                </button>
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openVersionHistory(doc); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
-                                >
-                                  <IconClock size={18} className="text-warm-500" /> Version History
-                                </button>
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openUploadVersionModal(doc); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
-                                >
-                                  <IconUpload size={18} className="text-warm-500" /> Upload New Version
-                                </button>
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openEditModal(doc); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
-                                >
-                                  <IconEdit size={18} className="text-warm-500" /> Edit Details
-                                </button>
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); openMoveModal(doc); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium text-warm-800 hover:bg-warm-100/60 active:bg-warm-100/80 transition-colors"
-                                >
-                                  <IconFolder size={18} className="text-warm-500" /> Move to Folder
-                                </button>
-                                <div className="my-1 h-px bg-warm-200/50" />
-                                <button
-                                  role="menuitem"
-                                  onClick={(e) => { e.stopPropagation(); void triggerHaptic('light'); setDeleteConfirmDoc(doc); setActiveDropdown(null); }}
-                                  className="flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] text-[15px] font-medium hover:bg-[#FF3B30]/8 active:bg-[#FF3B30]/12 transition-colors"
-                                  style={{ color: '#FF3B30' }}
-                                >
-                                  <IconTrash size={18} /> Delete
-                                </button>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); openPreview(doc); }}
+                              className="gap-3"
+                            >
+                              <IconEye size={18} className="text-warm-500" /> Preview
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); openVersionHistory(doc); }}
+                              className="gap-3"
+                            >
+                              <IconClock size={18} className="text-warm-500" /> Version History
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); openUploadVersionModal(doc); }}
+                              className="gap-3"
+                            >
+                              <IconUpload size={18} className="text-warm-500" /> Upload New Version
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); openEditModal(doc); }}
+                              className="gap-3"
+                            >
+                              <IconEdit size={18} className="text-warm-500" /> Edit Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); openMoveModal(doc); }}
+                              className="gap-3"
+                            >
+                              <IconFolder size={18} className="text-warm-500" /> Move to Folder
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={() => { void triggerHaptic('light'); setDeleteConfirmDoc(doc); }}
+                              className="gap-3 hover:bg-red-500/8 data-[highlighted]:bg-red-500/8"
+                              style={{ color: '#FF3B30' }}
+                            >
+                              <IconTrash size={18} /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   </div>

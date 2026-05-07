@@ -139,7 +139,7 @@ When you paste the generated message, Claude Code will:
    - Audit glassmorphism execution
    - Check kelly green (#22c55e) usage
    - Verify dark mode, accessibility
-   - Rate against Linear/Stripe/Vercel standards
+   - Rate against Apple-grade premium standards
    - Save findings to `03_EXPERIENCE_ARCHITECT_FINDINGS.md`
 
 4. **Generate Synthesis**

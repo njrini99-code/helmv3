@@ -6,7 +6,8 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
-import { useToast } from '@/components/ui/toast';
+import { EmptyState as EmptyStatePrimitive } from '@/components/ui/empty-state';
+import { useToast } from '@/components/ui/sonner';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import {
   IconSparkles,
@@ -33,6 +34,8 @@ import {
   InsightCard,
   type InsightAction,
 } from '@/components/golf/coachhelm/insight-card';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
@@ -80,28 +83,22 @@ function getStateGradient(state: PlayerCoachHelmDashboardData['playerState']) {
 
 /**
  * Empty state component for when no data is available at all.
+ * Uses the shared `<EmptyState>` primitive (variant="card", glass) but keeps
+ * the bespoke copy and CTA — the canonical "no insights yet" voice.
  */
 function EmptyState() {
   return (
-    <GlassCard className="text-center py-16">
-      <div className="w-20 h-20 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-6">
-        <IconInfo size={40} className="text-warm-400" />
-      </div>
-      <h3 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
-        No Insights Available Yet
-      </h3>
-      <p className="text-warm-600 mb-6 max-w-md mx-auto">
-        Complete a few rounds to unlock AI-powered insights about your game.
-        CoachHelm analyzes your performance patterns to provide personalized recommendations.
-      </p>
-      <a
-        href="/golf/dashboard/rounds/new"
-        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-      >
-        <IconSparkles size={16} />
-        Log Your First Round
-      </a>
-    </GlassCard>
+    <EmptyStatePrimitive
+      variant="card"
+      glass
+      icon={<IconInfo size={40} />}
+      title="No Insights Available Yet"
+      description="Complete a few rounds to unlock AI-powered insights about your game. CoachHelm analyzes your performance patterns to provide personalized recommendations."
+      action={{
+        label: 'Log Your First Round',
+        href: '/golf/dashboard/rounds/new',
+      }}
+    />
   );
 }
 
@@ -318,6 +315,23 @@ export function PlayerCoachHelmDashboard({
 
       {/* Main Content */}
       <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — magazine-cover framing for the player's
+            CoachHelm surface beneath the sticky LargeTitleHeader. The
+            stone plinth roots the editorial copy on a sculpted-matte
+            foundation so it reads architectural, not floating. */}
+        {hasData && (
+          <Reveal>
+            <div className="surface-stone rounded-3xl p-6 md:p-10 mb-8">
+              <PageHeader
+                eyebrow="CoachHelm"
+                eyebrowAccent="primary"
+                title="Your edge this week."
+                subtitle="The pattern that matters most, plus the supporting signal behind it."
+              />
+            </div>
+          </Reveal>
+        )}
+
         {/* Empty state */}
         {!hasData && <EmptyState />}
 

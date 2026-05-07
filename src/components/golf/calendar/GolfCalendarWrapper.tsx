@@ -5,7 +5,12 @@ import { PremiumCalendarClient, type TeamMember } from './PremiumCalendarClient'
 import { CalendarFeedManager, type FeedType } from './CalendarFeedManager';
 import type { CalendarFeed } from './FeedCard';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { useTeamContext } from '@/hooks/golf/use-team-context';
 
 async function loadCalendarFeedActions() {
@@ -17,6 +22,10 @@ interface GolfCalendarWrapperProps {
   teamMembers: TeamMember[];
   isCoach?: boolean;
   teamTimezone?: string | null;
+  /** Initial view for the inner grid — passed through to PremiumCalendarClient. */
+  initialView?: 'day' | 'week' | 'month';
+  /** Initial focus date for the inner grid — passed through. */
+  initialDate?: Date;
 }
 
 /**
@@ -29,6 +38,8 @@ export function GolfCalendarWrapper({
   teamMembers,
   isCoach = true,
   teamTimezone,
+  initialView,
+  initialDate,
 }: GolfCalendarWrapperProps) {
   const [showFeedManager, setShowFeedManager] = useState(false);
   const [feeds, setFeeds] = useState<CalendarFeed[]>([]);
@@ -136,31 +147,44 @@ export function GolfCalendarWrapper({
         onSyncSettings={() => setShowFeedManager(true)}
         teamTimezone={teamTimezone}
         teamId={teamId ?? undefined}
+        initialView={initialView}
+        initialDate={initialDate}
       />
 
-      <BottomSheet
+      <Drawer
         open={showFeedManager}
-        onClose={() => setShowFeedManager(false)}
-        title="Calendar Feeds"
+        onOpenChange={(next) => {
+          if (!next) setShowFeedManager(false);
+        }}
       >
-        {feedsError && (
-          <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
-        )}
-        {feedsLoading ? (
-          <div className="py-10 text-center text-sm text-warm-500">
-            Loading calendar feeds...
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Calendar Feeds</DrawerTitle>
+          </DrawerHeader>
+          <div
+            className="px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
+            {feedsError && (
+              <p className="text-sm text-rose-600 mb-4">{feedsError}</p>
+            )}
+            {feedsLoading ? (
+              <div className="py-10 text-center text-sm text-warm-500">
+                Loading calendar feeds...
+              </div>
+            ) : (
+              <CalendarFeedManager
+                feeds={feeds}
+                onCreateFeed={handleCreateFeed}
+                onRegenerateFeed={handleRegenerateFeed}
+                onDeleteFeed={handleDeleteFeed}
+                allowedTypes={allowedTypes}
+                showNameInput={false}
+              />
+            )}
           </div>
-        ) : (
-          <CalendarFeedManager
-            feeds={feeds}
-            onCreateFeed={handleCreateFeed}
-            onRegenerateFeed={handleRegenerateFeed}
-            onDeleteFeed={handleDeleteFeed}
-            allowedTypes={allowedTypes}
-            showNameInput={false}
-          />
-        )}
-      </BottomSheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

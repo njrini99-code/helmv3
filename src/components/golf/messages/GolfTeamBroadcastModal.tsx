@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { Input } from '@/components/ui/input';
 import { IconCheck, IconUsers, IconAlertCircle, IconMail } from '@/components/icons';
 import { getGolfTeamPlayersForBroadcast, createGolfTeamBroadcast } from '@/app/golf/actions/messages';
@@ -200,17 +208,24 @@ export function GolfTeamBroadcastModal({
   );
 
   return (
-    <BottomSheet
+    <Drawer
       open={isOpen}
-      onClose={onClose}
-      title={step === 'recipients' ? 'New Team Message' : 'Group Details'}
-      description={
-        step === 'recipients'
-          ? 'Select players to include in this group conversation'
-          : 'Name your group conversation'
-      }
-      footer={footer}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>
+            {step === 'recipients' ? 'New Team Message' : 'Group Details'}
+          </DrawerTitle>
+          <DrawerDescription>
+            {step === 'recipients'
+              ? 'Select players to include in this group conversation'
+              : 'Name your group conversation'}
+          </DrawerDescription>
+        </DrawerHeader>
+      <div className="px-6 overflow-y-auto overscroll-contain">
       {step === 'recipients' ? (
         <div className="space-y-4">
           {/* Error Display */}
@@ -296,16 +311,14 @@ export function GolfTeamBroadcastModal({
                 })}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-                  <IconUsers size={20} className="text-warm-400" />
-                </div>
-                <p className="text-sm text-warm-500">
-                  {searchQuery.trim()
-                    ? 'No players match your search'
-                    : 'No players on your team yet'}
-                </p>
-              </div>
+              <EmptyState
+                variant="compact"
+                icon={<IconUsers size={28} />}
+                title={searchQuery.trim() ? 'No players match your search' : 'No players on your team yet'}
+                description={searchQuery.trim()
+                  ? 'Try a different name or clear your search.'
+                  : 'Invite players to your roster to broadcast updates.'}
+              />
             )}
           </div>
         </div>
@@ -385,7 +398,10 @@ export function GolfTeamBroadcastModal({
           </div>
         </div>
       )}
+      </div>
 
-    </BottomSheet>
+      <DrawerFooter>{footer}</DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

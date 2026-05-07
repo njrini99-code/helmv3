@@ -5,7 +5,7 @@ import { GeistMono } from 'geist/font/mono';
 import { fraunces } from '@/lib/fonts';
 import './globals.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
-import { ToastContainer } from '@/components/ui/toast';
+import { Toaster } from '@/components/ui/sonner';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
 import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
@@ -106,7 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </TooltipProvider>
         </DatadogProvider>
-        <ToastContainer />
+        <Toaster />
         <Analytics />
         <AdminErrorHandler />
         <ChunkLoadErrorHandler />

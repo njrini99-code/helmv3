@@ -7,7 +7,7 @@
 ---
 
 **Project:** GolfHelm — College Golf Team Management + CoachHelm AI
-**Brand Personality:** Premium, Warm, Intelligent, Professional — think Linear meets Augusta
+**Brand Personality:** Premium, Warm, Intelligent, Professional — California-modern editorial sensibility meets Augusta
 **Category:** Sports SaaS / Team Intelligence Platform
 
 ---

@@ -321,7 +321,7 @@ export function SectionHeader({
             </div>
             {action && (
                 <Link href={action.href} prefetch={true} className="flex-shrink-0">
-                    <button className="group flex items-center gap-1 text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300">
+                    <button className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                         {action.label}
                         <IconArrowRight
                             size={13}

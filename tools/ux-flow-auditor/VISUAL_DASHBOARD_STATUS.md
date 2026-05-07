@@ -469,7 +469,7 @@ Planned for advanced features:
 ## 🎨 DESIGN PRINCIPLES
 
 The dashboard follows:
-- **Linear/Vercel aesthetic**: Clean, spacious, premium
+- **Editorial aesthetic**: Clean, spacious, premium
 - **Glassmorphism**: Subtle blur effects on modals
 - **Color-coded feedback**: 🟢 Good, 🟡 Warning, 🔴 Error
 - **Micro-interactions**: Hover effects, smooth transitions

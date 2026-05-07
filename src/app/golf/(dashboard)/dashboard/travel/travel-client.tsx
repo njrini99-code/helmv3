@@ -17,6 +17,8 @@ import {
   IconChartBar,
 } from '@/components/icons';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { markTravelSeen } from '@/app/golf/actions/player-notifications';
 import {
@@ -32,7 +34,7 @@ import {
   type TravelBudget,
 } from '@/app/golf/actions/travel';
 import { ExpenseForm, ExpenseList, ExpenseSummary } from '@/components/golf/travel';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface TravelItinerary {
   id: string;
@@ -397,6 +399,30 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — anchors the trip list beneath the sticky
+            title header in the magazine-cover rhythm used across the app. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Travel"
+              eyebrowAccent="primary"
+              title="Trips on the calendar."
+              subtitle={
+                itineraries.length === 0
+                  ? isCoach
+                    ? 'Build itineraries for upcoming tournaments and team trips.'
+                    : 'Travel details will appear here as your coach posts them.'
+                  : (() => {
+                      const now = new Date();
+                      const upcoming = itineraries.filter(i => new Date(i.departure_date) > now).length;
+                      const past = itineraries.length - upcoming;
+                      return `${upcoming} upcoming · ${past} past.`;
+                    })()
+              }
+            />
+          </div>
+        </Reveal>
+
         {itineraries.length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">

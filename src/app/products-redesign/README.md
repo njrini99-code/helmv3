@@ -6,7 +6,7 @@
 
 ## What You Got
 
-A **professional SaaS design** that feels like Linear, Stripe, and Vercel - not a dark gaming platform.
+A **professional SaaS design** with California-modern editorial polish - not a dark gaming platform.
 
 ---
 

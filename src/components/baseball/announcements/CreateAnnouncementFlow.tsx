@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconPlus, IconSend } from '@/components/icons';
 import { UrgencyPicker } from './UrgencyPicker';
 import { PlayerSelector } from './PlayerSelector';

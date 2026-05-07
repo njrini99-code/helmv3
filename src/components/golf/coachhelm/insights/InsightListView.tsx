@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Shimmer } from '@/components/ui/shimmer';
 import {
   IconChevronDown,
   IconChevronUp,
@@ -276,12 +277,12 @@ export function InsightListView({
       <GlassCard padding="none" hover={false}>
         <div className="p-6 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="animate-pulse flex items-center gap-4">
-              <div className="w-5 h-5 bg-warm-200 rounded" />
-              <div className="w-10 h-10 bg-warm-200 rounded-xl" />
+            <div key={i} className="flex items-center gap-4">
+              <Shimmer staggerIndex={i} className="w-5 h-5" />
+              <Shimmer staggerIndex={i} className="w-10 h-10 rounded-xl" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-warm-200 rounded w-2/3" />
-                <div className="h-3 bg-warm-200 rounded w-1/2" />
+                <Shimmer staggerIndex={i} className="h-4 w-2/3" />
+                <Shimmer staggerIndex={i} variant="line" className="w-1/2" />
               </div>
             </div>
           ))}

@@ -57,7 +57,7 @@ export function ShineEffect() {
 - Subtle shadow lift on hover
 - Border color transition to Kelly green
 - Icon color transition
-- Shine sweep on hover (like Linear buttons)
+- Shine sweep on hover (premium pill micro-interaction)
 **Impact:** Each selection feels intentional and responsive
 
 ### 5. CinematicIntro Skip Button
@@ -263,7 +263,7 @@ These 25 improvements align with your stated values:
 1. **Ultrathink** — Each enhancement has a clear "why" and avoids unnecessary complexity
 2. **Code as Craft** — Reusable components (ShineEffect, etc.) over copy-paste
 3. **Premium without Gamification** — No confetti, badges, or celebration animations
-4. **Linear/Vercel Quality** — Subtle, inevitable, professional
+4. **Apple-grade Quality** — Subtle, inevitable, professional
 5. **Kelly Green Identity** — Brand color used for focus, active states, and accents only
 
 ---

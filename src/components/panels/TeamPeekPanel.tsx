@@ -21,7 +21,7 @@ import {
 } from '@/components/icons';
 import type { Organization } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

@@ -270,12 +270,12 @@ Define these once, use everywhere:
 
 ## Benchmark: What Premium Looks Like
 
-| Brand | Signature | Steal This |
-|-------|-----------|------------|
-| **Linear** | Spacing discipline + subtle lighting | Consistent 8px grid, muted colors |
-| **Stripe** | Editorial typography + gradients | Large headlines, atmospheric backgrounds |
-| **Vercel** | Technical clarity + high contrast | Black/white, sharp CTAs |
-| **Framer** | Motion-forward + gallery | Smooth transitions, visual showcases |
+| Pattern | Signature | Steal This |
+|---------|-----------|------------|
+| **Editorial dashboard** | Spacing discipline + subtle lighting | Consistent 8px grid, muted colors |
+| **Editorial marketing** | Editorial typography + gradients | Large headlines, atmospheric backgrounds |
+| **Technical clarity** | High contrast + sharp CTAs | Black/white, decisive buttons |
+| **Motion-forward** | Cinematic transitions + gallery | Smooth transitions, visual showcases |
 
 The key: **a recognizable system** — premium because everything obeys the same rules.
 

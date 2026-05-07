@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { IconStar, IconArrowRight, IconMail, IconTrash, IconX, IconChevronUp } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 
@@ -22,7 +28,6 @@ export function BulkActionsBar({
   onClear,
   statusConfig,
 }: BulkActionsBarProps) {
-  const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
@@ -39,27 +44,26 @@ export function BulkActionsBar({
       <div className="w-px h-5 bg-warm-200" />
 
       {/* Move to Status */}
-      <div className="relative">
-        <button
-          onClick={() => setShowStatusMenu(!showStatusMenu)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
-        >
-          <IconArrowRight size={14} /> Move to
-          <IconChevronUp size={12} className={cn('transition-transform', showStatusMenu && 'rotate-180')} />
-        </button>
-        {showStatusMenu && (
-          <div className="absolute bottom-full mb-2 left-0 bg-white/95 backdrop-blur-xl border border-white/20 rounded-2xl shadow-xl py-1 min-w-[180px] max-h-[400px] overflow-y-auto">
-            {ALL_STATUSES.map(status => (
-              <button key={status}
-                onClick={() => { onAction('status', status); setShowStatusMenu(false); }}
-                className="w-full text-left px-4 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2">
-                <span className="flex items-center">{statusConfig[status]?.icon}</span>
-                <span>{statusConfig[status]?.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors">
+            <IconArrowRight size={14} /> Move to
+            <IconChevronUp size={12} className="transition-transform data-[state=open]:rotate-180" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent side="top" align="start" className="min-w-[180px] max-h-[400px] overflow-y-auto">
+          {ALL_STATUSES.map(status => (
+            <DropdownMenuItem
+              key={status}
+              onSelect={() => onAction('status', status)}
+              className="gap-2"
+            >
+              <span className="flex items-center">{statusConfig[status]?.icon}</span>
+              <span>{statusConfig[status]?.label}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       {/* Email */}
       <button

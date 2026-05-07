@@ -2,11 +2,15 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconCheck, IconUsers } from '@/components/icons';
 import { createTaskFromTemplate, type TaskTemplate } from '@/app/golf/actions/tasks';
 import { cn } from '@/lib/utils';
@@ -28,7 +32,6 @@ export function CreateFromTemplateModal({
   teamId,
   players,
 }: CreateFromTemplateModalProps) {
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const [loading, setLoading] = useState(false);
   const [customTitle, setCustomTitle] = useState(template.title);
   const [customDueDate, setCustomDueDate] = useState(() => {
@@ -88,8 +91,20 @@ export function CreateFromTemplateModal({
   }
 
   return (
-    <BottomSheet open={isOpen} onClose={onClose} title="Create Task from Template">
-      <div ref={modalRef}>
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create Task from Template</DrawerTitle>
+        </DrawerHeader>
+      <div
+        className="px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Template Info */}
         <div className="bg-warm-50 rounded-lg p-3 mb-4">
@@ -225,6 +240,7 @@ export function CreateFromTemplateModal({
         </div>
       </form>
       </div>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

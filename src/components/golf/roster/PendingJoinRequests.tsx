@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconUser, IconCheck, IconX, IconClock, IconChevronDown, IconChevronUp } from '@/components/icons';
 
 interface JoinRequest {

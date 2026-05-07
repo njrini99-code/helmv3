@@ -41,14 +41,21 @@ export async function getUserNotificationPreferences(
 ): Promise<NotificationPreferences> {
   try {
     const supabase = await createClient();
+    // .maybeSingle() returns null (no error) when the user row does not exist.
+    // The cron roster sweep can hand us stale or detached player_ids whose
+    // backing `users` row was deleted; .single() would throw PGRST116
+    // ("Cannot coerce the result to a single JSON object") and surface as a
+    // noisy "Failed to fetch notification preferences" log every iteration.
+    // Falling back to DEFAULT_NOTIFICATION_PREFERENCES is the existing
+    // behaviour for the missing-column / no-row case.
     const { data, error } = await supabase
       .from('users')
       .select('notification_preferences')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // Column might not exist yet or user not found - use defaults
+      // Column might not exist yet - use defaults
       console.warn('Failed to fetch notification preferences:', error.message);
       return DEFAULT_NOTIFICATION_PREFERENCES;
     }

@@ -22,6 +22,7 @@ import {
   IconTrendingDown,
 } from '@/components/icons';
 import { getInsightEvidenceSources, type EvidenceRound } from '@/app/golf/actions/insight-evidence';
+import { Shimmer } from '@/components/ui/shimmer';
 import type { ComposedInsight, MinedPattern } from '@/lib/coachhelm/v2/types';
 
 interface EvidenceSourcesViewProps {
@@ -75,9 +76,10 @@ export function EvidenceSourcesView({
           Loading evidence sources...
         </div>
         {[1, 2, 3].map((i) => (
-          <div
+          <Shimmer
             key={i}
-            className="animate-pulse bg-warm-100 rounded-xl h-24"
+            staggerIndex={i}
+            className="rounded-xl h-24"
           />
         ))}
       </div>

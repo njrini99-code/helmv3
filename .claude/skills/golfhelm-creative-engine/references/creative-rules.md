@@ -1,6 +1,6 @@
 # GolfHelm Creative Rules
 
-These rules are distilled from competitive research across Vercel, Linear, Stripe, and Supabase design systems, adapted specifically for GolfHelm's warm-glass aesthetic. They represent what separates premium SaaS creatives from generic "AI slop."
+These rules are distilled from competitive research across premium editorial dashboard design systems, adapted specifically for GolfHelm's warm-glass aesthetic. They represent what separates premium SaaS creatives from generic "AI slop."
 
 ## The Golden Rule
 

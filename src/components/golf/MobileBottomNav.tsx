@@ -78,13 +78,14 @@ export function MobileBottomNav({ isCoach = true }: MobileBottomNavProps) {
               className={cn(
                 'flex flex-col items-center justify-center gap-1 py-2 rounded-2xl transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                 'min-w-[60px] min-h-[48px] touch-manipulation',
-                isActive ? 'text-primary-700' : 'text-warm-400 hover:text-warm-600'
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+                isActive ? 'text-primary-700' : 'text-warm-600 hover:text-warm-700'
               )}
               aria-current={isActive ? 'page' : undefined}
             >
               <div className={cn(
                 'relative px-2.5 py-1 rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                isActive ? 'bg-primary-50/85 text-primary-700' : 'text-warm-400'
+                isActive ? 'bg-primary-50/85 text-primary-700' : 'text-warm-600'
               )}>
                 {item.icon}
                 {item.label === 'Messages' && badges.messages > 0 && (

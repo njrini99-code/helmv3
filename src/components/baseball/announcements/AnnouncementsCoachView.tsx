@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconUsers, IconClock } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ConfirmModal } from '@/components/ui/modal';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { AcknowledgementPill } from './AcknowledgementTracker';
 import { deleteAnnouncement } from '@/app/baseball/actions/announcements';
 import type { BaseballAnnouncementMeta } from '@/app/baseball/actions/announcements';

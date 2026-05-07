@@ -8,7 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconPlus, IconTrash } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { getFullName } from '@/lib/utils';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface CreateDevPlanModalProps {
   open: boolean;

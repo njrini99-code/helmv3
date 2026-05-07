@@ -5,6 +5,11 @@ import { createClient } from '@/lib/supabase/client';
 import { IconVideo, IconPlay, IconClock, IconEye } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 interface Video {
   id: string;
@@ -159,12 +164,10 @@ export function VideoShowcase({
       </div>
 
       {/* Video Modal */}
-      {selectedVideo && (
-        <VideoModal
-          video={selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-        />
-      )}
+      <VideoModal
+        video={selectedVideo}
+        onClose={() => setSelectedVideo(null)}
+      />
     </>
   );
 }
@@ -240,29 +243,22 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
 }
 
 interface VideoModalProps {
-  video: Video;
+  video: Video | null;
   onClose: () => void;
 }
 
 function VideoModal({ video, onClose }: VideoModalProps) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4"
-      onClick={onClose}
+    <Drawer
+      open={video !== null}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div
-        className="relative glass-prominent rounded-2xl shadow-2xl max-w-4xl w-full overflow-clip"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)',
-          }}
-        />
-        <div className="relative">
+      <DrawerContent className="sm:max-w-4xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden">
         {/* Video Player */}
         <div className="relative aspect-video bg-slate-900">
-          {video.url ? (
+          {video?.url ? (
             <iframe
               src={video.url}
               className="w-full h-full"
@@ -279,15 +275,14 @@ function VideoModal({ video, onClose }: VideoModalProps) {
           )}
         </div>
 
-        </div>
         {/* Info */}
         <div className="p-6 border-t border-slate-100">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                {video.title}
-              </h2>
-              {video.description && (
+              <DrawerTitle className="text-xl font-semibold text-slate-900 mb-2">
+                {video?.title}
+              </DrawerTitle>
+              {video?.description && (
                 <p className="text-sm leading-relaxed text-slate-600 leading-relaxed">
                   {video.description}
                 </p>
@@ -295,6 +290,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
             </div>
             <button
               onClick={onClose}
+              aria-label="Close video"
               className="ml-4 p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <svg
@@ -316,19 +312,19 @@ function VideoModal({ video, onClose }: VideoModalProps) {
 
           {/* Meta */}
           <div className="flex items-center gap-4 text-sm text-slate-500">
-            {video.video_type && (
+            {video?.video_type && (
               <span className="px-2.5 py-1 bg-slate-100 rounded-full text-xs font-medium">
                 {video.video_type}
               </span>
             )}
-            {video.created_at && (
+            {video?.created_at && (
               <span>
                 Uploaded {formatDistanceToNow(new Date(video.created_at), { addSuffix: true })}
               </span>
             )}
           </div>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -11,6 +11,7 @@ import {
   IconRefresh,
   IconExternalLink,
 } from '@/components/icons';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { EmailStatusBadge } from './EmailStatusBadge';
 
 // ---------------------------------------------------------------------------
@@ -227,51 +228,43 @@ export function InboundLeadsView() {
         />
       </div>
 
-      {/* Filter Tabs */}
-      <div
-        role="tablist"
+      {/* Filter — segmented control on the inbound-leads list */}
+      <ToggleGroup
+        type="single"
+        value={filter}
+        onValueChange={(v) => {
+          if (v) setFilter(v as FilterStatus);
+        }}
         aria-label="Filter inbound leads by status"
-        className="inline-flex items-center gap-1 p-1 rounded-xl bg-white/60 border border-warm-200/60 backdrop-blur-sm"
       >
         {(Object.keys(FILTER_LABELS) as FilterStatus[]).map((f) => {
-          const isActive = filter === f;
           const count =
             f === 'all' ? allStats.total :
             f === 'new' ? allStats.new :
             f === 'contacted' ? allStats.contacted :
             allStats.converted;
           return (
-            <button
+            <ToggleGroupItem
               key={f}
-              type="button"
-              role="tab"
-              aria-selected={isActive}
+              value={f}
               aria-controls="inbound-leads-list"
-              onClick={() => setFilter(f)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
-                isActive
-                  ? 'bg-warm-900 text-white shadow-sm'
-                  : 'text-warm-600 hover:text-warm-900',
-              )}
+              className="flex items-center gap-1.5"
             >
               {FILTER_LABELS[f]}
               <span
                 className={cn(
                   'px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums',
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : f === 'new' && count > 0
+                  f === 'new' && count > 0
                     ? 'bg-amber-100 text-amber-700'
                     : 'bg-warm-100 text-warm-600',
                 )}
               >
                 {count}
               </span>
-            </button>
+            </ToggleGroupItem>
           );
         })}
-      </div>
+      </ToggleGroup>
 
       {/* Request List */}
       <div

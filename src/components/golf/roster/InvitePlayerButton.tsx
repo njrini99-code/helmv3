@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconCopy, IconCheck, IconX } from '@/components/icons';
 import { invitePlayerToTeam } from '@/app/golf/actions/golf';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface InvitePlayerButtonProps {
   teamName: string;

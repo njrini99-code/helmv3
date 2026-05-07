@@ -25,6 +25,8 @@ import {
   IconCheckCheck,
 } from '@/components/icons';
 import { PlayerHubAnnouncementsSection } from './PlayerHubAnnouncementsSection';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ============================================================================
@@ -764,6 +766,25 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
             <div
               className="space-y-8"
             >
+              {/* Editorial hero band — magazine-cover greeting that reads
+                  before the engine signal. Mirrors the LargeTitleHeader copy
+                  but in display weight, with an Eyebrow anchor. Stone plinth
+                  gives the greeting a California-modern matte foundation. */}
+              <Reveal>
+                <div className="surface-stone rounded-3xl p-6 md:p-10">
+                  <PageHeader
+                    eyebrow="GolfHelm"
+                    eyebrowAccent="primary"
+                    title={`Welcome back, ${firstName}.`}
+                    subtitle={
+                      urgentCount > 0
+                        ? `${urgentCount} item${urgentCount !== 1 ? 's' : ''} on your plate today — start at the top.`
+                        : "Nothing urgent — a quiet day to sharpen what matters."
+                    }
+                  />
+                </div>
+              </Reveal>
+
               {/* CoachHelm signal card — one high-impact insight for today.
                   Slotted at the top of overview so every Hub visit becomes
                   engine-aware. Renders nothing when no insight is available. */}

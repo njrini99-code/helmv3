@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconMenu } from '@/components/icons';
-import { useSidebar } from '@/contexts/sidebar-context';
+import { useSidebarSafe } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
 interface MobileMenuButtonProps {
@@ -25,13 +25,19 @@ interface MobileMenuButtonProps {
  * - Consistent hover/focus ring across all dashboard pages
  */
 export function MobileMenuButton({ className, onClick, label = 'Open navigation menu' }: MobileMenuButtonProps) {
-  const { toggleMobile, mobileOpen } = useSidebar();
+  // Use the safe variant — some surfaces (auth pages, edge SSR) render this
+  // button outside a SidebarProvider, and throwing was being captured by
+  // Sentry as a noisy uncaught exception. When no sidebar is mounted, fall
+  // back to no-op state so the button renders inert without crashing.
+  const ctx = useSidebarSafe();
+  const toggleMobile = ctx?.toggleMobile;
+  const mobileOpen = ctx?.mobileOpen ?? false;
 
   const handleClick = () => {
     void triggerHaptic('light');
     if (onClick) {
       onClick();
-    } else {
+    } else if (toggleMobile) {
       toggleMobile();
     }
   };

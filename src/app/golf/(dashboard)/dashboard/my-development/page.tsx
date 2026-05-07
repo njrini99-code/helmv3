@@ -18,6 +18,8 @@ import {
 } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { LogProgressButton, MarkCompleteButton } from './LogProgressButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
@@ -151,6 +153,23 @@ export default async function MyDevelopmentPage() {
 
       <AnimatedItem>
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* Editorial hero band — frames the focus area list beneath the
+            sticky title header in the magazine-cover rhythm. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="My Development"
+              eyebrowAccent="primary"
+              title="Your focus areas."
+              subtitle={
+                (focusAreas || []).length === 0
+                  ? 'Your coach will assign focus areas to track your improvement.'
+                  : `${activeAreas.length} active · ${completedAreas.length} completed.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {(focusAreas || []).length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip p-8 md:p-16 text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">

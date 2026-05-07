@@ -14,7 +14,7 @@ import { containerVariants, itemVariants } from '@/components/golf/dashboard/pre
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
 import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';

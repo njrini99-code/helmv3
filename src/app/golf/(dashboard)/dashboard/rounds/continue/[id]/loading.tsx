@@ -1,19 +1,21 @@
+import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
+
 export default function Loading() {
   return (
     <div className="p-6 space-y-6">
-      <div className="animate-pulse">
-        <div className="h-8 bg-warm-200 rounded w-48 mb-2" />
-        <div className="h-4 bg-warm-200 rounded w-72" />
+      <div className="space-y-2">
+        <Shimmer className="h-8 w-48" />
+        <Shimmer variant="line" className="w-72" />
       </div>
-      <div className="bg-white rounded-2xl border border-warm-200 p-6 animate-pulse">
-        <div className="h-6 bg-warm-200 rounded w-1/3 mb-4" />
+      <ShimmerCard className="bg-white rounded-2xl border border-warm-200 p-6">
+        <Shimmer className="h-6 w-1/3 mb-4" />
         <div className="grid grid-cols-9 gap-2 mb-4">
-          {[...Array(9)].map((_, i) => (
-            <div key={i} className="h-12 bg-warm-200 rounded" />
+          {Array.from({ length: 9 }).map((_, i) => (
+            <Shimmer key={i} className="h-12" staggerIndex={i} />
           ))}
         </div>
-        <div className="h-10 bg-warm-200 rounded w-32" />
-      </div>
+        <Shimmer className="h-10 w-32 rounded-lg" />
+      </ShimmerCard>
     </div>
   );
 }

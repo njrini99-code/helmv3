@@ -27,7 +27,7 @@ import {
   IconUsers,
   IconSettings,
 } from '@/components/icons';
-import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   generateTeamInsight,
   recordInteraction,
@@ -1357,18 +1357,21 @@ export function IntelligenceCommandCenter({
 
       {/* Tabs */}
       {hasData && (
-        <GolfTabBar
-          tabs={tabs}
+        <Tabs
           value={activeTab}
-          onChange={setActiveTab}
-          ariaLabel="CoachHelm command center sections"
-          stretch
-          compact={!isPage}
-        />
-      )}
+          onChange={(v) => setActiveTab(v as TabId)}
+          className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}
+        >
+          <TabsList aria-label="CoachHelm command center sections" className="grid w-full grid-cols-4">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.id} value={t.id} badge={t.count > 0 ? t.count : undefined}>
+                {t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
 
       {/* Tab Content */}
-      {activeTab === 'overview' && hasData && (
+      <TabsContent value="overview" className="mt-0">
         <div className={cn(isPage ? 'space-y-6' : 'space-y-2.5')}>
           <OverviewSummary insights={insights} patterns={patterns} variant={variant} />
 
@@ -1465,9 +1468,9 @@ export function IntelligenceCommandCenter({
             </>
           )}
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === 'insights' && (
+      <TabsContent value="insights" className="mt-0">
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {displayGroups ? (
             <>
@@ -1534,9 +1537,9 @@ export function IntelligenceCommandCenter({
             />
           )}
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === 'patterns' && (
+      <TabsContent value="patterns" className="mt-0">
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
             <h3 className="text-lg font-medium text-warm-800">All Patterns ({sortedPatterns.length})</h3>
@@ -1562,9 +1565,9 @@ export function IntelligenceCommandCenter({
             />
           )}
         </div>
-      )}
+      </TabsContent>
 
-      {activeTab === 'predictions' && (
+      <TabsContent value="predictions" className="mt-0">
         <div className={cn(isPage ? 'space-y-4' : 'space-y-2')}>
           {isPage && (
             <h3 className="text-lg font-medium text-warm-800">All Forecasts ({predictions.length})</h3>
@@ -1590,6 +1593,8 @@ export function IntelligenceCommandCenter({
             />
           )}
         </div>
+      </TabsContent>
+        </Tabs>
       )}
 
       {/* No data state */}

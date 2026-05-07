@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { m } from 'framer-motion';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import {
   IconBell,
@@ -16,7 +19,7 @@ import {
   setPushSoftAskState,
 } from '@/lib/utils/push-registration';
 import { triggerHaptic } from '@/lib/utils/capacitor';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 /**
  * iOS-native "soft ask" before the system push permission prompt.
@@ -24,7 +27,7 @@ import { useToast } from '@/components/ui/toast';
  * Apple HIG: ask for permission in context, after the user has seen the
  * app and understands its value — NEVER on cold launch. Once the system
  * prompt is shown the user gets ONE chance to answer, so we front this
- * with our own BottomSheet explaining why notifications help them.
+ * with our own Drawer explaining why notifications help them.
  *
  * This component mounts invisibly, checks native state + localStorage,
  * and shows the sheet exactly once until the user decides.
@@ -70,14 +73,17 @@ export function PushPermissionSoftAsk() {
   }
 
   return (
-    <BottomSheet
+    <Drawer
       open={open}
-      onClose={handleDismiss}
-      showHandle
-      swipeToClose
-      snapPoints={[0.6]}
+      onOpenChange={(next) => {
+        if (!next) handleDismiss();
+      }}
     >
-      <div className="flex flex-col items-center text-center pt-2 pb-6">
+      <DrawerContent>
+      <div
+        className="flex flex-col items-center text-center pt-2 pb-6 px-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         {/* Hero icon */}
         <m.div
           initial={{ scale: 0.6, opacity: 0 }}
@@ -133,11 +139,12 @@ export function PushPermissionSoftAsk() {
           </button>
         </div>
 
-        <p className="text-[11px] text-warm-400 mt-2 max-w-xs leading-relaxed">
+        <p className="text-[11px] text-warm-600 mt-2 max-w-xs leading-relaxed">
           You can change this anytime in Settings.
         </p>
       </div>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

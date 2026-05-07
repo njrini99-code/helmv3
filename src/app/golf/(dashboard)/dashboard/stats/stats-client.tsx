@@ -24,6 +24,8 @@ import type {
 } from '@/app/golf/actions/stats-data-types';
 import Image from 'next/image';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
 import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
@@ -854,6 +856,20 @@ export default function StatsClient({
         />
         <div className="max-w-6xl mx-auto p-4 md:p-6">
 
+          {/* Editorial hero band — frames the team stats grid in the
+              magazine-cover rhythm beneath the sticky title header. The
+              stone plinth grounds the copy in California-modern matte. */}
+          <Reveal>
+            <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+              <PageHeader
+                eyebrow="Performance"
+                eyebrowAccent="primary"
+                title="Team stats."
+                subtitle="Scoring averages, trends, and the players moving the needle right now."
+              />
+            </div>
+          </Reveal>
+
           {/* Format Toggle */}
           <div className="flex items-center mb-4">
             <FormatToggle
@@ -1070,6 +1086,26 @@ export default function StatsClient({
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
         </button>
       )}
+
+      {/* Editorial hero band — sits between the sticky title header and
+          the intelligence strip so the surface reads with magazine rhythm.
+          Stone plinth gives the copy a sculpted-matte foundation. */}
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10">
+            <PageHeader
+              eyebrow="Performance"
+              eyebrowAccent="primary"
+              title={userRole === 'coach' ? `${playerName ? playerName + "'s stats." : 'Player stats.'}` : 'Your stats.'}
+              subtitle={
+                rounds.length > 0
+                  ? `Across ${rounds.length} round${rounds.length === 1 ? '' : 's'} — what's trending, what's holding back, and where the strokes are.`
+                  : 'Detailed performance view across every round logged.'
+              }
+            />
+          </div>
+        </Reveal>
+      </div>
 
       {/* CoachHelm AI strip — engine-derived ratings + evidence insights,
           rendered above raw stats so the "what matters" layer reads first. */}

@@ -4,6 +4,7 @@ import { m } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTarget,
   IconTrendingUp,
@@ -227,15 +228,11 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           </div>
         </div>
 
-        <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
-            <IconTarget size={24} className="text-warm-400" />
-          </div>
-          <p className="text-sm text-warm-600 mb-1">No focus areas identified yet</p>
-          <p className="text-xs text-warm-400">
-            Complete more rounds to unlock personalized focus areas
-          </p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          icon={<IconTarget size={20} />}
+          description="No focus areas identified yet — complete more rounds to unlock personalized focus areas."
+        />
       </GlassCard>
     );
   }

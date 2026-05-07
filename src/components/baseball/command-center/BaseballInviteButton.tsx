@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconCopy, IconCheck, IconX, IconRefresh } from '@/components/icons';
 import { generateTeamInviteCode, regenerateTeamInviteCode } from '@/app/baseball/actions/teams';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 
 interface BaseballInviteButtonProps {
   teamId: string;

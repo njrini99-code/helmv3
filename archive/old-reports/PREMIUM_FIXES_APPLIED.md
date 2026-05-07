@@ -116,7 +116,7 @@ Both dashboards now have:
 - **Consistent design language** - Predictable radii and typography
 - **Premium glass effect** - More transparent, see-through aesthetic
 - **Better readability** - While maintaining glass aesthetic
-- **Professional polish** - Matches Linear/Stripe/Vercel standards
+- **Professional polish** - Matches Apple-grade premium standards
 
 ---
 

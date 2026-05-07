@@ -664,16 +664,41 @@
     border: 1px solid hsl(40 14% 84% / 0.28);
   }
 
-  /* surface-stone — slightly weightier matte, for hero panels that
-     need to feel like a sculpted block. Two-layer warm shadow gives
-     the panel weight without ornamentation. */
+  /* surface-stone — weightier matte plinth, for hero panels that
+     need to feel like a sculpted block carved from cream linen.
+
+     California-modern × Neo-futurism reference: the way a Rivian config
+     tile or a Nothing product card sits on its surface — clearly
+     elevated, with three-layer warm-shifted shadow (tight contact +
+     ambient occlusion + diffused penumbra) and a 10-point gradient
+     range across the body so the plinth itself has tonal depth. The
+     hairline border (~0.55 alpha at top, ~0.65 at bottom) implies a
+     subtle bevel without going glossy. */
   .surface-stone {
     background:
-      linear-gradient(180deg, hsl(45 22% 97%) 0%, hsl(40 14% 90%) 100%);
-    border: 1px solid hsl(40 14% 80% / 0.45);
+      linear-gradient(180deg,
+        hsl(45 22% 98%) 0%,
+        hsl(42 16% 91%) 55%,
+        hsl(38 12% 84%) 100%);
+    border: 1px solid hsl(38 12% 76% / 0.55);
+    border-bottom-color: hsl(38 12% 68% / 0.45);
+    /*
+      Five layers, in order:
+        1. Inset top — 1px specular hairline. The Rivian / Nothing
+           "edge of material" trick — implies a sharply machined top
+           edge catching light without making the body glossy.
+        2. Inset bottom — 1px hairline groove. Subtle.
+        3. Tight contact shadow.
+        4. Mid-ambient occlusion.
+        5. Diffuse penumbra — the natural-light "11am sun through
+           linen" recipe shared with the rest of the system.
+    */
     box-shadow:
-      0 2px 4px hsl(42 14% 22% / 0.05),
-      0 18px 40px hsl(42 16% 22% / 0.07);
+      inset 0 1px 0 hsl(45 22% 100% / 0.85),
+      inset 0 -1px 0 hsl(38 12% 64% / 0.18),
+      0 1px 2px hsl(42 14% 22% / 0.06),
+      0 4px 12px hsl(42 16% 22% / 0.08),
+      0 22px 48px hsl(42 16% 22% / 0.12);
   }
 
   /* Glass Level 3: Prominent - Navigation, modals, overlays */
@@ -1511,6 +1536,44 @@
   .hover-lift:hover {
     @apply -translate-y-1;
     box-shadow: var(--shadow-elevation-medium);
+  }
+
+  /*
+    surface-tile-hover — Rivian / NEO config-tile hover choreography.
+
+    Subtler than .hover-lift: a -1px lift, primary border-glow, and an
+    elevation transform on the matte sheen (not a heavy box-shadow). Use
+    on glass cards that act as primary navigation surfaces (insight cards,
+    pattern cards, focus areas, summary tiles). Same 220ms cubic-bezier
+    used everywhere else (DropdownMenu, Tooltip, Tabs, Drawer, page
+    transitions) so the whole product breathes on one timing curve.
+  */
+  .surface-tile-hover {
+    transition-property: transform, border-color, box-shadow, background-color;
+    transition-duration: 220ms;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+
+  @media (hover: hover) {
+    .surface-tile-hover:hover {
+      transform: translateY(-1px);
+      border-color: rgba(22, 163, 74, 0.22);
+      box-shadow:
+        0 1px 2px hsl(42 14% 22% / 0.04),
+        0 8px 24px hsl(42 14% 22% / 0.08),
+        0 0 0 1px hsl(140 60% 36% / 0.06);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .surface-tile-hover {
+      transition: none;
+    }
+
+    .surface-tile-hover:hover {
+      transform: none;
+    }
   }
 
   .hover-scale {

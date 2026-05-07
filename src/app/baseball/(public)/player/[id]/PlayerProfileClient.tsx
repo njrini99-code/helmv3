@@ -30,7 +30,7 @@ import {
 import Image from 'next/image';
 import { formatHeight, cn } from '@/lib/utils';
 import { toggleWatchlistPlayer } from '@/app/baseball/actions/watchlist';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 interface PlayerSettings {
   show_videos?: boolean;

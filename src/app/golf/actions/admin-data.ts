@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath, unstable_cache } from 'next/cache';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAdminRollupA, type RollupA } from './admin/rollup-a';
@@ -26,13 +26,21 @@ import {
 // ADMIN DASHBOARD ROLLUP (single-call RPC)
 // ============================================
 //
-// Caching pattern: auth + role check happens OUTSIDE the cache body (the
-// server client needs request state). The cache body uses only the
-// service-role client, which does not read request state — Next.js 16 forbids
-// request helpers inside an unstable_cache body.
+// Auth + role check runs first via the user-scoped supabase-ssr client. The
+// RPC itself ALSO enforces admin-only access (migration 00004) by checking
+// `users WHERE id = auth.uid() AND role = 'admin'` — this only resolves when
+// the call carries the admin's JWT, which is exactly what the user-scoped
+// client provides.
 //
-// The RPC itself also enforces admin-role via auth.uid() (migration 00004) so
-// the cache can't leak admin data even if a non-admin ever reached it.
+// Previous implementation wrapped this in `unstable_cache` and used the
+// service_role client inside the cache body (because unstable_cache forbids
+// request-scoped state). After the perf fix landed and the function actually
+// began executing instead of timing out, that path tripped the SECURITY
+// DEFINER admin gate: service_role JWTs leave `auth.uid()` NULL, so the
+// `users.id = auth.uid()` predicate matched zero rows and the function
+// raised 'Forbidden' (code=42501) — 509 occurrences in ~1.5h. The RPC is
+// cheap (<100ms post-perf-fix) and only runs once per admin page load, so we
+// drop the cache and call directly via the user-scoped client.
 
 /** Shape returned by `public.get_admin_dashboard_rollup()` (see migration
  *  20260421000001_admin_dashboard_rollup.sql). */
@@ -74,37 +82,11 @@ export interface AdminDashboardRollup {
   signup_trend_30d: { date: string; count: number }[];
 }
 
-// Module-level constant (not exported — 'use server' files only allow async
-// function exports).
-const ADMIN_DASHBOARD_CACHE_TAG = 'admin-dashboard';
-
-// Cached RPC-only function: uses the service-role client so no request state
-// is read. The RPC itself enforces admin-only access via auth.uid() + role.
-const cachedAdminDashboardData = unstable_cache(
-  async (): Promise<AdminDashboardRollup> => {
-    const admin = createAdminClient();
-    const rpc = admin.rpc.bind(admin) as unknown as (
-      fn: 'get_admin_dashboard_rollup',
-    ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>;
-    const { data, error } = await rpc('get_admin_dashboard_rollup');
-    // Supabase Postgrest errors are plain objects, not Error instances —
-    // String(err) yielded "[object Object]" which surfaced as
-    // "Error: [object Object]" in production logs and Sentry. Use
-    // describeError() so the underlying code/msg/details/hint are preserved.
-    if (error) throw error instanceof Error ? error : new Error(describeError(error));
-    if (!data) throw new Error('Empty rollup response');
-    return data;
-  },
-  ['admin-dashboard-rollup'],
-  { tags: [ADMIN_DASHBOARD_CACHE_TAG], revalidate: 60 },
-);
-
-/** Server-side entrypoint: admin check, then one RPC round-trip (cached 60s). */
+/** Server-side entrypoint: admin check, then one RPC round-trip via the
+ *  user-scoped client so the SECURITY DEFINER `auth.uid()` gate inside
+ *  `get_admin_dashboard_rollup` resolves to the invoking admin (and not
+ *  NULL, as it would under the service_role JWT). */
 export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
-  // Auth check has to live OUTSIDE the cache — the server client reads
-  // request state that the unstable_cache body forbids in Next.js 16. The
-  // cache value is shared across all admin callers, which is correct: admin
-  // data is not per-user-scoped.
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
@@ -116,14 +98,21 @@ export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
     .single();
   if (userRow?.role !== 'admin') throw new Error('Forbidden');
 
-  return cachedAdminDashboardData();
+  // .bind() preserves `this` on the proxy; without it some bundler outputs
+  // detach the rpc method from its parent client and the auth header gets
+  // dropped on the underlying fetch. Same pattern as fetchAdminRollupA / C.
+  const rpc = supabase.rpc.bind(supabase) as unknown as (
+    fn: 'get_admin_dashboard_rollup',
+  ) => Promise<{ data: AdminDashboardRollup | null; error: unknown }>;
+  const { data, error } = await rpc('get_admin_dashboard_rollup');
+  if (error) throw error instanceof Error ? error : new Error(describeError(error));
+  if (!data) throw new Error('Empty rollup response');
+  return data;
 }
 
-/** Call from mutation paths that change admin-surfaced data (users, rounds,
- *  admin_events). Uses revalidatePath (the invalidation primitive the rest of
- *  the admin codebase uses); the 60s unstable_cache revalidate window is the
- *  background freshness floor. Currently not wired to any mutation — the 60s
- *  window is the only guarantee today. */
+/** Kept for API compatibility; the rollup is no longer cached so this is a
+ *  no-op apart from the broader `revalidatePath('/golf/admin')` invalidation
+ *  the rest of the codebase already uses for admin-surfaced mutations. */
 export async function invalidateAdminDashboardRollup(): Promise<void> {
   revalidatePath('/golf/admin');
 }

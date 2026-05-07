@@ -522,21 +522,17 @@ export async function checkRoundStaleness(
       return { success: false, error: 'You must be signed in' };
     }
 
-    const { data: player } = await supabase
-      .from('golf_players')
-      .select('id')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!player) {
-      return { success: false, error: 'Player profile not found' };
-    }
-
+    // Perf fix (incident 2): collapse the 3 sequential round-trips
+    // (getUser → fetch player → fetch round) into a single PK lookup that
+    // also returns the owning player's user_id. Filtering by `id` uses the
+    // golf_rounds PK; the embedded golf_players row is a single FK lookup
+    // via idx_golf_players_user. This eliminates the prior pattern where a
+    // slow player query (RLS, connection contention) could time out the
+    // whole staleness check on every 30s poll.
     const { data: round, error } = await supabase
       .from('golf_rounds')
-      .select('updated_at, status')
+      .select('updated_at, status, player:golf_players!inner(user_id)')
       .eq('id', roundId)
-      .eq('player_id', player.id)
       .maybeSingle();
 
     if (error) {
@@ -544,7 +540,6 @@ export async function checkRoundStaleness(
         action: 'checkRoundStaleness',
         featureArea: 'round_sync',
         roundId,
-        playerId: player.id,
         userId: user.id,
         userEmail: user.email,
         errorCode: error.code,
@@ -556,6 +551,16 @@ export async function checkRoundStaleness(
     }
 
     if (!round) {
+      return { success: false, error: 'Round not found or was deleted' };
+    }
+
+    // Verify ownership — embedded join can come back as object or single-row array
+    // depending on PostgREST version; handle both shapes.
+    const playerRel = (Array.isArray(round.player) ? round.player[0] : round.player) as
+      | { user_id: string | null }
+      | null
+      | undefined;
+    if (!playerRel || playerRel.user_id !== user.id) {
       return { success: false, error: 'Round not found or was deleted' };
     }
 

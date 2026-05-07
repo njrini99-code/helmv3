@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconCheck, IconX } from '@/components/icons';
+import { Shimmer } from '@/components/ui/shimmer';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
 
 interface CoachHelmToggleProps {
@@ -40,13 +41,13 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 p-4 bg-warm-50 rounded-xl animate-pulse">
-        <div className="w-10 h-10 bg-warm-200 rounded-lg" />
+      <div className="flex items-center gap-3 p-4 bg-warm-50 rounded-xl">
+        <Shimmer className="w-10 h-10 rounded-lg" />
         <div className="flex-1">
-          <div className="h-4 w-24 bg-warm-200 rounded mb-1" />
-          <div className="h-3 w-32 bg-warm-200 rounded" />
+          <Shimmer className="h-4 w-24 mb-1" />
+          <Shimmer variant="line" className="w-32" />
         </div>
-        <div className="w-12 h-6 bg-warm-200 rounded-full" />
+        <Shimmer className="w-12 h-6 rounded-full" />
       </div>
     );
   }

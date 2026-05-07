@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -33,16 +33,27 @@ interface TaskCardProps {
 
 export function TaskCard({ task }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
+
+  // Initialize `now` on the client so overdue + relative date labels match SSR.
+  useEffect(() => {
+    setNow(new Date());
+  }, []);
 
   const completedCount = task.assignments.filter(a => a.status === 'completed').length;
   const totalCount = task.assignments.length;
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && completionRate < 100;
+  const isOverdue =
+    !!now && !!task.due_date && new Date(task.due_date) < now && completionRate < 100;
 
   function formatDate(dateString: string) {
     const date = new Date(dateString);
-    const today = new Date();
+    if (!now) {
+      // Pre-hydration: render absolute date so SSR + first paint match.
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    const today = now;
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -101,10 +112,13 @@ export function TaskCard({ task }: TaskCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 text-sm">
             {task.due_date && (
-              <span className={cn(
-                'flex items-center gap-1',
-                isOverdue ? 'text-red-600' : 'text-warm-500'
-              )}>
+              <span
+                className={cn(
+                  'flex items-center gap-1',
+                  isOverdue ? 'text-red-600' : 'text-warm-500'
+                )}
+                suppressHydrationWarning
+              >
                 <IconClock size={14} />
                 {formatDate(task.due_date)}
               </span>
@@ -177,7 +191,7 @@ export function TaskCard({ task }: TaskCardProps) {
                         <span className="text-xs font-medium">Completed</span>
                       </motion.div>
                     ) : (
-                      <span className="text-xs text-warm-400 font-medium">Pending</span>
+                      <span className="text-xs text-warm-600 font-medium">Pending</span>
                     )}
                   </motion.div>
                 ))}

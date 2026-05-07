@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   IconSparkles,
   IconChevronDown,
@@ -733,7 +734,11 @@ export function RoundReviewDisplay({
           defaultExpanded={false}
           badge={
             <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
-              {review.strokesToGain.reduce((s, item) => s + item.potentialStrokes, 0).toFixed(1)} strokes
+              <AnimatedNumber
+                value={review.strokesToGain.reduce((s, item) => s + item.potentialStrokes, 0)}
+                decimals={1}
+                suffix=" strokes"
+              />
             </span>
           }
         >
@@ -763,7 +768,7 @@ export function RoundReviewDisplay({
                       item.potentialStrokes >= 1 ? 'text-amber-600' :
                       'text-warm-600'
                     )}>
-                      {item.potentialStrokes.toFixed(1)}
+                      <AnimatedNumber value={item.potentialStrokes} decimals={1} />
                     </span>
                   </div>
                   <p className="text-xs text-warm-600 mt-0.5">{item.description}</p>

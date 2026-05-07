@@ -71,6 +71,21 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
       .single();
 
     if (error) {
+      // Suppress the missing-table error in dev. Some Supabase projects
+      // (local stubs, branch envs, freshly-cloned dashboards) haven't run
+      // the admin_events migration yet — when that happens, every page
+      // visit floods the console with the same PGRST205 schema-cache
+      // error. We log it once so it's discoverable, then silently fail.
+      if (error.code === 'PGRST205') {
+        if (!hasWarnedAdminEventsMissing) {
+          console.warn(
+            '[AdminLogger] admin_events table not found — skipping event logging. ' +
+              'Run supabase migration 20260214220000_create_admin_events.sql to enable.',
+          );
+          hasWarnedAdminEventsMissing = true;
+        }
+        return null;
+      }
       console.error('[AdminLogger] Failed to log event:', error);
       return null;
     }
@@ -81,6 +96,8 @@ async function logAdminEvent(input: AdminEventInput): Promise<string | null> {
     return null;
   }
 }
+
+let hasWarnedAdminEventsMissing = false;
 
 // ============================================
 // ERROR HELPERS

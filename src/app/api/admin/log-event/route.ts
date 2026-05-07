@@ -102,6 +102,37 @@ function validatePayload(payload: unknown): payload is LogEventPayload {
 }
 
 // ============================================
+// ABORT DETECTION
+// ============================================
+
+/**
+ * Detects whether a thrown error is a client-side abort (the user closed the
+ * tab, navigated away, or the connection dropped mid-request). Node's undici
+ * surfaces these as `AbortError`, `cause.code === 'UND_ERR_ABORTED'`, or
+ * `name === 'AbortError'`. They are not actionable — the request never
+ * completed, so we should short-circuit cleanly without logging an error.
+ */
+function isClientAbortError(err: unknown): boolean {
+  if (!err) return false;
+  if (typeof err !== 'object') return false;
+
+  const e = err as { name?: string; message?: string; code?: string; cause?: { code?: string; name?: string } };
+
+  if (e.name === 'AbortError') return true;
+  if (e.code === 'ABORT_ERR' || e.code === 'UND_ERR_ABORTED') return true;
+  if (e.cause?.code === 'UND_ERR_ABORTED' || e.cause?.code === 'ABORT_ERR') return true;
+  if (e.cause?.name === 'AbortError') return true;
+
+  // Fallback string match — undici sometimes throws a bare `Error: aborted`
+  // with no useful structured fields.
+  const msg = (e.message ?? '').toLowerCase();
+  if (msg === 'aborted' || msg === 'request aborted' || msg.includes('the operation was aborted')) {
+    return true;
+  }
+  return false;
+}
+
+// ============================================
 // SANITIZATION
 // ============================================
 
@@ -214,6 +245,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, id: data?.id });
   } catch (err) {
+    // Client closed the connection mid-request (navigated away, closed tab,
+    // network dropped). The request never completed, so there's nothing
+    // actionable here — log at debug only and short-circuit. We can't
+    // actually return a useful response since the socket is gone.
+    if (isClientAbortError(err)) {
+      console.debug('[log-event] client aborted request');
+      return new NextResponse(null, { status: 499 });
+    }
     await logServerError(`[log-event] Unexpected error: ${describeError(err)}`, { action: 'route.POST' });
     return NextResponse.json(
       { error: 'Internal server error' },

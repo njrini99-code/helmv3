@@ -1,149 +1,144 @@
 'use client';
 
-import { createContext, useContext, useState, useRef, useEffect, useCallback } from 'react';
+/**
+ * Tabs — Radix-backed compound for switching panels within a surface.
+ *
+ * Migrated Apr 2026 from a hand-rolled implementation to
+ * @radix-ui/react-tabs so we get keyboard navigation (arrow keys,
+ * Home/End), ARIA correctness, and focus management for free.
+ *
+ * The legacy API (`onChange`, `value`, `icon`, `badge`, haptic feedback)
+ * is preserved so existing call sites keep working.
+ *
+ * Variants on TabsList:
+ *   - "pills" (default): chip-shaped tabs on a cream-200 inset rail.
+ *     Compact toolbars, hero header switchers, ≤4 tabs.
+ *   - "underline": editorial bottom-border with active hairline underline.
+ *     Long-form pages (stats sections, intelligence dashboards, ≥5 tabs).
+ */
+
+import * as React from 'react';
+import * as TabsPrimitive from '@radix-ui/react-tabs';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
-const TabsContext = createContext<{
-  value: string;
-  onChange: (v: string) => void;
-  registerTab: (value: string, element: HTMLButtonElement) => void;
-  activeRect: { left: number; width: number } | null;
-} | null>(null);
+/** Legacy alias for `onValueChange` — preserved so old call sites keep working.
+ *  If both are provided, both fire. We strip the native HTMLDivElement
+ *  `onChange` (FormEventHandler) so our value-typed `onChange` doesn't
+ *  collide with React's native form-event signature. */
+type WrappedTabsProps = Omit<
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>,
+  'onChange'
+> & {
+  onChange?: (value: string) => void;
+};
 
-export function Tabs({ defaultValue, value: controlledValue, onChange: controlledOnChange, children, className }: {
-  defaultValue: string;
-  value?: string;
-  onChange?: (v: string) => void;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const [internalValue, setInternalValue] = useState(defaultValue);
-  const [activeRect, setActiveRect] = useState<{ left: number; width: number } | null>(null);
-  const tabsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
-  const containerRef = useRef<HTMLDivElement>(null);
+const Tabs = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Root>,
+  WrappedTabsProps
+>(({ onChange, onValueChange, ...props }, ref) => (
+  <TabsPrimitive.Root
+    ref={ref}
+    onValueChange={(v) => {
+      void triggerHaptic('light');
+      onValueChange?.(v);
+      onChange?.(v);
+    }}
+    {...props}
+  />
+));
+Tabs.displayName = 'Tabs';
 
-  const value = controlledValue ?? internalValue;
-  const onChange = controlledOnChange ?? setInternalValue;
-
-  const registerTab = useCallback((tabValue: string, element: HTMLButtonElement) => {
-    tabsRef.current.set(tabValue, element);
-  }, []);
-
-  // Update indicator position when active tab changes
-  useEffect(() => {
-    const activeTab = tabsRef.current.get(value);
-    if (activeTab && containerRef.current) {
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const tabRect = activeTab.getBoundingClientRect();
-      setActiveRect({
-        left: tabRect.left - containerRect.left,
-        width: tabRect.width,
-      });
-    }
-  }, [value]);
-
-  return (
-    <TabsContext.Provider value={{ value, onChange, registerTab, activeRect }}>
-      <div ref={containerRef} className={className}>{children}</div>
-    </TabsContext.Provider>
-  );
+interface TabsListProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> {
+  variant?: 'pills' | 'underline';
 }
 
-export function TabsList({ children, className }: { children: React.ReactNode; className?: string }) {
-  const ctx = useContext(TabsContext);
+const TabsList = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  TabsListProps
+>(({ className, variant = 'pills', ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    data-variant={variant}
+    className={cn(
+      'inline-flex items-center',
+      variant === 'pills' &&
+        'gap-1 rounded-full bg-cream-100 p-1 text-warm-500',
+      variant === 'underline' &&
+        'gap-6 border-b border-warm-200/55 text-warm-500',
+      className,
+    )}
+    {...props}
+  />
+));
+TabsList.displayName = TabsPrimitive.List.displayName;
 
-  return (
-    <div
-      className={cn('relative flex gap-1 p-1 bg-cream-100 rounded-lg', className)}
-      role="tablist"
-    >
-      {/* Animated indicator */}
-      {ctx?.activeRect && (
-        <div
-          className="absolute top-1 bottom-1 bg-white rounded-md shadow-sm transition-all duration-200 ease-out pointer-events-none z-0"
-          style={{
-            left: `${ctx.activeRect.left}px`,
-            width: `${ctx.activeRect.width}px`,
-          }}
-        />
-      )}
-      {children}
-    </div>
-  );
-}
-
-export function TabsTrigger({ value, children, icon, badge, className }: {
-  value: string;
-  children: React.ReactNode;
+interface TabsTriggerProps extends React.ComponentPropsWithoutRef<typeof TabsPrimitive.Trigger> {
+  variant?: 'pills' | 'underline';
   icon?: React.ReactNode;
   badge?: number | string;
-  className?: string;
-}) {
-  const ctx = useContext(TabsContext);
-  const ref = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (ref.current && ctx) {
-      ctx.registerTab(value, ref.current);
-    }
-  }, [value, ctx]);
-
-  if (!ctx) return null;
-
-  const isActive = ctx.value === value;
-
-  return (
-    <button
-      ref={ref}
-      role="tab"
-      aria-selected={isActive}
-      onClick={() => {
-        if (!isActive) void triggerHaptic('light');
-        ctx.onChange(value);
-      }}
-      className={cn(
-        'relative z-10 px-4 py-2 min-h-[44px] text-sm font-medium rounded-md',
-        'transition-colors duration-200 ease-out',
-        'flex items-center justify-center gap-2',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2',
-        isActive
-          ? 'text-warm-900'
-          : 'text-warm-500 hover:text-warm-700',
-        className,
-      )}
-    >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
-      {children}
-      {badge !== undefined && (
-        <span className={cn(
-          'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-micro font-bold rounded-full',
-          'transition-colors duration-200',
-          isActive
-            ? 'bg-primary-100 text-primary-700'
-            : 'bg-warm-200 text-warm-600'
-        )}>
-          {badge}
-        </span>
-      )}
-    </button>
-  );
 }
 
-export function TabsContent({ value, children, className }: {
-  value: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
-  const ctx = useContext(TabsContext);
-  if (!ctx || ctx.value !== value) return null;
+const TabsTrigger = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Trigger>,
+  TabsTriggerProps
+>(({ className, variant = 'pills', icon, badge, children, ...props }, ref) => (
+  <TabsPrimitive.Trigger
+    ref={ref}
+    data-variant={variant}
+    className={cn(
+      'group relative inline-flex items-center justify-center gap-2 whitespace-nowrap outline-none',
+      'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'disabled:pointer-events-none disabled:opacity-40',
+      'focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-offset-0',
+      variant === 'pills' && [
+        'min-h-[44px] rounded-full px-4 py-1.5 text-[13px] font-medium tracking-[-0.005em]',
+        'data-[state=active]:bg-white data-[state=active]:text-warm-900',
+        'data-[state=active]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]',
+        'data-[state=inactive]:hover:text-warm-800',
+      ],
+      variant === 'underline' && [
+        'pb-3 text-[14px] font-medium tracking-[-0.005em]',
+        'before:absolute before:inset-x-0 before:-bottom-px before:h-[2px] before:scale-x-0 before:bg-warm-900',
+        'before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'data-[state=active]:text-warm-900 data-[state=active]:before:scale-x-100',
+        'data-[state=inactive]:hover:text-warm-700',
+      ],
+      className,
+    )}
+    {...props}
+  >
+    {icon && <span className="flex-shrink-0">{icon}</span>}
+    {children}
+    {badge !== undefined && (
+      <span className={cn(
+        'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-micro font-bold rounded-full',
+        'transition-colors duration-300',
+        'group-data-[state=active]:bg-primary-100 group-data-[state=active]:text-primary-700',
+        'group-data-[state=inactive]:bg-warm-200 group-data-[state=inactive]:text-warm-600',
+      )}>
+        {badge}
+      </span>
+    )}
+  </TabsPrimitive.Trigger>
+));
+TabsTrigger.displayName = TabsPrimitive.Trigger.displayName;
 
-  return (
-    <div
-      role="tabpanel"
-      className={cn('mt-4 animate-fade-in', className)}
-    >
-      {children}
-    </div>
-  );
-}
+const TabsContent = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.Content>
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.Content
+    ref={ref}
+    className={cn(
+      'mt-6 outline-none',
+      'data-[state=active]:animate-in data-[state=active]:fade-in-0',
+      'data-[state=active]:duration-300 data-[state=active]:ease-[cubic-bezier(0.16,1,0.3,1)]',
+      className,
+    )}
+    {...props}
+  />
+));
+TabsContent.displayName = TabsPrimitive.Content.displayName;
+
+export { Tabs, TabsList, TabsTrigger, TabsContent };

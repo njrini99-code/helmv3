@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { useAuth } from '@/hooks/use-auth';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { createClient } from '@/lib/supabase/client';
 import { sanitizeAuthError } from '@/lib/db-error';
 import { IconChevronRight, IconShield, IconBuilding, IconBell, IconMail } from '@/components/icons';

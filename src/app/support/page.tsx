@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { SupportHeader } from './SupportHeader';
+import { GlassCard } from '@/components/ui/glass-card';
 
 export const metadata: Metadata = {
   title: 'Support | Helm Sports Labs',
@@ -68,30 +69,29 @@ export default function SupportPage() {
 
         {/* Contact Cards */}
         <div className="grid md:grid-cols-2 gap-4 mb-12">
-          <a
-            href="mailto:admin@helmsportslabs.com"
-            className="group bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6 hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-          >
-            <div className="flex items-start gap-4">
-              <div className="w-11 h-11 rounded-xl bg-primary-600/10 text-primary-600 flex items-center justify-center flex-shrink-0">
-                <Mail size={20} />
+          <a href="mailto:admin@helmsportslabs.com" className="group block">
+            <GlassCard padding="md">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-primary-600/10 text-primary-600 flex items-center justify-center flex-shrink-0">
+                  <Mail size={20} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="font-semibold text-warm-900 mb-1">
+                    Email Support
+                  </h2>
+                  <p className="text-sm text-warm-600 mb-2">
+                    The fastest way to reach our team.
+                  </p>
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 group-hover:gap-2 transition-all">
+                    admin@helmsportslabs.com
+                    <ArrowRight size={14} />
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h2 className="font-semibold text-warm-900 mb-1">
-                  Email Support
-                </h2>
-                <p className="text-sm text-warm-600 mb-2">
-                  The fastest way to reach our team.
-                </p>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 group-hover:gap-2 transition-all">
-                  admin@helmsportslabs.com
-                  <ArrowRight size={14} />
-                </span>
-              </div>
-            </div>
+            </GlassCard>
           </a>
 
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-6">
+          <GlassCard hover={false} padding="md">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-xl bg-primary-600/10 text-primary-600 flex items-center justify-center flex-shrink-0">
                 <Clock size={20} />
@@ -109,7 +109,7 @@ export default function SupportPage() {
                 </p>
               </div>
             </div>
-          </div>
+          </GlassCard>
         </div>
 
         {/* FAQ */}
@@ -121,7 +121,7 @@ export default function SupportPage() {
             </h2>
           </div>
 
-          <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass divide-y divide-warm-200/60">
+          <GlassCard hover={false} padding="none" className="divide-y divide-warm-200/60">
             {faqs.map((item, i) => (
               <details key={i} className="group">
                 <summary className="flex items-center justify-between cursor-pointer p-6 list-none">
@@ -137,7 +137,7 @@ export default function SupportPage() {
                 </div>
               </details>
             ))}
-          </div>
+          </GlassCard>
         </section>
 
         {/* Resources */}
@@ -146,19 +146,17 @@ export default function SupportPage() {
             More Resources
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            <Link
-              href="/privacy"
-              className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-            >
-              <Shield size={18} className="text-primary-600 flex-shrink-0" />
-              <span className="font-medium text-warm-900">Privacy Policy</span>
+            <Link href="/privacy" className="block">
+              <GlassCard padding="sm" className="flex items-center gap-3 p-5">
+                <Shield size={18} className="text-primary-600 flex-shrink-0" />
+                <span className="font-medium text-warm-900">Privacy Policy</span>
+              </GlassCard>
             </Link>
-            <Link
-              href="/terms"
-              className="flex items-center gap-3 p-5 bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass hover:bg-white/80 hover:shadow-card-hover transition-all duration-200"
-            >
-              <FileText size={18} className="text-primary-600 flex-shrink-0" />
-              <span className="font-medium text-warm-900">Terms of Service</span>
+            <Link href="/terms" className="block">
+              <GlassCard padding="sm" className="flex items-center gap-3 p-5">
+                <FileText size={18} className="text-primary-600 flex-shrink-0" />
+                <span className="font-medium text-warm-900">Terms of Service</span>
+              </GlassCard>
             </Link>
           </div>
         </section>

@@ -7,9 +7,12 @@ import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
+import { EmptyState } from '@/components/ui/empty-state';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { AnimatedPage } from '@/components/golf/layout/AnimatedPage';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { useGolfConversations, useGolfMessages } from '@/hooks/golf/use-golf-messages';
 import { createGolfConversation, getPlayerUserId } from '@/app/golf/actions/messages';
 import { GolfNewMessageModal } from '@/components/golf/messages/GolfNewMessageModal';
@@ -84,6 +87,13 @@ export default function GolfMessagesPage() {
   const groupedConversations = useMemo(() => {
     return groupConversationsByTime(conversations);
   }, [conversations]);
+
+  // Subtitle stats — unread count + thread count for the editorial hero
+  const unreadCount = useMemo(
+    () => conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0),
+    [conversations],
+  );
+  const threadCount = conversations.length;
 
   // Track if we've handled the player URL param
   const [handledPlayerParam, setHandledPlayerParam] = useState(false);
@@ -342,6 +352,26 @@ export default function GolfMessagesPage() {
           </Button>
         </LargeTitleHeader>
 
+        {/* Editorial hero band — sits between the sticky title header and the
+            conversation list so the inbox column reads with magazine rhythm.
+            Tight padding keeps the conversation list above the fold. */}
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-5 md:p-6 mx-4 md:mx-6 mt-2 mb-3">
+            <PageHeader
+              eyebrow="Messages"
+              eyebrowAccent="primary"
+              title="Your inbox."
+              subtitle={
+                threadCount === 0
+                  ? 'Stay in touch with your team.'
+                  : unreadCount > 0
+                    ? `${unreadCount} unread · ${threadCount} thread${threadCount === 1 ? '' : 's'}.`
+                    : `${threadCount} thread${threadCount === 1 ? '' : 's'}.`
+              }
+            />
+          </div>
+        </Reveal>
+
         {/* Conversation List */}
         <div className="flex-1 min-h-0" data-scroll-container>
           <PullToRefresh onRefresh={handleConversationsRefresh} className="overscroll-contain touch-pan-y">
@@ -361,15 +391,16 @@ export default function GolfMessagesPage() {
               ))}
             </div>
           ) : !conversations || conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-              <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-                <IconMail size={20} className="text-warm-400" />
-              </div>
-              <p className="text-sm text-warm-500 mb-4">No conversations yet</p>
-              <Button size="sm" onClick={() => setShowNewMessageModal(true)}>
-                Start a Conversation
-              </Button>
-            </div>
+            <EmptyState
+              variant="compact"
+              icon={<IconMail size={28} />}
+              title="No conversations yet"
+              description="Reach out to a teammate or coach to get a thread started."
+              action={{
+                label: 'Start a Conversation',
+                onClick: () => setShowNewMessageModal(true),
+              }}
+            />
           ) : (
             <div className="py-2">
               {groupedConversations.today.length > 0 && (
@@ -466,13 +497,11 @@ export default function GolfMessagesPage() {
                   <div className="h-4 w-2/3 bg-warm-200 rounded skeleton-shimmer" />
                 </div>
               ) : !messages || messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="w-12 h-12 rounded-full bg-warm-200 flex items-center justify-center mb-3">
-                    <IconMessageSquare size={20} className="text-warm-400" />
-                  </div>
-                  <p className="text-sm text-warm-500">No messages yet</p>
-                  <p className="text-xs text-warm-400 mt-1">Start the conversation!</p>
-                </div>
+                <EmptyState
+                  variant="minimal"
+                  icon={<IconMessageSquare size={20} />}
+                  description="No messages yet — start the conversation!"
+                />
               ) : (
                 <div className="space-y-4">
                   {messages.map((msg, idx) => {

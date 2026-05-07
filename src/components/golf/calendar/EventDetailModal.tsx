@@ -10,10 +10,13 @@ import { RSVPStatusSection } from './RSVPStatusSection';
 import { PlayerRSVPCard } from './PlayerRSVPCard';
 import { ConflictWarning } from './ConflictWarning';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/sonner';
 import { EventDocumentsSection } from './EventDocumentsSection';
-import { m, useReducedMotion } from 'framer-motion';
-import { calendarSpring } from '@/lib/motion';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -224,7 +227,6 @@ export function EventDetailModal({
   currentUserId,
   timezone,
 }: EventDetailModalProps) {
-  const prefersReducedMotion = useReducedMotion();
   // Filter out current user from attendee list - you shouldn't be able to add yourself
   const availablePlayers = teamPlayers.filter(p => p.id !== currentUserId);
   const tzAbbrev = useMemo(() => {
@@ -255,7 +257,6 @@ export function EventDetailModal({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [conflicts, setConflicts] = useState<ConflictData | null>(null);
   const [checkingConflicts, setCheckingConflicts] = useState(false);
-  const { modalRef } = useFocusTrap(isOpen, onClose);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const rsvpEnabled = Boolean(event?.id && formData.requiresRsvp && !isCreating);
   const {
@@ -278,7 +279,7 @@ export function EventDetailModal({
     })) || []
   ), [rsvpSummary]);
 
-  // useFocusTrap handles: Escape key, focus trapping, focus restore, scroll lock
+  // Drawer (vaul) handles: ESC, focus trap, scroll lock, drag-to-dismiss
 
   // Reset form when modal opens/closes or event changes
   useEffect(() => {
@@ -535,8 +536,6 @@ export function EventDetailModal({
     setConflicts(null);
   };
 
-  if (!isOpen) return null;
-
   // Both coaches and players can create events
   // For editing, coaches can edit any event, players can only view
   const canEdit = isCreating || isCoach;
@@ -546,36 +545,25 @@ export function EventDetailModal({
   const modalTitle = isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event';
 
   return (
-    <div
-      ref={modalRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="event-modal-title"
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      {/* Backdrop with fade */}
-      <m.div
-        initial={prefersReducedMotion ? false : { opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.15 }}
-        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Modal panel with spring entry */}
-      <m.div
-        initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.95, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={prefersReducedMotion ? { duration: 0 } : calendarSpring.modalEntry}
-        className="relative bg-white rounded-[24px] border border-warm-200/35 shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden"
+      <DrawerContent
+        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden"
+        aria-labelledby="event-modal-title"
       >
         {/* Colored Header Band - tinted by event type */}
-        <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-5 pb-4')}>
+        <div className={cn('bg-gradient-to-r', activeTypePill.headerGradient, 'px-6 pt-3 pb-4')}>
           <div className="flex items-center justify-between mb-4">
-            <h2 id="event-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+            <DrawerTitle
+              id="event-modal-title"
+              className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]"
+            >
               {modalTitle}
-            </h2>
+            </DrawerTitle>
             <button
               ref={closeButtonRef}
               onClick={onClose}
@@ -628,7 +616,7 @@ export function EventDetailModal({
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[calc(90vh-200px)] overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 flex-1 overflow-y-auto overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }} data-scroll-container>
           {error && (
             <div
               role="alert"
@@ -1087,16 +1075,16 @@ export function EventDetailModal({
             </div>
           </div>
         </form>
-      </m.div>
 
-      {pendingScopeAction && (
-        <SeriesScopeDialog
-          action={pendingScopeAction}
-          onCancel={() => setPendingScopeAction(null)}
-          onConfirm={submitWithScope}
-        />
-      )}
-    </div>
+        {pendingScopeAction && (
+          <SeriesScopeDialog
+            action={pendingScopeAction}
+            onCancel={() => setPendingScopeAction(null)}
+            onConfirm={submitWithScope}
+          />
+        )}
+      </DrawerContent>
+    </Drawer>
   );
 }
 

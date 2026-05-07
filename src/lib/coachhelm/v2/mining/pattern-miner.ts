@@ -61,12 +61,48 @@ function deterministicPatternId(playerId: string, signature: string): string {
 }
 
 const THRESHOLDS = {
-  minSupport: 0.08,      // 8% of rounds — loosened from 0.12 to surface patterns on ~28-round players
-  minConfidence: 0.55,   // 55% confidence — loosened from 0.60
+  minSupport: 0.05,      // 5% of rounds — loosened from 0.08 so 11-round players aren't starved
+  minConfidence: 0.55,   // 55% confidence — kept as-is to avoid false positives
   minLift: 1.5,          // 1.5x lift — meaningful above random
-  minSampleSize: 6,      // 6 rounds minimum — loosened from 8
+  minSampleSize: 6,      // 6 rounds default — only applied at full strength when roundCount >= 16
   minStrokeImpact: 0.3,  // 0.3 strokes — meaningful impact
 };
+
+/**
+ * Absolute floor for the early-return guard when a player has too few rounds
+ * to mine anything meaningful. We drop this below `THRESHOLDS.minSampleSize`
+ * so 8–10 round players aren't rejected at the door — the per-condition
+ * sample-size gate (computed by `effectiveMinSampleSize`) is what actually
+ * controls whether each individual pattern is admissible.
+ */
+const ABSOLUTE_MIN_ROUNDS = 4;
+
+/**
+ * Scale `minSampleSize` to the player's round count.
+ *
+ * Rationale: a fixed `minSampleSize=6` over 11 rounds means a pattern needs
+ * to appear in >50% of all available rounds, which (combined with
+ * `minSupport`) starves output for any player who hasn't golfed dozens of
+ * rounds. Instead:
+ *   - For roundCount >= 16, use the full 6-round bar (well-calibrated).
+ *   - Below 16 rounds, scale down: max(3, ceil(roundCount * 0.25)).
+ *
+ * Caps at THRESHOLDS.minSampleSize so we never exceed the configured ceiling.
+ *
+ * Examples:
+ *   roundCount = 6  → 3
+ *   roundCount = 8  → 3
+ *   roundCount = 11 → 3
+ *   roundCount = 12 → 3
+ *   roundCount = 14 → 4
+ *   roundCount = 15 → 4
+ *   roundCount = 16 → 6 (full bar)
+ *   roundCount = 28 → 6 (full bar)
+ */
+export function effectiveMinSampleSize(roundCount: number): number {
+  if (roundCount >= 16) return THRESHOLDS.minSampleSize;
+  return Math.max(3, Math.ceil(roundCount * 0.25));
+}
 
 /**
  * Safely compute conviction = (1 - support) * confidence / (1 - confidence).
@@ -139,7 +175,7 @@ export class PatternMiner {
       .order('round_date', { ascending: false })
       .limit(100);
 
-    if (error || !rounds || rounds.length < THRESHOLDS.minSampleSize) {
+    if (error || !rounds || rounds.length < ABSOLUTE_MIN_ROUNDS) {
       return [];
     }
 
@@ -180,9 +216,24 @@ export class PatternMiner {
     // theoretically produce patterns but the rule-based miner returns 0.
     // The `[pattern-miner.thresholds]` prefix makes this discoverable in
     // production logs and admin trace dashboards.
+    //
+    // Severity policy: emit at INFO when the miner had a fair shot
+    // (roundCount >= the scaled per-pattern minSampleSize) — that's a
+    // legitimate "tried and found nothing" signal, not a config bug. Only
+    // promote to WARN when the player has a lot of rounds (>= 16) and we
+    // still produced nothing, which suggests the thresholds genuinely need
+    // re-tuning. This drops the noise floor (385+ events between 3 incidents
+    // were per-cron-tick re-firings on the same low-round players).
     if (deduplicatedPatterns.length === 0 && this.rounds.length >= 10) {
-      const message = `[pattern-miner.thresholds] 0 patterns produced for player ${this.playerId} despite ${this.rounds.length} rounds — thresholds may be starving output (minSupport=${THRESHOLDS.minSupport}, minConfidence=${THRESHOLDS.minConfidence}, minSampleSize=${THRESHOLDS.minSampleSize})`;
-      console.warn(message);
+      const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
+      const severity: 'info' | 'warning' =
+        this.rounds.length >= 16 ? 'warning' : 'info';
+      const message = `[pattern-miner.thresholds] 0 patterns produced for player ${this.playerId} despite ${this.rounds.length} rounds (minSupport=${THRESHOLDS.minSupport}, minConfidence=${THRESHOLDS.minConfidence}, scaledMinSampleSize=${scaledMinSample})`;
+      if (severity === 'warning') {
+        console.warn(message);
+      } else {
+        console.info(message);
+      }
       try {
         await logServerEvent(
           message,
@@ -192,13 +243,13 @@ export class PatternMiner {
             metadata: {
               playerId: this.playerId,
               roundCount: this.rounds.length,
-              thresholds: THRESHOLDS,
+              thresholds: { ...THRESHOLDS, scaledMinSampleSize: scaledMinSample },
             },
           },
-          'warning',
+          severity,
         );
       } catch {
-        // Tracing must never break the miner — the console.warn above is the fallback.
+        // Tracing must never break the miner — the console fallback above is enough.
       }
     }
 
@@ -237,6 +288,7 @@ export class PatternMiner {
   private async mineConditionalPatterns(): Promise<MinedPattern[]> {
     const patterns: MinedPattern[] = [];
     const baselineAvg = this.calculateBaseline();
+    const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
 
     // Test various conditions.
     //
@@ -342,7 +394,7 @@ export class PatternMiner {
     for (const { condition, test } of conditionsToTest) {
       const matchingRounds = this.rounds.filter(test);
 
-      if (matchingRounds.length < THRESHOLDS.minSampleSize) continue;
+      if (matchingRounds.length < scaledMinSample) continue;
 
       const matchingAvg =
         matchingRounds.reduce((a, r) => a + r.score_to_par, 0) /
@@ -421,6 +473,7 @@ export class PatternMiner {
   private async mineCompoundPatterns(): Promise<MinedPattern[]> {
     const patterns: MinedPattern[] = [];
     const baselineAvg = this.calculateBaseline();
+    const scaledMinSample = effectiveMinSampleSize(this.rounds.length);
 
     // Test combinations
     const compoundConditions: Array<{
@@ -470,7 +523,10 @@ export class PatternMiner {
     for (const { conditions, test } of compoundConditions) {
       const matchingRounds = this.rounds.filter(test);
 
-      if (matchingRounds.length < Math.max(5, THRESHOLDS.minSampleSize / 2))
+      // Compound patterns are rarer by construction — half the scaled
+      // single-condition bar, with a floor of 3 so 8–12 round players can
+      // still surface a compound hit when one exists.
+      if (matchingRounds.length < Math.max(3, Math.ceil(scaledMinSample / 2)))
         continue;
 
       const matchingAvg =

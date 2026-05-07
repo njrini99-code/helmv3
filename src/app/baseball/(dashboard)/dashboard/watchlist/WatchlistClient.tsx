@@ -15,7 +15,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { ShineEffect } from '@/components/ui/shine-effect';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import {
   IconSearch,
   IconFilter,

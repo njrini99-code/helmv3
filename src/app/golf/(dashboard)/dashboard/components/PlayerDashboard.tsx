@@ -16,9 +16,10 @@ import dynamic from 'next/dynamic';
 import { cn } from '@/lib/utils';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PlayerFocusAreas } from '@/components/golf/coachhelm/insights';
+import { ShimmerCard } from '@/components/ui/shimmer';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
-    loading: () => <div className="h-[200px] bg-cream-100/55 backdrop-blur-[20px] rounded-2xl border border-warm-200/45 animate-pulse" />,
+    loading: () => <ShimmerCard className="h-[200px] rounded-2xl" />,
     ssr: false
 });
 import {

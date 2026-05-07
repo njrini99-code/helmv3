@@ -107,6 +107,22 @@ Sentry.init({
     'AbortError',
     // ResizeObserver — benign, fires when layout settles
     /ResizeObserver loop/,
+    // Dev-only Next.js server-action hash mismatches.
+    // These fire after any HMR rebuild that changes a server-action file:
+    // the client bundle still references the old action ID and a polled
+    // request 404s. Pure dev artifact — production action hashes are
+    // baked at build time and never drift.
+    'UnrecognizedActionError',
+    /Server Action ".*" was not found on the server/,
+    /Failed to find Server Action/,
+    // Dev-only Turbopack HMR module-factory invalidation. Happens when a
+    // dependency module gets replaced mid-flight; the next render has a
+    // stale closure. Resolves on the following render — not actionable.
+    /module factory is not available/,
+    /It might have been deleted in an HMR update/,
+    // CSP-blocked Vercel analytics script in dev (we don't ship the
+    // debug.js variant in our CSP allowlist, on purpose).
+    /va\.vercel-scripts\.com/,
   ],
 });
 

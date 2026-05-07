@@ -4855,6 +4855,135 @@ export async function touchSavedCourse(courseId: string): Promise<ActionResult<v
   return { success: true, data: undefined };
 }
 
+/**
+ * RecentPlayedCourse — a saved course enriched with the player's
+ * historical round count. Used by the new-round quick-pick tile grid.
+ */
+export interface RecentPlayedCourse extends SavedCourse {
+  /** Total finished/in-progress rounds the player has logged at this course */
+  roundCount: number;
+  /** ISO date of the most recent round at this course (falls back to lastUsedAt) */
+  lastPlayedAt: string;
+}
+
+/**
+ * Get the player's recently-played courses for the "New Round" quick-pick.
+ *
+ * Source of truth: `golf_player_courses` (the saved-course record). We
+ * enrich each row with a play count derived from `golf_rounds` so the
+ * tile can show "{N} rounds". Matching is by `course_id` when present,
+ * otherwise case-insensitive `course_name`.
+ *
+ * Sorted by `last_played_at` DESC, capped to `limit` (default 8).
+ */
+export async function getRecentCoursesForPlayer(
+  limit = 8,
+): Promise<ActionResult<RecentPlayedCourse[]>> {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'You must be logged in' };
+  }
+
+  const { data: player } = await supabase
+    .from('golf_players')
+    .select('id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!player) {
+    return { success: false, error: 'Player profile not found' };
+  }
+
+  // Pull saved courses for the player (ordered by last played)
+  const { data: courses, error } = await fromUntyped(supabase, 'golf_player_courses')
+    .select('*')
+    .eq('player_id', player.id)
+    .order('last_played_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    return { success: false, error: 'Failed to load recent courses' };
+  }
+
+  const savedRows = (courses || []) as SavedCourseRow[];
+
+  // Empty fast-path — no saved courses yet, no need to query rounds
+  if (savedRows.length === 0) {
+    return { success: true, data: [] };
+  }
+
+  // Pull this player's rounds in one shot so we can build a count map.
+  // We only need the matching keys + round_date for fallback ordering.
+  const { data: rounds } = await supabase
+    .from('golf_rounds')
+    .select('course_id, course_name, round_date')
+    .eq('player_id', player.id);
+
+  const roundsList = (rounds || []) as Array<{
+    course_id: string | null;
+    course_name: string | null;
+    round_date: string | null;
+  }>;
+
+  // Build a count map keyed by course_id (preferred) and lowercased course_name
+  const countById = new Map<string, number>();
+  const lastDateById = new Map<string, string>();
+  const countByName = new Map<string, number>();
+  const lastDateByName = new Map<string, string>();
+
+  for (const r of roundsList) {
+    const date = r.round_date ?? '';
+    if (r.course_id) {
+      countById.set(r.course_id, (countById.get(r.course_id) ?? 0) + 1);
+      const prev = lastDateById.get(r.course_id);
+      if (!prev || (date && date > prev)) lastDateById.set(r.course_id, date);
+    }
+    if (r.course_name) {
+      const key = r.course_name.toLowerCase().trim();
+      countByName.set(key, (countByName.get(key) ?? 0) + 1);
+      const prev = lastDateByName.get(key);
+      if (!prev || (date && date > prev)) lastDateByName.set(key, date);
+    }
+  }
+
+  const enriched: RecentPlayedCourse[] = savedRows.map((course) => {
+    let parsed: SavedCourseNotes = {};
+    if (course.notes) {
+      try { parsed = JSON.parse(course.notes) as SavedCourseNotes; } catch { /* ignore */ }
+    }
+
+    // Resolve play count: prefer course_id match, fall back to course_name
+    const nameKey = course.course_name.toLowerCase().trim();
+    const roundCount = course.course_id
+      ? (countById.get(course.course_id) ?? countByName.get(nameKey) ?? 0)
+      : (countByName.get(nameKey) ?? 0);
+    const derivedLastPlayed = course.course_id
+      ? (lastDateById.get(course.course_id) ?? lastDateByName.get(nameKey))
+      : lastDateByName.get(nameKey);
+
+    return {
+      id: course.id,
+      courseId: course.course_id ?? null,
+      courseName: course.course_name,
+      courseCity: parsed.city ?? null,
+      courseState: parsed.state ?? null,
+      courseRating: parsed.rating ?? null,
+      courseSlope: parsed.slope ?? null,
+      teesPlayed: parsed.tees ?? null,
+      holesPerRound: parsed.holesPerRound ?? 18,
+      holeConfigs: parsed.holeConfigs ?? [],
+      lastUsedAt: course.last_played_at ?? '',
+      createdAt: course.created_at ?? '',
+      roundCount,
+      lastPlayedAt: derivedLastPlayed || course.last_played_at || '',
+    };
+  });
+
+  return { success: true, data: enriched };
+}
+
 // ============================================================================
 // SHOT MANAGEMENT ACTIONS
 // ============================================================================

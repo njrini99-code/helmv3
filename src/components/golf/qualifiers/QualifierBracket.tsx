@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { IconTrophy, IconAward, IconTarget, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface LeaderboardEntry {
   playerId: string;
@@ -175,12 +176,12 @@ export function QualifierBracket({
 
   if (leaderboard.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
-          <IconTarget size={28} className="text-warm-400" />
-        </div>
-        <p className="text-warm-500">No entries yet</p>
-      </div>
+      <EmptyState
+        variant="compact"
+        icon={<IconTarget size={28} />}
+        title="No entries yet"
+        description="Players will appear in the bracket once they're added to the qualifier."
+      />
     );
   }
 

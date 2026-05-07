@@ -16,6 +16,7 @@ import {
   IconChevronDown,
 } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Shimmer } from '@/components/ui/shimmer';
 import { useRoundReviewV2 } from '@/hooks/coachhelm/useRoundReviewV2';
 
 import { V2ReviewSummary } from './round-review/V2ReviewSummary';
@@ -110,21 +111,21 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
       <div className={cn('rounded-2xl surface-matte p-6', className)}>
         <div className="space-y-5">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-warm-100/65 rounded-xl animate-pulse" />
+            <Shimmer className="h-10 w-10 rounded-xl" />
             <div className="space-y-2">
-              <div className="h-4 w-28 bg-warm-200 rounded-lg animate-pulse" />
-              <div className="h-3 w-20 bg-warm-100 rounded animate-pulse" />
+              <Shimmer className="h-4 w-28 rounded-lg" />
+              <Shimmer variant="line" className="w-20" />
             </div>
           </div>
-          <div className="h-16 bg-gradient-to-r from-warm-100 via-warm-50 to-warm-100 rounded-xl animate-pulse" />
+          <Shimmer className="h-16 rounded-xl" />
           <div className="grid grid-cols-9 gap-1.5">
             {Array.from({ length: 18 }).map((_, i) => (
-              <div key={i} className="h-10 bg-warm-100 rounded-lg animate-pulse" style={{ animationDelay: `${i * 40}ms` }} />
+              <Shimmer key={i} staggerIndex={i} className="h-10 rounded-lg" />
             ))}
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-20 bg-warm-50 rounded-xl border border-warm-100 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+              <Shimmer key={i} staggerIndex={i} className="h-20 rounded-xl" />
             ))}
           </div>
         </div>
@@ -665,7 +666,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
   return (
     <details className="group rounded-2xl border border-warm-200 bg-cream-100/75 backdrop-blur-xl shadow-sm overflow-hidden [&_summary::-webkit-details-marker]:hidden">
       <summary
-        className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none list-none hover:bg-warm-50/60 active:bg-warm-50 transition-colors"
+        className="flex items-center justify-between gap-3 px-5 py-4 cursor-pointer select-none list-none hover:bg-warm-50/60 active:bg-warm-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-inset"
         aria-label="Toggle stats detail"
       >
         <div className="flex items-center gap-2.5">

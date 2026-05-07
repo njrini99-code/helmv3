@@ -43,12 +43,14 @@ const paddings = {
   lg: "p-8",
 };
 
+// Hover choreography: surface-tile-hover (globals.css) handles the
+// 1px lift, primary border-glow, three-layer shadow, and the shared
+// 220ms cubic-bezier(0.16,1,0.3,1) easing used everywhere else in the
+// product. We layer the bg-prominent shift on top so the matte sheen
+// also tightens slightly on hover.
 const hoverEffect = cn(
-  "transition-all duration-300",
+  "surface-tile-hover",
   "hover:bg-glass-prominent",
-  "hover:border-glass-border-prominent",
-  "hover:-translate-y-0.5",
-  "hover:shadow-glass-hover"
 );
 
 export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(

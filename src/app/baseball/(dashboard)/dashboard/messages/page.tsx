@@ -9,7 +9,7 @@ import { EmptyChatState } from '@/components/messages/EmptyChatState';
 import { NewMessageModal } from '@/components/messages/NewMessageModal';
 import { useConversations, useMessages } from '@/hooks/use-messages';
 import { useAuthStore } from '@/stores/auth-store';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { createConversation } from '@/app/baseball/actions/messages';
 import type { ConversationWithMeta } from '@/lib/types/messages';
 import { getParticipantDetails } from '@/lib/types/messages';

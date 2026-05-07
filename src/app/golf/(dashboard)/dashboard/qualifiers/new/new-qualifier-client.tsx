@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
 import { IconFlag, IconCalendar, IconMapPin, IconUsers, IconCheck } from '@/components/icons';
 import { createGolfQualifier } from '@/app/golf/actions/golf';
 
@@ -82,8 +84,21 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
         backLabel="Qualifiers"
       />
 
+      <div className="max-w-3xl mx-auto px-4 md:px-6 pt-6 md:pt-8">
+        <Reveal>
+          <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+            <PageHeader
+              eyebrow="Coach · New Qualifier"
+              eyebrowAccent="primary"
+              title="Create a qualifier."
+              subtitle="Pick a window, invite players, set the spots."
+            />
+          </div>
+        </Reveal>
+      </div>
+
       {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 md:px-6 pb-6 md:pb-8">
         <div className="space-y-8">
           {/* Error Message */}
           {error && (

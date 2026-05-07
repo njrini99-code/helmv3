@@ -2,10 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from '@/components/ui/drawer';
 import { SearchBar } from '@/components/ui/search-bar';
 import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconCheck, IconUsers, IconAlertCircle } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
 
@@ -227,14 +235,24 @@ export function GolfNewMessageModal({
   );
 
   return (
-    <BottomSheet
+    <Drawer
       open={isOpen}
-      onClose={onClose}
-      title="New Message"
-      description={currentUserRole === 'coach' ? 'Select a player to start a conversation' : 'Select a team member to start a conversation'}
-      footer={footer}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div className="space-y-4">
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>New Message</DrawerTitle>
+          <DrawerDescription>
+            {currentUserRole === 'coach'
+              ? 'Select a player to start a conversation'
+              : 'Select a team member to start a conversation'}
+          </DrawerDescription>
+        </DrawerHeader>
+      <div
+        className="space-y-4 px-6 overflow-y-auto overscroll-contain"
+      >
         {/* No Team Error */}
         {noTeamError && (
           <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
@@ -297,21 +315,22 @@ export function GolfNewMessageModal({
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-                <IconUsers size={20} className="text-warm-400" />
-              </div>
-              <p className="text-sm text-warm-500">
-                {searchQuery.trim()
-                  ? `No ${currentUserRole === 'coach' ? 'players' : 'team members'} found`
-                  : `No ${currentUserRole === 'coach' ? 'players' : 'team members'} on your team yet`
-                }
-              </p>
-            </div>
+            <EmptyState
+              variant="compact"
+              icon={<IconUsers size={28} />}
+              title={searchQuery.trim()
+                ? `No ${currentUserRole === 'coach' ? 'players' : 'team members'} found`
+                : `No ${currentUserRole === 'coach' ? 'players' : 'team members'} on your team yet`}
+              description={searchQuery.trim()
+                ? 'Try a different name or clear your search.'
+                : 'Once your team grows, you can start a conversation with anyone here.'}
+            />
           )}
         </div>
       </div>
 
-    </BottomSheet>
+      <DrawerFooter>{footer}</DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }

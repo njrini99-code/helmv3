@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { submitGolfRoundComprehensive } from '@/app/golf/actions/golf';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import type { HoleStats } from '@/lib/types/golf';
 import {
   getPendingRounds as getModernPendingRounds,
@@ -12,6 +12,7 @@ import {
 } from '@/lib/offline/indexed-db';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { GlassCard } from '@/components/ui/glass-card';
 
 // Legacy IndexedDB access kept for older locally saved drafts
 const LEGACY_DB_NAME = 'golf_offline_db';
@@ -399,7 +400,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
       />
       <div className="flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <div className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-6 sm:p-8">
+        <GlassCard hover={false} padding="md" className="sm:p-8">
           <p className="text-warm-500 text-sm mb-6">
             Found {rounds.length} recoverable round{rounds.length !== 1 ? 's' : ''} in your browser&apos;s offline storage.
           </p>
@@ -480,7 +481,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
               })}
             </div>
           )}
-        </div>
+        </GlassCard>
       </div>
       </div>
     </div>

@@ -11,12 +11,15 @@ import {
   getPlayerQualifiers,
   getNextQualifierRoundNumber,
   getPlayerSavedCourses,
+  getRecentCoursesForPlayer,
   savePlayerCourse,
   touchSavedCourse,
   type PlayerQualifierInfo,
   type SavedCourse,
-  type SavedCourseHoleConfig
+  type SavedCourseHoleConfig,
+  type RecentPlayedCourse
 } from '@/app/golf/actions/golf';
+import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
@@ -27,10 +30,18 @@ import { OfflineWarningBanner } from '@/components/golf';
 import { IconBookmark, IconCheck, IconChartBar, IconFlag, IconMapPin, IconPlus, IconSearch, IconTrophy, IconWarning } from '@/components/icons';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
+import { PageHeader } from '@/components/ui/page-header';
+import { Reveal } from '@/components/ui/reveal';
+import { GolfTabBar } from '@/components/golf/GolfTabBar';
 
 import { SaveRoundModal } from '@/components/golf/SaveRoundModal';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
@@ -497,6 +508,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // Saved courses state
   const [savedCourses, setSavedCourses] = useState<SavedCourse[]>([]);
   const [loadingSavedCourses, setLoadingSavedCourses] = useState(true);
+  // Recent courses (saved courses enriched with round counts) — quick-pick tile grid
+  const [recentCourses, setRecentCourses] = useState<RecentPlayedCourse[]>([]);
   const [courseMode, setCourseMode] = useState<'new' | 'saved'>('new');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   // FK to golf_courses (resolved from saved course or server-side fallback)
@@ -623,6 +636,69 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         }
         setLoadingSavedCourses(false);
       });
+  }, []);
+
+  // Fetch recent courses (saved courses enriched with round counts) for the
+  // quick-pick tile grid. Falls back gracefully — section is hidden if list is empty.
+  useEffect(() => {
+    getRecentCoursesForPlayer(8)
+      .then(result => {
+        if (result.success) {
+          setRecentCourses(result.data);
+        }
+      })
+      .catch(() => {
+        // Silently swallow — quick-pick is a progressive enhancement.
+      });
+  }, []);
+
+  /**
+   * Handle confirmation from the recent-courses quick-pick drawer.
+   * Pre-fills setupData with the chosen course and advances directly to
+   * the appropriate next step — skipping the manual course-search form.
+   *  - If the saved course has hole configs with valid yardages → 'tracking'
+   *  - Otherwise → 'holes' (hole configuration step)
+   */
+  const handleQuickPickConfirm = useCallback((course: RecentPlayedCourse) => {
+    // Mirror handleSavedCourseSelect: populate state + refs from the saved course
+    setSelectedCourseId(course.id);
+    setCourseMode('saved');
+    resolvedCourseIdRef.current = course.courseId ?? null;
+    setSetupData(prev => ({
+      ...prev,
+      courseName: course.courseName,
+      courseCity: course.courseCity || '',
+      courseState: course.courseState || '',
+      courseRating: course.courseRating?.toString() || '',
+      courseSlope: course.courseSlope?.toString() || '',
+      teesPlayed: course.teesPlayed || 'White',
+    }));
+    setPreloadedHoleConfigs(course.holeConfigs);
+    if (course.holesPerRound === 9 || course.holesPerRound === 18) {
+      setHolesPerRound(course.holesPerRound);
+    }
+    // Update last_played_at on the saved course (fire-and-forget)
+    touchSavedCourse(course.id).catch(() => { /* ignore */ });
+
+    // Advance straight into the round flow. We mirror the gating logic
+    // from handleSetupSubmit so behavior stays identical.
+    const hasValidYardages = course.holeConfigs?.some(h => h.yardage > 0) ?? false;
+    if (course.holeConfigs && course.holeConfigs.length > 0 && hasValidYardages) {
+      const targetCount = course.holesPerRound === 9 ? 9 : 18;
+      const configs: SavedCourseHoleConfig[] = course.holeConfigs.slice(0, targetCount);
+      const initialHoles: Hole[] = configs.map((h, idx) => ({
+        number: idx + 1,
+        par: h.par,
+        yardage: h.yardage,
+        score: null,
+      }));
+      setHoles(initialHoles);
+      setCompletedHoleStats([]);
+      setStep('tracking');
+    } else {
+      // No usable hole configs — go to the configuration step with what we have
+      setStep('holes');
+    }
   }, []);
 
   // Handle saved course selection
@@ -1461,16 +1537,30 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // ============================================================================
   if (step === 'setup') {
     return (
-      <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl">
+      <div className="min-h-dvh bg-transparent flex items-start justify-center p-4 py-8">
+        <div className="w-full max-w-2xl space-y-5">
+          {/* Quick-pick recent courses — sits above the manual setup form
+              and is hidden entirely when the player has no recent courses. */}
+          {recentCourses.length > 0 && !showResumePrompt && (
+            <RecentCoursesQuickPick
+              courses={recentCourses}
+              onConfirmCourse={handleQuickPickConfirm}
+            />
+          )}
+
+          <Reveal>
+            <div className="surface-stone rounded-3xl p-6 md:p-10">
+              <PageHeader
+                eyebrow="New Round · Setup"
+                eyebrowAccent="primary"
+                title="Track every shot of this round."
+                subtitle="Pick a course, set up your scorecard, then start tracking."
+              />
+            </div>
+          </Reveal>
+
           <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
             <StepProgressBar />
-            <h1 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-3">
-              New Round
-            </h1>
-            <p className="text-warm-500 text-sm mb-6">
-              Track your round shot-by-shot for comprehensive stats
-            </p>
 
             <form onSubmit={handleSetupSubmit} className="space-y-6">
               {/* Offline Warning Banner - inline variant for setup step */}
@@ -1501,29 +1591,22 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center rounded-full bg-warm-100/80 p-1">
-                      <button
-                        type="button"
-                        onClick={() => {
+                    <GolfTabBar<'saved' | 'new'>
+                      ariaLabel="Course source"
+                      compact
+                      tabs={[
+                        { id: 'saved', label: 'Saved', icon: <IconBookmark size={13} /> },
+                        { id: 'new', label: 'New', icon: <IconPlus size={13} /> },
+                      ]}
+                      value={courseMode}
+                      onChange={(next) => {
+                        if (next === 'saved') {
                           setCourseMode('saved');
                           setCourseSearchQuery('');
                           if (!selectedCourseId && savedCourses.length > 0) {
                             handleSavedCourseSelect(savedCourses[0]!.id);
                           }
-                        }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-[color,background-color,box-shadow] ${
-                          courseMode === 'saved'
-                            ? 'bg-white text-warm-900 shadow-sm'
-                            : 'text-warm-500 hover:text-warm-700'
-                        }`}
-                        aria-pressed={courseMode === 'saved'}
-                      >
-                        <IconBookmark size={13} />
-                        Saved
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
+                        } else {
                           setCourseMode('new');
                           setSelectedCourseId(null);
                           resolvedCourseIdRef.current = null;
@@ -1538,18 +1621,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             courseSlope: '',
                             teesPlayed: 'White',
                           }));
-                        }}
-                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-[color,background-color,box-shadow] ${
-                          courseMode === 'new'
-                            ? 'bg-white text-warm-900 shadow-sm'
-                            : 'text-warm-500 hover:text-warm-700'
-                        }`}
-                        aria-pressed={courseMode === 'new'}
-                      >
-                        <IconPlus size={13} />
-                        New
-                      </button>
-                    </div>
+                        }
+                      }}
+                    />
                   </div>
 
                   {/* ── Saved Course: Card Selector ── */}
@@ -1937,56 +2011,30 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                     <label className="text-sm font-medium text-warm-700 block mb-2">
                       Holes
                     </label>
-                    <div className="flex items-center rounded-lg bg-warm-100/80 p-1 w-fit">
-                      <button
-                        type="button"
-                        onClick={() => setHolesPerRound(9)}
-                        className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
-                          holesPerRound === 9
-                            ? 'bg-white text-warm-900 shadow-sm'
-                            : 'text-warm-500 hover:text-warm-700'
-                        }`}
-                      >
-                        9 Holes
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setHolesPerRound(18)}
-                        className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
-                          holesPerRound === 18
-                            ? 'bg-white text-warm-900 shadow-sm'
-                            : 'text-warm-500 hover:text-warm-700'
-                        }`}
-                      >
-                        18 Holes
-                      </button>
-                    </div>
+                    <GolfTabBar<'9' | '18'>
+                      ariaLabel="Holes per round"
+                      compact
+                      tabs={[
+                        { id: '9', label: '9 Holes' },
+                        { id: '18', label: '18 Holes' },
+                      ]}
+                      value={holesPerRound === 9 ? '9' : '18'}
+                      onChange={(next) => setHolesPerRound(next === '9' ? 9 : 18)}
+                    />
 
                     {/* Front/Back Nine selector — shown when 9 holes on an 18-hole saved course */}
                     {holesPerRound === 9 && preloadedHoleConfigs && preloadedHoleConfigs.length >= 18 && (
-                      <div className="flex items-center rounded-lg bg-warm-100/80 p-1 w-fit mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setNineSelection('front')}
-                          className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
-                            nineSelection === 'front'
-                              ? 'bg-white text-warm-900 shadow-sm'
-                              : 'text-warm-500 hover:text-warm-700'
-                          }`}
-                        >
-                          Front 9
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setNineSelection('back')}
-                          className={`px-5 py-2 rounded-md text-sm font-medium transition-[color,background-color,box-shadow] ${
-                            nineSelection === 'back'
-                              ? 'bg-white text-warm-900 shadow-sm'
-                              : 'text-warm-500 hover:text-warm-700'
-                          }`}
-                        >
-                          Back 9
-                        </button>
+                      <div className="mt-2">
+                        <GolfTabBar<'front' | 'back'>
+                          ariaLabel="Nine selection"
+                          compact
+                          tabs={[
+                            { id: 'front', label: 'Front 9' },
+                            { id: 'back', label: 'Back 9' },
+                          ]}
+                          value={nineSelection}
+                          onChange={(next) => setNineSelection(next)}
+                        />
                       </div>
                     )}
                   </div>
@@ -2250,21 +2298,25 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       </div>
 
       {/* Emergency Save Recovery Dialog (new round) */}
-      {showNewRoundRecovery && newRoundRecoveryData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" />
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6">
+      <Drawer
+        open={Boolean(showNewRoundRecovery && newRoundRecoveryData)}
+        onOpenChange={(next) => {
+          if (!next) setShowNewRoundRecovery(false);
+        }}
+      >
+        <DrawerContent className="sm:max-w-sm sm:mx-auto sm:rounded-3xl">
+          <div className="px-6 pb-6 pt-4">
             <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
+            <DrawerTitle className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
               Recover Unsaved Progress?
-            </h3>
+            </DrawerTitle>
             <p className="text-sm text-warm-500 text-center mb-6">
               Found locally saved data with{' '}
-              {newRoundRecoveryData.completedHoleStats?.filter(h => h != null).length || 0} completed holes.
+              {newRoundRecoveryData?.completedHoleStats?.filter(h => h != null).length || 0} completed holes.
               This data may have been saved when the app was interrupted.
             </p>
             <div className="flex gap-3">
@@ -2281,6 +2333,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               <button
                 onClick={() => {
                   const rd = newRoundRecoveryData;
+                  if (!rd) return;
                   if (rd.completedHoleStats) setCompletedHoleStats(rd.completedHoleStats);
                   if (rd.inProgressShotsByHole) setInProgressShotsByHole(rd.inProgressShotsByHole);
                   if (rd.holes?.length > 0) setHoles(rd.holes);
@@ -2300,8 +2353,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Save Round Modal */}
       <SaveRoundModal
@@ -2314,21 +2367,25 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       />
 
       {/* Back to Setup Confirmation Modal */}
-      {showBackToSetupModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm" onClick={() => setShowBackToSetupModal(false)} />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="back-setup-title"
-            className="relative glass-prominent rounded-2xl shadow-2xl max-w-sm w-full p-6"
-          >
+      <Drawer
+        open={showBackToSetupModal}
+        onOpenChange={(next) => {
+          if (!next) setShowBackToSetupModal(false);
+        }}
+      >
+        <DrawerContent
+          className="sm:max-w-sm sm:mx-auto sm:rounded-3xl"
+          aria-labelledby="back-setup-title"
+        >
+          <div className="px-6 pb-6 pt-2">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
                 <IconWarning size={20} className="text-amber-600" />
               </div>
               <div>
-                <h3 id="back-setup-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Go back to setup?</h3>
+                <DrawerTitle id="back-setup-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">
+                  Go back to setup?
+                </DrawerTitle>
                 <p className="text-sm text-warm-500 mt-0.5">Your progress and shot data will be lost.</p>
               </div>
             </div>
@@ -2356,8 +2413,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               </button>
             </div>
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
 
       {/* Finish Round — Premium Round Summary */}
       <LazyMotion features={domAnimation}>
@@ -2390,22 +2447,20 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             const toParLabel = toPar === 0 ? 'E' : `${toPar > 0 ? '+' : ''}${toPar}`;
 
             return (
-              <m.div
+              <Drawer
                 key="round-summary-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                open={true}
+                onOpenChange={(next) => {
+                  if (!next) setShowFinishConfirm(false);
+                }}
               >
-                <div className="fixed inset-0 bg-warm-900/60 backdrop-blur-md" />
-                <m.div
-                  initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="relative glass-prominent rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-                >
+                <DrawerContent className="sm:max-w-md sm:mx-auto sm:rounded-3xl p-0 overflow-y-auto">
+                  <DrawerTitle className="sr-only">Round Complete</DrawerTitle>
+                  <m.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
                   {/* Celebration Header */}
                   <div className="relative overflow-hidden rounded-t-2xl bg-primary-600 px-6 pt-6 pb-5 text-center">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.15),transparent_60%)]" />
@@ -2546,8 +2601,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       </button>
                     </m.div>
                   </div>
-                </m.div>
-              </m.div>
+                  </m.div>
+                </DrawerContent>
+              </Drawer>
             );
           })()}
         </AnimatePresence>

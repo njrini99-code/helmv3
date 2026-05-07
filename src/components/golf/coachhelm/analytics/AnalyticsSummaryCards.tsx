@@ -17,6 +17,7 @@ import {
   IconCheck,
   IconChartBar,
 } from '@/components/icons';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import type { CoachHelmOverviewData } from '@/app/golf/actions/coachhelm-analytics';
 
 interface AnalyticsSummaryCardsProps {
@@ -28,7 +29,9 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
   const cards = [
     {
       label: 'Total Insights',
-      value: data.totalInsights,
+      valueNode: (
+        <AnimatedNumber value={data.totalInsights} decimals={0} staggerIndex={0} />
+      ),
       subtext: `${data.insightsThisWeek} this week`,
       change: data.insightsChange,
       icon: <IconSparkles size={20} className="text-purple-600" />,
@@ -37,7 +40,14 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
     },
     {
       label: 'Action Rate',
-      value: `${(data.actionRate * 100).toFixed(0)}%`,
+      valueNode: (
+        <AnimatedNumber
+          value={data.actionRate * 100}
+          decimals={0}
+          suffix="%"
+          staggerIndex={1}
+        />
+      ),
       subtext: 'Insights acted upon',
       icon: <IconCheck size={20} className="text-blue-600" />,
       bgColor: 'bg-blue-50',
@@ -47,7 +57,14 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
     },
     {
       label: 'Improvement Rate',
-      value: `${(data.improvementRate * 100).toFixed(0)}%`,
+      valueNode: (
+        <AnimatedNumber
+          value={data.improvementRate * 100}
+          decimals={0}
+          suffix="%"
+          staggerIndex={2}
+        />
+      ),
       subtext: 'Led to improvement',
       icon: <IconTrendingUp size={20} className="text-primary-600" />,
       bgColor: 'bg-primary-50',
@@ -57,7 +74,14 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
     },
     {
       label: 'Prediction Accuracy',
-      value: `${(data.predictionAccuracy * 100).toFixed(0)}%`,
+      valueNode: (
+        <AnimatedNumber
+          value={data.predictionAccuracy * 100}
+          decimals={0}
+          suffix="%"
+          staggerIndex={3}
+        />
+      ),
       subtext: 'Model accuracy',
       icon: <IconTarget size={20} className="text-amber-600" />,
       bgColor: 'bg-amber-50',
@@ -67,7 +91,13 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
     },
     {
       label: 'Strokes Saved',
-      value: data.strokesSavedEstimate.toFixed(1),
+      valueNode: (
+        <AnimatedNumber
+          value={data.strokesSavedEstimate}
+          decimals={1}
+          staggerIndex={4}
+        />
+      ),
       subtext: 'Estimated impact',
       icon: <IconChartBar size={20} className="text-primary-600" />,
       bgColor: 'bg-primary-50',
@@ -95,7 +125,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
 
             {/* Value */}
             <div className="flex items-baseline gap-2">
-              <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{card.value}</span>
+              <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{card.valueNode}</span>
               {card.change !== undefined && card.change !== 0 && (
                 <span
                   className={cn(

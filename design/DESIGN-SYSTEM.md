@@ -6,7 +6,7 @@
 ## Brand Identity
 
 **Product:** GolfHelm — AI-powered college golf team management
-**Aesthetic:** Linear/Vercel-inspired, premium glassmorphism, warm tones
+**Aesthetic:** California-modern × neo-futurism — warm cream + helm green, matte sculptural surfaces, editorial typography
 **Font:** DM Sans (primary), Playfair Display (serif accents)
 
 ---
@@ -283,4 +283,4 @@ focus: border → #15803D, ring → 0 0 0 3px rgba(22,163,74,0.1)
 - Subtle framer-motion animations
 - Proper focus rings for accessibility
 - Server components by default (client only when interactive)
-- Think Linear, Stripe, Vercel quality bar
+- Think Apple-grade quality bar

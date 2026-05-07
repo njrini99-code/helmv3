@@ -36,7 +36,7 @@ text-neutral-600      // Secondary text (still readable)
 **Why:** Draw More Circles uses light backgrounds because:
 - Creates trust (nothing hidden in shadows)
 - Better accessibility (WCAG AA+ contrast)
-- Modern SaaS standard (Linear, Stripe, Vercel)
+- Modern SaaS standard for premium editorial UIs
 - Easier to scan quickly
 
 **Implementation:**
@@ -223,7 +223,7 @@ Simple, clean design > excessive effects
 UI showcases > dark overlays
 
 ### 5. **Professional > Flashy**
-Linear/Stripe vibe > Gaming/crypto vibe
+Editorial SaaS vibe > Gaming/crypto vibe
 
 ---
 

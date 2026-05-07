@@ -1,14 +1,18 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconPlus, IconSend, IconPaperclip, IconClipboardList, IconUsers, IconUser, IconCheck, IconX, IconSearch, IconFile, IconCalendar, IconChevronDown } from '@/components/icons';
 import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -79,14 +83,12 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
       <Button onClick={() => setIsOpen(true)} leftIcon={<IconPlus size={16} />}>
         New Announcement
       </Button>
-      {isOpen && createPortal(
-        <AnnouncementDialog
-          players={players}
-          documents={documents}
-          onClose={() => setIsOpen(false)}
-        />,
-        document.body
-      )}
+      <AnnouncementDialog
+        isOpen={isOpen}
+        players={players}
+        documents={documents}
+        onClose={() => setIsOpen(false)}
+      />
     </>
   );
 }
@@ -94,15 +96,15 @@ export function CreateAnnouncementFlow({ players, documents }: CreateAnnouncemen
 // ─── Dialog ──────────────────────────────────────────────────────────────────
 
 function AnnouncementDialog({
+  isOpen,
   players,
   documents,
   onClose,
-}: CreateAnnouncementFlowProps & { onClose: () => void }) {
+}: CreateAnnouncementFlowProps & { isOpen: boolean; onClose: () => void }) {
   const router = useRouter();
   const { showToast } = useToast();
   const titleRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -121,41 +123,16 @@ function AnnouncementDialog({
 
   const scrollBodyRef = useRef<HTMLDivElement>(null);
 
-  // Animate in + lock body scroll + scroll modal to top
+  // Focus title input on open. Drawer handles scroll lock, ESC, focus trap.
   useEffect(() => {
-    document.body.style.overflow = 'hidden';
-    const preventTouchScroll = (e: TouchEvent) => {
-      if (scrollBodyRef.current?.contains(e.target as Node)) return;
-      e.preventDefault();
-    };
-    document.addEventListener('touchmove', preventTouchScroll, { passive: false });
-
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      setIsAnimating(true);
-      scrollBodyRef.current?.scrollTo(0, 0);
-    }));
-    setTimeout(() => titleRef.current?.focus(), 150);
-
-    return () => {
-      document.body.style.overflow = 'unset';
-      document.removeEventListener('touchmove', preventTouchScroll);
-    };
-  }, []);
-
-  // Escape key
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === 'Escape' && !loading) handleClose();
-  }, [loading]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+    if (!isOpen) return;
+    const t = setTimeout(() => titleRef.current?.focus(), 150);
+    return () => clearTimeout(t);
+  }, [isOpen]);
 
   function handleClose() {
     if (loading) return;
-    setIsAnimating(false);
-    setTimeout(onClose, 200);
+    onClose();
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -220,40 +197,22 @@ function AnnouncementDialog({
   const recipientCount = isAllTeam ? players.length : recipientPlayerIds!.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6">
-      {/* Backdrop */}
-      <div
-        className={cn(
-          'absolute inset-0 bg-warm-900/60 backdrop-blur-sm transition-opacity duration-200',
-          isAnimating ? 'opacity-100' : 'opacity-0'
-        )}
-        onClick={handleClose}
-        aria-hidden="true"
-      />
-
-      {/* Dialog panel — full screen on mobile, centered card on desktop */}
-      <div
-        role="dialog"
-        aria-modal="true"
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) handleClose();
+      }}
+    >
+      <DrawerContent
+        className="sm:max-w-lg sm:mx-auto sm:rounded-3xl p-0 overflow-hidden flex flex-col"
         aria-labelledby="ann-dialog-title"
-        className={cn(
-          'relative z-10 w-full sm:max-w-lg bg-white sm:border sm:border-warm-200/60 sm:rounded-2xl shadow-2xl',
-          'flex flex-col',
-          // Mobile: full height sheet from bottom. Desktop: max height with margin.
-          'h-full sm:h-auto sm:max-h-[min(640px,calc(100dvh-3rem))]',
-          'rounded-t-2xl sm:rounded-2xl',
-          'transition-[opacity,transform] duration-200 ease-out',
-          isAnimating
-            ? 'opacity-100 translate-y-0 scale-100'
-            : 'opacity-0 translate-y-8 sm:translate-y-4 scale-100 sm:scale-[0.97]'
-        )}
       >
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* ── Header ──────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-warm-100 flex-shrink-0">
-            <h2 id="ann-dialog-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">
+            <DrawerTitle id="ann-dialog-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">
               New Announcement
-            </h2>
+            </DrawerTitle>
             <button
               type="button"
               onClick={handleClose}
@@ -679,7 +638,7 @@ function AnnouncementDialog({
             </div>
           </div>
         </form>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

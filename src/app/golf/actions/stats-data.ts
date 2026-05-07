@@ -775,6 +775,26 @@ export async function getStatsSummary(
  * Both public wrappers handle auth/access verification differently; once
  * they reach this helper the query shape is identical.
  */
+// Perf fix (incident 3): hard cap the rounds window for detailed stats so we
+// never feed hundreds of round_ids into the IN-list of the shots/holes query.
+// 100 rounds covers a full college season + ample headroom. Anything beyond
+// that is not actionable in stats UI today (the page filters down to season /
+// last-N anyway).
+const DETAILED_STATS_MAX_ROUNDS = 100;
+
+function presetLimitCount(filter?: StatsFilter): number | null {
+  switch (filter?.preset) {
+    case 'last5':
+      return 5;
+    case 'last10':
+      return 10;
+    case 'last20':
+      return 20;
+    default:
+      return null;
+  }
+}
+
 async function queryDetailedStatsWithClient(
   supabase: Awaited<ReturnType<typeof createClient>>,
   playerId: string,
@@ -807,6 +827,15 @@ async function queryDetailedStatsWithClient(
   query = applyRoundTypeFilter(query, conditions.roundType);
   if (conditions.courseName) query = query.eq('course_name', conditions.courseName);
   query = query.order('round_date', { ascending: false });
+
+  // Push the preset limit into SQL — previously we fetched every completed
+  // round and sliced in JS, which meant the shots/holes IN(round_ids) query
+  // below could fan out to hundreds of UUIDs and trip statement_timeout.
+  // For non-preset queries we still cap at DETAILED_STATS_MAX_ROUNDS so the
+  // fan-out stays bounded.
+  const presetLimit = presetLimitCount(filter);
+  const sqlLimit = presetLimit ?? DETAILED_STATS_MAX_ROUNDS;
+  query = query.limit(sqlLimit);
 
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {

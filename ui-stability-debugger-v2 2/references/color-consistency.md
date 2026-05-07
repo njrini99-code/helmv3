@@ -2,7 +2,7 @@
 
 ## The Three-Layer Token Architecture
 
-Premium SaaS apps (Linear, Vercel, Stripe, shadcn/ui) all use a layered token system. This prevents the #1 cause of color drift: developers picking "close enough" colors instead of referencing a single source of truth.
+Premium SaaS apps (shadcn/ui and other editorial dashboards) all use a layered token system. This prevents the #1 cause of color drift: developers picking "close enough" colors instead of referencing a single source of truth.
 
 ```
 Layer 1: Primitives    → Raw color values (--green-600: #16A34A)

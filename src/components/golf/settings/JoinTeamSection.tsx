@@ -43,6 +43,15 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
+
+  // Initialize `now` on the client to avoid SSR/CSR mismatch in the
+  // "Requested Xm/h/d ago" relative time labels.
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   // Fetch pending requests on mount
   useEffect(() => {
@@ -148,7 +157,10 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
 
   function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
-    const now = new Date();
+    if (!now) {
+      // Pre-hydration: render absolute date so SSR + first paint match.
+      return date.toLocaleDateString();
+    }
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
@@ -239,7 +251,7 @@ export function JoinTeamSection({ playerId, currentTeam }: JoinTeamSectionProps)
                     </div>
                     <div>
                       <p className="font-medium text-amber-900">{request.team.name}</p>
-                      <p className="text-sm text-amber-700">
+                      <p className="text-sm text-amber-700" suppressHydrationWarning>
                         {request.team.organization?.name && `${request.team.organization.name} · `}
                         Requested {formatDate(request.created_at)}
                       </p>

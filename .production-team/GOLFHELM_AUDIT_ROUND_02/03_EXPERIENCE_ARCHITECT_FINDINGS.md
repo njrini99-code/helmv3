@@ -205,16 +205,16 @@ small: text-sm text-warm-500
 
 ## Comparison to Benchmarks
 
-### vs Linear (Round 2)
-| Aspect | Linear | GolfHelm R2 |
-|--------|--------|-------------|
+### vs Premium Dashboard Standard (Round 2)
+| Aspect | Premium Standard | GolfHelm R2 |
+|--------|------------------|-------------|
 | Glass effects | 10/10 | 9/10 |
 | Animations | 10/10 | 8/10 |
 | Accessibility | 10/10 | 6/10 ⬆️ |
 
-### vs Stripe (Round 2)
-| Aspect | Stripe | GolfHelm R2 |
-|--------|--------|-------------|
+### vs Premium Brand Standard (Round 2)
+| Aspect | Premium Standard | GolfHelm R2 |
+|--------|------------------|-------------|
 | Brand consistency | 10/10 | 9/10 |
 | Form design | 10/10 | 8/10 |
 | Loading states | 10/10 | 9/10 ⬆️ |

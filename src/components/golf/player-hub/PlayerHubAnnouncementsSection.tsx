@@ -6,7 +6,7 @@ import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';

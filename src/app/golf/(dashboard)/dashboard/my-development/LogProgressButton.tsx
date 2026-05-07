@@ -2,10 +2,16 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { Input, Textarea } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import {
   updateFocusAreaProgress,
   completeFocusArea,
@@ -107,13 +113,22 @@ export function LogProgressButton({
         Log progress
       </button>
 
-      <BottomSheet
+      <Drawer
         open={open}
-        onClose={handleClose}
-        title="Log progress"
-        description={focusAreaTitle}
+        onOpenChange={(next) => {
+          if (!next) handleClose();
+        }}
       >
-        <form onSubmit={handleSubmit} className="space-y-5 pb-2">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Log progress</DrawerTitle>
+            <DrawerDescription>{focusAreaTitle}</DrawerDescription>
+          </DrawerHeader>
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-5 px-6 pb-6 overflow-y-auto overscroll-contain"
+            style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+          >
           {/* Current value (read-only) */}
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-1.5">
@@ -168,7 +183,8 @@ export function LogProgressButton({
             </Button>
           </div>
         </form>
-      </BottomSheet>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }

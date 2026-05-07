@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconFile, IconCheck, IconUsers, IconClock, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { deleteAnnouncement, getAnnouncementDetail } from '@/app/golf/actions/announcements';
 import { openExternalUrl } from '@/lib/utils/capacitor';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';

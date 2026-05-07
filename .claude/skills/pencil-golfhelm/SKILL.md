@@ -106,9 +106,9 @@ description: Supercharged Pencil design system for GolfHelm — UI mockups, mark
 
 ```
 1. Use WebSearch to find design inspiration:
-   - "Linear app dashboard design 2025"
-   - "Vercel dashboard glassmorphism"
-   - "Stripe billing page design patterns"
+   - "premium SaaS dashboard design 2025"
+   - "editorial dashboard glassmorphism"
+   - "premium billing page design patterns"
    - "Premium SaaS [feature-type] UI"
 2. Screenshot references with get_screenshot of browser
 3. Use as visual guide while building in Pencil
@@ -336,9 +336,9 @@ Save these to `helmv3/design/screenshots/`:
 When you need visual inspiration, search for these patterns:
 
 ### Dashboard Inspiration
-- "Linear app issue tracker UI design"
-- "Vercel analytics dashboard 2025"
-- "Stripe dashboard glassmorphism design"
+- "premium issue tracker UI design"
+- "premium analytics dashboard 2025"
+- "premium dashboard glassmorphism design"
 - "Notion workspace premium UI"
 
 ### Marketing Creative Inspiration
@@ -351,6 +351,6 @@ When you need visual inspiration, search for these patterns:
 - "Data table design system premium"
 - "Stats card bento grid dashboard"
 - "Glass card component library"
-- "Sidebar navigation design Linear Vercel"
+- "premium SaaS sidebar navigation design"
 
 When finding references, ALWAYS adapt to GolfHelm's token system. Never copy verbatim — translate to our cream/green/glass palette.

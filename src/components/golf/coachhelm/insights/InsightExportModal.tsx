@@ -2,9 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { cn } from '@/lib/utils';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/glass-card';
 import {
@@ -69,7 +74,6 @@ export function InsightExportModal({
   selectedIds,
   onExportComplete,
 }: InsightExportModalProps) {
-  const { modalRef } = useFocusTrap(open, onClose);
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('csv');
   const [isExporting, setIsExporting] = useState(false);
   const [exportResult, setExportResult] = useState<{
@@ -131,13 +135,23 @@ export function InsightExportModal({
   };
 
   return (
-    <BottomSheet
+    <Drawer
       open={open}
-      onClose={handleClose}
-      title="Export Insights"
-      description={`Export ${selectedIds.length} selected insight${selectedIds.length !== 1 ? 's' : ''}`}
+      onOpenChange={(next) => {
+        if (!next) handleClose();
+      }}
     >
-      <div ref={modalRef} className="space-y-6">
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Export Insights</DrawerTitle>
+          <DrawerDescription>
+            {`Export ${selectedIds.length} selected insight${selectedIds.length !== 1 ? 's' : ''}`}
+          </DrawerDescription>
+        </DrawerHeader>
+        <div
+          className="space-y-6 px-6 pb-6 overflow-y-auto overscroll-contain"
+          style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+        >
         {/* Format Selection */}
         <div>
           <label className="block text-sm font-medium text-warm-700 mb-3">
@@ -230,7 +244,8 @@ export function InsightExportModal({
             {isExporting ? 'Exporting...' : 'Export'}
           </Button>
         </div>
-      </div>
-    </BottomSheet>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

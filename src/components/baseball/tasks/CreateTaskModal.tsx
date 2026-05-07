@@ -2,10 +2,15 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { BottomSheet } from '@/components/ui/bottom-sheet';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import { IconCheck } from '@/components/icons';
 import { createTask } from '@/app/baseball/actions/tasks';
 import { ReminderPicker } from './ReminderPicker';
@@ -109,8 +114,21 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
   }
 
   return (
-    <BottomSheet open={isOpen} onClose={onClose} title="Create New Task">
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Drawer
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Create New Task</DrawerTitle>
+        </DrawerHeader>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 px-6 pb-6 overflow-y-auto overscroll-contain"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
+      >
         <Input
           label="Task Title"
           value={title}
@@ -284,6 +302,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           </Button>
         </div>
       </form>
-    </BottomSheet>
+      </DrawerContent>
+    </Drawer>
   );
 }

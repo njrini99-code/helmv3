@@ -1,10 +1,19 @@
 'use client';
 
+/**
+ * RecruitFormSheet — vaul-backed drawer for adding/editing a recruiting prospect.
+ *
+ * Migrated Apr 2026 from a hand-rolled fixed-overlay sheet with manual
+ * backdrop, focus trap, and onClick stopPropagation plumbing → the shared
+ * <Drawer> primitive. Inherits drag-to-dismiss, focus trap, scroll-lock,
+ * and ESC-to-close. The explicit X close button stays — coaches expect a
+ * visible "Close" affordance on a long form.
+ */
+
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { X, Trash2, Save, GraduationCap, MapPin, Mail, Phone } from 'lucide-react';
-import { toast } from '@/components/ui/toast';
+import { toast } from '@/components/ui/sonner';
 import {
   createRecruit,
   updateRecruit,
@@ -14,6 +23,10 @@ import {
   type RecruitStatus,
 } from '@/app/golf/actions/recruiting';
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
+import {
+  Drawer,
+  DrawerContent,
+} from '@/components/ui/drawer';
 
 interface RecruitFormSheetProps {
   open: boolean;
@@ -36,7 +49,6 @@ const EMPTY_FORM: RecruitInput = {
 
 export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFormSheetProps) {
   const isEditing = recruit !== null;
-  const { modalRef } = useFocusTrap(open, onClose);
   const [form, setForm] = useState<RecruitInput>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -60,8 +72,6 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
     }
     setConfirmingDelete(false);
   }, [open, recruit]);
-
-  if (!open) return null;
 
   const handleSave = async () => {
     if (!form.first_name?.trim()) {
@@ -114,18 +124,13 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
     setForm((prev) => ({ ...prev, [key]: value }));
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="recruit-form-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-0 sm:px-4 bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
+    <Drawer
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
     >
-      <div
-        ref={modalRef}
-        className="w-full sm:max-w-2xl max-h-[92vh] flex flex-col surface-stone rounded-t-3xl sm:rounded-3xl overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <DrawerContent className="sm:max-w-2xl sm:mx-auto sm:rounded-3xl">
         {/* Premium gradient header */}
         <div className="relative px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <div className="flex items-start justify-between gap-3">
@@ -154,7 +159,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-5">
           {/* Status selector */}
           <div>
             <label className="block text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-2">
@@ -353,9 +358,8 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
             </button>
           </div>
         </div>
-      </div>
-
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

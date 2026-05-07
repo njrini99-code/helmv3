@@ -2,7 +2,7 @@
 
 > **Scope**: Upgrade the admin tracer's Data Quality tab from a basic 2-check outlier panel into the master diagnostic for stats accuracy across the entire platform.
 >
-> **Constraint**: No new database tables. Backward-compatible `TracerData` interface. Server actions for data, client-side for presentation. Glassmorphism/Linear aesthetic.
+> **Constraint**: No new database tables. Backward-compatible `TracerData` interface. Server actions for data, client-side for presentation. Glassmorphism/editorial aesthetic.
 
 ---
 

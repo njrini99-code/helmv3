@@ -23,7 +23,7 @@ import { getFullName } from '@/lib/utils';
 import { InviteModal } from '@/components/coach/InviteModal';
 import { LineupBuilder } from '@/components/coach/lineup/LineupBuilder';
 import { saveLineup } from '@/app/baseball/actions/lineups';
-import { useToast } from '@/components/ui/toast';
+import { useToast } from '@/components/ui/sonner';
 import {
   PlayerRow,
   PlayerCard,

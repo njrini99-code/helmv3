@@ -358,7 +358,7 @@ export function RoundSubmitOverlay({
               <p className="text-sm text-warm-500 mb-1">
                 {courseName}
               </p>
-              <p className="text-xs text-warm-400">
+              <p className="text-xs text-warm-600">
                 Calculating your statistics...
               </p>
 
@@ -371,7 +371,7 @@ export function RoundSubmitOverlay({
                     exit={{ opacity: 0, height: 0 }}
                     className="mt-6 pt-5 border-t border-warm-100"
                   >
-                    <p className="text-xs text-warm-400 mb-3">
+                    <p className="text-xs text-warm-600 mb-3">
                       Taking longer than expected?
                     </p>
                     <div className="flex gap-3">

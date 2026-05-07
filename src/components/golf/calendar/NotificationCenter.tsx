@@ -42,9 +42,8 @@ function getNotificationIcon(type: Notification['type']) {
   }
 }
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(dateString: string, now: Date): string {
   const date = new Date(dateString);
-  const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
   const diffHours = Math.floor(diffMins / 60);
@@ -66,10 +65,13 @@ function isSameDay(a: Date, b: Date): boolean {
   );
 }
 
-function groupByDay(notifications: Notification[]) {
+function groupByDay(notifications: Notification[], now: Date | null) {
   const today: Notification[] = [];
   const earlier: Notification[] = [];
-  const now = new Date();
+  if (!now) {
+    // Pre-hydration: avoid time-based grouping; show all under "earlier" so SSR + first paint match.
+    return { today, earlier: notifications };
+  }
   for (const n of notifications) {
     if (isSameDay(new Date(n.created_at), now)) today.push(n);
     else earlier.push(n);
@@ -83,7 +85,16 @@ function groupByDay(notifications: Notification[]) {
 
 export function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
+  const [now, setNow] = useState<Date | null>(null);
   const router = useRouter();
+
+  // Initialize `now` on the client to avoid SSR/CSR mismatch when computing
+  // "today" vs "earlier" grouping and relative timestamps.
+  useEffect(() => {
+    setNow(new Date());
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
   const {
     notifications,
@@ -96,7 +107,7 @@ export function NotificationCenter() {
     pollInterval: 30000,
   });
 
-  const grouped = useMemo(() => groupByDay(notifications), [notifications]);
+  const grouped = useMemo(() => groupByDay(notifications, now), [notifications, now]);
 
   const handleNotificationClick = useCallback(
     async (notification: Notification) => {
@@ -223,6 +234,7 @@ export function NotificationCenter() {
                       <NotificationGroup
                         label="Today"
                         items={grouped.today}
+                        now={now}
                         onSelect={handleNotificationClick}
                         onDismiss={markAsRead}
                       />
@@ -231,6 +243,7 @@ export function NotificationCenter() {
                       <NotificationGroup
                         label="Earlier"
                         items={grouped.earlier}
+                        now={now}
                         onSelect={handleNotificationClick}
                         onDismiss={markAsRead}
                       />
@@ -265,11 +278,13 @@ function EmptyState() {
 function NotificationGroup({
   label,
   items,
+  now,
   onSelect,
   onDismiss,
 }: {
   label: string;
   items: Notification[];
+  now: Date | null;
   onSelect: (n: Notification) => void;
   onDismiss: (id: string) => void;
 }) {
@@ -286,6 +301,7 @@ function NotificationGroup({
             <NotificationRow
               key={notification.id}
               notification={notification}
+              now={now}
               onSelect={onSelect}
               onDismiss={onDismiss}
             />
@@ -298,10 +314,12 @@ function NotificationGroup({
 
 function NotificationRow({
   notification,
+  now,
   onSelect,
   onDismiss,
 }: {
   notification: Notification;
+  now: Date | null;
   onSelect: (n: Notification) => void;
   onDismiss: (id: string) => void;
 }) {
@@ -367,8 +385,8 @@ function NotificationRow({
               {notification.message}
             </p>
           )}
-          <p className="text-caption-2 text-warm-500 mt-1 tabular-nums">
-            {formatTimeAgo(notification.created_at)}
+          <p className="text-caption-2 text-warm-500 mt-1 tabular-nums" suppressHydrationWarning>
+            {now ? formatTimeAgo(notification.created_at, now) : ''}
           </p>
         </div>
 

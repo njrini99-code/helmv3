@@ -13,7 +13,7 @@ import { isNativeApp } from './capacitor';
  * Flow:
  *   1. App launches → `initPushListeners()` wires up listeners only
  *      (no permission prompt, no system dialog).
- *   2. Dashboard shell renders → shows a soft-ask BottomSheet on first
+ *   2. Dashboard shell renders → shows a soft-ask Drawer on first
  *      visit (tracked via localStorage).
  *   3. User taps "Enable" → `requestPushPermission()` shows the system
  *      prompt and registers with APNs on grant.

@@ -244,7 +244,7 @@ After each phase, verify:
 
 - **Kelly green:** `#16A34A` / `green-600` — for focus states, active indicators, accents
 - **No gamification:** No confetti, celebrations, badges
-- **Professional aesthetic:** Subtle, inevitable, Linear/Vercel quality
+- **Professional aesthetic:** Subtle, inevitable, Apple-grade quality
 - **Animation budget:** All UI feedback under 300ms
 - **Reduced motion:** Always respect `prefers-reduced-motion`
 

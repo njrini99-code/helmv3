@@ -9,6 +9,9 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
+import { Reveal } from '@/components/ui/reveal';
+import { PageHeader, Eyebrow } from '@/components/ui/page-header';
+import { generateRoundRecap } from '@/app/golf/actions/round-recap';
 
 export async function generateMetadata({
   params,
@@ -137,6 +140,49 @@ export default async function RoundDetailPage({
 
   const playerAvatarUrl = roundData.player?.avatar_url || null;
 
+  // Editorial header copy — magazine-cover framing for the post-round
+  // recap. Title = "{Day} at {Course}." Subtitle = round-type / holes /
+  // score line, mirroring how a beat reporter would lead a recap.
+  const roundDate = new Date(roundData.round_date);
+  const dayOfWeek = roundDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const courseShort = roundData.course_name?.replace(/\s+(Golf\s+(Course|Club)|Country\s+Club|GC|CC)$/i, '') ?? 'Round';
+  const heroTitle = `${dayOfWeek} at ${courseShort}.`;
+
+  const stp = roundData.score_to_par ?? 0;
+  const scoreChip = stp === 0 ? 'E' : stp > 0 ? `+${stp}` : `${stp}`;
+  const holesPlayed = (roundData as { holes_played?: number | null }).holes_played ?? 18;
+  const roundTypeLabel = (() => {
+    switch (roundData.round_type) {
+      case 'tournament':
+        return 'Tournament';
+      case 'qualifier':
+      case 'qualifying':
+        return 'Qualifier';
+      case 'practice':
+        return 'Practice round';
+      case 'casual':
+        return 'Casual round';
+      default:
+        return 'Round';
+    }
+  })();
+  const heroSubtitle = roundData.total_score
+    ? `${roundTypeLabel} · ${holesPlayed} holes · ${roundData.total_score} (${scoreChip})`
+    : `${roundTypeLabel} · ${holesPlayed} holes`;
+
+  // Generate (or fetch cached) AI round recap. Server action persists the
+  // result on first call so subsequent visits are instant. Failure here
+  // never blocks the page render — recap stays null.
+  let aiRecap: string | null = null;
+  try {
+    const result = await generateRoundRecap(id);
+    aiRecap = result.recap;
+  } catch (err) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[round-detail] recap generation failed:', err);
+    }
+  }
+
   return (
     <AnimatedPage className="max-w-5xl mx-auto">
       {/* Navigation */}
@@ -158,7 +204,32 @@ export default async function RoundDetailPage({
       </AnimatedItem>
       <div className="p-4 md:p-6">
 
-      {/* Premium Header - player info, score, stats */}
+      {/* Editorial recap plinth — magazine-cover framing on a sculpted
+          surface-stone matte block. The amber Eyebrow keeps the post-
+          round "retrospective" tone; the dynamic title/subtitle leads
+          like a beat-reporter recap. */}
+      <Reveal>
+        <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
+          <PageHeader
+            eyebrow="Round Review"
+            eyebrowAccent="amber"
+            title={heroTitle}
+            subtitle={heroSubtitle}
+          />
+          {/* AI-generated recap — two editorial sentences from a beat-
+              reporter prompt. Renders inside the plinth as a quote-style
+              callout so it reads as a magazine pull-quote, not body copy. */}
+          {aiRecap && (
+            <blockquote className="mt-7 border-l-2 border-helm-amber-300 pl-5 max-w-[60ch]">
+              <p className="font-serif italic text-[18px] leading-[1.55] tracking-[-0.005em] text-warm-800">
+                {aiRecap}
+              </p>
+            </blockquote>
+          )}
+        </div>
+      </Reveal>
+
+      {/* Premium scoreboard — player info, score, stats. */}
       <AnimatedItem>
       <PremiumRoundHeader
         playerName={playerName}
@@ -184,9 +255,17 @@ export default async function RoundDetailPage({
       />
       </AnimatedItem>
 
-      {/* AI Round Review */}
+      {/* AI Round Review — editorial sub-header anchors the engine layer
+          beneath the scoreboard. Hairline rule + small primary-accented
+          eyebrow reads like the next page of a magazine spread. */}
       <AnimatedItem>
-      <RoundReviewViewer roundId={id} isCoach={isCoach} className="mt-6" />
+      <Reveal staggerIndex={1} className="mt-10">
+        <div className="flex items-center gap-3 mb-4">
+          <Eyebrow accent="primary">CoachHelm Review</Eyebrow>
+          <div className="h-px flex-1 bg-warm-200/55" />
+        </div>
+        <RoundReviewViewer roundId={id} isCoach={isCoach} />
+      </Reveal>
       </AnimatedItem>
 
       </div>
