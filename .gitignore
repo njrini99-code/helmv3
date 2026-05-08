@@ -71,3 +71,6 @@ helm-vid/
 !public/email/*.png
 GolfHelm-Prospect-Deck.pptx
 .claude/worktrees/
+
+# Context7 MCP config — contains secret api_key, see context7.json.example
+context7.json
