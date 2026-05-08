@@ -100,8 +100,27 @@ const ABSOLUTE_MIN_ROUNDS = 4;
  *   roundCount = 28 → 6 (full bar)
  */
 export function effectiveMinSampleSize(roundCount: number): number {
-  if (roundCount >= 16) return THRESHOLDS.minSampleSize;
-  return Math.max(3, Math.ceil(roundCount * 0.25));
+  // Scale at 15% of round count throughout (was a flat 6-round cap above 16).
+  // Why this changed: a 28-round player with narrow round-type partitions
+  // (e.g. 4 tournaments out of 28 rounds = 14% support) was blocked by the
+  // flat floor — every per-condition matching set fell below 6 even though
+  // the conditions were statistically meaningful. Rationale per the
+  // parallel-debugging investigation that surfaced 18 starvation events
+  // across 5 distinct players in 24h while ShotPatternMiner kept producing
+  // contextual rows for the same players.
+  //   roundCount = 11 → 3   (was 3)
+  //   roundCount = 16 → 3   (was 6)
+  //   roundCount = 20 → 3   (was 6)
+  //   roundCount = 28 → 4   (was 6) ← unblocks tournament/qualifier conditions
+  //   roundCount = 40 → 6   (was 6, full bar reached organically)
+  //   roundCount = 60 → 6   (capped at THRESHOLDS.minSampleSize)
+  // Other gates (minConfidence=0.55, minLift=1.5, minStrokeImpact=0.3) keep
+  // false-positive risk bounded.
+  if (roundCount < 6) return 2;
+  return Math.min(
+    THRESHOLDS.minSampleSize,
+    Math.max(3, Math.round(roundCount * 0.15)),
+  );
 }
 
 /**

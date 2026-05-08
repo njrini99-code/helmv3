@@ -3124,7 +3124,16 @@ export async function triggerPlayerInsightsAfterRound(
       if ((tierOneCount ?? 0) > 0) {
         return { success: true, insights_created: tierOneCount ?? 0 };
       }
-      return { success: false, error: 'Player analysis returned no data (feature extraction failed)' };
+      // No completed rounds in the last 90 days, AND no Tier-1 insights either
+      // — this is a brand-new player or one who's been inactive too long.
+      // Returning success:false here lets the caller distinguish this from a
+      // real failure, but the caller (analyze-player API) treats it as 200
+      // since there's no actual error to surface to ops. The dashboard
+      // consumer uses optional chaining and degrades gracefully.
+      return {
+        success: false,
+        error: 'No completed rounds in the last 90 days yet — insights will populate after the next round',
+      };
     }
 
     // Archive stale V2 insights so post-round analysis can refresh them.
