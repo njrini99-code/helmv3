@@ -313,6 +313,15 @@ export interface GolfStats {
   sgAroundGreenPerRound: number | null;
   sgPuttingPerRound: number | null;
   sgTotalPerRound: number | null;
+
+  // Truncation signal — set to `true` by `getDetailedStats` when the
+  // non-preset query window was capped at DETAILED_STATS_MAX_ROUNDS rounds
+  // (i.e. there are more completed rounds than fit in the bounded IN-list).
+  // The UI surfaces a banner so prolific players (4-year college players
+  // with 80–150+ rounds) know to apply a date/season filter to see older
+  // data. Always `false` when an explicit preset (last5/10/20) is in use,
+  // because that's a user-driven cap, not a silent one.
+  truncated?: boolean;
 }
 
 // Putting stats by break type interface

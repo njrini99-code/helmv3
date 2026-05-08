@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Test API key first
-export ANTHROPIC_API_KEY="sk-ant-api03-XD8E2ACtgAFCh_XGTBtW8mcONUUk_x8PfDT7DWBBMgDrFM5gVuFHJN9fKHzvzUqShBfGrvXjQxKlEpP50KxVPg-W2sqpwAA"
+# ANTHROPIC_API_KEY must be set in your shell environment.
+# Previously hardcoded — that key has been compromised and should be rotated at
+# https://console.anthropic.com/settings/keys
+: "${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY must be set in environment (export from your shell rc, do NOT hardcode)}"
 
 echo "🔑 Testing API Key..."
 python3 /Users/ricknini/Downloads/helmv3/tools/continuous-improvement/test_api_key.py

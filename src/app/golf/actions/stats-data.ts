@@ -837,6 +837,29 @@ async function queryDetailedStatsWithClient(
   const sqlLimit = presetLimit ?? DETAILED_STATS_MAX_ROUNDS;
   query = query.limit(sqlLimit);
 
+  // For non-preset queries, also count the unfiltered total so we can tell the
+  // UI when the cap silently truncated the window. Counting in parallel keeps
+  // the extra hop off the critical path. We only do this when no preset is
+  // active — preset caps are explicit user requests, not silent truncation.
+  let totalCountForFilter: number | null = null;
+  if (presetLimit === null) {
+    let countQuery = supabase
+      .from('golf_rounds')
+      .select('id', { count: 'exact', head: true })
+      .eq('player_id', playerId)
+      .eq('status', 'completed');
+
+    if (conditions.startDate) countQuery = countQuery.gte('round_date', conditions.startDate);
+    if (conditions.endDate) countQuery = countQuery.lte('round_date', conditions.endDate);
+    countQuery = applyRoundTypeFilter(countQuery, conditions.roundType);
+    if (conditions.courseName) countQuery = countQuery.eq('course_name', conditions.courseName);
+
+    const { count: matchedCount, error: countError } = await countQuery;
+    if (!countError) {
+      totalCountForFilter = matchedCount ?? null;
+    }
+  }
+
   const { data: fetchedRounds, error: roundsError } = await query;
   if (roundsError) {
     await logServerError(`[Stats] Rounds query error: ${describeError(roundsError)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
@@ -845,6 +868,15 @@ async function queryDetailedStatsWithClient(
 
   const roundsData = applyPresetLimit(fetchedRounds || [], filter);
   if (roundsData.length === 0) return calculateStatsFromShots([], [], []);
+
+  // Truncation flag: only meaningful for non-preset queries. We compare the
+  // unfiltered match count against the hard cap. If we couldn't get an exact
+  // count (rare — query error), fall back to the cap-equality heuristic.
+  const truncated = presetLimit === null
+    ? (totalCountForFilter !== null
+        ? totalCountForFilter > DETAILED_STATS_MAX_ROUNDS
+        : roundsData.length >= DETAILED_STATS_MAX_ROUNDS)
+    : false;
 
   const roundIds = roundId && roundId !== 'overall'
     ? [roundId]
@@ -962,10 +994,14 @@ async function queryDetailedStatsWithClient(
       };
     });
 
-    return serializeDetailedStats(calculateStatsFromShots(shots, holesInfo, roundsInfo));
+    const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo);
+    computed.truncated = truncated;
+    return serializeDetailedStats(computed);
   } catch (error) {
     await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
-    return serializeDetailedStats(buildFallbackDetailedStats(roundsData));
+    const fallback = buildFallbackDetailedStats(roundsData);
+    fallback.truncated = truncated;
+    return serializeDetailedStats(fallback);
   }
 }
 

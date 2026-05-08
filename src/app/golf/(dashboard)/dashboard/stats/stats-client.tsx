@@ -1119,6 +1119,22 @@ export default function StatsClient({
         </div>
       )}
 
+      {/* Truncation notice — surfaces when getDetailedStats hit the 100-round
+          cap on a non-preset query. Prolific players (4-year college rosters
+          easily hit 80–150 rounds) need to know stats below are a recent slice
+          and not their full history. Suppressed when a preset is active —
+          that cap is a user-driven request, not silent truncation. */}
+      {detailedStats?.truncated && (
+        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 md:px-5 md:py-4 text-sm text-amber-800 flex items-start gap-3">
+            <span className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold" aria-hidden="true">!</span>
+            <p className="leading-relaxed">
+              Showing the most recent 100 rounds. Apply a date or season filter to see older data.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Stats Display */}
       {loadingDetailed && !detailedStats ? (
         <DetailedStatsSkeleton />

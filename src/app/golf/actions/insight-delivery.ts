@@ -21,6 +21,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 import type {
   InsightCategory,
   InsightEvidence,
@@ -155,27 +156,6 @@ const INSIGHT_SELECT = `
   )
 ` as const;
 
-/**
- * Detect transient fetch failures (TypeError: fetch failed, ECONNRESET, etc.)
- * thrown by the supabase client's underlying `fetch`. Used to decide whether
- * to retry once before logging an error.
- */
-function isTransientFetchErrorLocal(err: unknown): boolean {
-  if (!err) return false;
-  const msg = err instanceof Error ? err.message : String(err);
-  const lower = msg.toLowerCase();
-  return (
-    lower.includes('fetch failed') ||
-    lower.includes('econnreset') ||
-    lower.includes('etimedout') ||
-    lower.includes('socket hang up') ||
-    lower.includes('network') ||
-    lower.includes('503') ||
-    lower.includes('502') ||
-    lower.includes('504')
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -293,7 +273,7 @@ export async function getInsightsForPlayer(
     user = data.user;
   } catch (err) {
     // Auth-call fetch failures shouldn't poison the dashboard.
-    if (isTransientFetchErrorLocal(err)) {
+    if (isTransientFetchError(err)) {
       console.debug(
         `[insight-delivery] auth.getUser transient: ${err instanceof Error ? err.message : String(err)}`,
       );
@@ -334,8 +314,8 @@ export async function getInsightsForPlayer(
     // The supabase client's underlying fetch can throw before returning a
     // typed { data, error } pair (e.g. TypeError: fetch failed). Retry
     // once for transient errors, otherwise return [] so callers don't crash.
-    if (isTransientFetchErrorLocal(err)) {
-      await new Promise((r) => setTimeout(r, 500));
+    if (isTransientFetchError(err)) {
+      await delay(500);
       try {
         const result = await runQuery();
         data = result.data;

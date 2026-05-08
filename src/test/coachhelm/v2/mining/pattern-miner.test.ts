@@ -35,6 +35,44 @@ describe('effectiveMinSampleSize (threshold scaling for low-round players)', () 
     expect(effectiveMinSampleSize(50)).toBeLessThanOrEqual(6);
     expect(effectiveMinSampleSize(500)).toBeLessThanOrEqual(6);
   });
+
+  // --------------------------------------------------------------------
+  // Trivial inputs — verifies the floor of 3 even when callers (e.g. the
+  // compound miner) bypass the ABSOLUTE_MIN_ROUNDS=4 early-return guard
+  // and feed roundCount values below the absolute floor. The function
+  // must never return < 3 because that's the formula's hard minimum.
+  // --------------------------------------------------------------------
+  it('returns the floor (3) for trivial roundCount inputs (0, 1, 2, 3)', () => {
+    expect(effectiveMinSampleSize(0)).toBe(3);
+    expect(effectiveMinSampleSize(1)).toBe(3);
+    expect(effectiveMinSampleSize(2)).toBe(3);
+    expect(effectiveMinSampleSize(3)).toBe(3);
+  });
+
+  // --------------------------------------------------------------------
+  // The 16-boundary jump — assert the 4 → 6 step between roundCount=15
+  // and roundCount=16 is intentional. At roundCount=15 the scaled
+  // formula returns ceil(15 * 0.25) = 4. At roundCount=16 the function
+  // shortcuts to the full configured ceiling (6). This 50% jump is
+  // deliberate — once a player crosses ~16 rounds the full bar applies.
+  // --------------------------------------------------------------------
+  it('jumps from 4 to 6 between roundCount=15 and roundCount=16 (intentional)', () => {
+    expect(effectiveMinSampleSize(15)).toBe(4);
+    expect(effectiveMinSampleSize(16)).toBe(6);
+  });
+
+  // --------------------------------------------------------------------
+  // THRESHOLDS export — guards the new `minSupport = 0.05` value (down
+  // from 0.08) so loosening doesn't silently drift back. THRESHOLDS is
+  // a module-private constant in pattern-miner.ts at time of writing,
+  // so we skip rather than assert against an undefined import. If/when
+  // it's exported, flip this to `it(...)` and assert the value.
+  // --------------------------------------------------------------------
+  it.skip('exports THRESHOLDS.minSupport === 0.05 (when exported)', () => {
+    // TODO: pattern-miner.ts does not currently export `THRESHOLDS` or
+    // `MIN_SUPPORT`. When it does, import it and assert:
+    //   expect(THRESHOLDS.minSupport).toBe(0.05);
+  });
 });
 
 describe('computeConvictionSafe (LIVE-16)', () => {

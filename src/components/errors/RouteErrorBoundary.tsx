@@ -2,7 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { logError } from '@/lib/error-logging';
+import {
+  logError,
+  isStaleServerActionError,
+  softReloadForStaleServerAction,
+  STALE_ACTION_RELOAD_KEY,
+} from '@/lib/error-logging';
 
 interface RouteErrorBoundaryProps {
   error: Error & { digest?: string };
@@ -38,13 +43,11 @@ function isChunkLoadError(error: Error): boolean {
 }
 
 /**
- * Check if an error is from a stale server action (deployment mismatch).
- * Like chunk load errors, these need a full page reload.
+ * Stale-server-action detection lives in `@/lib/error-logging` so the global
+ * unhandledrejection/error handlers and this boundary share one regex and
+ * one reload-once-per-session guard. See `isStaleServerActionError` and
+ * `softReloadForStaleServerAction` in that module.
  */
-function isStaleActionError(error: Error): boolean {
-  const msg = error.message || '';
-  return msg.includes('not found on the server') || msg.includes('Server Action');
-}
 
 /**
  * Check if an error appears to be transient (retryable)
@@ -114,18 +117,28 @@ export function RouteErrorBoundary({
   const [isRetrying, setIsRetrying] = useState(false);
 
   const isChunk = isChunkLoadError(error);
-  const isStaleAction = isStaleActionError(error);
+  const isStaleAction = isStaleServerActionError(error);
   const isTransient = isTransientError(error);
   const isGenericLoad = isGenericLoadFailure(error);
 
-  // For chunk load or stale server action errors, a full page reload is the only real fix
+  // For chunk load or stale server action errors, a full page reload is the only real fix.
+  // Stale-action reloads delegate to softReloadForStaleServerAction so this boundary and the
+  // global unhandledrejection/error handlers share state — they cannot each "first-reload"
+  // the same session.
   useEffect(() => {
-    if (isChunk || isStaleAction) {
-      const key = isChunk ? 'chunk-error-reload' : 'stale-action-reload';
-      const hasReloaded = sessionStorage.getItem(key);
-      if (!hasReloaded) {
-        sessionStorage.setItem(key, Date.now().toString());
-        window.location.reload();
+    if (isStaleAction) {
+      softReloadForStaleServerAction();
+      return;
+    }
+    if (isChunk) {
+      try {
+        const hasReloaded = sessionStorage.getItem('chunk-error-reload');
+        if (!hasReloaded) {
+          sessionStorage.setItem('chunk-error-reload', Date.now().toString());
+          window.location.reload();
+        }
+      } catch {
+        // sessionStorage unavailable — skip reload to avoid a loop.
       }
     }
   }, [isChunk, isStaleAction]);
@@ -163,10 +176,19 @@ export function RouteErrorBoundary({
       isTransientError: isTransient,
       isGenericLoadFailure: isGenericLoad,
       retryCount,
-      sessionReloadFlags: {
-        chunkErrorReloaded: typeof window !== 'undefined' ? sessionStorage.getItem('chunk-error-reload') : null,
-        staleActionReloaded: typeof window !== 'undefined' ? sessionStorage.getItem('stale-action-reload') : null,
-      },
+      sessionReloadFlags: (() => {
+        if (typeof window === 'undefined') return { chunkErrorReloaded: null, staleActionReloaded: null };
+        try {
+          return {
+            chunkErrorReloaded: sessionStorage.getItem('chunk-error-reload'),
+            staleActionReloaded: sessionStorage.getItem(STALE_ACTION_RELOAD_KEY),
+          };
+        } catch {
+          // sessionStorage may throw in private mode; surface that explicitly so we
+          // don't get a misleading "no reload happened" signal in error logs.
+          return { chunkErrorReloaded: 'unavailable', staleActionReloaded: 'unavailable' };
+        }
+      })(),
     }, 'high');
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, retryCount]);
 

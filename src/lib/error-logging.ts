@@ -128,9 +128,24 @@ function enrichErrorContext(error: Error, context?: ErrorContext): ErrorContext 
  * in error tracking — the fix is a single page reload to pick up the new
  * action map. We suppress server-side capture and rely on the client error
  * boundary's reload-once logic to recover.
+ *
+ * Accepts `unknown` so window error handlers and React error boundaries can
+ * pass through whatever they got (Error, string, or random rejection value)
+ * without their own type guards.
  */
-function isStaleServerActionError(error: Error): boolean {
-  const msg = error?.message ?? '';
+export function isStaleServerActionError(error: unknown): boolean {
+  if (!error) return false;
+
+  let msg = '';
+  if (typeof error === 'string') {
+    msg = error;
+  } else if (typeof error === 'object' && 'message' in error) {
+    const candidate = (error as { message?: unknown }).message;
+    msg = typeof candidate === 'string' ? candidate : '';
+  }
+
+  if (!msg) return false;
+
   return (
     /Server Action ".*" was not found on the server/.test(msg) ||
     msg.includes('was not found on the server')
@@ -233,26 +248,62 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
 }
 
 /**
- * Storage key + flag used to ensure we only auto-reload once per session
- * after detecting a stale-server-action error. Prevents an infinite reload
- * loop if for some reason the new bundle is still broken.
+ * Storage key used to ensure we only auto-reload once per session after
+ * detecting a stale-server-action error. Prevents an infinite reload loop
+ * if for some reason the new bundle is still broken.
+ *
+ * Exported so other modules (e.g. RouteErrorBoundary) coordinate on the
+ * same key — there must be exactly one source of truth, otherwise two
+ * paths can each "first-reload" the same session.
  */
-const STALE_ACTION_RELOAD_KEY = 'stale-action-auto-reload';
+export const STALE_ACTION_RELOAD_KEY = 'stale-action-auto-reload';
+
+/**
+ * Module-level fallback flag for environments where sessionStorage throws
+ * (Safari private mode, sandboxed iframes, storage quota exceeded). Without
+ * this, a sessionStorage failure in the catch block would silently fall
+ * through and the reload would fire on every error → infinite loop.
+ */
+let reloadAttempted = false;
 
 /**
  * Reload the page once per session after a stale-server-action error,
  * showing a toast to explain what's happening if a toast system is mounted.
  * Falls back to a silent reload if `sonner` isn't loaded yet.
+ *
+ * Reload-guarding is layered: sessionStorage is the primary signal (survives
+ * the reload itself), but the module-level `reloadAttempted` flag is the
+ * authoritative fallback when sessionStorage is unavailable or throws.
  */
-function softReloadForStaleServerAction(): void {
+export function softReloadForStaleServerAction(): void {
   if (typeof window === 'undefined') return;
+
+  // Module-level guard catches the private-mode case where sessionStorage
+  // throws on every read AND every write — without this, both fail silently
+  // and we'd reload forever.
+  if (reloadAttempted) return;
+
+  let storageAvailable = true;
   try {
     const already = window.sessionStorage.getItem(STALE_ACTION_RELOAD_KEY);
     if (already) return;
-    window.sessionStorage.setItem(STALE_ACTION_RELOAD_KEY, Date.now().toString());
   } catch {
-    // sessionStorage may be unavailable (SSR / private mode) — proceed anyway.
+    storageAvailable = false;
   }
+
+  if (storageAvailable) {
+    try {
+      window.sessionStorage.setItem(STALE_ACTION_RELOAD_KEY, Date.now().toString());
+    } catch {
+      // setItem can throw even when getItem succeeds (quota exceeded /
+      // privacy mode partial support). Fall through to the module flag.
+      storageAvailable = false;
+    }
+  }
+
+  // Always set the module flag so a same-tick second call cannot reload
+  // again, regardless of sessionStorage state.
+  reloadAttempted = true;
 
   // Best-effort toast. Dynamic import keeps this file framework-agnostic and
   // avoids pulling sonner into the server bundle.
@@ -288,10 +339,7 @@ export function setupGlobalErrorHandlers(): void {
         (typeof reason === 'string' ? reason : '');
 
       // Stale server action — soft-reload once per session and don't log.
-      if (
-        /Server Action ".*" was not found on the server/.test(reasonMessage) ||
-        reasonMessage.includes('was not found on the server')
-      ) {
+      if (isStaleServerActionError(reason) || isStaleServerActionError(reasonMessage)) {
         softReloadForStaleServerAction();
         return;
       }
@@ -310,7 +358,7 @@ export function setupGlobalErrorHandlers(): void {
     // Global error handler
     window.addEventListener('error', (event) => {
       const err = event.error || new Error(event.message);
-      if (err && err.message && err.message.includes('was not found on the server')) {
+      if (isStaleServerActionError(err)) {
         softReloadForStaleServerAction();
         return;
       }

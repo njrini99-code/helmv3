@@ -91,12 +91,12 @@ export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: userRow } = await supabase
+  const { data: userRow, error: userErr } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
-  if (userRow?.role !== 'admin') throw new Error('Forbidden');
+  if (userErr || userRow?.role !== 'admin') throw new Error('Forbidden');
 
   // .bind() preserves `this` on the proxy; without it some bundler outputs
   // detach the rpc method from its parent client and the auth header gets
@@ -108,13 +108,6 @@ export async function getAdminDashboardRollup(): Promise<AdminDashboardRollup> {
   if (error) throw error instanceof Error ? error : new Error(describeError(error));
   if (!data) throw new Error('Empty rollup response');
   return data;
-}
-
-/** Kept for API compatibility; the rollup is no longer cached so this is a
- *  no-op apart from the broader `revalidatePath('/golf/admin')` invalidation
- *  the rest of the codebase already uses for admin-surfaced mutations. */
-export async function invalidateAdminDashboardRollup(): Promise<void> {
-  revalidatePath('/golf/admin');
 }
 
 // ============================================
@@ -1138,13 +1131,13 @@ export async function resolveDashboardIncident(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: userData } = await supabase
+  const { data: userData, error: userErr } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
 
-  if ((userData?.role as string) !== 'admin') throw new Error('Forbidden');
+  if (userErr || (userData?.role as string) !== 'admin') throw new Error('Forbidden');
 
   const adminDb = createAdminClient();
 
@@ -1327,12 +1320,12 @@ export async function getAdminIncidents(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: userRow } = await supabase
+  const { data: userRow, error: userErr } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
-  if ((userRow?.role as string | undefined) !== 'admin') throw new Error('Forbidden');
+  if (userErr || (userRow?.role as string | undefined) !== 'admin') throw new Error('Forbidden');
 
   const limit = clampIncidentLimit(params.limit);
   const admin = createAdminClient();
@@ -1601,12 +1594,12 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Unauthorized');
 
-  const { data: userRow } = await supabase
+  const { data: userRow, error: userErr } = await supabase
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
-  if ((userRow?.role as string) !== 'admin') throw new Error('Forbidden');
+  if (userErr || (userRow?.role as string) !== 'admin') throw new Error('Forbidden');
 
   // 2. Kick off Slice A + Slice B in parallel — Slice C needs Slice A's
   //    `allRoundsMinimal` so it runs in the next wave.

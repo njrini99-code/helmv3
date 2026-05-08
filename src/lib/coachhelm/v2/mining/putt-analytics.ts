@@ -18,6 +18,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 
 // ---------------------------------------------------------------------------
 // Constants — bucket definitions, baselines, windows.
@@ -107,33 +108,6 @@ interface RawPuttRow {
   miss_tags: string[] | null;
   round_id: string | null;
   round_date: string | null;
-}
-
-/**
- * Detects whether an error looks transient (network blip, fetch failed,
- * timeout, 5xx). We retry these once before surfacing them — Supabase
- * occasionally fails with a bare "TypeError: fetch failed" during regional
- * blips, and a single retry resolves >95% of those.
- */
-function isTransientFetchError(err: unknown): boolean {
-  if (!err) return false;
-  const msg = err instanceof Error ? err.message : String(err);
-  const lower = msg.toLowerCase();
-  return (
-    lower.includes('fetch failed') ||
-    lower.includes('econnreset') ||
-    lower.includes('etimedout') ||
-    lower.includes('socket hang up') ||
-    lower.includes('network') ||
-    lower.includes('503') ||
-    lower.includes('502') ||
-    lower.includes('504')
-  );
-}
-
-/** Sleep without external deps. */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
