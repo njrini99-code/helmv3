@@ -7,6 +7,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import type { GolfDocument, DocumentVersion, VersionComparison } from '@/lib/types/golf';
+import { logServerError } from '@/lib/server-error-logger';
 
 // Type helper for golf_document_versions table (until types are regenerated)
 interface DocumentVersionRow {
@@ -107,6 +108,10 @@ export async function getDocuments(teamId: string): Promise<{ data: GolfDocument
 
     return { data: data as GolfDocument[], error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in getDocuments: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.getDocuments', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -158,6 +163,10 @@ export async function getDocument(documentId: string): Promise<{ data: GolfDocum
 
     return { data: data as GolfDocument, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in getDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.getDocument', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -234,6 +243,10 @@ export async function createDocument(
     revalidatePath('/golf/dashboard/documents');
     return { data: document as GolfDocument, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in createDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.createDocument', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -291,6 +304,10 @@ export async function updateDocument(
     revalidatePath('/golf/dashboard/documents');
     return { data: data as GolfDocument, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in updateDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.updateDocument', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -340,6 +357,10 @@ export async function deleteDocument(documentId: string): Promise<{ success: boo
     revalidatePath('/golf/dashboard/documents');
     return { success: true, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in deleteDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.deleteDocument', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -436,6 +457,10 @@ export async function uploadNewVersion(
       }
     };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in uploadNewVersion: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.uploadNewVersion', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -489,6 +514,10 @@ export async function getDocumentVersions(documentId: string): Promise<{ data: D
 
     return { data: versionsWithUrls as DocumentVersion[], error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in getDocumentVersions: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.getDocumentVersions', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -565,6 +594,10 @@ export async function revertToVersion(
     revalidatePath('/golf/dashboard/documents');
     return { success: true, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in revertToVersion: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.revertToVersion', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -627,6 +660,10 @@ export async function compareVersions(
       error: null,
     };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in compareVersions: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.compareVersions', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -709,6 +746,10 @@ export async function getPreviewUrl(
       };
     }
   } catch (error) {
+    await logServerError(
+      `Unexpected error in getPreviewUrl: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.getPreviewUrl', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }
@@ -750,6 +791,10 @@ export async function uploadGolfDocument(
 
     return { success: true, file_url: urlData.publicUrl };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in uploadGolfDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.uploadGolfDocument', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -824,6 +869,10 @@ export async function createGolfDocument(data: {
     revalidatePath('/golf/dashboard/documents');
     return { success: true, data: document as GolfDocument };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in createGolfDocument: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.createGolfDocument', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -944,6 +993,10 @@ export async function deleteVersion(
     revalidatePath('/golf/dashboard/documents');
     return { success: true, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in deleteVersion: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.deleteVersion', featureArea: 'documents' }
+    );
     return { success: false, error: handleError(error) };
   }
 }
@@ -1017,6 +1070,10 @@ export async function getTextFileContent(
     const text = await data.text();
     return { data: text, error: null };
   } catch (error) {
+    await logServerError(
+      `Unexpected error in getTextFileContent: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'documents.getTextFileContent', featureArea: 'documents' }
+    );
     return { data: null, error: handleError(error) };
   }
 }

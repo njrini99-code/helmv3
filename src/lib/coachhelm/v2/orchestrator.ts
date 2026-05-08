@@ -31,6 +31,7 @@ import { analyzeMultiWindowTrends } from './trends/multi-window';
 import { detectAnomalies } from './stats/anomaly-detector';
 import { detectStreaks } from './trends/streak-detector';
 import { scoreInsight, shouldShowInsight } from './feedback/insight-scorer';
+import { logServerError } from '@/lib/server-error-logger';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 
 import type {
@@ -729,6 +730,10 @@ class CoachHelmIntelligence {
       }
     } catch (error) {
       console.error('[CoachHelm] Error generating team pattern insights:', error);
+      await logServerError(
+        `CoachHelm orchestrator failed generating team pattern insights: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'coachhelm.orchestrator.generateTeamPatternInsights', featureArea: 'coachhelm' }
+      );
     }
 
     return insights;
@@ -1593,6 +1598,10 @@ class CoachHelmIntelligence {
       return stats;
     } catch (error) {
       console.error('[CoachHelm] Error fetching player stats:', error);
+      await logServerError(
+        `CoachHelm orchestrator failed fetching player stats: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'coachhelm.orchestrator.fetchPlayerStats', featureArea: 'coachhelm', playerId }
+      );
       this._statsCache.set(playerId, undefined);
       return undefined;
     }
@@ -1639,6 +1648,10 @@ class CoachHelmIntelligence {
       }
     } catch (error) {
       console.error('[CoachHelm] Error generating correlation insights:', error);
+      await logServerError(
+        `CoachHelm orchestrator failed generating correlation insights: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'coachhelm.orchestrator.generateCorrelationInsights', featureArea: 'coachhelm', playerId }
+      );
     }
 
     return insights;

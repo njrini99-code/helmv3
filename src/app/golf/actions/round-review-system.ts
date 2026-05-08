@@ -1320,7 +1320,11 @@ export async function getRoundReview(roundId: string): Promise<{
     };
 
     return { success: true, review };
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] getRoundReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'round_review_system.getRoundReview', featureArea: 'round_reviews', roundId }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1501,7 +1505,11 @@ export async function generateAndStoreRoundReview(
     };
 
     return { success: true, review };
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] generateAndStoreRoundReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'round_review_system.generateAndStoreRoundReview', featureArea: 'round_reviews', roundId, playerId }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1537,7 +1545,11 @@ export async function shareRoundReviewWithCoach(reviewId: string): Promise<{
     if (error) return { success: false, error: 'Failed to share review' };
     revalidatePath('/golf/dashboard/rounds');
     return { success: true };
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] shareRoundReviewWithCoach failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'round_review_system.shareRoundReviewWithCoach', featureArea: 'round_reviews' }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -1605,7 +1617,11 @@ export async function getStatAverages(
     }
 
     return { success: true, playerAvg, teamAvg };
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] getStatAverages failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'round_review_system.getStatAverages', featureArea: 'round_reviews', playerId }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

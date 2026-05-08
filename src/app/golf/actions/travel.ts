@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // VALIDATION SCHEMAS (Zod)
@@ -192,6 +193,10 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
+    await logServerError(
+      `Unexpected error in createGolfTravelItinerary: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'travel.createGolfTravelItinerary', featureArea: 'travel' }
+    );
     return formatSafeErrorResponse(error);
   }
 }
@@ -305,6 +310,10 @@ export async function updateGolfTravelItinerary(input: UpdateTravelItineraryInpu
         error: 'Invalid travel itinerary data. Please check your inputs.',
       };
     }
+    await logServerError(
+      `Unexpected error in updateGolfTravelItinerary: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'travel.updateGolfTravelItinerary', featureArea: 'travel' }
+    );
     return formatSafeErrorResponse(error);
   }
 }
@@ -510,6 +519,10 @@ export async function createTravelExpense(input: CreateExpenseInput) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
+    await logServerError(
+      `Unexpected error in createTravelExpense: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'travel.createTravelExpense', featureArea: 'travel' }
+    );
     return formatSafeErrorResponse(error);
   }
 }
@@ -557,6 +570,10 @@ export async function updateTravelExpense(input: UpdateExpenseInput) {
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid expense data. Please check your inputs.' };
     }
+    await logServerError(
+      `Unexpected error in updateTravelExpense: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'travel.updateTravelExpense', featureArea: 'travel' }
+    );
     return formatSafeErrorResponse(error);
   }
 }
@@ -909,6 +926,10 @@ export async function setBudget(input: { itinerary_id: string; category: Expense
     if (error instanceof z.ZodError) {
       return { success: false, error: 'Invalid budget data.' };
     }
+    await logServerError(
+      `Unexpected error in setBudget: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'travel.setBudget', featureArea: 'travel' }
+    );
     return formatSafeErrorResponse(error);
   }
 }

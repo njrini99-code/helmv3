@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Player, CoachWithOrganization } from '@/lib/types';
@@ -24,6 +25,7 @@ export function useAuth() {
       if (!isMounted.current) return;
 
       if (!authUser) {
+        Sentry.setUser(null);
         setLoading(false);
         return;
       }
@@ -41,6 +43,21 @@ export function useAuth() {
         setUser(userData);
         if (coachData) setCoach(coachData);
         if (playerData) setPlayer(playerData);
+        // Attribute Sentry events to this user. Email is intentionally NOT
+        // sent — id + org_id + user_role tags below give us all the triage
+        // signal we need without shipping personal contact info to Sentry.
+        const role = coachData ? 'coach' : playerData ? 'player' : 'user';
+        Sentry.setUser({
+          id: authUser.id,
+          segment: role,
+        });
+        // Tags make triage 10x faster — "filter to coach errors in org X"
+        // is a one-click query in the Sentry UI.
+        Sentry.setTag('user_role', role);
+        if (coachData?.organization?.id) {
+          Sentry.setTag('org_id', coachData.organization.id);
+          Sentry.setTag('org_name', coachData.organization.name);
+        }
       }
 
       if (isMounted.current) setLoading(false);
@@ -59,6 +76,12 @@ export function useAuth() {
       if (!isMounted.current) return;
 
       if (event === 'SIGNED_OUT') {
+        Sentry.setUser(null);
+        Sentry.getCurrentScope().setTags({
+          user_role: undefined,
+          org_id: undefined,
+          org_name: undefined,
+        });
         clear();
         router.push('/baseball/login');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {

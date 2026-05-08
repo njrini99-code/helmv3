@@ -32,6 +32,7 @@ import type {
 } from './types';
 import { calcConfidence } from './types';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
+import { logServerError } from '@/lib/server-error-logger';
 
 const DEDUP_WINDOW_DAYS = 30;
 const MOVEMENT_THRESHOLD = 0.05; // 5%
@@ -211,8 +212,13 @@ async function updateExisting(
       lifecycle_state: nextLifecycleState,
       was_lifecycle_promotion: shouldMature,
     });
-  } catch {
+  } catch (error) {
     // notifyInsightLanded never throws, but belt-and-braces here.
+    await logServerError(
+      `notifyInsightLanded threw unexpectedly: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id },
+      'warning'
+    );
   }
 
   return existing.id;
@@ -324,7 +330,12 @@ async function resolvePlayerOwnership(
       .maybeSingle();
 
     return { coachId: coach?.id ?? null, teamId };
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `resolvePlayerOwnership failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'coachhelm.upsert.resolvePlayerOwnership', featureArea: 'coachhelm' },
+      'warning'
+    );
     return { coachId: null, teamId: null };
   }
 }

@@ -33,6 +33,7 @@ import {
 } from '@/lib/offline/indexed-db';
 import { saveRoundDraft, type RoundDraftData } from '@/app/golf/actions/round-drafts';
 import type { ShotRecord } from '@/lib/types/golf';
+import { logError } from '@/lib/error-logging';
 
 // ============================================================================
 // TYPES
@@ -132,6 +133,14 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
         }
       } catch (error) {
         console.error('Failed to initialize offline storage:', error);
+        logError(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useOfflineSync',
+            action: 'initialize_indexeddb',
+          },
+          'medium'
+        );
       }
     };
 
@@ -253,6 +262,18 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          logError(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'useOfflineSync',
+              action: 'sync_pending_round',
+              roundId: round.id,
+              serverRoundId: round.serverRoundId,
+              syncAttempts: round.syncAttempts,
+              pendingRoundsCount: pendingRounds.length,
+            },
+            'critical'
+          );
           await updateRoundSyncStatus(round.id, 'failed', undefined, errorMessage);
           hadError = true;
         }
@@ -282,6 +303,20 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
           syncedCount++;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          logError(
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              component: 'useOfflineSync',
+              action: 'sync_pending_shot',
+              shotId: shot.id,
+              roundId: shot.roundId,
+              holeNumber: shot.holeNumber,
+              shotNumber: shot.shotNumber,
+              syncAttempts: shot.syncAttempts,
+              pendingShotsCount: pendingShots.length,
+            },
+            'critical'
+          );
           await updateShotSyncStatus(shot.id, 'failed', undefined, errorMessage);
           hadError = true;
         }
@@ -306,6 +341,18 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
 
     } catch (error) {
       console.error('Sync failed:', error);
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useOfflineSync',
+          action: 'perform_sync_outer',
+          syncedCount,
+          hadError,
+          isOnline: state.isOnline,
+          isIndexedDBReady: state.isIndexedDBReady,
+        },
+        'critical'
+      );
       if (isMountedRef.current) {
         setState(prev => ({
           ...prev,

@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useRef } from 'react';
 import type { ShotRecord, RoundHole, PuttMissTag, ApproachMissDirection } from '@/lib/types/golf';
 import { lieFromShotResult, computeShotFingerprint, type LieType } from '@/lib/utils/shot-helpers';
+import { logError } from '@/lib/error-logging';
 
 // ============================================================================
 // TYPES
@@ -647,7 +648,19 @@ export function useShotStateMachine({
               if (isMountedRef.current) dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
               await onAutoSaveRef.current(shotHistoryRef.current, currentHoleIndexRef.current);
               if (isMountedRef.current) handleSaveSuccess(probeFingerprint);
-            } catch {
+            } catch (error) {
+              logError(
+                error instanceof Error ? error : new Error(String(error)),
+                {
+                  component: 'useShotStateMachine',
+                  action: 'auto-save circuit-breaker probe',
+                  currentHoleIndex: currentHoleIndexRef.current,
+                  shotCount: shotHistoryRef.current.length,
+                  consecutiveFailures: circuitBreakerFailuresRef.current,
+                  circuitBreakerOpen: circuitBreakerOpenRef.current,
+                },
+                'high'
+              );
               // Probe failed — stay open, schedule another probe
               if (isMountedRef.current) {
                 dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'error' });
@@ -682,7 +695,19 @@ export function useShotStateMachine({
             dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
             await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
             handleSaveSuccess(retryFingerprint);
-          } catch {
+          } catch (error) {
+            logError(
+              error instanceof Error ? error : new Error(String(error)),
+              {
+                component: 'useShotStateMachine',
+                action: 'auto-save retry attempt',
+                currentHoleIndex: currentHoleIndexRef.current,
+                shotCount: shotHistoryRef.current.length,
+                retryAttempt: autoSaveRetryAttemptRef.current,
+                consecutiveFailures: circuitBreakerFailuresRef.current,
+              },
+              'high'
+            );
             handleSaveFailure();
           }
         }, delay);
@@ -697,7 +722,19 @@ export function useShotStateMachine({
         dispatch({ type: 'SET_AUTO_SAVE_STATUS', payload: 'saving' });
         await onAutoSaveRef.current?.(shotHistoryRef.current, currentHoleIndexRef.current);
         handleSaveSuccess(freshFingerprint);
-      } catch {
+      } catch (error) {
+        logError(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useShotStateMachine',
+            action: 'auto-save initial attempt',
+            currentHoleIndex: currentHoleIndexRef.current,
+            shotCount: shotHistoryRef.current.length,
+            autoSaveInterval,
+            consecutiveFailures: circuitBreakerFailuresRef.current,
+          },
+          'high'
+        );
         handleSaveFailure();
       }
     }, autoSaveInterval);

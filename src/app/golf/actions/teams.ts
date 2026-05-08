@@ -3,6 +3,7 @@
 import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { logServerError } from '@/lib/server-error-logger';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -246,8 +247,13 @@ export async function joinGolfTeam(playerId: string, teamId: string) {
         // Notification shape includes metadata field not in generated types
         await fromUntyped(supabase, 'notifications').insert(notifications);
       }
-    } catch {
+    } catch (error) {
       // Don't fail the join if notification fails
+      await logServerError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.joinGolfTeam', featureArea: 'teams' },
+        'warning'
+      );
     }
   }
 
@@ -640,8 +646,13 @@ export async function createTeamJoinRequest(
         // Notification shape includes metadata field not in generated types
         await fromUntyped(supabase, 'notifications').insert(notifications);
       }
-    } catch {
+    } catch (error) {
       // Don't fail the request if notification fails
+      await logServerError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.createTeamJoinRequest', featureArea: 'teams' },
+        'warning'
+      );
     }
   }
 
@@ -843,8 +854,13 @@ export async function acceptJoinRequest(
         },
         read: false,
       });
-    } catch {
+    } catch (error) {
       // Don't fail the approval if notification fails
+      await logServerError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.acceptJoinRequest', featureArea: 'teams' },
+        'warning'
+      );
     }
   }
 
@@ -951,8 +967,13 @@ export async function rejectJoinRequest(
         },
         read: false,
       });
-    } catch {
+    } catch (error) {
       // Don't fail the rejection if notification fails
+      await logServerError(
+        `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+        { action: 'teams.rejectJoinRequest', featureArea: 'teams' },
+        'warning'
+      );
     }
   }
 

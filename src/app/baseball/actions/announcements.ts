@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
 // TYPES
@@ -126,7 +127,11 @@ export async function createAnnouncement(input: {
     revalidatePath('/baseball/dashboard/announcements');
     return { success: true, data: { announcementId } };
 
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.createAnnouncement', featureArea: 'baseball_announcements' }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -219,7 +224,11 @@ export async function getAnnouncementsWithMeta(
 
     return { success: true, data: enriched };
 
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.getAnnouncementsWithMeta', featureArea: 'baseball_announcements' }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -289,7 +298,11 @@ export async function acknowledgeAnnouncement(
     revalidatePath('/baseball/dashboard/announcements');
     return { success: true };
 
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.acknowledgeAnnouncement', featureArea: 'baseball_announcements' }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
@@ -338,7 +351,11 @@ export async function deleteAnnouncement(
     revalidatePath('/baseball/dashboard/announcements');
     return { success: true };
 
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'baseball_announcements.deleteAnnouncement', featureArea: 'baseball_announcements' }
+    );
     return { success: false, error: 'An unexpected error occurred' };
   }
 }

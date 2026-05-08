@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { logServerError } from '@/lib/server-error-logger';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
 // ============================================================================
@@ -218,6 +219,10 @@ export async function getPlayerNotificationCounts(
       },
     };
   } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'player_notifications.getPlayerNotificationCounts', featureArea: 'notifications' }
+    );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch notification counts' };
   }
 }
@@ -262,6 +267,10 @@ export async function markAnnouncementsSeen(): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'player_notifications.markAnnouncementsSeen', featureArea: 'notifications' }
+    );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to mark announcements seen' };
   }
 }
@@ -304,6 +313,10 @@ export async function markTravelSeen(): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'player_notifications.markTravelSeen', featureArea: 'notifications' }
+    );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to mark travel seen' };
   }
 }
@@ -341,6 +354,10 @@ export async function getPlayerHubAnnouncements(
     const rows = (data as GolfAnnouncementMeta[] | null) ?? [];
     return { success: true, data: rows };
   } catch (error) {
+    await logServerError(
+      `Unexpected error: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'player_notifications.getPlayerHubAnnouncements', featureArea: 'notifications' }
+    );
     return { success: false, error: error instanceof Error ? error.message : 'Failed to fetch hub announcements' };
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { saveRoundDraft, loadRoundDraft, clearRoundDraft } from '@/app/golf/actions/round-drafts';
+import { logError } from '@/lib/error-logging';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
 
 /**
@@ -146,7 +147,18 @@ export function useAutoSaveRound(
         roundId: currentRoundId,
       };
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(backup));
-    } catch {
+    } catch (error) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useAutoSaveRound',
+          action: 'saveToLocalStorage',
+          roundId: currentRoundId,
+          step: data.step,
+          currentHoleIndex: data.currentHoleIndex,
+        },
+        'medium'
+      );
       // localStorage may be unavailable - silently fail
     }
   }, [currentRoundId]);
@@ -168,7 +180,16 @@ export function useAutoSaveRound(
       }
 
       return backup.data;
-    } catch {
+    } catch (error) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useAutoSaveRound',
+          action: 'loadFromLocalStorage',
+          localStorageKey: LOCAL_STORAGE_KEY,
+        },
+        'medium'
+      );
       return null;
     }
   }, []);
@@ -179,7 +200,16 @@ export function useAutoSaveRound(
   const clearLocalStorage = useCallback(() => {
     try {
       localStorage.removeItem(LOCAL_STORAGE_KEY);
-    } catch {
+    } catch (error) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useAutoSaveRound',
+          action: 'clearLocalStorage',
+          localStorageKey: LOCAL_STORAGE_KEY,
+        },
+        'medium'
+      );
       // Silently fail
     }
   }, []);
@@ -273,6 +303,21 @@ export function useAutoSaveRound(
         });
       }
     } catch (error) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useAutoSaveRound',
+          action: 'performSave',
+          roundId: currentRoundId,
+          step: data.step,
+          currentHoleIndex: data.currentHoleIndex,
+          isOnline,
+          holesCount: data.holes?.length,
+          inProgressShotsCount: data.inProgressShots ? Object.keys(data.inProgressShots).length : 0,
+        },
+        'high'
+      );
+
       if (!isMountedRef.current) return;
 
       setSaveStatus({
@@ -376,7 +421,16 @@ export function useAutoSaveRound(
           source: 'database',
         };
       }
-    } catch {
+    } catch (error) {
+      logError(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          component: 'useAutoSaveRound',
+          action: 'loadDraft.loadRoundDraft',
+          currentRoundId,
+        },
+        'medium'
+      );
       // Fall through to localStorage
     }
 
@@ -417,7 +471,16 @@ export function useAutoSaveRound(
     if (currentRoundId) {
       try {
         await clearRoundDraft(currentRoundId);
-      } catch {
+      } catch (error) {
+        logError(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useAutoSaveRound',
+            action: 'clearDraft.clearRoundDraft',
+            roundId: currentRoundId,
+          },
+          'medium'
+        );
         // Silently fail - draft may already be deleted
       }
     }

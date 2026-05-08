@@ -207,34 +207,53 @@ export default isDev
   : withSentryConfig(
       withBundleAnalyzer(nextConfig),
       {
-        // For all available options, see:
         // https://github.com/getsentry/sentry-webpack-plugin#options
-
-        // Suppresses source map uploading logs during build
         silent: true,
         org: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        // Release name + commits — falls back to Vercel's git SHA so each
+        // deploy is a distinct release. setCommits with auto:true lets Sentry
+        // associate the commits in this build with the release, which powers
+        // Suspect Commits ("this error was introduced by commit abc123") and
+        // the per-release commit list in the UI.
+        release: {
+          name: process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA,
+          setCommits: {
+            auto: true,
+            // Don't fail the build if no GitHub integration is wired up yet —
+            // commits will populate once that integration is installed.
+            ignoreMissing: true,
+            ignoreEmpty: true,
+          },
+          // Notify Sentry when a deployment to a given environment finishes
+          // so release adoption metrics work.
+          deploy: {
+            env: process.env.VERCEL_ENV || process.env.NODE_ENV || 'production',
+          },
+        },
+        // Don't phone home about build telemetry
+        telemetry: false,
       },
       {
-        // For all available options, see:
         // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
         // Upload a larger set of source maps for prettier stack traces (increases build time)
         widenClientFileUpload: true,
 
-        // Transpiles SDK to be compatible with IE11 (increases bundle size)
-        transpileClientSDK: false,
-
-        // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers (increases server load)
+        // Routes browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers
         tunnelRoute: '/monitoring',
 
         // Hides source maps from generated client bundles
         hideSourceMaps: true,
 
-        // Automatically tree-shake Sentry logger statements to reduce bundle size
+        // Tree-shake Sentry logger statements
         disableLogger: true,
 
-        // Enables automatic instrumentation of Vercel Cron Monitors.
+        // Auto-instrument Vercel Cron Monitors
         automaticVercelMonitors: true,
+
+        // React component annotations make stack traces show JSX component names
+        reactComponentAnnotation: { enabled: true },
       }
     );

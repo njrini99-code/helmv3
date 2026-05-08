@@ -4070,7 +4070,16 @@ export async function deleteInProgressRound(roundId: string): Promise<ActionResu
 
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (error) {
+    await logServerError(
+      `deleteInProgressRound failed: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        action: 'golf.deleteInProgressRound',
+        featureArea: 'golf_rounds',
+        roundId,
+        extra: { stack: error instanceof Error ? error.stack : undefined },
+      }
+    );
     return {
       success: false,
       error: 'Failed to delete round. Please try again.'
@@ -5446,6 +5455,15 @@ export async function getRoundShotDetails(
       },
     };
   } catch (error) {
+    await logServerError(
+      `getRoundShotDetails failed: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        action: 'golf.getRoundShotDetails',
+        featureArea: 'golf_rounds',
+        roundId,
+        extra: { stack: error instanceof Error ? error.stack : undefined },
+      }
+    );
     return formatSafeErrorResponse(error);
   }
 }

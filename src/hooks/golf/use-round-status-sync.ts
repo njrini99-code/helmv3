@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type MutableRefObject } from 'react';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
+import { logError } from '@/lib/error-logging';
 
 interface UseRoundStatusSyncOptions {
   roundId?: string | null;
@@ -108,7 +109,19 @@ export function useRoundStatusSync({
           lastStaleVersionRef.current = currentUpdatedAt;
           await onRoundStaleRef.current?.({ currentUpdatedAt, status });
         }
-      } catch {
+      } catch (error) {
+        logError(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            component: 'useRoundStatusSync',
+            action: 'checkRoundStaleness sync',
+            roundId,
+            expectedUpdatedAt: expectedUpdatedAtRef.current,
+            consecutiveFailures: consecutiveFailuresRef.current + 1,
+            syncIntervalMs,
+          },
+          'medium'
+        );
         // Network error / "unexpected response" (e.g. deploy mismatch) — backoff
         consecutiveFailuresRef.current++;
       } finally {

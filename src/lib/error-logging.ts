@@ -1,12 +1,15 @@
 /**
- * Error Logging Service
- *
- * Centralized error logging that can be integrated with:
- * - Sentry (https://sentry.io)
- * - LogRocket (https://logrocket.com)
- * - Datadog (https://www.datadoghq.com)
- * - Custom logging solution
+ * Error Logging Service — routes errors to Sentry + the internal error_logs table.
  */
+
+import * as Sentry from '@sentry/nextjs';
+
+const SEVERITY_TO_SENTRY_LEVEL: Record<'low' | 'medium' | 'high' | 'critical', Sentry.SeverityLevel> = {
+  low: 'info',
+  medium: 'warning',
+  high: 'error',
+  critical: 'fatal',
+};
 
 export interface ErrorContext {
   userId?: string;
@@ -147,7 +150,32 @@ export function logError(
     console.groupEnd();
   }
 
-  // Send to error_logs table via API route
+  // Send to Sentry — captures stack, breadcrumbs, replay, user context
+  Sentry.withScope((scope) => {
+    scope.setLevel(SEVERITY_TO_SENTRY_LEVEL[severity]);
+    if (enrichedContext) {
+      const { browser, location, viewport, document: docCtx, history, network, ...rest } = enrichedContext as Record<string, unknown>;
+      // Promote diagnostic blocks to Sentry contexts (queryable in UI)
+      if (browser) scope.setContext('browser', browser as Record<string, unknown>);
+      if (location) scope.setContext('location', location as Record<string, unknown>);
+      if (viewport) scope.setContext('viewport', viewport as Record<string, unknown>);
+      if (docCtx) scope.setContext('document', docCtx as Record<string, unknown>);
+      if (history) scope.setContext('history', history as Record<string, unknown>);
+      if (network) scope.setContext('network', network as Record<string, unknown>);
+      // Remaining keys become tags / extras
+      for (const [key, value] of Object.entries(rest)) {
+        if (value === undefined || value === null) continue;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          scope.setTag(key, String(value));
+        } else {
+          scope.setExtra(key, value);
+        }
+      }
+    }
+    Sentry.captureException(error);
+  });
+
+  // Also persist to error_logs table for product analytics
   sendToMonitoringService(logEntry);
 }
 
