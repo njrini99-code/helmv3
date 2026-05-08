@@ -118,7 +118,7 @@ function RecruitingSnapshotCard({
           href="/baseball/dashboard/analytics" 
           className="text-xs text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group"
         >
-          View All <IconChevronRight size={12} className="group-hover:tranwarm-x-0.5 transition-transform" />
+          View All <IconChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 

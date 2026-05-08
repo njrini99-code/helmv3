@@ -329,7 +329,7 @@ export default function VideosPage() {
             <CardContent className="p-3 sm:p-4">
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                 <div className="flex-1 relative">
-                  <IconSearch size={18} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+                  <IconSearch size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
                   <Input
                     type="text"
                     placeholder={isCoach ? "Search by player name or video title..." : "Search videos..."}

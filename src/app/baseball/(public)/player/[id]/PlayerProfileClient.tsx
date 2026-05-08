@@ -247,8 +247,8 @@ export function PlayerProfileClient({
               <div className="absolute inset-0 bg-gradient-to-br from-warm-900 via-primary-900 to-emerald-800" />
               <div className="absolute inset-0 bg-[url('/patterns/topography.svg')] opacity-[0.07]" />
               {/* Accent glow effects */}
-              <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -tranwarm-y-1/2 tranwarm-x-1/2" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl tranwarm-y-1/2 -tranwarm-x-1/2" />
+              <div className="absolute top-0 right-0 w-96 h-96 bg-primary-500/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             </>
           )}

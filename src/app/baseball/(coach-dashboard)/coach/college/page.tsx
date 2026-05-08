@@ -67,7 +67,7 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className={`relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5 ${size === 'large' ? 'p-6' : 'p-5'}`}>
+    <div className={`relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${size === 'large' ? 'p-6' : 'p-5'}`}>
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -215,7 +215,7 @@ export default function CollegeCoachDashboard() {
                 <h2 className="font-semibold text-warm-900 tracking-tight">Engagement (7 Days)</h2>
               </div>
               <Link href="/baseball/dashboard/analytics" className="text-sm leading-relaxed text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
-                Details <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
+                Details <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
             </div>
             <div className="p-6">
@@ -301,7 +301,7 @@ export default function CollegeCoachDashboard() {
               </div>
             </div>
             <Link href="/baseball/dashboard/discover" className="text-sm leading-relaxed text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
-              Discover <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
+              Discover <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
           </div>
           <div className="p-6">

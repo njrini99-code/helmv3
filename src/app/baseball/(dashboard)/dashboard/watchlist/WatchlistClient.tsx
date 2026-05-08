@@ -455,7 +455,7 @@ export function WatchlistClient() {
             {/* Filters */}
             <div className="flex flex-wrap items-center gap-3 mb-6">
               <div className="relative flex-1 min-w-[200px] max-w-md">
-                <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+                <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -832,7 +832,7 @@ export function WatchlistClient() {
       >
         <div className="space-y-4">
           <div className="relative">
-            <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
             <Input
               value={playerSearchQuery}
               onChange={(e) => {

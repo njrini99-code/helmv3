@@ -445,7 +445,7 @@ export default function RosterPage() {
                     <div className="flex-1 relative">
                       <IconSearch
                         size={18}
-                        className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400"
                       />
                       <Input
                         type="text"

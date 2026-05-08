@@ -64,7 +64,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <div className="relative flex-1">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             value={search}

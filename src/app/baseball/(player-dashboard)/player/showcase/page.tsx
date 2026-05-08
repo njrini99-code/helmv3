@@ -55,7 +55,7 @@ function BentoStatCard({
   href?: string;
 }) {
   const content = (
-    <div className="relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5 p-5">
+    <div className="relative group glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 p-5">
       <ShineEffect />
       <div className="flex items-start justify-between">
         <div>
@@ -246,7 +246,7 @@ export default function ShowcasePlayerDashboardPage() {
                       <p className="text-sm font-medium text-warm-900 group-hover:text-primary-600 transition-colors">{action.label}</p>
                       <p className="text-xs text-warm-500">{action.description}</p>
                     </div>
-                    <IconChevronRight size={16} className="text-warm-300 group-hover:text-warm-500 group-hover:tranwarm-x-0.5 transition-all" />
+                    <IconChevronRight size={16} className="text-warm-300 group-hover:text-warm-500 group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </Link>
               ))}
