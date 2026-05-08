@@ -10,6 +10,7 @@
  */
 
 import { z } from 'zod';
+import { logServerException } from '@/lib/server-error-logger';
 
 /**
  * Common validation schemas
@@ -146,8 +147,20 @@ export function formatSafeErrorResponse(error: unknown): {
     };
   }
 
-  // For unknown errors, return generic message and log details
+  // For unknown errors, log to Sentry + error_logs and return generic message.
+  // This is the single funnel for ~72 silent catches across 12 mutation files
+  // (golf.ts, tasks.ts, announcements.ts, recurring-events.ts, etc.) — wiring
+  // logServerException here means every catch using formatSafeErrorResponse
+  // now reaches Sentry with the original stack preserved.
   console.error('[Server Action] Unexpected error:', error);
+  void logServerException(
+    error,
+    {
+      action: 'server_action.formatSafeErrorResponse',
+      featureArea: 'server_action_unknown_error',
+    },
+    'error',
+  );
 
   return {
     success: false,
