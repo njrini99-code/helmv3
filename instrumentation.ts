@@ -58,7 +58,16 @@ export async function register() {
           recordInputs: true,
           recordOutputs: true,
         }),
+        // Forward server console.log/warn/error to Sentry → Explore → Logs
+        // (separate stream from issues). Catches anything we log via console
+        // that doesn't go through logServerError.
+        Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
+        // Capture console.error/.warn AS issues too (high-signal, errors only).
+        Sentry.captureConsoleIntegration({ levels: ['error'] }),
       ],
+
+      // Enable Sentry SDK structured logs (separate from error events).
+      enableLogs: true,
 
       // 20% in prod controls span volume on hot endpoints; 10% in dev for speed.
       tracesSampleRate: isDev ? 0.1 : 0.2,
@@ -68,6 +77,11 @@ export async function register() {
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
     });
+
+    console.log('[Sentry] Node runtime initialized', {
+      release: release ?? 'none',
+      hasDsn: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
+    });
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {
@@ -76,9 +90,19 @@ export async function register() {
       release,
       environment: process.env.NODE_ENV || 'development',
       debug: false,
+      integrations: [
+        Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
+        Sentry.captureConsoleIntegration({ levels: ['error'] }),
+      ],
+      enableLogs: true,
       tracesSampleRate: isDev ? 0.1 : 0.2,
       beforeSend: scrubPii,
       ignoreErrors: sharedIgnoreErrors,
+    });
+
+    console.log('[Sentry] Edge runtime initialized', {
+      release: release ?? 'none',
+      hasDsn: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
     });
   }
 }

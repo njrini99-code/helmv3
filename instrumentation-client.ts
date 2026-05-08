@@ -14,6 +14,9 @@ Sentry.init({
   // 10% in dev to reduce overhead.
   tracesSampleRate: isDev ? 0.1 : 0.2,
 
+  // Enable Sentry SDK structured logs (separate from error events).
+  enableLogs: true,
+
   // Capture 100% of sessions with errors, 10% of all sessions (prod only)
   replaysOnErrorSampleRate: 1.0,
   replaysSessionSampleRate: isDev ? 0 : 0.1,
@@ -25,12 +28,20 @@ Sentry.init({
       blockAllMedia: false,
     })] : []),
     Sentry.browserTracingIntegration(),
+    // Forward client console.log/.warn/.error to Sentry → Explore → Logs
+    // (separate stream from issues). Catches anything that goes through
+    // console rather than Sentry.captureException.
+    Sentry.consoleLoggingIntegration({ levels: ['log', 'warn', 'error'] }),
+    // Capture console.error AS issues too — high-signal, picks up React
+    // error boundary console.errors, hydration warnings, unhandled promise
+    // rejections that get logged but not thrown.
+    Sentry.captureConsoleIntegration({ levels: ['error'] }),
     // Note: feedbackIntegration was moved out of @sentry/nextjs in v10.x —
-    // it now lives in @sentry-internal/feedback. We removed it here because
-    // calling undefined({...}) crashed Sentry.init() on the client and took
-    // the whole client SDK with it (including server attribution because
-    // the bundle would silently drop traces). Re-add later by importing
-    // from @sentry-internal/feedback directly if we want the widget back.
+    // it now lives in @sentry-internal/feedback. Calling
+    // Sentry.feedbackIntegration({...}) at runtime evaluates to
+    // undefined({...}) which crashes the entire client SDK init and
+    // starves the project of events. Re-add by importing from
+    // @sentry-internal/feedback directly if we want the widget back.
   ] : [],
 
   environment: process.env.NODE_ENV || 'development',
