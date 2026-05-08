@@ -25,26 +25,12 @@ Sentry.init({
       blockAllMedia: false,
     })] : []),
     Sentry.browserTracingIntegration(),
-    // Floating "Report a Bug" button — captures screenshot + description,
-    // attaches active replay. Disabled in dev to avoid clutter.
-    ...(!isDev ? [Sentry.feedbackIntegration({
-      colorScheme: 'light',
-      autoInject: true,
-      showBranding: false,
-      // Match Helm's brand: kelly green, generous radius
-      themeLight: {
-        accentBackground: '#16A34A',
-        accentForeground: '#ffffff',
-        background: '#FFFEFA',
-        border: '1.5px solid rgba(22,163,74,0.15)',
-        boxShadow: '0 8px 32px rgba(22,163,74,0.12)',
-      },
-      buttonLabel: 'Report a bug',
-      submitButtonLabel: 'Send',
-      formTitle: 'What went wrong?',
-      messagePlaceholder: 'What happened? What were you trying to do?',
-      successMessageText: 'Thanks — we\'ll look into it.',
-    })] : []),
+    // Note: feedbackIntegration was moved out of @sentry/nextjs in v10.x —
+    // it now lives in @sentry-internal/feedback. We removed it here because
+    // calling undefined({...}) crashed Sentry.init() on the client and took
+    // the whole client SDK with it (including server attribution because
+    // the bundle would silently drop traces). Re-add later by importing
+    // from @sentry-internal/feedback directly if we want the widget back.
   ] : [],
 
   environment: process.env.NODE_ENV || 'development',
