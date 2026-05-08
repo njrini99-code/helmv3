@@ -6,6 +6,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
@@ -40,7 +41,14 @@ export async function getUserNotificationPreferences(
   userId: string
 ): Promise<NotificationPreferences> {
   try {
-    const supabase = await createClient();
+    // Notification routing is server-side infrastructure that needs to read
+    // OTHER users' prefs (e.g. analyze-player invoked via x-internal-secret
+    // has no Supabase auth session, so the SSR client's RLS-gated SELECT
+    // on `users` returns an error). Use the service-role admin client so
+    // the lookup succeeds regardless of caller auth context. Falls back to
+    // DEFAULT_NOTIFICATION_PREFERENCES via the outer catch if admin creds
+    // are missing (dev environments without SUPABASE_SERVICE_ROLE_KEY).
+    const supabase = createAdminClient();
     // .maybeSingle() returns null (no error) when the user row does not exist.
     // The cron roster sweep can hand us stale or detached player_ids whose
     // backing `users` row was deleted; .single() would throw PGRST116
@@ -55,7 +63,6 @@ export async function getUserNotificationPreferences(
       .maybeSingle();
 
     if (error) {
-      // Column might not exist yet - use defaults
       console.warn('Failed to fetch notification preferences:', error.message);
       return DEFAULT_NOTIFICATION_PREFERENCES;
     }

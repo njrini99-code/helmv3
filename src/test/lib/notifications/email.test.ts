@@ -33,8 +33,8 @@ const eqSpy = vi.fn(() => ({ maybeSingle: maybeSingleSpy }));
 const selectSpy = vi.fn(() => ({ eq: eqSpy }));
 const fromSpy = vi.fn(() => ({ select: selectSpy }));
 
-vi.mock('@/lib/supabase/server', () => ({
-  createClient: async () => ({ from: fromSpy }),
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({ from: fromSpy }),
 }));
 
 // --- Helpers --------------------------------------------------------------
