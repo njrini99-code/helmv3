@@ -9,9 +9,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         // Load the Capacitor web view directly as the root. The first screen
-        // the user sees is now the Scenic Chooser sign-in page (/golf/login),
-        // rendered by the web app. The native HomeViewController is retained
-        // in the bundle but no longer shown on cold start.
+        // the user sees is the GolfHelm sign-in page (/golf/login), rendered
+        // by the web app. The legacy native chooser was deleted in May 2026 —
+        // the iOS shell exists solely to host the web app inside a WKWebView
+        // with native plugins (haptics, push, keyboard, status bar).
         let window = UIWindow(windowScene: windowScene)
 
         let storyboard = UIStoryboard(name: "Main", bundle: nil)
