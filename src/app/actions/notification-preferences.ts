@@ -80,11 +80,14 @@ export async function getNotificationPreferences(): Promise<{
       return { data: null, error: 'Unauthorized' };
     }
 
+    // .maybeSingle() so an orphaned auth.users (no public.users row) returns
+    // {data:null, error:null} instead of throwing PGRST116. Same fix already
+    // shipped on the sister read in src/lib/notifications/email.ts.
     const { data, error } = await supabase
       .from('users')
       .select('notification_preferences')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       return { data: null, error: error.message };

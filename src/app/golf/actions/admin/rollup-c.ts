@@ -59,6 +59,12 @@ type RpcTeam = {
   organization_id: string | null;
 };
 type RpcTeamMember = { player_id: string; team_id: string };
+type RpcTeamCoachStaff = {
+  team_id: string;
+  coach_id: string;
+  role: string | null;
+  is_primary: boolean | null;
+};
 type RpcPlayer = {
   id: string;
   user_id: string;
@@ -111,6 +117,12 @@ type RpcPayload = {
   playerInsightRollup: RpcPlayerInsightRollup[];
   teams: RpcTeam[];
   teamMembers: RpcTeamMember[];
+  // Canonical coach→team mapping (replaces the old organization_id heuristic
+  // that was double-counting coaches across multi-team orgs and dropping any
+  // coach with a NULL organization_id). Optional so older deployments of the
+  // RPC that pre-date 20260510120000 don't break consumers — fall back to
+  // empty list and let the org_id path handle it.
+  teamCoachStaff?: RpcTeamCoachStaff[];
   players: RpcPlayer[];
   coaches: RpcCoach[];
   users: RpcUser[];
@@ -241,6 +253,23 @@ export async function fetchAdminRollupC(
     const list = teamIdToPlayerIds.get(m.team_id) ?? [];
     list.push(m.player_id);
     teamIdToPlayerIds.set(m.team_id, list);
+  }
+
+  // coach → team assignment via golf_team_coach_staff (canonical). Replaces
+  // the old `coach.organization_id == team.organization_id` heuristic that
+  // double-counted coaches across multi-team orgs and dropped coaches with
+  // NULL organization_id. We keep the org_id fallback ONLY for teams that
+  // have no staff entry yet (defensive — covers any data gap that survives
+  // the 20260510120000 backfill).
+  const teamIdToCoachIds = new Map<string, Set<string>>();
+  const coachIdToTeamIds = new Map<string, Set<string>>();
+  for (const s of data.teamCoachStaff ?? []) {
+    const teamSet = teamIdToCoachIds.get(s.team_id) ?? new Set<string>();
+    teamSet.add(s.coach_id);
+    teamIdToCoachIds.set(s.team_id, teamSet);
+    const coachSet = coachIdToTeamIds.get(s.coach_id) ?? new Set<string>();
+    coachSet.add(s.team_id);
+    coachIdToTeamIds.set(s.coach_id, coachSet);
   }
 
   // player → { totalRounds, lastRound, firstRound }  from caller's
@@ -418,22 +447,26 @@ export async function fetchAdminRollupC(
   // ---------------------------------------------------------------------------
   const coachIntelligence: AdminDashboardData['coachIntelligence'] = [];
   for (const c of data.coaches) {
-    // Team for this coach (first team matching the coach's organization)
+    // Team for this coach. Prefer the canonical staff mapping; fall back to
+    // org_id only when the staff table has no entry for the coach.
     let coachTeamName: string | null = null;
     let coachPlayerCount = 0;
     let totalPlayerRounds = 0;
-    if (c.organization_id) {
-      const coachTeams = orgToTeams.get(c.organization_id) ?? [];
-      if (coachTeams.length > 0) {
-        const firstTeam = coachTeams[0];
-        if (firstTeam) coachTeamName = firstTeam.name;
-      }
-      for (const t of coachTeams) {
-        const teamPlayers = teamIdToPlayerIds.get(t.id) ?? [];
-        coachPlayerCount += teamPlayers.length;
-        for (const pid of teamPlayers) {
-          totalPlayerRounds += playerRoundCount.get(pid) ?? 0;
-        }
+    const staffTeamIds = coachIdToTeamIds.get(c.id);
+    const coachTeams = staffTeamIds && staffTeamIds.size > 0
+      ? data.teams.filter((t) => staffTeamIds.has(t.id))
+      : c.organization_id
+        ? (orgToTeams.get(c.organization_id) ?? [])
+        : [];
+    if (coachTeams.length > 0) {
+      const firstTeam = coachTeams[0];
+      if (firstTeam) coachTeamName = firstTeam.name;
+    }
+    for (const t of coachTeams) {
+      const teamPlayers = teamIdToPlayerIds.get(t.id) ?? [];
+      coachPlayerCount += teamPlayers.length;
+      for (const pid of teamPlayers) {
+        totalPlayerRounds += playerRoundCount.get(pid) ?? 0;
       }
     }
 
@@ -507,33 +540,39 @@ export async function fetchAdminRollupC(
       });
     }
 
-    // Coaches via team.organization_id === coach.organization_id
-    if (team.organization_id) {
-      for (const coach of data.coaches) {
-        if (coach.organization_id !== team.organization_id) continue;
-        if (!coach.user_id) continue;
-        if (usersOnTeams.has(coach.user_id)) continue;
-        const user = usersById.get(coach.user_id);
-        if (!user) continue;
-        const lastSeen = userLastActive.get(user.id) ?? null;
-        usersOnTeams.add(user.id);
-        members.push({
-          id: user.id,
-          email: user.email,
-          name: (coach.full_name ?? '').trim() || null,
-          role: 'coach',
-          created_at: user.created_at ?? '',
-          last_seen: lastSeen,
-          daysSinceLastSeen: daysSince(lastSeen),
-          activityStatus: activityStatus(lastSeen, todayIso, ago7dIso, ago30dIso),
-          roundsEntered: 0,
-          lastRoundDate: null,
-          avgScore: null,
-          insightsReceived: 0,
-          roundReviews: 0,
-          onboardingCompleted: coach.onboarding_completed,
-        });
-      }
+    // Coaches: prefer the canonical golf_team_coach_staff mapping. Fall
+    // back to the legacy organization_id heuristic only if the staff table
+    // has no entry for this team — this covers any pre-backfill rows that
+    // ship with an older RPC payload.
+    const staffCoachIds = teamIdToCoachIds.get(team.id);
+    const coachesForTeam = staffCoachIds
+      ? data.coaches.filter((c) => staffCoachIds.has(c.id))
+      : team.organization_id
+        ? data.coaches.filter((c) => c.organization_id === team.organization_id)
+        : [];
+    for (const coach of coachesForTeam) {
+      if (!coach.user_id) continue;
+      if (usersOnTeams.has(coach.user_id)) continue;
+      const user = usersById.get(coach.user_id);
+      if (!user) continue;
+      const lastSeen = userLastActive.get(user.id) ?? null;
+      usersOnTeams.add(user.id);
+      members.push({
+        id: user.id,
+        email: user.email,
+        name: (coach.full_name ?? '').trim() || null,
+        role: 'coach',
+        created_at: user.created_at ?? '',
+        last_seen: lastSeen,
+        daysSinceLastSeen: daysSince(lastSeen),
+        activityStatus: activityStatus(lastSeen, todayIso, ago7dIso, ago30dIso),
+        roundsEntered: 0,
+        lastRoundDate: null,
+        avgScore: null,
+        insightsReceived: 0,
+        roundReviews: 0,
+        onboardingCompleted: coach.onboarding_completed,
+      });
     }
 
     const activeMemberCount = members.filter(
@@ -706,12 +745,17 @@ export async function fetchAdminRollupC(
       ? Math.floor((Date.now() - new Date(lastCheck).getTime()) / 86_400_000)
       : 999;
     if (daysGone < 7) continue;
+    // Same precedence as coachIntelligence: staff mapping first, org_id only
+    // as a fallback for teams without a staff row yet.
     let coachTeamName: string | null = null;
-    if (c.organization_id) {
-      const teamsForCoach = orgToTeams.get(c.organization_id) ?? [];
-      const firstTeam = teamsForCoach[0];
-      if (firstTeam) coachTeamName = firstTeam.name;
-    }
+    const staffTeamIdsForCoach = coachIdToTeamIds.get(c.id);
+    const teamsForCoach = staffTeamIdsForCoach && staffTeamIdsForCoach.size > 0
+      ? data.teams.filter((t) => staffTeamIdsForCoach.has(t.id))
+      : c.organization_id
+        ? (orgToTeams.get(c.organization_id) ?? [])
+        : [];
+    const firstTeam = teamsForCoach[0];
+    if (firstTeam) coachTeamName = firstTeam.name;
     disengagedCoaches.push({
       id: c.id,
       name: (c.full_name ?? '').trim() || 'Unknown',
