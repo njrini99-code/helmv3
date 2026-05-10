@@ -14,13 +14,6 @@ interface LargeTitleHeaderProps {
    * Subtitle — string (auto-truncated) or JSX (caller handles overflow).
    */
   subtitle?: React.ReactNode;
-  /**
-   * Optional eyebrow above the title. Renders in Fraunces italic small-caps —
-   * editorial accent for section context (e.g. "Coach Dashboard", a player's
-   * team name on a detail page, the active season). Skip for routine pages
-   * where the title alone carries meaning.
-   */
-  eyebrow?: React.ReactNode;
   /** Action buttons shown on the right (icons or short labels) */
   children?: React.ReactNode;
   /** Extra row below the title (filter chips, tabs, search bar, etc.) */
@@ -63,7 +56,6 @@ const COLLAPSE_THRESHOLD = 32;
 export function LargeTitleHeader({
   title,
   subtitle,
-  eyebrow,
   children,
   belowContent,
   className,
@@ -232,25 +224,19 @@ export function LargeTitleHeader({
             </button>
 
             {/* Desktop: always-visible full title block on the left.
-                Premium spec — Geist display weight at -0.028em tracking
-                with optional Fraunces eyebrow above. Larger optical size
-                than the previous 28px treatment so the header carries the
-                same editorial weight as the rest of the surface kit. */}
+                Apple-native minimal — Geist regular at iOS-equivalent
+                proportions. No editorial flourishes, no display weight,
+                just title + optional quiet subtitle on warm cream. */}
             <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
               <div className="min-w-0 flex-1">
-                {eyebrow && (
-                  <div className="mb-0.5 font-serif italic text-[11px] uppercase tracking-[0.18em] text-warm-500 truncate">
-                    {eyebrow}
-                  </div>
-                )}
-                <h1 className="font-display text-[32px] leading-[1.05] font-medium tracking-[-0.028em] text-warm-900 truncate">
+                <h1 className="text-[28px] leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
                   {title}
                 </h1>
                 {subtitle && (
                   typeof subtitle === 'string' ? (
-                    <p className="text-warm-500 mt-1 text-sm truncate">{subtitle}</p>
+                    <p className="text-warm-500 mt-0.5 text-sm truncate">{subtitle}</p>
                   ) : (
-                    <div className="text-warm-500 mt-1 text-sm min-w-0">{subtitle}</div>
+                    <div className="text-warm-500 mt-0.5 text-sm min-w-0">{subtitle}</div>
                   )
                 )}
               </div>
@@ -267,29 +253,21 @@ export function LargeTitleHeader({
       </div>
 
       {/* ===== Large title — part of scrollable content (mobile only) =====
-          Premium spec — Geist display weight at 40px / -0.03em tracking,
-          optional Fraunces serif eyebrow on top, hairline rule below.
-          Not sticky. Scrolls away naturally. Zero flicker. */}
-      <div className="lg:hidden max-w-7xl mx-auto px-4 pt-1 pb-3">
-        {eyebrow && (
-          <div className="mb-1 font-serif italic text-[11px] uppercase tracking-[0.2em] text-warm-500 truncate">
-            {eyebrow}
-          </div>
-        )}
-        <h1 className="font-display text-[40px] leading-[1.02] font-medium tracking-[-0.03em] text-warm-900 truncate">
+          Apple-native iOS large title. 34pt-equivalent (UIKit
+          UINavigationItem largeTitle), Geist medium, restrained tracking.
+          No eyebrow, no hairline, no glass tray — just the title sitting
+          on warm cream and scrolling away naturally. Zero flicker. */}
+      <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-3">
+        <h1 className="text-[34px] leading-[1.05] font-medium tracking-[-0.018em] text-warm-900 truncate">
           {title}
         </h1>
         {subtitle && (
           typeof subtitle === 'string' ? (
-            <p className="text-warm-500 mt-1.5 text-subhead leading-tight truncate">{subtitle}</p>
+            <p className="text-warm-500 mt-1 text-subhead leading-tight truncate">{subtitle}</p>
           ) : (
-            <div className="text-warm-500 mt-1.5 text-subhead leading-tight min-w-0">{subtitle}</div>
+            <div className="text-warm-500 mt-1 text-subhead leading-tight min-w-0">{subtitle}</div>
           )
         )}
-        {/* Hairline rule — editorial separator. Sits under the large title
-            block on mobile only; desktop inherits the existing nav-bar
-            border-bottom and doesn't need a second rule. */}
-        <div className="mt-3 h-px bg-warm-900/8" aria-hidden="true" />
       </div>
 
       {/* ===== belowContent (filters / tabs) ===== */}
