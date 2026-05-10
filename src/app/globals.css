@@ -136,7 +136,13 @@
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
-  --golf-mobile-bottom-nav-offset: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  /* Bottom nav was removed May 2026 — single hamburger lives in the page
+     header now. The var is kept (instead of deleted) so every existing
+     `pb-[var(--golf-mobile-bottom-nav-offset)]` / `100dvh - var(...)` site
+     keeps compiling without churn; it now resolves to the iOS home-indicator
+     safe area only, so nothing reserves dead pixels for a bar that no
+     longer exists. */
+  --golf-mobile-bottom-nav-offset: env(safe-area-inset-bottom, 0px);
 }
 
 @media (min-width: 1024px) {

@@ -15,6 +15,11 @@ interface MobileNavHeaderProps {
    * truncation; ReactNode callers are responsible for their own overflow.
    */
   subtitle?: React.ReactNode;
+  /**
+   * Optional editorial eyebrow above the title (Fraunces italic small-caps).
+   * Use sparingly for context like a parent section name on a detail page.
+   */
+  eyebrow?: React.ReactNode;
   /** Action buttons shown on the right (icons or short labels) */
   children?: React.ReactNode;
   /** Extra row below the title (filter chips, tabs, search bar, etc.) */
@@ -45,6 +50,7 @@ interface MobileNavHeaderProps {
 export function MobileNavHeader({
   title,
   subtitle,
+  eyebrow,
   children,
   belowContent,
   className,
@@ -113,16 +119,21 @@ export function MobileNavHeader({
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {BackNav}
             <div className="min-w-0 flex-1">
-              <h1 className="text-[20px] md:text-[26px] font-medium tracking-[-0.022em] text-warm-900 truncate">
+              {eyebrow && (
+                <div className="mb-0.5 font-serif italic text-[11px] uppercase tracking-[0.18em] text-warm-500 truncate">
+                  {eyebrow}
+                </div>
+              )}
+              <h1 className="font-display text-[24px] md:text-[30px] leading-[1.05] font-medium tracking-[-0.028em] text-warm-900 truncate">
                 {title}
               </h1>
               {subtitle && (
                 typeof subtitle === 'string' ? (
-                  <p className="text-warm-500 mt-0.5 text-xs md:text-sm truncate">
+                  <p className="text-warm-500 mt-1 text-xs md:text-sm truncate">
                     {subtitle}
                   </p>
                 ) : (
-                  <div className="text-warm-500 mt-0.5 text-xs md:text-sm min-w-0">
+                  <div className="text-warm-500 mt-1 text-xs md:text-sm min-w-0">
                     {subtitle}
                   </div>
                 )
@@ -135,6 +146,9 @@ export function MobileNavHeader({
             </div>
           )}
         </div>
+        {/* Hairline rule — editorial separator that mirrors the LargeTitle
+            treatment so detail pages match the premium hub language. */}
+        <div className="mt-3 h-px bg-warm-900/8 lg:hidden" aria-hidden="true" />
         {belowContent && <div className="mt-3">{belowContent}</div>}
       </div>
     </div>

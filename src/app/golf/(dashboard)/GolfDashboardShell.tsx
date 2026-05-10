@@ -7,7 +7,6 @@ import { SidebarProvider, useSidebar } from '@/contexts/sidebar-context';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { usePresence } from '@/hooks/use-presence';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
-import { MobileBottomNav } from '@/components/golf/MobileBottomNav';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
 import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
 import { MobileNavProvider } from '@/contexts/mobile-nav-context';
@@ -208,8 +207,11 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         <NotificationCenter />
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileBottomNav isCoach={isCoach} />
+      {/* Mobile Bottom Navigation removed May 2026 — replaced by the
+          hamburger button that lives in every page's <LargeTitleHeader> /
+          <MobileNavHeader>. Single nav surface, premium feel. The
+          --golf-mobile-bottom-nav-offset CSS var is now zero (just
+          safe-area-inset-bottom) so existing layout math still works. */}
 
       {/* Keyboard Shortcut Hint (shows once) */}
       <KeyboardShortcutHint />
