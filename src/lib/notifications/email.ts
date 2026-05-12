@@ -725,7 +725,10 @@ function generateEmailTemplate(
  */
 async function getRecipientGreeting(userId: string): Promise<string> {
   try {
-    const supabase = await createClient();
+    // Same rationale as getUserNotificationPreferences: notification fan-out
+    // legitimately reads a different user's profile row, and the SSR client
+    // is blocked by RLS on golf_players/golf_coaches/etc.
+    const supabase = createAdminClient();
 
     // 1. Golf player → first name
     const { data: golfPlayer } = await supabase
