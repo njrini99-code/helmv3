@@ -5,7 +5,7 @@
  * Falls back gracefully if Resend is not configured.
  */
 
-import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import type { NotificationPreferences, NotificationType, EmailTemplate } from './types';
 import { DEFAULT_NOTIFICATION_PREFERENCES } from './types';
 
@@ -40,14 +40,16 @@ export async function getUserNotificationPreferences(
   userId: string
 ): Promise<NotificationPreferences> {
   try {
-    const supabase = await createClient();
-    // .maybeSingle() returns null (no error) when the user row does not exist.
-    // The cron roster sweep can hand us stale or detached player_ids whose
-    // backing `users` row was deleted; .single() would throw PGRST116
-    // ("Cannot coerce the result to a single JSON object") and surface as a
-    // noisy "Failed to fetch notification preferences" log every iteration.
-    // Falling back to DEFAULT_NOTIFICATION_PREFERENCES is the existing
-    // behaviour for the missing-column / no-row case.
+    // Service-role client: callers include cron paths (event-reminders,
+    // coachhelm-roster-sweep) and internal-secret routes (analyze-player)
+    // that legitimately read other users' rows. RLS on `users` blocks
+    // cross-user reads from the SSR client and the SELECT silently errors,
+    // spamming a warn line per recipient. Only the notification_preferences
+    // JSONB column is read here, so the RLS bypass surface is minimal.
+    //
+    // .maybeSingle() returns null (no error) when the user row does not
+    // exist — keeps the cron's stale-player_id path quiet (no PGRST116).
+    const supabase = createAdminClient();
     const { data, error } = await supabase
       .from('users')
       .select('notification_preferences')
