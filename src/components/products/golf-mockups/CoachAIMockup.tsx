@@ -36,7 +36,7 @@ export function CoachAIMockup() {
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </div>
-        <span className="font-semibold text-slate-900">CoachHelm AI</span>
+        <span className="font-semibold text-warm-900">CoachHelm AI</span>
         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
           3 new
         </span>
@@ -87,8 +87,8 @@ export function CoachAIMockup() {
                 )}
               </div>
               <div className="flex-1">
-                <h4 className="font-medium text-slate-900 text-sm">{insight.title}</h4>
-                <p className="text-xs text-slate-500 mt-0.5">{insight.desc}</p>
+                <h4 className="font-medium text-warm-900 text-sm">{insight.title}</h4>
+                <p className="text-xs text-warm-500 mt-0.5">{insight.desc}</p>
                 <button className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
@@ -104,7 +104,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow backdrop */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-400/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -tranwarm-x-1/2 w-2/3 h-12 bg-emerald-400/10 blur-2xl rounded-full" />
     </div>
   );
 }

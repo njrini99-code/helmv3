@@ -56,6 +56,7 @@ interface CalendarFeed {
   feed_token: string;
   feed_type: string;
   team_id: string | null;
+  user_id: string;
   name: string | null;
   is_active: boolean;
   last_synced_at: string | null;
@@ -71,6 +72,13 @@ interface CalendarFeedEvent {
   event_type: string | null;
   all_day: boolean | null;
   status: string | null;
+}
+
+interface TeamAuthRpcClient {
+  rpc(
+    name: 'is_user_on_team',
+    args: { p_user_id: string; p_team_id: string },
+  ): Promise<{ data: boolean | null; error: { message: string } | null }>;
 }
 
 // ============================================================================
@@ -187,7 +195,7 @@ export async function GET(
     // Look up the feed by token
     const { data: feed, error: feedError } = await supabase
       .from('golf_calendar_feeds')
-      .select('id, feed_token, feed_type, team_id, name, is_active, last_synced_at')
+      .select('id, feed_token, feed_type, team_id, user_id, name, is_active, last_synced_at')
       .eq('feed_token', token)
       .eq('is_active', true)
       .single();
@@ -197,6 +205,18 @@ export async function GET(
     }
 
     const typedFeed = feed as unknown as CalendarFeed;
+
+    if (typedFeed.team_id) {
+      // Generated Supabase types lag this hotfix migration until db:types runs.
+      const { data: authorized, error: authError } = await (supabase as unknown as TeamAuthRpcClient).rpc('is_user_on_team', {
+        p_user_id: typedFeed.user_id,
+        p_team_id: typedFeed.team_id,
+      });
+
+      if (authError || authorized !== true) {
+        return new NextResponse('Invalid or inactive feed', { status: 404 });
+      }
+    }
 
     // Update last_synced_at (fire-and-forget, don't block response)
     void supabase

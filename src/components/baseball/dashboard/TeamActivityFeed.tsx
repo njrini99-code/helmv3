@@ -46,8 +46,8 @@ const activityConfig: Record<TeamActivity['type'], {
   },
   message: {
     icon: IconMessage,
-    color: 'text-slate-600',
-    bgColor: 'bg-slate-100',
+    color: 'text-warm-600',
+    bgColor: 'bg-warm-100',
   },
 };
 
@@ -56,7 +56,7 @@ function ActivityRow({ activity }: { activity: TeamActivity }) {
   const Icon = config.icon;
 
   return (
-    <div className="flex items-start gap-3 px-5 py-3 hover:bg-slate-50/50 transition-colors">
+    <div className="flex items-start gap-3 px-5 py-3 hover:bg-warm-50/50 transition-colors">
       {activity.playerName ? (
         <Avatar 
           name={activity.playerName} 
@@ -68,13 +68,13 @@ function ActivityRow({ activity }: { activity: TeamActivity }) {
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-900">
+        <p className="text-sm text-warm-900">
           {activity.playerName && (
             <span className="font-medium">{activity.playerName} </span>
           )}
-          <span className="text-slate-600">{activity.description}</span>
+          <span className="text-warm-600">{activity.description}</span>
         </p>
-        <p className="text-xs text-slate-400 mt-0.5">
+        <p className="text-xs text-warm-400 mt-0.5">
           {formatRelativeTime(activity.timestamp)}
         </p>
       </div>
@@ -87,13 +87,13 @@ export function TeamActivityFeed({ data, loading }: TeamActivityFeedProps) {
     return (
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="px-5 py-4 border-b border-slate-100/50">
+        <div className="px-5 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-2">
             <Skeleton variant="rectangular" width={16} height={16} className="rounded" />
             <Skeleton variant="text" width={120} height={18} />
           </div>
         </div>
-        <div className="divide-y divide-slate-100/50">
+        <div className="divide-y divide-warm-100/50">
           {[1, 2, 3, 4].map(i => (
             <div key={i} className="flex items-center gap-3 px-5 py-3">
               <Skeleton variant="circular" width={32} height={32} />
@@ -113,22 +113,22 @@ export function TeamActivityFeed({ data, loading }: TeamActivityFeedProps) {
       <ShineEffect />
       
       {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100/50">
+      <div className="px-5 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-2">
           <IconActivity size={16} className="text-primary-500" />
-          <h3 className="font-semibold text-slate-900 tracking-tight">Recent Activity</h3>
+          <h3 className="font-semibold text-warm-900 tracking-tight">Recent Activity</h3>
         </div>
       </div>
 
       {/* Activity List */}
-      <div className="divide-y divide-slate-100/50 max-h-[280px] overflow-y-auto">
+      <div className="divide-y divide-warm-100/50 max-h-[280px] overflow-y-auto">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 px-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-              <IconActivity size={20} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mb-3">
+              <IconActivity size={20} className="text-warm-400" />
             </div>
-            <h4 className="text-sm font-medium text-slate-900 mb-1">No activity yet</h4>
-            <p className="text-xs text-slate-500 text-center max-w-[180px]">
+            <h4 className="text-sm font-medium text-warm-900 mb-1">No activity yet</h4>
+            <p className="text-xs text-warm-500 text-center max-w-[180px]">
               Team activity will appear here as players engage
             </p>
           </div>

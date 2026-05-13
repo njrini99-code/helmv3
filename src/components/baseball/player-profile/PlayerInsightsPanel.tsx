@@ -32,7 +32,7 @@ const priorityColors: Record<string, { bg: string; border: string; text: string;
   urgent: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', icon: 'text-red-500' },
   high: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', icon: 'text-amber-500' },
   medium: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700', icon: 'text-blue-500' },
-  low: { bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', icon: 'text-slate-500' },
+  low: { bg: 'bg-warm-50', border: 'border-warm-200', text: 'text-warm-700', icon: 'text-warm-500' },
 };
 
 export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsightsPanelProps) {
@@ -41,9 +41,9 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
   if (insights.length === 0) {
     return (
       <div className="text-center py-6">
-        <IconSparkles size={24} className="mx-auto text-slate-300 mb-2" />
-        <p className="text-sm text-slate-500">No active insights</p>
-        <p className="text-xs text-slate-400 mt-1">
+        <IconSparkles size={24} className="mx-auto text-warm-300 mb-2" />
+        <p className="text-sm text-warm-500">No active insights</p>
+        <p className="text-xs text-warm-400 mt-1">
           Insights will appear as we analyze performance data
         </p>
       </div>
@@ -84,12 +84,12 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                   {insight.title}
                 </p>
                 {!isExpanded && insight.description && (
-                  <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                  <p className="text-xs text-warm-500 mt-0.5 line-clamp-1">
                     {insight.description}
                   </p>
                 )}
               </div>
-              <div className="text-slate-400">
+              <div className="text-warm-400">
                 {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
               </div>
             </button>
@@ -97,19 +97,19 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
             {isExpanded && (
               <div className="px-4 pb-4 pt-0">
                 {insight.description && (
-                  <p className="text-sm text-slate-600 mb-3">
+                  <p className="text-sm text-warm-600 mb-3">
                     {insight.description}
                   </p>
                 )}
 
                 {insight.data && typeof insight.data === 'object' && (
                   <div className="bg-cream-100/60 rounded-lg p-3 mb-3">
-                    <p className="text-xs font-medium text-slate-500 mb-2">Key Metrics</p>
+                    <p className="text-xs font-medium text-warm-500 mb-2">Key Metrics</p>
                     <div className="grid grid-cols-2 gap-2">
                       {Object.entries(insight.data as Record<string, string | number>).slice(0, 4).map(([key, value]) => (
                         <div key={key} className="text-sm">
-                          <span className="text-slate-500">{key}: </span>
-                          <span className="font-medium text-slate-700">
+                          <span className="text-warm-500">{key}: </span>
+                          <span className="font-medium text-warm-700">
                             {typeof value === 'number' ? value.toFixed(2) : value}
                           </span>
                         </div>
@@ -120,8 +120,8 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
 
                 {insight.recommended_action && (
                   <div className="bg-cream-100/60 rounded-lg p-3">
-                    <p className="text-xs font-medium text-slate-500 mb-1">Recommended Action</p>
-                    <p className="text-sm text-slate-700">{insight.recommended_action}</p>
+                    <p className="text-xs font-medium text-warm-500 mb-1">Recommended Action</p>
+                    <p className="text-sm text-warm-700">{insight.recommended_action}</p>
                   </div>
                 )}
 
@@ -130,7 +130,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                     <IconCheck size={14} />
                     Mark Addressed
                   </button>
-                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 active:bg-slate-300 transition-colors">
+                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors">
                     <IconX size={14} />
                     Dismiss
                   </button>

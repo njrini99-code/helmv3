@@ -241,28 +241,18 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
           // Store the full rule-based content for the viewer
           setRuleBasedContent(content);
 
-          // Build a RoundReview from the stored review data.
+          // Build a RoundReview from the stored review data
           //
-          // CONTRACT NOTE — playerAverages is null in this V1-fallback path.
-          //
-          // The canonical `RoundReview` type (declared in
-          // `src/lib/coachhelm/types.ts`) currently types `playerAverages`
-          // as a non-null `RoundStats`. Until that type is widened to
-          // `RoundStats | null` (effectively `PlayerAverages | null`), we
-          // cast through `unknown` to deliver `null` at runtime here. The
-          // hook return type intentionally exposes `null` to consumers via
-          // this slot when no real averages are available — consumers MUST
-          // null-check `review.playerAverages` before reading any field.
-          //
-          // Why: a previous version injected hardcoded league baselines (72
-          // strokes, 32 putts, 50% across the board) which silently misrepresented
-          // every player's stat comparisons. The interim fix shipped a zeroed
-          // RoundStats which rendered as "0/0/0" comparison lines — anti-marketing
-          // risk. The real averages live in `golf_round_reviews.player_averages`
+          // NOTE: This is a V1-fallback shape. `playerAverages` is intentionally
+          // null here — the real averages live in `golf_round_reviews.player_averages`
           // and on the canonical `/rounds/[id]/review` page come from
-          // `getStatAverages(playerId)`. A5 (review/page.tsx) is informed of
-          // this null contract.
-          const basicReview: RoundReview = {
+          // `getStatAverages(playerId)`. We previously zeroed every field, which
+          // any consumer that reads this prop renders as "0/0/0" stat
+          // comparisons (anti-marketing risk). Consumers MUST null-check
+          // `playerAverages` before reading it. The hook return type still says
+          // `RoundReview`, but at runtime this slot is now nullable in the V1
+          // fallback path; A5 (review/page.tsx) is informed.
+          const basicReview = {
             id: result.review.id,
             roundId: result.review.round_id,
             playerId: result.review.player_id,
@@ -308,9 +298,9 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
               sandAttempts: 0,
               sandPct: 0,
             },
-            // Null instead of fake league baselines / zeroed stats — see
-            // CONTRACT NOTE above. Cast through unknown because the canonical
-            // `RoundReview` type still types this slot as non-null `RoundStats`.
+            // Null instead of zeroed RoundStats — see note above. Cast through
+            // unknown because the canonical `RoundReview` type (owned outside
+            // this file) still types this slot as non-null `RoundStats`.
             playerAverages: null as unknown as RoundReview['playerAverages'],
             teamAverages: null,
             strokesGained: null,
@@ -325,7 +315,7 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
             coachViewedAt: result.review.coach_viewed_at ?? null,
             coachNotes: result.review.coach_notes ?? null,
             createdAt: result.review.created_at,
-          };
+          } satisfies RoundReview;
           setReview(basicReview);
 
           // If CoachHelm is enabled, also try to get the enhanced AI review
@@ -398,16 +388,55 @@ function useRoundReview(roundId: string | null, isCoach?: boolean): UseRoundRevi
   // Auto-generate once when a round has no cached review. Keeps the round
   // detail page from sitting on an empty "Generate review" prompt — the
   // review materializes on mount if the backing data exists.
+  //
+  // Data guard: only auto-fire when the round actually has score or shot
+  // data. Empty/in-progress rounds otherwise burn a generator pass and
+  // produce noisy "insufficient data" errors.
   const autoGenAttempted = useRef(false);
+  const [hasRoundData, setHasRoundData] = useState(false);
+  useEffect(() => {
+    if (!roundId) {
+      setHasRoundData(false);
+      return;
+    }
+    let cancelled = false;
+    const supabase = supabaseRef.current;
+    (async () => {
+      const { data: round } = await supabase
+        .from('golf_rounds')
+        .select('total_score, status')
+        .eq('id', roundId)
+        .maybeSingle();
+      if (cancelled) return;
+      const r = round as { total_score: number | null; status: string | null } | null;
+      const hasScore = r?.total_score !== null && r?.total_score !== undefined;
+      const isCompleted = r?.status === 'completed';
+      if (hasScore || isCompleted) {
+        setHasRoundData(true);
+        return;
+      }
+      // Fall back to a shot-existence probe — short rounds without a cached
+      // total_score still warrant generation if any shots were logged.
+      const { count } = await supabase
+        .from('golf_shots')
+        .select('id', { count: 'exact', head: true })
+        .eq('round_id', roundId);
+      if (cancelled) return;
+      setHasRoundData((count ?? 0) > 0);
+    })();
+    return () => { cancelled = true; };
+  }, [roundId]);
+
   const needsGeneration = !loading && !review && !intelligentReview;
   useEffect(() => {
     if (!needsGeneration) return;
     if (generating) return;
     if (autoGenAttempted.current) return;
     if (!roundId || !playerId) return;
+    if (!hasRoundData) return;
     autoGenAttempted.current = true;
     void generate();
-  }, [needsGeneration, generating, roundId, playerId, generate]);
+  }, [needsGeneration, generating, roundId, playerId, generate, hasRoundData]);
 
   return {
     review,

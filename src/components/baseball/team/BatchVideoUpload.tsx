@@ -173,13 +173,13 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold text-slate-900">Batch Video Upload</h2>
-            <p className="text-sm leading-relaxed text-slate-500 mt-1">
+            <h2 className="font-semibold text-warm-900">Batch Video Upload</h2>
+            <p className="text-sm leading-relaxed text-warm-500 mt-1">
               Upload a single video and attach it to multiple players at once.
             </p>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            <IconVideo size={20} className="text-slate-600" />
+          <div className="h-10 w-10 rounded-xl bg-warm-100 flex items-center justify-center">
+            <IconVideo size={20} className="text-warm-600" />
           </div>
         </div>
       </CardHeader>
@@ -200,11 +200,11 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
               required
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Video Type</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1">Video Type</label>
               <select
                 value={form.video_type}
                 onChange={(event) => setForm((prev) => ({ ...prev, video_type: event.target.value }))}
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-slate-900 bg-white transition-colors"
+                className="w-full px-4 py-2.5 rounded-lg border border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 text-warm-900 bg-white transition-colors"
               >
                 <option value="">Select type</option>
                 {videoTypes.map((type) => (
@@ -220,22 +220,22 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
               rows={3}
             />
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Video File</label>
+              <label className="block text-sm font-medium text-warm-700 mb-1">Video File</label>
               <input
                 type="file"
                 accept="video/mp4,video/quicktime,video/webm,video/x-msvideo"
                 onChange={handleInputChange}
-                className="w-full text-sm text-slate-600 file:mr-4 file:rounded-lg file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+                className="w-full text-sm text-warm-600 file:mr-4 file:rounded-lg file:border-0 file:bg-warm-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-warm-700 hover:file:bg-warm-200"
               />
               {file && (
-                <p className="text-xs text-slate-500 mt-1">{file.name}</p>
+                <p className="text-xs text-warm-500 mt-1">{file.name}</p>
               )}
             </div>
           </div>
 
-          <div className="border border-slate-200 rounded-lg">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
-              <p className="text-sm font-medium text-slate-700">
+          <div className="border border-warm-200 rounded-lg">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200 bg-warm-50">
+              <p className="text-sm font-medium text-warm-700">
                 Select Players ({selectedPlayers.length})
               </p>
               <div className="flex gap-2 text-xs">
@@ -246,25 +246,25 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                 >
                   Select All
                 </button>
-                <span className="text-slate-300">|</span>
+                <span className="text-warm-300">|</span>
                 <button
                   type="button"
                   onClick={clearSelection}
-                  className="text-slate-600 hover:text-slate-700 font-medium"
+                  className="text-warm-600 hover:text-warm-700 font-medium"
                 >
                   Clear
                 </button>
               </div>
             </div>
-            <div className="max-h-60 overflow-y-auto divide-y divide-slate-100">
+            <div className="max-h-60 overflow-y-auto divide-y divide-warm-100">
               {players.length === 0 ? (
-                <p className="text-sm text-slate-400 p-4 text-center">No active players found</p>
+                <p className="text-sm text-warm-400 p-4 text-center">No active players found</p>
               ) : (
                 players.map((player) => (
                   <label
                     key={player.id}
                     className={cn(
-                      'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 active:bg-slate-100',
+                      'flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-warm-50 active:bg-warm-100',
                       selectedPlayers.includes(player.id) && 'bg-primary-50'
                     )}
                   >
@@ -272,9 +272,9 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                       type="checkbox"
                       checked={selectedPlayers.includes(player.id)}
                       onChange={() => togglePlayer(player.id)}
-                      className="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                      className="w-4 h-4 rounded border-warm-300 text-primary-600 focus:ring-primary-500"
                     />
-                    <span className="text-sm text-slate-900">{player.name}</span>
+                    <span className="text-sm text-warm-900">{player.name}</span>
                   </label>
                 ))
               )}

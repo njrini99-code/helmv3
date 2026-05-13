@@ -84,13 +84,13 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
     return (
       <>
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
-            <IconLayoutGrid size={32} className="text-slate-400" />
+          <div className="w-16 h-16 rounded-full bg-warm-100 flex items-center justify-center mb-4">
+            <IconLayoutGrid size={32} className="text-warm-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+          <h3 className="text-lg font-semibold text-warm-900 mb-2">
             No saved comparisons yet
           </h3>
-          <p className="text-slate-500 mb-6 max-w-md">
+          <p className="text-warm-500 mb-6 max-w-md">
             Compare players and save them for future reference. Your saved comparisons will appear here.
           </p>
           <Button
@@ -117,13 +117,13 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
           <div className="p-6">
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
-              <h3 className="text-base font-semibold text-slate-900 group-hover:text-primary-600 transition-colors line-clamp-2">
+              <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-600 transition-colors line-clamp-2">
                 {comparison.name || 'Untitled Comparison'}
               </h3>
               <button
                 onClick={(e) => handleDelete(comparison.id, e)}
                 disabled={deletingId === comparison.id}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100
+                className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100
                            transition-colors disabled:opacity-50 flex-shrink-0"
                 title="Delete comparison"
               >
@@ -134,20 +134,20 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
             {/* Notes */}
             {comparison.notes && (
               <div className="flex items-start gap-2 mb-3">
-                <IconNote size={14} className="text-slate-400 mt-0.5 flex-shrink-0" />
-                <p className="text-sm leading-relaxed text-slate-600 line-clamp-2">{comparison.notes}</p>
+                <IconNote size={14} className="text-warm-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm leading-relaxed text-warm-600 line-clamp-2">{comparison.notes}</p>
               </div>
             )}
 
             {/* Metadata */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
+              <div className="flex items-center gap-2 text-sm text-warm-500">
                 <IconUsers size={14} />
                 <span>{comparison.player_ids.length} players</span>
               </div>
 
               {comparison.created_at && (
-                <div className="flex items-center gap-2 text-sm text-slate-500">
+                <div className="flex items-center gap-2 text-sm text-warm-500">
                   <IconCalendar size={14} />
                   <span>
                     {format(new Date(comparison.created_at), 'MMM d, yyyy')}
@@ -157,7 +157,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
             </div>
 
             {/* Footer - View button appears on hover */}
-            <div className="mt-4 pt-4 border-t border-slate-100">
+            <div className="mt-4 pt-4 border-t border-warm-100">
               <span className="text-sm leading-relaxed text-primary-600 group-hover:underline">
                 View Comparison →
               </span>

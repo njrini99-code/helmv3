@@ -119,7 +119,7 @@ export function PlayerCard({
         );
       case 'stable':
         return (
-          <div className="flex items-center gap-1 text-slate-400">
+          <div className="flex items-center gap-1 text-warm-400">
             <IconMinus size={14} />
             <span className="text-xs font-medium">Stable</span>
           </div>
@@ -147,7 +147,7 @@ export function PlayerCard({
 
   return (
     <div
-      className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-slate-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
+      className="bg-white rounded-xl border border-warm-200 p-4 shadow-sm hover:shadow-md hover:border-warm-300 active:scale-[0.98] transition-all duration-200 cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Player header with avatar + name */}
@@ -160,14 +160,14 @@ export function PlayerCard({
           />
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900 truncate">{fullName}</h3>
+              <h3 className="font-semibold text-warm-900 truncate">{fullName}</h3>
               {jerseyNumber && (
-                <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded flex-shrink-0">
+                <span className="text-xs bg-warm-100 text-warm-600 px-1.5 py-0.5 rounded flex-shrink-0">
                   #{jerseyNumber}
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               {player.primary_position || 'N/A'}
               {player.secondary_position && ` / ${player.secondary_position}`}
               {player.grad_year ? ` • '${String(player.grad_year).slice(-2)}` : ''}
@@ -184,57 +184,57 @@ export function PlayerCard({
       {aggregates && (aggregates.career_avg != null || aggregates.total_sessions) ? (
         <>
           {/* Slash Line Header */}
-          <div className="bg-slate-50 rounded-lg p-2 mb-2">
-            <p className="text-xs text-slate-500 mb-0.5 text-center">Slash Line (AVG/OBP/SLG/OPS)</p>
-            <p className="text-sm font-semibold text-slate-900 tabular-nums text-center tracking-wide">
+          <div className="bg-warm-50 rounded-lg p-2 mb-2">
+            <p className="text-xs text-warm-500 mb-0.5 text-center">Slash Line (AVG/OBP/SLG/OPS)</p>
+            <p className="text-sm font-semibold text-warm-900 tabular-nums text-center tracking-wide">
               {formatAvg(aggregates.career_avg)} / {formatOBP(aggregates.career_obp)} / {formatSLG(aggregates.career_slg)} / {formatOPS(aggregates.career_ops)}
             </p>
           </div>
 
           <div className="grid grid-cols-4 gap-2 mb-2">
-            <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">OPS</p>
+            <div className="bg-warm-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-warm-500 mb-0.5">OPS</p>
               <p
                 className={`text-base font-semibold tabular-nums ${
                   aggregates.career_ops != null && aggregates.career_ops >= 0.8
                     ? 'text-primary-600'
                     : aggregates.career_ops != null && aggregates.career_ops >= 0.7
-                      ? 'text-slate-900'
-                      : 'text-slate-600'
+                      ? 'text-warm-900'
+                      : 'text-warm-600'
                 }`}
               >
                 {formatOPS(aggregates.career_ops)}
               </p>
             </div>
-            <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">Exit V</p>
-              <p className="text-base font-semibold text-slate-900 tabular-nums">
+            <div className="bg-warm-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-warm-500 mb-0.5">Exit V</p>
+              <p className="text-base font-semibold text-warm-900 tabular-nums">
                 {formatExitVelo(aggregates.avg_exit_velocity)}
               </p>
             </div>
-            <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">Last 5</p>
-              <p className="text-base font-semibold text-slate-900 tabular-nums">
+            <div className="bg-warm-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-warm-500 mb-0.5">Last 5</p>
+              <p className="text-base font-semibold text-warm-900 tabular-nums">
                 {formatAvg(aggregates.last_5_avg)}
               </p>
             </div>
-            <div className="bg-slate-50 rounded-lg p-2 text-center">
-              <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
-              <p className="text-base font-semibold text-slate-900 tabular-nums">
+            <div className="bg-warm-50 rounded-lg p-2 text-center">
+              <p className="text-xs text-warm-500 mb-0.5">Sessions</p>
+              <p className="text-base font-semibold text-warm-900 tabular-nums">
                 {aggregates.total_sessions ?? 0}
               </p>
             </div>
           </div>
         </>
       ) : (
-        <div className="bg-slate-50 rounded-lg p-3 mb-3 text-center">
-          <p className="text-sm text-slate-500">No stats uploaded yet</p>
+        <div className="bg-warm-50 rounded-lg p-3 mb-3 text-center">
+          <p className="text-sm text-warm-500">No stats uploaded yet</p>
         </div>
       )}
 
       {/* Location */}
       {(player.city || player.state) && (
-        <p className="text-xs text-slate-500 mb-3">
+        <p className="text-xs text-warm-500 mb-3">
           📍 {player.city && player.state ? `${player.city}, ${player.state}` : player.city || player.state}
         </p>
       )}

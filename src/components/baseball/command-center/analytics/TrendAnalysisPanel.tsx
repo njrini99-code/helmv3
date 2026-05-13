@@ -85,8 +85,8 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
   if (trendData.all.length === 0) {
     return (
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-        <h3 className="font-semibold text-slate-900 mb-2">Trend Analysis</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="font-semibold text-warm-900 mb-2">Trend Analysis</h3>
+        <p className="text-sm text-warm-500">
           Need more session data to analyze player trends. Keep tracking
           performance!
         </p>
@@ -96,7 +96,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-      <h3 className="font-semibold text-slate-900 mb-4">Trend Analysis</h3>
+      <h3 className="font-semibold text-warm-900 mb-4">Trend Analysis</h3>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -109,12 +109,12 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
             {summary.improvingCount}
           </p>
         </div>
-        <div className="bg-slate-50 rounded-xl p-3 text-center">
+        <div className="bg-warm-50 rounded-xl p-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
-            <IconMinus size={16} className="text-slate-500" />
-            <span className="text-xs font-medium text-slate-600">Steady</span>
+            <IconMinus size={16} className="text-warm-500" />
+            <span className="text-xs font-medium text-warm-600">Steady</span>
           </div>
-          <p className="text-2xl font-bold text-slate-600">
+          <p className="text-2xl font-bold text-warm-600">
             {summary.stableCount}
           </p>
         </div>
@@ -143,10 +143,10 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
                     Hottest
                   </span>
                 </div>
-                <p className="font-medium text-slate-900 truncate">
+                <p className="font-medium text-warm-900 truncate">
                   {summary.hottest.name}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-warm-500">
                   {formatAvg(summary.hottest.last5Avg)} last 5 games
                   <span className="text-primary-600 ml-1">
                     {formatChange(
@@ -176,10 +176,10 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
                     Needs Attention
                   </span>
                 </div>
-                <p className="font-medium text-slate-900 truncate">
+                <p className="font-medium text-warm-900 truncate">
                   {summary.coldest.name}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-warm-500">
                   {formatAvg(summary.coldest.last5Avg)} last 5 games
                   <span className="text-red-500 ml-1">
                     {formatChange(
@@ -202,7 +202,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
       {/* Player Trend List */}
       <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+        <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-2">
           All Players by Trend
         </h4>
 
@@ -211,7 +211,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
             <Link
               key={player.id}
               href={`/baseball/dashboard/players/${player.id}`}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 transition-colors group"
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 transition-colors group"
             >
               <Avatar
                 src={player.avatarUrl}
@@ -220,10 +220,10 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
               />
 
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-slate-900 truncate">
+                <p className="text-sm font-medium text-warm-900 truncate">
                   {player.name}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-warm-500">
                   {formatAvg(player.careerAvg)} career · {player.sessions} games
                 </p>
               </div>
@@ -244,7 +244,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
                     </span>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 text-slate-400">
+                  <div className="flex items-center gap-1 text-warm-400">
                     <IconMinus size={14} />
                     <span className="text-xs font-medium">Stable</span>
                   </div>
@@ -252,7 +252,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 
                 <IconChevronRight
                   size={16}
-                  className="text-slate-300 group-hover:text-slate-500 transition-colors"
+                  className="text-warm-300 group-hover:text-warm-500 transition-colors"
                 />
               </div>
             </Link>
@@ -260,7 +260,7 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
         </div>
 
         {trendData.all.length > 10 && (
-          <p className="text-xs text-slate-400 text-center pt-2">
+          <p className="text-xs text-warm-400 text-center pt-2">
             +{trendData.all.length - 10} more players
           </p>
         )}
@@ -272,14 +272,14 @@ export function TrendAnalysisPanel({ players }: TrendAnalysisPanelProps) {
 export function TrendAnalysisPanelSkeleton() {
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-      <div className="h-5 w-32 bg-slate-200 rounded animate-pulse mb-4" />
+      <div className="h-5 w-32 bg-warm-200 rounded animate-pulse mb-4" />
 
       {/* Summary Stats */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-slate-50 rounded-xl p-3 text-center">
-            <div className="h-4 w-12 bg-slate-200 rounded animate-pulse mx-auto mb-2" />
-            <div className="h-8 w-8 bg-slate-200 rounded animate-pulse mx-auto" />
+          <div key={i} className="bg-warm-50 rounded-xl p-3 text-center">
+            <div className="h-4 w-12 bg-warm-200 rounded animate-pulse mx-auto mb-2" />
+            <div className="h-8 w-8 bg-warm-200 rounded animate-pulse mx-auto" />
           </div>
         ))}
       </div>
@@ -287,12 +287,12 @@ export function TrendAnalysisPanelSkeleton() {
       {/* Highlights */}
       <div className="space-y-3 mb-6">
         {Array.from({ length: 2 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-            <div className="w-10 h-10 rounded-full bg-slate-200 animate-pulse" />
+          <div key={i} className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl">
+            <div className="w-10 h-10 rounded-full bg-warm-200 animate-pulse" />
             <div className="flex-1 space-y-1">
-              <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
-              <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-              <div className="h-3 w-32 bg-slate-200 rounded animate-pulse" />
+              <div className="h-3 w-16 bg-warm-200 rounded animate-pulse" />
+              <div className="h-4 w-24 bg-warm-200 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-warm-200 rounded animate-pulse" />
             </div>
           </div>
         ))}
@@ -302,12 +302,12 @@ export function TrendAnalysisPanelSkeleton() {
       <div className="space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-2">
-            <div className="w-8 h-8 rounded-full bg-slate-200 animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-warm-200 animate-pulse" />
             <div className="flex-1 space-y-1">
-              <div className="h-4 w-24 bg-slate-200 rounded animate-pulse" />
-              <div className="h-3 w-32 bg-slate-200 rounded animate-pulse" />
+              <div className="h-4 w-24 bg-warm-200 rounded animate-pulse" />
+              <div className="h-3 w-32 bg-warm-200 rounded animate-pulse" />
             </div>
-            <div className="h-4 w-16 bg-slate-200 rounded animate-pulse" />
+            <div className="h-4 w-16 bg-warm-200 rounded animate-pulse" />
           </div>
         ))}
       </div>

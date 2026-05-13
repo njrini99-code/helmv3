@@ -177,10 +177,10 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
               label="Complete"
             />
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-slate-900">Profile Completion</h3>
+              <h3 className="font-semibold text-warm-900">Profile Completion</h3>
               {profileCompletion < 100 ? (
                 <div className="mt-1">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-warm-600">
                     Add {missingFields.slice(0, 2).join(', ')}
                     {missingFields.length > 2 && ` +${missingFields.length - 2} more`}
                   </p>
@@ -211,16 +211,16 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
               <IconUsers size={20} className="text-primary-600" />
             </div>
-            <h3 className="font-semibold text-slate-900">Team Affiliation</h3>
+            <h3 className="font-semibold text-warm-900">Team Affiliation</h3>
           </div>
           
           {loadingTeams ? (
             <div className="animate-pulse space-y-2">
-              <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-              <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+              <div className="h-4 bg-warm-200 rounded w-3/4"></div>
+              <div className="h-4 bg-warm-200 rounded w-1/2"></div>
             </div>
           ) : teamMemberships.length === 0 ? (
-            <p className="text-sm text-slate-500">No team affiliations yet</p>
+            <p className="text-sm text-warm-500">No team affiliations yet</p>
           ) : (
             <div className="space-y-3">
               {teamMemberships.map((membership, idx) => (
@@ -241,15 +241,15 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       </div>
                     )}
                     <div>
-                      <p className="font-medium text-slate-900 text-sm">{membership.team.name}</p>
-                      <p className="text-xs text-slate-500 capitalize">
+                      <p className="font-medium text-warm-900 text-sm">{membership.team.name}</p>
+                      <p className="text-xs text-warm-500 capitalize">
                         {membership.team.team_type?.replace('_', ' ')}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     {membership.jersey_number && (
-                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 font-bold text-sm">
+                      <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-warm-100 text-warm-700 font-bold text-sm">
                         #{membership.jersey_number}
                       </span>
                     )}
@@ -280,7 +280,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   'flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap',
                   activeTab === tab.id
                     ? 'bg-brand-600 text-white'
-                    : 'text-slate-600 hover:bg-cream-100 active:bg-cream-200'
+                    : 'text-warm-600 hover:bg-cream-100 active:bg-cream-200'
                 )}
               >
                 {tab.icon}
@@ -294,14 +294,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
         <div className="p-4 sm:p-6">
           {activeTab === 'personal' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <IconUser size={20} className="text-slate-400" />
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
+                <IconUser size={20} className="text-warm-400" />
                 Personal Information
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">First Name *</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">First Name *</label>
                   <input
                     type="text"
                     value={formData.first_name || ''}
@@ -312,7 +312,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Last Name *</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Last Name *</label>
                   <input
                     type="text"
                     value={formData.last_name || ''}
@@ -325,9 +325,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <IconMapPin size={14} className="text-slate-400" />
+                      <IconMapPin size={14} className="text-warm-400" />
                       City
                     </span>
                   </label>
@@ -340,7 +340,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">State *</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">State *</label>
                   <select
                     value={formData.state || ''}
                     onChange={(e) => handleInputChange('state', e.target.value)}
@@ -356,7 +356,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">About Me</label>
+                <label className="block text-sm font-medium text-warm-700 mb-1.5">About Me</label>
                 <textarea
                   value={formData.about_me || ''}
                   onChange={(e) => handleInputChange('about_me', e.target.value)}
@@ -364,21 +364,21 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                   className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 resize-none"
                   placeholder="Share your story, goals, and what drives you as a player..."
                 />
-                <p className="text-xs text-slate-500 mt-1">This appears on your public profile</p>
+                <p className="text-xs text-warm-500 mt-1">This appears on your public profile</p>
               </div>
             </div>
           )}
 
           {activeTab === 'athletic' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <IconActivity size={20} className="text-slate-400" />
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
+                <IconActivity size={20} className="text-warm-400" />
                 Athletic Information
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Primary Position *</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Primary Position *</label>
                   <select
                     value={formData.primary_position || ''}
                     onChange={(e) => handleInputChange('primary_position', e.target.value)}
@@ -393,7 +393,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Secondary Position</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Secondary Position</label>
                   <select
                     value={formData.secondary_position || ''}
                     onChange={(e) => handleInputChange('secondary_position', e.target.value)}
@@ -409,7 +409,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Bats</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Bats</label>
                   <select
                     value={formData.bats || ''}
                     onChange={(e) => handleInputChange('bats', e.target.value)}
@@ -423,7 +423,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Throws</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Throws</label>
                   <select
                     value={formData.throws || ''}
                     onChange={(e) => handleInputChange('throws', e.target.value)}
@@ -436,7 +436,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Height</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Height</label>
                   <div className="flex gap-1.5">
                     <input
                       type="number"
@@ -460,7 +460,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Weight</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Weight</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -469,16 +469,16 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                       placeholder="185"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">lbs</span>
+                    <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">lbs</span>
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-border pt-4 mt-4">
-                <h4 className="text-sm font-semibold text-slate-700 mb-3">Performance Metrics</h4>
+                <h4 className="text-sm font-semibold text-warm-700 mb-3">Performance Metrics</h4>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Pitch Velo</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Pitch Velo</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -487,12 +487,12 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="85"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">mph</span>
+                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">mph</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Exit Velo</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Exit Velo</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -501,12 +501,12 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="90"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">mph</span>
+                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">mph</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">60-Yard</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-1.5">60-Yard</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -516,12 +516,12 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="7.2"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sec</span>
+                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">sec</span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Pop Time</label>
+                    <label className="block text-sm font-medium text-warm-700 mb-1.5">Pop Time</label>
                     <div className="relative">
                       <input
                         type="number"
@@ -531,7 +531,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="2.0"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">sec</span>
+                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">sec</span>
                     </div>
                   </div>
                 </div>
@@ -541,14 +541,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
           {activeTab === 'academic' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <IconGraduationCap size={20} className="text-slate-400" />
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
+                <IconGraduationCap size={20} className="text-warm-400" />
                 Academic Information
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">GPA</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">GPA</label>
                   <input
                     type="number"
                     step="0.01"
@@ -559,11 +559,11 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60"
                     placeholder="3.50"
                   />
-                  <p className="text-xs text-slate-500 mt-1">Current cumulative GPA</p>
+                  <p className="text-xs text-warm-500 mt-1">Current cumulative GPA</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Graduation Year</label>
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">Graduation Year</label>
                   <input
                     type="number"
                     value={formData.grad_year || ''}
@@ -573,15 +573,15 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                     min={new Date().getFullYear()}
                     max={new Date().getFullYear() + 6}
                   />
-                  <p className="text-xs text-slate-500 mt-1">Expected graduation year</p>
+                  <p className="text-xs text-warm-500 mt-1">Expected graduation year</p>
                 </div>
               </div>
 
               {/* High School Info (read-only for college players) */}
               {player.high_school_name && (
-                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 mt-4">
-                  <p className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">High School Background</p>
-                  <p className="text-sm text-slate-700">
+                <div className="bg-warm-50 rounded-xl p-4 border border-warm-100 mt-4">
+                  <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-2">High School Background</p>
+                  <p className="text-sm text-warm-700">
                     {player.high_school_name}
                     {player.high_school_city && `, ${player.high_school_city}`}
                     {player.high_school_state && `, ${player.high_school_state}`}
@@ -593,16 +593,16 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
           {activeTab === 'social' && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-                <IconMail size={20} className="text-slate-400" />
+              <h3 className="text-lg font-semibold text-warm-900 flex items-center gap-2">
+                <IconMail size={20} className="text-warm-400" />
                 Contact & Social
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <IconMail size={14} className="text-slate-400" />
+                      <IconMail size={14} className="text-warm-400" />
                       Email *
                     </span>
                   </label>
@@ -616,9 +616,9 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <IconPhone size={14} className="text-slate-400" />
+                      <IconPhone size={14} className="text-warm-400" />
                       Phone
                     </span>
                   </label>
@@ -634,14 +634,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <IconTwitter size={14} className="text-slate-400" />
+                      <IconTwitter size={14} className="text-warm-400" />
                       Twitter
                     </span>
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3 py-2.5 bg-slate-100 border border-r-0 border-border rounded-l-lg text-slate-500 text-sm">@</span>
+                    <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
                     <input
                       type="text"
                       value={formData.twitter || ''}
@@ -653,14 +653,14 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  <label className="block text-sm font-medium text-warm-700 mb-1.5">
                     <span className="flex items-center gap-1.5">
-                      <IconInstagram size={14} className="text-slate-400" />
+                      <IconInstagram size={14} className="text-warm-400" />
                       Instagram
                     </span>
                   </label>
                   <div className="flex items-center">
-                    <span className="px-3 py-2.5 bg-slate-100 border border-r-0 border-border rounded-l-lg text-slate-500 text-sm">@</span>
+                    <span className="px-3 py-2.5 bg-warm-100 border border-r-0 border-border rounded-l-lg text-warm-500 text-sm">@</span>
                     <input
                       type="text"
                       value={formData.instagram || ''}

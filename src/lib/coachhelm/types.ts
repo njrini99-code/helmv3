@@ -315,7 +315,7 @@ export const HIGHLIGHT_CONFIG: Record<HighlightType, { emoji: string; color: str
   great_approach: { emoji: '💫', color: 'text-yellow-500' },
   sand_save: { emoji: '🏖️', color: 'text-amber-600' },
   up_and_down: { emoji: '⬆️', color: 'text-green-500' },
-  par_save: { emoji: '💪', color: 'text-slate-600' },
+  par_save: { emoji: '💪', color: 'text-warm-600' },
   bounce_back: { emoji: '🔄', color: 'text-blue-500' },
   strong_finish: { emoji: '🏁', color: 'text-green-600' },
 };

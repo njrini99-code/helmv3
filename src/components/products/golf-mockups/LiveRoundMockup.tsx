@@ -4,12 +4,12 @@ export function LiveRoundMockup() {
   return (
     <div className="relative mx-auto w-[300px]">
       {/* Phone frame */}
-      <div className="relative bg-slate-900 rounded-[44px] p-3 shadow-2xl ring-1 ring-white/10">
+      <div className="relative bg-warm-900 rounded-[44px] p-3 shadow-2xl ring-1 ring-white/10">
         {/* Side button accents */}
-        <div className="absolute -right-[2px] top-28 w-[3px] h-8 bg-slate-700 rounded-r-sm" />
-        <div className="absolute -left-[2px] top-24 w-[3px] h-6 bg-slate-700 rounded-l-sm" />
-        <div className="absolute -left-[2px] top-36 w-[3px] h-12 bg-slate-700 rounded-l-sm" />
-        <div className="absolute -left-[2px] top-52 w-[3px] h-12 bg-slate-700 rounded-l-sm" />
+        <div className="absolute -right-[2px] top-28 w-[3px] h-8 bg-warm-700 rounded-r-sm" />
+        <div className="absolute -left-[2px] top-24 w-[3px] h-6 bg-warm-700 rounded-l-sm" />
+        <div className="absolute -left-[2px] top-36 w-[3px] h-12 bg-warm-700 rounded-l-sm" />
+        <div className="absolute -left-[2px] top-52 w-[3px] h-12 bg-warm-700 rounded-l-sm" />
 
         {/* Screen */}
         <div className="bg-warm-50 rounded-[36px] overflow-hidden">
@@ -198,7 +198,7 @@ export function LiveRoundMockup() {
       </div>
 
       {/* Glow effect */}
-      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-56 h-20 bg-emerald-500/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-10 left-1/2 -tranwarm-x-1/2 w-56 h-20 bg-emerald-500/15 blur-3xl rounded-full" />
     </div>
   );
 }

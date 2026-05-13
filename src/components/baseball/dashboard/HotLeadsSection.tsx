@@ -170,21 +170,21 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
     return (
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
               <IconTrendingUp size={18} className="text-orange-600" />
             </div>
-            <h2 className="font-semibold text-slate-900 tracking-tight">Hot Leads</h2>
+            <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
           </div>
         </div>
         <div className="p-6">
           {[1, 2, 3].map(i => (
             <div key={i} className="flex items-center gap-4 py-4 animate-pulse">
-              <div className="w-12 h-12 rounded-full bg-slate-200" />
+              <div className="w-12 h-12 rounded-full bg-warm-200" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 w-1/3 bg-slate-200 rounded" />
-                <div className="h-3 w-1/2 bg-slate-100 rounded" />
+                <div className="h-4 w-1/3 bg-warm-200 rounded" />
+                <div className="h-3 w-1/2 bg-warm-100 rounded" />
               </div>
             </div>
           ))}
@@ -197,23 +197,23 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
     return (
       <div className="relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
               <IconTrendingUp size={18} className="text-orange-600" />
             </div>
-            <h2 className="font-semibold text-slate-900 tracking-tight">Hot Leads</h2>
+            <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
           </div>
-          <Link href="/baseball/dashboard/pipeline" className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
-            Pipeline <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+          <Link href="/baseball/dashboard/pipeline" className="text-sm text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
+            Pipeline <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
           </Link>
         </div>
         <div className="flex flex-col items-center justify-center py-12 px-6">
           <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mb-4">
             <IconCheck size={24} className="text-primary-500" />
           </div>
-          <h3 className="text-base font-medium text-slate-900 mb-1">All caught up!</h3>
-          <p className="text-sm text-slate-500 text-center mb-4 max-w-xs">
+          <h3 className="text-base font-medium text-warm-900 mb-1">All caught up!</h3>
+          <p className="text-sm text-warm-500 text-center mb-4 max-w-xs">
             No players need immediate attention. Keep building your pipeline.
           </p>
           <Link href="/baseball/dashboard/discover">
@@ -229,21 +229,21 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
   return (
     <div className="relative glass-standard rounded-2xl overflow-clip">
       <ShineEffect />
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
             <IconTrendingUp size={18} className="text-orange-600" />
           </div>
           <div>
-            <h2 className="font-semibold text-slate-900 tracking-tight">Hot Leads</h2>
-            <p className="text-xs text-slate-500">{hotLeads.length} player{hotLeads.length !== 1 ? 's' : ''} need attention</p>
+            <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
+            <p className="text-xs text-warm-500">{hotLeads.length} player{hotLeads.length !== 1 ? 's' : ''} need attention</p>
           </div>
         </div>
-        <Link href="/baseball/dashboard/pipeline" className="text-sm text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group">
-          View all <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        <Link href="/baseball/dashboard/pipeline" className="text-sm text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
+          View all <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
         </Link>
       </div>
-      <div className="divide-y divide-slate-100/50">
+      <div className="divide-y divide-warm-100/50">
         {hotLeads.map((lead, index) => {
           const config = getUrgencyConfig(lead.urgency);
           const Icon = config.icon;
@@ -251,7 +251,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
           return (
             <div
               key={lead.id}
-              className="px-6 py-4 hover:bg-slate-50/50 transition-all duration-200 animate-fade-in"
+              className="px-6 py-4 hover:bg-warm-50/50 transition-all duration-200 animate-fade-in"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start gap-4">
@@ -265,30 +265,30 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
                   <div className="flex items-center gap-2 mb-1">
                     <Link
                       href={`/baseball/dashboard/players/${lead.playerId}`}
-                      className="text-sm font-medium text-slate-900 hover:text-primary-600 transition-colors truncate"
+                      className="text-sm font-medium text-warm-900 hover:text-primary-600 transition-colors truncate"
                     >
                       {getFullName(lead.player.first_name, lead.player.last_name)}
                     </Link>
-                    <Badge variant="secondary" className="text-xs bg-slate-100">
+                    <Badge variant="secondary" className="text-xs bg-warm-100">
                       {lead.player.primary_position}
                     </Badge>
-                    <span className="text-xs text-slate-400">•</span>
-                    <span className="text-xs text-slate-500">{lead.player.grad_year}</span>
+                    <span className="text-xs text-warm-400">•</span>
+                    <span className="text-xs text-warm-500">{lead.player.grad_year}</span>
                   </div>
-                  <p className="text-sm text-slate-600">{lead.reason}</p>
+                  <p className="text-sm text-warm-600">{lead.reason}</p>
                   {lead.subtext && (
-                    <p className="text-xs text-slate-400 mt-0.5">{lead.subtext}</p>
+                    <p className="text-xs text-warm-400 mt-0.5">{lead.subtext}</p>
                   )}
 
                   {/* Quick actions */}
                   <div className="flex items-center gap-2 mt-3">
                     <Link href={`/baseball/dashboard/messages?player=${lead.playerId}`}>
-                      <Button variant="secondary" size="sm" className="h-8 text-xs gap-1.5 bg-slate-100 hover:bg-slate-200 transition-colors active:bg-slate-300 border-0">
+                      <Button variant="secondary" size="sm" className="h-8 text-xs gap-1.5 bg-warm-100 hover:bg-warm-200 transition-colors active:bg-warm-300 border-0">
                         <IconMessage size={14} /> Message
                       </Button>
                     </Link>
                     <Link href={`/baseball/dashboard/players/${lead.playerId}`}>
-                      <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-slate-500 hover:text-slate-700">
+                      <Button variant="ghost" size="sm" className="h-8 text-xs gap-1.5 text-warm-500 hover:text-warm-700">
                         <IconEye size={14} /> View
                       </Button>
                     </Link>
@@ -305,10 +305,10 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
         })}
       </div>
       {/* Footer link */}
-      <div className="px-6 py-3 bg-slate-50/50 border-t border-slate-100/50">
+      <div className="px-6 py-3 bg-warm-50/50 border-t border-warm-100/50">
         <Link
           href="/baseball/dashboard/pipeline"
-          className="text-sm text-slate-600 hover:text-primary-600 transition-colors flex items-center justify-center gap-1"
+          className="text-sm text-warm-600 hover:text-primary-600 transition-colors flex items-center justify-center gap-1"
         >
           Manage full pipeline <IconChevronRight size={14} />
         </Link>

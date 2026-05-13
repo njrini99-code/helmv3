@@ -83,7 +83,7 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
 
   const alignClasses = {
     start: 'left-0',
-    center: 'left-1/2 -translate-x-1/2',
+    center: 'left-1/2 -tranwarm-x-1/2',
     end: 'right-0',
   };
 
@@ -117,8 +117,8 @@ export function Dropdown({ trigger, children, align = 'start', className }: Drop
             align === 'center' && 'origin-top',
             align === 'start' && 'origin-top-left',
             isAnimating
-              ? 'opacity-100 scale-100 translate-y-0'
-              : 'opacity-0 scale-95 -translate-y-1',
+              ? 'opacity-100 scale-100 tranwarm-y-0'
+              : 'opacity-0 scale-95 -tranwarm-y-1',
             className,
           )}
         >

@@ -112,7 +112,7 @@ export function BaseballDashboardShell({ children, role }: Props) {
       {/* Mobile Sidebar Overlay */}
       <div
         className={cn(
-          'fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 lg:hidden',
+          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-40 lg:hidden',
           'transition-opacity duration-300 ease-out',
           mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         )}
@@ -129,7 +129,7 @@ export function BaseballDashboardShell({ children, role }: Props) {
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          mobileOpen ? 'tranwarm-x-0' : '-tranwarm-x-full'
         )}
       >
         <Sidebar isMobile />

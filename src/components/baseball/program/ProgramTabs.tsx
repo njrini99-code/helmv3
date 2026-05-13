@@ -24,7 +24,7 @@ export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachT
   return (
     <div>
       {/* Tab Navigation */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl mb-6">
+      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl mb-6">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -32,8 +32,8 @@ export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachT
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all flex-1 justify-center',
               activeTab === tab.id
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             )}
           >
             {tab.icon}

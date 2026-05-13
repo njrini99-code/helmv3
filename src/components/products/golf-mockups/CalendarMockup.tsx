@@ -26,7 +26,7 @@ export function CalendarMockup() {
   const eventColors = {
     tournament: 'bg-primary-500',
     practice: 'bg-amber-500',
-    meeting: 'bg-slate-400',
+    meeting: 'bg-warm-400',
   };
 
   return (
@@ -37,7 +37,7 @@ export function CalendarMockup() {
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="text-[8px] text-slate-400 text-center font-medium">
+          <div key={i} className="text-[8px] text-warm-400 text-center font-medium">
             {d}
           </div>
         ))}
@@ -57,7 +57,7 @@ export function CalendarMockup() {
               >
                 {day && (
                   <>
-                    <span className={day === 15 ? "" : "text-slate-600"}>{day}</span>
+                    <span className={day === 15 ? "" : "text-warm-600"}>{day}</span>
                     {events[day] && (
                       <div className={cn("w-1 h-1 rounded-full mt-0.5", eventColors[events[day]])} />
                     )}
@@ -82,7 +82,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1">
       <div className={cn("w-1.5 h-1.5 rounded-full", color)} />
-      <span className="text-[8px] text-slate-500">{label}</span>
+      <span className="text-[8px] text-warm-500">{label}</span>
     </div>
   );
 }

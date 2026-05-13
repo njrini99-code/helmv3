@@ -358,7 +358,7 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
       {metrics.map((m, i) => (
         <div
           key={i}
-          className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+          className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5"
           style={{ animation: `scaleIn 0.3s ease-out forwards`, animationDelay: `${i * 50}ms` }}
         >
           <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"

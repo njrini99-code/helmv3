@@ -319,7 +319,7 @@ export function PlayerComparison({
         <Card variant="glass" className={cn('overflow-hidden border-white/40', className)}>
           {onClose && (
         <CardHeader className="flex flex-row items-center justify-between border-b border-border-light">
-          <h2 className="text-lg font-semibold text-slate-900">Player Comparison</h2>
+          <h2 className="text-lg font-semibold text-warm-900">Player Comparison</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <IconX size={18} />
           </Button>
@@ -333,7 +333,7 @@ export function PlayerComparison({
             {/* Player Headers */}
             <thead className="bg-cream-50 border-b border-border-light">
               <tr>
-                <th className="sticky left-0 bg-cream-50 z-10 px-4 py-3 text-left text-sm font-medium text-slate-600 min-w-[140px]">
+                <th className="sticky left-0 bg-cream-50 z-10 px-4 py-3 text-left text-sm font-medium text-warm-600 min-w-[140px]">
                   Metric
                 </th>
                 {players.map(player => {
@@ -351,15 +351,15 @@ export function PlayerComparison({
                           {onRemovePlayer && players.length > 1 && (
                             <button
                               onClick={() => onRemovePlayer(player.id)}
-                              className="absolute -top-1 -right-1 w-5 h-5 bg-slate-700 text-white rounded-full flex items-center justify-center hover:bg-slate-800 transition-colors shadow-sm"
+                              className="absolute -top-1 -right-1 w-5 h-5 bg-warm-700 text-white rounded-full flex items-center justify-center hover:bg-warm-800 transition-colors shadow-sm"
                             >
                               <IconX size={12} />
                             </button>
                           )}
                         </div>
                         <div className="text-center">
-                          <p className="font-semibold text-slate-900 text-sm">{name}</p>
-                          <p className="text-xs text-slate-500">
+                          <p className="font-semibold text-warm-900 text-sm">{name}</p>
+                          <p className="text-xs text-warm-500">
                             {player.high_school_name}
                           </p>
                           <div className="flex items-center gap-1 justify-center mt-1">
@@ -390,7 +390,7 @@ export function PlayerComparison({
                       index % 2 === 0 && 'bg-white'
                     )}
                   >
-                    <td className="sticky left-0 bg-inherit z-10 px-4 py-3 text-sm font-medium text-slate-700">
+                    <td className="sticky left-0 bg-inherit z-10 px-4 py-3 text-sm font-medium text-warm-700">
                       {stat.label}
                     </td>
                     {players.map(player => {
@@ -429,7 +429,7 @@ export function PlayerComparison({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <IconChartRadar size={20} className="text-primary-600" />
-                <h3 className="text-base font-semibold text-slate-900">Performance Radar</h3>
+                <h3 className="text-base font-semibold text-warm-900">Performance Radar</h3>
               </div>
               <Button
                 variant="ghost"
@@ -467,14 +467,14 @@ export function PlayerComparison({
                 />
               </RadarChart>
             </ResponsiveContainer>
-            <p className="text-xs text-slate-500 text-center mt-2">
+            <p className="text-xs text-warm-500 text-center mt-2">
               Values are normalized to a 0-100 scale for comparison
             </p>
           </div>
         )}
 
         {!showRadarChart && (
-          <div className="p-4 bg-slate-50 border-t border-border-light">
+          <div className="p-4 bg-warm-50 border-t border-border-light">
             <Button
               variant="ghost"
               size="sm"
@@ -489,7 +489,7 @@ export function PlayerComparison({
 
         {/* Footer with action buttons */}
         <div className="p-4 bg-cream-50 border-t border-border-light flex items-center justify-between">
-          <p className="text-sm leading-relaxed text-slate-600">
+          <p className="text-sm leading-relaxed text-warm-600">
             Comparing {players.length} player{players.length > 1 ? 's' : ''}
           </p>
           <div className="flex gap-2">

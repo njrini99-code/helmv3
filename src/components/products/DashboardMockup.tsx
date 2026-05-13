@@ -12,49 +12,49 @@ export function DashboardMockup() {
       {/* Phone Frame */}
       <div className="relative">
         {/* Outer bezel - the phone body */}
-        <div className="relative w-[280px] sm:w-[320px] h-[560px] sm:h-[640px] bg-slate-900 rounded-[3rem] p-[10px] shadow-2xl">
+        <div className="relative w-[280px] sm:w-[320px] h-[560px] sm:h-[640px] bg-warm-900 rounded-[3rem] p-[10px] shadow-2xl">
           {/* Side buttons - Volume */}
-          <div className="absolute -left-[3px] top-[100px] w-[3px] h-[30px] bg-slate-700 rounded-l-sm" />
-          <div className="absolute -left-[3px] top-[145px] w-[3px] h-[50px] bg-slate-700 rounded-l-sm" />
-          <div className="absolute -left-[3px] top-[205px] w-[3px] h-[50px] bg-slate-700 rounded-l-sm" />
+          <div className="absolute -left-[3px] top-[100px] w-[3px] h-[30px] bg-warm-700 rounded-l-sm" />
+          <div className="absolute -left-[3px] top-[145px] w-[3px] h-[50px] bg-warm-700 rounded-l-sm" />
+          <div className="absolute -left-[3px] top-[205px] w-[3px] h-[50px] bg-warm-700 rounded-l-sm" />
           {/* Side button - Power */}
-          <div className="absolute -right-[3px] top-[160px] w-[3px] h-[70px] bg-slate-700 rounded-r-sm" />
+          <div className="absolute -right-[3px] top-[160px] w-[3px] h-[70px] bg-warm-700 rounded-r-sm" />
 
           {/* Inner bezel with subtle gradient */}
-          <div className="relative w-full h-full bg-gradient-to-b from-slate-800 to-slate-900 rounded-[2.5rem] p-[2px]">
+          <div className="relative w-full h-full bg-gradient-to-b from-warm-800 to-warm-900 rounded-[2.5rem] p-[2px]">
             {/* Screen container */}
             <div className="relative w-full h-full bg-white rounded-[2.4rem] overflow-hidden">
               {/* Dynamic Island / Notch */}
-              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
-                <div className="w-[90px] sm:w-[110px] h-[28px] sm:h-[32px] bg-slate-900 rounded-full flex items-center justify-center gap-2">
+              <div className="absolute top-3 left-1/2 -tranwarm-x-1/2 z-20">
+                <div className="w-[90px] sm:w-[110px] h-[28px] sm:h-[32px] bg-warm-900 rounded-full flex items-center justify-center gap-2">
                   {/* Camera */}
-                  <div className="w-3 h-3 rounded-full bg-slate-800 ring-1 ring-slate-700">
-                    <div className="w-1.5 h-1.5 rounded-full bg-slate-600 mt-[3px] ml-[3px]" />
+                  <div className="w-3 h-3 rounded-full bg-warm-800 ring-1 ring-warm-700">
+                    <div className="w-1.5 h-1.5 rounded-full bg-warm-600 mt-[3px] ml-[3px]" />
                   </div>
                 </div>
               </div>
 
               {/* Status Bar */}
               <div className="absolute top-0 left-0 right-0 h-12 z-10 flex items-end justify-between px-6 pb-1">
-                <span className="text-micro font-semibold text-slate-900">9:41</span>
+                <span className="text-micro font-semibold text-warm-900">9:41</span>
                 <div className="flex items-center gap-1">
                   {/* Signal */}
                   <div className="flex items-end gap-[2px]">
-                    <div className="w-[3px] h-[4px] bg-slate-900 rounded-sm" />
-                    <div className="w-[3px] h-[6px] bg-slate-900 rounded-sm" />
-                    <div className="w-[3px] h-[8px] bg-slate-900 rounded-sm" />
-                    <div className="w-[3px] h-[10px] bg-slate-900 rounded-sm" />
+                    <div className="w-[3px] h-[4px] bg-warm-900 rounded-sm" />
+                    <div className="w-[3px] h-[6px] bg-warm-900 rounded-sm" />
+                    <div className="w-[3px] h-[8px] bg-warm-900 rounded-sm" />
+                    <div className="w-[3px] h-[10px] bg-warm-900 rounded-sm" />
                   </div>
                   {/* Wifi */}
-                  <svg className="w-3.5 h-3.5 text-slate-900" viewBox="0 0 24 24" fill="currentColor">
+                  <svg className="w-3.5 h-3.5 text-warm-900" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 18c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm-4.9-2.3c2.6-2.6 6.8-2.6 9.4 0l-1.4 1.4c-1.8-1.8-4.7-1.8-6.5 0l-1.5-1.4zm-2.8-2.8c4.2-4.2 10.9-4.2 15.1 0l-1.4 1.4c-3.4-3.4-8.9-3.4-12.3 0l-1.4-1.4zm-2.8-2.8c5.6-5.6 14.7-5.6 20.3 0l-1.4 1.4c-4.8-4.8-12.7-4.8-17.5 0l-1.4-1.4z" />
                   </svg>
                   {/* Battery */}
                   <div className="flex items-center gap-0.5">
-                    <div className="w-5 h-2.5 border border-slate-900 rounded-sm p-[1px]">
-                      <div className="w-full h-full bg-slate-900 rounded-[1px]" />
+                    <div className="w-5 h-2.5 border border-warm-900 rounded-sm p-[1px]">
+                      <div className="w-full h-full bg-warm-900 rounded-[1px]" />
                     </div>
-                    <div className="w-[2px] h-1 bg-slate-900 rounded-r-full" />
+                    <div className="w-[2px] h-1 bg-warm-900 rounded-r-full" />
                   </div>
                 </div>
               </div>
@@ -62,7 +62,7 @@ export function DashboardMockup() {
               {/* App Content */}
               <div className="absolute inset-0 pt-14 bg-gradient-to-b from-[#FAFAF9] to-[#F5F5F4]">
                 {/* App Header */}
-                <div className="px-4 py-3 bg-cream-100/82 backdrop-blur-xl border-b border-slate-100">
+                <div className="px-4 py-3 bg-cream-100/82 backdrop-blur-xl border-b border-warm-100">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
                       <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -70,8 +70,8 @@ export function DashboardMockup() {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm font-semibold text-slate-900">Dashboard</div>
-                      <div className="text-micro text-slate-500">Team Overview</div>
+                      <div className="text-sm font-semibold text-warm-900">Dashboard</div>
+                      <div className="text-micro text-warm-500">Team Overview</div>
                     </div>
                   </div>
                 </div>
@@ -89,7 +89,7 @@ export function DashboardMockup() {
 
                   {/* Quick Actions */}
                   <div className="mt-4">
-                    <div className="text-micro font-medium text-slate-500 uppercase tracking-wider mb-2">Quick Actions</div>
+                    <div className="text-micro font-medium text-warm-500 uppercase tracking-wider mb-2">Quick Actions</div>
                     <div className="space-y-2">
                       <ActionRow icon="plus" label="Log New Round" primary />
                       <ActionRow icon="users" label="View Roster" />
@@ -99,8 +99,8 @@ export function DashboardMockup() {
 
                   {/* Recent Activity */}
                   <div className="mt-4">
-                    <div className="text-micro font-medium text-slate-500 uppercase tracking-wider mb-2">Recent Activity</div>
-                    <div className="bg-white rounded-xl border border-slate-100 p-3 space-y-2.5">
+                    <div className="text-micro font-medium text-warm-500 uppercase tracking-wider mb-2">Recent Activity</div>
+                    <div className="bg-white rounded-xl border border-warm-100 p-3 space-y-2.5">
                       <ActivityRow name="J. Smith" action="scored 71" time="2h ago" />
                       <ActivityRow name="M. Davis" action="completed practice" time="4h ago" />
                       <ActivityRow name="T. Wilson" action="logged 18 holes" time="Yesterday" />
@@ -110,7 +110,7 @@ export function DashboardMockup() {
               </div>
 
               {/* Home Indicator */}
-              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-900 rounded-full" />
+              <div className="absolute bottom-2 left-1/2 -tranwarm-x-1/2 w-32 h-1 bg-warm-900 rounded-full" />
             </div>
           </div>
         </div>
@@ -126,12 +126,12 @@ function StatCard({ label, value, accent }: { label: string; value: string; acce
   return (
     <div className={cn(
       "bg-white rounded-xl p-3 border",
-      accent ? "border-emerald-200 bg-emerald-50/50" : "border-slate-100"
+      accent ? "border-emerald-200 bg-emerald-50/50" : "border-warm-100"
     )}>
-      <div className="text-micro text-slate-500 mb-1">{label}</div>
+      <div className="text-micro text-warm-500 mb-1">{label}</div>
       <div className={cn(
         "text-lg font-bold",
-        accent ? "text-emerald-600" : "text-slate-900"
+        accent ? "text-emerald-600" : "text-warm-900"
       )}>{value}</div>
     </div>
   );
@@ -147,17 +147,17 @@ function ActionRow({ icon, label, primary }: { icon: string; label: string; prim
   return (
     <div className={cn(
       "flex items-center gap-3 p-2.5 rounded-lg",
-      primary ? "bg-emerald-500 text-white" : "bg-white border border-slate-100"
+      primary ? "bg-emerald-500 text-white" : "bg-white border border-warm-100"
     )}>
       <div className={cn(
         "w-7 h-7 rounded-lg flex items-center justify-center",
-        primary ? "bg-white/20" : "bg-slate-100"
+        primary ? "bg-white/20" : "bg-warm-100"
       )}>
-        <svg className={cn("w-4 h-4", primary ? "text-white" : "text-slate-600")} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+        <svg className={cn("w-4 h-4", primary ? "text-white" : "text-warm-600")} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
           {icons[icon as keyof typeof icons]}
         </svg>
       </div>
-      <span className={cn("text-xs font-medium", primary ? "text-white" : "text-slate-700")}>{label}</span>
+      <span className={cn("text-xs font-medium", primary ? "text-white" : "text-warm-700")}>{label}</span>
     </div>
   );
 }
@@ -169,10 +169,10 @@ function ActivityRow({ name, action, time }: { name: string; action: string; tim
         <span className="text-[9px] font-semibold text-emerald-600">{name.split(' ').map(n => n[0]).join('')}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-label text-slate-900 font-medium">{name}</span>
-        <span className="text-label text-slate-500"> {action}</span>
+        <span className="text-label text-warm-900 font-medium">{name}</span>
+        <span className="text-label text-warm-500"> {action}</span>
       </div>
-      <span className="text-[9px] text-slate-400 flex-shrink-0">{time}</span>
+      <span className="text-[9px] text-warm-400 flex-shrink-0">{time}</span>
     </div>
   );
 }

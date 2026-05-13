@@ -160,22 +160,22 @@ export function NewMessageModal({
               <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
             </div>
           ) : results.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-warm-100">
               {results.map(result => (
                 <button
                   key={result.id}
                   onClick={() => handleSelect(result)}
                   className={cn(
                     'w-full px-4 py-3 flex items-center gap-3 text-left transition-colors',
-                    'hover:bg-slate-50 rounded-lg -mx-4',
+                    'hover:bg-warm-50 rounded-lg -mx-4',
                     selectedId === result.userId && 'bg-primary-50 hover:bg-primary-50'
                   )}
                 >
                   <Avatar name={result.name} src={result.avatar} size="md" />
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-slate-900 truncate">{result.name}</p>
+                    <p className="font-medium text-warm-900 truncate">{result.name}</p>
                     {result.subtitle && (
-                      <p className="text-sm text-slate-500 truncate">{result.subtitle}</p>
+                      <p className="text-sm text-warm-500 truncate">{result.subtitle}</p>
                     )}
                   </div>
                   {selectedId === result.userId && (
@@ -188,10 +188,10 @@ export function NewMessageModal({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                <IconUsers size={20} className="text-slate-400" />
+              <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
+                <IconUsers size={20} className="text-warm-400" />
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-warm-500">
                 {searchQuery.trim()
                   ? `No ${currentUserRole === 'coach' ? 'players' : 'coaches'} found`
                   : `No ${currentUserRole === 'coach' ? 'players' : 'coaches'} available`

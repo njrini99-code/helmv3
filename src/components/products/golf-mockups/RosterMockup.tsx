@@ -26,10 +26,10 @@ function PlayerRow({ name, status }: { name: 'wide' | 'medium' | 'short'; status
       "shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
     )}>
       {/* Avatar */}
-      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0" />
+      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-warm-200 to-warm-300 flex-shrink-0" />
 
       {/* Name placeholder */}
-      <div className={cn("h-2 bg-slate-200 rounded", widths[name])} />
+      <div className={cn("h-2 bg-warm-200 rounded", widths[name])} />
 
       {/* Status badge */}
       <div className={cn(

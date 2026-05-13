@@ -172,7 +172,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                     className="group flex items-center gap-1 text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300"
                 >
                     Calendar
-                    <IconArrowRight size={12} className="transition-transform duration-300 group-hover:translate-x-0.5" />
+                    <IconArrowRight size={12} className="transition-transform duration-300 group-hover:tranwarm-x-0.5" />
                 </Link>
             </div>
 
@@ -299,7 +299,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                         style={{ left: nowX + 20 }}
                     >
                         <div className="relative">
-                            <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(22,163,74,0.4)] -translate-x-[3px]" />
+                            <div className="w-2 h-2 rounded-full bg-primary-500 shadow-[0_0_8px_rgba(22,163,74,0.4)] -tranwarm-x-[3px]" />
                             <div className="w-px h-[calc(100%+40px)] bg-primary-500/40" style={{ marginLeft: 0 }} />
                         </div>
                     </div>

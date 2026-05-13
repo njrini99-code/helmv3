@@ -124,7 +124,7 @@ export function CalendarFeedManager({
           <div className="flex items-center gap-3">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+              <Search className="absolute left-3 top-1/2 -tranwarm-y-1/2 w-4 h-4 text-warm-400" />
               <input
                 type="search"
                 value={searchQuery}
@@ -145,7 +145,7 @@ export function CalendarFeedManager({
             {/* Filter dropdown */}
             {allowedTypeList.length > 1 && (
               <div className="relative">
-                <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
+                <Filter className="absolute left-3 top-1/2 -tranwarm-y-1/2 w-4 h-4 text-warm-400 pointer-events-none" />
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as FeedType | 'all')}

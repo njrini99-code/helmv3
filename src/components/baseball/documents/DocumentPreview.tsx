@@ -60,8 +60,8 @@ function FileTypeIcon({ mimeType, className }: { mimeType: string; className?: s
   if (mimeType.startsWith('image/')) return <IconImage className={cn('text-blue-500', className)} />;
   if (mimeType.startsWith('video/')) return <IconVideo className={cn('text-purple-500', className)} />;
   if (mimeType.includes('spreadsheet') || mimeType.includes('excel') || mimeType === 'text/csv') return <IconFileSpreadsheet className={cn('text-primary-500', className)} />;
-  if (mimeType.startsWith('text/') || mimeType === 'application/json') return <IconFileText className={cn('text-slate-500', className)} />;
-  return <IconFile className={cn('text-slate-400', className)} />;
+  if (mimeType.startsWith('text/') || mimeType === 'application/json') return <IconFileText className={cn('text-warm-500', className)} />;
+  return <IconFile className={cn('text-warm-400', className)} />;
 }
 
 interface DocumentPreviewProps {
@@ -164,7 +164,7 @@ export function DocumentPreview({
         <div className="flex items-center justify-center h-[60vh]">
           <div className="text-center">
             <div className="animate-spin h-12 w-12 border-2 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-slate-500">Loading preview...</p>
+            <p className="text-warm-500">Loading preview...</p>
           </div>
         </div>
       );
@@ -178,7 +178,7 @@ export function DocumentPreview({
               <IconFile size={24} className="text-red-500" />
             </div>
             <p className="text-red-600 font-medium mb-2">Preview unavailable</p>
-            <p className="text-slate-500 text-sm mb-4">{error}</p>
+            <p className="text-warm-500 text-sm mb-4">{error}</p>
             <div className="flex gap-2 justify-center">
               <Button variant="secondary" onClick={handleDownload}>
                 <IconDownload size={16} className="mr-2" />
@@ -199,7 +199,7 @@ export function DocumentPreview({
     if (!previewUrl) {
       return (
         <div className="flex items-center justify-center h-[60vh]">
-          <p className="text-slate-500">No preview available</p>
+          <p className="text-warm-500">No preview available</p>
         </div>
       );
     }
@@ -321,8 +321,8 @@ export function DocumentPreview({
       <div className="flex flex-col items-center justify-center h-[40vh]">
         <FileTypeIcon mimeType={mimeType} className="h-16 w-16 mb-4" />
         <p className="text-lg font-medium mb-2">{fileName}</p>
-        <p className="text-sm text-slate-500 mb-4">{formatFileSize(fileSize)}</p>
-        <p className="text-sm text-slate-500 mb-4">Preview not available for this file type</p>
+        <p className="text-sm text-warm-500 mb-4">{formatFileSize(fileSize)}</p>
+        <p className="text-sm text-warm-500 mb-4">Preview not available for this file type</p>
         <div className="flex gap-2">
           <Button onClick={handleDownload}>
             <IconDownload size={16} className="mr-2" />
@@ -349,7 +349,7 @@ export function DocumentPreview({
               <FileTypeIcon mimeType={mimeType} className="h-6 w-6" />
               <div>
                 <DialogTitle className="text-lg">{baseballDocument.title}</DialogTitle>
-                <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
+                <div className="flex items-center gap-2 text-sm text-warm-500 mt-1">
                   <span>{formatFileSize(fileSize)}</span>
                   {version && (
                     <>

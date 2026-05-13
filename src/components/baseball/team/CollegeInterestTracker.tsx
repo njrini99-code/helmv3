@@ -26,8 +26,8 @@ export function CollegeInterestTracker({ interests }: CollegeInterestTrackerProp
     <Card variant="glass">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <h2 className="font-semibold text-slate-900">College Interest Tracker</h2>
-          <p className="text-sm leading-relaxed text-slate-500 mt-1">Recent activity from college programs</p>
+          <h2 className="font-semibold text-warm-900">College Interest Tracker</h2>
+          <p className="text-sm leading-relaxed text-warm-500 mt-1">Recent activity from college programs</p>
         </div>
         <Link href="/baseball/dashboard/college-interest">
           <Button variant="ghost" size="sm">
@@ -38,9 +38,9 @@ export function CollegeInterestTracker({ interests }: CollegeInterestTrackerProp
       <CardContent>
         {interests.length === 0 ? (
           <div className="text-center py-8">
-            <IconEye size={32} className="text-slate-300 mx-auto mb-2" />
-            <p className="text-sm leading-relaxed text-slate-500">No recent college interest</p>
-            <p className="text-xs text-slate-400 mt-1">
+            <IconEye size={32} className="text-warm-300 mx-auto mb-2" />
+            <p className="text-sm leading-relaxed text-warm-500">No recent college interest</p>
+            <p className="text-xs text-warm-400 mt-1">
               Interest events will appear here when college coaches engage with your players.
             </p>
           </div>
@@ -49,22 +49,22 @@ export function CollegeInterestTracker({ interests }: CollegeInterestTrackerProp
             {interests.slice(0, 6).map((interest) => (
               <div
                 key={interest.id}
-                className="flex items-start gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                className="flex items-start gap-3 p-3 border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                   <IconEye size={16} className="text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900">
+                  <p className="text-sm font-medium text-warm-900">
                     {interest.school_name || 'Unknown School'}
                     {interest.school_division && (
                       <Badge variant="secondary" className="ml-2">{interest.school_division}</Badge>
                     )}
                   </p>
-                  <p className="text-sm leading-relaxed text-slate-600">
+                  <p className="text-sm leading-relaxed text-warm-600">
                     {interest.coach_name || 'A coach'} {interest.event_type === 'profile_view' ? 'viewed' : 'added to watchlist'} <span className="font-medium">{interest.player_name}</span>
                   </p>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className="text-xs text-warm-400 mt-1">
                     {formatRelativeTime(interest.created_at)}
                   </p>
                 </div>

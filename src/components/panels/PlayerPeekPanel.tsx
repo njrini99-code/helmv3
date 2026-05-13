@@ -130,25 +130,25 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
       {loading ? (
         <div className="p-6 space-y-5 animate-pulse">
           <div className="flex items-start gap-4">
-            <div className="w-16 h-16 rounded-full bg-slate-200 flex-shrink-0" />
+            <div className="w-16 h-16 rounded-full bg-warm-200 flex-shrink-0" />
             <div className="flex-1 space-y-2">
-              <div className="h-5 bg-slate-200 rounded w-2/3" />
-              <div className="h-3 bg-slate-100 rounded w-1/2" />
+              <div className="h-5 bg-warm-200 rounded w-2/3" />
+              <div className="h-3 bg-warm-100 rounded w-1/2" />
               <div className="flex gap-2">
-                <div className="h-5 bg-slate-100 rounded w-16" />
-                <div className="h-5 bg-slate-100 rounded w-20" />
+                <div className="h-5 bg-warm-100 rounded w-16" />
+                <div className="h-5 bg-warm-100 rounded w-20" />
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {[1,2,3,4].map((i) => <div key={i} className="h-14 bg-slate-100 rounded-lg" />)}
+            {[1,2,3,4].map((i) => <div key={i} className="h-14 bg-warm-100 rounded-lg" />)}
           </div>
           <div className="space-y-2">
-            <div className="h-3 bg-slate-100 rounded w-1/4" />
-            <div className="h-3 bg-slate-100 rounded w-full" />
-            <div className="h-3 bg-slate-100 rounded w-5/6" />
+            <div className="h-3 bg-warm-100 rounded w-1/4" />
+            <div className="h-3 bg-warm-100 rounded w-full" />
+            <div className="h-3 bg-warm-100 rounded w-5/6" />
           </div>
-          <div className="h-10 bg-slate-200 rounded-lg" />
+          <div className="h-10 bg-warm-200 rounded-lg" />
         </div>
       ) : player ? (
         <div className="p-6 space-y-6">
@@ -156,7 +156,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
           <div className="flex justify-end -mb-2">
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+              className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               aria-label="Close panel"
             >
               <IconX size={18} />
@@ -171,10 +171,10 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
               size="xl"
             />
             <div className="flex-1">
-              <h2 className="text-xl font-semibold text-slate-900">
+              <h2 className="text-xl font-semibold text-warm-900">
                 {getFullName(player.first_name, player.last_name)}
               </h2>
-              <p className="text-sm leading-relaxed text-slate-500 mt-1">
+              <p className="text-sm leading-relaxed text-warm-500 mt-1">
                 {highSchoolOrgName || player.high_school_name || 'Unknown School'} • {player.city}, {player.state}
               </p>
               <div className="flex items-center gap-2 mt-2">
@@ -233,8 +233,8 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
           {/* About */}
           {player.about_me && (
             <div>
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">About</h3>
-              <p className="text-sm leading-relaxed text-slate-600 line-clamp-4">{player.about_me}</p>
+              <h3 className="text-sm font-semibold text-warm-900 mb-2">About</h3>
+              <p className="text-sm leading-relaxed text-warm-600 line-clamp-4">{player.about_me}</p>
             </div>
           )}
 
@@ -242,20 +242,20 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
           <div className="flex items-center gap-4 text-sm">
             {player.bats && (
               <div>
-                <span className="text-slate-500">Bats:</span>{' '}
-                <span className="font-medium text-slate-900">{player.bats}</span>
+                <span className="text-warm-500">Bats:</span>{' '}
+                <span className="font-medium text-warm-900">{player.bats}</span>
               </div>
             )}
             {player.throws && (
               <div>
-                <span className="text-slate-500">Throws:</span>{' '}
-                <span className="font-medium text-slate-900">{player.throws}</span>
+                <span className="text-warm-500">Throws:</span>{' '}
+                <span className="font-medium text-warm-900">{player.throws}</span>
               </div>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 pt-4 border-t border-slate-200">
+          <div className="flex flex-col gap-3 pt-4 border-t border-warm-200">
             <Button
               variant="primary"
               onClick={handleViewFullProfile}
@@ -288,7 +288,7 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
         </div>
       ) : (
         <div className="flex items-center justify-center h-64">
-          <p className="text-slate-500">Player not found</p>
+          <p className="text-warm-500">Player not found</p>
         </div>
       )}
     </PeekPanelRoot>
@@ -297,11 +297,11 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
 
 function StatItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50">
-      <div className="text-slate-500">{icon}</div>
+    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-warm-50">
+      <div className="text-warm-500">{icon}</div>
       <div className="flex-1">
-        <p className="text-xs text-slate-500">{label}</p>
-        <p className="text-sm font-semibold text-slate-900">{value}</p>
+        <p className="text-xs text-warm-500">{label}</p>
+        <p className="text-sm font-semibold text-warm-900">{value}</p>
       </div>
     </div>
   );

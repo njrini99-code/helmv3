@@ -120,21 +120,21 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="border-b border-slate-100 last:border-0">
+    <div className="border-b border-warm-100 last:border-0">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-4 text-left hover:text-primary-600 transition-colors"
       >
-        <span className="font-medium text-slate-900 pr-4">{question}</span>
+        <span className="font-medium text-warm-900 pr-4">{question}</span>
         {isOpen ? (
-          <ChevronDown size={20} className="text-slate-400 flex-shrink-0" />
+          <ChevronDown size={20} className="text-warm-400 flex-shrink-0" />
         ) : (
-          <ChevronRight size={20} className="text-slate-400 flex-shrink-0" />
+          <ChevronRight size={20} className="text-warm-400 flex-shrink-0" />
         )}
       </button>
       {isOpen && (
         <div className="pb-4 pr-8">
-          <p className="text-slate-600 leading-relaxed">{answer}</p>
+          <p className="text-warm-600 leading-relaxed">{answer}</p>
         </div>
       )}
     </div>
@@ -156,17 +156,17 @@ export default function HelpPage() {
   return (
     <div className="min-h-screen bg-[#FAF6F1]">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200">
+      <header className="bg-white border-b border-warm-200">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <Link
             href="/baseball/dashboard"
-            className="inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-warm-600 hover:text-warm-900 transition-colors mb-4"
           >
             <ArrowLeft size={20} />
             <span>Back to Dashboard</span>
           </Link>
-          <h1 className="text-3xl font-bold text-slate-900">Help Center</h1>
-          <p className="text-slate-600 mt-2">
+          <h1 className="text-3xl font-bold text-warm-900">Help Center</h1>
+          <p className="text-warm-600 mt-2">
             Find answers to common questions about using Helm Sports Lab
           </p>
         </div>
@@ -177,14 +177,14 @@ export default function HelpPage() {
         <div className="relative mb-8">
           <Search
             size={20}
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            className="absolute left-4 top-1/2 -tranwarm-y-1/2 text-warm-400"
           />
           <input
             type="text"
             placeholder="Search for help..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-warm-200 rounded-xl text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           />
         </div>
 
@@ -193,11 +193,11 @@ export default function HelpPage() {
           {filteredFaqs.map((category) => (
             <div
               key={category.category}
-              className="bg-white rounded-2xl border border-slate-200 overflow-hidden"
+              className="bg-white rounded-2xl border border-warm-200 overflow-hidden"
             >
-              <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
+              <div className="px-6 py-4 bg-warm-50 border-b border-warm-200 flex items-center gap-3">
                 <category.icon size={20} className="text-primary-600" />
-                <h2 className="font-semibold text-slate-900">{category.category}</h2>
+                <h2 className="font-semibold text-warm-900">{category.category}</h2>
               </div>
               <div className="px-6">
                 {category.questions.map((item, index) => (
@@ -210,24 +210,24 @@ export default function HelpPage() {
 
         {filteredFaqs.length === 0 && (
           <div className="text-center py-12">
-            <Search size={48} className="text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No results found</h3>
-            <p className="text-slate-500">
+            <Search size={48} className="text-warm-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-warm-900 mb-2">No results found</h3>
+            <p className="text-warm-500">
               Try different keywords or contact support for help
             </p>
           </div>
         )}
 
         {/* Contact Section */}
-        <div className="mt-12 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 text-center">
+        <div className="mt-12 bg-gradient-to-br from-warm-900 to-warm-800 rounded-2xl p-8 text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Still need help?</h2>
-          <p className="text-slate-300 mb-6">
+          <p className="text-warm-300 mb-6">
             Our support team is here to assist you
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <a
               href="mailto:admin@helmsportslabs.com"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-slate-900 font-medium rounded-lg hover:bg-slate-100 transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-white text-warm-900 font-medium rounded-lg hover:bg-warm-100 transition-colors"
             >
               <Mail size={20} />
               Email Support

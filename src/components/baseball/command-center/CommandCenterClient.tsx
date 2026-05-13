@@ -94,7 +94,7 @@ function TrendIndicator({ trend }: { trend: string | null | undefined }) {
     );
   }
   return (
-    <span className="flex items-center gap-0.5 text-slate-400 text-[11px] font-medium">
+    <span className="flex items-center gap-0.5 text-warm-400 text-[11px] font-medium">
       <IconMinus size={12} />—
     </span>
   );
@@ -102,9 +102,9 @@ function TrendIndicator({ trend }: { trend: string | null | undefined }) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center px-2 py-1 bg-slate-50 rounded-lg">
-      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
-      <span className="text-xs font-bold text-slate-800 tabular-nums">{value}</span>
+    <div className="flex flex-col items-center px-2 py-1 bg-warm-50 rounded-lg">
+      <span className="text-[9px] font-semibold text-warm-400 uppercase tracking-wide">{label}</span>
+      <span className="text-xs font-bold text-warm-800 tabular-nums">{value}</span>
     </div>
   );
 }
@@ -126,7 +126,7 @@ function PlayerRosterCard({
     <button
       onClick={onClick}
       className="w-full text-left bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4
-                 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
+                 shadow-sm hover:shadow-md hover:-tranwarm-y-0.5 transition-[transform,box-shadow] duration-200 group"
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
@@ -157,10 +157,10 @@ function PlayerRosterCard({
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold text-slate-900 text-sm truncate">{fullName || 'Unknown'}</p>
+            <p className="font-semibold text-warm-900 text-sm truncate">{fullName || 'Unknown'}</p>
             <TrendIndicator trend={trend} />
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-warm-500 mt-0.5">
             {player.primary_position ?? 'N/A'}
             {player.grad_year && ` · '${String(player.grad_year).slice(-2)}`}
           </p>
@@ -182,9 +182,9 @@ function PlayerRosterCard({
 function TeamStatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className={`rounded-2xl p-4 ${accent ? 'bg-primary-600 text-white' : 'bg-cream-100/75 backdrop-blur-xl border border-white/20 shadow-sm'}`}>
-      <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-slate-400'}`}>{label}</p>
-      <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-slate-900'}`}>{value}</p>
-      {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-slate-400'}`}>{sub}</p>}
+      <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-warm-400'}`}>{label}</p>
+      <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-warm-900'}`}>{value}</p>
+      {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-warm-400'}`}>{sub}</p>}
     </div>
   );
 }
@@ -337,8 +337,8 @@ export function CommandCenterClient({
           {/* ── Header ─────────────────────────────────────────────────── */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Command Center</h1>
-              <p className="text-slate-500 mt-0.5 text-sm">
+              <h1 className="text-2xl sm:text-3xl font-bold text-warm-900">Command Center</h1>
+              <p className="text-warm-500 mt-0.5 text-sm">
                 {team.name} · {players.length} player{players.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -352,7 +352,7 @@ export function CommandCenterClient({
               )}
               <Link href="/baseball/dashboard/stats/upload">
                 <button className="flex items-center gap-2 px-4 py-2 bg-cream-100/75 backdrop-blur-sm
-                                   border border-white/20 rounded-xl text-sm font-medium text-slate-700
+                                   border border-white/20 rounded-xl text-sm font-medium text-warm-700
                                    hover:bg-white hover:shadow-sm transition-[background-color,box-shadow]">
                   <IconUpload size={16} />
                   <span className="hidden sm:inline">Upload Stats</span>
@@ -365,8 +365,8 @@ export function CommandCenterClient({
           <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4 mb-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <IconCalendar size={15} className="text-slate-400" />
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">This Week</span>
+                <IconCalendar size={15} className="text-warm-400" />
+                <span className="text-xs font-semibold text-warm-500 uppercase tracking-wide">This Week</span>
               </div>
               <Link
                 href="/baseball/dashboard/calendar"
@@ -383,17 +383,17 @@ export function CommandCenterClient({
                   <button
                     key={day.date.toISOString()}
                     onClick={() => router.push('/baseball/dashboard/calendar')}
-                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-slate-50"
+                    className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-warm-50"
                   >
                     <span className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${
-                      day.isToday ? 'text-primary-600' : 'text-slate-400'
+                      day.isToday ? 'text-primary-600' : 'text-warm-400'
                     }`}>
                       {day.dayLabel}
                     </span>
                     <span className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-[color,background-color,box-shadow] ${
                       day.isToday
                         ? 'bg-primary-600 text-white shadow-sm'
-                        : 'text-slate-700 group-hover:bg-slate-100'
+                        : 'text-warm-700 group-hover:bg-warm-100'
                     }`}>
                       {day.dayNum}
                     </span>
@@ -402,7 +402,7 @@ export function CommandCenterClient({
                       {dayEvents.slice(0, 3).map((_, i) => (
                         <span
                           key={i}
-                          className={`w-1.5 h-1.5 rounded-full ${day.isToday ? 'bg-primary-400' : 'bg-slate-300'}`}
+                          className={`w-1.5 h-1.5 rounded-full ${day.isToday ? 'bg-primary-400' : 'bg-warm-300'}`}
                         />
                       ))}
                     </div>
@@ -424,7 +424,7 @@ export function CommandCenterClient({
                 className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] ${
                   activeTab === id
                     ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    : 'text-warm-600 hover:text-warm-900 hover:bg-warm-50'
                 }`}
               >
                 {icon}
@@ -443,14 +443,14 @@ export function CommandCenterClient({
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Search */}
                 <div className="relative flex-1 max-w-xs">
-                  <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <IconSearch size={15} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
                   <input
                     type="text"
                     placeholder="Search players…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl
-                               text-sm text-slate-900 placeholder:text-slate-400
+                    className="w-full pl-9 pr-4 py-2.5 bg-cream-100/82 border border-warm-200/80 rounded-xl
+                               text-sm text-warm-900 placeholder:text-warm-400
                                focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                   />
                 </div>
@@ -459,7 +459,7 @@ export function CommandCenterClient({
                 <select
                   value={positionFilter}
                   onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
-                  className="px-3 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl text-sm text-slate-700
+                  className="px-3 py-2.5 bg-cream-100/82 border border-warm-200/80 rounded-xl text-sm text-warm-700
                              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                 >
                   {positions.map((p) => (
@@ -471,7 +471,7 @@ export function CommandCenterClient({
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as SortOption)}
-                  className="px-3 py-2.5 bg-cream-100/82 border border-slate-200/80 rounded-xl text-sm text-slate-700
+                  className="px-3 py-2.5 bg-cream-100/82 border border-warm-200/80 rounded-xl text-sm text-warm-700
                              focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-colors"
                 >
                   <option value="name">Sort: Name</option>
@@ -481,8 +481,8 @@ export function CommandCenterClient({
 
                 {/* Upload stats */}
                 <Link href="/baseball/dashboard/stats/upload" className="sm:ml-auto">
-                  <button className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-slate-500
-                                     bg-cream-100/68 border border-slate-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
+                  <button className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-warm-500
+                                     bg-cream-100/68 border border-warm-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
                     <IconUpload size={14} />
                     Upload Stats
                   </button>
@@ -492,11 +492,11 @@ export function CommandCenterClient({
               {/* Empty state */}
               {players.length === 0 ? (
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-14 text-center">
-                  <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                    <IconUsers size={24} className="text-slate-400" />
+                  <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+                    <IconUsers size={24} className="text-warm-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">No Players Yet</h3>
-                  <p className="text-slate-500 mb-6 max-w-sm mx-auto text-sm">
+                  <h3 className="text-lg font-semibold text-warm-900 mb-2">No Players Yet</h3>
+                  <p className="text-warm-500 mb-6 max-w-sm mx-auto text-sm">
                     Share your join code to invite players to your roster.
                   </p>
                   {team.id && (
@@ -509,7 +509,7 @@ export function CommandCenterClient({
                 </div>
               ) : filteredPlayers.length === 0 ? (
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
-                  <p className="text-slate-500">No players match your search.</p>
+                  <p className="text-warm-500">No players match your search.</p>
                   <button
                     onClick={() => { setSearchQuery(''); setPositionFilter('all'); }}
                     className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
@@ -539,7 +539,7 @@ export function CommandCenterClient({
 
               {/* Team overview cards */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Team Overview</h3>
+                <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">Team Overview</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                   <TeamStatCard label="Players" value={String(players.length)} accent />
                   <TeamStatCard label="Team AVG" value={formatAvg(teamStats.teamAvg)} />
@@ -552,7 +552,7 @@ export function CommandCenterClient({
 
               {/* Game vs Scrimmage comparison */}
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">
                   Game vs Scrimmage
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -568,15 +568,15 @@ export function CommandCenterClient({
                       <div key={type} className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-5">
                         <div className="flex items-center gap-2 mb-3">
                           <span className={`w-2 h-2 rounded-full ${isGame ? 'bg-primary-500' : 'bg-blue-400'}`} />
-                          <span className="text-sm font-semibold text-slate-900">
+                          <span className="text-sm font-semibold text-warm-900">
                             {isGame ? 'Game' : 'Scrimmage'}
                           </span>
                         </div>
-                        <p className="text-3xl font-bold text-slate-900 tabular-nums">
+                        <p className="text-3xl font-bold text-warm-900 tabular-nums">
                           {formatAvg(avgVal)}
                         </p>
-                        <p className="text-xs text-slate-400 mt-1">Team batting average</p>
-                        <p className="text-xs text-slate-500 mt-3">
+                        <p className="text-xs text-warm-400 mt-1">Team batting average</p>
+                        <p className="text-xs text-warm-500 mt-3">
                           {withData.length} of {players.length} players with {isGame ? 'game' : 'scrimmage'} data
                         </p>
                       </div>
@@ -588,10 +588,10 @@ export function CommandCenterClient({
               {/* Player performance table */}
               <div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Player Performance</h3>
+                  <h3 className="text-xs font-semibold text-warm-500 uppercase tracking-wide">Player Performance</h3>
                   <div className="flex items-center gap-2 sm:ml-auto">
                     {/* Stat type filter */}
-                    <div className="flex bg-cream-100/75 border border-slate-200/60 rounded-xl p-0.5 gap-0.5">
+                    <div className="flex bg-cream-100/75 border border-warm-200/60 rounded-xl p-0.5 gap-0.5">
                       {(['all', 'game', 'scrimmage'] as const).map((t) => (
                         <button
                           key={t}
@@ -599,7 +599,7 @@ export function CommandCenterClient({
                           className={`px-3 py-1 rounded-lg text-xs font-medium transition-[color,background-color] ${
                             statTypeFilter === t
                               ? 'bg-primary-600 text-white'
-                              : 'text-slate-600 hover:text-slate-900'
+                              : 'text-warm-600 hover:text-warm-900'
                           }`}
                         >
                           {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -610,7 +610,7 @@ export function CommandCenterClient({
                     <select
                       value={positionFilter}
                       onChange={(e) => setPositionFilter(e.target.value as PositionFilter)}
-                      className="px-2.5 py-1.5 bg-cream-100/82 border border-slate-200/60 rounded-xl text-xs text-slate-700
+                      className="px-2.5 py-1.5 bg-cream-100/82 border border-warm-200/60 rounded-xl text-xs text-warm-700
                                  focus:outline-none focus:border-primary-400 transition-colors"
                     >
                       {positions.map((p) => (
@@ -622,36 +622,36 @@ export function CommandCenterClient({
 
                 {players.length === 0 ? (
                   <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
-                    <p className="text-slate-500 text-sm">No player data available yet.</p>
+                    <p className="text-warm-500 text-sm">No player data available yet.</p>
                   </div>
                 ) : (
                   <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="border-b border-slate-100 bg-slate-50/60">
+                          <tr className="border-b border-warm-100 bg-warm-50/60">
                             <th
-                              className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                              className="px-4 py-3 text-left text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('name')}
                             >
                               Player {statSortKey === 'name' && '↓'}
                             </th>
-                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Pos</th>
+                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide">Pos</th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('avg')}
                             >
                               AVG {statSortKey === 'avg' && '↓'}
                             </th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('ops')}
                             >
                               OPS {statSortKey === 'ops' && '↓'}
                             </th>
-                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Sessions</th>
+                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide">Sessions</th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-slate-500 uppercase tracking-wide cursor-pointer hover:text-slate-700"
+                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('trend')}
                             >
                               Trend {statSortKey === 'trend' && '↓'}
@@ -670,7 +670,7 @@ export function CommandCenterClient({
                             return (
                               <tr
                                 key={player.id}
-                                className="border-b border-slate-50 last:border-0 hover:bg-slate-50/80 cursor-pointer transition-colors"
+                                className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 cursor-pointer transition-colors"
                                 onClick={() => setPeekPlayer(player)}
                               >
                                 <td className="px-4 py-3">
@@ -680,23 +680,23 @@ export function CommandCenterClient({
                                         {(player.first_name?.[0] ?? '') + (player.last_name?.[0] ?? '')}
                                       </span>
                                     </div>
-                                    <span className="text-sm font-medium text-slate-900 truncate max-w-[120px]">
+                                    <span className="text-sm font-medium text-warm-900 truncate max-w-[120px]">
                                       {fullName || 'Unknown'}
                                     </span>
                                   </div>
                                 </td>
                                 <td className="px-3 py-3 text-center">
-                                  <span className="text-xs font-medium text-slate-500">
+                                  <span className="text-xs font-medium text-warm-500">
                                     {player.primary_position ?? '—'}
                                   </span>
                                 </td>
-                                <td className="px-3 py-3 text-center text-sm font-bold text-slate-900 tabular-nums">
+                                <td className="px-3 py-3 text-center text-sm font-bold text-warm-900 tabular-nums">
                                   {formatAvg(avg)}
                                 </td>
-                                <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">
+                                <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">
                                   {formatAvg(ops)}
                                 </td>
-                                <td className="px-3 py-3 text-center text-sm text-slate-500 tabular-nums">
+                                <td className="px-3 py-3 text-center text-sm text-warm-500 tabular-nums">
                                   {player.aggregates?.total_sessions ?? 0}
                                 </td>
                                 <td className="px-3 py-3 text-center">

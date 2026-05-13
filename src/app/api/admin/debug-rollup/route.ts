@@ -4,9 +4,11 @@ import { fetchAdminRollupA } from '@/app/golf/actions/admin/rollup-a';
 import { fetchAdminRollupB } from '@/app/golf/actions/admin/rollup-b';
 import { fetchAdminRollupC } from '@/app/golf/actions/admin/rollup-c';
 
-// Temporary debug endpoint: exercises the refactored rollup path and returns
-// detailed JSON — success or failure. Admin-gated. Hit this in the browser
-// while logged in as admin to see the real error behind /golf/admin.
+// Debug endpoint: exercises the refactored rollup path and returns detailed
+// JSON — success or failure. Admin-gated AND env-gated. The endpoint serializes
+// raw Error properties (stack, cause, supabase error extras) which is sensitive
+// operational detail; we keep it disabled in prod by default. Flip
+// ENABLE_DEBUG_ROLLUP=1 in env to enable for a diagnostic window.
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +61,13 @@ async function step<T>(
 }
 
 export async function GET() {
+  // 0. Env gate — endpoint serializes raw Error internals; disabled by
+  // default in prod. Set ENABLE_DEBUG_ROLLUP=1 to enable for a diagnostic
+  // window, then unset.
+  if (process.env.ENABLE_DEBUG_ROLLUP !== '1') {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   // 1. Auth gate
   const supabase = await createClient();
   const { data: { user }, error: authErr } = await supabase.auth.getUser();

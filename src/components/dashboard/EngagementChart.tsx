@@ -33,7 +33,7 @@ export function EngagementChart({ data, loading }: EngagementChartProps) {
   if (loading) {
     return (
       <div className="h-[200px] flex items-center justify-center">
-        <div className="animate-pulse text-slate-400 text-sm">Loading chart...</div>
+        <div className="animate-pulse text-warm-400 text-sm">Loading chart...</div>
       </div>
     );
   }
@@ -41,7 +41,7 @@ export function EngagementChart({ data, loading }: EngagementChartProps) {
   if (data.length === 0) {
     return (
       <div className="h-[200px] flex items-center justify-center">
-        <p className="text-sm leading-relaxed text-slate-400">No engagement data yet</p>
+        <p className="text-sm leading-relaxed text-warm-400">No engagement data yet</p>
       </div>
     );
   }
@@ -55,11 +55,11 @@ export function EngagementChart({ data, loading }: EngagementChartProps) {
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-primary-500" />
-          <span className="text-xs text-slate-500">Views: <span className="font-medium text-slate-900">{totalViews}</span></span>
+          <span className="text-xs text-warm-500">Views: <span className="font-medium text-warm-900">{totalViews}</span></span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-purple-500" />
-          <span className="text-xs text-slate-500">Watchlist: <span className="font-medium text-slate-900">{totalAdds}</span></span>
+          <span className="text-xs text-warm-500">Watchlist: <span className="font-medium text-warm-900">{totalAdds}</span></span>
         </div>
       </div>
 

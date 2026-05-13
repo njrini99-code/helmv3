@@ -101,14 +101,15 @@ describe('verifyTeamAccess', () => {
     vi.clearAllMocks();
   });
 
-  it('grants when the coach staffs the team', async () => {
+  it('grants when the coach staffs the team and returns the matched coachId', async () => {
     const sb = {
-      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: 'coach-uuid-1', error: null }),
     };
     const result = await verifyTeamAccess('team-1', 'user-1', sb as never);
     expect(result.allowed).toBe(true);
     expect(result.reason).toBe('coach');
-    expect(sb.rpc).toHaveBeenCalledWith('verify_coach_owns_team', {
+    expect(result.coachId).toBe('coach-uuid-1');
+    expect(sb.rpc).toHaveBeenCalledWith('coach_id_for_team', {
       p_team_id: 'team-1',
       p_user_id: 'user-1',
     });
@@ -116,7 +117,17 @@ describe('verifyTeamAccess', () => {
 
   it('denies when the coach does not staff the team', async () => {
     const sb = {
-      rpc: vi.fn().mockResolvedValue({ data: false, error: null }),
+      rpc: vi.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    const result = await verifyTeamAccess('team-1', 'user-1', sb as never);
+    expect(result.allowed).toBe(false);
+    expect(result.reason).toBe('denied');
+    expect(result.coachId).toBeUndefined();
+  });
+
+  it('denies when RPC returns an empty string (defensive)', async () => {
+    const sb = {
+      rpc: vi.fn().mockResolvedValue({ data: '', error: null }),
     };
     const result = await verifyTeamAccess('team-1', 'user-1', sb as never);
     expect(result.allowed).toBe(false);

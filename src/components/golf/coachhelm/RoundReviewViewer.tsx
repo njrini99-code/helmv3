@@ -791,14 +791,14 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.03 * i, duration: 0.3 }}
                   className={cn(
-                    'absolute rounded-full -translate-x-1/2',
+                    'absolute rounded-full -tranwarm-x-1/2',
                     isLast ? 'w-3 h-3 ring-2 ring-cream-50' : 'w-1.5 h-1.5',
                     d.rollingScoreToPar <= 0 ? 'bg-primary-500' : 'bg-red-400',
                   )}
                   style={{ top: `${pct}%`, left: '50%' }}
                 />
                 {(i % 3 === 0 || isLast) && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[8px] text-warm-400 font-medium">
+                  <div className="absolute bottom-0 left-1/2 -tranwarm-x-1/2 text-[8px] text-warm-400 font-medium">
                     {d.hole}
                   </div>
                 )}

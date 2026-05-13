@@ -89,9 +89,9 @@ export const TeamCard = memo(function TeamCard({
   return (
     <motion.div
       className={cn(
-        'group relative rounded-2xl bg-white border border-slate-200/80 overflow-hidden',
+        'group relative rounded-2xl bg-white border border-warm-200/80 overflow-hidden',
         'transition-all duration-300 ease-out cursor-pointer',
-        'hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50',
+        'hover:border-warm-300 hover:shadow-lg hover:shadow-warm-200/50',
         className
       )}
       onClick={() => onTeamClick?.(team.id)}
@@ -108,7 +108,7 @@ export const TeamCard = memo(function TeamCard({
           <div
             className={cn(
               'relative flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden',
-              'border border-slate-200 bg-slate-50',
+              'border border-warm-200 bg-warm-50',
               'flex items-center justify-center'
             )}
             style={{
@@ -153,17 +153,17 @@ export const TeamCard = memo(function TeamCard({
                 {TYPE_LABELS[team.type]}
               </span>
             </div>
-            <h3 className="font-semibold text-slate-900 truncate leading-tight text-sm">
+            <h3 className="font-semibold text-warm-900 truncate leading-tight text-sm">
               {team.name}
             </h3>
-            <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+            <div className="flex items-center gap-1 mt-0.5 text-xs text-warm-500">
               <IconMapPin size={12} className="flex-shrink-0" />
               <span className="truncate">
                 {team.city}, {team.state}
               </span>
             </div>
             {team.headCoachName && (
-              <div className="flex items-center gap-1 mt-0.5 text-xs text-slate-500">
+              <div className="flex items-center gap-1 mt-0.5 text-xs text-warm-500">
                 <IconUser size={12} className="flex-shrink-0" />
                 <span className="truncate">{team.headCoachName}</span>
               </div>
@@ -174,9 +174,9 @@ export const TeamCard = memo(function TeamCard({
         {/* Stats Row */}
         <div className="mt-4 flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-1.5">
-            <IconUsers size={14} className="text-slate-400 flex-shrink-0" />
-            <span className="text-xs text-slate-600 whitespace-nowrap">
-              <span className="font-semibold text-slate-900">
+            <IconUsers size={14} className="text-warm-400 flex-shrink-0" />
+            <span className="text-xs text-warm-600 whitespace-nowrap">
+              <span className="font-semibold text-warm-900">
                 {team.playerCount}
               </span>{' '}
               players
@@ -186,7 +186,7 @@ export const TeamCard = memo(function TeamCard({
           {team.recruitingActiveCount > 0 && (
             <div className="flex items-center gap-1.5">
               <IconSparkles size={14} className="text-primary-500 flex-shrink-0" />
-              <span className="text-xs text-slate-600 whitespace-nowrap">
+              <span className="text-xs text-warm-600 whitespace-nowrap">
                 <span className="font-semibold text-primary-600">
                   {team.recruitingActiveCount}
                 </span>{' '}
@@ -198,8 +198,8 @@ export const TeamCard = memo(function TeamCard({
 
         {/* Top Prospects Preview */}
         {team.topProspects && team.topProspects.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-slate-100">
-            <p className="text-micro font-medium text-slate-400 uppercase tracking-wide mb-1.5">
+          <div className="mt-3 pt-3 border-t border-warm-100">
+            <p className="text-micro font-medium text-warm-400 uppercase tracking-wide mb-1.5">
               Top Prospects
             </p>
             <div className="flex items-center gap-2">
@@ -210,8 +210,8 @@ export const TeamCard = memo(function TeamCard({
                     key={prospect.id}
                     className={cn(
                       'relative w-6 h-6 rounded-full border-2 border-white',
-                      'bg-slate-200 flex items-center justify-center',
-                      'text-micro font-medium text-slate-600'
+                      'bg-warm-200 flex items-center justify-center',
+                      'text-micro font-medium text-warm-600'
                     )}
                     style={{ zIndex: 3 - index }}
                   >
@@ -236,13 +236,13 @@ export const TeamCard = memo(function TeamCard({
 
               {/* Names */}
               <div className="flex-1 min-w-0 overflow-hidden">
-                <p className="text-xs text-slate-600 truncate">
+                <p className="text-xs text-warm-600 truncate">
                   {team.topProspects
                     .slice(0, 2)
                     .map((p) => p.name.split(' ')[1] || p.name)
                     .join(', ')}
                   {team.topProspects.length > 2 && (
-                    <span className="text-slate-400">
+                    <span className="text-warm-400">
                       {' '}
                       +{team.topProspects.length - 2}
                     </span>
@@ -256,7 +256,7 @@ export const TeamCard = memo(function TeamCard({
         {/* Action Button */}
         <div
           className={cn(
-            'mt-4 pt-4 border-t border-slate-100',
+            'mt-4 pt-4 border-t border-warm-100',
             'transition-opacity duration-200',
             variant === 'compact' ? 'opacity-0 group-hover:opacity-100' : ''
           )}
@@ -315,22 +315,22 @@ export function TeamCardGrid({
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl bg-white border border-slate-200/80 p-4 animate-pulse"
+            className="rounded-2xl bg-white border border-warm-200/80 p-4 animate-pulse"
           >
             <div className="flex items-start gap-3">
-              <div className="w-11 h-11 rounded-lg bg-slate-200" />
+              <div className="w-11 h-11 rounded-lg bg-warm-200" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-100 rounded w-16" />
-                <div className="h-4 bg-slate-200 rounded w-3/4" />
-                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                <div className="h-4 bg-warm-100 rounded w-16" />
+                <div className="h-4 bg-warm-200 rounded w-3/4" />
+                <div className="h-3 bg-warm-100 rounded w-1/2" />
               </div>
             </div>
             <div className="mt-4 flex gap-3">
-              <div className="h-4 bg-slate-100 rounded w-16" />
-              <div className="h-4 bg-slate-100 rounded w-16" />
+              <div className="h-4 bg-warm-100 rounded w-16" />
+              <div className="h-4 bg-warm-100 rounded w-16" />
             </div>
-            <div className="mt-3 pt-3 border-t border-slate-100">
-              <div className="h-8 bg-slate-200 rounded-lg" />
+            <div className="mt-3 pt-3 border-t border-warm-100">
+              <div className="h-8 bg-warm-200 rounded-lg" />
             </div>
           </div>
         ))}
@@ -341,13 +341,13 @@ export function TeamCardGrid({
   if (teams.length === 0) {
     return (
       <div className="py-16 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
-          <IconBuilding size={32} className="text-slate-400" />
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-warm-100 flex items-center justify-center">
+          <IconBuilding size={32} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">
           No teams found
         </h3>
-        <p className="text-sm text-slate-500 max-w-md mx-auto">
+        <p className="text-sm text-warm-500 max-w-md mx-auto">
           {emptyMessage}
         </p>
       </div>

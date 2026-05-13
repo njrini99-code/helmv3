@@ -7,8 +7,8 @@ import type { BaseballPlayerSeasonStats } from '@/lib/types';
 function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className={`rounded-2xl p-4 text-center border ${highlight ? 'bg-primary-50 border-primary-100' : 'bg-cream-100/75 backdrop-blur-xl border-white/20'} shadow-sm`}>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-2xl font-black tabular-nums ${highlight ? 'text-primary-700' : 'text-slate-900'}`}>{value}</p>
+      <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-1">{label}</p>
+      <p className={`text-2xl font-black tabular-nums ${highlight ? 'text-primary-700' : 'text-warm-900'}`}>{value}</p>
     </div>
   );
 }
@@ -28,7 +28,7 @@ export function MySeasonStats() {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
+          <div key={i} className="h-20 bg-warm-100 rounded-2xl animate-pulse" />
         ))}
       </div>
     );
@@ -37,7 +37,7 @@ export function MySeasonStats() {
   if (!stats || (stats.ab === 0 && stats.ip === 0)) {
     return (
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-center">
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-warm-400">
           No season stats yet. Your coach will enter them from game box scores.
         </p>
       </div>
@@ -49,14 +49,14 @@ export function MySeasonStats() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-800">{currentYear} Season Stats</h3>
-        <span className="text-xs text-slate-400">{stats.g} games played</span>
+        <h3 className="text-base font-bold text-warm-800">{currentYear} Season Stats</h3>
+        <span className="text-xs text-warm-400">{stats.g} games played</span>
       </div>
 
       {/* Batting stats */}
       {stats.ab > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Batting</p>
+          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Batting</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="AVG" value={stats.avg != null ? stats.avg.toFixed(3).replace(/^0/, '') : '—'} highlight={stats.avg != null && stats.avg >= 0.3} />
             <StatCard label="OBP" value={stats.obp != null ? stats.obp.toFixed(3).replace(/^0/, '') : '—'} />
@@ -74,9 +74,9 @@ export function MySeasonStats() {
               { label: 'BB', value: stats.bb },
               { label: 'SB', value: stats.sb },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-slate-50 rounded-xl p-2 text-center">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase">{label}</p>
-                <p className="text-base font-bold text-slate-800 tabular-nums">{value}</p>
+              <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
+                <p className="text-[10px] font-semibold text-warm-400 uppercase">{label}</p>
+                <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
               </div>
             ))}
           </div>
@@ -86,7 +86,7 @@ export function MySeasonStats() {
       {/* Pitching stats */}
       {stats.ip > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pitching</p>
+          <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider">Pitching</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="ERA" value={stats.era != null ? stats.era.toFixed(2) : '—'} highlight={stats.era != null && stats.era <= 3.0} />
             <StatCard label="WHIP" value={stats.whip != null ? stats.whip.toFixed(3) : '—'} />
@@ -103,9 +103,9 @@ export function MySeasonStats() {
               { label: 'H', value: stats.h_allowed },
               { label: 'HR', value: stats.hr_allowed },
             ].map(({ label, value }) => (
-              <div key={label} className="bg-slate-50 rounded-xl p-2 text-center">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase">{label}</p>
-                <p className="text-base font-bold text-slate-800 tabular-nums">{value}</p>
+              <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
+                <p className="text-[10px] font-semibold text-warm-400 uppercase">{label}</p>
+                <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
               </div>
             ))}
           </div>

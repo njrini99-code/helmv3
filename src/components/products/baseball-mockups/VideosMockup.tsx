@@ -21,7 +21,7 @@ function VideoThumbnail({ featured, small }: { featured?: boolean; small?: boole
   return (
     <div className={cn(
       "relative rounded-lg overflow-hidden group cursor-pointer",
-      "bg-gradient-to-br from-slate-200 to-slate-300",
+      "bg-gradient-to-br from-warm-200 to-warm-300",
       featured ? "aspect-video" : small ? "aspect-square" : "aspect-video"
     )}>
       {/* Play button overlay */}
@@ -33,7 +33,7 @@ function VideoThumbnail({ featured, small }: { featured?: boolean; small?: boole
           "w-6 h-6 rounded-full bg-cream-50/92 flex items-center justify-center",
           "shadow-lg"
         )}>
-          <Play className="w-3 h-3 text-slate-700 ml-0.5" fill="currentColor" />
+          <Play className="w-3 h-3 text-warm-700 ml-0.5" fill="currentColor" />
         </div>
       </div>
 

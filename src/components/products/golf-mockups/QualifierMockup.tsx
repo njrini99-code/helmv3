@@ -34,12 +34,12 @@ export function QualifierMockup() {
       </div>
 
       {/* Leaderboard */}
-      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-          <span className="font-semibold text-slate-900">Leaderboard</span>
-          <span className="text-xs text-slate-500">Top 5 qualify</span>
+      <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-warm-200">
+        <div className="px-4 py-3 border-b border-warm-100 flex items-center justify-between">
+          <span className="font-semibold text-warm-900">Leaderboard</span>
+          <span className="text-xs text-warm-500">Top 5 qualify</span>
         </div>
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-warm-100">
           {players.map((player, i) => (
             <div
               key={player.rank}
@@ -51,20 +51,20 @@ export function QualifierMockup() {
               <div className={cn(
                 "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
                 player.rank === 1 ? "bg-amber-400 text-white" :
-                player.rank === 2 ? "bg-slate-300 text-slate-700" :
+                player.rank === 2 ? "bg-warm-300 text-warm-700" :
                 player.rank === 3 ? "bg-amber-700 text-white" :
-                "bg-slate-100 text-slate-600"
+                "bg-warm-100 text-warm-600"
               )}>
                 {player.rank}
               </div>
               <div className="flex-1">
-                <p className="font-medium text-slate-900">{player.name}</p>
-                <p className="text-xs text-slate-500">{player.rounds}</p>
+                <p className="font-medium text-warm-900">{player.name}</p>
+                <p className="text-xs text-warm-500">{player.rounds}</p>
               </div>
               <div className="text-right">
                 <p className={cn(
                   "font-semibold",
-                  typeof player.score === 'number' && player.score < 0 ? "text-emerald-600" : "text-slate-900"
+                  typeof player.score === 'number' && player.score < 0 ? "text-emerald-600" : "text-warm-900"
                 )}>
                   {typeof player.score === 'number' && player.score < 0 ? player.score : player.score}
                 </p>
@@ -77,7 +77,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Decorative element */}
-      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-amber-500/10 blur-xl rounded-full" />
+      <div className="absolute -bottom-4 left-1/2 -tranwarm-x-1/2 w-3/4 h-8 bg-amber-500/10 blur-xl rounded-full" />
     </div>
   );
 }

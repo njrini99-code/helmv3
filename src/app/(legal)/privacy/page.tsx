@@ -12,17 +12,17 @@ export default function PrivacyPage() {
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Legal</p>
-            <h1 className="text-4xl md:text-5xl font-semibold text-slate-900 mt-2">Privacy Policy</h1>
+            <p className="text-xs uppercase tracking-[0.2em] text-warm-500">Legal</p>
+            <h1 className="text-4xl md:text-5xl font-semibold text-warm-900 mt-2">Privacy Policy</h1>
           </div>
-          <Link href="/" className="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+          <Link href="/" className="text-sm text-warm-600 hover:text-warm-900 transition-colors">
             Back to home
           </Link>
         </div>
 
-        <div className="space-y-10 text-slate-700 leading-relaxed">
+        <div className="space-y-10 text-warm-700 leading-relaxed">
           <section className="space-y-3">
-            <p className="text-sm text-slate-500">Last updated: April 11, 2026</p>
+            <p className="text-sm text-warm-500">Last updated: April 11, 2026</p>
             <p>
               This Privacy Policy explains how Helm Sports Labs collects, uses, and protects your
               information when you use our websites, products, and services (collectively, the
@@ -31,7 +31,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Information we collect</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Information we collect</h2>
             <ul className="list-disc pl-5 space-y-2">
               <li><strong>Account information</strong> such as name, email, password (hashed), role, avatar, and team details.</li>
               <li><strong>Profile data</strong> you choose to provide, including handicap, graduation year, hometown, and recruiting details.</li>
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">How we use information</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">How we use information</h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Provide, maintain, and improve the Services.</li>
               <li>Personalize experiences for athletes, coaches, and organizations.</li>
@@ -54,7 +54,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">How we share information</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">How we share information</h2>
             <p>
               We do not sell personal data. We may share information with service providers who
               process data on our behalf, or when required by law. Team and recruiting data may be
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Your choices</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Your choices</h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Update profile and privacy settings from your account.</li>
               <li>Opt out of non-essential communications.</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Children&apos;s privacy (COPPA)</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Children&apos;s privacy (COPPA)</h2>
             <p>
               The Services are not directed to children under the age of 13. You must be at least 13
               years old to create an account on Helm Sports Labs.
@@ -104,7 +104,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Third-party services</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Third-party services</h2>
             <p>
               We use the following third-party services to operate, monitor, and improve the
               Services. These providers may process data on our behalf in accordance with their own
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Data retention</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Data retention</h2>
             <ul className="list-disc pl-5 space-y-2">
               <li>Account data is retained as long as the account is active.</li>
               <li>
@@ -137,7 +137,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">California privacy rights (CCPA)</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">California privacy rights (CCPA)</h2>
             <p>
               If you are a California resident, you have the following rights under the California
               Consumer Privacy Act (CCPA):
@@ -159,7 +159,7 @@ export default function PrivacyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold text-slate-900">Contact us</h2>
+            <h2 className="text-2xl font-semibold text-warm-900">Contact us</h2>
             <p>
               If you have questions about this policy, email us at{' '}
               <a href="mailto:admin@helmsportslabs.com" className="text-primary-700 hover:text-primary-800">

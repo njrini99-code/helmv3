@@ -82,12 +82,12 @@ function StatBlock({
   return (
     <div className="text-center p-3 rounded-xl bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors">
       <div className="flex items-center justify-center gap-1.5 mb-1">
-        <Icon size={14} className="text-slate-400" />
-        <span className="text-xs text-slate-400 uppercase tracking-wide">{label}</span>
+        <Icon size={14} className="text-warm-400" />
+        <span className="text-xs text-warm-400 uppercase tracking-wide">{label}</span>
       </div>
       <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
       {subtext && (
-        <p className="text-xs text-slate-400 mt-0.5">{subtext}</p>
+        <p className="text-xs text-warm-400 mt-0.5">{subtext}</p>
       )}
     </div>
   );
@@ -114,7 +114,7 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
 
   if (loading) {
     return (
-      <div className="md:col-span-2 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden animate-pulse">
+      <div className="md:col-span-2 rounded-3xl bg-gradient-to-br from-warm-900 via-warm-800 to-warm-900 border border-warm-700/50 p-6 overflow-hidden animate-pulse">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-xl bg-white/10" />
           <div>
@@ -135,7 +135,7 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
   }
 
   return (
-    <div className="md:col-span-2 relative group rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
+    <div className="md:col-span-2 relative group rounded-3xl bg-gradient-to-br from-warm-900 via-warm-800 to-warm-900 border border-warm-700/50 p-6 overflow-hidden hover:shadow-2xl transition-shadow duration-300">
       {/* Glow effect */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl group-hover:bg-primary-500/15 transition-colors duration-500" />
       
@@ -156,10 +156,10 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
               </div>
             </div>
             <div>
-              <p className="text-sm text-slate-400 mb-0.5">Team Health</p>
+              <p className="text-sm text-warm-400 mb-0.5">Team Health</p>
               <p className="text-3xl font-bold text-white tabular-nums">
                 {data.rosterCount}
-                <span className="text-lg text-slate-500 font-normal">/{data.rosterCapacity}</span>
+                <span className="text-lg text-warm-500 font-normal">/{data.rosterCapacity}</span>
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-slate-400 hover:text-white hover:bg-white/10"
+              className="text-warm-400 hover:text-white hover:bg-white/10"
             >
               View Academics <IconArrowRight size={14} className="ml-1" />
             </Button>
@@ -228,7 +228,7 @@ export function TeamHealthHero({ data, loading }: TeamHealthHeroProps) {
 // Skeleton component for loading state
 export function TeamHealthHeroSkeleton() {
   return (
-    <div className="md:col-span-2 rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-slate-700/50 p-6 overflow-hidden animate-pulse">
+    <div className="md:col-span-2 rounded-3xl bg-gradient-to-br from-warm-900 via-warm-800 to-warm-900 border border-warm-700/50 p-6 overflow-hidden animate-pulse">
       <div className="flex items-center gap-4 mb-6">
         <div className="w-14 h-14 rounded-full bg-white/10" />
         <div>

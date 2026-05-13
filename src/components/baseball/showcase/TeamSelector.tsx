@@ -24,12 +24,12 @@ export function TeamSelector({ value, onChange }: TeamSelectorProps) {
     <Card variant="glass" className="p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center">
-            <IconLayers size={20} className="text-slate-600" />
+          <div className="h-10 w-10 rounded-xl bg-warm-100 flex items-center justify-center">
+            <IconLayers size={20} className="text-warm-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-slate-700">Viewing</p>
-            <p className="text-xs text-slate-500">Switch between teams or view all</p>
+            <p className="text-sm font-medium text-warm-700">Viewing</p>
+            <p className="text-xs text-warm-500">Switch between teams or view all</p>
           </div>
         </div>
         <div className="flex-1 md:max-w-sm md:ml-auto">

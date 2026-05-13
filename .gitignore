@@ -74,3 +74,7 @@ GolfHelm-Prospect-Deck.pptx
 
 # Context7 MCP config — contains secret api_key, see context7.json.example
 context7.json
+
+# Local agent/codex tooling (machine-specific, not shared)
+.agents/
+.codex/

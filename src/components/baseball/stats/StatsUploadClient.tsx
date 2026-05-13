@@ -413,15 +413,15 @@ export function StatsUploadClient({
           <div className="flex items-center gap-4">
             <Link
               href="/baseball/dashboard/command-center"
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+              className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <IconArrowLeft size={20} />
             </Link>
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900">
+              <h1 className="text-2xl font-semibold text-warm-900">
                 Upload Stats
               </h1>
-              <p className="text-slate-500 mt-1">{teamName}</p>
+              <p className="text-warm-500 mt-1">{teamName}</p>
             </div>
           </div>
           <Button
@@ -472,7 +472,7 @@ export function StatsUploadClient({
                       ? 'bg-primary-600 text-white'
                       : isPast
                         ? 'bg-primary-100 text-primary-700'
-                        : 'bg-slate-100 text-slate-400'
+                        : 'bg-warm-100 text-warm-400'
                   }`}
                 >
                   {isPast ? <IconCheck size={14} /> : i + 1}
@@ -480,16 +480,16 @@ export function StatsUploadClient({
                 <span
                   className={`ml-2 text-sm hidden sm:inline ${
                     isActive
-                      ? 'text-slate-900 font-medium'
+                      ? 'text-warm-900 font-medium'
                       : isPast
                         ? 'text-primary-700'
-                        : 'text-slate-400'
+                        : 'text-warm-400'
                   }`}
                 >
                   {s.label}
                 </span>
                 {i < arr.length - 1 && (
-                  <div className="w-6 sm:w-8 h-0.5 bg-slate-200 mx-2" />
+                  <div className="w-6 sm:w-8 h-0.5 bg-warm-200 mx-2" />
                 )}
               </div>
             );
@@ -502,7 +502,7 @@ export function StatsUploadClient({
             className={`bg-cream-100/75 backdrop-blur-xl border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
               isDragging
                 ? 'border-primary-500 bg-primary-50/50'
-                : 'border-slate-200'
+                : 'border-warm-200'
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -514,10 +514,10 @@ export function StatsUploadClient({
             <div className="w-16 h-16 rounded-2xl bg-primary-100 flex items-center justify-center mx-auto mb-4">
               <IconUpload size={32} className="text-primary-600" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
               Upload CSV File
             </h2>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
+            <p className="text-warm-500 mb-6 max-w-md mx-auto">
               Drag and drop your stats CSV file here, or click to browse. We'll
               help you map columns and match player names.
             </p>
@@ -537,7 +537,7 @@ export function StatsUploadClient({
             </label>
 
             <div className="mt-8 text-left max-w-sm mx-auto">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+              <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                 Supported Columns
               </p>
               <div className="flex flex-wrap gap-1">
@@ -556,7 +556,7 @@ export function StatsUploadClient({
                 ].map((col) => (
                   <span
                     key={col}
-                    className="px-2 py-1 bg-slate-100 rounded text-xs text-slate-600"
+                    className="px-2 py-1 bg-warm-100 rounded text-xs text-warm-600"
                   >
                     {col}
                   </span>
@@ -576,8 +576,8 @@ export function StatsUploadClient({
                   <IconFile size={24} className="text-primary-600" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium text-slate-900">{fileName}</p>
-                  <p className="text-sm text-slate-500">
+                  <p className="font-medium text-warm-900">{fileName}</p>
+                  <p className="text-sm text-warm-500">
                     {parsedRows.length} rows • {columnMappings.length} columns
                   </p>
                 </div>
@@ -590,8 +590,8 @@ export function StatsUploadClient({
             {/* Auto-detected Mappings Summary */}
             <div className="glass-standard rounded-2xl p-6">
               <div className="flex items-center gap-2 mb-4">
-                <IconSettings size={18} className="text-slate-400" />
-                <h3 className="font-semibold text-slate-900">
+                <IconSettings size={18} className="text-warm-400" />
+                <h3 className="font-semibold text-warm-900">
                   Auto-Detected Columns
                 </h3>
               </div>
@@ -631,18 +631,18 @@ export function StatsUploadClient({
 
             {/* Data Preview */}
             <div className="glass-standard rounded-2xl p-6 overflow-clip">
-              <h3 className="font-semibold text-slate-900 mb-4">Data Preview</h3>
+              <h3 className="font-semibold text-warm-900 mb-4">Data Preview</h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-200">
+                    <tr className="border-b border-warm-200">
                       {parsedRows[0] &&
                         Object.keys(parsedRows[0])
                           .slice(0, 6)
                           .map((header) => (
                             <th
                               key={header}
-                              className="px-3 py-2 text-left text-xs font-semibold text-slate-500 uppercase"
+                              className="px-3 py-2 text-left text-xs font-semibold text-warm-500 uppercase"
                             >
                               {header.replace(/_/g, ' ')}
                             </th>
@@ -651,11 +651,11 @@ export function StatsUploadClient({
                   </thead>
                   <tbody>
                     {parsedRows.slice(0, 5).map((row, i) => (
-                      <tr key={i} className="border-b border-slate-100">
+                      <tr key={i} className="border-b border-warm-100">
                         {Object.values(row)
                           .slice(0, 6)
                           .map((val, j) => (
-                            <td key={j} className="px-3 py-2 text-slate-600">
+                            <td key={j} className="px-3 py-2 text-warm-600">
                               {val || '-'}
                             </td>
                           ))}
@@ -664,7 +664,7 @@ export function StatsUploadClient({
                   </tbody>
                 </table>
                 {parsedRows.length > 5 && (
-                  <p className="text-center text-xs text-slate-400 mt-2">
+                  <p className="text-center text-xs text-warm-400 mt-2">
                     +{parsedRows.length - 5} more rows
                   </p>
                 )}
@@ -687,10 +687,10 @@ export function StatsUploadClient({
         {step === 'columns' && (
           <div className="space-y-6">
             <div className="glass-standard rounded-2xl p-6">
-              <h3 className="font-semibold text-slate-900 mb-2">
+              <h3 className="font-semibold text-warm-900 mb-2">
                 Map CSV Columns
               </h3>
-              <p className="text-sm text-slate-500 mb-6">
+              <p className="text-sm text-warm-500 mb-6">
                 We auto-detected some columns. Review and adjust the mappings as
                 needed.
               </p>
@@ -703,24 +703,24 @@ export function StatsUploadClient({
                       mapping.mappedTo === 'player_name'
                         ? 'bg-primary-50/50 border-primary-200'
                         : mapping.mappedTo
-                          ? 'bg-slate-50 border-slate-200'
-                          : 'bg-white border-slate-100'
+                          ? 'bg-warm-50 border-warm-200'
+                          : 'bg-white border-warm-100'
                     }`}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                       {/* CSV Column Info */}
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 truncate">
+                        <p className="font-medium text-warm-900 truncate">
                           {mapping.csvColumn}
                         </p>
-                        <p className="text-xs text-slate-500 mt-1 truncate">
+                        <p className="text-xs text-warm-500 mt-1 truncate">
                           Sample: {mapping.sampleValues.join(', ')}
                         </p>
                       </div>
 
                       {/* Arrow */}
                       <div className="hidden sm:block">
-                        <IconChevronRight size={16} className="text-slate-300" />
+                        <IconChevronRight size={16} className="text-warm-300" />
                       </div>
 
                       {/* Mapping Dropdown */}
@@ -736,7 +736,7 @@ export function StatsUploadClient({
                           className={`w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
                             mapping.mappedTo === 'player_name'
                               ? 'border-primary-300 bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100'
-                              : 'border-slate-200 bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100'
+                              : 'border-warm-200 bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100'
                           }`}
                         >
                           <option value="">Skip this column</option>
@@ -806,10 +806,10 @@ export function StatsUploadClient({
                     <IconCheck size={16} className="text-primary-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">
+                    <h3 className="font-semibold text-warm-900">
                       {goodMatches.length} Players Matched
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-warm-500">
                       Automatically matched with high confidence
                     </p>
                   </div>
@@ -819,7 +819,7 @@ export function StatsUploadClient({
                     {goodMatches.slice(0, 10).map((match) => (
                       <span
                         key={match.csvName}
-                        className="px-2 py-1 bg-white rounded text-xs text-slate-700 shadow-sm"
+                        className="px-2 py-1 bg-white rounded text-xs text-warm-700 shadow-sm"
                       >
                         {match.csvName} → {match.playerName}
                       </span>
@@ -842,10 +842,10 @@ export function StatsUploadClient({
                     <IconAlertCircle size={16} className="text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">
+                    <h3 className="font-semibold text-warm-900">
                       {poorMatches.length} Players Need Review
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-warm-500">
                       Select the correct player or skip
                     </p>
                   </div>
@@ -878,7 +878,7 @@ export function StatsUploadClient({
                           className="w-full flex items-center justify-between p-4 text-left"
                         >
                           <div>
-                            <p className="font-medium text-slate-900">
+                            <p className="font-medium text-warm-900">
                               {match.csvName}
                             </p>
                             <p className="text-xs text-amber-600">
@@ -887,18 +887,18 @@ export function StatsUploadClient({
                           </div>
                           <IconChevronDown
                             size={18}
-                            className={`text-slate-400 transition-transform ${
+                            className={`text-warm-400 transition-transform ${
                               isExpanded ? 'rotate-180' : ''
                             }`}
                           />
                         </button>
 
                         {isExpanded && (
-                          <div className="px-4 pb-4 border-t border-slate-100 pt-4">
+                          <div className="px-4 pb-4 border-t border-warm-100 pt-4">
                             {/* Suggestions */}
                             {suggestions.length > 0 && (
                               <div className="mb-4">
-                                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                                <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                                   Suggestions
                                 </p>
                                 <div className="space-y-2">
@@ -911,12 +911,12 @@ export function StatsUploadClient({
                                           sug.player.id
                                         )
                                       }
-                                      className="w-full flex items-center justify-between p-2 rounded-lg border border-slate-200 hover:border-primary-300 hover:bg-primary-50 transition-colors text-left"
+                                      className="w-full flex items-center justify-between p-2 rounded-lg border border-warm-200 hover:border-primary-300 hover:bg-primary-50 transition-colors text-left"
                                     >
-                                      <span className="font-medium text-slate-900">
+                                      <span className="font-medium text-warm-900">
                                         {sug.player.firstName} {sug.player.lastName}
                                       </span>
-                                      <span className="text-xs text-slate-400">
+                                      <span className="text-xs text-warm-400">
                                         {Math.round(sug.confidence * 100)}% match
                                       </span>
                                     </button>
@@ -927,13 +927,13 @@ export function StatsUploadClient({
 
                             {/* Search All Players */}
                             <div>
-                              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                              <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                                 Or search roster
                               </p>
                               <div className="relative mb-2">
                                 <IconSearch
                                   size={16}
-                                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                  className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400"
                                 />
                                 <input
                                   type="text"
@@ -942,7 +942,7 @@ export function StatsUploadClient({
                                   onChange={(e) =>
                                     setPlayerSearchQuery(e.target.value)
                                   }
-                                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+                                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-warm-200 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
                                 />
                               </div>
                               {playerSearchQuery && (
@@ -956,13 +956,13 @@ export function StatsUploadClient({
                                           player.id
                                         )
                                       }
-                                      className="w-full flex items-center p-2 rounded-lg hover:bg-slate-50 transition-colors text-left text-sm"
+                                      className="w-full flex items-center p-2 rounded-lg hover:bg-warm-50 transition-colors text-left text-sm"
                                     >
                                       {player.firstName} {player.lastName}
                                     </button>
                                   ))}
                                   {filteredPlayers.length === 0 && (
-                                    <p className="text-sm text-slate-400 text-center py-2">
+                                    <p className="text-sm text-warm-400 text-center py-2">
                                       No players found
                                     </p>
                                   )}
@@ -971,12 +971,12 @@ export function StatsUploadClient({
                             </div>
 
                             {/* Skip Button */}
-                            <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="mt-4 pt-4 border-t border-warm-100">
                               <button
                                 onClick={() =>
                                   handleManualAssignment(match.csvName, null)
                                 }
-                                className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                                className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
                               >
                                 Skip this player
                               </button>
@@ -1012,10 +1012,10 @@ export function StatsUploadClient({
                   size={32}
                   className="text-amber-500 mx-auto mb-3"
                 />
-                <h3 className="font-semibold text-slate-900 mb-1">
+                <h3 className="font-semibold text-warm-900 mb-1">
                   No Player Names Found
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-warm-500">
                   Check that the player name column is correctly mapped
                 </p>
               </div>
@@ -1041,14 +1041,14 @@ export function StatsUploadClient({
         {step === 'configure' && (
           <div className="space-y-6">
             <div className="glass-standard rounded-2xl p-6">
-              <h3 className="font-semibold text-slate-900 mb-4">
+              <h3 className="font-semibold text-warm-900 mb-4">
                 Session Details
               </h3>
 
               <div className="space-y-4">
                 {/* Stat Type */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-warm-700 mb-2">
                     Session Type
                   </label>
                   <div className="flex gap-2">
@@ -1059,36 +1059,36 @@ export function StatsUploadClient({
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                           statType === type
                             ? 'bg-primary-600 text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200 active:bg-slate-300'
+                            : 'bg-warm-100 text-warm-600 hover:bg-warm-200 active:bg-warm-300'
                         }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
                       </button>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-warm-500 mt-2">
                     This helps track practice vs game performance separately.
                   </p>
                 </div>
 
                 {/* Date */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-warm-700 mb-2">
                     Session Date
                   </label>
                   <input
                     type="date"
                     value={sessionDate}
                     onChange={(e) => setSessionDate(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-slate-200
+                    className="w-full px-4 py-2 rounded-lg border border-warm-200
                                focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                               text-slate-900 transition-colors"
+                               text-warm-900 transition-colors"
                   />
                 </div>
 
                 {/* Session Name */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-warm-700 mb-2">
                     Session Name (Optional)
                   </label>
                   <input
@@ -1096,9 +1096,9 @@ export function StatsUploadClient({
                     value={sessionName}
                     onChange={(e) => setSessionName(e.target.value)}
                     placeholder="e.g., Fall Scrimmage vs State"
-                    className="w-full px-4 py-2 rounded-lg border border-slate-200
+                    className="w-full px-4 py-2 rounded-lg border border-warm-200
                                focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                               text-slate-900 placeholder:text-slate-400 transition-colors"
+                               text-warm-900 placeholder:text-warm-400 transition-colors"
                   />
                 </div>
               </div>
@@ -1170,10 +1170,10 @@ export function StatsUploadClient({
         {step === 'processing' && (
           <div className="glass-standard rounded-2xl p-12 text-center">
             <div className="animate-spin w-12 h-12 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">
+            <h2 className="text-xl font-semibold text-warm-900 mb-2">
               Processing Upload
             </h2>
-            <p className="text-slate-500">
+            <p className="text-warm-500">
               Matching players and calculating statistics...
             </p>
           </div>

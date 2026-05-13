@@ -84,10 +84,10 @@ export function VideoShowcase({
           }}
         />
         <div className="relative animate-pulse space-y-4">
-          <div className="h-6 bg-slate-200 rounded w-1/3"></div>
+          <div className="h-6 bg-warm-200 rounded w-1/3"></div>
           <div className="grid grid-cols-2 gap-4">
             {[...Array(2)].map((_, i) => (
-              <div key={i} className="h-32 bg-slate-200 rounded-xl"></div>
+              <div key={i} className="h-32 bg-warm-200 rounded-xl"></div>
             ))}
           </div>
         </div>
@@ -104,13 +104,13 @@ export function VideoShowcase({
           }}
         />
         <div className="relative">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-            <IconVideo size={28} className="text-slate-400" />
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-warm-100 flex items-center justify-center mb-4">
+            <IconVideo size={28} className="text-warm-400" />
           </div>
-          <h3 className="text-sm font-semibold text-slate-700 mb-2">
+          <h3 className="text-sm font-semibold text-warm-700 mb-2">
             No Videos Yet
           </h3>
-          <p className="text-sm leading-relaxed text-slate-500">
+          <p className="text-sm leading-relaxed text-warm-500">
             This player hasn't uploaded any videos yet.
           </p>
         </div>
@@ -127,14 +127,14 @@ export function VideoShowcase({
           }}
         />
         {/* Header */}
-        <div className="relative px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="relative px-6 py-4 border-b border-warm-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
               <IconVideo size={20} className="text-primary-600" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900">Video Highlights</h3>
-              <p className="text-xs text-slate-500">{videos.length} {videos.length === 1 ? 'video' : 'videos'}</p>
+              <h3 className="font-semibold text-warm-900">Video Highlights</h3>
+              <p className="text-xs text-warm-500">{videos.length} {videos.length === 1 ? 'video' : 'videos'}</p>
             </div>
           </div>
           {showViewAll && videos.length > 0 && (
@@ -185,7 +185,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
   return (
     <button
       onClick={onClick}
-      className="group relative bg-slate-100 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 aspect-video"
+      className="group relative bg-warm-100 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 aspect-video"
     >
       {/* Thumbnail */}
       {video.thumbnail_url && !imageError ? (
@@ -196,16 +196,16 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center bg-slate-200">
-          <IconVideo size={32} className="text-slate-400" />
+        <div className="w-full h-full flex items-center justify-center bg-warm-200">
+          <IconVideo size={32} className="text-warm-400" />
         </div>
       )}
 
       {/* Overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent opacity-100 group-hover:opacity-100 transition-opacity">
+      <div className="absolute inset-0 bg-gradient-to-t from-warm-900/80 via-warm-900/20 to-transparent opacity-100 group-hover:opacity-100 transition-opacity">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-12 h-12 rounded-full bg-cream-50/92 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-            <IconPlay size={20} className="text-slate-900 ml-0.5" />
+            <IconPlay size={20} className="text-warm-900 ml-0.5" />
           </div>
         </div>
 
@@ -232,9 +232,9 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
 
         {/* Primary Badge */}
         {video.is_primary && (
-          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-slate-200/60 shadow-sm">
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cream-50/92 backdrop-blur-sm border border-warm-200/60 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-            <span className="text-xs font-medium text-slate-700">Primary</span>
+            <span className="text-xs font-medium text-warm-700">Primary</span>
           </div>
         )}
       </div>
@@ -257,7 +257,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
     >
       <DrawerContent className="sm:max-w-4xl sm:mx-auto sm:rounded-3xl p-0 overflow-hidden">
         {/* Video Player */}
-        <div className="relative aspect-video bg-slate-900">
+        <div className="relative aspect-video bg-warm-900">
           {video?.url ? (
             <iframe
               src={video.url}
@@ -276,14 +276,14 @@ function VideoModal({ video, onClose }: VideoModalProps) {
         </div>
 
         {/* Info */}
-        <div className="p-6 border-t border-slate-100">
+        <div className="p-6 border-t border-warm-100">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <DrawerTitle className="text-xl font-semibold text-slate-900 mb-2">
+              <DrawerTitle className="text-xl font-semibold text-warm-900 mb-2">
                 {video?.title}
               </DrawerTitle>
               {video?.description && (
-                <p className="text-sm leading-relaxed text-slate-600 leading-relaxed">
+                <p className="text-sm leading-relaxed text-warm-600 leading-relaxed">
                   {video.description}
                 </p>
               )}
@@ -291,7 +291,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
             <button
               onClick={onClose}
               aria-label="Close video"
-              className="ml-4 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="ml-4 p-2 rounded-lg hover:bg-warm-100 transition-colors"
             >
               <svg
                 width="20"
@@ -302,7 +302,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-slate-400"
+                className="text-warm-400"
               >
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -311,9 +311,9 @@ function VideoModal({ video, onClose }: VideoModalProps) {
           </div>
 
           {/* Meta */}
-          <div className="flex items-center gap-4 text-sm text-slate-500">
+          <div className="flex items-center gap-4 text-sm text-warm-500">
             {video?.video_type && (
-              <span className="px-2.5 py-1 bg-slate-100 rounded-full text-xs font-medium">
+              <span className="px-2.5 py-1 bg-warm-100 rounded-full text-xs font-medium">
                 {video.video_type}
               </span>
             )}

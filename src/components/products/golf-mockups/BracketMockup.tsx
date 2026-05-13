@@ -47,12 +47,12 @@ function BracketSlot({ position, active }: { position: number; active?: boolean 
     )}>
       <span className={cn(
         "text-micro font-semibold",
-        active ? "text-primary-700" : "text-slate-400"
+        active ? "text-primary-700" : "text-warm-400"
       )}>
         {position}
       </span>
-      <div className="w-4 h-4 rounded-full bg-slate-200" />
-      <div className={cn("h-1.5 w-8 rounded", active ? "bg-primary-200" : "bg-slate-200")} />
+      <div className="w-4 h-4 rounded-full bg-warm-200" />
+      <div className={cn("h-1.5 w-8 rounded", active ? "bg-primary-200" : "bg-warm-200")} />
     </div>
   );
 }

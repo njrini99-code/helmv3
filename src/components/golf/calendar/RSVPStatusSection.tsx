@@ -184,7 +184,7 @@ export function RSVPStatusSection({
       <div className={cn('p-4 border-b border-warm-200 space-y-3', compact && 'p-3')}>
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
+          <Search className="absolute left-3 top-1/2 -tranwarm-y-1/2 w-4 h-4 text-warm-400" />
           <input
             type="text"
             placeholder="Search players..."

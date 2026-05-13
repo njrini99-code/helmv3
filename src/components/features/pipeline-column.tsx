@@ -39,7 +39,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         }}
       />
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-900 tracking-tight text-sm">{getPipelineStageLabel(stage)}</h3>
+        <h3 className="font-semibold text-warm-900 tracking-tight text-sm">{getPipelineStageLabel(stage)}</h3>
         <Badge variant="secondary" className={cn(
           'tabular-nums',
           isOver && 'bg-primary-600 text-white'
@@ -58,7 +58,7 @@ export function PipelineColumn({ stage, items }: PipelineColumnProps) {
         {items.length === 0 && (
           <p className={cn(
             'text-sm text-center py-8 transition-colors',
-            isOver ? 'text-primary-700 font-semibold' : 'text-slate-400'
+            isOver ? 'text-primary-700 font-semibold' : 'text-warm-400'
           )}>
             {isOver ? 'Drop here' : 'No players'}
           </p>

@@ -1130,7 +1130,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <div className="flex items-center justify-between text-xs text-warm-400 mb-2.5">
           <span className="tabular-nums">{formatScore(rangeLow)}</span>
           <div className="flex-1 mx-2 h-px bg-warm-200 relative">
-            <div className="absolute left-1/2 -translate-x-1/2 -top-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+            <div className="absolute left-1/2 -tranwarm-x-1/2 -top-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
           </div>
           <span className="tabular-nums">{formatScore(rangeHigh)}</span>
         </div>

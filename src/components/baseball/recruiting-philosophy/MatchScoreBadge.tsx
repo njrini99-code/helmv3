@@ -93,10 +93,10 @@ export function MatchScoreBadge({
 
       {/* Breakdown dropdown */}
       {isExpanded && breakdown && (
-        <div className="absolute top-full left-0 right-0 z-10 bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-lg overflow-hidden">
+        <div className="absolute top-full left-0 right-0 z-10 bg-white rounded-b-xl border border-t-0 border-warm-200 shadow-lg overflow-hidden">
           {/* Score bar */}
-          <div className="p-3 bg-slate-50">
-            <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div className="p-3 bg-warm-50">
+            <div className="h-3 bg-warm-200 rounded-full overflow-hidden">
               <div
                 className={cn('h-full rounded-full bg-gradient-to-r', tierBgGradient[tier.tier])}
                 style={{ width: `${score}%` }}
@@ -105,24 +105,24 @@ export function MatchScoreBadge({
           </div>
 
           {/* Breakdown items */}
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-warm-100">
             {Object.entries(breakdown).map(([key, detail]) => {
               if (!detail) return null;
               const label = RECRUITING_METRIC_LABELS[key as keyof typeof RECRUITING_METRIC_LABELS];
               return (
                 <div key={key} className="flex items-center justify-between px-3 py-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-slate-600">{label}</span>
-                    <span className="text-xs text-slate-400">×{detail.weight}%</span>
+                    <span className="text-sm text-warm-600">{label}</span>
+                    <span className="text-xs text-warm-400">×{detail.weight}%</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="w-16 h-1.5 bg-warm-200 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-primary-500 rounded-full"
                         style={{ width: `${detail.percentile}%` }}
                       />
                     </div>
-                    <span className="text-sm font-medium text-slate-700 tabular-nums w-10 text-right">
+                    <span className="text-sm font-medium text-warm-700 tabular-nums w-10 text-right">
                       {detail.percentile}%
                     </span>
                   </div>

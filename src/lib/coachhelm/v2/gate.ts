@@ -168,27 +168,41 @@ export async function isCoachHelmEnabledForCoach(
     };
   }
 
-  // Check team-level settings if coach has an organization
-  if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+  // Check team-level settings across every team the coach staffs. A coach is
+  // gated as disabled only when ALL staffed teams have CoachHelm disabled —
+  // otherwise CoachHelm runs for the still-enabled team. Resolving via
+  // golf_team_coach_staff avoids the old "pick first team in the org" bug
+  // that silently misread the wrong team's settings in multi-team orgs.
+  const { data: staffedTeams } = await supabase
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coachId);
 
-    if (team) {
-      const teamSettings = await getTeamCoachHelmSettings(team.id, supabase);
+  const teamIds = (staffedTeams ?? [])
+    .map((s) => s.team_id)
+    .filter((id): id is string => !!id);
+
+  if (teamIds.length > 0) {
+    let allDisabled = true;
+    let firstDisabledReason: string | null = null;
+    for (const teamId of teamIds) {
+      const teamSettings = await getTeamCoachHelmSettings(teamId, supabase);
       const teamEnabled = teamSettings?.enabled ?? true;
-
-      if (!teamEnabled) {
-        return {
-          userEnabled: true,
-          teamEnabled: false,
-          effectivelyEnabled: false,
-          disabledReason: teamSettings?.disabledReason ?? 'Disabled by team',
-          disabledBy: 'team',
-        };
+      if (teamEnabled) {
+        allDisabled = false;
+        break;
       }
+      firstDisabledReason ??= teamSettings?.disabledReason ?? null;
+    }
+
+    if (allDisabled) {
+      return {
+        userEnabled: true,
+        teamEnabled: false,
+        effectivelyEnabled: false,
+        disabledReason: firstDisabledReason ?? 'Disabled by team',
+        disabledBy: 'team',
+      };
     }
   }
 
@@ -227,7 +241,7 @@ export async function isCoachHelmEnabledForPlayer(
 
   const { data: player, error: playerError } = await supabase
     .from('golf_players')
-    .select('user_id, team:golf_team_members(team_id)')
+    .select('user_id')
     .eq('id', playerId)
     .single();
 
@@ -256,19 +270,39 @@ export async function isCoachHelmEnabledForPlayer(
     };
   }
 
-  // Check team-level settings if player has a team
-  const teamMembership = Array.isArray(player.team) ? player.team[0] : player.team;
-  const playerTeamId = teamMembership?.team_id ?? null;
-  if (playerTeamId) {
-    const teamSettings = await getTeamCoachHelmSettings(playerTeamId, supabase);
-    const teamEnabled = teamSettings?.enabled ?? true;
+  // Players on multiple teams: gate as disabled only when EVERY active team
+  // has CoachHelm disabled. Otherwise CoachHelm runs (the still-enabled team
+  // governs). Previous code read player.team[0] — an arbitrary first
+  // membership — which could read the wrong team's setting.
+  const { data: memberships } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active');
 
-    if (!teamEnabled) {
+  const playerTeamIds = (memberships ?? [])
+    .map((m) => m.team_id)
+    .filter((id): id is string => !!id);
+
+  if (playerTeamIds.length > 0) {
+    let allDisabled = true;
+    let firstDisabledReason: string | null = null;
+    for (const teamId of playerTeamIds) {
+      const teamSettings = await getTeamCoachHelmSettings(teamId, supabase);
+      const teamEnabled = teamSettings?.enabled ?? true;
+      if (teamEnabled) {
+        allDisabled = false;
+        break;
+      }
+      firstDisabledReason ??= teamSettings?.disabledReason ?? null;
+    }
+
+    if (allDisabled) {
       return {
         userEnabled: true,
         teamEnabled: false,
         effectivelyEnabled: false,
-        disabledReason: teamSettings?.disabledReason ?? 'Disabled by coach',
+        disabledReason: firstDisabledReason ?? 'Disabled by coach',
         disabledBy: 'coach',
       };
     }

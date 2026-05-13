@@ -35,12 +35,12 @@ export default function Error({
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-slate-900">Something went wrong</h2>
-          <p className="text-slate-500 mt-2">
+          <h2 className="text-2xl font-semibold text-warm-900">Something went wrong</h2>
+          <p className="text-warm-500 mt-2">
             We encountered an unexpected error. Please try again.
           </p>
           {error.digest && (
-            <p className="text-xs text-slate-400 mt-2 font-mono">
+            <p className="text-xs text-warm-400 mt-2 font-mono">
               Error ID: {error.digest}
             </p>
           )}
@@ -55,7 +55,7 @@ export default function Error({
           </Link>
         </div>
 
-        <p className="text-sm text-slate-400 mt-8">
+        <p className="text-sm text-warm-400 mt-8">
           If this problem persists,{' '}
           <Link href="mailto:admin@helmsportslabs.com" className="text-primary-600 hover:underline">
             contact support

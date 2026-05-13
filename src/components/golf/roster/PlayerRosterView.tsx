@@ -62,7 +62,7 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
               {players.map((player) => (
                 <div
                   key={player.id}
-                  className="group surface-matte rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]"
+                  className="group surface-matte rounded-3xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-tranwarm-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]"
                 >
                   <div className="p-6 md:p-7">
                     <div className="flex items-start gap-4">

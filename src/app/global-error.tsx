@@ -41,12 +41,12 @@ export default function GlobalError({
                   />
                 </svg>
               </div>
-              <h2 className="text-2xl font-semibold text-slate-900">Critical Error</h2>
-              <p className="text-slate-500 mt-2">
+              <h2 className="text-2xl font-semibold text-warm-900">Critical Error</h2>
+              <p className="text-warm-500 mt-2">
                 We encountered a critical error. Please refresh the page.
               </p>
               {error.digest && (
-                <p className="text-xs text-slate-400 mt-2 font-mono">
+                <p className="text-xs text-warm-400 mt-2 font-mono">
                   Error ID: {error.digest}
                 </p>
               )}
@@ -55,7 +55,7 @@ export default function GlobalError({
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button
                 onClick={reset}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-slate-300 rounded-lg font-medium transition-colors"
+                className="px-4 py-2 bg-white hover:bg-warm-50 text-warm-700 border border-warm-200 hover:border-warm-300 rounded-lg font-medium transition-colors"
               >
                 Try again
               </button>
@@ -67,7 +67,7 @@ export default function GlobalError({
               </a>
             </div>
 
-            <p className="text-sm text-slate-400 mt-8">
+            <p className="text-sm text-warm-400 mt-8">
               If this problem persists,{' '}
               <a href="mailto:admin@helmsportslabs.com" className="text-primary-600 hover:underline">
                 contact support

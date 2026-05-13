@@ -51,12 +51,12 @@ const STAGE_COLORS: Record<PipelineStage, StageColorConfig> = {
     gradient: 'from-emerald-100/50 to-emerald-50/30',
   },
   uninterested: {
-    bg: 'bg-slate-50/80',
-    border: 'border-slate-200/50',
-    text: 'text-slate-500',
-    dot: 'bg-slate-400',
+    bg: 'bg-warm-50/80',
+    border: 'border-warm-200/50',
+    text: 'text-warm-500',
+    dot: 'bg-warm-400',
     glow: 'shadow-none',
-    gradient: 'from-slate-100/50 to-slate-50/30',
+    gradient: 'from-warm-100/50 to-warm-50/30',
   },
 };
 

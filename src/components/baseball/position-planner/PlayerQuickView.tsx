@@ -25,7 +25,7 @@ const STAGE_CONFIG: Record<PipelineStage, {
   high_priority: { label: 'High Priority', variant: 'warning', color: 'bg-amber-500', glow: 'shadow-amber-500/30' },
   offer_extended: { label: 'Offer Extended', variant: 'primary', color: 'bg-primary-500', glow: 'shadow-primary-500/30' },
   committed: { label: 'Committed', variant: 'success', color: 'bg-emerald-500', glow: 'shadow-emerald-500/40' },
-  uninterested: { label: 'Not Interested', variant: 'secondary', color: 'bg-slate-400', glow: '' },
+  uninterested: { label: 'Not Interested', variant: 'secondary', color: 'bg-warm-400', glow: '' },
 };
 
 export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickViewProps) {
@@ -366,7 +366,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
                 View Full Profile
                 <IconChevronRight
                   size={16}
-                  className="transition-transform duration-200 group-hover:translate-x-0.5"
+                  className="transition-transform duration-200 group-hover:tranwarm-x-0.5"
                 />
               </span>
             </Button>

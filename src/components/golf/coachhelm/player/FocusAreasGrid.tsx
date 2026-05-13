@@ -159,7 +159,7 @@ function FocusAreaCardContent({
           }}
         />
         {/* Center marker */}
-        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 -translate-x-1/2" />
+        <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-warm-300 -tranwarm-x-1/2" />
       </div>
 
       {/* Recommendation snippet */}
@@ -192,7 +192,7 @@ function FocusAreaCard({
   const sharedClassName = cn(
     'relative w-full p-4 rounded-xl border text-left transition-all duration-200',
     'surface-matte',
-    interactive && 'hover:bg-cream-50/92 hover:shadow-lg hover:-translate-y-0.5 group cursor-pointer'
+    interactive && 'hover:bg-cream-50/92 hover:shadow-lg hover:-tranwarm-y-0.5 group cursor-pointer'
   );
 
   if (interactive) {

@@ -15,6 +15,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+      return NextResponse.json({ success: false }, { status: 401 });
+    }
+
     const errorReport = await request.json();
     const adminClient = createAdminClient();
 
@@ -63,7 +67,7 @@ export async function POST(request: NextRequest) {
         user_agent: userAgent,
         ip,
         url,
-        user_id: user?.id ?? null,
+        user_id: user.id,
         timestamp,
       }),
       adminClient.from('admin_events').insert({
@@ -72,8 +76,8 @@ export async function POST(request: NextRequest) {
         severity,
         message,
         metadata: adminMetadata,
-        user_id: user?.id ?? null,
-        user_email: user?.email ?? null,
+        user_id: user.id,
+        user_email: user.email ?? null,
         url,
         stack_trace: stack,
         browser_info: sanitizedContext,

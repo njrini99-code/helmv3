@@ -403,7 +403,7 @@ export const USStateMap = memo(function USStateMap({
                 <p className="font-semibold text-white text-base">
                   {STATE_CODE_TO_NAME[hoveredState]}
                 </p>
-                <p className="text-slate-300 text-sm mt-0.5">
+                <p className="text-warm-300 text-sm mt-0.5">
                   <span className="font-semibold text-white tabular-nums">
                     {(playersByState[hoveredState] || 0).toLocaleString()}
                   </span>
@@ -413,13 +413,13 @@ export const USStateMap = memo(function USStateMap({
             </div>
 
             {/* Hint text */}
-            <p className="text-micro text-slate-500 mt-2 uppercase tracking-wider">
+            <p className="text-micro text-warm-500 mt-2 uppercase tracking-wider">
               Click to filter
             </p>
 
             {/* Pointer arrow */}
             <div
-              className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rotate-45"
+              className="absolute -left-2 top-1/2 -tranwarm-y-1/2 w-4 h-4 rotate-45"
               style={{
                 background: 'rgba(15, 23, 42, 0.92)',
                 borderLeft: '1px solid rgba(255, 255, 255, 0.12)',
@@ -449,10 +449,10 @@ export const USStateMap = memo(function USStateMap({
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-6 mb-3">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            <span className="text-xs font-bold text-warm-700 uppercase tracking-wider">
               {itemLabelCapital}
             </span>
-            <span className="text-xs font-semibold text-slate-500 tabular-nums">
+            <span className="text-xs font-semibold text-warm-500 tabular-nums">
               {totalPlayers.toLocaleString()} total
             </span>
           </div>
@@ -479,9 +479,9 @@ export const USStateMap = memo(function USStateMap({
 
             {/* Scale markers */}
             <div className="flex justify-between mt-1.5">
-              <span className="text-micro font-medium text-slate-400">0</span>
-              <span className="text-micro font-medium text-slate-400">{Math.round(maxPlayers / 2)}</span>
-              <span className="text-micro font-medium text-slate-400">{maxPlayers}+</span>
+              <span className="text-micro font-medium text-warm-400">0</span>
+              <span className="text-micro font-medium text-warm-400">{Math.round(maxPlayers / 2)}</span>
+              <span className="text-micro font-medium text-warm-400">{maxPlayers}+</span>
             </div>
           </div>
         </div>

@@ -89,8 +89,8 @@ export function ReminderPicker({
     <div className={cn('space-y-3', className)}>
       {/* Toggle */}
       <div className="flex items-center justify-between">
-        <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
-          <IconBell size={16} className="text-slate-500" />
+        <label className="flex items-center gap-2 text-sm font-medium text-warm-700">
+          <IconBell size={16} className="text-warm-500" />
           Set Reminder
         </label>
         <button
@@ -103,27 +103,27 @@ export function ReminderPicker({
             'relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
-            isEnabled ? 'bg-primary-600' : 'bg-slate-200'
+            isEnabled ? 'bg-primary-600' : 'bg-warm-200'
           )}
         >
           <span
             className={cn(
               'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform',
-              isEnabled ? 'translate-x-4' : 'translate-x-0'
+              isEnabled ? 'tranwarm-x-4' : 'tranwarm-x-0'
             )}
           />
         </button>
       </div>
 
       {!dueDate && (
-        <p className="text-xs text-slate-500">Set a due date first to enable reminders</p>
+        <p className="text-xs text-warm-500">Set a due date first to enable reminders</p>
       )}
 
       {/* Reminder options */}
       {isEnabled && dueDate && (
         <div className="space-y-3 pl-6 border-l-2 border-primary-100">
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-slate-600">
+            <label className="block text-xs font-medium text-warm-600">
               When to remind
             </label>
             <div className="flex flex-wrap gap-2">
@@ -139,7 +139,7 @@ export function ReminderPicker({
                     'disabled:cursor-not-allowed disabled:opacity-50',
                     selectedPreset === preset.value
                       ? 'bg-primary-50 text-primary-700 border-primary-200'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 active:bg-slate-100'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300 hover:bg-warm-50 active:bg-warm-100'
                   )}
                 >
                   {preset.label}
@@ -152,23 +152,23 @@ export function ReminderPicker({
           {selectedPreset === 'custom' && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1">Date</label>
                 <input
                   type="date"
                   value={customDate}
                   onChange={(e) => handleCustomChange(e.target.value, customTime)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Time</label>
+                <label className="block text-xs font-medium text-warm-600 mb-1">Time</label>
                 <input
                   type="time"
                   value={customTime}
                   onChange={(e) => handleCustomChange(customDate, e.target.value)}
                   disabled={disabled}
-                  className="w-full px-3 py-2 text-sm bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
+                  className="w-full px-3 py-2 text-sm bg-white border border-warm-200 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-50 disabled:opacity-50"
                 />
               </div>
             </div>

@@ -14,12 +14,12 @@ export function LiveRoundMockup() {
   return (
     <div className="relative mx-auto w-[280px]">
       {/* Phone frame — 19.5:9 aspect ratio */}
-      <div className="relative bg-slate-900 rounded-[40px] p-[10px] shadow-2xl ring-1 ring-white/10">
+      <div className="relative bg-warm-900 rounded-[40px] p-[10px] shadow-2xl ring-1 ring-white/10">
         {/* Side buttons */}
-        <div className="absolute -right-[2px] top-24 w-[3px] h-7 bg-slate-700 rounded-r-sm" />
-        <div className="absolute -left-[2px] top-20 w-[3px] h-5 bg-slate-700 rounded-l-sm" />
-        <div className="absolute -left-[2px] top-32 w-[3px] h-10 bg-slate-700 rounded-l-sm" />
-        <div className="absolute -left-[2px] top-46 w-[3px] h-10 bg-slate-700 rounded-l-sm" />
+        <div className="absolute -right-[2px] top-24 w-[3px] h-7 bg-warm-700 rounded-r-sm" />
+        <div className="absolute -left-[2px] top-20 w-[3px] h-5 bg-warm-700 rounded-l-sm" />
+        <div className="absolute -left-[2px] top-32 w-[3px] h-10 bg-warm-700 rounded-l-sm" />
+        <div className="absolute -left-[2px] top-46 w-[3px] h-10 bg-warm-700 rounded-l-sm" />
 
         {/* Screen — fixed height for realistic phone proportions */}
         <div className="bg-warm-50 rounded-[32px] overflow-hidden h-[572px] flex flex-col">
@@ -157,7 +157,7 @@ export function LiveRoundMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-16 bg-emerald-500/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -tranwarm-x-1/2 w-48 h-16 bg-emerald-500/15 blur-3xl rounded-full" />
     </div>
   );
 }
@@ -309,7 +309,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -tranwarm-x-1/2 w-3/4 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
     </div>
   );
 }
@@ -320,14 +320,14 @@ export function QualifierMockup() {
 export function StatsMockup() {
   return (
     <div className="relative w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-xl border border-warm-200 overflow-hidden">
         {/* Header */}
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-warm-100 flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-slate-900">Performance Trends</h3>
-            <p className="text-xs text-slate-500">Last 30 days</p>
+            <h3 className="font-semibold text-warm-900">Performance Trends</h3>
+            <p className="text-xs text-warm-500">Last 30 days</p>
           </div>
-          <select className="text-xs bg-slate-100 border-0 rounded-lg px-3 py-1.5 text-slate-600">
+          <select className="text-xs bg-warm-100 border-0 rounded-lg px-3 py-1.5 text-warm-600">
             <option>All Players</option>
           </select>
         </div>
@@ -337,7 +337,7 @@ export function StatsMockup() {
           {/* Mini chart visualization */}
           <div className="relative h-40 mb-6">
             {/* Y-axis labels */}
-            <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-slate-400 pr-3">
+            <div className="absolute left-0 top-0 bottom-0 flex flex-col justify-between text-xs text-warm-400 pr-3">
               <span>80</span>
               <span>75</span>
               <span>70</span>
@@ -367,19 +367,19 @@ export function StatsMockup() {
 
           {/* Stats grid */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-slate-50 rounded-xl">
-              <p className="text-2xl font-bold text-slate-900">72.4</p>
-              <p className="text-xs text-slate-500">Avg Score</p>
+            <div className="text-center p-3 bg-warm-50 rounded-xl">
+              <p className="text-2xl font-bold text-warm-900">72.4</p>
+              <p className="text-xs text-warm-500">Avg Score</p>
               <p className="text-xs text-emerald-600 font-medium">-1.2 ↓</p>
             </div>
             <div className="text-center p-3 bg-emerald-50 rounded-xl">
               <p className="text-2xl font-bold text-emerald-600">68%</p>
-              <p className="text-xs text-slate-500">GIR</p>
+              <p className="text-xs text-warm-500">GIR</p>
               <p className="text-xs text-emerald-600 font-medium">+4% ↑</p>
             </div>
-            <div className="text-center p-3 bg-slate-50 rounded-xl">
-              <p className="text-2xl font-bold text-slate-900">31.2</p>
-              <p className="text-xs text-slate-500">Putts/Rd</p>
+            <div className="text-center p-3 bg-warm-50 rounded-xl">
+              <p className="text-2xl font-bold text-warm-900">31.2</p>
+              <p className="text-xs text-warm-500">Putts/Rd</p>
               <p className="text-xs text-emerald-600 font-medium">-0.8 ↓</p>
             </div>
           </div>
@@ -426,7 +426,7 @@ export function CoachAIMockup() {
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
           </svg>
         </div>
-        <span className="font-semibold text-slate-900">CoachHelm AI</span>
+        <span className="font-semibold text-warm-900">CoachHelm AI</span>
         <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">
           3 new
         </span>
@@ -477,8 +477,8 @@ export function CoachAIMockup() {
                 )}
               </div>
               <div className="flex-1">
-                <h4 className="font-medium text-slate-900 text-sm">{insight.title}</h4>
-                <p className="text-xs text-slate-500 mt-0.5">{insight.desc}</p>
+                <h4 className="font-medium text-warm-900 text-sm">{insight.title}</h4>
+                <p className="text-xs text-warm-500 mt-0.5">{insight.desc}</p>
                 <button className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
@@ -494,7 +494,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -tranwarm-x-1/2 w-2/3 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
     </div>
   );
 }

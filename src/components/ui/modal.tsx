@@ -154,8 +154,8 @@ export function Modal({
           'transition-all duration-200 ease-out',
           'max-h-[calc(100vh-2rem)] flex flex-col',
           isAnimating
-            ? 'opacity-100 translate-y-0 scale-100'
-            : 'opacity-0 translate-y-4 scale-[0.97]',
+            ? 'opacity-100 tranwarm-y-0 scale-100'
+            : 'opacity-0 tranwarm-y-4 scale-[0.97]',
           sizeClasses[size],
         )}
       >

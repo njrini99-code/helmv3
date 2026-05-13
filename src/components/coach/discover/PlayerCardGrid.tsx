@@ -150,13 +150,13 @@ function PlayerCardGridComponent({
   if (!players.length) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-          <IconUsers size={28} className="text-slate-400" />
+        <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mb-4">
+          <IconUsers size={28} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">
           {emptyTitle}
         </h3>
-        <p className="text-sm leading-relaxed text-slate-500 max-w-md">
+        <p className="text-sm leading-relaxed text-warm-500 max-w-md">
           {emptyMessage}
         </p>
       </div>
@@ -216,11 +216,11 @@ function PlayerCardGridComponent({
 function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
   if (variant === 'compact') {
     return (
-      <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-slate-100 animate-pulse">
-        <div className="w-10 h-10 rounded-full bg-slate-200" />
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-white border border-warm-100 animate-pulse">
+        <div className="w-10 h-10 rounded-full bg-warm-200" />
         <div className="flex-1">
-          <div className="h-4 bg-slate-200 rounded w-32 mb-1.5" />
-          <div className="h-3 bg-slate-200 rounded w-24" />
+          <div className="h-4 bg-warm-200 rounded w-32 mb-1.5" />
+          <div className="h-3 bg-warm-200 rounded w-24" />
         </div>
       </div>
     );
@@ -228,22 +228,22 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
 
   if (variant === 'featured') {
     return (
-      <div className="rounded-2xl bg-white border border-slate-100 overflow-hidden animate-pulse">
-        <div className="h-32 bg-slate-200" />
+      <div className="rounded-2xl bg-white border border-warm-100 overflow-hidden animate-pulse">
+        <div className="h-32 bg-warm-200" />
         <div className="p-5 pt-0">
           <div className="-mt-10 mb-3">
-            <div className="w-20 h-20 rounded-full bg-slate-200 ring-4 ring-white" />
+            <div className="w-20 h-20 rounded-full bg-warm-200 ring-4 ring-white" />
           </div>
-          <div className="h-5 bg-slate-200 rounded w-36 mb-2" />
-          <div className="h-4 bg-slate-200 rounded w-28 mb-4" />
+          <div className="h-5 bg-warm-200 rounded w-36 mb-2" />
+          <div className="h-4 bg-warm-200 rounded w-28 mb-4" />
           <div className="flex gap-4 mb-4">
-            <div className="h-3 bg-slate-200 rounded w-20" />
-            <div className="h-3 bg-slate-200 rounded w-16" />
+            <div className="h-3 bg-warm-200 rounded w-20" />
+            <div className="h-3 bg-warm-200 rounded w-16" />
           </div>
-          <div className="pt-4 border-t border-slate-100 flex gap-4">
-            <div className="h-10 bg-slate-200 rounded w-16" />
-            <div className="h-10 bg-slate-200 rounded w-16" />
-            <div className="h-10 bg-slate-200 rounded w-16" />
+          <div className="pt-4 border-t border-warm-100 flex gap-4">
+            <div className="h-10 bg-warm-200 rounded w-16" />
+            <div className="h-10 bg-warm-200 rounded w-16" />
+            <div className="h-10 bg-warm-200 rounded w-16" />
           </div>
         </div>
       </div>
@@ -252,19 +252,19 @@ function PlayerCardSkeleton({ variant = 'default' }: { variant?: string }) {
 
   // Default skeleton
   return (
-    <div className="rounded-2xl bg-white border border-slate-100 p-5 animate-pulse">
+    <div className="rounded-2xl bg-white border border-warm-100 p-5 animate-pulse">
       <div className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-full bg-slate-200" />
+        <div className="w-12 h-12 rounded-full bg-warm-200" />
         <div className="flex-1">
-          <div className="h-5 bg-slate-200 rounded w-36 mb-2" />
-          <div className="h-4 bg-slate-200 rounded w-28 mb-2" />
-          <div className="h-3 bg-slate-200 rounded w-40" />
+          <div className="h-5 bg-warm-200 rounded w-36 mb-2" />
+          <div className="h-4 bg-warm-200 rounded w-28 mb-2" />
+          <div className="h-3 bg-warm-200 rounded w-40" />
         </div>
       </div>
-      <div className="flex gap-3 mt-4 pt-4 border-t border-slate-100">
-        <div className="h-4 bg-slate-200 rounded w-16" />
-        <div className="h-4 bg-slate-200 rounded w-16" />
-        <div className="h-4 bg-slate-200 rounded w-16" />
+      <div className="flex gap-3 mt-4 pt-4 border-t border-warm-100">
+        <div className="h-4 bg-warm-200 rounded w-16" />
+        <div className="h-4 bg-warm-200 rounded w-16" />
+        <div className="h-4 bg-warm-200 rounded w-16" />
       </div>
     </div>
   );

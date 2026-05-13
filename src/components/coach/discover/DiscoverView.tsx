@@ -451,14 +451,14 @@ export function DiscoverView({
           {/* Sort (players only) */}
           {mode === 'players' && (
             <div className="flex items-center gap-2">
-              <label htmlFor="sort" className="text-sm text-slate-500">
+              <label htmlFor="sort" className="text-sm text-warm-500">
                 Sort:
               </label>
               <select
                 id="sort"
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="text-sm border border-slate-200 rounded-lg px-3 py-1.5
+                className="text-sm border border-warm-200 rounded-lg px-3 py-1.5
                            focus:border-primary-500 focus:ring-2 focus:ring-primary-100
                            focus:outline-none bg-white cursor-pointer"
               >
@@ -483,8 +483,8 @@ export function DiscoverView({
 
       {/* Results Count (when no filters) */}
       {!hasActiveFilters && (
-        <p className="text-sm text-slate-500">
-          <span className="font-semibold text-slate-900">
+        <p className="text-sm text-warm-500">
+          <span className="font-semibold text-warm-900">
             {totalCount.toLocaleString()}
           </span>{' '}
           {mode === 'players' ? 'players' : 'teams'} found
@@ -517,12 +517,12 @@ export function DiscoverView({
               />
 
               <div className="relative mb-4">
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                <h3 className="text-lg font-semibold text-warm-900 mb-2">
                   {mode === 'players'
                     ? 'Player Distribution by State'
                     : 'Team Distribution by State'}
                 </h3>
-                <p className="text-sm leading-relaxed text-slate-500">
+                <p className="text-sm leading-relaxed text-warm-500">
                   Click a state to filter {mode} by location
                 </p>
               </div>
@@ -686,7 +686,7 @@ export function DiscoverView({
                     'w-8 h-8 rounded-lg text-sm font-medium transition-colors',
                     pageNum === currentPage
                       ? 'bg-primary-600 text-white'
-                      : 'text-slate-600 hover:bg-slate-100 active:bg-slate-200'
+                      : 'text-warm-600 hover:bg-warm-100 active:bg-warm-200'
                   )}
                 >
                   {pageNum}

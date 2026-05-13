@@ -23,14 +23,14 @@ const itemVariants = {
 };
 
 const urgencyBorderColors: Record<string, string> = {
-  low: 'border-l-slate-300',
+  low: 'border-l-warm-300',
   normal: 'border-l-primary-400',
   high: 'border-l-amber-400',
   urgent: 'border-l-red-400',
 };
 
 const urgencyBadgeColors: Record<string, { bg: string; text: string }> = {
-  low: { bg: 'bg-slate-100', text: 'text-slate-600' },
+  low: { bg: 'bg-warm-100', text: 'text-warm-600' },
   normal: { bg: 'bg-primary-50', text: 'text-primary-600' },
   high: { bg: 'bg-amber-50', text: 'text-amber-600' },
   urgent: { bg: 'bg-red-50', text: 'text-red-600' },
@@ -104,26 +104,26 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-semibold text-slate-900 truncate">{ann.title}</h3>
+              <h3 className="text-sm font-semibold text-warm-900 truncate">{ann.title}</h3>
               {isRecent && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded-full bg-primary-50 text-primary-600 flex-shrink-0">
                   New
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500 line-clamp-2">{ann.body}</p>
+            <p className="text-sm text-warm-500 line-clamp-2">{ann.body}</p>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <span className="text-xs text-slate-400">{publishedDate}</span>
+              <span className="text-xs text-warm-400">{publishedDate}</span>
               <span className={cn('px-1.5 py-0.5 rounded text-xs font-semibold uppercase tracking-wider', urgencyBadge.bg, urgencyBadge.text)}>
                 {ann.urgency || 'normal'}
               </span>
               {ann.recipient_count > 0 ? (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconUsers size={10} />
                   {ann.recipient_count} players
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                <span className="inline-flex items-center gap-1 text-xs text-warm-500">
                   <IconUsers size={10} />
                   All team
                 </span>
@@ -138,7 +138,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
             transition={{ duration: 0.2 }}
             className="flex-shrink-0 mt-1"
           >
-            <IconChevronDown size={16} className="text-slate-400" />
+            <IconChevronDown size={16} className="text-warm-400" />
           </motion.div>
         </button>
 
@@ -152,18 +152,18 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
               transition={{ duration: 0.25 }}
               className="overflow-hidden"
             >
-              <div className="px-5 pb-4 border-t border-slate-100">
+              <div className="px-5 pb-4 border-t border-warm-100">
                 <div className="pt-4 space-y-4">
                   {/* Full body */}
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{ann.body}</p>
+                  <p className="text-sm text-warm-700 whitespace-pre-wrap">{ann.body}</p>
 
                   {/* Acknowledgements progress */}
                   {ann.requires_acknowledgement && (
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                      <p className="text-xs font-semibold text-warm-500 uppercase tracking-wider mb-2">
                         Acknowledgements ({ann.acknowledged_count}/{ann.total_recipients})
                       </p>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                      <div className="h-2 bg-warm-100 rounded-full overflow-hidden mb-2">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
@@ -172,7 +172,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                           style={{ width: `${ann.total_recipients > 0 ? (ann.acknowledged_count / ann.total_recipients) * 100 : 0}%` }}
                         />
                       </div>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-warm-400">
                         {ann.acknowledged_count >= ann.total_recipients && ann.total_recipients > 0
                           ? 'All players have acknowledged'
                           : `${ann.total_recipients - ann.acknowledged_count} player${ann.total_recipients - ann.acknowledged_count !== 1 ? 's' : ''} remaining`}
@@ -181,7 +181,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                   )}
 
                   {/* Recipient info */}
-                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <div className="flex items-center gap-2 text-xs text-warm-400">
                     <IconClock size={12} />
                     <span>
                       {ann.recipient_count > 0
@@ -191,7 +191,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: BaseballAn
                   </div>
 
                   {/* Delete action */}
-                  <div className="pt-2 border-t border-slate-100">
+                  <div className="pt-2 border-t border-warm-100">
                     <Button
                       variant="ghost"
                       size="sm"

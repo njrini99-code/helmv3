@@ -30,7 +30,7 @@ function FilterPill({ label, active }: { label: string; active?: boolean }) {
       "px-2 py-0.5 rounded text-[9px] font-medium",
       active
         ? "bg-primary-100 text-primary-700 border border-primary-200"
-        : "bg-cream-100/68 text-slate-600 border border-warm-200/55"
+        : "bg-cream-100/68 text-warm-600 border border-warm-200/55"
     )}>
       {label}
     </div>
@@ -44,17 +44,17 @@ function DiscoveryPlayerCard({ featured }: { featured?: boolean }) {
       "bg-cream-100/55 backdrop-blur-xl border border-warm-200/45",
       featured && "ring-1 ring-primary-200"
     )}>
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0" />
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-warm-200 to-warm-300 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1">
-          <div className="h-2 w-14 bg-slate-200 rounded" />
+          <div className="h-2 w-14 bg-warm-200 rounded" />
           {featured && (
             <span className="text-[8px] text-primary-600 font-semibold">TOP</span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[8px] text-slate-500">SS</span>
-          <span className="text-[8px] text-slate-500">2026</span>
+          <span className="text-[8px] text-warm-500">SS</span>
+          <span className="text-[8px] text-warm-500">2026</span>
           <span className="text-[8px] text-primary-600 font-semibold">89 mph</span>
         </div>
       </div>

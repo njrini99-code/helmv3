@@ -114,8 +114,8 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-900">Travel</h1>
-          <p className="text-slate-500 mt-1 text-sm">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-warm-900">Travel</h1>
+          <p className="text-warm-500 mt-1 text-sm">
             {itineraries.length > 0
               ? `${itineraries.length} trip${itineraries.length !== 1 ? 's' : ''} planned`
               : 'Manage team travel and expenses'}
@@ -133,11 +133,11 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {itineraries.length === 0 && (
         <Card variant="glass">
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-              <IconMapPin size={32} className="text-slate-300" />
+            <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+              <IconMapPin size={32} className="text-warm-300" />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No Trips Planned</h3>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
+            <h3 className="text-lg font-medium text-warm-900 mb-2">No Trips Planned</h3>
+            <p className="text-warm-500 mb-6 max-w-md mx-auto">
               {isCoach
                 ? 'Create a trip itinerary to track travel logistics and expenses for your team.'
                 : 'Your coach has not added any travel itineraries yet.'}
@@ -155,7 +155,7 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {/* Upcoming Trips */}
       {upcoming.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Trips</h2>
+          <h2 className="text-lg font-semibold text-warm-900 mb-4">Upcoming Trips</h2>
           <div className="space-y-4">
             {upcoming.map(itin => (
               <ItineraryCard
@@ -181,7 +181,7 @@ export function TravelClient({ itineraries: initialItineraries, teamId, isCoach 
       {/* Past Trips */}
       {past.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-slate-500 mb-4">Past Trips</h2>
+          <h2 className="text-lg font-semibold text-warm-500 mb-4">Past Trips</h2>
           <div className="space-y-4 opacity-80">
             {past.map(itin => (
               <ItineraryCard

@@ -14,12 +14,12 @@ export function DevPlanMockup() {
     )}>
       {/* Progress header */}
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-semibold text-slate-600">Hitting Program</span>
+        <span className="text-[9px] font-semibold text-warm-600">Hitting Program</span>
         <span className="text-micro text-primary-600 font-semibold">67%</span>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
         <div className="h-full w-2/3 bg-primary-500 rounded-full" />
       </div>
 
@@ -40,7 +40,7 @@ function GoalItem({ label, completed }: { label: string; completed?: boolean }) 
         "w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0",
         completed
           ? "bg-primary-100 text-primary-600"
-          : "bg-slate-100 text-slate-300"
+          : "bg-warm-100 text-warm-300"
       )}>
         {completed ? (
           <Check className="w-2.5 h-2.5" strokeWidth={3} />
@@ -50,7 +50,7 @@ function GoalItem({ label, completed }: { label: string; completed?: boolean }) 
       </div>
       <span className={cn(
         "text-micro",
-        completed ? "text-slate-500 line-through" : "text-slate-700"
+        completed ? "text-warm-500 line-through" : "text-warm-700"
       )}>
         {label}
       </span>

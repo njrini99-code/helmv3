@@ -153,7 +153,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
   return (
     <div className="space-y-5">
       {/* Tab selector */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
         {(['manual', 'csv', 'pdf'] as UploadTab[]).map((tab) => (
           <button
             key={tab}
@@ -167,8 +167,8 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
             }}
             className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
               activeTab === tab
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             {tab === 'manual' ? '✏️ Manual Entry' : tab === 'csv' ? '📄 CSV Upload' : '📑 PDF Upload'}
@@ -188,20 +188,20 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
           <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-800">Upload Stats CSV</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <h3 className="text-sm font-semibold text-warm-800">Upload Stats CSV</h3>
+                <p className="text-xs text-warm-500 mt-0.5">
                   Upload a CSV file with one row per player. Download the template below.
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {/* Batting/Pitching switch */}
-                <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+                <div className="flex gap-1 p-1 bg-warm-100 rounded-lg">
                   {(['batting', 'pitching'] as CSVType[]).map((t) => (
                     <button
                       key={t}
                       onClick={() => setCsvType(t)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
-                        csvType === t ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500'
+                        csvType === t ? 'bg-white text-warm-800 shadow-sm' : 'text-warm-500'
                       }`}
                     >
                       {t}
@@ -223,8 +223,8 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
             </div>
 
             {/* Column reference */}
-            <div className="bg-slate-50 rounded-xl p-3">
-              <p className="text-xs font-mono text-slate-500 leading-relaxed">
+            <div className="bg-warm-50 rounded-xl p-3">
+              <p className="text-xs font-mono text-warm-500 leading-relaxed">
                 {csvType === 'batting'
                   ? 'player_name, ab, r, h, 2b, 3b, hr, rbi, bb, k, sb, cs, hbp, sac, sf, lob'
                   : 'player_name, ip, h, r, er, bb, k, hr, pitch_count, result (W/L/S/H/BS/ND)'}
@@ -248,7 +248,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                 <IconUpload size={14} className="mr-1.5" />
                 Choose File
               </Button>
-              <span className="text-xs text-slate-400">or paste CSV below</span>
+              <span className="text-xs text-warm-400">or paste CSV below</span>
             </div>
 
             {/* Paste area */}
@@ -259,7 +259,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                 ? 'Paste your batting CSV here or choose a file above...'
                 : 'Paste your pitching CSV here or choose a file above...'}
               rows={6}
-              className="w-full text-xs font-mono border border-slate-200 rounded-xl p-3 bg-cream-100/82 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y placeholder:text-slate-300"
+              className="w-full text-xs font-mono border border-warm-200 rounded-xl p-3 bg-cream-100/82 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-y placeholder:text-warm-300"
             />
 
             {uploadError && (
@@ -291,7 +291,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
           {(matched.length > 0 || unmatched.length > 0) && (
             <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-800">Player Matching Results</h3>
+                <h3 className="text-sm font-semibold text-warm-800">Player Matching Results</h3>
                 {allMatched && (
                   <span className="flex items-center gap-1.5 text-xs text-green-600 font-medium">
                     <IconCheck size={14} />
@@ -303,13 +303,13 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
               {/* Matched players */}
               {matched.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-2">
+                  <p className="text-xs font-medium text-warm-500 mb-2">
                     ✅ Matched ({matched.length})
                   </p>
                   <div className="space-y-1.5">
                     {matched.map((m) => (
                       <div key={m.csvName} className="flex items-center justify-between bg-green-50 rounded-lg px-3 py-2">
-                        <span className="text-xs text-slate-700 font-mono">{m.csvName}</span>
+                        <span className="text-xs text-warm-700 font-mono">{m.csvName}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-green-700 font-medium">{m.playerName}</span>
                           <span className="text-[10px] text-green-500 bg-green-100 px-1.5 py-0.5 rounded-full">
@@ -325,14 +325,14 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
               {/* Unmatched players — manual resolution */}
               {unmatched.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-slate-500 mb-2">
+                  <p className="text-xs font-medium text-warm-500 mb-2">
                     ⚠️ Unmatched — please resolve ({unmatched.length})
                   </p>
                   <div className="space-y-2">
                     {unmatched.map((u) => (
                       <div key={u.csvName} className="flex items-center gap-3 bg-amber-50 rounded-lg px-3 py-2">
-                        <span className="text-xs text-slate-700 font-mono flex-1 truncate">{u.csvName}</span>
-                        <span className="text-slate-400 text-xs">→</span>
+                        <span className="text-xs text-warm-700 font-mono flex-1 truncate">{u.csvName}</span>
+                        <span className="text-warm-400 text-xs">→</span>
                         <select
                           value={u.resolvedPlayerId ?? ''}
                           onChange={(e) => updateUnmatchedResolution(u.csvName, e.target.value)}
@@ -377,12 +377,12 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
       {/* PDF upload tab */}
       {activeTab === 'pdf' && (
         <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-sm text-center space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto">
-            <IconUpload size={24} className="text-slate-400" />
+          <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto">
+            <IconUpload size={24} className="text-warm-400" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-slate-800 mb-1">Upload Box Score PDF</h3>
-            <p className="text-sm text-slate-500 max-w-sm mx-auto">
+            <h3 className="text-base font-semibold text-warm-800 mb-1">Upload Box Score PDF</h3>
+            <p className="text-sm text-warm-500 max-w-sm mx-auto">
               Upload a PDF box score and we&apos;ll extract player stats automatically. 
               Works best with standard box score formats.
             </p>
@@ -411,7 +411,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
             </div>
           )}
 
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-warm-400">
             Tip: If PDF parsing doesn&apos;t work, use the CSV tab — download the template and fill it in manually.
           </p>
         </div>

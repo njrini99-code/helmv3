@@ -125,13 +125,13 @@ export function PhilosophySettingsClient({
         <div className="flex items-center gap-4 mb-8">
           <Link
             href="/baseball/dashboard/settings"
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           >
             <IconArrowLeft size={20} />
           </Link>
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Coaching Philosophy</h1>
-            <p className="text-slate-500 mt-1">Configure how AI insights are generated for your team</p>
+            <h1 className="text-2xl font-semibold text-warm-900">Coaching Philosophy</h1>
+            <p className="text-warm-500 mt-1">Configure how AI insights are generated for your team</p>
           </div>
         </div>
 
@@ -161,8 +161,8 @@ export function PhilosophySettingsClient({
                 <IconActivity size={20} className="text-amber-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Alert Sensitivity</h3>
-                <p className="text-sm text-slate-500">How often should we notify you?</p>
+                <h3 className="font-semibold text-warm-900">Alert Sensitivity</h3>
+                <p className="text-sm text-warm-500">How often should we notify you?</p>
               </div>
             </div>
 
@@ -174,15 +174,15 @@ export function PhilosophySettingsClient({
                   className={`p-4 rounded-xl border-2 transition-all ${
                     alertSensitivity === level
                       ? 'border-primary-500 bg-primary-50'
-                      : 'border-slate-200 hover:border-slate-300'
+                      : 'border-warm-200 hover:border-warm-300'
                   }`}
                 >
                   <p className={`font-medium capitalize ${
-                    alertSensitivity === level ? 'text-primary-700' : 'text-slate-700'
+                    alertSensitivity === level ? 'text-primary-700' : 'text-warm-700'
                   }`}>
                     {level}
                   </p>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-xs text-warm-500 mt-1">
                     {level === 'conservative' && 'Only critical issues'}
                     {level === 'balanced' && 'Important changes'}
                     {level === 'aggressive' && 'All notable changes'}
@@ -199,8 +199,8 @@ export function PhilosophySettingsClient({
                 <IconTarget size={20} className="text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Alert Thresholds</h3>
-                <p className="text-sm text-slate-500">Fine-tune when alerts trigger</p>
+                <h3 className="font-semibold text-warm-900">Alert Thresholds</h3>
+                <p className="text-sm text-warm-500">Fine-tune when alerts trigger</p>
               </div>
             </div>
 
@@ -208,10 +208,10 @@ export function PhilosophySettingsClient({
               {/* Decline Threshold */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-warm-700">
                     Decline Alert Threshold
                   </label>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-warm-900">
                     {declineThreshold.toFixed(1)}%
                   </span>
                 </div>
@@ -222,9 +222,9 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={declineThreshold}
                   onChange={(e) => setDeclineThreshold(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                  className="w-full h-2 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-warm-500 mt-1">
                   Alert when a player&apos;s performance drops by this percentage
                 </p>
               </div>
@@ -232,10 +232,10 @@ export function PhilosophySettingsClient({
               {/* Pressure Gap Threshold */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-warm-700">
                     Pressure Gap Threshold
                   </label>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-warm-900">
                     {pressureGapThreshold.toFixed(1)}%
                   </span>
                 </div>
@@ -246,9 +246,9 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={pressureGapThreshold}
                   onChange={(e) => setPressureGapThreshold(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                  className="w-full h-2 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-warm-500 mt-1">
                   Alert when game vs practice performance differs by this amount
                 </p>
               </div>
@@ -256,10 +256,10 @@ export function PhilosophySettingsClient({
               {/* Bubble Zone Range */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-sm font-medium text-slate-700">
+                  <label className="text-sm font-medium text-warm-700">
                     Bubble Zone Range
                   </label>
-                  <span className="text-sm font-semibold text-slate-900">
+                  <span className="text-sm font-semibold text-warm-900">
                     ±{bubbleZoneRange.toFixed(1)}%
                   </span>
                 </div>
@@ -270,9 +270,9 @@ export function PhilosophySettingsClient({
                   step="0.5"
                   value={bubbleZoneRange}
                   onChange={(e) => setBubbleZoneRange(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                  className="w-full h-2 bg-warm-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-warm-500 mt-1">
                   Range around team average to consider a player &quot;on the bubble&quot;
                 </p>
               </div>
@@ -286,8 +286,8 @@ export function PhilosophySettingsClient({
                 <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900">Development Priorities</h3>
-                <p className="text-sm text-slate-500">Rank what matters most to your program</p>
+                <h3 className="font-semibold text-warm-900">Development Priorities</h3>
+                <p className="text-sm text-warm-500">Rank what matters most to your program</p>
               </div>
             </div>
 
@@ -295,27 +295,27 @@ export function PhilosophySettingsClient({
               {sortedPriorities.map((priority, index) => (
                 <div
                   key={priority.key}
-                  className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl"
+                  className="flex items-center gap-3 p-3 bg-warm-50 rounded-xl"
                 >
                   <span className="w-8 h-8 rounded-full bg-primary-100 text-primary-700 font-semibold text-sm flex items-center justify-center">
                     {index + 1}
                   </span>
                   <div className="flex-1">
-                    <p className="font-medium text-slate-900">{priority.label}</p>
-                    <p className="text-xs text-slate-500">{priority.description}</p>
+                    <p className="font-medium text-warm-900">{priority.label}</p>
+                    <p className="text-xs text-warm-500">{priority.description}</p>
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'up')}
                       disabled={index === 0}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↑
                     </button>
                     <button
                       onClick={() => handlePriorityChange(priority.key, 'down')}
                       disabled={index === sortedPriorities.length - 1}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↓
                     </button>

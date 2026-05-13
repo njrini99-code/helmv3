@@ -50,16 +50,16 @@ export function GolfHelmSection() {
                 sizes="96px"
               />
             </div>
-            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">GolfHelm</span>
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-warm-900 tracking-tight">GolfHelm</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-warm-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
             Track every shot.
             <br />
             <span className="text-emerald-600">Develop every player.</span>
           </h2>
 
-          <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg text-warm-600 mb-6 sm:mb-8 leading-relaxed">
             Complete team management system with comprehensive round tracking. Everything you need to build a winning program!
           </p>
 
@@ -77,16 +77,16 @@ export function GolfHelmSection() {
             <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
               Live Tracking
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               Every shot, captured in real-time
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Players log shots from their phones during rounds. Coaches see live updates,
               hole-by-hole scores, and club selection data as it happens.
             </p>
             <ul className="space-y-2">
               {['Shot-by-shot tracking', 'Club selection & distances', 'GIR, putts, penalties', 'Works offline'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {item}
                 </li>
@@ -104,16 +104,16 @@ export function GolfHelmSection() {
             <p className="text-sm font-medium text-amber-600 uppercase tracking-wide mb-3">
               Qualifiers
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               Run qualifiers like the pros
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Set up multi-round qualifiers with automatic scoring, live leaderboards,
               and transparent lineup selection. No more spreadsheet chaos.
             </p>
             <ul className="space-y-2">
               {['Multi-round events', 'Automatic leaderboards', 'Tiebreaker rules', 'Travel team selection'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                   {item}
                 </li>
@@ -137,16 +137,16 @@ export function GolfHelmSection() {
             <p className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-3">
               Analytics
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               See the trends that matter
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Track team and individual performance over time. Spot improvements,
               identify weaknesses, and make data-driven coaching decisions.
             </p>
             <ul className="space-y-2">
               {['Scoring trends', 'GIR & putting stats', 'Player comparisons', 'Season progress'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
                   {item}
                 </li>
@@ -162,7 +162,7 @@ export function GolfHelmSection() {
             <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             {/* Soft warm glow top center — static radial gradient (no blur) */}
             <div
-              className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full pointer-events-none"
+              className="absolute -top-20 left-1/2 -tranwarm-x-1/2 w-96 h-96 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%)' }}
             />
 

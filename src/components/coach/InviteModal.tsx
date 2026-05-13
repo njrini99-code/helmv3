@@ -75,22 +75,22 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-lg">
-        <CardHeader className="border-b border-slate-200">
+        <CardHeader className="border-b border-warm-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-primary-50 flex items-center justify-center">
                 <IconLink size={20} className="text-primary-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Invite Players</h2>
-                <p className="text-sm leading-relaxed text-slate-500">{teamName}</p>
+                <h2 className="text-lg font-semibold text-warm-900">Invite Players</h2>
+                <p className="text-sm leading-relaxed text-warm-500">{teamName}</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+              className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               aria-label="Close invite modal"
             >
               <IconX size={20} />
@@ -101,12 +101,12 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
         <CardContent className="p-6">
           {!inviteCode ? (
             <>
-              <p className="text-sm leading-relaxed text-slate-600 mb-4">
+              <p className="text-sm leading-relaxed text-warm-600 mb-4">
                 Generate a unique invite link that players can use to join your team. You can share this link via email, text, or any messaging platform.
               </p>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-warm-700 mb-2">
                   Link expires in (days)
                 </label>
                 <Input
@@ -117,7 +117,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                   onChange={(e) => setExpiresIn(parseInt(e.target.value) || 30)}
                   className="w-full"
                 />
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-warm-500 mt-1">
                   Link will expire on {new Date(Date.now() + expiresIn * 24 * 60 * 60 * 1000).toLocaleDateString()}
                 </p>
               </div>
@@ -140,8 +140,8 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                     <IconCheck size={18} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-slate-900 mb-1">Invite link generated!</h3>
-                    <p className="text-sm leading-relaxed text-slate-600">
+                    <h3 className="font-medium text-warm-900 mb-1">Invite link generated!</h3>
+                    <p className="text-sm leading-relaxed text-warm-600">
                       Share this link with players to join your team.
                     </p>
                   </div>
@@ -149,7 +149,7 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
+                <label className="block text-sm font-medium text-warm-700 mb-2">
                   Invite Link
                 </label>
                 <div className="flex items-center gap-2">
@@ -178,19 +178,19 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                 </div>
               </div>
 
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                <h4 className="font-medium text-slate-900 mb-3 text-sm">How to share:</h4>
-                <ol className="space-y-2 text-sm text-slate-600">
+              <div className="bg-warm-50 border border-warm-200 rounded-lg p-4 mb-6">
+                <h4 className="font-medium text-warm-900 mb-3 text-sm">How to share:</h4>
+                <ol className="space-y-2 text-sm text-warm-600">
                   <li className="flex gap-2">
-                    <span className="font-medium text-slate-700">1.</span>
+                    <span className="font-medium text-warm-700">1.</span>
                     <span>Copy the link above</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="font-medium text-slate-700">2.</span>
+                    <span className="font-medium text-warm-700">2.</span>
                     <span>Send it to your players via email, text, or team chat</span>
                   </li>
                   <li className="flex gap-2">
-                    <span className="font-medium text-slate-700">3.</span>
+                    <span className="font-medium text-warm-700">3.</span>
                     <span>Players will automatically be added when they sign up using the link</span>
                   </li>
                 </ol>

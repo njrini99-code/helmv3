@@ -4657,6 +4657,48 @@ export type Database = {
           },
         ]
       }
+      crm_automations: {
+        Row: {
+          actions: Json
+          conditions: Json
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: number
+          trigger_event: string
+          updated_at: string
+        }
+        Insert: {
+          actions: Json
+          conditions?: Json
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: number
+          trigger_event: string
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: number
+          trigger_event?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_coaches: {
         Row: {
           archived_at: string | null
@@ -4672,7 +4714,7 @@ export type Database = {
           decision_timeline: string | null
           division: Database["public"]["Enums"]["ncaa_division"]
           email: string | null
-          email_status: string | null
+          email_status: Database["public"]["Enums"]["email_status"]
           highlight_color: string | null
           id: string
           internal_comments: string | null
@@ -4711,7 +4753,7 @@ export type Database = {
           decision_timeline?: string | null
           division: Database["public"]["Enums"]["ncaa_division"]
           email?: string | null
-          email_status?: string | null
+          email_status?: Database["public"]["Enums"]["email_status"]
           highlight_color?: string | null
           id?: string
           internal_comments?: string | null
@@ -4750,7 +4792,7 @@ export type Database = {
           decision_timeline?: string | null
           division?: Database["public"]["Enums"]["ncaa_division"]
           email?: string | null
-          email_status?: string | null
+          email_status?: Database["public"]["Enums"]["email_status"]
           highlight_color?: string | null
           id?: string
           internal_comments?: string | null
@@ -4837,6 +4879,13 @@ export type Database = {
             foreignKeyName: "crm_contact_log_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_contact_log_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
           },
@@ -4848,6 +4897,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      crm_email_suppressions: {
+        Row: {
+          email: string
+          id: string
+          metadata: Json | null
+          reason: string
+          source: string
+          suppressed_at: string
+          suppressed_by: string | null
+        }
+        Insert: {
+          email: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+          source: string
+          suppressed_at?: string
+          suppressed_by?: string | null
+        }
+        Update: {
+          email?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
+          source?: string
+          suppressed_at?: string
+          suppressed_by?: string | null
+        }
+        Relationships: []
       }
       crm_email_templates: {
         Row: {
@@ -4992,6 +5071,13 @@ export type Database = {
             foreignKeyName: "crm_events_coach_id_fkey"
             columns: ["coach_id"]
             isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_events_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
             referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
           },
@@ -5063,6 +5149,389 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_notes: {
+        Row: {
+          author_id: string
+          body: string
+          coach_id: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          kind: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          coach_id: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          kind?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          coach_id?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          kind?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_notes_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_notes_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_replies: {
+        Row: {
+          body_html: string | null
+          body_text: string | null
+          coach_id: string | null
+          contact_log_id: string | null
+          from_address: string
+          id: string
+          in_reply_to: string | null
+          is_read: boolean
+          message_id: string
+          raw_payload: Json | null
+          received_at: string
+          subject: string | null
+          thread_id: string | null
+          to_addresses: string[]
+        }
+        Insert: {
+          body_html?: string | null
+          body_text?: string | null
+          coach_id?: string | null
+          contact_log_id?: string | null
+          from_address: string
+          id?: string
+          in_reply_to?: string | null
+          is_read?: boolean
+          message_id: string
+          raw_payload?: Json | null
+          received_at?: string
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: string[]
+        }
+        Update: {
+          body_html?: string | null
+          body_text?: string | null
+          coach_id?: string | null
+          contact_log_id?: string | null
+          from_address?: string
+          id?: string
+          in_reply_to?: string | null
+          is_read?: boolean
+          message_id?: string
+          raw_payload?: Json | null
+          received_at?: string
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_replies_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_replies_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_replies_contact_log_id_fkey"
+            columns: ["contact_log_id"]
+            isOneToOne: false
+            referencedRelation: "crm_contact_log"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_segments: {
+        Row: {
+          created_at: string
+          created_by: string
+          definition: Json
+          description: string | null
+          id: string
+          is_shared: boolean
+          name: string
+          pin_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          definition: Json
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name: string
+          pin_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          definition?: Json
+          description?: string | null
+          id?: string
+          is_shared?: boolean
+          name?: string
+          pin_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_sequence_enrollments: {
+        Row: {
+          coach_id: string
+          completed_at: string | null
+          current_step: number
+          enrolled_at: string
+          enrolled_by: string
+          id: string
+          metadata: Json | null
+          next_send_at: string | null
+          sequence_id: string
+          status: string
+          stop_reason: string | null
+          stopped_at: string | null
+        }
+        Insert: {
+          coach_id: string
+          completed_at?: string | null
+          current_step?: number
+          enrolled_at?: string
+          enrolled_by: string
+          id?: string
+          metadata?: Json | null
+          next_send_at?: string | null
+          sequence_id: string
+          status?: string
+          stop_reason?: string | null
+          stopped_at?: string | null
+        }
+        Update: {
+          coach_id?: string
+          completed_at?: string | null
+          current_step?: number
+          enrolled_at?: string
+          enrolled_by?: string
+          id?: string
+          metadata?: Json | null
+          next_send_at?: string | null
+          sequence_id?: string
+          status?: string
+          stop_reason?: string | null
+          stopped_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sequence_enrollments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_enrollments_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_sequence_steps: {
+        Row: {
+          body_override: string | null
+          condition: Json | null
+          created_at: string
+          delay_hours: number
+          id: string
+          sequence_id: string
+          step_order: number
+          subject_override: string | null
+          template_id: string | null
+        }
+        Insert: {
+          body_override?: string | null
+          condition?: Json | null
+          created_at?: string
+          delay_hours?: number
+          id?: string
+          sequence_id: string
+          step_order: number
+          subject_override?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          body_override?: string | null
+          condition?: Json | null
+          created_at?: string
+          delay_hours?: number
+          id?: string
+          sequence_id?: string
+          step_order?: number
+          subject_override?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "crm_sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_sequence_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "crm_email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_sequences: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          trigger_kind: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          trigger_kind?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          trigger_kind?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_tasks: {
+        Row: {
+          assignee_id: string | null
+          coach_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          id: string
+          kind: string | null
+          metadata: Json | null
+          priority: string
+          reminder_at: string | null
+          reminder_sent: boolean
+          source: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          coach_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          kind?: string | null
+          metadata?: Json | null
+          priority?: string
+          reminder_at?: string | null
+          reminder_sent?: boolean
+          source?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          coach_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          kind?: string | null
+          metadata?: Json | null
+          priority?: string
+          reminder_at?: string | null
+          reminder_sent?: boolean
+          source?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coach_engagement"
+            referencedColumns: ["coach_id"]
+          },
+          {
+            foreignKeyName: "crm_tasks_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "crm_coaches"
             referencedColumns: ["id"]
           },
         ]
@@ -6801,6 +7270,52 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_event_documents: {
+        Row: {
+          attached_at: string
+          attached_by: string | null
+          document_id: string
+          event_id: string
+          note: string | null
+        }
+        Insert: {
+          attached_at?: string
+          attached_by?: string | null
+          document_id: string
+          event_id: string
+          note?: string | null
+        }
+        Update: {
+          attached_at?: string
+          attached_by?: string | null
+          document_id?: string
+          event_id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_event_documents_attached_by_fkey"
+            columns: ["attached_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_event_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "golf_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_event_documents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
             referencedColumns: ["id"]
           },
         ]
@@ -8650,6 +9165,72 @@ export type Database = {
           },
         ]
       }
+      golf_recruits: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          first_name: string
+          hometown: string | null
+          hs_class: number | null
+          id: string
+          last_name: string | null
+          notes: string | null
+          phone: string | null
+          state: string | null
+          status: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name: string
+          hometown?: string | null
+          hs_class?: number | null
+          id?: string
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          status?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          first_name?: string
+          hometown?: string | null
+          hs_class?: number | null
+          id?: string
+          last_name?: string | null
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          status?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_recruits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_recruits_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_review_events: {
         Row: {
           actor_id: string | null
@@ -8981,6 +9562,8 @@ export type Database = {
       }
       golf_rounds: {
         Row: {
+          ai_recap: string | null
+          ai_recap_generated_at: string | null
           back_nine: number | null
           course_city: string | null
           course_id: string | null
@@ -9020,6 +9603,8 @@ export type Database = {
           weather_conditions: string | null
         }
         Insert: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
           back_nine?: number | null
           course_city?: string | null
           course_id?: string | null
@@ -9059,6 +9644,8 @@ export type Database = {
           weather_conditions?: string | null
         }
         Update: {
+          ai_recap?: string | null
+          ai_recap_generated_at?: string | null
           back_nine?: number | null
           course_city?: string | null
           course_id?: string | null
@@ -10353,6 +10940,17 @@ export type Database = {
       }
     }
     Views: {
+      crm_coach_engagement: {
+        Row: {
+          clicks_90d: number | null
+          coach_id: string | null
+          last_event_at: string | null
+          opens_90d: number | null
+          score: number | null
+          temperature: string | null
+        }
+        Relationships: []
+      }
       crm_email_events: {
         Row: {
           contact_log_id: string | null
@@ -10406,6 +11004,10 @@ export type Database = {
           sg_tee: number
           sg_total: number
         }[]
+      }
+      coach_id_for_team: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: string
       }
       get_admin_analytics_rollup: {
         Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
@@ -10497,6 +11099,14 @@ export type Database = {
         Args: { p_team_id: string; p_today_end: string; p_today_start: string }
         Returns: Json
       }
+      get_crm_click_destinations: {
+        Args: { p_limit?: number; p_window?: string }
+        Returns: {
+          click_count: number
+          clicked_url: string
+          unique_recipients: number
+        }[]
+      }
       get_crm_coach_email_events: {
         Args: { p_coach_id: string }
         Returns: {
@@ -10526,6 +11136,28 @@ export type Database = {
           start_time: string
           status: string
           title: string
+        }[]
+      }
+      get_crm_template_performance: {
+        Args: { p_window?: string }
+        Returns: {
+          bounced_count: number
+          click_rate: number
+          clicked_count: number
+          delivered_count: number
+          open_rate: number
+          opened_count: number
+          sent_count: number
+          template_id: string
+          template_name: string
+        }[]
+      }
+      get_crm_time_to_open: {
+        Args: { p_window?: string }
+        Returns: {
+          bucket_max: number
+          bucket_min: number
+          count: number
         }[]
       }
       get_current_golf_player_id: { Args: never; Returns: string }
@@ -10734,6 +11366,10 @@ export type Database = {
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
+      is_user_on_team: {
+        Args: { p_team_id: string; p_user_id: string }
+        Returns: boolean
+      }
       mark_player_stats_stale: {
         Args: { p_player_id: string }
         Returns: undefined
@@ -10755,6 +11391,7 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      refresh_crm_coach_engagement: { Args: never; Returns: undefined }
       refresh_player_stats_cache: {
         Args: { p_player_id: string }
         Returns: undefined
@@ -10862,6 +11499,12 @@ export type Database = {
         | "meeting"
         | "email_reminder"
         | "other"
+      email_status:
+        | "valid"
+        | "bounced"
+        | "complained"
+        | "unknown"
+        | "unsubscribed"
       golf_expense_category:
         | "lodging"
         | "transportation"
@@ -11046,6 +11689,13 @@ export const Constants = {
         "meeting",
         "email_reminder",
         "other",
+      ],
+      email_status: [
+        "valid",
+        "bounced",
+        "complained",
+        "unknown",
+        "unsubscribed",
       ],
       golf_expense_category: [
         "lodging",

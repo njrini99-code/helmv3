@@ -11,7 +11,7 @@ export function AcknowledgementPill({ count, total }: { count: number; total: nu
       'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium tabular-nums',
       isComplete
         ? 'bg-primary-50 text-primary-700'
-        : 'bg-slate-100 text-slate-500'
+        : 'bg-warm-100 text-warm-500'
     )}>
       {isComplete ? <IconCheck size={10} /> : <IconClock size={10} />}
       {count}/{total}

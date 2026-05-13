@@ -141,7 +141,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         <div className="relative group">
           {leftIcon && (
             <div className={cn(
-              'absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+              'absolute left-4 top-1/2 -tranwarm-y-1/2 transition-colors duration-200',
               isFocused ? 'text-warm-600' : 'text-warm-400',
             )}>
               {leftIcon}
@@ -181,7 +181,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               onClick={handleClear}
               aria-label="Clear input"
               className={cn(
-                'absolute right-1 top-1/2 -translate-y-1/2',
+                'absolute right-1 top-1/2 -tranwarm-y-1/2',
                 'min-w-[44px] min-h-[44px] flex items-center justify-center',
                 'text-warm-400 hover:text-warm-600 active:text-warm-600',
                 'transition-all duration-150',
@@ -202,7 +202,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               aria-label={showPassword ? 'Hide password' : 'Show password'}
               aria-pressed={showPassword}
               className={cn(
-                'absolute right-1 top-1/2 -translate-y-1/2',
+                'absolute right-1 top-1/2 -tranwarm-y-1/2',
                 'min-w-[44px] min-h-[44px] flex items-center justify-center',
                 'text-warm-400 hover:text-warm-600',
                 'transition-colors duration-200',
@@ -223,7 +223,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {rightIcon && !isPassword && (
             <div
               className={cn(
-                'absolute right-4 top-1/2 -translate-y-1/2 transition-colors duration-200',
+                'absolute right-4 top-1/2 -tranwarm-y-1/2 transition-colors duration-200',
                 isFocused ? 'text-warm-600' : 'text-warm-400',
                 onRightIconClick && 'cursor-pointer hover:text-warm-700'
               )}

@@ -185,8 +185,8 @@ export function QuickAddEventFAB({
             'absolute bottom-20 right-0 flex flex-col gap-3',
             'transition-[opacity,transform] duration-300 ease-out origin-bottom-right',
             isExpanded
-              ? 'opacity-100 scale-100 translate-y-0'
-              : 'opacity-0 scale-75 translate-y-4 pointer-events-none'
+              ? 'opacity-100 scale-100 tranwarm-y-0'
+              : 'opacity-0 scale-75 tranwarm-y-4 pointer-events-none'
           )}
         >
           {QUICK_ACTIONS.map((action, index) => {

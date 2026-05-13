@@ -31,13 +31,16 @@ import { logServerError } from '@/lib/server-error-logger';
 import { calcConfidence, type InsightEvidence, type InsightLifecycleState } from '@/lib/coachhelm/v2/insights/types';
 import { rollupInsightEffectivenessForYesterday } from '@/lib/coachhelm/v2/analytics/effectiveness-writer';
 import { rollupPredictionPerformanceRolling30d } from '@/lib/coachhelm/v2/analytics/prediction-performance-writer';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const PAGE_SIZE = 2000;
+const MAX_ROWS_PER_RUN = 10000;
 const UPDATE_CONCURRENCY = 50;
+const STALE_EVALUATION_MS = 12 * 60 * 60 * 1000;
 const HEALTHY_GAP_THRESHOLD = 0.20; // within 20% of comparison = healthy
 const HEALTHY_CYCLES_TO_RESOLVE = 2;
 const ARCHIVE_DETECTED_AGE_DAYS = 30;
@@ -56,6 +59,7 @@ interface InsightRow {
   addressed_at: string | null;
   archived_at: string | null;
   resolved_at: string | null;
+  updated_at: string | null;
 }
 
 interface UpdatePatch {
@@ -67,27 +71,80 @@ interface UpdatePatch {
   updated_at: string;
 }
 
+interface LifecycleCursor {
+  updatedAt: string;
+  id: string;
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Parse and validate the pagination cursor from the query string.
+ *
+ * The cursor is interpolated into a PostgREST `.or(...)` filter further
+ * down, so unvalidated input could break the query or (in theory) allow
+ * filter injection. The cron is cron-auth protected, but we still validate
+ * fail-closed so a malformed cursor returns null (start of scan) instead of
+ * a 500.
+ */
+function parseCursor(raw: string | null): LifecycleCursor | null {
+  if (!raw) return null;
+  const [updatedAt, id] = raw.split('|');
+  if (!updatedAt || !id) return null;
+
+  // `id` must be a UUID — golf_coach_insights.id is uuid.
+  if (!UUID_REGEX.test(id)) return null;
+
+  // `updatedAt` must round-trip through Date.parse → ISO so we know it is
+  // a well-formed timestamp PostgREST will accept.
+  const parsedMs = Date.parse(updatedAt);
+  if (Number.isNaN(parsedMs)) return null;
+  const isoUpdatedAt = new Date(parsedMs).toISOString();
+
+  return { updatedAt: isoUpdatedAt, id };
+}
+
+function formatCursor(cursor: LifecycleCursor): string {
+  return `${cursor.updatedAt}|${cursor.id}`;
+}
+
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createAdminClient();
   const nowIso = new Date().toISOString();
   const now = Date.now();
+  const staleBeforeIso = new Date(now - STALE_EVALUATION_MS).toISOString();
+  let cursor = parseCursor(req.nextUrl.searchParams.get('cursor'));
 
-  // Paginate through every non-terminal insight. Resolved/archived rows are frozen.
-  const rows: InsightRow[] = [];
-  let offset = 0;
-  while (true) {
-    const { data, error } = await supabase
+  type EvaluatedRow = { id: string; patch: UpdatePatch };
+  let scannedCount = 0;
+  let nextCursor: string | null = null;
+  let reachedRunLimit = false;
+  let resolvedCount = 0;
+  let archivedCount = 0;
+  let recencyAdjustedCount = 0;
+  let demotedCount = 0;
+  let healthyCyclesUpdatedCount = 0;
+  let failed = 0;
+
+  while (scannedCount < MAX_ROWS_PER_RUN) {
+    const remaining = MAX_ROWS_PER_RUN - scannedCount;
+    const limit = Math.min(PAGE_SIZE, remaining);
+    let query = supabase
       .from('golf_coach_insights')
-      .select('id, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at')
+      .select('id, lifecycle_state, evidence, metadata, created_at, addressed_at, archived_at, resolved_at, updated_at')
       .in('lifecycle_state', ['tentative', 'detected', 'matured', 'addressed'])
-      .order('created_at', { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
+      .lt('updated_at', staleBeforeIso)
+      .order('updated_at', { ascending: true })
+      .order('id', { ascending: true });
+
+    if (cursor) {
+      query = query.or(`updated_at.gt.${cursor.updatedAt},and(updated_at.eq.${cursor.updatedAt},id.gt.${cursor.id})`);
+    }
+
+    const { data, error } = await query.limit(limit);
 
     if (error) {
       await logServerError(
@@ -95,7 +152,7 @@ export async function GET(req: NextRequest) {
         {
           action: 'cron.coachhelm.insight_lifecycle.fetch',
           featureArea: 'coachhelm',
-          extra: { code: error.code, offset },
+          extra: { code: error.code, cursor },
         },
         'error',
       );
@@ -104,75 +161,74 @@ export async function GET(req: NextRequest) {
 
     // Generated Database types lag the live schema. Cast through unknown.
     const page = ((data ?? []) as unknown) as InsightRow[];
-    rows.push(...page);
-    if (page.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
-  }
+    if (page.length === 0) break;
 
-  // Build patches up front so we can run updates concurrently.
-  type EvaluatedRow = { id: string; patch: UpdatePatch };
-  const evaluated: EvaluatedRow[] = [];
-  let resolvedCount = 0;
-  let archivedCount = 0;
-  let recencyAdjustedCount = 0;
-  let demotedCount = 0;
-  let healthyCyclesUpdatedCount = 0;
-
-  for (const row of rows) {
-    try {
-      const patch = evaluateRow(row, now, nowIso);
-      if (!patch) continue;
-      if (patch.lifecycle_state === 'resolved') resolvedCount++;
-      if (patch.lifecycle_state === 'archived') archivedCount++;
-      if (patch.lifecycle_state === 'tentative') demotedCount++;
-      if (patch.evidence) recencyAdjustedCount++;
-      if (patch.metadata && !patch.lifecycle_state && !patch.evidence) {
-        healthyCyclesUpdatedCount++;
-      }
-      evaluated.push({ id: row.id, patch });
-    } catch (err) {
-      await logServerError(
-        `cron.insight_lifecycle.evaluate failed: ${err instanceof Error ? err.message : String(err)}`,
-        {
-          action: 'cron.coachhelm.insight_lifecycle.evaluate',
-          featureArea: 'coachhelm',
-          extra: { insightId: row.id, stack: err instanceof Error ? err.stack : undefined },
-        },
-        'error',
-      );
+    scannedCount += page.length;
+    const last = page[page.length - 1];
+    if (last?.updated_at) {
+      cursor = { updatedAt: last.updated_at, id: last.id };
+      nextCursor = formatCursor(cursor);
     }
-  }
 
-  // Issue updates in concurrent chunks (50 in flight at once) instead of
-  // serial round-trips. Per-row updates remain because evidence + metadata
-  // patches are row-specific (recency decay, healthy_cycles_count).
-  let failed = 0;
-  for (let i = 0; i < evaluated.length; i += UPDATE_CONCURRENCY) {
-    const chunk = evaluated.slice(i, i + UPDATE_CONCURRENCY);
-    const results = await Promise.all(
-      chunk.map(({ id, patch }) =>
-        supabase
-          .from('golf_coach_insights')
-          .update(patch as unknown as Record<string, never>)
-          .eq('id', id),
-      ),
-    );
-    for (let j = 0; j < results.length; j++) {
-      const result = results[j];
-      const updateError = result?.error;
-      if (updateError) {
-        failed++;
+    const evaluated: EvaluatedRow[] = [];
+    for (const row of page) {
+      try {
+        const patch = evaluateRow(row, now, nowIso);
+        if (!patch) continue;
+        if (patch.lifecycle_state === 'resolved') resolvedCount++;
+        if (patch.lifecycle_state === 'archived') archivedCount++;
+        if (patch.lifecycle_state === 'tentative') demotedCount++;
+        if (patch.evidence) recencyAdjustedCount++;
+        if (patch.metadata && !patch.lifecycle_state && !patch.evidence) {
+          healthyCyclesUpdatedCount++;
+        }
+        evaluated.push({ id: row.id, patch });
+      } catch (err) {
         await logServerError(
-          `cron.insight_lifecycle.update failed: ${updateError.message}`,
+          `cron.insight_lifecycle.evaluate failed: ${err instanceof Error ? err.message : String(err)}`,
           {
-            action: 'cron.coachhelm.insight_lifecycle.update',
+            action: 'cron.coachhelm.insight_lifecycle.evaluate',
             featureArea: 'coachhelm',
-            extra: { insightId: chunk[j]?.id, code: updateError.code },
+            extra: { insightId: row.id, stack: err instanceof Error ? err.stack : undefined },
           },
           'error',
         );
       }
     }
+
+    // Issue updates in concurrent chunks (50 in flight at once) instead of
+    // serial round-trips. Per-row updates remain because evidence + metadata
+    // patches are row-specific (recency decay, healthy_cycles_count).
+    for (let i = 0; i < evaluated.length; i += UPDATE_CONCURRENCY) {
+      const chunk = evaluated.slice(i, i + UPDATE_CONCURRENCY);
+      const results = await Promise.all(
+        chunk.map(({ id, patch }) =>
+          supabase
+            .from('golf_coach_insights')
+            .update(patch as unknown as Record<string, never>)
+            .eq('id', id),
+        ),
+      );
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        const updateError = result?.error;
+        if (updateError) {
+          failed++;
+          await logServerError(
+            `cron.insight_lifecycle.update failed: ${updateError.message}`,
+            {
+              action: 'cron.coachhelm.insight_lifecycle.update',
+              featureArea: 'coachhelm',
+              extra: { insightId: chunk[j]?.id, code: updateError.code },
+            },
+            'error',
+          );
+        }
+      }
+    }
+
+    if (page.length < limit) break;
+    reachedRunLimit = scannedCount >= MAX_ROWS_PER_RUN;
   }
 
   // After lifecycle progression, run the analytics rollups so
@@ -201,7 +257,10 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     success: true,
-    total: rows.length,
+    total: scannedCount,
+    stale_before: staleBeforeIso,
+    max_rows_per_run: MAX_ROWS_PER_RUN,
+    next_cursor: reachedRunLimit ? nextCursor : null,
     resolved: resolvedCount,
     archived: archivedCount,
     recency_adjusted: recencyAdjustedCount,
@@ -283,12 +342,17 @@ function evaluateRow(row: InsightRow, nowMs: number, nowIso: string): UpdatePatc
   }
 
   // --- Rule 4: recency decay + possible tentative demotion -------------------
+  // Recency is derived FROM age, not subtracted FROM the prior recency value.
+  // Subtracting the age-based decay from the already-decayed prior value on
+  // every cron run compounds decay daily and zeros out confidence within a
+  // few extra days. Compute decay against a fixed baseline of 1.0 so the
+  // value at a given age is stable regardless of how many times the cron ran.
   if (row.evidence && typeof row.evidence.window_days === 'number') {
     const overageDays = ageDays - row.evidence.window_days;
     if (overageDays > 0) {
       const priorRecency = row.evidence.confidence_factors?.recency ?? 1;
       const decay = (overageDays / 30) * RECENCY_DECAY_PER_30D;
-      const newRecency = Math.max(0, priorRecency - decay);
+      const newRecency = Math.max(0, 1 - decay);
       if (newRecency !== priorRecency) {
         const updatedEvidence: InsightEvidence = {
           ...row.evidence,

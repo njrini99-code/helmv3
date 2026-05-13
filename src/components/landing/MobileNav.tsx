@@ -101,21 +101,21 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 rotate-45 w-full'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} -translate-y-[5px] w-full`
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} -tranwarm-y-[5px] w-full`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-200 ease-out
               ${isOpen
                 ? 'bg-warm-700 opacity-0 scale-x-0'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} opacity-100 w-3/4 -translate-x-[2px]`
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} opacity-100 w-3/4 -tranwarm-x-[2px]`
               }`}
           />
           <span
             className={`absolute h-[1.5px] rounded-full transition-all duration-300 ease-out
               ${isOpen
                 ? 'bg-warm-700 -rotate-45 w-full'
-                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} translate-y-[5px] w-full`
+                : `${isDarkBg ? 'bg-white' : 'bg-warm-800'} tranwarm-y-[5px] w-full`
               }`}
           />
         </div>
@@ -210,7 +210,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             {link.name}
                           </span>
                           <svg
-                            className="w-5 h-5 text-warm-300 group-active:translate-x-1 transition-transform duration-150"
+                            className="w-5 h-5 text-warm-300 group-active:tranwarm-x-1 transition-transform duration-150"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"

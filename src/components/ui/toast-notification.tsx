@@ -68,8 +68,8 @@ export function ToastNotification({ toast, onClose }: ToastNotificationProps) {
         'transition-all duration-300 ease-out',
         toastStyles[toast.type],
         isExiting
-          ? 'opacity-0 translate-x-full scale-95'
-          : 'opacity-100 translate-x-0 scale-100 animate-fade-in'
+          ? 'opacity-0 tranwarm-x-full scale-95'
+          : 'opacity-100 tranwarm-x-0 scale-100 animate-fade-in'
       )}
     >
       {/* Shine effect */}
@@ -116,8 +116,8 @@ const positionStyles = {
   'top-left': 'top-4 left-4',
   'bottom-right': 'bottom-4 right-4',
   'bottom-left': 'bottom-4 left-4',
-  'top-center': 'top-4 left-1/2 -translate-x-1/2',
-  'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2',
+  'top-center': 'top-4 left-1/2 -tranwarm-x-1/2',
+  'bottom-center': 'bottom-4 left-1/2 -tranwarm-x-1/2',
 };
 
 export function ToastContainer({ toasts, onClose, position = 'top-right' }: ToastContainerProps) {

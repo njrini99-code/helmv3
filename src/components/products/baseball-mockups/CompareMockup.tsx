@@ -40,8 +40,8 @@ function ComparePlayerHeader({ name, color }: { name: 'wide' | 'medium'; color: 
       "bg-cream-100/55 border-b-2",
       colors[color]
     )}>
-      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-slate-200 to-slate-300" />
-      <div className={cn("h-1.5 bg-slate-200 rounded", widths[name])} />
+      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-warm-200 to-warm-300" />
+      <div className={cn("h-1.5 bg-warm-200 rounded", widths[name])} />
     </div>
   );
 }
@@ -64,30 +64,30 @@ function CompareStatRow({
   return (
     <div className="space-y-1">
       <div className="flex justify-between items-center">
-        <span className="text-[9px] text-slate-500">{label}</span>
+        <span className="text-[9px] text-warm-500">{label}</span>
         <div className="flex gap-3">
           <span className={cn(
             "text-micro font-semibold",
-            winner === 0 ? "text-primary-600" : "text-slate-400"
+            winner === 0 ? "text-primary-600" : "text-warm-400"
           )}>
             {values[0]}
           </span>
           <span className={cn(
             "text-micro font-semibold",
-            winner === 1 ? "text-amber-600" : "text-slate-400"
+            winner === 1 ? "text-amber-600" : "text-warm-400"
           )}>
             {values[1]}
           </span>
         </div>
       </div>
       <div className="flex gap-1">
-        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
           <div
             className={cn("h-full rounded-full", winner === 0 ? "bg-primary-500" : "bg-primary-200")}
             style={{ width: `${percent1}%` }}
           />
         </div>
-        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
           <div
             className={cn("h-full rounded-full", winner === 1 ? "bg-amber-500" : "bg-amber-200")}
             style={{ width: `${percent2}%` }}

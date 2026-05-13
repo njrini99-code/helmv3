@@ -53,7 +53,7 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
     >
       <div className={cn(
         'relative bg-cream-100/75 backdrop-blur-md rounded-[20px] border border-warm-200/55 shadow-sm overflow-clip',
-        'hover:shadow-lg hover:-translate-y-1 transition-all duration-200',
+        'hover:shadow-lg hover:-tranwarm-y-1 transition-all duration-200',
         isActuallyDragging && 'rotate-2 shadow-xl scale-105'
       )}>
         {/* Shine effect */}
@@ -73,11 +73,11 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
           >
             <Avatar name={name} size="sm" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-slate-900 truncate group-hover:text-slate-700 transition-colors">{name}</p>
-              <p className="text-xs text-slate-500">{item.player?.primary_position} • {item.player?.grad_year}</p>
+              <p className="text-sm font-medium text-warm-900 truncate group-hover:text-warm-700 transition-colors">{name}</p>
+              <p className="text-xs text-warm-500">{item.player?.primary_position} • {item.player?.grad_year}</p>
             </div>
           </Link>
-          {item.notes && <p className="text-xs text-slate-500 mt-2 line-clamp-2">{item.notes}</p>}
+          {item.notes && <p className="text-xs text-warm-500 mt-2 line-clamp-2">{item.notes}</p>}
           {!isDragging && (
             <div className="flex gap-1 mt-3 flex-wrap opacity-0 group-hover:opacity-100 transition-opacity">
               {prevStage && (

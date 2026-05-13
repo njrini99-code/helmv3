@@ -109,9 +109,9 @@ function formatShortDate(iso: string): string {
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-sm">
-      <p className="text-[11px] font-medium text-slate-400 uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-2xl font-bold text-slate-900 tabular-nums leading-none">{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+      <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-2xl font-bold text-warm-900 tabular-nums leading-none">{value}</p>
+      {sub && <p className="text-xs text-warm-400 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -134,7 +134,7 @@ function SortHeader({
   const active = sortKey === currentKey;
   return (
     <th
-      className={`px-3 py-3 text-${align} text-xs font-semibold text-slate-500 uppercase tracking-wide cursor-pointer select-none hover:text-slate-700 transition-colors`}
+      className={`px-3 py-3 text-${align} text-xs font-semibold text-warm-500 uppercase tracking-wide cursor-pointer select-none hover:text-warm-700 transition-colors`}
       onClick={() => onSort(sortKey)}
     >
       {label}
@@ -157,10 +157,10 @@ function TrendTooltip({ active, payload, label }: TrendTooltipProps) {
   if (!active || !payload?.length) return null;
   const data = payload[0];
   return (
-    <div className="bg-cream-50/95 backdrop-blur-xl border border-slate-200/80 rounded-xl shadow-lg px-3 py-2.5 text-xs">
-      <p className="font-medium text-slate-700 mb-1">{label}</p>
-      <p className="text-slate-900 font-bold">{formatAvg(data?.value)}</p>
-      <p className="text-slate-400 mt-0.5">
+    <div className="bg-cream-50/95 backdrop-blur-xl border border-warm-200/80 rounded-xl shadow-lg px-3 py-2.5 text-xs">
+      <p className="font-medium text-warm-700 mb-1">{label}</p>
+      <p className="text-warm-900 font-bold">{formatAvg(data?.value)}</p>
+      <p className="text-warm-400 mt-0.5">
         {data?.payload.hits}/{data?.payload.atBats} AB
         {data?.payload.type && ` · ${data.payload.type}`}
       </p>
@@ -317,7 +317,7 @@ export function PlayerProfileClient({
   const trendBadge = {
     improving: { label: 'Improving', icon: <IconTrendingUp size={14} />, cls: 'bg-primary-100 text-primary-700' },
     declining: { label: 'Declining', icon: <IconTrendingDown size={14} />, cls: 'bg-red-100 text-red-700' },
-    stable: { label: 'Stable', icon: <IconMinus size={14} />, cls: 'bg-slate-100 text-slate-600' },
+    stable: { label: 'Stable', icon: <IconMinus size={14} />, cls: 'bg-warm-100 text-warm-600' },
   } as const;
   const badge = trend ? trendBadge[trend] : trendBadge.stable;
 
@@ -338,15 +338,15 @@ export function PlayerProfileClient({
         <div className="flex items-center gap-3 mb-7">
           <Link
             href="/baseball/dashboard/command-center"
-            className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors group"
+            className="flex items-center gap-2 text-warm-500 hover:text-warm-800 transition-colors group"
           >
-            <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-cream-100/82 border border-slate-200/80 shadow-sm group-hover:shadow transition-shadow">
+            <span className="w-8 h-8 flex items-center justify-center rounded-xl bg-cream-100/82 border border-warm-200/80 shadow-sm group-hover:shadow transition-shadow">
               <IconArrowLeft size={16} />
             </span>
             <span className="text-sm font-medium hidden sm:inline">Back to Command Center</span>
           </Link>
-          <span className="text-slate-300 hidden sm:inline">/</span>
-          <span className="text-sm text-slate-400 hidden sm:inline truncate max-w-[200px]">{teamName}</span>
+          <span className="text-warm-300 hidden sm:inline">/</span>
+          <span className="text-sm text-warm-400 hidden sm:inline truncate max-w-[200px]">{teamName}</span>
         </div>
 
         {/* ── Hero card ────────────────────────────────────────────────── */}
@@ -385,7 +385,7 @@ export function PlayerProfileClient({
 
               {/* Name + info */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight">
+                <h1 className="text-2xl sm:text-3xl font-bold text-warm-900 leading-tight">
                   {fullName}
                 </h1>
 
@@ -397,7 +397,7 @@ export function PlayerProfileClient({
                     </span>
                   )}
                   {player.secondary_position && (
-                    <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">
+                    <span className="px-2.5 py-1 bg-warm-100 text-warm-600 text-xs font-semibold rounded-lg">
                       {player.secondary_position}
                     </span>
                   )}
@@ -414,10 +414,10 @@ export function PlayerProfileClient({
                 </div>
 
                 {/* Physical + hometown row */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-slate-500">
+                <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm text-warm-500">
                   {hometown && (
                     <span className="flex items-center gap-1">
-                      <span className="text-slate-300">📍</span>
+                      <span className="text-warm-300">📍</span>
                       {hometown}
                     </span>
                   )}
@@ -452,28 +452,28 @@ export function PlayerProfileClient({
             </div>
 
             {/* ── Key stat row ─────────────────────────────────────────── */}
-            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
+            <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-warm-100">
               <div className="text-center">
-                <p className="text-[11px] text-slate-400 uppercase tracking-wide">AVG</p>
-                <p className="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-warm-400 uppercase tracking-wide">AVG</p>
+                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {formatAvg(aggregates?.career_avg)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-slate-400 uppercase tracking-wide">OBP</p>
-                <p className="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-warm-400 uppercase tracking-wide">OBP</p>
+                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {formatAvg(aggregates?.career_obp)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-slate-400 uppercase tracking-wide">HR</p>
-                <p className="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-warm-400 uppercase tracking-wide">HR</p>
+                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {careerHR}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-slate-400 uppercase tracking-wide">Sessions</p>
-                <p className="text-xl font-bold text-slate-900 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-warm-400 uppercase tracking-wide">Sessions</p>
+                <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {aggregates?.total_sessions ?? stats.length}
                 </p>
               </div>
@@ -494,7 +494,7 @@ export function PlayerProfileClient({
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-cream-100/75 backdrop-blur-sm text-slate-600 hover:bg-white border border-white/20 hover:shadow-sm'
+                  : 'bg-cream-100/75 backdrop-blur-sm text-warm-600 hover:bg-white border border-white/20 hover:shadow-sm'
               }`}
             >
               {tab.icon}
@@ -514,7 +514,7 @@ export function PlayerProfileClient({
 
               {/* Career stats grid */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Career Statistics</h3>
+                <h3 className="font-semibold text-warm-900 mb-4">Career Statistics</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
                   <StatCard label="Career AVG" value={formatAvg(aggregates?.career_avg)} />
                   <StatCard label="OBP" value={formatAvg(aggregates?.career_obp)} />
@@ -542,8 +542,8 @@ export function PlayerProfileClient({
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="font-semibold text-slate-900">Performance Trend</h3>
-                      <p className="text-xs text-slate-400 mt-0.5">Batting average per session</p>
+                      <h3 className="font-semibold text-warm-900">Performance Trend</h3>
+                      <p className="text-xs text-warm-400 mt-0.5">Batting average per session</p>
                     </div>
                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${badge.cls}`}>
                       {badge.icon}
@@ -584,7 +584,7 @@ export function PlayerProfileClient({
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
-                  <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
+                  <div className="flex items-center gap-4 mt-3 text-xs text-warm-400">
                     <span className="flex items-center gap-1.5">
                       <span className="w-3 h-0.5 rounded bg-primary-500 inline-block" />
                       Batting Average
@@ -600,7 +600,7 @@ export function PlayerProfileClient({
               {/* Advanced metrics */}
               {(pressureIndex ?? aggregates?.trend_magnitude) && (
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                  <h3 className="font-semibold text-slate-900 mb-4">Advanced Metrics</h3>
+                  <h3 className="font-semibold text-warm-900 mb-4">Advanced Metrics</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {pressureIndex && (
                       <div className="flex items-center gap-3 p-3.5 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl">
@@ -609,9 +609,9 @@ export function PlayerProfileClient({
                         </div>
                         <div>
                           <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wide">Pressure</p>
-                          <p className="text-base font-bold text-slate-900">{pressureIndex}</p>
+                          <p className="text-base font-bold text-warm-900">{pressureIndex}</p>
                           {aggregates?.pressure_gap != null && (
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10px] text-warm-400">
                               {aggregates.pressure_gap > 0 ? '+' : ''}{(aggregates.pressure_gap * 1000).toFixed(0)} pts game vs scrimmage
                             </p>
                           )}
@@ -625,10 +625,10 @@ export function PlayerProfileClient({
                         </div>
                         <div>
                           <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Trend Velocity</p>
-                          <p className="text-base font-bold text-slate-900">
+                          <p className="text-base font-bold text-warm-900">
                             {(aggregates.trend_magnitude * 100).toFixed(1)}%
                           </p>
-                          <p className="text-[10px] text-slate-400">Rate of change</p>
+                          <p className="text-[10px] text-warm-400">Rate of change</p>
                         </div>
                       </div>
                     )}
@@ -639,11 +639,11 @@ export function PlayerProfileClient({
                         </div>
                         <div>
                           <p className="text-[10px] font-semibold text-primary-600 uppercase tracking-wide">Exit Velocity</p>
-                          <p className="text-base font-bold text-slate-900">
+                          <p className="text-base font-bold text-warm-900">
                             {aggregates.avg_exit_velocity.toFixed(1)} mph
                           </p>
                           {aggregates.max_exit_velocity && (
-                            <p className="text-[10px] text-slate-400">
+                            <p className="text-[10px] text-warm-400">
                               Max {aggregates.max_exit_velocity.toFixed(1)} mph
                             </p>
                           )}
@@ -658,7 +658,7 @@ export function PlayerProfileClient({
               {videos.length > 0 && (
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-900">Videos</h3>
+                    <h3 className="font-semibold text-warm-900">Videos</h3>
                     <button
                       onClick={() => setActiveTab('videos')}
                       className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
@@ -671,18 +671,18 @@ export function PlayerProfileClient({
                       <button
                         key={v.id}
                         onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
-                        className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 hover:ring-2 hover:ring-primary-500 transition-shadow"
+                        className="group relative aspect-video rounded-xl overflow-hidden bg-warm-100 hover:ring-2 hover:ring-primary-500 transition-shadow"
                       >
                         {v.thumbnail_url ? (
                           <Image src={v.thumbnail_url} alt={v.title ?? 'Video'} fill className="object-cover" />
                         ) : (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-                            <IconVideo size={20} className="text-slate-400" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-warm-200 to-warm-300">
+                            <IconVideo size={20} className="text-warm-400" />
                           </div>
                         )}
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
                           <div className="w-9 h-9 rounded-full bg-cream-50/92 flex items-center justify-center opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform]">
-                            <IconPlay size={16} className="text-slate-900 ml-0.5" />
+                            <IconPlay size={16} className="text-warm-900 ml-0.5" />
                           </div>
                         </div>
                       </button>
@@ -697,7 +697,7 @@ export function PlayerProfileClient({
 
               {/* AI Insights */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 flex items-center gap-2 mb-4">
+                <h3 className="font-semibold text-warm-900 flex items-center gap-2 mb-4">
                   <IconSparkles size={16} className="text-purple-500" />
                   AI Insights
                   {insights.length > 0 && (
@@ -708,7 +708,7 @@ export function PlayerProfileClient({
                 </h3>
                 <PlayerInsightsPanel insights={insights.slice(0, 3)} />
                 {insights.length > 3 && (
-                  <p className="text-xs text-slate-400 text-center mt-3">
+                  <p className="text-xs text-warm-400 text-center mt-3">
                     +{insights.length - 3} more insights
                   </p>
                 )}
@@ -717,8 +717,8 @@ export function PlayerProfileClient({
               {/* Notes */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                    <IconNote size={15} className="text-slate-400" />
+                  <h3 className="font-semibold text-warm-900 flex items-center gap-2">
+                    <IconNote size={15} className="text-warm-400" />
                     Coach Notes
                   </h3>
                   <button className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
@@ -731,23 +731,23 @@ export function PlayerProfileClient({
 
               {/* Session breakdown */}
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Sessions</h3>
+                <h3 className="font-semibold text-warm-900 mb-4">Sessions</h3>
                 <div className="space-y-3">
                   {[
                     { label: 'Game', count: stats.filter((s) => s.stat_type === 'game').length, color: 'bg-primary-500' },
                     { label: 'Practice / Scrimmage', count: stats.filter((s) => s.stat_type === 'practice').length, color: 'bg-blue-400' },
-                    { label: 'Other', count: stats.filter((s) => s.stat_type !== 'game' && s.stat_type !== 'practice').length, color: 'bg-slate-300' },
+                    { label: 'Other', count: stats.filter((s) => s.stat_type !== 'game' && s.stat_type !== 'practice').length, color: 'bg-warm-300' },
                   ].map(({ label, count, color }) => (
                     <div key={label} className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
-                        <span className="text-sm text-slate-600">{label}</span>
+                        <span className="text-sm text-warm-600">{label}</span>
                       </div>
-                      <span className="text-sm font-semibold text-slate-900">{count}</span>
+                      <span className="text-sm font-semibold text-warm-900">{count}</span>
                     </div>
                   ))}
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                    <span className="text-sm font-medium text-slate-700">Total</span>
+                  <div className="flex items-center justify-between pt-2 border-t border-warm-100">
+                    <span className="text-sm font-medium text-warm-700">Total</span>
                     <span className="text-sm font-bold text-primary-600">{stats.length}</span>
                   </div>
                 </div>
@@ -782,7 +782,7 @@ export function PlayerProfileClient({
                   AVG · OBP · SLG · OPS · ERA · WHIP · game log
                 </p>
               </div>
-              <span className="text-primary-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+              <span className="text-primary-600 text-sm font-medium group-hover:tranwarm-x-1 transition-transform">
                 View →
               </span>
             </Link>
@@ -797,20 +797,20 @@ export function PlayerProfileClient({
                     className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] ${
                       statFilter === f
                         ? 'bg-primary-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-warm-600 hover:text-warm-900'
                     }`}
                   >
                     {f === 'all' ? 'All' : f === 'game' ? 'Game' : 'Scrimmage'}
                   </button>
                 ))}
               </div>
-              <span className="text-xs text-slate-400">{filteredStats.length} sessions</span>
+              <span className="text-xs text-warm-400">{filteredStats.length} sessions</span>
             </div>
 
             {/* Summary row */}
             {filteredStats.length > 0 && (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-3">
+                <p className="text-[10px] font-semibold text-warm-400 uppercase tracking-wide mb-3">
                   Totals — {statFilter === 'all' ? 'All Sessions' : statFilter === 'game' ? 'Game Sessions' : 'Scrimmage Sessions'}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
@@ -824,8 +824,8 @@ export function PlayerProfileClient({
                     { label: 'SO', value: String(statSummary.so) },
                   ].map(({ label, value }) => (
                     <div key={label} className="text-center">
-                      <p className="text-[10px] text-slate-400 uppercase">{label}</p>
-                      <p className="text-base font-bold text-slate-900 tabular-nums">{value}</p>
+                      <p className="text-[10px] text-warm-400 uppercase">{label}</p>
+                      <p className="text-base font-bold text-warm-900 tabular-nums">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -835,18 +835,18 @@ export function PlayerProfileClient({
             {/* Stats table */}
             {filteredStats.length === 0 ? (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <IconActivity size={32} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">No stats for this filter</p>
-                <p className="text-sm text-slate-400 mt-1">Try switching to "All" to see all sessions.</p>
+                <IconActivity size={32} className="mx-auto text-warm-300 mb-3" />
+                <p className="text-warm-500 font-medium">No stats for this filter</p>
+                <p className="text-sm text-warm-400 mt-1">Try switching to "All" to see all sessions.</p>
               </div>
             ) : (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm overflow-clip">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50/80">
+                      <tr className="border-b border-warm-100 bg-warm-50/80">
                         <SortHeader label="Date" sortKey="date" currentKey={sortKey} dir={sortDir} onSort={handleSort} align="left" />
-                        <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</th>
+                        <th className="px-3 py-3 text-left text-xs font-semibold text-warm-500 uppercase tracking-wide">Type</th>
                         <SortHeader label="AB" sortKey="ab" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortHeader label="H" sortKey="h" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
                         <SortHeader label="AVG" sortKey="avg" currentKey={sortKey} dir={sortDir} onSort={handleSort} />
@@ -863,9 +863,9 @@ export function PlayerProfileClient({
                         return (
                           <tr
                             key={stat.id}
-                            className="border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors"
+                            className="border-b border-warm-50 last:border-0 hover:bg-warm-50/80 transition-colors"
                           >
-                            <td className="px-3 py-3 text-sm text-slate-700 whitespace-nowrap">
+                            <td className="px-3 py-3 text-sm text-warm-700 whitespace-nowrap">
                               {formatDate(stat.session_date)}
                             </td>
                             <td className="px-3 py-3">
@@ -875,21 +875,21 @@ export function PlayerProfileClient({
                                     ? 'bg-primary-100 text-primary-700'
                                     : stat.stat_type === 'practice'
                                     ? 'bg-blue-100 text-blue-700'
-                                    : 'bg-slate-100 text-slate-600'
+                                    : 'bg-warm-100 text-warm-600'
                                 }`}
                               >
                                 {stat.stat_type === 'practice' ? 'Scrimmage' : stat.stat_type}
                               </span>
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.at_bats ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.hits ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm font-semibold text-slate-900 tabular-nums">
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.at_bats ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.hits ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm font-semibold text-warm-900 tabular-nums">
                               {formatAvg(sessionAvg)}
                             </td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.home_runs ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.rbis ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.walks ?? '—'}</td>
-                            <td className="px-3 py-3 text-center text-sm text-slate-600 tabular-nums">{stat.strikeouts ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.home_runs ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.rbis ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.walks ?? '—'}</td>
+                            <td className="px-3 py-3 text-center text-sm text-warm-600 tabular-nums">{stat.strikeouts ?? '—'}</td>
                           </tr>
                         );
                       })}
@@ -918,20 +918,20 @@ export function PlayerProfileClient({
                       className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] whitespace-nowrap ${
                         videoFilter === key
                           ? 'bg-primary-600 text-white shadow-sm'
-                          : 'text-slate-600 hover:text-slate-900'
+                          : 'text-warm-600 hover:text-warm-900'
                       }`}
                     >
                       {label}
                       {key !== 'all' && (videoTypeCounts[key] ?? 0) > 0 && (
                         <span className={`ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full ${
-                          videoFilter === key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                          videoFilter === key ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videoTypeCounts[key]}
                         </span>
                       )}
                       {key === 'all' && (
                         <span className={`ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full ${
-                          videoFilter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                          videoFilter === 'all' ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videos.length}
                         </span>
@@ -945,9 +945,9 @@ export function PlayerProfileClient({
             {/* Video grid / empty state */}
             {videosByFilter.length === 0 ? (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-12 text-center">
-                <IconVideo size={36} className="mx-auto text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">No videos uploaded yet</p>
-                <p className="text-sm text-slate-400 mt-1">
+                <IconVideo size={36} className="mx-auto text-warm-300 mb-3" />
+                <p className="text-warm-500 font-medium">No videos uploaded yet</p>
+                <p className="text-sm text-warm-400 mt-1">
                   Videos will appear here once the player uploads them.
                 </p>
               </div>
@@ -957,7 +957,7 @@ export function PlayerProfileClient({
                   <button
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
-                    className="group relative aspect-video rounded-2xl overflow-hidden bg-slate-100
+                    className="group relative aspect-video rounded-2xl overflow-hidden bg-warm-100
                                hover:ring-2 hover:ring-primary-500 hover:shadow-md transition-shadow duration-200"
                   >
                     {video.thumbnail_url ? (
@@ -968,8 +968,8 @@ export function PlayerProfileClient({
                         className="object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-200 to-slate-300">
-                        <IconVideo size={28} className="text-slate-400" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-warm-200 to-warm-300">
+                        <IconVideo size={28} className="text-warm-400" />
                       </div>
                     )}
 
@@ -977,7 +977,7 @@ export function PlayerProfileClient({
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                       <div className="w-12 h-12 rounded-full bg-cream-50/92 flex items-center justify-center
                                       opacity-0 group-hover:opacity-100 scale-75 group-hover:scale-100 transition-[opacity,transform] duration-200">
-                        <IconPlay size={20} className="text-slate-900 ml-0.5" />
+                        <IconPlay size={20} className="text-warm-900 ml-0.5" />
                       </div>
                     </div>
 
@@ -1025,7 +1025,7 @@ export function PlayerProfileClient({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ type: 'spring', stiffness: 400, damping: 32 }}
-              className="relative w-full max-w-4xl bg-slate-900 rounded-2xl overflow-hidden shadow-2xl"
+              className="relative w-full max-w-4xl bg-warm-900 rounded-2xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
@@ -1050,24 +1050,24 @@ export function PlayerProfileClient({
                   </video>
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                    <IconVideo size={40} className="text-slate-600" />
-                    <p className="text-slate-400 text-sm">Video unavailable</p>
+                    <IconVideo size={40} className="text-warm-600" />
+                    <p className="text-warm-400 text-sm">Video unavailable</p>
                   </div>
                 )}
               </div>
 
               {/* Video info footer */}
-              <div className="px-5 py-4 bg-slate-900">
+              <div className="px-5 py-4 bg-warm-900">
                 <h3 className="font-semibold text-white text-base">
                   {selectedVideo.title ?? 'Untitled Video'}
                 </h3>
-                <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-400">
+                <div className="flex items-center gap-3 mt-1.5 text-sm text-warm-400">
                   <span className="flex items-center gap-1.5">
                     <IconClock size={13} />
                     {formatDate(selectedVideo.created_at)}
                   </span>
                   {selectedVideo.video_type && (
-                    <span className="px-2 py-0.5 bg-slate-800 rounded-md capitalize text-xs">
+                    <span className="px-2 py-0.5 bg-warm-800 rounded-md capitalize text-xs">
                       {selectedVideo.video_type}
                     </span>
                   )}

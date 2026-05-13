@@ -126,15 +126,15 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Minimum Standards</h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <h3 className="text-lg font-semibold text-warm-900">Minimum Standards</h3>
+          <p className="text-sm text-warm-500 mt-1">
             Set hard requirements. Players below these thresholds are penalized.
           </p>
         </div>
         {activeCount > 0 && (
           <button
             onClick={handleClearAll}
-            className="text-sm text-slate-500 hover:text-slate-700 underline"
+            className="text-sm text-warm-500 hover:text-warm-700 underline"
           >
             Clear all
           </button>
@@ -169,7 +169,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                 'p-4 rounded-xl border transition-all',
                 isEnabled
                   ? 'bg-white border-primary-200'
-                  : 'bg-slate-50 border-slate-200'
+                  : 'bg-warm-50 border-warm-200'
               )}
             >
               <div className="flex items-start gap-3">
@@ -180,7 +180,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                     'w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
                     isEnabled
                       ? 'bg-primary-500 border-primary-500 text-white'
-                      : 'border-slate-300 hover:border-slate-400'
+                      : 'border-warm-300 hover:border-warm-400'
                   )}
                 >
                   {isEnabled && <Check className="w-4 h-4" />}
@@ -192,7 +192,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                     <span
                       className={cn(
                         'font-medium',
-                        isEnabled ? 'text-slate-900' : 'text-slate-500'
+                        isEnabled ? 'text-warm-900' : 'text-warm-500'
                       )}
                     >
                       {config.label}
@@ -208,7 +208,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                           step={config.step}
                           value={currentValue ?? ''}
                           onChange={(e) => handleValueChange(config.key, e.target.value)}
-                          className="w-24 px-3 py-1.5 text-right text-sm font-medium border border-slate-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
+                          className="w-24 px-3 py-1.5 text-right text-sm font-medium border border-warm-200 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-100 transition-colors"
                           placeholder={config.placeholder}
                         />
                       </div>
@@ -218,7 +218,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                   <p
                     className={cn(
                       'text-sm mt-1',
-                      isEnabled ? 'text-slate-600' : 'text-slate-400'
+                      isEnabled ? 'text-warm-600' : 'text-warm-400'
                     )}
                   >
                     {config.description}
@@ -227,14 +227,14 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                   {/* Preview bar */}
                   {isEnabled && currentValue !== null && (
                     <div className="mt-3">
-                      <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                      <div className="flex items-center justify-between text-xs text-warm-500 mb-1">
                         <span>{config.format(config.min)}</span>
                         <span className="font-medium text-primary-600">
                           {config.isMaximum ? '≤' : '≥'} {config.format(currentValue)}
                         </span>
                         <span>{config.format(config.max)}</span>
                       </div>
-                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
                         <div
                           className={cn(
                             'h-full rounded-full transition-all',
@@ -260,8 +260,8 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
 
       {/* Summary */}
       {activeCount === 0 && (
-        <div className="bg-slate-50 rounded-xl p-4 text-center">
-          <p className="text-sm text-slate-500">
+        <div className="bg-warm-50 rounded-xl p-4 text-center">
+          <p className="text-sm text-warm-500">
             No minimum standards set. All players will be ranked purely by weighted metrics.
           </p>
         </div>

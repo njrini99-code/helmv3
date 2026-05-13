@@ -3,10 +3,9 @@
  *
  * Schedule: every 10 minutes — see vercel.json `crons` entry (added by the
  *           orchestrator).
- * Auth: accepts either Vercel's automatic `x-vercel-cron` header (set by the
- *       platform) or `Authorization: Bearer ${CRON_SECRET}` for manual /
- *       monitoring invocations. Same pattern as
- *       /api/cron/refresh-engagement.
+ * Auth: requires `Authorization: Bearer ${CRON_SECRET}`. Vercel Cron sends
+ *       this header automatically; do not trust `x-vercel-cron` alone since
+ *       it is not stripped from inbound external traffic.
  *
  * Per-tick algorithm (see Phase 2 plan):
  *   1. Fetch enrollments where status='active' AND next_send_at <= now()
@@ -27,6 +26,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -84,15 +84,8 @@ interface TemplateRow {
 // HTTP entry
 // ============================================================================
 export async function GET(request: Request) {
-  const isVercelCron = request.headers.get('x-vercel-cron') !== null;
-  const authHeader = request.headers.get('authorization');
-  const expectedAuth = process.env.CRON_SECRET
-    ? `Bearer ${process.env.CRON_SECRET}`
-    : null;
-
-  if (!isVercelCron && (!expectedAuth || authHeader !== expectedAuth)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const unauthorized = requireCronAuth(request);
+  if (unauthorized) return unauthorized;
 
   try {
     const result = await tick();

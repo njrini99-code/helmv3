@@ -81,13 +81,13 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
   if (!canViewRoster) {
     return (
       <Card className="p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-          <IconUsers size={28} className="text-slate-400" />
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
+          <IconUsers size={28} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">
           Roster not available
         </h3>
-        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+        <p className="text-sm text-warm-500 max-w-sm mx-auto">
           {coachType === 'juco'
             ? 'JUCO coaches can view high school program rosters only.'
             : 'You do not have access to view this program\'s roster.'}
@@ -169,14 +169,14 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     return (
       <div className="space-y-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 animate-pulse">
+          <div key={i} className="bg-white rounded-xl border border-warm-200 p-4 animate-pulse">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-slate-200" />
+              <div className="w-12 h-12 rounded-full bg-warm-200" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-200 rounded w-1/3" />
-                <div className="h-3 bg-slate-100 rounded w-1/2" />
+                <div className="h-4 bg-warm-200 rounded w-1/3" />
+                <div className="h-3 bg-warm-100 rounded w-1/2" />
               </div>
-              <div className="h-3 bg-slate-100 rounded w-16" />
+              <div className="h-3 bg-warm-100 rounded w-16" />
             </div>
           </div>
         ))}
@@ -188,13 +188,13 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
     const isJuco = organizationType === 'juco';
     return (
       <Card className="p-8 text-center">
-        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-          <IconUsers size={28} className="text-slate-400" />
+        <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-warm-100 flex items-center justify-center">
+          <IconUsers size={28} className="text-warm-400" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+        <h3 className="text-lg font-semibold text-warm-900 mb-2">
           {isJuco ? 'No players on roster' : 'No recruiting-active players'}
         </h3>
-        <p className="text-sm text-slate-500 max-w-sm mx-auto">
+        <p className="text-sm text-warm-500 max-w-sm mx-auto">
           {isJuco
             ? 'This JUCO program has no players on their roster yet.'
             : 'Players on this team haven\'t activated their recruiting profiles yet.'}
@@ -218,7 +218,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
   return (
     <div className="space-y-6">
       {/* Summary */}
-      <div className="flex items-center gap-2 text-sm text-slate-600">
+      <div className="flex items-center gap-2 text-sm text-warm-600">
         <IconSparkles size={16} className="text-primary-500" />
         <span>
           <span className="font-semibold text-primary-600">{players.length}</span>{' '}
@@ -229,7 +229,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
       {/* Players by Year */}
       {years.map((year) => (
         <div key={year}>
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+          <h3 className="text-sm font-semibold text-warm-500 uppercase tracking-wide mb-3">
             Class of {year}
           </h3>
           <div className="space-y-2">
@@ -237,7 +237,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
               <button
                 key={player.id}
                 onClick={() => handleViewPlayer(player.id)}
-                className="w-full bg-white rounded-xl border border-slate-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
+                className="w-full bg-white rounded-xl border border-warm-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
                   <Avatar
@@ -247,7 +247,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-semibold text-slate-900 truncate">
+                      <p className="font-semibold text-warm-900 truncate">
                         {player.first_name} {player.last_name}
                       </p>
                       {player.player_type === 'juco' ? (
@@ -256,26 +256,26 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                         <Badge variant="success" className="text-micro">Recruiting</Badge>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-warm-500">
                       {player.primary_position || 'Position TBD'} • {player.city}, {player.state}
                     </p>
                   </div>
                   <div className="flex items-center gap-4 text-sm">
                     {player.pitch_velo && (
                       <div className="text-right">
-                        <p className="font-semibold text-slate-900">{player.pitch_velo}</p>
-                        <p className="text-xs text-slate-400">mph</p>
+                        <p className="font-semibold text-warm-900">{player.pitch_velo}</p>
+                        <p className="text-xs text-warm-400">mph</p>
                       </div>
                     )}
                     {player.exit_velo && (
                       <div className="text-right">
-                        <p className="font-semibold text-slate-900">{player.exit_velo}</p>
-                        <p className="text-xs text-slate-400">exit</p>
+                        <p className="font-semibold text-warm-900">{player.exit_velo}</p>
+                        <p className="text-xs text-warm-400">exit</p>
                       </div>
                     )}
                     <IconChevronRight
                       size={18}
-                      className="text-slate-300 group-hover:text-primary-500 transition-colors"
+                      className="text-warm-300 group-hover:text-primary-500 transition-colors"
                     />
                   </div>
                 </div>

@@ -79,12 +79,15 @@ export async function upsertInsight(
     Date.now() - DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const { data: existingRows, error: lookupError } = await supabase
+  let lookup = supabase
     .from('golf_coach_insights')
     .select('id, evidence, metadata, lifecycle_state')
-    .eq('player_id', input.player_id)
     .eq('signature', input.signature)
-    .gte('created_at', cutoff)
+    .gte('created_at', cutoff);
+  lookup = input.player_id === null
+    ? lookup.is('player_id', null)
+    : lookup.eq('player_id', input.player_id);
+  const { data: existingRows, error: lookupError } = await lookup
     .order('created_at', { ascending: false })
     .limit(1);
 
@@ -203,20 +206,22 @@ async function updateExisting(
   const nextLifecycleState: InsightLifecycleState =
     shouldMature ? 'matured' : (existing.lifecycle_state ?? 'detected');
   try {
-    await notifyInsightLanded({
-      player_id: input.player_id,
-      insight_id: existing.id,
-      category: input.category,
-      title: input.title,
-      evidence,
-      lifecycle_state: nextLifecycleState,
-      was_lifecycle_promotion: shouldMature,
-    });
+    if (input.player_id) {
+      await notifyInsightLanded({
+        player_id: input.player_id,
+        insight_id: existing.id,
+        category: input.category,
+        title: input.title,
+        evidence,
+        lifecycle_state: nextLifecycleState,
+        was_lifecycle_promotion: shouldMature,
+      });
+    }
   } catch (error) {
     // notifyInsightLanded never throws, but belt-and-braces here.
     await logServerError(
       `notifyInsightLanded threw unexpectedly: ${error instanceof Error ? error.message : String(error)}`,
-      { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id },
+      { action: 'coachhelm.upsert.updateExisting.notifyInsightLanded', featureArea: 'coachhelm', playerId: input.player_id ?? undefined },
       'warning'
     );
   }
@@ -243,10 +248,11 @@ async function insertNew(
   // "Coaches can view their own insights" RLS policy hides it from the
   // coach UI even though the engine wrote it. This was the root cause of
   // the player insight + team Deep Analysis tabs showing "0 insights".
-  const { coachId, teamId } = await resolvePlayerOwnership(
-    supabase,
-    input.player_id,
-  );
+  const ownership = input.player_id
+    ? await resolvePlayerOwnership(supabase, input.player_id)
+    : { coachId: null, teamId: null };
+  const coachId = input.coach_id ?? ownership.coachId;
+  const teamId = input.team_id ?? ownership.teamId;
 
   // `insight_type` is NOT NULL on the legacy table. Fall back to category as
   // the type so we don't violate the pre-existing constraint while we
@@ -262,7 +268,7 @@ async function insertNew(
     evidence,
     metadata,
     lifecycle_state: lifecycleState,
-    insight_type: input.category,
+    insight_type: input.insight_type ?? input.category,
   };
 
   const { data, error } = await supabase
@@ -286,10 +292,14 @@ interface DrillRow {
 }
 
 /**
- * Resolve the team + organization-coach for a player so newly-created
- * insights carry the FK ownership the existing coach RLS policy expects.
- * Falls back to nulls if a player has no active team membership — better
- * to land an orphaned row than throw.
+ * Resolve the team + staffing coach for a player so newly-created insights
+ * carry the FK ownership the existing coach RLS policy expects.
+ *
+ * Ownership is resolved through `golf_team_coach_staff` (the canonical
+ * coach↔team relationship). When a team has multiple staff, we prefer the
+ * `is_primary` coach, then fall back to the earliest-created staff row.
+ * Falls back to nulls if a player has no active team membership or no
+ * staffed coach — better to land an orphaned row than throw.
  */
 async function resolvePlayerOwnership(
   supabase: SupabaseClient,
@@ -298,7 +308,7 @@ async function resolvePlayerOwnership(
   try {
     const { data: membership } = await supabase
       .from('golf_team_members')
-      .select('team_id, golf_teams(organization_id)')
+      .select('team_id')
       .eq('player_id', playerId)
       .eq('status', 'active')
       .order('created_at', { ascending: true, nullsFirst: false })
@@ -306,30 +316,20 @@ async function resolvePlayerOwnership(
       .maybeSingle();
 
     const teamId = membership?.team_id ?? null;
-    // PostgREST may return the embedded golf_teams as an array OR an object
-    // depending on the FK shape; narrow defensively rather than trust the
-    // generated types here.
-    const teamRel = membership?.golf_teams as
-      | { organization_id: string | null }
-      | { organization_id: string | null }[]
-      | null
-      | undefined;
-    const orgId = Array.isArray(teamRel)
-      ? teamRel[0]?.organization_id ?? null
-      : teamRel?.organization_id ?? null;
-    if (!teamId || !orgId) {
-      return { coachId: null, teamId };
+    if (!teamId) {
+      return { coachId: null, teamId: null };
     }
 
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id')
-      .eq('organization_id', orgId)
+    const { data: staff } = await supabase
+      .from('golf_team_coach_staff')
+      .select('coach_id, is_primary, created_at')
+      .eq('team_id', teamId)
+      .order('is_primary', { ascending: false, nullsFirst: false })
       .order('created_at', { ascending: true, nullsFirst: false })
       .limit(1)
       .maybeSingle();
 
-    return { coachId: coach?.id ?? null, teamId };
+    return { coachId: staff?.coach_id ?? null, teamId };
   } catch (error) {
     await logServerError(
       `resolvePlayerOwnership failed: ${error instanceof Error ? error.message : String(error)}`,

@@ -48,7 +48,7 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
     upcoming: 'bg-amber-50 text-amber-700 border-amber-200',
     soon: 'bg-orange-50 text-orange-700 border-orange-200',
     imminent: 'bg-red-50 text-red-700 border-red-200 animate-pulse',
-    past: 'bg-slate-50 text-slate-500 border-slate-200',
+    past: 'bg-warm-50 text-warm-500 border-warm-200',
   };
 
   const sizeStyles = {

@@ -5,12 +5,12 @@ import { cn } from '@/lib/utils';
 export function PipelineMiniMockup() {
   return (
     <div className="relative w-full max-w-md mx-auto">
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 shadow-2xl">
+      <div className="bg-gradient-to-br from-warm-900 to-warm-800 rounded-2xl p-5 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-semibold text-white">Recruiting Pipeline</h3>
-            <p className="text-xs text-slate-400">Class of 2026</p>
+            <p className="text-xs text-warm-400">Class of 2026</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs font-medium rounded">
@@ -28,14 +28,14 @@ export function PipelineMiniMockup() {
         </div>
 
         {/* Recent activity */}
-        <div className="mt-4 pt-4 border-t border-slate-700">
-          <p className="text-xs text-slate-400 mb-2">Recent Activity</p>
+        <div className="mt-4 pt-4 border-t border-warm-700">
+          <p className="text-xs text-warm-400 mb-2">Recent Activity</p>
           <div className="flex items-center gap-2 text-sm">
             <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs">
               ✓
             </div>
-            <span className="text-slate-300">Jake M. committed</span>
-            <span className="text-slate-500 text-xs ml-auto">2h ago</span>
+            <span className="text-warm-300">Jake M. committed</span>
+            <span className="text-warm-500 text-xs ml-auto">2h ago</span>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@ function PipelineBar({
   color: 'slate' | 'amber' | 'blue' | 'emerald'
 }) {
   const colors = {
-    slate: 'from-slate-500 to-slate-600',
+    slate: 'from-warm-500 to-warm-600',
     amber: 'from-amber-500 to-orange-500',
     blue: 'from-blue-500 to-indigo-500',
     emerald: 'from-emerald-500 to-teal-500'
@@ -74,7 +74,7 @@ function PipelineBar({
           <span className="text-lg font-bold text-white">{count}</span>
         </div>
       </div>
-      <span className="text-xs text-slate-400 mt-2">{label}</span>
+      <span className="text-xs text-warm-400 mt-2">{label}</span>
     </div>
   );
 }

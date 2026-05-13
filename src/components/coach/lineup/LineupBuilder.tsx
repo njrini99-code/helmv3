@@ -114,8 +114,8 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-slate-900">Lineup Builder</h2>
-              <p className="text-sm text-slate-500 mt-1">
+              <h2 className="text-xl font-semibold text-warm-900">Lineup Builder</h2>
+              <p className="text-sm text-warm-500 mt-1">
                 Drag players into batting order positions
               </p>
             </div>
@@ -158,19 +158,19 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Batting Order */}
         <div className="lg:col-span-2 space-y-3">
-          <h3 className="font-medium text-slate-700">Batting Order</h3>
+          <h3 className="font-medium text-warm-700">Batting Order</h3>
           <div className="space-y-2">
             {lineup.map((slot, index) => (
               <div
                 key={slot.order}
-                className="bg-white rounded-2xl border border-slate-200 p-4 transition-all hover:border-primary-200"
+                className="bg-white rounded-2xl border border-warm-200 p-4 transition-all hover:border-primary-200"
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(index)}
               >
                 <div className="flex items-center gap-4">
                   {/* Order Number */}
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                    <span className="font-semibold text-slate-700">{slot.order}</span>
+                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center">
+                    <span className="font-semibold text-warm-700">{slot.order}</span>
                   </div>
 
                   {/* Player or Empty Slot */}
@@ -181,17 +181,17 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                         draggable
                         onDragStart={() => handleDragStart(slot.player!, index)}
                       >
-                        <IconMoreVertical size={20} className="text-slate-400" />
+                        <IconMoreVertical size={20} className="text-warm-400" />
                         <Avatar
                           name={getFullName(slot.player.first_name, slot.player.last_name)}
                           src={slot.player.avatar_url || undefined}
                           size="sm"
                         />
                         <div className="flex-1">
-                          <p className="font-medium text-slate-900">
+                          <p className="font-medium text-warm-900">
                             {getFullName(slot.player.first_name, slot.player.last_name)}
                           </p>
-                          <p className="text-xs text-slate-500">
+                          <p className="text-xs text-warm-500">
                             {slot.player.primary_position || 'No position'}
                             {slot.player.jersey_number && ` • #${slot.player.jersey_number}`}
                           </p>
@@ -199,14 +199,14 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                       </div>
                       <button
                         onClick={() => removePlayerFromLineup(index)}
-                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
+                        className="p-2 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                       >
                         <IconX size={18} />
                       </button>
                     </>
                   ) : (
-                    <div className="flex-1 py-3 px-4 border-2 border-dashed border-slate-200 rounded-lg">
-                      <p className="text-sm text-slate-400">Drop player here or select from roster →</p>
+                    <div className="flex-1 py-3 px-4 border-2 border-dashed border-warm-200 rounded-lg">
+                      <p className="text-sm text-warm-400">Drop player here or select from roster →</p>
                     </div>
                   )}
                 </div>
@@ -217,33 +217,33 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
 
         {/* Available Players */}
         <div className="space-y-3">
-          <h3 className="font-medium text-slate-700">Available Players</h3>
+          <h3 className="font-medium text-warm-700">Available Players</h3>
           <Card>
             <CardContent className="p-4 space-y-2 max-h-[600px] overflow-y-auto">
               {availablePlayers.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-sm text-slate-500">All players in lineup</p>
+                  <p className="text-sm text-warm-500">All players in lineup</p>
                 </div>
               ) : (
                 availablePlayers.map((player) => (
                   <div
                     key={player.id}
-                    className="p-3 bg-white rounded-lg border border-slate-200 cursor-move hover:border-primary-200 hover:shadow-sm transition-all"
+                    className="p-3 bg-white rounded-lg border border-warm-200 cursor-move hover:border-primary-200 hover:shadow-sm transition-all"
                     draggable
                     onDragStart={() => handleDragStart(player)}
                   >
                     <div className="flex items-center gap-3">
-                      <IconMoreVertical size={16} className="text-slate-400 flex-shrink-0" />
+                      <IconMoreVertical size={16} className="text-warm-400 flex-shrink-0" />
                       <Avatar
                         name={getFullName(player.first_name, player.last_name)}
                         src={player.avatar_url || undefined}
                         size="xs"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm text-slate-900 truncate">
+                        <p className="font-medium text-sm text-warm-900 truncate">
                           {getFullName(player.first_name, player.last_name)}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-warm-500">
                           {player.primary_position || 'No position'}
                           {player.jersey_number && ` • #${player.jersey_number}`}
                         </p>

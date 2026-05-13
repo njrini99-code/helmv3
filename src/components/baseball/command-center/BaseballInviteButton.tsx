@@ -166,15 +166,15 @@ export function BaseballInviteButton({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-200">
-          <h2 className="text-lg font-semibold text-slate-900">
+        <div className="px-6 py-4 border-b border-warm-200">
+          <h2 className="text-lg font-semibold text-warm-900">
             Invite Player to {teamName}
           </h2>
         </div>
 
         {/* Content */}
         <div className="px-6 py-5 space-y-4">
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-warm-600">
             Share this link with players to invite them to your team. They&apos;ll
             be able to join by clicking the link and creating an account.
           </p>
@@ -183,7 +183,7 @@ export function BaseballInviteButton({
           {loading && (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin h-6 w-6 border-2 border-primary-600 border-t-transparent rounded-full" />
-              <span className="ml-3 text-sm text-slate-500">
+              <span className="ml-3 text-sm text-warm-500">
                 Generating invite link...
               </span>
             </div>
@@ -215,20 +215,20 @@ export function BaseballInviteButton({
           {/* Success State */}
           {!loading && !error && inviteLink && (
             <>
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <p className="text-xs font-medium text-slate-500 mb-2">
+              <div className="bg-warm-50 rounded-lg p-4 border border-warm-200">
+                <p className="text-xs font-medium text-warm-500 mb-2">
                   Invite Code
                 </p>
-                <p className="text-2xl font-mono font-bold text-slate-900 tracking-wider select-all">
+                <p className="text-2xl font-mono font-bold text-warm-900 tracking-wider select-all">
                   {inviteCode}
                 </p>
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <p className="text-xs font-medium text-slate-500 mb-2">
+              <div className="bg-warm-50 rounded-lg p-4 border border-warm-200">
+                <p className="text-xs font-medium text-warm-500 mb-2">
                   Invite Link
                 </p>
-                <div className="text-sm text-slate-700 break-all font-mono select-all bg-white p-2 rounded border border-slate-100">
+                <div className="text-sm text-warm-700 break-all font-mono select-all bg-white p-2 rounded border border-warm-100">
                   {inviteLink}
                 </div>
               </div>
@@ -286,7 +286,7 @@ export function BaseballInviteButton({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-200 flex justify-end">
+        <div className="px-6 py-4 border-t border-warm-200 flex justify-end">
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>

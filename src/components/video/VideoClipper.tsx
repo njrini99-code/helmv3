@@ -241,7 +241,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
   const currentPercent = duration ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-2xl border border-warm-200 overflow-hidden">
       {/* Video Preview */}
       <div className="relative bg-black aspect-video">
         <video
@@ -258,12 +258,12 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         >
           <div className="w-16 h-16 rounded-full bg-cream-50/92 flex items-center justify-center">
             {isPlaying ? (
-              <svg className="w-6 h-6 text-slate-900" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-warm-900" fill="currentColor" viewBox="0 0 24 24">
                 <rect x="6" y="4" width="4" height="16" />
                 <rect x="14" y="4" width="4" height="16" />
               </svg>
             ) : (
-              <svg className="w-6 h-6 text-slate-900 ml-1" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 text-warm-900 ml-1" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z" />
               </svg>
             )}
@@ -272,10 +272,10 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
       </div>
 
       {/* Timeline */}
-      <div className="p-4 bg-slate-50 border-b border-slate-200">
-        <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
+      <div className="p-4 bg-warm-50 border-b border-warm-200">
+        <div className="mb-2 flex items-center justify-between text-xs text-warm-500">
           <span>{formatTime(0)}</span>
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-warm-900">
             Clip: {formatTime(clipRange.startTime)} - {formatTime(clipRange.endTime)} ({formatTime(clipDuration)})
           </span>
           <span>{formatTime(duration)}</span>
@@ -284,7 +284,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         {/* Timeline Track */}
         <div
           ref={timelineRef}
-          className="relative h-12 bg-slate-200 rounded-lg cursor-pointer"
+          className="relative h-12 bg-warm-200 rounded-lg cursor-pointer"
           onClick={(e) => {
             if (!timelineRef.current || !duration) return;
             const rect = timelineRef.current.getBoundingClientRect();
@@ -317,7 +317,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('start');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 w-1 h-6 bg-white rounded-full" />
           </div>
 
           {/* End Handle */}
@@ -332,7 +332,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('end');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 w-1 h-6 bg-white rounded-full" />
           </div>
 
           {/* Current Time Indicator */}
@@ -340,7 +340,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
             className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none"
             style={{ left: `${currentPercent}%` }}
           >
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full" />
+            <div className="absolute -top-1 left-1/2 -tranwarm-x-1/2 w-3 h-3 bg-red-500 rounded-full" />
           </div>
         </div>
 
@@ -349,7 +349,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
           <div className="flex items-center gap-2">
             <button
               onClick={handleSeekToStart}
-              className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded"
+              className="px-2 py-1 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded"
             >
               Go to Start
             </button>
@@ -377,7 +377,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
             </button>
             <button
               onClick={handleSeekToEnd}
-              className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded"
+              className="px-2 py-1 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded"
             >
               Go to End
             </button>
@@ -387,7 +387,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
 
       {/* Clip Details Form */}
       <div className="p-6 space-y-4">
-        <h3 className="font-semibold text-slate-900">Clip Details</h3>
+        <h3 className="font-semibold text-warm-900">Clip Details</h3>
 
         <Input
           label="Clip Title *"

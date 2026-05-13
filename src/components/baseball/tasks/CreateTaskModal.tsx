@@ -26,7 +26,7 @@ const CATEGORIES = [
 ];
 
 const PRIORITIES = [
-  { value: 'low', label: 'Low', color: 'bg-slate-100 text-slate-700' },
+  { value: 'low', label: 'Low', color: 'bg-warm-100 text-warm-700' },
   { value: 'normal', label: 'Normal', color: 'bg-primary-100 text-primary-700' },
   { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' },
 ];
@@ -139,7 +139,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
         />
 
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-1">
+          <label className="text-sm font-medium text-warm-700 block mb-1">
             Description (Optional)
           </label>
           <textarea
@@ -147,24 +147,24 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Add more details about this task..."
             rows={3}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-200
+            className="w-full px-4 py-2.5 rounded-lg border border-warm-200
                      focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                     text-slate-900 placeholder:text-slate-400 transition-colors resize-none"
+                     text-warm-900 placeholder:text-warm-400 transition-colors resize-none"
           />
         </div>
 
         {/* Category & Priority */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">
+            <label className="text-sm font-medium text-warm-700 block mb-1">
               Category
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-200
+              className="w-full px-4 py-2.5 rounded-lg border border-warm-200
                        focus:border-primary-500 focus:ring-2 focus:ring-primary-100
-                       text-slate-900 bg-white transition-colors"
+                       text-warm-900 bg-white transition-colors"
             >
               {CATEGORIES.map(cat => (
                 <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -173,7 +173,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-700 block mb-1">
+            <label className="text-sm font-medium text-warm-700 block mb-1">
               Priority
             </label>
             <div className="flex gap-2">
@@ -186,7 +186,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                     'px-3 py-1.5 text-xs font-medium rounded-full border transition-colors',
                     priority === p.value
                       ? p.color + ' border-transparent'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                      : 'bg-white text-warm-600 border-warm-200 hover:border-warm-300'
                   )}
                 >
                   {p.label}
@@ -215,7 +215,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
 
         {/* Assignment */}
         <div>
-          <label className="text-sm font-medium text-slate-700 block mb-2">
+          <label className="text-sm font-medium text-warm-700 block mb-2">
             Assign To
           </label>
 
@@ -232,11 +232,11 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 assignToAll
                   ? 'border-primary-600 bg-primary-50 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                  : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
-              <p className="font-medium text-slate-900">All Team Members</p>
-              <p className="text-xs text-slate-500 mt-0.5">{players.length} players</p>
+              <p className="font-medium text-warm-900">All Team Members</p>
+              <p className="text-xs text-warm-500 mt-0.5">{players.length} players</p>
             </motion.button>
 
             <motion.button
@@ -248,11 +248,11 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                 'w-full p-3 rounded-lg border-2 text-left transition-all',
                 !assignToAll
                   ? 'border-primary-600 bg-primary-50 shadow-sm'
-                  : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                  : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
               )}
             >
-              <p className="font-medium text-slate-900">Specific Players</p>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="font-medium text-warm-900">Specific Players</p>
+              <p className="text-xs text-warm-500 mt-0.5">
                 {selectedPlayers.length > 0 ? `${selectedPlayers.length} selected` : 'Select players below'}
               </p>
             </motion.button>
@@ -264,7 +264,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.22 }}
-              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-slate-200 rounded-lg p-2"
+              className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
             >
               {players.map((player, index) => (
                 <motion.button
@@ -280,7 +280,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                     'w-full px-3 py-2 rounded-md text-left text-sm flex items-center justify-between transition-all',
                     selectedPlayers.includes(player.id)
                       ? 'bg-primary-100 text-primary-900 shadow-sm'
-                      : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
+                      : 'hover:bg-warm-50 active:bg-warm-100 text-warm-700'
                   )}
                 >
                   <span>{player.first_name || ''} {player.last_name || ''}</span>
@@ -293,7 +293,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
           )}
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+        <div className="flex justify-end gap-3 pt-4 border-t border-warm-200">
           <Button variant="secondary" type="button" onClick={onClose}>
             Cancel
           </Button>

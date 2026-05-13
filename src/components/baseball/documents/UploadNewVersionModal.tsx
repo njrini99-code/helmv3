@@ -92,22 +92,22 @@ export function UploadNewVersionModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-warm-900/50 backdrop-blur-sm"
         onClick={handleClose}
       />
 
       {/* Modal */}
       <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-clip">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Upload New Version</h2>
-            <p className="text-sm text-slate-500 mt-0.5">{documentTitle}</p>
+            <h2 className="text-lg font-semibold text-warm-900">Upload New Version</h2>
+            <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
           </div>
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="p-2 hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             <IconX size={20} />
           </button>
@@ -145,7 +145,7 @@ export function UploadNewVersionModal({
                   ? 'border-primary-400 bg-primary-50'
                   : selectedFile
                   ? 'border-primary-500 bg-primary-50/50'
-                  : 'border-slate-200 hover:border-slate-300'
+                  : 'border-warm-200 hover:border-warm-300'
               }
             `}
           >
@@ -161,8 +161,8 @@ export function UploadNewVersionModal({
                 <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <IconFile size={24} className="text-primary-600" />
                 </div>
-                <p className="font-medium text-slate-900">{selectedFile.name}</p>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="font-medium text-warm-900">{selectedFile.name}</p>
+                <p className="text-sm text-warm-500 mt-1">
                   {formatFileSize(selectedFile.size)}
                 </p>
                 <button
@@ -170,18 +170,18 @@ export function UploadNewVersionModal({
                     e.stopPropagation();
                     setSelectedFile(null);
                   }}
-                  className="mt-3 text-sm text-slate-500 hover:text-slate-700 underline"
+                  className="mt-3 text-sm text-warm-500 hover:text-warm-700 underline"
                 >
                   Choose different file
                 </button>
               </div>
             ) : (
               <div>
-                <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <IconUpload size={24} className="text-slate-400" />
+                <div className="w-12 h-12 bg-warm-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <IconUpload size={24} className="text-warm-400" />
                 </div>
-                <p className="font-medium text-slate-700">Drop file here or click to browse</p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className="font-medium text-warm-700">Drop file here or click to browse</p>
+                <p className="text-sm text-warm-400 mt-1">
                   PDF, images, Office documents, videos
                 </p>
               </div>
@@ -190,7 +190,7 @@ export function UploadNewVersionModal({
 
           {/* Change notes */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
+            <label className="block text-sm font-medium text-warm-700 mb-2">
               Change Notes (optional)
             </label>
             <textarea
@@ -198,17 +198,17 @@ export function UploadNewVersionModal({
               onChange={(e) => setChangeNotes(e.target.value)}
               placeholder="Describe what changed in this version..."
               rows={3}
-              className="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-slate-900 placeholder:text-slate-400 resize-none"
+              className="w-full px-4 py-2.5 border border-warm-200 rounded-lg focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-warm-900 placeholder:text-warm-400 resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
           <button
             onClick={handleClose}
             disabled={uploading}
-            className="px-4 py-2 text-slate-700 font-medium hover:bg-slate-100 active:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
           </button>

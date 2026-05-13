@@ -138,11 +138,11 @@ export function SeasonStatsTable({
     <div className="space-y-4">
       {/* Header controls */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+        <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
           <button
             onClick={() => { setActiveTab('batting'); setSortField('avg'); setSortDir('desc'); }}
             className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-              activeTab === 'batting' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             <IconUser size={14} />
@@ -152,7 +152,7 @@ export function SeasonStatsTable({
             <button
               onClick={() => { setActiveTab('pitching'); setSortField('era'); setSortDir('asc'); }}
               className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'pitching' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
               }`}
             >
               <IconTrendingUp size={14} />
@@ -165,7 +165,7 @@ export function SeasonStatsTable({
           <select
             value={seasonYear}
             onChange={(e) => onYearChange?.(Number(e.target.value))}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             {availableYears.map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -174,7 +174,7 @@ export function SeasonStatsTable({
 
           <button
             onClick={() => exportToCSV(stats, activeTab)}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 transition-colors"
           >
             <IconDownload size={14} />
             Export
@@ -185,7 +185,7 @@ export function SeasonStatsTable({
       {/* Stats table */}
       {sorted.length === 0 ? (
         <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-warm-400">
             No {activeTab} stats for {seasonYear}. Enter game box scores to populate stats.
           </p>
         </div>
@@ -194,8 +194,8 @@ export function SeasonStatsTable({
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80">
-                  <th className="text-left px-4 py-3 font-semibold text-slate-500 sticky left-0 bg-slate-50/80 min-w-[140px]">
+                <tr className="border-b border-warm-100 bg-warm-50/80">
+                  <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">
                     Player
                   </th>
                   {columns.map((col) => {
@@ -207,7 +207,7 @@ export function SeasonStatsTable({
                         className={`text-center px-2 py-3 font-semibold cursor-pointer select-none min-w-[44px] transition-colors ${
                           isActive
                             ? 'text-primary-600 bg-primary-50/50'
-                            : 'text-slate-500 hover:text-slate-700'
+                            : 'text-warm-500 hover:text-warm-700'
                         }`}
                       >
                         <span className="flex items-center justify-center gap-0.5">
@@ -221,28 +221,28 @@ export function SeasonStatsTable({
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-warm-50">
                 {sorted.map((s, i) => {
                   const playerName = s.player
                     ? `${s.player.first_name ?? ''} ${s.player.last_name ?? ''}`.trim()
                     : 'Unknown';
                   const pos = s.player?.primary_position ?? '';
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={s.id} className="hover:bg-warm-50/60 transition-colors">
                       <td className="px-4 py-2.5 sticky left-0 bg-cream-50/92">
                         <Link
                           href={`/baseball/dashboard/players/${s.player_id}/stats`}
                           className="flex items-center gap-2 group"
                         >
-                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-[10px] font-bold text-warm-500 shrink-0">
                             {i + 1}
                           </div>
                           <div>
-                            <span className="font-medium text-slate-800 group-hover:text-primary-600 transition-colors">
+                            <span className="font-medium text-warm-800 group-hover:text-primary-600 transition-colors">
                               {playerName}
                             </span>
                             {pos && (
-                              <span className="ml-1.5 text-[10px] text-slate-400">{pos}</span>
+                              <span className="ml-1.5 text-[10px] text-warm-400">{pos}</span>
                             )}
                           </div>
                         </Link>
@@ -268,7 +268,7 @@ export function SeasonStatsTable({
                             key={col.key as string}
                             className={`px-2 py-2.5 text-center tabular-nums ${
                               isActive ? 'bg-primary-50/30 font-semibold text-primary-900' : ''
-                            } ${isHighlight ? 'text-primary-700 font-semibold' : 'text-slate-700'}`}
+                            } ${isHighlight ? 'text-primary-700 font-semibold' : 'text-warm-700'}`}
                           >
                             {display}
                           </td>

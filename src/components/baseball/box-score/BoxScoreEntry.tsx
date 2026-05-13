@@ -168,11 +168,11 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">
+            <h2 className="text-lg font-bold text-warm-900">
               {game.game_type === 'scrimmage' ? 'Scrimmage' : 'Game'} vs{' '}
               {game.opponent_name ?? 'TBD'}
             </h2>
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-warm-500 mt-0.5">
               {new Date(game.game_date + 'T00:00:00').toLocaleDateString('en-US', {
                 weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
               })}
@@ -183,19 +183,19 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           {/* Score inputs */}
           <div className="flex items-center gap-3">
             <div className="text-center">
-              <p className="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">Us</p>
+              <p className="text-xs text-warm-400 mb-1 font-medium uppercase tracking-wide">Us</p>
               <input
                 type="number"
                 min={0}
                 max={99}
                 value={ourScore}
                 onChange={(e) => setOurScore(Number(e.target.value))}
-                className="w-16 text-center text-2xl font-bold text-slate-900 border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
+                className="w-16 text-center text-2xl font-bold text-warm-900 border border-warm-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
               />
             </div>
-            <span className="text-2xl font-bold text-slate-300 mt-4">—</span>
+            <span className="text-2xl font-bold text-warm-300 mt-4">—</span>
             <div className="text-center">
-              <p className="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">
+              <p className="text-xs text-warm-400 mb-1 font-medium uppercase tracking-wide">
                 {game.opponent_name ?? 'Them'}
               </p>
               <input
@@ -204,7 +204,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                 max={99}
                 value={oppScore}
                 onChange={(e) => setOppScore(Number(e.target.value))}
-                className="w-16 text-center text-2xl font-bold text-slate-900 border border-slate-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
+                className="w-16 text-center text-2xl font-bold text-warm-900 border border-warm-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-cream-100/82"
               />
             </div>
           </div>
@@ -212,11 +212,11 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
         <button
           onClick={() => setActiveTab('batting')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'batting' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
           }`}
         >
           <IconUser size={14} />
@@ -225,7 +225,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         <button
           onClick={() => setActiveTab('pitching')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-            activeTab === 'pitching' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
           }`}
         >
           <IconTrendingUp size={14} />
@@ -239,26 +239,26 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80">
-                  <th className="text-left px-4 py-3 font-semibold text-slate-500 sticky left-0 bg-slate-50/80 min-w-[140px]">Player</th>
+                <tr className="border-b border-warm-100 bg-warm-50/80">
+                  <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Player</th>
                   {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','CS','HBP','SAC','SF','LOB'].map((h) => (
-                    <th key={h} className="text-center px-2 py-3 font-semibold text-slate-500 min-w-[44px]">{h}</th>
+                    <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[44px]">{h}</th>
                   ))}
-                  <th className="text-center px-2 py-3 font-semibold text-slate-400 min-w-[52px]">AVG</th>
-                  <th className="text-center px-2 py-3 font-semibold text-slate-400 min-w-[52px]">OPS</th>
+                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">AVG</th>
+                  <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">OPS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-warm-50">
                 {battingRows.map((row) => {
                   const player = playerMap.get(row.player_id);
                   return (
-                    <tr key={row.player_id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-4 py-2 sticky left-0 bg-cream-50/92 font-medium text-slate-800">
+                    <tr key={row.player_id} className="hover:bg-warm-50/60 transition-colors">
+                      <td className="px-4 py-2 sticky left-0 bg-cream-50/92 font-medium text-warm-800">
                         {player ? (
                           <span>
                             {player.first_name?.[0]}. {player.last_name}
                             {player.primary_position && (
-                              <span className="ml-1 text-slate-400 font-normal">{player.primary_position}</span>
+                              <span className="ml-1 text-warm-400 font-normal">{player.primary_position}</span>
                             )}
                           </span>
                         ) : 'Unknown'}
@@ -273,14 +273,14 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             max={99}
                             value={row[field] as number}
                             onChange={(e) => updateBatting(row.player_id, field, Number(e.target.value))}
-                            className="w-10 text-center text-xs font-medium text-slate-900 border border-slate-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-slate-200 transition-colors tabular-nums"
+                            className="w-10 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-warm-200 transition-colors tabular-nums"
                           />
                         </td>
                       ))}
-                      <td className="px-2 py-2 text-center text-slate-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
                         {calcAvg(row.h, row.ab)}
                       </td>
-                      <td className="px-2 py-2 text-center text-slate-400 font-mono tabular-nums">
+                      <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
                         {calcOPS(row)}
                       </td>
                     </tr>
@@ -289,8 +289,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               </tbody>
               {/* Totals row */}
               <tfoot>
-                <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-700">
-                  <td className="px-4 py-2.5 sticky left-0 bg-slate-50/90 text-sm">TOTALS</td>
+                <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                  <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.h}</td>
@@ -302,7 +302,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.k}</td>
                   <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.sb}</td>
                   <td colSpan={5} />
-                  <td className="px-2 py-2.5 text-center text-slate-500 font-mono">
+                  <td className="px-2 py-2.5 text-center text-warm-500 font-mono">
                     {calcAvg(battingTotals.h, battingTotals.ab)}
                   </td>
                   <td />
@@ -321,7 +321,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
             <select
               value={selectedPitcherId}
               onChange={(e) => setSelectedPitcherId(e.target.value)}
-              className="flex-1 max-w-xs text-sm border border-slate-200 rounded-lg px-3 py-2 bg-cream-100/75 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="flex-1 max-w-xs text-sm border border-warm-200 rounded-lg px-3 py-2 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
               <option value="">Select pitcher to add...</option>
               {teamPlayers
@@ -345,7 +345,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
           {pitchingRows.length === 0 ? (
             <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-warm-400">
                 Add pitchers using the selector above.
               </p>
             </div>
@@ -354,22 +354,22 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/80">
-                      <th className="text-left px-4 py-3 font-semibold text-slate-500 sticky left-0 bg-slate-50/80 min-w-[140px]">Pitcher</th>
+                    <tr className="border-b border-warm-100 bg-warm-50/80">
+                      <th className="text-left px-4 py-3 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[140px]">Pitcher</th>
                       {['IP','H','R','ER','BB','K','HR','PC','Result'].map((h) => (
-                        <th key={h} className="text-center px-2 py-3 font-semibold text-slate-500 min-w-[52px]">{h}</th>
+                        <th key={h} className="text-center px-2 py-3 font-semibold text-warm-500 min-w-[52px]">{h}</th>
                       ))}
-                      <th className="text-center px-2 py-3 font-semibold text-slate-400 min-w-[52px]">ERA</th>
-                      <th className="text-center px-2 py-3 font-semibold text-slate-400 min-w-[52px]">WHIP</th>
+                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">ERA</th>
+                      <th className="text-center px-2 py-3 font-semibold text-warm-400 min-w-[52px]">WHIP</th>
                       <th className="px-2 py-3" />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-50">
+                  <tbody className="divide-y divide-warm-50">
                     {pitchingRows.map((row) => {
                       const player = playerMap.get(row.player_id);
                       return (
-                        <tr key={row.player_id} className="hover:bg-slate-50/60 transition-colors">
-                          <td className="px-4 py-2 sticky left-0 bg-cream-50/92 font-medium text-slate-800">
+                        <tr key={row.player_id} className="hover:bg-warm-50/60 transition-colors">
+                          <td className="px-4 py-2 sticky left-0 bg-cream-50/92 font-medium text-warm-800">
                             {player ? `${player.first_name?.[0]}. ${player.last_name}` : 'Unknown'}
                           </td>
                           {(
@@ -385,7 +385,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                 onChange={(e) =>
                                   updatePitching(row.player_id, field, Number(e.target.value))
                                 }
-                                className="w-12 text-center text-xs font-medium text-slate-900 border border-slate-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-slate-200 transition-colors tabular-nums"
+                                className="w-12 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-300 bg-white hover:border-warm-200 transition-colors tabular-nums"
                               />
                             </td>
                           ))}
@@ -399,7 +399,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               onChange={(e) =>
                                 updatePitching(row.player_id, 'pitch_count', Number(e.target.value))
                               }
-                              className="w-14 text-center text-xs font-medium text-slate-900 border border-slate-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white transition-colors tabular-nums"
+                              className="w-14 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white transition-colors tabular-nums"
                             />
                           </td>
                           {/* Result */}
@@ -413,7 +413,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                                   e.target.value as BaseballPitchingResult
                                 )
                               }
-                              className="w-14 text-center text-xs font-medium text-slate-900 border border-slate-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                              className="w-14 text-center text-xs font-medium text-warm-900 border border-warm-100 rounded-md p-1 focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
                             >
                               <option value="">—</option>
                               {PITCHING_RESULTS.map((r) => (
@@ -421,16 +421,16 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                               ))}
                             </select>
                           </td>
-                          <td className="px-2 py-2 text-center text-slate-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
                             {calcERA(row.er, row.ip)}
                           </td>
-                          <td className="px-2 py-2 text-center text-slate-400 font-mono tabular-nums">
+                          <td className="px-2 py-2 text-center text-warm-400 font-mono tabular-nums">
                             {calcWHIP(row.h, row.bb, row.ip)}
                           </td>
                           <td className="px-2 py-2 text-center">
                             <button
                               onClick={() => removePitcher(row.player_id)}
-                              className="text-slate-300 hover:text-red-400 transition-colors text-lg leading-none"
+                              className="text-warm-300 hover:text-red-400 transition-colors text-lg leading-none"
                               title="Remove"
                             >
                               ×
@@ -442,8 +442,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                   </tbody>
                   {pitchingRows.length > 1 && (
                     <tfoot>
-                      <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-700">
-                        <td className="px-4 py-2.5 sticky left-0 bg-slate-50/90 text-sm">TOTALS</td>
+                      <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                        <td className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-sm">TOTALS</td>
                         <td className="px-2 py-2.5 text-center tabular-nums font-mono">
                           {pitchingRows.reduce((s, r) => s + r.ip, 0).toFixed(1)}
                         </td>
@@ -471,7 +471,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
       )}
 
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-warm-400">
           Saving will mark this game as completed and auto-calculate season stats.
         </p>
         <Button

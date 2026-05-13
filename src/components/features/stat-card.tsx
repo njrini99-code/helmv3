@@ -22,8 +22,8 @@ export function StatCard({ label, value, change, changeType = 'neutral', icon: I
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-sm font-medium text-slate-500 mb-1">{label}</p>
-            <p className="text-2xl font-semibold text-slate-900 tabular-nums tracking-tight">
+            <p className="text-sm font-medium text-warm-500 mb-1">{label}</p>
+            <p className="text-2xl font-semibold text-warm-900 tabular-nums tracking-tight">
               {canAnimate ? (
                 <AnimatedNumber value={numericValue} decimals={0} />
               ) : typeof value === 'number' ? (
@@ -36,12 +36,12 @@ export function StatCard({ label, value, change, changeType = 'neutral', icon: I
               <p className={cn('text-xs mt-1.5',
                 changeType === 'positive' && 'text-primary-600',
                 changeType === 'negative' && 'text-red-500',
-                changeType === 'neutral' && 'text-slate-400'
+                changeType === 'neutral' && 'text-warm-400'
               )}>{change}</p>
             )}
           </div>
-          <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
-            <Icon size={20} className="text-slate-600" />
+          <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+            <Icon size={20} className="text-warm-600" />
           </div>
         </div>
       </div>

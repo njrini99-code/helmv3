@@ -5,8 +5,9 @@
  * Uses token-based auth via golf_calendar_feeds — no session required,
  * so external calendar apps (Google, Apple, Outlook) can fetch via webcal://.
  *
- * The token is looked up in golf_calendar_feeds. The feed's user_id is matched
- * to a golf_coaches record to resolve the team and timezone.
+ * The token is looked up in golf_calendar_feeds. The feed's team_id MUST be
+ * coach-staffed by feed.user_id (verified via golf_team_coach_staff). Player
+ * memberships do NOT satisfy this endpoint — those go through /api/calendar/feeds.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,6 +15,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { generateCoachCalendar, convertToICalEvent } from '@/lib/calendar/ical';
 import { getValidTimezone, DEFAULT_TIMEZONE } from '@/lib/calendar/timezone';
 import { addMonths, format } from 'date-fns';
+
+interface CoachTeamAuthRpcClient {
+  rpc(
+    name: 'verify_coach_owns_team',
+    args: { p_team_id: string; p_user_id: string },
+  ): Promise<{ data: boolean | null; error: { message: string } | null }>;
+}
+
+interface CoachStaffRow {
+  coach: { id: string; full_name: string | null; organization_id: string | null } | null;
+}
 
 export async function GET(
   _request: NextRequest,
@@ -41,12 +53,43 @@ export async function GET(
       return new NextResponse('Invalid or disabled feed', { status: 404 });
     }
 
-    // Find the coach profile for this user
-    const { data: coach } = await supabase
-      .from('golf_coaches')
-      .select('id, full_name, organization_id')
-      .eq('user_id', feed.user_id)
-      .single();
+    let coach: { id: string; full_name: string | null; organization_id: string | null } | null = null;
+
+    if (feed.team_id) {
+      // Coach feed REQUIRES the feed owner to be coach staff on this team.
+      // verify_coach_owns_team only returns true for golf_team_coach_staff rows;
+      // active players on the team do NOT satisfy it.
+      const { data: authorized, error: authError } = await (supabase as unknown as CoachTeamAuthRpcClient).rpc('verify_coach_owns_team', {
+        p_team_id: feed.team_id,
+        p_user_id: feed.user_id,
+      });
+
+      if (authError || authorized !== true) {
+        return new NextResponse('Invalid or disabled feed', { status: 404 });
+      }
+
+      // Resolve the SPECIFIC coach row staffing this team. For users with
+      // multiple coach profiles (multi-org), this picks the one matched via
+      // golf_team_coach_staff for the verified team, not an arbitrary row.
+      const { data: staffRow } = await supabase
+        .from('golf_team_coach_staff')
+        .select('coach:golf_coaches!inner(id, full_name, organization_id)')
+        .eq('team_id', feed.team_id)
+        .eq('coach.user_id', feed.user_id)
+        .maybeSingle<CoachStaffRow>();
+
+      coach = staffRow?.coach ?? null;
+    } else {
+      // No team_id on feed: fall back to coach lookup by user_id.
+      // .maybeSingle is intentional — for multi-org users with multiple coach
+      // rows, falling back to org-derived team is best-effort only.
+      const { data: anyCoach } = await supabase
+        .from('golf_coaches')
+        .select('id, full_name, organization_id')
+        .eq('user_id', feed.user_id)
+        .maybeSingle();
+      coach = anyCoach;
+    }
 
     if (!coach) {
       return new NextResponse('Coach profile not found', { status: 404 });

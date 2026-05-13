@@ -190,13 +190,13 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
         <CardHeader>
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-900">Organization Roster</h2>
-              <p className="text-sm leading-relaxed text-slate-500">
+              <h2 className="text-base font-semibold text-warm-900">Organization Roster</h2>
+              <p className="text-sm leading-relaxed text-warm-500">
                 {teamFilterId === 'all' ? 'Showing all teams' : 'Showing selected team roster'}
               </p>
             </div>
             <div className="w-full md:max-w-xs relative">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
               <Input
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
@@ -208,11 +208,11 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
         </CardHeader>
         <CardContent className="p-0">
           {filteredRoster.length === 0 ? (
-            <div className="p-10 text-center text-sm text-slate-500">
+            <div className="p-10 text-center text-sm text-warm-500">
               No roster entries found for this selection.
             </div>
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-warm-100">
               {filteredRoster.map((entry) => {
                 const name = getFullName(entry.player?.first_name, entry.player?.last_name);
                 return (
@@ -223,13 +223,13 @@ export function OrgDashboard({ teamFilterId }: OrgDashboardProps) {
                     <div className="flex items-center gap-3">
                       <Avatar name={name} src={entry.player?.avatar_url} size="sm" />
                       <div>
-                        <p className="text-sm font-semibold text-slate-900">{name}</p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-sm font-semibold text-warm-900">{name}</p>
+                        <p className="text-xs text-warm-500">
                           {entry.player?.primary_position || 'Position N/A'} • {entry.player?.grad_year || 'Grad Year N/A'}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-warm-500">
                       {entry.team && (
                         <Badge variant="secondary" className="text-xs">
                           {entry.team.name}

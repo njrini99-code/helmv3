@@ -10,7 +10,7 @@ import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions
 import { useToast } from '@/components/ui/sonner';
 
 const categoryColors: Record<string, string> = {
-  general: 'bg-slate-100 text-slate-600',
+  general: 'bg-warm-100 text-warm-600',
   conditioning: 'bg-red-100 text-red-700',
   academic: 'bg-amber-100 text-amber-700',
   administrative: 'bg-blue-100 text-blue-700',
@@ -21,7 +21,7 @@ const categoryColors: Record<string, string> = {
 const priorityColors: Record<string, string> = {
   high: 'bg-red-500',
   normal: 'bg-primary-500',
-  low: 'bg-slate-400',
+  low: 'bg-warm-400',
 };
 
 interface Assignment {
@@ -139,7 +139,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
       initial="hidden"
       animate="visible"
       layout
-      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
+      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5"
     >
       <div className="p-5">
         {/* Header */}
@@ -154,7 +154,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                   'mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all',
                   isCompletedByPlayer
                     ? 'bg-primary-600 border-primary-600 text-white'
-                    : 'border-slate-300 hover:border-primary-500'
+                    : 'border-warm-300 hover:border-primary-500'
                 )}
               >
                 {isCompletedByPlayer && <IconCheck size={12} />}
@@ -170,14 +170,14 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                   />
                 )}
                 <h3 className={cn(
-                  'font-semibold text-slate-900',
-                  isCompletedByPlayer && 'line-through text-slate-400'
+                  'font-semibold text-warm-900',
+                  isCompletedByPlayer && 'line-through text-warm-400'
                 )}>
                   {task.title}
                 </h3>
               </div>
               {task.description && (
-                <p className="text-sm text-slate-500 line-clamp-2">{task.description}</p>
+                <p className="text-sm text-warm-500 line-clamp-2">{task.description}</p>
               )}
             </div>
           </div>
@@ -191,7 +191,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               <button
                 onClick={handleDelete}
                 disabled={deleting}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
+                className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
                 title="Delete task"
               >
                 <IconTrash size={14} />
@@ -203,14 +203,14 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
         {/* Progress Bar (coach view) */}
         {isCoach && totalCount > 0 && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+            <div className="flex items-center justify-between text-xs text-warm-500 mb-1.5">
               <span className="flex items-center gap-1">
                 <IconUsers size={14} />
                 {completedCount} of {totalCount} completed
               </span>
               <span className="font-medium">{Math.round(completionRate)}%</span>
             </div>
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div className="h-2 bg-warm-100 rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full transition-all duration-300',
@@ -228,7 +228,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
             {task.due_date && (
               <span className={cn(
                 'flex items-center gap-1',
-                isOverdue ? 'text-red-600' : 'text-slate-500'
+                isOverdue ? 'text-red-600' : 'text-warm-500'
               )}>
                 <IconClock size={14} />
                 {formatDate(task.due_date)}
@@ -250,7 +250,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           {isCoach && totalCount > 0 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors"
+              className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
             >
               {expanded ? 'Hide' : 'View'} details
               {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
@@ -266,9 +266,9 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-4 pt-4 border-t border-slate-200"
+              className="mt-4 pt-4 border-t border-warm-200"
             >
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
+              <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-3">
                 Player Progress
               </p>
               <motion.div
@@ -290,9 +290,9 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                       hidden: { opacity: 0, x: -8 },
                       visible: { opacity: 1, x: 0 },
                     }}
-                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50 transition-colors hover:bg-slate-100 active:bg-slate-200"
+                    className="flex items-center justify-between py-2 px-3 rounded-lg bg-warm-50 transition-colors hover:bg-warm-100 active:bg-warm-200"
                   >
-                    <span className="text-sm text-slate-700">
+                    <span className="text-sm text-warm-700">
                       {assignment.player_first_name} {assignment.player_last_name}
                     </span>
                     {assignment.status === 'completed' ? (
@@ -306,7 +306,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                         <span className="text-xs font-medium">Completed</span>
                       </motion.div>
                     ) : (
-                      <span className="text-xs text-slate-400 font-medium">Pending</span>
+                      <span className="text-xs text-warm-400 font-medium">Pending</span>
                     )}
                   </motion.div>
                 ))}

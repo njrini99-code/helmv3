@@ -223,17 +223,17 @@ export function SmartEmptyState({
       className
     )}>
       {/* Icon */}
-      <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mb-6">
-        <IconSearch size={36} className="text-slate-400" />
+      <div className="w-20 h-20 rounded-2xl bg-warm-100 flex items-center justify-center mb-6">
+        <IconSearch size={36} className="text-warm-400" />
       </div>
 
       {/* Title */}
-      <h3 className="text-xl font-semibold text-slate-900 mb-2">
+      <h3 className="text-xl font-semibold text-warm-900 mb-2">
         No players match your filters
       </h3>
 
       {/* Subtitle */}
-      <p className="text-slate-500 mb-8 max-w-md">
+      <p className="text-warm-500 mb-8 max-w-md">
         {activeFilterCount > 1 
           ? `You have ${activeFilterCount} filters active. Try adjusting your criteria to find more players.`
           : 'Try adjusting your search criteria to find more players.'}
@@ -242,7 +242,7 @@ export function SmartEmptyState({
       {/* Suggestions */}
       {suggestions.length > 0 && (
         <div className="w-full max-w-lg mb-8">
-          <p className="text-sm font-medium text-slate-700 mb-4">
+          <p className="text-sm font-medium text-warm-700 mb-4">
             Suggestions
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -252,25 +252,25 @@ export function SmartEmptyState({
                 onClick={suggestion.action}
                 className={cn(
                   'flex items-center gap-3 p-4 rounded-xl text-left',
-                  'bg-white border border-slate-200',
+                  'bg-white border border-warm-200',
                   'hover:border-primary-300 hover:bg-primary-50/50',
                   'transition-all duration-200',
                   'group animate-scale-in'
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-100 transition-colors">
-                  <suggestion.icon size={18} className="text-slate-500 group-hover:text-primary-600" />
+                <div className="w-10 h-10 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-100 transition-colors">
+                  <suggestion.icon size={18} className="text-warm-500 group-hover:text-primary-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-slate-900 group-hover:text-primary-700 transition-colors">
+                  <p className="font-medium text-warm-900 group-hover:text-primary-700 transition-colors">
                     {suggestion.label}
                   </p>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-warm-500">
                     {suggestion.description}
                   </p>
                 </div>
-                <IconArrowRight size={16} className="text-slate-300 group-hover:text-primary-500 transition-colors flex-shrink-0" />
+                <IconArrowRight size={16} className="text-warm-300 group-hover:text-primary-500 transition-colors flex-shrink-0" />
               </button>
             ))}
           </div>
@@ -280,7 +280,7 @@ export function SmartEmptyState({
       {/* Top states for position */}
       {filters.position && topStatesForPosition.length > 0 && !filters.state && (
         <div className="w-full max-w-lg mb-8">
-          <p className="text-sm font-medium text-slate-700 mb-4">
+          <p className="text-sm font-medium text-warm-700 mb-4">
             Top states for {filters.position}s
           </p>
           <div className="flex justify-center gap-3">
@@ -294,14 +294,14 @@ export function SmartEmptyState({
                   router.push(`?${params.toString()}`);
                 }}
                 className={cn(
-                  'px-4 py-3 rounded-xl bg-white border border-slate-200',
+                  'px-4 py-3 rounded-xl bg-white border border-warm-200',
                   'hover:border-primary-300 hover:bg-primary-50/50',
                   'transition-all duration-200 animate-scale-in'
                 )}
                 style={{ animationDelay: `${index * 50}ms` }}
               >
-                <p className="font-semibold text-slate-900">{state.name}</p>
-                <p className="text-sm text-slate-500">{state.count} players</p>
+                <p className="font-semibold text-warm-900">{state.name}</p>
+                <p className="text-sm text-warm-500">{state.count} players</p>
               </button>
             ))}
           </div>
@@ -318,7 +318,7 @@ export function SmartEmptyState({
           <IconFilter size={16} />
           Clear all filters
           {totalPlayersUnfiltered > 0 && (
-            <span className="text-slate-400 font-normal">
+            <span className="text-warm-400 font-normal">
               ({totalPlayersUnfiltered.toLocaleString()} total)
             </span>
           )}

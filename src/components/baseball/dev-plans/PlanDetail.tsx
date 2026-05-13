@@ -58,9 +58,9 @@ export function PlanDetail({ plan }: PlanDetailProps) {
           <div className="flex items-center gap-3">
             <Avatar name={playerName} src={plan.player?.avatar_url || undefined} size="md" />
             <div>
-              <p className="text-sm text-slate-500">Development Plan</p>
-              <h1 className="text-xl font-semibold text-slate-900">{plan.title}</h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <p className="text-sm text-warm-500">Development Plan</p>
+              <h1 className="text-xl font-semibold text-warm-900">{plan.title}</h1>
+              <p className="text-sm text-warm-500 mt-1">
                 {playerName} • {plan.player?.primary_position || 'Position N/A'} • Class of {plan.player?.grad_year || '—'}
               </p>
             </div>
@@ -71,16 +71,16 @@ export function PlanDetail({ plan }: PlanDetailProps) {
           <ProgressTracker completed={completedGoals} total={goals.length} />
 
           {plan.description && (
-            <div className="rounded-xl border border-slate-200 bg-cream-100/75 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <div className="rounded-xl border border-warm-200 bg-cream-100/75 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-warm-700">
                 <IconNote size={16} />
                 <span>Plan Overview</span>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{plan.description}</p>
+              <p className="mt-2 text-sm leading-relaxed text-warm-600">{plan.description}</p>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+          <div className="flex flex-wrap gap-3 text-xs text-warm-500">
             {plan.start_date && (
               <span className="flex items-center gap-1">
                 <IconCalendar size={14} />
@@ -99,20 +99,20 @@ export function PlanDetail({ plan }: PlanDetailProps) {
 
       <Card variant="glass">
         <CardHeader>
-          <h2 className="font-semibold text-slate-900">Goals & Milestones</h2>
+          <h2 className="font-semibold text-warm-900">Goals & Milestones</h2>
         </CardHeader>
         <CardContent>
           {goals.length === 0 ? (
-            <p className="text-sm text-slate-500">No goals have been added to this plan yet.</p>
+            <p className="text-sm text-warm-500">No goals have been added to this plan yet.</p>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {goals.map((goal, index) => (
-                <div key={`${goal.title}-${index}`} className="rounded-xl border border-slate-200 p-4">
+                <div key={`${goal.title}-${index}`} className="rounded-xl border border-warm-200 p-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900">{goal.title}</h3>
+                      <h3 className="text-sm font-semibold text-warm-900">{goal.title}</h3>
                       {goal.description && (
-                        <p className="mt-1 text-sm leading-relaxed text-slate-600">{goal.description}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-warm-600">{goal.description}</p>
                       )}
                     </div>
                     {goal.completed && (
@@ -123,7 +123,7 @@ export function PlanDetail({ plan }: PlanDetailProps) {
                     )}
                   </div>
                   {goal.target_date && (
-                    <p className="mt-3 text-xs text-slate-500">
+                    <p className="mt-3 text-xs text-warm-500">
                       Target: {new Date(goal.target_date).toLocaleDateString()}
                     </p>
                   )}

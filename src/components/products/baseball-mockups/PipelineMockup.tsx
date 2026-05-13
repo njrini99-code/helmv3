@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
  */
 export function PipelineMockup() {
   const stages = [
-    { label: 'Watchlist', count: 12, color: 'bg-slate-200' },
+    { label: 'Watchlist', count: 12, color: 'bg-warm-200' },
     { label: 'Priority', count: 5, color: 'bg-amber-200' },
     { label: 'Offer', count: 3, color: 'bg-blue-200' },
     { label: 'Committed', count: 2, color: 'bg-primary-200' },
@@ -22,8 +22,8 @@ export function PipelineMockup() {
             "px-2 py-1 rounded-t-lg text-center",
             stage.color
           )}>
-            <p className="text-[9px] font-semibold text-slate-700 truncate">{stage.label}</p>
-            <p className="text-micro text-slate-500">{stage.count}</p>
+            <p className="text-[9px] font-semibold text-warm-700 truncate">{stage.label}</p>
+            <p className="text-micro text-warm-500">{stage.count}</p>
           </div>
 
           {/* Cards */}
@@ -38,7 +38,7 @@ export function PipelineMockup() {
               />
             ))}
             {stage.count > 3 && (
-              <p className="text-[8px] text-slate-400 text-center">+{stage.count - 3} more</p>
+              <p className="text-[8px] text-warm-400 text-center">+{stage.count - 3} more</p>
             )}
           </div>
         </div>
@@ -51,15 +51,15 @@ function PipelineCard({ isDragging }: { isDragging?: boolean }) {
   return (
     <div className={cn(
       "bg-white rounded p-1.5",
-      "border border-slate-100",
+      "border border-warm-100",
       "shadow-[0_1px_2px_rgba(0,0,0,0.04)]",
-      isDragging && "ring-2 ring-primary-300 shadow-md translate-x-1 -translate-y-1"
+      isDragging && "ring-2 ring-primary-300 shadow-md tranwarm-x-1 -tranwarm-y-1"
     )}>
       <div className="flex items-center gap-1.5">
-        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex-shrink-0" />
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warm-200 to-warm-300 flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <div className="h-1.5 w-10 bg-slate-200 rounded" />
-          <div className="h-1 w-6 bg-slate-100 rounded mt-0.5" />
+          <div className="h-1.5 w-10 bg-warm-200 rounded" />
+          <div className="h-1 w-6 bg-warm-100 rounded mt-0.5" />
         </div>
       </div>
     </div>

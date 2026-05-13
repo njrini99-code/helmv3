@@ -177,7 +177,7 @@ export function SearchAutocomplete({
   return (
     <div className={`relative ${className}`}>
       <div className="relative">
-        <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 z-10" />
+        <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400 z-10" />
         <input
           ref={inputRef}
           type="text"
@@ -200,14 +200,14 @@ export function SearchAutocomplete({
                      transition-colors"
         />
         {loading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -tranwarm-y-1/2">
             <div className="animate-spin h-4 w-4 border-2 border-primary-600 border-t-transparent rounded-full" />
           </div>
         )}
         {value && !loading && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
+            className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={16} />
           </button>

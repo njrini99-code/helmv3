@@ -285,7 +285,7 @@ export function PatternValidationModal({
                     <span
                       className={cn(
                         'inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm',
-                        createFocusArea ? 'translate-x-6' : 'translate-x-1'
+                        createFocusArea ? 'tranwarm-x-6' : 'tranwarm-x-1'
                       )}
                     />
                   </button>

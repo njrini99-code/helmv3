@@ -115,7 +115,7 @@ export function PlayerRow({
       case 'declining':
         return <IconTrendingDown size={14} className="text-red-500" />;
       case 'stable':
-        return <IconMinus size={14} className="text-slate-400" />;
+        return <IconMinus size={14} className="text-warm-400" />;
       default:
         return null;
     }
@@ -146,7 +146,7 @@ export function PlayerRow({
 
   return (
     <tr
-      className="hover:bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer group relative"
+      className="hover:bg-warm-50 active:bg-warm-100 transition-colors cursor-pointer group relative"
       onClick={handleRowClick}
       onMouseEnter={() => setShowPreview(true)}
       onMouseLeave={() => setShowPreview(false)}
@@ -161,35 +161,35 @@ export function PlayerRow({
           />
           <div>
             <div className="flex items-center gap-2">
-              <p className="font-medium text-slate-900">{fullName}</p>
+              <p className="font-medium text-warm-900">{fullName}</p>
               {jerseyNumber && (
-                <span className="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
+                <span className="text-xs bg-warm-100 text-warm-600 px-1.5 py-0.5 rounded">
                   #{jerseyNumber}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500">{player.email}</p>
+            <p className="text-xs text-warm-500">{player.email}</p>
           </div>
         </div>
       </td>
 
       {/* Position */}
-      <td className="py-4 px-4 text-sm text-slate-600">
+      <td className="py-4 px-4 text-sm text-warm-600">
         <span className="font-medium">{player.primary_position || '-'}</span>
         {player.secondary_position && (
-          <span className="text-slate-400"> / {player.secondary_position}</span>
+          <span className="text-warm-400"> / {player.secondary_position}</span>
         )}
       </td>
 
       {/* Grad Year */}
-      <td className="py-4 px-4 text-sm text-slate-600">
+      <td className="py-4 px-4 text-sm text-warm-600">
         {player.grad_year ? `'${String(player.grad_year).slice(-2)}` : '-'}
       </td>
 
       {/* AVG */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-semibold text-slate-900 tabular-nums">
+          <span className="text-sm font-semibold text-warm-900 tabular-nums">
             {formatAvg(aggregates?.career_avg)}
           </span>
           {getTrendIcon()}
@@ -197,12 +197,12 @@ export function PlayerRow({
       </td>
 
       {/* OBP */}
-      <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+      <td className="py-4 px-4 text-sm text-warm-600 tabular-nums">
         {formatOBP(aggregates?.career_obp)}
       </td>
 
       {/* SLG */}
-      <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+      <td className="py-4 px-4 text-sm text-warm-600 tabular-nums">
         {formatSLG(aggregates?.career_slg)}
       </td>
 
@@ -213,8 +213,8 @@ export function PlayerRow({
             aggregates?.career_ops != null && aggregates.career_ops >= 0.8
               ? 'text-primary-600'
               : aggregates?.career_ops != null && aggregates.career_ops >= 0.7
-                ? 'text-slate-900'
-                : 'text-slate-600'
+                ? 'text-warm-900'
+                : 'text-warm-600'
           }`}
         >
           {formatOPS(aggregates?.career_ops)}
@@ -223,18 +223,18 @@ export function PlayerRow({
 
       {/* Last 5 AVG - Hidden in compact mode */}
       {!compact && (
-        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+        <td className="py-4 px-4 text-sm text-warm-600 tabular-nums">
           {formatAvg(aggregates?.last_5_avg)}
         </td>
       )}
 
       {/* Exit Velo - Hidden in compact mode */}
       {!compact && (
-        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+        <td className="py-4 px-4 text-sm text-warm-600 tabular-nums">
           {aggregates?.avg_exit_velocity ? (
             <span>
               {formatExitVelo(aggregates.avg_exit_velocity)}
-              <span className="text-slate-400 text-xs ml-0.5">mph</span>
+              <span className="text-warm-400 text-xs ml-0.5">mph</span>
             </span>
           ) : (
             '---'
@@ -244,7 +244,7 @@ export function PlayerRow({
 
       {/* Sessions - Hidden in compact mode */}
       {!compact && (
-        <td className="py-4 px-4 text-sm text-slate-600 tabular-nums">
+        <td className="py-4 px-4 text-sm text-warm-600 tabular-nums">
           {aggregates?.total_sessions ?? 0}
         </td>
       )}
@@ -257,84 +257,84 @@ export function PlayerRow({
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={handleViewStats}
-            className="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="View Stats"
           >
             <IconChart size={16} />
           </button>
           <button
             onClick={handleMessage}
-            className="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="Message"
           >
             <IconMessage size={16} />
           </button>
           <button
             onClick={handleViewProfile}
-            className="p-2 rounded-lg text-slate-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="View Profile"
           >
             <IconUser size={16} />
           </button>
           <IconChevronRight
             size={16}
-            className="text-slate-300 group-hover:text-slate-500 transition-colors ml-1"
+            className="text-warm-300 group-hover:text-warm-500 transition-colors ml-1"
           />
         </div>
       </td>
 
       {/* Hover Preview Card */}
       {showPreview && aggregates && (
-        <td className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 pointer-events-none">
-          <div className="bg-white rounded-xl shadow-xl border border-slate-200 p-4 w-64 animate-in fade-in slide-in-from-right-2 duration-150">
-            <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-100">
+        <td className="absolute right-full top-1/2 -tranwarm-y-1/2 mr-2 z-50 pointer-events-none">
+          <div className="bg-white rounded-xl shadow-xl border border-warm-200 p-4 w-64 animate-in fade-in slide-in-from-right-2 duration-150">
+            <div className="flex items-center gap-3 mb-3 pb-3 border-b border-warm-100">
               <Avatar name={fullName} src={player.avatar_url || undefined} size="md" />
               <div>
-                <p className="font-semibold text-slate-900">{fullName}</p>
-                <p className="text-xs text-slate-500">
+                <p className="font-semibold text-warm-900">{fullName}</p>
+                <p className="text-xs text-warm-500">
                   {player.primary_position} • Class of {player.grad_year}
                 </p>
               </div>
             </div>
 
             {/* Slash Line Stats */}
-            <div className="bg-slate-50 rounded-lg p-2 mb-2">
-              <p className="text-xs text-slate-500 mb-1 text-center">Slash Line</p>
-              <p className="text-sm font-semibold text-slate-900 tabular-nums text-center tracking-wide">
+            <div className="bg-warm-50 rounded-lg p-2 mb-2">
+              <p className="text-xs text-warm-500 mb-1 text-center">Slash Line</p>
+              <p className="text-sm font-semibold text-warm-900 tabular-nums text-center tracking-wide">
                 {formatAvg(aggregates.career_avg)} / {formatOBP(aggregates.career_obp)} / {formatSLG(aggregates.career_slg)} / {formatOPS(aggregates.career_ops)}
               </p>
             </div>
 
             <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-slate-500 mb-0.5">OPS</p>
+              <div className="bg-warm-50 rounded-lg p-2 text-center">
+                <p className="text-xs text-warm-500 mb-0.5">OPS</p>
                 <p
                   className={`text-base font-semibold tabular-nums ${
                     aggregates.career_ops != null && aggregates.career_ops >= 0.8
                       ? 'text-primary-600'
-                      : 'text-slate-900'
+                      : 'text-warm-900'
                   }`}
                 >
                   {formatOPS(aggregates.career_ops)}
                 </p>
               </div>
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-slate-500 mb-0.5">Last 5</p>
-                <p className="text-base font-semibold text-slate-900 tabular-nums">
+              <div className="bg-warm-50 rounded-lg p-2 text-center">
+                <p className="text-xs text-warm-500 mb-0.5">Last 5</p>
+                <p className="text-base font-semibold text-warm-900 tabular-nums">
                   {formatAvg(aggregates.last_5_avg)}
                 </p>
               </div>
-              <div className="bg-slate-50 rounded-lg p-2 text-center">
-                <p className="text-xs text-slate-500 mb-0.5">Sessions</p>
-                <p className="text-base font-semibold text-slate-900 tabular-nums">
+              <div className="bg-warm-50 rounded-lg p-2 text-center">
+                <p className="text-xs text-warm-500 mb-0.5">Sessions</p>
+                <p className="text-base font-semibold text-warm-900 tabular-nums">
                   {aggregates.total_sessions ?? 0}
                 </p>
               </div>
             </div>
 
             {aggregates.pressure_gap != null && (
-              <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-2">
-                <span className="text-slate-500">Practice → Game</span>
+              <div className="flex items-center justify-between text-xs border-t border-warm-100 pt-2">
+                <span className="text-warm-500">Practice → Game</span>
                 <span
                   className={`font-medium ${
                     aggregates.pressure_gap >= 0 ? 'text-primary-600' : 'text-red-500'
@@ -347,8 +347,8 @@ export function PlayerRow({
 
             {aggregates.avg_exit_velocity && (
               <div className="flex items-center justify-between text-xs mt-2">
-                <span className="text-slate-500">Avg Exit Velo</span>
-                <span className="font-medium text-slate-900">
+                <span className="text-warm-500">Avg Exit Velo</span>
+                <span className="font-medium text-warm-900">
                   {formatExitVelo(aggregates.avg_exit_velocity)} mph
                 </span>
               </div>

@@ -47,24 +47,24 @@ function getFileTypeLabel(mimeType: string | null): string {
 
 // Get file icon based on MIME type
 function getFileIcon(fileType: string | null, size = 20) {
-  if (!fileType) return <IconFile size={size} className="text-slate-400" />;
+  if (!fileType) return <IconFile size={size} className="text-warm-400" />;
   if (fileType === 'application/pdf') return <IconFileText size={size} className="text-red-500" />;
   if (fileType.startsWith('image/')) return <IconImage size={size} className="text-blue-500" />;
   if (fileType.includes('word') || fileType.includes('document')) return <IconFileText size={size} className="text-blue-600" />;
   if (fileType.includes('sheet') || fileType.includes('excel') || fileType === 'text/csv') return <IconFileSpreadsheet size={size} className="text-emerald-500" />;
   if (fileType.startsWith('video/')) return <IconVideo size={size} className="text-purple-500" />;
-  if (fileType.startsWith('text/')) return <IconFileText size={size} className="text-slate-500" />;
-  return <IconFile size={size} className="text-slate-400" />;
+  if (fileType.startsWith('text/')) return <IconFileText size={size} className="text-warm-500" />;
+  return <IconFile size={size} className="text-warm-400" />;
 }
 
 function getFileTypeColor(fileType: string | null): string {
-  if (!fileType) return 'bg-slate-100 text-slate-500';
+  if (!fileType) return 'bg-warm-100 text-warm-500';
   if (fileType === 'application/pdf') return 'bg-red-50 text-red-600';
   if (fileType.startsWith('image/')) return 'bg-blue-50 text-blue-600';
   if (fileType.includes('word') || fileType.includes('document')) return 'bg-blue-50 text-blue-700';
   if (fileType.includes('sheet') || fileType.includes('excel')) return 'bg-emerald-50 text-emerald-600';
   if (fileType.startsWith('video/')) return 'bg-purple-50 text-purple-600';
-  return 'bg-slate-50 text-slate-500';
+  return 'bg-warm-50 text-warm-500';
 }
 
 function formatFileSize(bytes: number | null): string {
@@ -141,7 +141,7 @@ export function DocumentCard({
             ? 'bg-emerald-400'
             : document.file_type?.startsWith('video/')
             ? 'bg-purple-400'
-            : 'bg-slate-300'
+            : 'bg-warm-300'
         )}
       />
 
@@ -160,7 +160,7 @@ export function DocumentCard({
           <div className="flex items-center gap-1">
             {/* Version badge */}
             {document.version_count && document.version_count > 1 && (
-              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600 flex items-center gap-0.5">
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-warm-100 text-warm-600 flex items-center gap-0.5">
                 <IconLayers size={10} />
                 v{document.version_count}
               </span>
@@ -173,7 +173,7 @@ export function DocumentCard({
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === document.id ? null : document.id);
                   }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 opacity-0 group-hover:opacity-100 transition-all"
+                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <IconMoreVertical size={14} />
                 </button>
@@ -187,14 +187,14 @@ export function DocumentCard({
                         setActiveDropdown(null);
                       }}
                     />
-                    <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                    <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePreview();
                           setActiveDropdown(null);
                         }}
-                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                        className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                       >
                         <IconEye size={14} /> Preview
                       </button>
@@ -204,7 +204,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onViewHistory(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconClock size={14} /> Version History
                         </button>
@@ -215,7 +215,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onUploadVersion(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconUpload size={14} /> Upload New Version
                         </button>
@@ -226,7 +226,7 @@ export function DocumentCard({
                             e.stopPropagation();
                             onEdit(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconEdit size={14} /> Edit Details
                         </button>
@@ -237,14 +237,14 @@ export function DocumentCard({
                             e.stopPropagation();
                             onMoveToFolder(document);
                           }}
-                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition-colors"
+                          className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconFolder size={14} /> Move to Folder
                         </button>
                       )}
                       {onDelete && (
                         <>
-                          <div className="my-1 h-px bg-slate-100" />
+                          <div className="my-1 h-px bg-warm-100" />
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -266,13 +266,13 @@ export function DocumentCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-slate-900 mb-1 truncate text-[15px] leading-tight">
+        <h3 className="font-semibold text-warm-900 mb-1 truncate text-[15px] leading-tight">
           {document.title}
         </h3>
 
         {/* Description */}
         {document.description && (
-          <p className="text-xs text-slate-500 mb-3 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-warm-500 mb-3 line-clamp-2 leading-relaxed">
             {document.description}
           </p>
         )}
@@ -293,7 +293,7 @@ export function DocumentCard({
             </span>
           )}
           {document.folder && (
-            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-slate-100 text-slate-600">
+            <span className="inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-medium rounded-md bg-warm-100 text-warm-600">
               <IconFolder size={9} /> {document.folder}
             </span>
           )}
@@ -305,8 +305,8 @@ export function DocumentCard({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-          <div className="flex items-center gap-3 text-xs text-slate-400">
+        <div className="flex items-center justify-between pt-3 border-t border-warm-100">
+          <div className="flex items-center gap-3 text-xs text-warm-400">
             <span>{formatFileSize(document.file_size)}</span>
             <span>{timeAgo(document.created_at)}</span>
           </div>
@@ -325,7 +325,7 @@ export function DocumentCard({
               href={document.file_url}
               download
               onClick={(e) => e.stopPropagation()}
-              className="p-1.5 rounded-lg hover:bg-slate-100 active:bg-slate-200 text-slate-500 transition-colors"
+              className="p-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 text-warm-500 transition-colors"
               title="Download"
             >
               <IconDownload size={14} />

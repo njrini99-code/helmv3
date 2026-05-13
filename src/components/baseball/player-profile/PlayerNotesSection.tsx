@@ -23,9 +23,9 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
   if (notes.length === 0) {
     return (
       <div className="text-center py-6">
-        <IconNote size={24} className="mx-auto text-slate-300 mb-2" />
-        <p className="text-sm text-slate-500">No notes yet</p>
-        <p className="text-xs text-slate-400 mt-1">
+        <IconNote size={24} className="mx-auto text-warm-300 mb-2" />
+        <p className="text-sm text-warm-500">No notes yet</p>
+        <p className="text-xs text-warm-400 mt-1">
           Add notes to track observations and coaching points
         </p>
       </div>
@@ -43,11 +43,11 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
         return (
           <div
             key={note.id}
-            className="bg-slate-50 rounded-xl p-4 group"
+            className="bg-warm-50 rounded-xl p-4 group"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <p className={`text-sm text-slate-700 whitespace-pre-wrap ${
+                <p className={`text-sm text-warm-700 whitespace-pre-wrap ${
                   !isExpanded && isLong ? 'line-clamp-3' : ''
                 }`}>
                   {note.content}
@@ -62,7 +62,7 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
                   </button>
                 )}
 
-                <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
+                <div className="flex items-center gap-3 mt-2 text-xs text-warm-400">
                   <span className="flex items-center gap-1">
                     <IconClock size={12} />
                     {new Date(note.created_at).toLocaleDateString('en-US', {
@@ -72,7 +72,7 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
                     })}
                   </span>
                   {note.note_type && (
-                    <span className="px-1.5 py-0.5 bg-slate-200 rounded text-slate-500 capitalize">
+                    <span className="px-1.5 py-0.5 bg-warm-200 rounded text-warm-500 capitalize">
                       {note.note_type}
                     </span>
                   )}
@@ -81,10 +81,10 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
 
               {!compact && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  <button className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconEdit size={14} />
                   </button>
-                  <button className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  <button className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconTrash size={14} />
                   </button>
                 </div>

@@ -101,7 +101,7 @@ function PlayerBracketCard({
     <div
       className={cn(
         'relative flex items-center gap-4 px-4 py-3 rounded-xl border transition-all duration-300',
-        'hover:shadow-md hover:-translate-y-0.5',
+        'hover:shadow-md hover:-tranwarm-y-0.5',
         styles.card,
         styles.ring
       )}
@@ -248,7 +248,7 @@ export function QualifierBracket({
               {showCutlineMarker && (
                 <div className="relative my-3">
                   <div className="absolute inset-x-0 top-1/2 h-px bg-gradient-to-r from-transparent via-red-400 to-transparent" />
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-red-50 rounded-full">
+                  <div className="absolute left-1/2 top-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 px-3 py-1 bg-red-50 rounded-full">
                     <span className="text-xs font-medium text-red-600 uppercase tracking-wide">
                       Cutline
                     </span>

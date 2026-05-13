@@ -19,9 +19,9 @@ function getResultInfo(game: BaseballGame) {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  scheduled: 'text-slate-500 bg-slate-100',
+  scheduled: 'text-warm-500 bg-warm-100',
   in_progress: 'text-blue-600 bg-blue-50',
-  completed: 'text-slate-600 bg-slate-100',
+  completed: 'text-warm-600 bg-warm-100',
   cancelled: 'text-red-500 bg-red-50',
   postponed: 'text-amber-500 bg-amber-50',
 };
@@ -61,17 +61,17 @@ export function GameCard({ game }: GameCardProps) {
             </span>
             {/* Home/Away */}
             {game.home_away && (
-              <span className="text-xs text-slate-400 uppercase tracking-wide font-medium">
+              <span className="text-xs text-warm-400 uppercase tracking-wide font-medium">
                 {game.home_away === 'home' ? 'Home' : game.home_away === 'away' ? 'Away' : 'Neutral'}
               </span>
             )}
           </div>
 
-          <h3 className="text-base font-semibold text-slate-900 truncate">
+          <h3 className="text-base font-semibold text-warm-900 truncate">
             {game.opponent_name ? `vs ${game.opponent_name}` : 'TBD Opponent'}
           </h3>
 
-          <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
+          <div className="flex items-center gap-3 mt-1.5 text-xs text-warm-500">
             <span className="flex items-center gap-1">
               <IconCalendar size={12} />
               {formattedDate}
@@ -94,7 +94,7 @@ export function GameCard({ game }: GameCardProps) {
                   {result.label}
                 </span>
               )}
-              <span className="text-xl font-bold text-slate-900 tabular-nums">
+              <span className="text-xl font-bold text-warm-900 tabular-nums">
                 {game.our_score}-{game.opponent_score}
               </span>
             </div>
@@ -119,7 +119,7 @@ export function GameCard({ game }: GameCardProps) {
             ) : game.status !== 'cancelled' ? (
               <Link
                 href={`/baseball/dashboard/stats/games/${game.id}`}
-                className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-primary-600 font-medium transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-warm-400 hover:text-primary-600 font-medium transition-colors"
               >
                 Enter Results
               </Link>
@@ -130,7 +130,7 @@ export function GameCard({ game }: GameCardProps) {
 
       {/* Stats counts for completed games */}
       {game.status === 'completed' && (
-        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-3 text-xs text-slate-400">
+        <div className="mt-3 pt-3 border-t border-warm-100 flex items-center gap-3 text-xs text-warm-400">
           <span>{game.batting_count ?? 0} batting lines</span>
           <span>·</span>
           <span>{game.pitching_count ?? 0} pitching lines</span>

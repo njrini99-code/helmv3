@@ -87,7 +87,7 @@ function formatOPS(value: number | null): string {
 }
 
 function getStatColor(value: number | null, type: 'avg' | 'obp' | 'slg' | 'ops'): string {
-  if (value == null) return 'text-slate-400';
+  if (value == null) return 'text-warm-400';
 
   // Thresholds for good/average/below average
   const thresholds: Record<string, { good: number; average: number }> = {
@@ -98,9 +98,9 @@ function getStatColor(value: number | null, type: 'avg' | 'obp' | 'slg' | 'ops')
   };
 
   const t = thresholds[type];
-  if (!t) return 'text-slate-900';
+  if (!t) return 'text-warm-900';
   if (value >= t.good) return 'text-primary-600';
-  if (value >= t.average) return 'text-slate-900';
+  if (value >= t.average) return 'text-warm-900';
   return 'text-amber-600';
 }
 
@@ -141,8 +141,8 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
   if (stats.playersWithData === 0) {
     return (
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-        <h3 className="font-semibold text-slate-900 mb-2">Team Batting</h3>
-        <p className="text-sm text-slate-500">
+        <h3 className="font-semibold text-warm-900 mb-2">Team Batting</h3>
+        <p className="text-sm text-warm-500">
           No batting data available yet. Upload stats to see team performance.
         </p>
       </div>
@@ -152,8 +152,8 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-900">Team Batting</h3>
-        <span className="text-xs text-slate-500">
+        <h3 className="font-semibold text-warm-900">Team Batting</h3>
+        <span className="text-xs text-warm-500">
           {stats.playersWithData} players · {stats.totalAtBats} sessions
         </span>
       </div>
@@ -162,18 +162,18 @@ export function TeamBattingOverview({ players }: TeamBattingOverviewProps) {
         {statCards.map((stat) => (
           <div
             key={stat.label}
-            className="bg-slate-50/80 rounded-xl p-4 text-center"
+            className="bg-warm-50/80 rounded-xl p-4 text-center"
           >
             <div className="flex items-center justify-center gap-2 mb-2">
-              <stat.icon size={16} className="text-slate-400" />
-              <span className="text-xs text-slate-500 font-medium">
+              <stat.icon size={16} className="text-warm-400" />
+              <span className="text-xs text-warm-500 font-medium">
                 {stat.label}
               </span>
             </div>
             <p className={cn('text-2xl font-bold tabular-nums', stat.color)}>
               {stat.value}
             </p>
-            <p className="text-xs text-slate-400 mt-1">{stat.description}</p>
+            <p className="text-xs text-warm-400 mt-1">{stat.description}</p>
           </div>
         ))}
       </div>
@@ -185,22 +185,22 @@ export function TeamBattingOverviewSkeleton() {
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <div className="h-5 w-28 bg-slate-200 rounded animate-pulse" />
-        <div className="h-4 w-32 bg-slate-200 rounded animate-pulse" />
+        <div className="h-5 w-28 bg-warm-200 rounded animate-pulse" />
+        <div className="h-4 w-32 bg-warm-200 rounded animate-pulse" />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="bg-slate-50/80 rounded-xl p-4 text-center"
+            className="bg-warm-50/80 rounded-xl p-4 text-center"
           >
             <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="w-4 h-4 bg-slate-200 rounded animate-pulse" />
-              <div className="h-3 w-16 bg-slate-200 rounded animate-pulse" />
+              <div className="w-4 h-4 bg-warm-200 rounded animate-pulse" />
+              <div className="h-3 w-16 bg-warm-200 rounded animate-pulse" />
             </div>
-            <div className="h-8 w-16 bg-slate-200 rounded animate-pulse mx-auto" />
-            <div className="h-3 w-20 bg-slate-200 rounded animate-pulse mx-auto mt-2" />
+            <div className="h-8 w-16 bg-warm-200 rounded animate-pulse mx-auto" />
+            <div className="h-3 w-20 bg-warm-200 rounded animate-pulse mx-auto mt-2" />
           </div>
         ))}
       </div>

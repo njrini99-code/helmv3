@@ -63,22 +63,22 @@ export const RosterToolbar = memo(function RosterToolbar({
             onClick={() => setShowSortMenu(!showSortMenu)}
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-              'bg-cream-100/75 backdrop-blur-sm border border-slate-200 text-slate-600',
-              'hover:bg-white hover:border-slate-300',
+              'bg-cream-100/75 backdrop-blur-sm border border-warm-200 text-warm-600',
+              'hover:bg-white hover:border-warm-300',
               'transition-all duration-150 active:scale-95'
             )}
             aria-label="Sort roster"
           >
-            <IconFilter size={14} className="text-slate-400" />
+            <IconFilter size={14} className="text-warm-400" />
             <span className="hidden sm:inline">Sort:</span>
             <span className="font-medium">{selectedSort?.label}</span>
-            <span className="text-slate-400">
+            <span className="text-warm-400">
               {sortDirection === 'asc' ? '↑' : '↓'}
             </span>
             <IconChevronDown
               size={14}
               className={cn(
-                'text-slate-400 transition-transform',
+                'text-warm-400 transition-transform',
                 showSortMenu && 'rotate-180'
               )}
             />
@@ -93,7 +93,7 @@ export const RosterToolbar = memo(function RosterToolbar({
               <div
                 className={cn(
                   'absolute left-0 top-full mt-1 z-40',
-                  'bg-white rounded-xl border border-slate-200 shadow-lg',
+                  'bg-white rounded-xl border border-warm-200 shadow-lg',
                   'py-1 min-w-[180px]'
                 )}
               >
@@ -105,7 +105,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                       'w-full text-left px-3 py-2 text-sm transition-colors flex items-center justify-between',
                       option.value === sortField
                         ? 'text-primary-700 bg-primary-50 font-medium'
-                        : 'text-slate-600 hover:bg-slate-50 active:bg-slate-100'
+                        : 'text-warm-600 hover:bg-warm-50 active:bg-warm-100'
                     )}
                   >
                     <span>{option.label}</span>
@@ -122,14 +122,14 @@ export const RosterToolbar = memo(function RosterToolbar({
         </div>
 
         {/* View Toggle - Desktop only */}
-        <div className="hidden lg:flex items-center bg-cream-100/75 backdrop-blur-sm border border-slate-200 rounded-xl p-1">
+        <div className="hidden lg:flex items-center bg-cream-100/75 backdrop-blur-sm border border-warm-200 rounded-xl p-1">
           <button
             onClick={() => onViewModeChange('compact')}
             className={cn(
               'p-2 rounded-lg transition-all',
               viewMode === 'compact'
                 ? 'bg-primary-100 text-primary-700'
-                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'
             )}
             aria-label="Compact view"
             title="Compact view"
@@ -142,7 +142,7 @@ export const RosterToolbar = memo(function RosterToolbar({
               'p-2 rounded-lg transition-all',
               viewMode === 'expanded'
                 ? 'bg-primary-100 text-primary-700'
-                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                : 'text-warm-400 hover:text-warm-600 hover:bg-warm-100'
             )}
             aria-label="Expanded view"
             title="Expanded view"
@@ -158,8 +158,8 @@ export const RosterToolbar = memo(function RosterToolbar({
           onClick={onExport}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
-            'bg-cream-100/75 backdrop-blur-sm border border-slate-200 text-slate-600',
-            'hover:bg-white hover:border-slate-300',
+            'bg-cream-100/75 backdrop-blur-sm border border-warm-200 text-warm-600',
+            'hover:bg-white hover:border-warm-300',
             'transition-all duration-150 active:scale-95'
           )}
           aria-label={`Export ${playerCount} players as CSV`}

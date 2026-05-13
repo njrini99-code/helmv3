@@ -63,13 +63,13 @@ export const DiscoverToggle = memo(function DiscoverToggle({
       {/* Toggle Container */}
       <div
         ref={containerRef}
-        className="relative inline-flex items-center p-1 rounded-xl bg-slate-100/80 backdrop-blur-sm border border-slate-200/50"
+        className="relative inline-flex items-center p-1 rounded-xl bg-warm-100/80 backdrop-blur-sm border border-warm-200/50"
         role="tablist"
         aria-label="Discovery mode"
       >
         {/* Animated Background Indicator */}
         <motion.div
-          className="absolute top-1 bottom-1 rounded-lg bg-white shadow-sm border border-slate-200/80"
+          className="absolute top-1 bottom-1 rounded-lg bg-white shadow-sm border border-warm-200/80"
           initial={false}
           animate={{
             left: indicatorStyle.left,
@@ -107,15 +107,15 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                 'text-sm font-medium transition-colors duration-200',
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
                 isActive
-                  ? 'text-slate-900'
-                  : 'text-slate-500 hover:text-slate-700'
+                  ? 'text-warm-900'
+                  : 'text-warm-500 hover:text-warm-700'
               )}
             >
               <Icon
                 size={18}
                 className={cn(
                   'transition-colors duration-200',
-                  isActive ? 'text-primary-600' : 'text-slate-400'
+                  isActive ? 'text-primary-600' : 'text-warm-400'
                 )}
               />
               <span>{option.label}</span>
@@ -134,7 +134,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                       'transition-colors duration-200',
                       isActive
                         ? 'bg-primary-100 text-primary-700'
-                        : 'bg-slate-200/80 text-slate-500'
+                        : 'bg-warm-200/80 text-warm-500'
                     )}
                   >
                     {option.count.toLocaleString()}
@@ -154,7 +154,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 4 }}
           transition={{ duration: 0.15 }}
-          className="mt-2 text-xs text-slate-400"
+          className="mt-2 text-xs text-warm-400"
         >
           {options.find(o => o.value === mode)?.description}
         </motion.p>

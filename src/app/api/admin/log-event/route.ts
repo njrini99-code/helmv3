@@ -65,21 +65,63 @@ setInterval(() => {
 // VALIDATION
 // ============================================
 
+// Full set of admin_event types — includes server-only categories that the
+// server-side admin-logger.ts emits directly via createAdminClient(). This
+// route is the CLIENT-CALLABLE entrypoint and must not accept the server-only
+// categories below or admins can't trust the incident feed.
+const SERVER_ONLY_EVENT_TYPES = [
+  'security',       // Failed logins, RLS denials — server emits, not client
+  'signup',         // Server-emitted on auth completion
+  'login',          // Server-emitted on auth completion
+  'round_submitted',// Server-emitted on submit_round_atomic
+  'ai_generation',  // Server-emitted from CoachHelm pipeline
+  'subscription',   // Server-emitted from billing webhooks
+  'api',            // Server-emitted from API perf log
+] as const;
+
+// Client-callable event types. Anything outside this list from the client is
+// rejected with 403, regardless of authentication status. user_id is still
+// server-bound on the insert.
+const CLIENT_ALLOWED_EVENT_TYPES = [
+  'error',        // Client runtime errors (window.onerror, React errors)
+  'feature_use',  // Client-side feature instrumentation
+  'onboarding',   // Client-side onboarding milestone hits
+  'system',       // Client perf telemetry (slow page loads) — capped severity below
+] as const;
+
 const VALID_EVENT_TYPES = [
-  'error',
-  'signup',
-  'login',
-  'round_submitted',
-  'ai_generation',
-  'feature_use',
-  'onboarding',
-  'security',
-  'system',
-  'subscription',
-  'api',
+  ...CLIENT_ALLOWED_EVENT_TYPES,
+  ...SERVER_ONLY_EVENT_TYPES,
 ];
 
 const VALID_SEVERITIES = ['info', 'warning', 'error', 'critical'];
+
+// Per-event-type ceiling on client-claimed severity. Clients cannot post
+// "critical" anything — that label is reserved for server-emitted incidents.
+const CLIENT_MAX_SEVERITY: Record<string, 'info' | 'warning' | 'error'> = {
+  error: 'error',         // a real client crash IS at most 'error'
+  feature_use: 'info',    // usage telemetry is informational
+  onboarding: 'info',     // milestone hit is informational
+  system: 'warning',      // slow page load tops out at warning, never critical
+};
+
+const SEVERITY_RANK: Record<string, number> = {
+  info: 0,
+  warning: 1,
+  error: 2,
+  critical: 3,
+};
+
+function clampClientSeverity(
+  eventType: string,
+  requested: 'info' | 'warning' | 'error' | 'critical' | undefined,
+): 'info' | 'warning' | 'error' | 'critical' {
+  const ceiling = CLIENT_MAX_SEVERITY[eventType] ?? 'info';
+  const req: 'info' | 'warning' | 'error' | 'critical' = requested ?? 'info';
+  const reqRank = SEVERITY_RANK[req] ?? 0;
+  const ceilingRank = SEVERITY_RANK[ceiling] ?? 0;
+  return reqRank > ceilingRank ? ceiling : req;
+}
 
 function validatePayload(payload: unknown): payload is LogEventPayload {
   if (!payload || typeof payload !== 'object') return false;
@@ -87,7 +129,7 @@ function validatePayload(payload: unknown): payload is LogEventPayload {
   const p = payload as Record<string, unknown>;
   
   // Required fields
-  if (typeof p.eventType !== 'string' || !VALID_EVENT_TYPES.includes(p.eventType)) return false;
+  if (typeof p.eventType !== 'string' || !(VALID_EVENT_TYPES as readonly string[]).includes(p.eventType)) return false;
   if (typeof p.title !== 'string' || p.title.length === 0 || p.title.length > 500) return false;
   
   // Optional fields with validation
@@ -209,9 +251,22 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
+    // Reject server-only event types from client posts. These can only come
+    // through src/lib/admin-logger.ts (server-side, createAdminClient()).
+    // Without this gate, a logged-in player could fabricate fake "security"
+    // or "api" events that poison the admin incident feed.
+    if (!(CLIENT_ALLOWED_EVENT_TYPES as readonly string[]).includes(body.eventType)) {
+      return NextResponse.json(
+        { error: 'Event type not allowed for client posts' },
+        { status: 403 }
+      );
+    }
+
     // Sanitize
     const sanitized = sanitizePayload(body);
+    // Clamp severity per event-type ceiling — clients cannot claim critical.
+    sanitized.severity = clampClientSeverity(sanitized.eventType, sanitized.severity);
 
     // Insert using service-role admin client. RLS on admin_events restricts INSERT
     // to service_role only (see migration 20260214220000_create_admin_events.sql);

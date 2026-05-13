@@ -50,13 +50,13 @@ export function RosterTable({ roster }: RosterTableProps) {
     <Card variant="glass">
       <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="font-semibold text-slate-900">Roster Management</h2>
-          <p className="text-sm leading-relaxed text-slate-500 mt-1">
+          <h2 className="font-semibold text-warm-900">Roster Management</h2>
+          <p className="text-sm leading-relaxed text-warm-500 mt-1">
             View and manage your full roster with quick access to player profiles.
           </p>
         </div>
         <div className="w-full md:max-w-xs relative">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
           <Input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
@@ -67,11 +67,11 @@ export function RosterTable({ roster }: RosterTableProps) {
       </CardHeader>
       <CardContent className="p-0">
         {filteredRoster.length === 0 ? (
-          <div className="p-10 text-center text-sm text-slate-500">
+          <div className="p-10 text-center text-sm text-warm-500">
             No players match your search.
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-warm-100">
             {filteredRoster.map((member) => {
               const name = getFullName(member.player?.first_name, member.player?.last_name);
               return (
@@ -82,13 +82,13 @@ export function RosterTable({ roster }: RosterTableProps) {
                   <div className="flex items-center gap-3">
                     <Avatar name={name} src={member.player?.avatar_url || undefined} size="sm" />
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{name}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-warm-900">{name}</p>
+                      <p className="text-xs text-warm-500">
                         {member.player?.primary_position || 'Position N/A'} • Class of {member.player?.grad_year || '—'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-warm-500">
                     {member.player?.gpa && (
                       <Badge variant={member.player.gpa >= 3.0 ? 'success' : member.player.gpa >= 2.5 ? 'warning' : 'danger'}>
                         GPA {member.player.gpa.toFixed(2)}

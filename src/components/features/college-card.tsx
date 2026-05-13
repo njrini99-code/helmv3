@@ -62,7 +62,7 @@ export function CollegeCard({
             <Avatar name={college.name} size="lg" src={college.logo_url} />
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-semibold text-slate-900 truncate">{college.name}</h3>
+                <h3 className="font-semibold text-warm-900 truncate">{college.name}</h3>
                 {showInterestButton && (
                   <button
                     onClick={handleInterestClick}
@@ -70,7 +70,7 @@ export function CollegeCard({
                     className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
                       interested
                         ? 'text-red-500 hover:bg-red-50 active:bg-red-100'
-                        : 'text-slate-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100'
+                        : 'text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100'
                     } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     aria-label={interested ? 'Remove from interests' : 'Add to interests'}
                   >
@@ -78,7 +78,7 @@ export function CollegeCard({
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+              <div className="flex items-center gap-1 text-sm text-warm-500 mt-1">
                 <IconMapPin size={14} />
                 <span className="truncate">{college.location_city}, {college.location_state}</span>
               </div>

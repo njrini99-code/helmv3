@@ -93,7 +93,7 @@ const PlayerCardComponent = function PlayerCard({
           "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
           "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
-          "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
+          "hover:-tranwarm-y-0.5 hover:shadow-md hover:border-warm-200/55",
           isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
         )}
@@ -108,7 +108,7 @@ const PlayerCardComponent = function PlayerCard({
               'w-5 h-5 rounded-md border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200 flex-shrink-0',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                : 'border-slate-300 hover:border-primary-500 bg-white'
+                : 'border-warm-300 hover:border-primary-500 bg-white'
             )}
           >
             {isSelected && <IconCheck size={12} />}
@@ -117,15 +117,15 @@ const PlayerCardComponent = function PlayerCard({
         
         <PlayerAvatar player={player} size="sm" />
         <div className="flex-1 min-w-0">
-          <div className="font-medium text-slate-900 truncate">
+          <div className="font-medium text-warm-900 truncate">
             {player.firstName} {player.lastName}
           </div>
-          <div className="text-sm leading-relaxed text-slate-500">
+          <div className="text-sm leading-relaxed text-warm-500">
             {player.position} • {player.graduationYear}
           </div>
         </div>
         {player.hasVideo && (
-          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">
+          <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-600 text-xs">
             <IconVideo size={10} />
           </div>
         )}
@@ -142,7 +142,7 @@ const PlayerCardComponent = function PlayerCard({
         "relative overflow-hidden rounded-[20px]",
         "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
         "transition-[transform,box-shadow,border-color] duration-200",
-        "hover:-translate-y-1 hover:shadow-xl hover:border-warm-200/55",
+        "hover:-tranwarm-y-1 hover:shadow-xl hover:border-warm-200/55",
         isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
@@ -158,7 +158,7 @@ const PlayerCardComponent = function PlayerCard({
                 'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
                 isSelected
                   ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                  : 'border-slate-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
+                  : 'border-warm-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
               )}
             >
               {isSelected && <IconCheck size={14} />}
@@ -176,7 +176,7 @@ const PlayerCardComponent = function PlayerCard({
         )}
 
         {/* Cover Image */}
-        <div className="h-32 bg-gradient-to-br from-slate-200 to-slate-300 relative">
+        <div className="h-32 bg-gradient-to-br from-warm-200 to-warm-300 relative">
           {player.coverImage && (
             <Image
               src={player.coverImage}
@@ -210,15 +210,15 @@ const PlayerCardComponent = function PlayerCard({
 
           <div onClick={handleClick} className="group cursor-pointer">
             <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-lg text-slate-900 group-hover:text-emerald-600 transition-colors">
+              <h3 className="font-semibold text-lg text-warm-900 group-hover:text-emerald-600 transition-colors">
                 {player.firstName} {player.lastName}
               </h3>
               {player.verified && <VerifiedBadge />}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-sm text-slate-500 mb-4">
-            <span className="font-medium text-slate-700">{player.position}</span>
+          <div className="flex items-center gap-3 text-sm text-warm-500 mb-4">
+            <span className="font-medium text-warm-700">{player.position}</span>
             {player.secondaryPosition && (
               <>
                 <span>•</span>
@@ -227,20 +227,20 @@ const PlayerCardComponent = function PlayerCard({
             )}
           </div>
 
-          <div className="flex items-center gap-4 text-sm text-slate-500 mb-4">
+          <div className="flex items-center gap-4 text-sm text-warm-500 mb-4">
             <div className="flex items-center gap-1.5">
-              <IconGraduationCap size={16} className="text-slate-400" />
+              <IconGraduationCap size={16} className="text-warm-400" />
               <span>Class of {player.graduationYear}</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <IconMapPin size={16} className="text-slate-400" />
+              <IconMapPin size={16} className="text-warm-400" />
               <span>{player.state}</span>
             </div>
           </div>
 
           {/* Stats Row */}
           {player.stats && (
-            <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+            <div className="flex items-center gap-4 pt-4 border-t border-warm-100">
               {player.stats.velocity && (
                 <StatBadge label="Velo" value={`${player.stats.velocity}`} unit="mph" />
               )}
@@ -263,7 +263,7 @@ const PlayerCardComponent = function PlayerCard({
       "relative overflow-hidden rounded-[20px]",
       "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
       "transition-[transform,box-shadow,border-color] duration-200",
-      "hover:-translate-y-1 hover:shadow-lg hover:border-warm-200/55",
+      "hover:-tranwarm-y-1 hover:shadow-lg hover:border-warm-200/55",
       "group",
       isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
       isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
@@ -280,7 +280,7 @@ const PlayerCardComponent = function PlayerCard({
               'w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-[color,background-color,border-color,transform] duration-200',
               isSelected
                 ? 'bg-primary-600 border-primary-600 text-white scale-110'
-                : 'border-slate-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
+                : 'border-warm-300 hover:border-primary-500 bg-cream-50/92 backdrop-blur-sm'
             )}
           >
             {isSelected && <IconCheck size={14} />}
@@ -311,7 +311,7 @@ const PlayerCardComponent = function PlayerCard({
           <div className="flex-1 min-w-0">
             <div onClick={handleClick} className="cursor-pointer">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors truncate">
+                <h3 className="font-semibold text-warm-900 group-hover:text-emerald-600 transition-colors truncate">
                   {player.firstName} {player.lastName}
                 </h3>
                 {player.verified && <VerifiedBadge />}
@@ -323,11 +323,11 @@ const PlayerCardComponent = function PlayerCard({
               </div>
             </div>
 
-            <div className="text-sm leading-relaxed text-slate-500 mb-2">
+            <div className="text-sm leading-relaxed text-warm-500 mb-2">
               {player.position} • Class of {player.graduationYear}
             </div>
 
-            <div className="flex items-center gap-1.5 text-sm text-slate-400">
+            <div className="flex items-center gap-1.5 text-sm text-warm-400">
               <IconMapPin size={14} className="flex-shrink-0" />
               <span className="truncate">{player.highSchool}, {player.state}</span>
             </div>
@@ -341,7 +341,7 @@ const PlayerCardComponent = function PlayerCard({
 
         {/* Stats */}
         {player.stats && (
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-warm-100">
             {player.stats.velocity && (
               <StatBadge label="Velo" value={`${player.stats.velocity}`} unit="mph" compact />
             )}
@@ -352,7 +352,7 @@ const PlayerCardComponent = function PlayerCard({
               <StatBadge label="Ht" value={player.stats.height} compact />
             )}
             {player.hasVideo && (
-              <div className="ml-auto flex items-center gap-1 text-xs text-slate-500">
+              <div className="ml-auto flex items-center gap-1 text-xs text-warm-500">
                 <IconVideo size={12} />
                 <span>Video</span>
               </div>
@@ -400,7 +400,7 @@ const PlayerAvatar = memo(function PlayerAvatar({
 
   return (
     <div className={cn(
-      "rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0 overflow-hidden",
+      "rounded-full bg-gradient-to-br from-warm-200 to-warm-300 flex items-center justify-center flex-shrink-0 overflow-hidden",
       sizeClasses[size],
       border && "ring-4 ring-white shadow-md"
     )}>
@@ -413,7 +413,7 @@ const PlayerAvatar = memo(function PlayerAvatar({
           className="w-full h-full object-cover"
         />
       ) : (
-        <span className="font-medium text-slate-600">
+        <span className="font-medium text-warm-600">
           {player.firstName.charAt(0)}{player.lastName.charAt(0)}
         </span>
       )}
@@ -443,20 +443,20 @@ const StatBadge = memo(function StatBadge({
   if (compact) {
     return (
       <div className="text-sm">
-        <span className="text-slate-400">{label}</span>{' '}
-        <span className="font-medium text-slate-700">{value}</span>
-        {unit && <span className="text-slate-400 text-xs ml-0.5">{unit}</span>}
+        <span className="text-warm-400">{label}</span>{' '}
+        <span className="font-medium text-warm-700">{value}</span>
+        {unit && <span className="text-warm-400 text-xs ml-0.5">{unit}</span>}
       </div>
     );
   }
 
   return (
     <div className="text-center">
-      <div className="text-lg font-semibold text-slate-900">
+      <div className="text-lg font-semibold text-warm-900">
         {value}
-        {unit && <span className="text-sm font-normal leading-relaxed text-slate-400 ml-0.5">{unit}</span>}
+        {unit && <span className="text-sm font-normal leading-relaxed text-warm-400 ml-0.5">{unit}</span>}
       </div>
-      <div className="text-xs text-slate-500">{label}</div>
+      <div className="text-xs text-warm-500">{label}</div>
     </div>
   );
 });
@@ -491,8 +491,8 @@ const ActionButton = memo(function ActionButton({
         onClick?.();
       }}
       className={cn(
-        "rounded-lg bg-cream-50/92 backdrop-blur-sm text-slate-600",
-        "hover:bg-white active:bg-cream-100/75 hover:text-slate-900",
+        "rounded-lg bg-cream-50/92 backdrop-blur-sm text-warm-600",
+        "hover:bg-white active:bg-cream-100/75 hover:text-warm-900",
         "transition-[color,background-color,transform] duration-200",
         "active:scale-95",
         sizeClasses[size],

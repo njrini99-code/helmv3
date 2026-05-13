@@ -64,9 +64,9 @@ export function CompareBar({
   return (
     <div
       className={cn(
-        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
+        'fixed bottom-6 left-1/2 -tranwarm-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
         'flex items-center gap-4 px-5 py-3 rounded-2xl',
-        'bg-slate-900/95 backdrop-blur-lg border border-slate-700/50',
+        'bg-warm-900/95 backdrop-blur-lg border border-warm-700/50',
         'shadow-2xl shadow-black/20',
         'animate-slide-up',
         className
@@ -84,7 +84,7 @@ export function CompareBar({
               name={`${player.firstName} ${player.lastName}`}
               src={player.avatar}
               size="sm"
-              className="ring-2 ring-slate-700"
+              className="ring-2 ring-warm-700"
             />
             <button
               onClick={() => onRemove(player.id)}
@@ -95,8 +95,8 @@ export function CompareBar({
               <IconX size={10} />
             </button>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
-                            px-2 py-1 rounded bg-slate-800 text-white text-xs
+            <div className="absolute bottom-full left-1/2 -tranwarm-x-1/2 mb-2 
+                            px-2 py-1 rounded bg-warm-800 text-white text-xs
                             whitespace-nowrap opacity-0 group-hover:opacity-100
                             transition-opacity pointer-events-none">
               {player.firstName} {player.lastName}
@@ -108,23 +108,23 @@ export function CompareBar({
         {Array.from({ length: maxPlayers - selectedPlayers.length }).map((_, i) => (
           <div
             key={`empty-${i}`}
-            className="w-8 h-8 rounded-full border-2 border-dashed border-slate-600
+            className="w-8 h-8 rounded-full border-2 border-dashed border-warm-600
                        flex items-center justify-center"
           >
-            <IconPlus size={12} className="text-slate-500" />
+            <IconPlus size={12} className="text-warm-500" />
           </div>
         ))}
       </div>
 
-      <div className="w-px h-8 bg-slate-700" />
+      <div className="w-px h-8 bg-warm-700" />
 
       {/* Info */}
       <div className="text-sm">
         <span className="text-white font-medium">{selectedPlayers.length}</span>
-        <span className="text-slate-400"> of {maxPlayers} selected</span>
+        <span className="text-warm-400"> of {maxPlayers} selected</span>
       </div>
 
-      <div className="w-px h-8 bg-slate-700" />
+      <div className="w-px h-8 bg-warm-700" />
 
       {/* Actions */}
       <div className="flex items-center gap-2">
@@ -142,7 +142,7 @@ export function CompareBar({
           onClick={onAddAllToWatchlist}
           variant="secondary"
           size="sm"
-          className="bg-slate-800 hover:bg-slate-700 transition-colors text-white border-slate-600 gap-2"
+          className="bg-warm-800 hover:bg-warm-700 transition-colors text-white border-warm-600 gap-2"
         >
           <IconCheck size={14} />
           Add All
@@ -150,7 +150,7 @@ export function CompareBar({
         
         <button
           onClick={onClear}
-          className="px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors"
+          className="px-3 py-1.5 text-sm text-warm-400 hover:text-white transition-colors"
         >
           Clear
         </button>

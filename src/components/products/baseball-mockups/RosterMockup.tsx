@@ -39,15 +39,15 @@ function RosterRow({ jersey, recruiting }: { jersey: number; recruiting?: boolea
       "bg-cream-100/55 border border-warm-200/45"
     )}>
       {/* Jersey number */}
-      <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center">
-        <span className="text-micro font-bold text-slate-600">#{jersey}</span>
+      <div className="w-6 h-6 rounded bg-warm-100 flex items-center justify-center">
+        <span className="text-micro font-bold text-warm-600">#{jersey}</span>
       </div>
 
       {/* Avatar */}
-      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-slate-200 to-slate-300" />
+      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warm-200 to-warm-300" />
 
       {/* Name */}
-      <div className="flex-1 h-1.5 bg-slate-200 rounded w-16" />
+      <div className="flex-1 h-1.5 bg-warm-200 rounded w-16" />
 
       {/* Recruiting status */}
       {recruiting && (

@@ -68,7 +68,7 @@ export function PeekPanelRoot({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/30 backdrop-blur-sm z-40"
+            className="fixed inset-0 bg-warm-900/30 backdrop-blur-sm z-40"
           />
 
           {/* Panel */}
@@ -85,11 +85,11 @@ export function PeekPanelRoot({
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 flex-shrink-0">
-                <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
+                <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                  className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   aria-label="Close panel"
                 >
                   <IconX size={20} />

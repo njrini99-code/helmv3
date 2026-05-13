@@ -52,16 +52,16 @@ export function BaseballHelmSection() {
                 sizes="96px"
               />
             </div>
-            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">BaseballHelm</span>
+            <span className="text-xl sm:text-2xl md:text-3xl font-bold text-warm-900 tracking-tight">BaseballHelm</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-warm-900 leading-[1.1] tracking-tight mb-4 sm:mb-5">
             Find talent.
             <br />
             <span className="text-emerald-600">Build champions.</span>
           </h2>
 
-          <p className="text-base sm:text-lg text-slate-600 mb-6 sm:mb-8 leading-relaxed">
+          <p className="text-base sm:text-lg text-warm-600 mb-6 sm:mb-8 leading-relaxed">
             The recruiting platform that turns prospects into commits.
           </p>
 
@@ -75,7 +75,7 @@ export function BaseballHelmSection() {
               </button>
             </Link>
             <button className="w-full sm:w-auto px-6 py-3 rounded-lg
-                             text-slate-700 font-medium border border-slate-200
+                             text-warm-700 font-medium border border-warm-200
                              hover:bg-white active:scale-[0.98] transition-all">
               Request Demo
             </button>
@@ -94,16 +94,16 @@ export function BaseballHelmSection() {
             <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
               Discovery
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               Find your next commit
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Search thousands of prospects with powerful filters. Filter by velocity,
               exit velo, academics, position, geography, and more.
             </p>
             <ul className="space-y-2">
               {['12,000+ verified prospects', 'Advanced metric filters', 'Geographic targeting', 'Academic requirements'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {item}
                 </li>
@@ -121,16 +121,16 @@ export function BaseballHelmSection() {
             <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
               Pipeline
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               Track every prospect's journey
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Drag-and-drop pipeline management from first contact to commitment.
               Never lose track of where each recruit stands.
             </p>
             <ul className="space-y-2">
               {['Kanban-style board', 'Custom pipeline stages', 'Activity timeline', 'Team collaboration'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {item}
                 </li>
@@ -154,16 +154,16 @@ export function BaseballHelmSection() {
             <p className="text-sm font-medium text-emerald-600 uppercase tracking-wide mb-3">
               Compare
             </p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-4 tracking-tight">
+            <h3 className="text-2xl sm:text-3xl font-bold text-warm-900 mb-4 tracking-tight">
               Make informed decisions
             </h3>
-            <p className="text-slate-600 mb-5 leading-relaxed">
+            <p className="text-warm-600 mb-5 leading-relaxed">
               Put prospects side-by-side to compare stats, metrics, and fit.
               See who's the best match for your program's needs.
             </p>
             <ul className="space-y-2">
               {['Side-by-side comparison', 'Stat highlights', 'Video sync playback', 'Share with staff'].map((item) => (
-                <li key={item} className="flex items-center gap-3 text-slate-600 text-sm">
+                <li key={item} className="flex items-center gap-3 text-warm-600 text-sm">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                   {item}
                 </li>
@@ -179,7 +179,7 @@ export function BaseballHelmSection() {
             <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '28px 28px' }} />
             {/* Soft warm glow top center — static radial gradient (no blur) */}
             <div
-              className="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full pointer-events-none"
+              className="absolute -top-20 left-1/2 -tranwarm-x-1/2 w-96 h-96 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 60%)' }}
             />
 

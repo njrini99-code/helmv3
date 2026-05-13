@@ -100,8 +100,11 @@ export interface InsightMovement {
 }
 
 export interface InsightInput {
-  player_id: string;
+  player_id: string | null;
+  coach_id?: string | null;
+  team_id?: string | null;
   category: InsightCategory;
+  insight_type?: string;
   signature: string;
   title: string;
   content: string;

@@ -254,14 +254,14 @@ export function PrivacySettingsForm({
     <div className="space-y-6">
       {SETTING_GROUPS.map((group) => (
         <Card key={group.title} className="overflow-hidden">
-          <div className="relative p-6 border-b border-slate-200">
-            <h3 className="text-lg font-semibold text-slate-900 mb-1">
+          <div className="relative p-6 border-b border-warm-200">
+            <h3 className="text-lg font-semibold text-warm-900 mb-1">
               {group.title}
             </h3>
-            <p className="text-sm leading-relaxed text-slate-500">{group.description}</p>
+            <p className="text-sm leading-relaxed text-warm-500">{group.description}</p>
           </div>
 
-          <div className="relative p-6 space-y-4 bg-slate-50/50">
+          <div className="relative p-6 space-y-4 bg-warm-50/50">
             {group.settings.map((setting) => (
               <div
                 key={setting.key}
@@ -275,11 +275,11 @@ export function PrivacySettingsForm({
                 <div className="relative flex-1">
                   <label
                     htmlFor={setting.key}
-                    className="text-sm font-medium text-slate-900 block mb-1 cursor-pointer"
+                    className="text-sm font-medium text-warm-900 block mb-1 cursor-pointer"
                   >
                     {setting.label}
                   </label>
-                  <p className="text-xs text-slate-500">{setting.description}</p>
+                  <p className="text-xs text-warm-500">{setting.description}</p>
                 </div>
 
                 {/* Toggle Switch */}
@@ -293,14 +293,14 @@ export function PrivacySettingsForm({
                   className={`
                     relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent
                     transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2
-                    ${settings[setting.key] ? 'bg-primary-600' : 'bg-slate-300'}
+                    ${settings[setting.key] ? 'bg-primary-600' : 'bg-warm-300'}
                   `}
                 >
                   <span
                     className={`
                       pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0
                       transition duration-200 ease-in-out
-                      ${settings[setting.key] ? 'translate-x-5' : 'translate-x-0'}
+                      ${settings[setting.key] ? 'tranwarm-x-5' : 'tranwarm-x-0'}
                     `}
                   />
                 </button>

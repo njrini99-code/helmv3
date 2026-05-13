@@ -81,9 +81,9 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
+          <h2 className="text-xl font-bold text-warm-900">{title}</h2>
           {completedGames.length > 0 && (
-            <p className="text-sm text-slate-500 mt-0.5">
+            <p className="text-sm text-warm-500 mt-0.5">
               {completedGames.length} played · {wins}W {losses}L
             </p>
           )}
@@ -94,7 +94,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
           <select
             value={seasonYear}
             onChange={(e) => setSeasonYear(Number(e.target.value))}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="text-sm border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 text-warm-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             {SEASON_YEARS.map((y) => (
               <option key={y} value={y}>
@@ -126,15 +126,15 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       </div>
 
       {/* Type filter tabs */}
-      <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+      <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
         {(['all', 'game', 'scrimmage'] as TabFilter[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all capitalize ${
               activeTab === tab
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
+                ? 'bg-white text-warm-900 shadow-sm'
+                : 'text-warm-500 hover:text-warm-700'
             }`}
           >
             {tab === 'all' ? 'All' : tab === 'scrimmage' ? 'Scrimmages' : 'Games'}
@@ -146,7 +146,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       {loading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 bg-slate-100 rounded-2xl animate-pulse" />
+            <div key={i} className="h-28 bg-warm-100 rounded-2xl animate-pulse" />
           ))}
         </div>
       ) : error ? (
@@ -161,11 +161,11 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
         </div>
       ) : games.length === 0 ? (
         <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <IconPlus size={24} className="text-slate-400" />
+          <div className="w-12 h-12 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
+            <IconPlus size={24} className="text-warm-400" />
           </div>
-          <h3 className="text-base font-semibold text-slate-900 mb-1">No games yet</h3>
-          <p className="text-sm text-slate-500 mb-5">
+          <h3 className="text-base font-semibold text-warm-900 mb-1">No games yet</h3>
+          <p className="text-sm text-warm-500 mb-5">
             Add your first game to start tracking stats.
           </p>
           {showAddButton && (
@@ -185,13 +185,13 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
               <GameCard game={game} />
               {deletingId === game.id && (
                 <div className="absolute inset-0 bg-cream-100/82 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                  <span className="text-sm text-slate-500">Deleting...</span>
+                  <span className="text-sm text-warm-500">Deleting...</span>
                 </div>
               )}
               {/* Delete action - accessible via right-click context or small button */}
               <button
                 onClick={() => handleDelete(game.id)}
-                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all text-xs hidden"
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs hidden"
                 aria-label="Delete game"
               >
                 ×

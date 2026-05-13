@@ -73,7 +73,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
   if (!hasBatting && !hasPitching) {
     return (
       <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-8 text-center">
-        <p className="text-sm text-slate-400">No game log yet. Stats will appear here after box scores are entered.</p>
+        <p className="text-sm text-warm-400">No game log yet. Stats will appear here after box scores are entered.</p>
       </div>
     );
   }
@@ -82,12 +82,12 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
     <div className="space-y-4">
       {/* Controls */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+        <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
           {hasBatting && (
             <button
               onClick={() => setActiveTab('batting')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'batting' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Batting
@@ -97,7 +97,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
             <button
               onClick={() => setActiveTab('pitching')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                activeTab === 'pitching' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Pitching
@@ -105,13 +105,13 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
           )}
         </div>
 
-        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+        <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
           {(['all', 'game', 'scrimmage'] as GameTypeFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setGameTypeFilter(f)}
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-all capitalize ${
-                gameTypeFilter === f ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'
+                gameTypeFilter === f ? 'bg-white text-warm-800 shadow-sm' : 'text-warm-400'
               }`}
             >
               {f === 'all' ? 'All' : f === 'scrimmage' ? 'Scrimmages' : 'Games'}
@@ -126,21 +126,21 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80">
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-500 sticky left-0 bg-slate-50/80 min-w-[110px]">Date</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-slate-500 min-w-[100px]">Opponent</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-400 min-w-[36px]">Type</th>
+                <tr className="border-b border-warm-100 bg-warm-50/80">
+                  <th className="text-left px-4 py-2.5 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[110px]">Date</th>
+                  <th className="text-left px-3 py-2.5 font-semibold text-warm-500 min-w-[100px]">Opponent</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-warm-400 min-w-[36px]">Type</th>
                   {['AB','R','H','2B','3B','HR','RBI','BB','K','SB','HBP'].map((h) => (
-                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-slate-500 min-w-[32px]">{h}</th>
+                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-warm-500 min-w-[32px]">{h}</th>
                   ))}
-                  <th className="text-center px-3 py-2.5 font-semibold text-slate-400 min-w-[44px]">AVG</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-slate-400 min-w-[44px]">OPS</th>
+                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[44px]">AVG</th>
+                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[44px]">OPS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-warm-50">
                 {filteredBatting.length === 0 ? (
                   <tr>
-                    <td colSpan={18} className="px-4 py-6 text-center text-slate-400">No batting stats</td>
+                    <td colSpan={18} className="px-4 py-6 text-center text-warm-400">No batting stats</td>
                   </tr>
                 ) : filteredBatting.map((row) => {
                   const singles = row.h - row.doubles - row.triples - row.hr;
@@ -150,14 +150,14 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                   const ops = slg != null && obp != null ? (obp + slg).toFixed(3) : '—';
 
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50/40 transition-colors">
+                    <tr key={row.id} className="hover:bg-warm-50/40 transition-colors">
                       <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                         <div className="flex items-center gap-1.5">
-                          <IconCalendar size={11} className="text-slate-300 shrink-0" />
-                          <span className="text-slate-600">{fmtDate(row.game?.game_date)}</span>
+                          <IconCalendar size={11} className="text-warm-300 shrink-0" />
+                          <span className="text-warm-600">{fmtDate(row.game?.game_date)}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2 text-slate-600 truncate max-w-[100px]">
+                      <td className="px-3 py-2 text-warm-600 truncate max-w-[100px]">
                         {row.game?.id ? (
                           <Link href={`/baseball/dashboard/stats/games/${row.game.id}`} className="hover:text-primary-600 transition-colors">
                             {row.game?.opponent_name ?? 'Unknown'}
@@ -183,19 +183,19 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                       <td className="px-2 py-2 text-center tabular-nums">{row.sb}</td>
                       <td className="px-2 py-2 text-center tabular-nums">{row.hbp}</td>
                       <td className="px-3 py-2 text-center font-mono">
-                        <span className={row.h >= 2 ? 'text-primary-700 font-semibold' : 'text-slate-600'}>
+                        <span className={row.h >= 2 ? 'text-primary-700 font-semibold' : 'text-warm-600'}>
                           {fmtAvg(row.h, row.ab)}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-center font-mono text-slate-500">{ops}</td>
+                      <td className="px-3 py-2 text-center font-mono text-warm-500">{ops}</td>
                     </tr>
                   );
                 })}
               </tbody>
               {filteredBatting.length > 1 && (
                 <tfoot>
-                  <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-700">
-                    <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-slate-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
+                  <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                    <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.ab}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{battingTotals.r}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums font-bold">{battingTotals.h}</td>
@@ -224,32 +224,32 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/80">
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-500 sticky left-0 bg-slate-50/80 min-w-[110px]">Date</th>
-                  <th className="text-left px-3 py-2.5 font-semibold text-slate-500 min-w-[100px]">Opponent</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-400 min-w-[36px]">Type</th>
+                <tr className="border-b border-warm-100 bg-warm-50/80">
+                  <th className="text-left px-4 py-2.5 font-semibold text-warm-500 sticky left-0 bg-warm-50/80 min-w-[110px]">Date</th>
+                  <th className="text-left px-3 py-2.5 font-semibold text-warm-500 min-w-[100px]">Opponent</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-warm-400 min-w-[36px]">Type</th>
                   {['IP','H','R','ER','BB','K','HR','PC'].map((h) => (
-                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-slate-500 min-w-[32px]">{h}</th>
+                    <th key={h} className="text-center px-2 py-2.5 font-semibold text-warm-500 min-w-[32px]">{h}</th>
                   ))}
-                  <th className="text-center px-3 py-2.5 font-semibold text-slate-400 min-w-[44px]">ERA</th>
-                  <th className="text-center px-3 py-2.5 font-semibold text-slate-400 min-w-[44px]">WHIP</th>
-                  <th className="text-center px-2 py-2.5 font-semibold text-slate-400 min-w-[36px]">Dec</th>
+                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[44px]">ERA</th>
+                  <th className="text-center px-3 py-2.5 font-semibold text-warm-400 min-w-[44px]">WHIP</th>
+                  <th className="text-center px-2 py-2.5 font-semibold text-warm-400 min-w-[36px]">Dec</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50">
+              <tbody className="divide-y divide-warm-50">
                 {filteredPitching.length === 0 ? (
                   <tr>
-                    <td colSpan={16} className="px-4 py-6 text-center text-slate-400">No pitching stats</td>
+                    <td colSpan={16} className="px-4 py-6 text-center text-warm-400">No pitching stats</td>
                   </tr>
                 ) : filteredPitching.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50/40 transition-colors">
+                  <tr key={row.id} className="hover:bg-warm-50/40 transition-colors">
                     <td className="px-4 py-2 sticky left-0 bg-cream-50/92">
                       <div className="flex items-center gap-1.5">
-                        <IconCalendar size={11} className="text-slate-300 shrink-0" />
-                        <span className="text-slate-600">{fmtDate(row.game?.game_date)}</span>
+                        <IconCalendar size={11} className="text-warm-300 shrink-0" />
+                        <span className="text-warm-600">{fmtDate(row.game?.game_date)}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-slate-600 truncate max-w-[100px]">
+                    <td className="px-3 py-2 text-warm-600 truncate max-w-[100px]">
                       {row.game?.id ? (
                         <Link href={`/baseball/dashboard/stats/games/${row.game.id}`} className="hover:text-primary-600 transition-colors">
                           {row.game?.opponent_name ?? 'Unknown'}
@@ -270,9 +270,9 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     <td className="px-2 py-2 text-center tabular-nums">{row.bb}</td>
                     <td className="px-2 py-2 text-center tabular-nums font-semibold">{row.k}</td>
                     <td className="px-2 py-2 text-center tabular-nums">{row.hr}</td>
-                    <td className="px-2 py-2 text-center tabular-nums text-slate-400">{row.pitch_count ?? '—'}</td>
-                    <td className="px-3 py-2 text-center font-mono text-slate-700">{fmtERA(row.er, row.ip)}</td>
-                    <td className="px-3 py-2 text-center font-mono text-slate-500">
+                    <td className="px-2 py-2 text-center tabular-nums text-warm-400">{row.pitch_count ?? '—'}</td>
+                    <td className="px-3 py-2 text-center font-mono text-warm-700">{fmtERA(row.er, row.ip)}</td>
+                    <td className="px-3 py-2 text-center font-mono text-warm-500">
                       {row.ip > 0 ? ((row.h + row.bb) / row.ip).toFixed(3) : '—'}
                     </td>
                     <td className="px-2 py-2 text-center">
@@ -281,7 +281,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                           row.result === 'W' ? 'bg-green-100 text-green-700' :
                           row.result === 'L' ? 'bg-red-100 text-red-700' :
                           row.result === 'S' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-500'
+                          'bg-warm-100 text-warm-500'
                         }`}>
                           {row.result}
                         </span>
@@ -292,8 +292,8 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               </tbody>
               {filteredPitching.length > 1 && (
                 <tfoot>
-                  <tr className="border-t-2 border-slate-200 bg-slate-50/80 font-semibold text-slate-700">
-                    <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-slate-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
+                  <tr className="border-t-2 border-warm-200 bg-warm-50/80 font-semibold text-warm-700">
+                    <td colSpan={3} className="px-4 py-2.5 sticky left-0 bg-warm-50/90 text-xs font-bold uppercase tracking-wide">TOTALS</td>
                     <td className="px-2 py-2.5 text-center font-mono tabular-nums">{fmtIP(pitchingTotals.ip)}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.h}</td>
                     <td className="px-2 py-2.5 text-center tabular-nums">{pitchingTotals.r}</td>

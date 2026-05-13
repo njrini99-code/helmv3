@@ -36,8 +36,8 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-cream-50/95 backdrop-blur-sm border border-slate-200 rounded-lg shadow-lg p-3">
-      <p className="text-xs text-slate-500 mb-2">{label}</p>
+    <div className="bg-cream-50/95 backdrop-blur-sm border border-warm-200 rounded-lg shadow-lg p-3">
+      <p className="text-xs text-warm-500 mb-2">{label}</p>
       {payload.map((entry: any) => {
         const metric = metrics.find(m => m.key === entry.dataKey);
         return (
@@ -46,8 +46,8 @@ function CustomTooltip({ active, payload, label }: any) {
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-slate-600">{metric?.label}:</span>
-            <span className="font-medium text-slate-900">
+            <span className="text-warm-600">{metric?.label}:</span>
+            <span className="font-medium text-warm-900">
               {metric?.format(entry.value)}
             </span>
           </div>
@@ -95,7 +95,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
     return (
       <div className="lg:col-span-2 relative glass-standard rounded-2xl overflow-clip">
         <ShineEffect />
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
           <div className="flex items-center gap-3">
             <Skeleton variant="rectangular" width={36} height={36} className="rounded-lg" />
             <Skeleton variant="text" width={180} height={20} />
@@ -121,29 +121,29 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
       <ShineEffect />
       
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100/50">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100/50">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-primary-50 flex items-center justify-center">
             <IconChart size={18} className="text-primary-600" />
           </div>
-          <h2 className="font-semibold text-slate-900 tracking-tight">Team Performance</h2>
+          <h2 className="font-semibold text-warm-900 tracking-tight">Team Performance</h2>
         </div>
         <Link 
           href="/baseball/dashboard/roster" 
-          className="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 transition-colors group"
+          className="text-xs text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group"
         >
-          Player Stats <IconChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
+          Player Stats <IconChevronRight size={12} className="group-hover:tranwarm-x-0.5 transition-transform" />
         </Link>
       </div>
 
       <div className="p-6">
         {data.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-              <IconChart size={20} className="text-slate-400" />
+            <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mb-3">
+              <IconChart size={20} className="text-warm-400" />
             </div>
-            <h4 className="text-sm font-medium text-slate-900 mb-1">No stats data yet</h4>
-            <p className="text-xs text-slate-500 max-w-[200px]">
+            <h4 className="text-sm font-medium text-warm-900 mb-1">No stats data yet</h4>
+            <p className="text-xs text-warm-500 max-w-[200px]">
               Upload player stats to see team performance trends
             </p>
             <Link href="/baseball/dashboard/stats/upload">
@@ -162,8 +162,8 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
                   onClick={() => toggleMetric(metric.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     visibleMetrics.has(metric.key)
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-warm-900 text-white'
+                      : 'bg-warm-100 text-warm-600 hover:bg-warm-200'
                   }`}
                 >
                   <div 
@@ -212,28 +212,28 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
             </div>
 
             {/* Summary stats */}
-            <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-warm-100">
               <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-lg font-semibold text-warm-900 tabular-nums">
                   {latestStats?.teamAvg ? `.${(latestStats.teamAvg * 1000).toFixed(0).padStart(3, '0')}` : '—'}
                 </p>
-                <p className="text-xs text-slate-500">Team AVG</p>
+                <p className="text-xs text-warm-500">Team AVG</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-lg font-semibold text-warm-900 tabular-nums">
                   {latestStats?.exitVelo?.toFixed(1) || '—'}
                 </p>
-                <p className="text-xs text-slate-500">Exit Velo</p>
+                <p className="text-xs text-warm-500">Exit Velo</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">
+                <p className="text-lg font-semibold text-warm-900 tabular-nums">
                   {latestStats?.obp ? `.${(latestStats.obp * 1000).toFixed(0).padStart(3, '0')}` : '—'}
                 </p>
-                <p className="text-xs text-slate-500">OBP</p>
+                <p className="text-xs text-warm-500">OBP</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 tabular-nums">{data.length}</p>
-                <p className="text-xs text-slate-500">Sessions</p>
+                <p className="text-lg font-semibold text-warm-900 tabular-nums">{data.length}</p>
+                <p className="text-xs text-warm-500">Sessions</p>
               </div>
             </div>
           </>

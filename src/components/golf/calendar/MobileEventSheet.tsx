@@ -313,7 +313,7 @@ export function MobileEventSheet({
           'bg-white rounded-t-3xl shadow-2xl',
           'max-h-[90vh] overflow-hidden',
           'transform transition-transform duration-300 ease-out',
-          isOpen ? 'translate-y-0' : 'translate-y-full'
+          isOpen ? 'tranwarm-y-0' : 'tranwarm-y-full'
         )}
         style={{ paddingBottom: safeAreaBottom }}
       >
@@ -480,7 +480,7 @@ export function MobileEventSheet({
                 >
                   <span aria-hidden="true" className={cn(
                     'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
-                    formData.allDay && 'translate-x-5'
+                    formData.allDay && 'tranwarm-x-5'
                   )} />
                 </button>
               </div>

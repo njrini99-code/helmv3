@@ -113,34 +113,34 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
 
   return (
     <div className={cn(
-      'flex items-center gap-3 p-3 rounded-xl bg-slate-50/80 border border-slate-100',
+      'flex items-center gap-3 p-3 rounded-xl bg-warm-50/80 border border-warm-100',
       'animate-fade-in',
       className
     )}>
-      <span className="text-sm text-slate-500 font-medium whitespace-nowrap">
-        <span className="font-semibold text-slate-900">{totalCount.toLocaleString()}</span>
+      <span className="text-sm text-warm-500 font-medium whitespace-nowrap">
+        <span className="font-semibold text-warm-900">{totalCount.toLocaleString()}</span>
         {' '}{totalCount === 1 ? 'player' : 'players'}
       </span>
       
-      <div className="w-px h-5 bg-slate-200" />
+      <div className="w-px h-5 bg-warm-200" />
       
       <div className="flex items-center gap-2 flex-wrap flex-1">
         {chips.map((chip, index) => (
           <div
             key={`${chip.key}-${chip.removeValue || index}`}
             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg
-                       bg-white border border-slate-200 text-sm
+                       bg-white border border-warm-200 text-sm
                        animate-scale-in shadow-sm"
             style={{ animationDelay: `${index * 50}ms` }}
           >
             {chip.label && (
-              <span className="text-slate-400">{chip.label}:</span>
+              <span className="text-warm-400">{chip.label}:</span>
             )}
-            <span className="font-medium text-slate-700">{chip.value}</span>
+            <span className="font-medium text-warm-700">{chip.value}</span>
             <button
               onClick={() => removeFilter(chip.key, chip.removeValue)}
-              className="ml-0.5 p-0.5 rounded hover:bg-slate-100 transition-colors active:bg-slate-200 text-slate-400
-                         hover:text-slate-600 transition-colors"
+              className="ml-0.5 p-0.5 rounded hover:bg-warm-100 transition-colors active:bg-warm-200 text-warm-400
+                         hover:text-warm-600 transition-colors"
             >
               <IconX size={12} />
             </button>
@@ -151,7 +151,7 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
       {chips.length > 1 && (
         <button
           onClick={clearAll}
-          className="text-sm text-slate-500 hover:text-slate-700 font-medium
+          className="text-sm text-warm-500 hover:text-warm-700 font-medium
                      whitespace-nowrap transition-colors"
         >
           Clear all

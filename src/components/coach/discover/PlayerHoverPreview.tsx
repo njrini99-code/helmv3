@@ -85,7 +85,7 @@ export function PlayerHoverPreview({
       className={cn(
         'fixed z-50 w-72 pointer-events-auto',
         'bg-white rounded-2xl shadow-2xl shadow-black/15',
-        'border border-slate-200',
+        'border border-warm-200',
         'animate-scale-in origin-top-left',
         'overflow-hidden'
       )}
@@ -95,10 +95,10 @@ export function PlayerHoverPreview({
       }}
     >
       {/* Header with Avatar */}
-      <div className="p-4 pb-3 border-b border-slate-100">
+      <div className="p-4 pb-3 border-b border-warm-100">
         <div className="flex items-start gap-3">
           {/* Avatar */}
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-warm-200 to-warm-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
             {player.avatar ? (
               <Image
                 src={player.avatar}
@@ -108,7 +108,7 @@ export function PlayerHoverPreview({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <span className="text-lg font-medium text-slate-600">
+              <span className="text-lg font-medium text-warm-600">
                 {player.firstName.charAt(0)}{player.lastName.charAt(0)}
               </span>
             )}
@@ -116,13 +116,13 @@ export function PlayerHoverPreview({
 
           {/* Name & Position */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-slate-900 truncate">
+            <h4 className="font-semibold text-warm-900 truncate">
               {player.firstName} {player.lastName}
             </h4>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-warm-500">
               {player.position} • Class of {player.graduationYear}
             </p>
-            <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
+            <div className="flex items-center gap-1 mt-1 text-xs text-warm-400">
               <IconMapPin size={12} />
               <span className="truncate">{player.highSchool}, {player.state}</span>
             </div>
@@ -131,7 +131,7 @@ export function PlayerHoverPreview({
       </div>
 
       {/* Stats Grid */}
-      <div className="p-4 pt-3 border-b border-slate-100">
+      <div className="p-4 pt-3 border-b border-warm-100">
         <div className="grid grid-cols-3 gap-3">
           {player.stats?.velocity && (
             <StatItem label="Pitch Velo" value={`${player.stats.velocity}`} unit="mph" highlight />
@@ -156,8 +156,8 @@ export function PlayerHoverPreview({
 
       {/* Video Preview (if available) */}
       {player.hasVideo && (
-        <div className="p-4 pt-3 border-b border-slate-100">
-          <div className="relative rounded-lg overflow-hidden bg-slate-100 aspect-video group cursor-pointer"
+        <div className="p-4 pt-3 border-b border-warm-100">
+          <div className="relative rounded-lg overflow-hidden bg-warm-100 aspect-video group cursor-pointer"
             onClick={onView}
           >
             {player.videoThumbnail ? (
@@ -177,7 +177,7 @@ export function PlayerHoverPreview({
             )}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <div className="w-10 h-10 rounded-full bg-cream-50/92 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <IconPlay size={16} className="text-slate-900 ml-0.5" />
+                <IconPlay size={16} className="text-warm-900 ml-0.5" />
               </div>
             </div>
             <div className="absolute bottom-2 left-2 px-2 py-1 rounded bg-black/70 text-white text-xs">
@@ -241,12 +241,12 @@ function StatItem({
     <div className="text-center">
       <p className={cn(
         'text-lg font-semibold',
-        highlight ? 'text-primary-600' : 'text-slate-900'
+        highlight ? 'text-primary-600' : 'text-warm-900'
       )}>
         {value}
-        {unit && <span className="text-xs font-normal text-slate-400 ml-0.5">{unit}</span>}
+        {unit && <span className="text-xs font-normal text-warm-400 ml-0.5">{unit}</span>}
       </p>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-warm-500">{label}</p>
     </div>
   );
 }

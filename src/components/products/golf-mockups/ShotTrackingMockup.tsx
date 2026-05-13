@@ -12,19 +12,19 @@ export function ShotTrackingMockup() {
       {/* Course illustration */}
       <div className="absolute inset-0">
         {/* Fairway */}
-        <div className="absolute left-8 top-1/2 -translate-y-1/2 w-[60%] h-24 bg-emerald-200/60 rounded-full blur-sm" />
+        <div className="absolute left-8 top-1/2 -tranwarm-y-1/2 w-[60%] h-24 bg-emerald-200/60 rounded-full blur-sm" />
 
         {/* Green */}
-        <div className="absolute right-12 top-1/2 -translate-y-1/2 w-20 h-20 bg-emerald-300/80 rounded-full" />
+        <div className="absolute right-12 top-1/2 -tranwarm-y-1/2 w-20 h-20 bg-emerald-300/80 rounded-full" />
 
         {/* Flag */}
         <div className="absolute right-[70px] top-[38%]">
-          <div className="w-0.5 h-8 bg-slate-600" />
+          <div className="w-0.5 h-8 bg-warm-600" />
           <div className="absolute top-0 left-0.5 w-4 h-3 bg-red-500 rounded-r-sm" />
         </div>
 
         {/* Tee box */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-300/60 rounded" />
+        <div className="absolute left-4 top-1/2 -tranwarm-y-1/2 w-6 h-6 bg-warm-300/60 rounded" />
       </div>
 
       {/* Shot path - animated dots */}
@@ -57,12 +57,12 @@ export function ShotTrackingMockup() {
           "shadow-[0_1px_3px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
         )}>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded bg-slate-200 flex items-center justify-center">
-              <div className="w-1 h-4 bg-slate-400 rounded-full" />
+            <div className="w-8 h-8 rounded bg-warm-200 flex items-center justify-center">
+              <div className="w-1 h-4 bg-warm-400 rounded-full" />
             </div>
             <div className="flex-1">
-              <div className="h-2 w-12 bg-slate-300 rounded" />
-              <div className="h-1.5 w-8 bg-slate-200 rounded mt-1" />
+              <div className="h-2 w-12 bg-warm-300 rounded" />
+              <div className="h-1.5 w-8 bg-warm-200 rounded mt-1" />
             </div>
             <div className="flex gap-1">
               {['#22c55e', '#f97316', '#ef4444'].map((color, i) => (
@@ -87,8 +87,8 @@ function ShotDataBadge({ label, value }: { label: string; value: string }) {
       "border border-warm-200/55",
       "shadow-[0_1px_2px_rgba(0,0,0,0.02),inset_0_1px_0_rgba(255,255,255,0.5)]"
     )}>
-      <p className="text-micro text-slate-500">{label}</p>
-      <p className="text-xs font-semibold text-slate-900">{value}</p>
+      <p className="text-micro text-warm-500">{label}</p>
+      <p className="text-xs font-semibold text-warm-900">{value}</p>
     </div>
   );
 }

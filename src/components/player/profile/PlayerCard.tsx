@@ -70,7 +70,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
   return (
     <Card className="overflow-hidden">
       {/* Header with Avatar */}
-      <div className="bg-gradient-to-br from-primary-50 to-white p-6 border-b border-slate-200">
+      <div className="bg-gradient-to-br from-primary-50 to-white p-6 border-b border-warm-200">
         <div className="flex items-start gap-4">
           <div className="relative">
             <Avatar
@@ -87,7 +87,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-semibold text-slate-900 mb-1">
+            <h2 className="text-2xl font-semibold text-warm-900 mb-1">
               {displayName}
             </h2>
 
@@ -106,14 +106,14 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
             {/* Location & School */}
             <div className="space-y-1 text-sm">
               {showSchool && player.high_school_name && (
-                <div className="flex items-center gap-2 text-slate-600">
-                  <IconSchool size={16} className="text-slate-400" />
+                <div className="flex items-center gap-2 text-warm-600">
+                  <IconSchool size={16} className="text-warm-400" />
                   <span>{player.high_school_name}</span>
                 </div>
               )}
               {showLocation && player.city && player.state && (
-                <div className="flex items-center gap-2 text-slate-600">
-                  <IconMapPin size={16} className="text-slate-400" />
+                <div className="flex items-center gap-2 text-warm-600">
+                  <IconMapPin size={16} className="text-warm-400" />
                   <span>{player.city}, {player.state}</span>
                 </div>
               )}
@@ -124,40 +124,40 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
 
       {/* Stats Grid */}
       {showPhysicals && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 border-b border-slate-200 bg-white">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-6 border-b border-warm-200 bg-white">
           <div>
-            <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-1">
+            <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-1">
               Height
             </p>
-            <p className="text-lg font-semibold text-slate-900">
+            <p className="text-lg font-semibold text-warm-900">
               {player.height_feet && player.height_inches
                 ? formatHeight(player.height_feet, player.height_inches)
                 : '—'}
             </p>
           </div>
           <div>
-            <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-1">
+            <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-1">
               Weight
             </p>
-            <p className="text-lg font-semibold text-slate-900">
+            <p className="text-lg font-semibold text-warm-900">
               {player.weight_lbs ? `${player.weight_lbs} lbs` : '—'}
             </p>
           </div>
           {showBatsThrows && (
             <>
               <div>
-                <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-1">
+                <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-1">
                   Bats
                 </p>
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-lg font-semibold text-warm-900">
                   {player.bats || '—'}
                 </p>
               </div>
               <div>
-                <p className="text-label font-medium uppercase tracking-wider text-slate-400 mb-1">
+                <p className="text-label font-medium uppercase tracking-wider text-warm-400 mb-1">
                   Throws
                 </p>
-                <p className="text-lg font-semibold text-slate-900">
+                <p className="text-lg font-semibold text-warm-900">
                   {player.throws || '—'}
                 </p>
               </div>
@@ -168,14 +168,14 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
 
       {/* Contact Information */}
       {(showContactEmail || showPhone || showSocial) && (
-        <div className="p-6 bg-slate-50 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wide mb-3">
+        <div className="p-6 bg-warm-50 space-y-3">
+          <h3 className="text-sm font-semibold text-warm-900 uppercase tracking-wide mb-3">
             Contact
           </h3>
 
           {showContactEmail && player.email && (
             <div className="flex items-center gap-3">
-              <IconMail size={16} className="text-slate-400" />
+              <IconMail size={16} className="text-warm-400" />
               <a
                 href={`mailto:${player.email}`}
                 className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 hover:underline"
@@ -187,7 +187,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
 
           {showPhone && player.phone && (
             <div className="flex items-center gap-3">
-              <IconPhone size={16} className="text-slate-400" />
+              <IconPhone size={16} className="text-warm-400" />
               <a
                 href={`tel:${player.phone}`}
                 className="text-sm leading-relaxed text-primary-600 hover:text-primary-700 hover:underline"
@@ -204,7 +204,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
                   href={`https://twitter.com/${player.twitter_handle}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-slate-600 hover:text-primary-600 transition-colors"
+                  className="flex items-center gap-2 text-sm text-warm-600 hover:text-primary-600 transition-colors"
                 >
                   <IconBrandTwitter size={16} />
                   <span>@{player.twitter_handle}</span>
@@ -215,7 +215,7 @@ export function PlayerCard({ player, isPublic = false }: PlayerCardProps) {
                   href={`https://instagram.com/${player.instagram_handle}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-slate-600 hover:text-primary-600 transition-colors"
+                  className="flex items-center gap-2 text-sm text-warm-600 hover:text-primary-600 transition-colors"
                 >
                   <IconBrandInstagram size={16} />
                   <span>@{player.instagram_handle}</span>

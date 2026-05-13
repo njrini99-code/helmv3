@@ -144,6 +144,12 @@ export interface ValidationPersistResult {
  * Resolves the actual value for a prediction by averaging the same metric
  * across the player's completed rounds inside the prediction window
  * (created_at .. due_date). Returns null if no round lands in the window.
+ *
+ * Filters on `golf_rounds.created_at` (the round's actual submission
+ * timestamp) rather than `round_date` (DATE only, truncated to midnight).
+ * Using round_date silently excluded same-day rounds whenever the
+ * prediction was created after 00:00 UTC of that day, because Postgres
+ * coerces the date to midnight when comparing against a timestamp.
  */
 async function resolveActualValue(
   supabase: AdminSupabase,
@@ -156,11 +162,11 @@ async function resolveActualValue(
 
   const { data: rounds, error } = await supabase
     .from('golf_rounds')
-    .select('score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, round_date')
+    .select('score_to_par, total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible, created_at')
     .eq('player_id', prediction.player_id)
     .eq('status', 'completed')
-    .gte('round_date', start)
-    .lte('round_date', end);
+    .gte('created_at', start)
+    .lte('created_at', end);
 
   if (error) {
     await logServerError(

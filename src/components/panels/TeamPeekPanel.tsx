@@ -221,12 +221,12 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
       ) : team ? (
         <div className="flex flex-col h-full">
           {/* ── Header ────────────────────────────────────────────────── */}
-          <div className="px-6 pt-6 pb-4 border-b border-slate-100 flex-shrink-0">
+          <div className="px-6 pt-6 pb-4 border-b border-warm-100 flex-shrink-0">
             {/* Close button */}
             <div className="flex justify-end mb-3">
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 aria-label="Close panel"
               >
                 <IconX size={18} />
@@ -235,7 +235,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
             <div className="flex items-start gap-4">
               {/* Logo */}
               <div
-                className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center"
+                className="flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border border-warm-200 bg-warm-50 flex items-center justify-center"
                 style={{
                   backgroundColor: team.primary_color ? `${team.primary_color}15` : undefined,
                   borderColor: team.primary_color ? `${team.primary_color}30` : undefined,
@@ -244,16 +244,16 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                 {team.logo_url ? (
                   <Image src={team.logo_url} alt={team.name || 'Team'} width={64} height={64} className="object-contain" />
                 ) : (
-                  <IconBuilding size={28} className="text-slate-400" style={{ color: team.primary_color || undefined }} />
+                  <IconBuilding size={28} className="text-warm-400" style={{ color: team.primary_color || undefined }} />
                 )}
               </div>
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <h2 className="text-lg font-semibold text-slate-900 leading-tight truncate">
+                <h2 className="text-lg font-semibold text-warm-900 leading-tight truncate">
                   {team.name || 'Unknown Team'}
                 </h2>
-                <div className="flex items-center gap-1.5 mt-1 text-sm text-slate-500">
+                <div className="flex items-center gap-1.5 mt-1 text-sm text-warm-500">
                   <IconMapPin size={13} className="flex-shrink-0" />
                   <span className="truncate">{team.location_city}, {team.location_state}</span>
                 </div>
@@ -266,17 +266,17 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
 
             {/* Quick stats */}
             <div className="mt-4 grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-                <IconUsers size={15} className="text-slate-400 flex-shrink-0" />
+              <div className="flex items-center gap-2 bg-warm-50 rounded-xl px-3 py-2">
+                <IconUsers size={15} className="text-warm-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-slate-500">Roster</p>
-                  <p className="text-sm font-semibold text-slate-900">{team.playerCount}</p>
+                  <p className="text-xs text-warm-500">Roster</p>
+                  <p className="text-sm font-semibold text-warm-900">{team.playerCount}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 bg-primary-50 rounded-xl px-3 py-2">
                 <IconSparkles size={15} className="text-primary-500 flex-shrink-0" />
                 <div>
-                  <p className="text-xs text-slate-500">Recruiting</p>
+                  <p className="text-xs text-warm-500">Recruiting</p>
                   <p className="text-sm font-semibold text-primary-600">{team.recruitingActiveCount}</p>
                 </div>
               </div>
@@ -292,8 +292,8 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                 className={cn(
                   'flex-1 py-2 text-sm font-medium rounded-lg transition-all capitalize',
                   tab === t
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                    ? 'bg-warm-900 text-white shadow-sm'
+                    : 'text-warm-500 hover:text-warm-700 hover:bg-warm-100'
                 )}
               >
                 {t === 'details' ? 'Details' : `Roster (${roster.length})`}
@@ -319,7 +319,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
           </div>
 
           {/* ── Footer Actions ────────────────────────────────────────── */}
-          <div className="px-6 py-4 border-t border-slate-100 flex-shrink-0 space-y-2">
+          <div className="px-6 py-4 border-t border-warm-100 flex-shrink-0 space-y-2">
             <Button
               variant="primary"
               className="w-full"
@@ -345,7 +345,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
           </div>
         </div>
       ) : (
-        <div className="flex items-center justify-center h-64 text-slate-500 text-sm">
+        <div className="flex items-center justify-center h-64 text-warm-500 text-sm">
           Team not found
         </div>
       )}
@@ -361,17 +361,17 @@ function DetailsTab({ team, staff }: { team: TeamWithDetails; staff: CoachStaff[
       {/* Description */}
       {team.description && (
         <div>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">About</h3>
-          <p className="text-sm leading-relaxed text-slate-600">{team.description}</p>
+          <h3 className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-2">About</h3>
+          <p className="text-sm leading-relaxed text-warm-600">{team.description}</p>
         </div>
       )}
 
       {/* Coaching Staff */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Coaching Staff</h3>
+        <h3 className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">Coaching Staff</h3>
         {staff.length === 0 ? (
-          <div className="flex items-center gap-3 py-4 text-sm text-slate-400">
-            <IconUser size={18} className="text-slate-300" />
+          <div className="flex items-center gap-3 py-4 text-sm text-warm-400">
+            <IconUser size={18} className="text-warm-300" />
             <span>No coaching staff listed</span>
           </div>
         ) : (
@@ -379,12 +379,12 @@ function DetailsTab({ team, staff }: { team: TeamWithDetails; staff: CoachStaff[
             {staff.map((coach) => (
               <div
                 key={coach.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100"
+                className="flex items-center gap-3 p-3 rounded-xl bg-warm-50 border border-warm-100"
               >
                 <Avatar name={coach.name} src={coach.avatarUrl} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">{coach.name}</p>
-                  <p className="text-xs text-slate-500">{coach.title}</p>
+                  <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
+                  <p className="text-xs text-warm-500">{coach.title}</p>
                 </div>
                 {coach.isPrimary && (
                   <span className="flex-shrink-0 text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full border border-primary-100">
@@ -400,17 +400,17 @@ function DetailsTab({ team, staff }: { team: TeamWithDetails; staff: CoachStaff[
       {/* Quick facts */}
       {(team.conference || team.website_url) && (
         <div>
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Program Info</h3>
+          <h3 className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-3">Program Info</h3>
           <div className="space-y-2 text-sm">
             {team.conference && (
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Conference</span>
-                <span className="font-medium text-slate-900">{team.conference}</span>
+                <span className="text-warm-500">Conference</span>
+                <span className="font-medium text-warm-900">{team.conference}</span>
               </div>
             )}
             {team.website_url && (
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Website</span>
+                <span className="text-warm-500">Website</span>
                 <a
                   href={team.website_url}
                   target="_blank"
@@ -442,14 +442,14 @@ function RosterTab({
   if (roster.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3">
-          <IconUsers size={22} className="text-slate-400" />
+        <div className="w-12 h-12 rounded-xl bg-warm-100 flex items-center justify-center mb-3">
+          <IconUsers size={22} className="text-warm-400" />
         </div>
-        <p className="text-sm font-medium text-slate-600">
+        <p className="text-sm font-medium text-warm-600">
           {orgType === 'juco' ? 'No players on roster yet' : 'No recruiting-active players yet'}
         </p>
         {orgType !== 'juco' && (
-          <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
+          <p className="text-xs text-warm-400 mt-1 max-w-[220px]">
             Players appear here when they activate their recruiting profile
           </p>
         )}
@@ -469,7 +469,7 @@ function RosterTab({
     <div className="space-y-5">
       {years.map((year) => (
         <div key={year}>
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold text-warm-400 uppercase tracking-wide mb-2">
             Class of {year}
           </p>
           <div className="space-y-1.5">
@@ -477,7 +477,7 @@ function RosterTab({
               <button
                 key={player.id}
                 onClick={() => onPlayerClick(player.id)}
-                className="w-full flex items-center gap-3 p-3 rounded-xl bg-slate-50 hover:bg-white hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
+                className="w-full flex items-center gap-3 p-3 rounded-xl bg-warm-50 hover:bg-white hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
               >
                 <Avatar
                   name={`${player.firstName ?? ''} ${player.lastName ?? ''}`}
@@ -485,10 +485,10 @@ function RosterTab({
                   size="sm"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">
+                  <p className="text-sm font-medium text-warm-900 truncate">
                     {player.firstName} {player.lastName}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-warm-500">
                     {player.primaryPosition ?? '—'}
                     {player.pitchVelo ? ` · ${player.pitchVelo} mph` : ''}
                     {player.exitVelo ? ` · ${player.exitVelo} exit` : ''}
@@ -500,7 +500,7 @@ function RosterTab({
                   ) : (
                     <span className="text-xs text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded font-medium">Active</span>
                   )}
-                  <IconChevronRight size={14} className="text-slate-300 group-hover:text-primary-400 transition-colors" />
+                  <IconChevronRight size={14} className="text-warm-300 group-hover:text-primary-400 transition-colors" />
                 </div>
               </button>
             ))}
@@ -518,29 +518,29 @@ function TeamPeekSkeleton() {
     <div className="p-6 space-y-5 animate-pulse">
       {/* Header */}
       <div className="flex items-start gap-4">
-        <div className="w-16 h-16 rounded-xl bg-slate-200 flex-shrink-0" />
+        <div className="w-16 h-16 rounded-xl bg-warm-200 flex-shrink-0" />
         <div className="flex-1 space-y-2">
-          <div className="h-5 bg-slate-200 rounded w-3/4" />
-          <div className="h-3 bg-slate-100 rounded w-1/2" />
-          <div className="h-5 bg-slate-100 rounded w-20" />
+          <div className="h-5 bg-warm-200 rounded w-3/4" />
+          <div className="h-3 bg-warm-100 rounded w-1/2" />
+          <div className="h-5 bg-warm-100 rounded w-20" />
         </div>
       </div>
       {/* Stats */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="h-12 bg-slate-100 rounded-xl" />
-        <div className="h-12 bg-slate-100 rounded-xl" />
+        <div className="h-12 bg-warm-100 rounded-xl" />
+        <div className="h-12 bg-warm-100 rounded-xl" />
       </div>
       {/* Tabs */}
-      <div className="h-9 bg-slate-100 rounded-lg" />
+      <div className="h-9 bg-warm-100 rounded-lg" />
       {/* Content */}
       <div className="space-y-2">
-        <div className="h-4 bg-slate-100 rounded w-1/4" />
+        <div className="h-4 bg-warm-100 rounded w-1/4" />
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50">
-            <div className="w-8 h-8 rounded-full bg-slate-200" />
+          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-warm-50">
+            <div className="w-8 h-8 rounded-full bg-warm-200" />
             <div className="flex-1 space-y-1.5">
-              <div className="h-3 bg-slate-200 rounded w-1/2" />
-              <div className="h-2.5 bg-slate-100 rounded w-1/3" />
+              <div className="h-3 bg-warm-200 rounded w-1/2" />
+              <div className="h-2.5 bg-warm-100 rounded w-1/3" />
             </div>
           </div>
         ))}

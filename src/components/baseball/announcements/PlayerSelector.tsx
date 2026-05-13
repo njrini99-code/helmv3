@@ -48,7 +48,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
 
   return (
     <div>
-      <label className="text-sm font-medium text-slate-700 block mb-2">
+      <label className="text-sm font-medium text-warm-700 block mb-2">
         Send To
       </label>
 
@@ -62,18 +62,18 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             isAllTeam
               ? 'border-primary-600 bg-primary-50 shadow-sm'
-              : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+              : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            isAllTeam ? 'bg-primary-100' : 'bg-slate-100'
+            isAllTeam ? 'bg-primary-100' : 'bg-warm-100'
           )}>
-            <IconUsers size={18} className={isAllTeam ? 'text-primary-600' : 'text-slate-400'} />
+            <IconUsers size={18} className={isAllTeam ? 'text-primary-600' : 'text-warm-400'} />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-slate-900 text-sm">All Team Members</p>
-            <p className="text-xs text-slate-500">{players.length} players</p>
+            <p className="font-medium text-warm-900 text-sm">All Team Members</p>
+            <p className="text-xs text-warm-500">{players.length} players</p>
           </div>
           {isAllTeam && (
             <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center">
@@ -91,18 +91,18 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             'w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3',
             !isAllTeam
               ? 'border-primary-600 bg-primary-50 shadow-sm'
-              : 'border-slate-200 hover:border-slate-300 hover:shadow-sm'
+              : 'border-warm-200 hover:border-warm-300 hover:shadow-sm'
           )}
         >
           <div className={cn(
             'w-9 h-9 rounded-lg flex items-center justify-center',
-            !isAllTeam ? 'bg-primary-100' : 'bg-slate-100'
+            !isAllTeam ? 'bg-primary-100' : 'bg-warm-100'
           )}>
-            <IconUser size={18} className={!isAllTeam ? 'text-primary-600' : 'text-slate-400'} />
+            <IconUser size={18} className={!isAllTeam ? 'text-primary-600' : 'text-warm-400'} />
           </div>
           <div className="flex-1">
-            <p className="font-medium text-slate-900 text-sm">Specific Players</p>
-            <p className="text-xs text-slate-500">
+            <p className="font-medium text-warm-900 text-sm">Specific Players</p>
+            <p className="text-xs text-warm-500">
               {!isAllTeam && selectedPlayerIds && selectedPlayerIds.length > 0
                 ? `${selectedPlayerIds.length} selected`
                 : 'Select players below'}
@@ -125,14 +125,14 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 border border-slate-200 rounded-xl overflow-hidden">
-              <div className="px-3 py-2 border-b border-slate-100">
+            <div className="mt-3 border border-warm-200 rounded-xl overflow-hidden">
+              <div className="px-3 py-2 border-b border-warm-100">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search players..."
-                  className="w-full text-sm text-slate-900 placeholder:text-slate-400 bg-transparent outline-none"
+                  className="w-full text-sm text-warm-900 placeholder:text-warm-400 bg-transparent outline-none"
                 />
               </div>
               <div className="max-h-48 overflow-y-auto p-1.5 space-y-0.5">
@@ -152,14 +152,14 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                         'w-full px-3 py-2 rounded-lg text-left text-sm transition-all flex items-center gap-2',
                         isSelected
                           ? 'bg-primary-100 text-primary-900'
-                          : 'hover:bg-slate-50 active:bg-slate-100 text-slate-700'
+                          : 'hover:bg-warm-50 active:bg-warm-100 text-warm-700'
                       )}
                     >
                       <div className={cn(
                         'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
                         isSelected
                           ? 'bg-primary-600 border-primary-600'
-                          : 'border-slate-300'
+                          : 'border-warm-300'
                       )}>
                         {isSelected && <IconCheck size={10} className="text-white" />}
                       </div>
@@ -168,7 +168,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                   );
                 })}
                 {filteredPlayers.length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-4">No players found</p>
+                  <p className="text-sm text-warm-400 text-center py-4">No players found</p>
                 )}
               </div>
             </div>

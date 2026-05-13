@@ -191,13 +191,13 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Command palette">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md animate-fade-in"
+        className="absolute inset-0 bg-warm-900/40 backdrop-blur-md animate-fade-in"
         onClick={() => setOpen(false)}
         aria-hidden="true"
       />
 
       {/* Dialog */}
-      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
+      <div className="absolute top-[20%] left-1/2 -tranwarm-x-1/2 w-full max-w-lg animate-scale-in">
         <div className={cn(
           'bg-cream-100/68 backdrop-blur-[24px]',
           'rounded-2xl',
@@ -207,7 +207,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
         )}>
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-white/20 bg-white/30">
-            <IconSearch size={20} className="text-slate-400" aria-hidden="true" />
+            <IconSearch size={20} className="text-warm-400" aria-hidden="true" />
             <input
               ref={inputRef}
               type="text"
@@ -219,9 +219,9 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               onKeyDown={handleKeyDown}
               placeholder="Search commands..."
               aria-label="Search commands"
-              className="flex-1 outline-none text-slate-900 placeholder:text-slate-400 bg-transparent"
+              className="flex-1 outline-none text-warm-900 placeholder:text-warm-400 bg-transparent"
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-slate-400 bg-cream-100/68 backdrop-blur-sm rounded-lg border border-warm-200/45">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-1 text-xs text-warm-400 bg-cream-100/68 backdrop-blur-sm rounded-lg border border-warm-200/45">
               ESC
             </kbd>
           </div>
@@ -234,7 +234,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
             className="max-h-80 overflow-y-auto p-2" data-scroll-container
           >
             {filteredCommands.length === 0 ? (
-              <div className="text-center py-8 text-sm text-slate-500" role="status">
+              <div className="text-center py-8 text-sm text-warm-500" role="status">
                 No commands found
               </div>
             ) : (
@@ -252,7 +252,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors',
                     index === selectedIndex
                       ? 'bg-primary-50/80 backdrop-blur-sm text-primary-900'
-                      : 'hover:bg-white/40 text-slate-700'
+                      : 'hover:bg-white/40 text-warm-700'
                   )}
                 >
                   <div
@@ -267,17 +267,17 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-xs text-slate-500 truncate">{cmd.description}</p>
+                      <p className="text-xs text-warm-500 truncate">{cmd.description}</p>
                     )}
                   </div>
-                  <IconChevronRight size={16} className="text-slate-400" aria-hidden="true" />
+                  <IconChevronRight size={16} className="text-warm-400" aria-hidden="true" />
                 </button>
               ))
             )}
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-slate-500">
+          <div className="px-4 py-2 border-t border-white/20 bg-white/30 backdrop-blur-sm flex items-center justify-between text-xs text-warm-500">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-cream-100/68 backdrop-blur-sm rounded border border-warm-200/45">↓</kbd>

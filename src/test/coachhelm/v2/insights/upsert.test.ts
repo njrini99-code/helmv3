@@ -50,6 +50,10 @@ function createFakeSupabase(opts: {
         state.filters[col] = val;
         return thenable;
       }),
+      is: vi.fn((col: string, val: unknown) => {
+        state.filters[`${col}__is`] = val;
+        return thenable;
+      }),
       gte: vi.fn((col: string, val: unknown) => {
         state.filters[`${col}__gte`] = val;
         return thenable;
@@ -191,6 +195,39 @@ describe('upsertInsight', () => {
     expect(payload.player_id).toBe('player-1');
     expect(payload.category).toBe('putting');
     expect(payload.signature).toBe('player-1:putt_make_rate:6_10ft');
+  });
+
+  it('team-level input uses player_id IS NULL and preserves caller ownership', async () => {
+    const { client, calls } = createFakeSupabase({
+      selectResult: { data: [], error: null },
+    });
+    await upsertInsight(
+      client,
+      baseInput({
+        player_id: null,
+        coach_id: 'coach-1',
+        team_id: 'team-1',
+        category: 'scoring',
+        insight_type: 'team_trend',
+        signature: 'team_team-1:team_trend:scoring:closing',
+      }),
+    );
+
+    const lookupCall = calls.find((c) => c.op === 'select');
+    expect(lookupCall?.filters?.player_id__is).toBeNull();
+
+    const insertCall = calls.find((c) => c.op === 'insert');
+    expect(insertCall).toBeDefined();
+    const payload = insertCall!.payload as {
+      player_id: string | null;
+      coach_id: string;
+      team_id: string;
+      insight_type: string;
+    };
+    expect(payload.player_id).toBeNull();
+    expect(payload.coach_id).toBe('coach-1');
+    expect(payload.team_id).toBe('team-1');
+    expect(payload.insight_type).toBe('team_trend');
   });
 
   it('same signature, value within 5% → UPDATE existing row (no new insert) and no movement metadata', async () => {

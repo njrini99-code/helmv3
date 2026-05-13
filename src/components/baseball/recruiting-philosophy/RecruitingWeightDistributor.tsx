@@ -127,14 +127,14 @@ export function RecruitingWeightDistributor({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">Metric Weights</h3>
-          <p className="text-sm text-slate-500 mt-1">
+          <h3 className="text-lg font-semibold text-warm-900">Metric Weights</h3>
+          <p className="text-sm text-warm-500 mt-1">
             Adjust how much each attribute matters in your player rankings
           </p>
         </div>
         <button
           onClick={handleReset}
-          className="text-sm text-slate-500 hover:text-slate-700 underline"
+          className="text-sm text-warm-500 hover:text-warm-700 underline"
         >
           Reset to defaults
         </button>
@@ -152,7 +152,7 @@ export function RecruitingWeightDistributor({
             <div className="flex items-center justify-between text-sm mb-2">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{metric.icon}</span>
-                <span className="font-medium text-slate-700">{metric.label}</span>
+                <span className="font-medium text-warm-700">{metric.label}</span>
               </div>
               <span
                 className={cn(
@@ -160,8 +160,8 @@ export function RecruitingWeightDistributor({
                   values[metric.key] >= 20
                     ? 'text-primary-600'
                     : values[metric.key] >= 10
-                      ? 'text-slate-700'
-                      : 'text-slate-400'
+                      ? 'text-warm-700'
+                      : 'text-warm-400'
                 )}
               >
                 {values[metric.key]}%
@@ -171,7 +171,7 @@ export function RecruitingWeightDistributor({
             {/* Slider track */}
             <div className="relative h-8 rounded-lg overflow-hidden">
               {/* Background */}
-              <div className="absolute inset-0 bg-slate-100" />
+              <div className="absolute inset-0 bg-warm-100" />
 
               {/* Filled portion */}
               <div
@@ -181,7 +181,7 @@ export function RecruitingWeightDistributor({
                     ? 'bg-gradient-to-r from-primary-400 to-primary-500'
                     : values[metric.key] >= 10
                       ? 'bg-gradient-to-r from-primary-300 to-primary-400'
-                      : 'bg-slate-300'
+                      : 'bg-warm-300'
                 )}
                 style={{ width: `${values[metric.key]}%` }}
               />
@@ -199,14 +199,14 @@ export function RecruitingWeightDistributor({
 
               {/* Thumb indicator */}
               <div
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-primary-500 pointer-events-none transition-all duration-150"
+                className="absolute top-1/2 -tranwarm-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-primary-500 pointer-events-none transition-all duration-150"
                 style={{ left: `calc(${values[metric.key]}% - 8px)` }}
               />
             </div>
 
             {/* Description tooltip */}
             {hoveredMetric === metric.key && (
-              <p className="text-xs text-slate-500 mt-1.5 animate-in fade-in duration-200">
+              <p className="text-xs text-warm-500 mt-1.5 animate-in fade-in duration-200">
                 {metric.description}
               </p>
             )}
@@ -217,7 +217,7 @@ export function RecruitingWeightDistributor({
       {/* Total */}
       <div
         className={cn(
-          'flex items-center justify-between pt-4 border-t border-slate-200 text-sm font-semibold',
+          'flex items-center justify-between pt-4 border-t border-warm-200 text-sm font-semibold',
           isValid ? 'text-primary-600' : 'text-amber-600'
         )}
       >
@@ -233,8 +233,8 @@ export function RecruitingWeightDistributor({
       )}
 
       {/* Visual summary */}
-      <div className="bg-slate-50 rounded-xl p-4">
-        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
+      <div className="bg-warm-50 rounded-xl p-4">
+        <p className="text-xs font-medium text-warm-500 uppercase tracking-wider mb-3">
           Your Priorities
         </p>
         <div className="flex flex-wrap gap-2">
@@ -247,14 +247,14 @@ export function RecruitingWeightDistributor({
                   'px-3 py-1.5 rounded-full text-sm font-medium',
                   values[metric.key] >= 25
                     ? 'bg-primary-100 text-primary-700'
-                    : 'bg-slate-100 text-slate-600'
+                    : 'bg-warm-100 text-warm-600'
                 )}
               >
                 {metric.icon} {metric.label}
               </span>
             ))}
           {METRICS.filter((m) => values[m.key] >= 15).length === 0 && (
-            <span className="text-sm text-slate-400 italic">
+            <span className="text-sm text-warm-400 italic">
               No strong preferences set
             </span>
           )}

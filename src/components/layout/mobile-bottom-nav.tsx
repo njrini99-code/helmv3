@@ -97,7 +97,7 @@ export function MobileBottomNav({ items, className }: MobileBottomNavProps) {
               {active && (
                 <div
                   className="
-                    absolute bottom-0 left-1/2 -translate-x-1/2
+                    absolute bottom-0 left-1/2 -tranwarm-x-1/2
                     w-8 h-1
                     bg-primary-600 rounded-full
                   "

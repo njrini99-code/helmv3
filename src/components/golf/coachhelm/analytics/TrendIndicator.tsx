@@ -116,7 +116,7 @@ export function TrendIndicator({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
+            className="absolute bottom-full left-1/2 -tranwarm-x-1/2 mb-2 z-50"
           >
             <div className="bg-warm-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
               <div className="font-medium mb-1">{formatMetricLabel(trend.metric)}</div>
@@ -126,7 +126,7 @@ export function TrendIndicator({
                 <span>Was: {trend.previousValue}</span>
               </div>
               {/* Arrow pointer */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+              <div className="absolute top-full left-1/2 -tranwarm-x-1/2 -mt-px">
                 <div className="border-4 border-transparent border-t-warm-900" />
               </div>
             </div>

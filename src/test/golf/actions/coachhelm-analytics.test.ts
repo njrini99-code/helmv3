@@ -52,7 +52,9 @@ describe('coachhelm-analytics — error surfacing (no silent mock fallback)', ()
         if (table === 'golf_team_members') {
           return {
             select: () => ({
-              eq: async () => ({ data: [{ player_id: 'p-1' }], error: null }),
+              eq: () => ({
+                eq: async () => ({ data: [{ player_id: 'p-1' }], error: null }),
+              }),
             }),
           };
         }

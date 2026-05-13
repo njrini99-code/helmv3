@@ -60,13 +60,13 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-center justify-between z-10">
-          <h2 className="text-xl font-semibold text-slate-900">Player Profile</h2>
+        <div className="sticky top-0 bg-white border-b border-warm-200 p-6 flex items-center justify-between z-10">
+          <h2 className="text-xl font-semibold text-warm-900">Player Profile</h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+            className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             aria-label="Close player profile"
           >
             <IconX size={20} />
@@ -82,7 +82,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
               size="xl"
             />
             <div className="flex-1">
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">
+              <h3 className="text-2xl font-bold text-warm-900 mb-2">
                 {getFullName(player.first_name, player.last_name)}
               </h3>
               <div className="flex items-center gap-3 mb-3">
@@ -92,7 +92,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
                   <Badge variant="success">Recruiting Active</Badge>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-sm text-slate-600">
+              <div className="flex items-center gap-4 text-sm text-warm-600">
                 {(player.city || player.state) && (
                   <div className="flex items-center gap-1">
                     <IconMapPin size={14} />
@@ -130,8 +130,8 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
           {/* About */}
           {player.about_me && (
             <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">About</h4>
-              <p className="text-sm leading-relaxed text-slate-600">{player.about_me}</p>
+              <h4 className="text-sm font-semibold text-warm-700 mb-2">About</h4>
+              <p className="text-sm leading-relaxed text-warm-600">{player.about_me}</p>
             </div>
           )}
 
@@ -139,9 +139,9 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Physical */}
             {(player.height_feet || player.weight_lbs) && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">Physical</p>
-                <p className="text-lg font-semibold text-slate-900">
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">Physical</p>
+                <p className="text-lg font-semibold text-warm-900">
                   {player.height_feet}'{player.height_inches}" / {player.weight_lbs} lbs
                 </p>
               </div>
@@ -149,9 +149,9 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
 
             {/* Bats/Throws */}
             {(player.bats || player.throws) && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">Bats/Throws</p>
-                <p className="text-lg font-semibold text-slate-900">
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">Bats/Throws</p>
+                <p className="text-lg font-semibold text-warm-900">
                   {player.bats || '-'} / {player.throws || '-'}
                 </p>
               </div>
@@ -159,49 +159,49 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
 
             {/* Pitch Velo */}
             {player.pitch_velo && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">Pitch Velocity</p>
-                <p className="text-lg font-semibold text-slate-900">{player.pitch_velo} mph</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">Pitch Velocity</p>
+                <p className="text-lg font-semibold text-warm-900">{player.pitch_velo} mph</p>
               </div>
             )}
 
             {/* Exit Velo */}
             {player.exit_velo && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">Exit Velocity</p>
-                <p className="text-lg font-semibold text-slate-900">{player.exit_velo} mph</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">Exit Velocity</p>
+                <p className="text-lg font-semibold text-warm-900">{player.exit_velo} mph</p>
               </div>
             )}
 
             {/* 60 Time */}
             {player.sixty_time && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">60-Yard Time</p>
-                <p className="text-lg font-semibold text-slate-900">{player.sixty_time} sec</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">60-Yard Time</p>
+                <p className="text-lg font-semibold text-warm-900">{player.sixty_time} sec</p>
               </div>
             )}
 
             {/* Pop Time */}
             {player.pop_time && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">Pop Time</p>
-                <p className="text-lg font-semibold text-slate-900">{player.pop_time} sec</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">Pop Time</p>
+                <p className="text-lg font-semibold text-warm-900">{player.pop_time} sec</p>
               </div>
             )}
 
             {/* GPA */}
             {player.gpa && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">GPA</p>
-                <p className="text-lg font-semibold text-slate-900">{player.gpa.toFixed(2)}</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">GPA</p>
+                <p className="text-lg font-semibold text-warm-900">{player.gpa.toFixed(2)}</p>
               </div>
             )}
 
             {/* SAT */}
             {player.sat_score && (
-              <div className="bg-slate-50 rounded-lg p-4">
-                <p className="text-xs font-medium text-slate-500 mb-1">SAT</p>
-                <p className="text-lg font-semibold text-slate-900">{player.sat_score}</p>
+              <div className="bg-warm-50 rounded-lg p-4">
+                <p className="text-xs font-medium text-warm-500 mb-1">SAT</p>
+                <p className="text-lg font-semibold text-warm-900">{player.sat_score}</p>
               </div>
             )}
           </div>
@@ -210,7 +210,7 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
           {/* Social */}
           {(player.twitter || player.instagram) && (
             <div>
-              <h4 className="text-sm font-semibold text-slate-700 mb-2">Social Media</h4>
+              <h4 className="text-sm font-semibold text-warm-700 mb-2">Social Media</h4>
               <div className="flex gap-4">
                 {player.twitter && (
                   <a
