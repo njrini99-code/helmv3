@@ -25,7 +25,7 @@ const stageConfig: Record<LifecycleStage, { label: string; color: string }> = {
   power_user: { label: 'Power User', color: 'bg-violet-50 text-violet-700 border-violet-200' },
   at_risk: { label: 'At Risk', color: 'bg-amber-50 text-amber-700 border-amber-200' },
   churned: { label: 'Churned', color: 'bg-red-50 text-red-700 border-red-200' },
-  dormant: { label: 'Dormant', color: 'bg-gray-50 text-gray-600 border-gray-200' },
+  dormant: { label: 'Dormant', color: 'bg-warm-50 text-warm-600 border-warm-200' },
 };
 
 const stageDotColors: Record<LifecycleStage, string> = {
@@ -36,7 +36,7 @@ const stageDotColors: Record<LifecycleStage, string> = {
   power_user: 'bg-violet-500',
   at_risk: 'bg-amber-500',
   churned: 'bg-red-500',
-  dormant: 'bg-gray-400',
+  dormant: 'bg-warm-400',
 };
 
 export function LifecycleBadge({ stage, className }: LifecycleBadgeProps) {

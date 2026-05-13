@@ -21,6 +21,7 @@ import {
   ReferenceLine,
   Dot,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip';
 import { GlassCard } from '@/components/ui/glass-card';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 
@@ -117,8 +118,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function TrendTooltip({ active, payload }: any) {
+function TrendTooltip({ active, payload }: Partial<TooltipContentProps<number, string>>) {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload as Point;
   if (typeof p.score_to_par !== 'number') return null;
@@ -140,8 +140,7 @@ function TrendTooltip({ active, payload }: any) {
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function TrendDot(props: any) {
+function TrendDot(props: { cx?: number; cy?: number; payload?: { notable?: boolean } }) {
   const { cx, cy, payload } = props;
   if (typeof cx !== 'number' || typeof cy !== 'number') return null;
   const notable = Boolean(payload?.notable);

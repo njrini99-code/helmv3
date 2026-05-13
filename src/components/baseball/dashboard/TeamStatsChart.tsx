@@ -11,6 +11,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts';
+import type { TooltipContentProps } from 'recharts/types/component/Tooltip';
 import { Skeleton } from '@/components/ui/skeleton-loader';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
@@ -32,13 +33,13 @@ const metrics: { key: MetricKey; label: string; color: string; format: (v: numbe
   { key: 'obp', label: 'OBP', color: '#f59e0b', format: (v) => v ? `.${(v * 1000).toFixed(0).padStart(3, '0')}` : '—' },
 ];
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: Partial<TooltipContentProps<number, string>>) {
   if (!active || !payload?.length) return null;
 
   return (
     <div className="bg-cream-50/95 backdrop-blur-sm border border-warm-200 rounded-lg shadow-lg p-3">
       <p className="text-xs text-warm-500 mb-2">{label}</p>
-      {payload.map((entry: any) => {
+      {payload.map((entry) => {
         const metric = metrics.find(m => m.key === entry.dataKey);
         return (
           <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
