@@ -311,9 +311,10 @@ export async function getAttendanceReport(
 /**
  * Get attendance statistics for a player.
  *
- * TODO: golf_player_attendance_stats view does not exist yet.
- * A migration is needed to create this view/materialized view.
- * For now, we compute basic stats from golf_event_attendance directly.
+ * Aggregates golf_event_attendance by (player_id, status).
+ * Migration 20260513100000_golf_player_attendance_stats_view.sql creates a view
+ * for this — once applied, consider refactoring to query the view directly.
+ * Until then, in-memory aggregation from golf_event_attendance is correct.
  */
 export async function getPlayerAttendanceStats(
   playerId?: string

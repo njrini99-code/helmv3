@@ -204,7 +204,7 @@ class SyncEngine {
 
   /**
    * Initialize the sync engine
-   * TODO: Add any async initialization logic needed (e.g., loading persisted state)
+   * Loads persisted sync metadata, refreshes the pending count, and starts the engine.
    */
   async initialize(): Promise<void> {
     await this.loadSyncMetadata();

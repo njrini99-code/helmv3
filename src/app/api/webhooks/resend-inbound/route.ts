@@ -197,11 +197,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // TODO (orchestrator): once Wave A1's 20260505T1_crm_sequences.sql lands,
-    // add a separate migration with a trigger that flips active
-    // crm_sequence_enrollments rows to status='stopped',
-    // stop_reason='replied' on insert here. Skipping in this wave to avoid
-    // migration ordering issues.
+    // Sequence stop-on-reply is handled by DB trigger `trg_stop_sequences_on_reply`
+    // (migration 20260429T5_reply_stops_sequences.sql). When a row is inserted into
+    // crm_replies, the trigger automatically flips active enrollments to
+    // status='stopped', stop_reason='replied'. No application-level action needed.
   } catch (err) {
     await logServerError(
       `[Resend Inbound Webhook] Processing error: ${err instanceof Error ? err.message : String(err)}`,

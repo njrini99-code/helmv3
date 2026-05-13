@@ -60,8 +60,10 @@ export function compareAgainstBaseline(args: {
   };
 }
 
-// TODO: Replace with dynamic baselines from stats/baselines.ts
-// These are D2/D3 college golf averages used as fallback when player baselines aren't available
+// Static D2/D3 college golf averages — intentionally hardcoded as population-level benchmarks.
+// stats/baselines.ts provides per-player EWMA baselines (different purpose — individual trends,
+// not population reference). These population benchmarks should only change if the target
+// skill level changes.
 const BENCHMARKS = {
   // Strokes Gained per round (vs scratch/par)
   sgTotal: 0,           // Even with par (baseline)
