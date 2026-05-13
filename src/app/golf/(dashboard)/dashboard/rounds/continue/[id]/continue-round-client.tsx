@@ -104,7 +104,6 @@ export default function ContinueRoundClient({
 
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0);

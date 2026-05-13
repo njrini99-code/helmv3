@@ -214,7 +214,6 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 text-[11px] font-medium overflow-hidden">
                       {p.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                       ) : (
                         p.full_name.split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
