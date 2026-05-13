@@ -4,7 +4,7 @@ import { startTransition, useState, useCallback, useRef, useEffect } from 'react
 import { useRouter } from 'next/navigation';
 import ShotTrackingComprehensive from '@/components/golf/ShotTrackingComprehensive';
 import type { HoleStats, ShotRecord, RoundHole } from '@/lib/types/golf';
-import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound } from '@/app/golf/actions/golf';
+import { submitGolfRoundComprehensive, savePartialRound, deleteInProgressRound, type PartialRoundData } from '@/app/golf/actions/golf';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
 import { deleteOfflineRound, saveOfflineRound } from '@/lib/offline/indexed-db';
 import {
@@ -105,7 +105,7 @@ export default function ContinueRoundClient({
   // Concurrency lock for background server saves
   const serverSaveInProgressRef = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
+  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0);
   const isSubmittingRef = useRef(false);
@@ -648,7 +648,7 @@ export default function ContinueRoundClient({
                 void (async () => {
                   serverSaveInProgressRef.current = true;
                   try {
-                    const r = await savePartialRound(pending.roundData, roundId);
+                    const r = await savePartialRound(pending.roundData!, roundId);
                     if (r.success) {
                       consecutiveSaveFailuresRef.current = 0;
                       if (r.data.updatedAt) lastServerUpdatedAtRef.current = r.data.updatedAt;

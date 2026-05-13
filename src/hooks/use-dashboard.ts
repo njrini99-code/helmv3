@@ -32,7 +32,7 @@ export function useSavedSearches() {
           setSearches(JSON.parse(stored));
         }
       } catch (error) {
-        console.log('Error loading saved searches:', error);
+        // Silently reset — malformed localStorage is non-critical
         setSearches([]);
       }
 

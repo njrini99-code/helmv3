@@ -17,7 +17,8 @@ import {
   type PlayerQualifierInfo,
   type SavedCourse,
   type SavedCourseHoleConfig,
-  type RecentPlayedCourse
+  type RecentPlayedCourse,
+  type PartialRoundData,
 } from '@/app/golf/actions/golf';
 import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
 import { checkRoundStaleness } from '@/app/golf/actions/round-drafts';
@@ -198,7 +199,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   const isSubmittingRef = useRef(false);
   const serverSaveInProgressRef = useRef(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: any } | null>(null);
+  const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0); // Timestamp to throttle warning toasts
   const savedRoundIdRef = useRef<string | null>(null);
