@@ -94,9 +94,9 @@ export function CoachFilters({
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           {isDebouncing ? (
-            <IconLoader size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary-400 animate-spin" />
+            <IconLoader size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-primary-400 animate-spin" />
           ) : (
-            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+            <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
           )}
           <input
             type="text"
@@ -112,7 +112,7 @@ export function CoachFilters({
             )}
           />
           {localSearch && (
-            <button onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
+            <button onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 hover:text-warm-600">
               <IconX size={14} />
             </button>
           )}

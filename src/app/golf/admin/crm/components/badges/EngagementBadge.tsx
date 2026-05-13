@@ -7,7 +7,7 @@ import type { CoachEngagement } from '@/app/golf/admin/crm/types/foundations';
 // ============================================================================
 // EngagementBadge — Hot / Warm / Cold pill
 // ============================================================================
-// Tones mirror EmailStatusBadge.tsx (warm-/slate-/red-/blue palette). The
+// Tones mirror EmailStatusBadge.tsx (warm-/warm-/red-/blue palette). The
 // parent surface (CoachTable) passes a pre-fetched engagement map and each
 // badge looks up its own row — keeping the data fetch one-shot per page load
 // while preserving per-row React.memo benefits.

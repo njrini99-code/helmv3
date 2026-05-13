@@ -32,7 +32,7 @@ interface EmailStatusBadgeProps extends EmailStatusFields {
 // ============================================================================
 // STATUS -> LABEL/COLOR MAP
 // ============================================================================
-// Tones match the warm-/slate- palette used across the CRM (see STATUS_CONFIG
+// Tones match the warm-/warm- palette used across the CRM (see STATUS_CONFIG
 // in crm-config.tsx for reference tones: amber, red, emerald/green, blue,
 // warm/neutral).
 interface BadgeTone {

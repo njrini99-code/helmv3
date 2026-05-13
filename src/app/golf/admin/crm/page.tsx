@@ -685,7 +685,7 @@ export default function CRMPage() {
                     isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
                   )}
                 >
-                  {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
+                  {isActive && <div className="absolute left-0 top-1/2 -tranwarm-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />}
                   <TabIcon size={20} className={cn('flex-shrink-0', isActive ? 'text-primary-400' : 'text-warm-400 group-hover:text-white')} />
                   {!sidebarCollapsed && <span className="text-sm font-medium flex-1 text-left">{tab.label}</span>}
                   {!sidebarCollapsed && (

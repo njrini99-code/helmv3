@@ -251,7 +251,7 @@ export function LiveActivityFeed({
             exit={{ y: -40, opacity: 0 }}
             onClick={scrollToTop}
             className={cn(
-              'absolute top-14 left-1/2 -translate-x-1/2 z-10',
+              'absolute top-14 left-1/2 -tranwarm-x-1/2 z-10',
               'flex items-center gap-2 px-4 py-2 rounded-full',
               'bg-primary-500 text-white text-sm font-medium shadow-lg',
               'hover:bg-primary-600 transition-colors'

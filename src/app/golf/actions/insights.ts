@@ -20,6 +20,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
+import { verifyInsightAccess } from '@/lib/auth/verify-player-access';
 import {
   coachHelmIntelligence,
   isCoachHelmEnabledForCoach,
@@ -40,6 +41,8 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
+import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
+import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { getGolfSessionProfile } from '@/lib/auth/session';
@@ -73,7 +76,7 @@ interface InsightRecord {
   team_id: string;
   insight_type: string;
   priority: string;
-  player_id: string;
+  player_id: string | null;
   title: string;
   content: string;  // DB column is 'content', not 'description'
   metadata: Record<string, unknown>;  // recommendation goes in metadata
@@ -696,6 +699,8 @@ function convertV2ToInsightRecord(
       reasoning_steps: insight.reasoning?.reasoningChain?.length ?? 0,
       v2_engine: true,
       pattern_id: pattern?.id,
+      sample_n: pattern?.sampleSize ?? pattern?.occurrenceCount,
+      stroke_impact: insight.strokeImpact ?? pattern?.strokeImpact,
       prediction_value: prediction?.predictedValue,
     },
     status: 'active',
@@ -882,6 +887,8 @@ export async function generateTeamInsights() {
               v2_engine: true,
               pattern_type: pattern.patternType,
               support: pattern.support,
+              sample_n: pattern.sampleSize ?? pattern.occurrenceCount,
+              occurrence_count: pattern.occurrenceCount,
               confidence: pattern.confidence,
               stroke_impact: pattern.strokeImpact,
               recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
@@ -908,13 +915,15 @@ export async function generateTeamInsights() {
           team_id: teamId,
           insight_type: 'team_trend',
           priority: tpi.tone === 'urgent' ? 'high' : tpi.tone === 'cautionary' ? 'medium' : 'low',
-          player_id: players[0]?.id ?? '', // Team-level, attributed to first player
+          player_id: null,
           title: tpi.headline,
           content: tpi.body,
           metadata: {
             v2_engine: true,
             cross_player: true,
             confidence: tpi.confidence,
+            sample_n: players.length,
+            stroke_impact: tpi.strokeImpact,
             recommendation: tpi.callToAction || 'Review team-wide pattern.',
             reasoning_steps: tpi.reasoning?.reasoningChain?.length ?? 0,
           },
@@ -962,16 +971,17 @@ export async function generateTeamInsights() {
       return cleanInsight as InsightRecord;
     });
 
-    // 7. Bulk insert insights (now sorted by philosophy score)
+    // 7. Persist insights through the evidence-backed upsert contract.
     if (cleanInsights.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insertError } = await (supabase as any).from('golf_coach_insights').insert(cleanInsights);
-
-      if (insertError) {
-        await logServerError(`generateInsightsForTeam insert failed: ${insertError.message}`, {
+      try {
+        await Promise.all(
+          cleanInsights.map((record) => upsertInsight(supabase, toInsightInput(record))),
+        );
+      } catch (insertError) {
+        await logServerError(`generateInsightsForTeam upsert failed: ${insertError instanceof Error ? insertError.message : String(insertError)}`, {
           action: 'generateInsightsForTeam.insert',
           featureArea: 'insights',
-          extra: { insightCount: cleanInsights.length, errorCode: insertError.code },
+          extra: { insightCount: cleanInsights.length },
         });
         return { success: false, error: 'Failed to save insights' };
       }
@@ -1081,14 +1091,30 @@ export async function acknowledgeInsight(insightId: string) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Defensive server-side ownership check on top of RLS. Resolves the
+    // insight's team_id and confirms the user staffs that team via
+    // golf_team_coach_staff. Multi-org safe (does NOT pick an arbitrary
+    // coach row by user_id).
+    const access = await verifyInsightAccess(insightId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
+    // Write lifecycle_state='addressed' alongside the timestamp so the
+    // lifecycle cron can pick it up for the addressed→resolved progression.
+    // Without this, acknowledged insights sit in 'detected'/'matured' forever
+    // and the cron's healthy-band tracking can never run.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from('golf_coach_insights')
       .update({
         status: 'acknowledged',
         acknowledged_at: new Date().toISOString(),
+        lifecycle_state: 'addressed',
       })
-      .eq('id', insightId);
+      .eq('id', insightId)
+      .eq('team_id', access.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`acknowledgeInsight failed: ${error.message}`, {
@@ -1097,6 +1123,10 @@ export async function acknowledgeInsight(insightId: string) {
         extra: { insightId, errorCode: error.code },
       });
       return { success: false, error: 'Operation failed. Please try again.' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
     }
 
     revalidatePath('/golf/dashboard');
@@ -1124,13 +1154,24 @@ export async function dismissInsight(insightId: string) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Defensive server-side ownership check on top of RLS.
+    const access = await verifyInsightAccess(insightId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from('golf_coach_insights')
       .update({
         status: 'dismissed',
+        dismissed: true,
+        dismissed_at: new Date().toISOString(),
+        lifecycle_state: 'archived',
       })
-      .eq('id', insightId);
+      .eq('id', insightId)
+      .eq('team_id', access.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`dismissInsight failed: ${error.message}`, {
@@ -1139,6 +1180,10 @@ export async function dismissInsight(insightId: string) {
         extra: { insightId, errorCode: error.code },
       });
       return { success: false, error: 'Operation failed. Please try again.' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
     }
 
     revalidatePath('/golf/dashboard');
@@ -1166,14 +1211,23 @@ export async function resolveInsight(insightId: string) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Defensive server-side ownership check on top of RLS.
+    const access = await verifyInsightAccess(insightId, user.id, supabase);
+    if (!access.allowed) {
+      return { success: false, error: access.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error } = await (supabase as any)
+    const { data, error } = await (supabase as any)
       .from('golf_coach_insights')
       .update({
         status: 'resolved',
         resolved_at: new Date().toISOString(),
+        lifecycle_state: 'resolved',
       })
-      .eq('id', insightId);
+      .eq('id', insightId)
+      .eq('team_id', access.teamId)
+      .select('id');
 
     if (error) {
       await logServerError(`resolveInsight failed: ${error.message}`, {
@@ -1182,6 +1236,10 @@ export async function resolveInsight(insightId: string) {
         extra: { insightId, errorCode: error.code },
       });
       return { success: false, error: 'Operation failed. Please try again.' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
     }
 
     revalidatePath('/golf/dashboard');
@@ -3202,6 +3260,8 @@ export async function triggerPlayerInsightsAfterRound(
             auto_triggered: true,
             pattern_type: pattern.patternType,
             support: pattern.support,
+            sample_n: pattern.sampleSize ?? pattern.occurrenceCount,
+            occurrence_count: pattern.occurrenceCount,
             confidence: pattern.confidence,
             stroke_impact: pattern.strokeImpact,
             recommendation: pattern.recommendation || 'Work with coach to address this pattern.',
@@ -3233,13 +3293,9 @@ export async function triggerPlayerInsightsAfterRound(
         } as InsightRecord;
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: insertError } = await (admin as any)
-        .from('golf_coach_insights')
-        .insert(cleanInsights);
-      if (insertError) {
-        throw new Error(`Failed to persist post-round CoachHelm insights: ${insertError.message}`);
-      }
+      await Promise.all(
+        cleanInsights.map((record) => upsertInsight(admin, toInsightInput(record))),
+      );
 
       // Push notification to coach: new insights generated (fire-and-forget)
       (async () => {

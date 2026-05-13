@@ -125,7 +125,7 @@ export function PipelineStats({ coaches, statusConfig }: PipelineStatsProps) {
 
                 {/* Arrow connector */}
                 {index < 3 && (
-                  <div className="absolute right-0 top-1/3 translate-x-1/2 -translate-y-1/2 z-10 hidden lg:flex items-center justify-center" aria-hidden="true">
+                  <div className="absolute right-0 top-1/3 tranwarm-x-1/2 -tranwarm-y-1/2 z-10 hidden lg:flex items-center justify-center" aria-hidden="true">
                     <IconArrowRight size={14} className="text-warm-300" />
                   </div>
                 )}

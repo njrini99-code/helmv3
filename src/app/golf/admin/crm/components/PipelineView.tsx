@@ -344,7 +344,7 @@ function KanbanCard({
       onKeyDown={handleKeyDown}
       className={cn(
         'glass-standard rounded-2xl p-3',
-        'hover:-translate-y-0.5 hover:bg-white/80',
+        'hover:-tranwarm-y-0.5 hover:bg-white/80',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:border-primary-300',
         'transition-all duration-200',
         'cursor-grab active:cursor-grabbing group',

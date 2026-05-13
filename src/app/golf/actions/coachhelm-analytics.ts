@@ -340,7 +340,16 @@ export async function getPredictionPerformance(
       predictionsValidated: (p.predictions_validated as number) || 0,
     }));
 
-    // Aggregate calibration data
+    // Each performance row is a rolling 30-day snapshot keyed by period_end.
+    // Adjacent rows share ~29 days of predictions, so summing predictions_made
+    // / predictions_validated across all rows would multi-count the same
+    // underlying events. Use only the latest snapshot for "total" counts and
+    // average rate-style metrics across the time series.
+    const latest = performance[performance.length - 1] as Record<string, unknown>;
+
+    // Aggregate calibration data — average the per-snapshot accuracy at each
+    // confidence range so the buckets shipped to the UI actually reflect the
+    // calibrationMap rather than the previous hard-coded zeros.
     const calibrationMap = new Map<string, { total: number; accurate: number }>();
     for (const p of performance) {
       const byConfidence = (p.accuracy_by_confidence as Record<string, number>) || {};
@@ -352,13 +361,25 @@ export async function getPredictionPerformance(
       }
     }
 
-    const calibration: ConfidenceBucket[] = [
+    const calibrationBuckets: ConfidenceBucket[] = [
       { range: '0-20%', minConfidence: 0, maxConfidence: 0.2, predictionsCount: 0, actualAccuracy: 0, expectedAccuracy: 0.1, calibrationError: 0 },
       { range: '20-40%', minConfidence: 0.2, maxConfidence: 0.4, predictionsCount: 0, actualAccuracy: 0, expectedAccuracy: 0.3, calibrationError: 0 },
       { range: '40-60%', minConfidence: 0.4, maxConfidence: 0.6, predictionsCount: 0, actualAccuracy: 0, expectedAccuracy: 0.5, calibrationError: 0 },
       { range: '60-80%', minConfidence: 0.6, maxConfidence: 0.8, predictionsCount: 0, actualAccuracy: 0, expectedAccuracy: 0.7, calibrationError: 0 },
       { range: '80-100%', minConfidence: 0.8, maxConfidence: 1.0, predictionsCount: 0, actualAccuracy: 0, expectedAccuracy: 0.9, calibrationError: 0 },
     ];
+
+    const calibration: ConfidenceBucket[] = calibrationBuckets.map((bucket) => {
+      const agg = calibrationMap.get(bucket.range);
+      if (!agg || agg.total === 0) return bucket;
+      const actualAccuracy = agg.accurate / agg.total;
+      return {
+        ...bucket,
+        predictionsCount: agg.total,
+        actualAccuracy,
+        calibrationError: Math.abs(actualAccuracy - bucket.expectedAccuracy),
+      };
+    });
 
     // Aggregate error distribution
     const errorCounts: Record<string, number> = {};
@@ -377,17 +398,16 @@ export async function getPredictionPerformance(
       percentage: totalErrors > 0 ? (count / totalErrors) * 100 : 0,
     }));
 
-    // Calculate summary
-    const totals = performance.reduce(
-      (acc: { predictions: number; validated: number; accuracy: number; mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
-        predictions: acc.predictions + ((p.predictions_made as number) || 0),
-        validated: acc.validated + ((p.predictions_validated as number) || 0),
+    // Average rate-style metrics across snapshots; pull totals from the latest
+    // snapshot so we don't double-count overlapping rolling windows.
+    const rateTotals = performance.reduce(
+      (acc: { accuracy: number; mae: number; overconf: number; underconf: number }, p: Record<string, unknown>) => ({
         accuracy: acc.accuracy + ((p.accuracy_rate as number) || 0),
         mae: acc.mae + ((p.mean_absolute_error as number) || 0),
         overconf: acc.overconf + ((p.overconfidence_rate as number) || 0),
         underconf: acc.underconf + ((p.underconfidence_rate as number) || 0),
       }),
-      { predictions: 0, validated: 0, accuracy: 0, mae: 0, overconf: 0, underconf: 0 }
+      { accuracy: 0, mae: 0, overconf: 0, underconf: 0 }
     );
 
     const count = performance.length || 1;
@@ -399,13 +419,13 @@ export async function getPredictionPerformance(
         calibration,
         errorDistribution,
         summary: {
-          totalPredictions: totals.predictions,
-          validatedPredictions: totals.validated,
-          overallAccuracy: totals.accuracy / count,
-          meanAbsoluteError: totals.mae / count,
-          calibrationScore: performance[performance.length - 1]?.calibration_score || 0,
-          overconfidenceRate: totals.overconf / count,
-          underconfidenceRate: totals.underconf / count,
+          totalPredictions: (latest?.predictions_made as number) || 0,
+          validatedPredictions: (latest?.predictions_validated as number) || 0,
+          overallAccuracy: rateTotals.accuracy / count,
+          meanAbsoluteError: rateTotals.mae / count,
+          calibrationScore: (latest?.calibration_score as number) || 0,
+          overconfidenceRate: rateTotals.overconf / count,
+          underconfidenceRate: rateTotals.underconf / count,
         },
         periodStart: start.toISOString(),
         periodEnd: end.toISOString(),
@@ -444,11 +464,13 @@ export async function getPatternImpact(
     const end = dateRange?.end || new Date();
     const start = dateRange?.start || new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Get team players first
+    // Get active team players first. Inactive memberships are excluded so
+    // removed/transferred players do not inflate pattern impact metrics.
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     if (!teamMembers || teamMembers.length === 0) {
       return {
@@ -620,21 +642,25 @@ export async function getCoachHelmOverview(
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
-    // Get team players
+    // Get active team players (skip transferred / inactive members so they
+    // do not inflate team analytics).
     const { data: teamMembers } = await supabase
       .from('golf_team_members')
       .select('player_id')
-      .eq('team_id', teamId);
+      .eq('team_id', teamId)
+      .eq('status', 'active');
 
     const playerIds = (teamMembers || []).map((m) => m.player_id);
 
-    // Single fetch over the broadest 14-day window covering all 6 prior count
-    // queries; bucket in memory to avoid 6 sequential round-trips.
+    // Single fetch over the broadest 30-day window covering all 6 prior count
+    // queries; bucket in memory to avoid 6 sequential round-trips. The select
+    // bound must be the widest in-memory bin (30 days) so totalInsights —
+    // which advertises a 30-day count — does not silently drop days 15–30.
     const { data: insightRows } = await supabase
       .from('golf_coach_insights')
       .select('created_at, action_taken, outcome_status')
       .in('player_id', playerIds)
-      .gte('created_at', fourteenDaysAgo.toISOString());
+      .gte('created_at', thirtyDaysAgo.toISOString());
 
     const thirtyMs = thirtyDaysAgo.getTime();
     const sevenMs = sevenDaysAgo.getTime();
@@ -661,10 +687,6 @@ export async function getCoachHelmOverview(
       if (ts >= sevenMs) insightsThisWeek++;
       else if (ts >= fourteenMs) insightsLastWeek++;
     }
-    // Note: `totalInsights` aggregates the full 30-day window. The 14-day
-    // SELECT above only feeds this-week / last-week / 30-day bins via the
-    // per-row created_at check — so values are consistent with the prior
-    // 6-query implementation.
 
     // Active patterns count — single dedicated count (different table).
     const { count: activePatternsCount } = await supabase

@@ -90,7 +90,7 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
   const ago30d = daysAgo(30);
 
   try {
-    const [platformMetricsRes, engagementRes, aiRoundsRes, insightLogRes] =
+    const [platformMetricsRes, engagementRes, aiRoundsRes, insightLogRes, insightActionRes] =
       await Promise.all([
         // Last 30 daily snapshots
         (adminDb.from('golf_platform_metrics_daily' as never) as any)
@@ -107,11 +107,20 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
           .select('id, player_id, created_at')
           .gte('created_at', ago30d),
 
-        // Insight generation log for action rate + AI user identification
+        // Insight generation log for AI user identification (who got an insight).
         adminDb
           .from('golf_insight_generation_log')
           .select('id, player_id, insights_generated, created_at')
           .gte('created_at', ago30d),
+
+        // Insight action data: counts of insights actually addressed/resolved
+        // vs total generated over the same 30d window. Drives the real
+        // insightActionRate metric — not the old "insights per user" ratio.
+        adminDb
+          .from('golf_coach_insights')
+          .select('id, lifecycle_state, addressed_at, resolved_at', { count: 'exact' })
+          .gte('created_at', ago30d)
+          .limit(1), // we only need the count; rows are ignored
       ]);
 
     // Parse platform metrics
@@ -132,19 +141,24 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
     }));
 
     // Compute AI vs non-AI retention
-    const aiCoachIds = new Set(
+    const aiPlayerIds = new Set(
       (insightLogRes.data ?? []).map((r: Record<string, unknown>) =>
         String(r.player_id ?? '')
       )
     );
 
-    // Normalize rounds for the shared D7 retention helper. The "signup
-    // anchor" used by this surface is the user's *first round* (we don't
-    // have the auth-level signup date here), so we derive a synthetic
-    // signupAt map from each user's earliest round.
+    // Normalize rounds for the shared D7 retention helper.
+    //
+    // Signup anchor strategy: prefer `golf_players.created_at` (when the
+    // player profile was created, which happens during signup/onboarding) for
+    // each player who has rounds in the window. Fall back to the player's
+    // earliest round only when the player row can't be resolved — so D7
+    // retention is anchored on real signup, not on "first round," which was
+    // a known proxy that made retention look better than it is.
     const rounds = aiRoundsRes.data ?? [];
     const normalizedRounds: RoundForRetention[] = [];
     const firstRoundByUser = new Map<string, number>();
+    const playerIdsInWindow = new Set<string>();
     for (const r of rounds) {
       const rec = r as Record<string, unknown>;
       const uid = String(rec.player_id ?? '');
@@ -153,18 +167,34 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
       const ts = new Date(createdRaw).getTime();
       if (!Number.isFinite(ts)) continue;
       normalizedRounds.push({ player_id: uid, created_at: createdRaw });
+      playerIdsInWindow.add(uid);
       const prior = firstRoundByUser.get(uid);
       if (prior === undefined || ts < prior) firstRoundByUser.set(uid, ts);
     }
 
+    // Look up real signup timestamps from golf_players.created_at.
+    const signupByPlayer = new Map<string, number>();
+    if (playerIdsInWindow.size > 0) {
+      const { data: playerRows } = await adminDb
+        .from('golf_players')
+        .select('id, created_at')
+        .in('id', Array.from(playerIdsInWindow));
+      for (const row of (playerRows ?? []) as Array<{ id: string; created_at: string | null }>) {
+        if (!row.id || !row.created_at) continue;
+        const ts = new Date(row.created_at).getTime();
+        if (Number.isFinite(ts)) signupByPlayer.set(row.id, ts);
+      }
+    }
+
     // Split signupAt maps into AI vs non-AI cohorts, then call the shared
-    // metrics helper for each. This keeps D7 retention math identical to the
-    // overview/Intelligence tabs (single source of truth).
+    // metrics helper for each. Real signup wins; first-round is the safety net.
     const aiSignupAt = new Map<string, string>();
     const nonAiSignupAt = new Map<string, string>();
-    for (const [uid, firstTs] of firstRoundByUser) {
-      const iso = new Date(firstTs).toISOString();
-      if (aiCoachIds.has(uid)) aiSignupAt.set(uid, iso);
+    for (const uid of playerIdsInWindow) {
+      const signupTs = signupByPlayer.get(uid) ?? firstRoundByUser.get(uid);
+      if (signupTs === undefined) continue;
+      const iso = new Date(signupTs).toISOString();
+      if (aiPlayerIds.has(uid)) aiSignupAt.set(uid, iso);
       else nonAiSignupAt.set(uid, iso);
     }
 
@@ -191,16 +221,26 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
       if (bucket) bucket.push(created);
       else roundsByUser.set(uid, [created]);
     }
-    const aiTotal = aiSignupAt.size;
+    // Insight action rate: fraction of insights generated in the last 30 days
+    // that have been addressed or resolved by a coach. Sourced from
+    // golf_coach_insights lifecycle state — the same column the lifecycle cron
+    // writes to when a coach acts on an alert. Returns null when there are no
+    // insights in the window (avoids a fake 0% on empty data).
+    const totalInsightsInWindow =
+      (insightActionRes as unknown as { count: number | null }).count ?? 0;
 
-    // Insight action rate: ratio of insights that led to follow-up activity
-    const totalInsights = (insightLogRes.data ?? []).reduce(
-      (sum: number, r: Record<string, unknown>) =>
-        sum + Number(r.insights_generated ?? 0),
-      0
-    );
+    let actedOnCount = 0;
+    if (totalInsightsInWindow > 0) {
+      const actedRes = await adminDb
+        .from('golf_coach_insights')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', ago30d)
+        .or('lifecycle_state.in.(addressed,resolved),addressed_at.not.is.null,resolved_at.not.is.null');
+      actedOnCount = (actedRes as unknown as { count: number | null }).count ?? 0;
+    }
+
     const insightActionRate =
-      totalInsights > 0 ? Math.min(totalInsights / Math.max(aiTotal, 1), 1) : null;
+      totalInsightsInWindow > 0 ? actedOnCount / totalInsightsInWindow : null;
 
     // Compute engagement tiers from engagement summary
     const engagementTiers: Record<string, number> = {};
@@ -261,9 +301,9 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
       featureStickiness.push({
         featureName: 'CoachHelm AI Insights',
         weeklyActiveUsers: weeklyAiUsers.size,
-        totalAdopters: aiCoachIds.size,
+        totalAdopters: aiPlayerIds.size,
         stickinessRate:
-          aiCoachIds.size > 0 ? weeklyAiUsers.size / aiCoachIds.size : 0,
+          aiPlayerIds.size > 0 ? weeklyAiUsers.size / aiPlayerIds.size : 0,
       });
     }
 

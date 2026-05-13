@@ -9,7 +9,7 @@
  *
  * Premium recipe (May 2026):
  *   - Opacity fade-in 0 → 1 over 380ms
- *   - Tiny slide-up: 6px translate-y → 0
+ *   - Tiny slide-up: 6px tranwarm-y → 0
  *   - Cubic-bezier(0.16, 1, 0.3, 1) — the "Apple iOS" out-quint ease
  *     used everywhere else in the system (DropdownMenu, Tooltip,
  *     Popover, Drawer, Tabs)

@@ -308,7 +308,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                 <Link
                   key={round.id}
                   href={`/golf/dashboard/rounds/${round.id}`}
-                  className="group relative surface-matte rounded-3xl block hover:shadow-md transition-all hover:-translate-y-0.5"
+                  className="group relative surface-matte rounded-3xl block hover:shadow-md transition-all hover:-tranwarm-y-0.5"
                   style={{
                     animation: 'fadeInUp 0.4s ease-out forwards',
                     animationDelay: `${index * 60}ms`,

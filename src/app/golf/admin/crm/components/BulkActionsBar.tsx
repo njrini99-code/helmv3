@@ -32,7 +32,7 @@ export function BulkActionsBar({
 
   return (
     <div className={cn(
-      'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
+      'fixed bottom-6 left-1/2 -tranwarm-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
       'flex items-center gap-3 px-4 py-2.5 rounded-2xl',
       'bg-white/80 backdrop-blur-xl text-warm-800 shadow-2xl',
       'border border-white/20',

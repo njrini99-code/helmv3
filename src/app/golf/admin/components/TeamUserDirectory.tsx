@@ -289,7 +289,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
       <div className="flex flex-wrap items-center gap-2 px-3 sm:px-4 py-3 border-b border-warm-100 bg-warm-50/30">
         {/* Search */}
         <div className="relative flex-1 min-w-0 sm:min-w-[200px] max-w-xs w-full sm:w-auto">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

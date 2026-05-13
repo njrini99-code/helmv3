@@ -143,7 +143,7 @@ export default async function GolfQualifiersPage() {
                     opacity: 0,
                   }}
                 >
-                  <div className="relative surface-matte rounded-3xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-translate-y-0.5 active:bg-warm-50 transition-all duration-200">
+                  <div className="relative surface-matte rounded-3xl overflow-clip p-6 min-h-[80px] hover:shadow-lg hover:-tranwarm-y-0.5 active:bg-warm-50 transition-all duration-200">
                     {/* Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex-1 min-w-0 pr-4">
@@ -220,7 +220,7 @@ export default async function GolfQualifiersPage() {
                     <div className="flex items-center justify-end mt-4 pt-4 border-t border-warm-100">
                       <span className="flex items-center gap-1 text-sm text-warm-400 group-hover:text-primary-600 transition-colors">
                         View Details
-                        <IconChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                        <IconChevronRight size={16} className="group-hover:tranwarm-x-0.5 transition-transform" />
                       </span>
                     </div>
                   </div>

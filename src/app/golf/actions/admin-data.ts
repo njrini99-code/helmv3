@@ -2958,8 +2958,38 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
   };
 
   // --- Infra health: merge rollupC shell with DB stats + client errors summary ---
+  //
+  // Aggregate the per-action apiPerf rows (sourced from admin_api_perf_log) into
+  // platform-wide totals. The previous implementation reported the current
+  // dashboard fetch's wall time as avgResponseMs and `responseTime * 1.5` as
+  // p95ResponseMs — both fabricated. Real data is right here in apiPerf.
+  //
+  //   avgResponseMs = sum(avg * calls) / sum(calls)         — call-weighted mean
+  //   p95ResponseMs = max(p95) across actions               — conservative bound
+  //
+  // Using max-of-p95s is a known overestimate vs. a true cross-action p95, but
+  // it is honest (matches the highest real measurement) and never under-reports
+  // tail latency. A real cross-action p95 would need raw samples, not per-action
+  // summaries.
+  const apiPerf = rollupC.infraHealth.apiPerf;
+  let weightedDurationSum = 0;
+  let totalCallsFromPerf = 0;
+  let maxP95 = 0;
+  for (const row of apiPerf) {
+    if (row.callCount > 0 && Number.isFinite(row.avgDurationMs)) {
+      weightedDurationSum += row.avgDurationMs * row.callCount;
+      totalCallsFromPerf += row.callCount;
+    }
+    if (Number.isFinite(row.p95DurationMs) && row.p95DurationMs > maxP95) {
+      maxP95 = row.p95DurationMs;
+    }
+  }
+  const weightedAvgResponseMs = totalCallsFromPerf > 0
+    ? Math.round(weightedDurationSum / totalCallsFromPerf)
+    : 0;
+
   const infraHealth: AdminDashboardData['infraHealth'] = {
-    apiPerf: rollupC.infraHealth.apiPerf,
+    apiPerf,
     clientErrors: (errorSummary?.top_errors ?? []).slice(0, 10).map((e) => ({
       message: e.message,
       occurrences: e.occurrences,
@@ -2978,8 +3008,8 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
     },
     totals: {
       totalApiCalls7d: rollupC.infraHealth.totals.totalApiCalls7d,
-      avgResponseMs: responseTime,
-      p95ResponseMs: Math.round(responseTime * 1.5),
+      avgResponseMs: weightedAvgResponseMs,
+      p95ResponseMs: Math.round(maxP95),
       errorRate: totalErrors7d > 0 && rollupC.infraHealth.totals.totalApiCalls7d > 0
         ? Math.round((totalErrors7d / rollupC.infraHealth.totals.totalApiCalls7d) * 10000) / 100
         : 0,
@@ -3526,7 +3556,10 @@ function assembleAdminDashboardData(parts: AssemblyInput): AdminDashboardData {
       roundReviewsThisWeek: coachhelm.reviewsThisWeek,
       insightsThisWeek: coachhelm.insightsThisWeek,
       systemErrors7d: systemErrors,
-      avgResponseTimeMs: responseTime,
+      // Real call-weighted avg from admin_api_perf_log (same source as
+      // infraHealth.totals.avgResponseMs). Falls back to the dashboard fetch
+      // wall-time only when no perf samples are available.
+      avgResponseTimeMs: weightedAvgResponseMs > 0 ? weightedAvgResponseMs : responseTime,
       dataFreshness,
       lastRoundSubmitted: lastRoundTimestamp,
       lastInsightGenerated: lastInsightTimestamp,

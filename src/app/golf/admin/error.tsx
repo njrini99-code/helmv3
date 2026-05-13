@@ -22,16 +22,10 @@ export default function Error({
           </svg>
         </div>
         <h2 className="text-xl font-semibold text-warm-900 mb-2">Something went wrong</h2>
-        <p className="text-warm-500 mb-2">An unexpected error occurred.</p>
-        {/* TEMP DEBUG: surface the real error message for admins so we can
-         * diagnose the refactor without pulling server logs. Remove once
-         * admin-data.ts is stable. */}
-        <pre className="text-left text-xs bg-warm-50 border border-warm-200 rounded p-3 mb-4 overflow-auto max-h-64 whitespace-pre-wrap">
-          <strong>message:</strong> {error.message || '(empty)'}
-          {'\n'}
-          <strong>digest:</strong> {error.digest || '(none)'}
-          {error.stack ? `\n\nstack:\n${error.stack}` : ''}
-        </pre>
+        <p className="text-warm-500 mb-4">An unexpected error occurred. Details have been logged to Sentry.</p>
+        {error.digest && (
+          <p className="text-xs text-warm-400 mb-4 font-mono">ref: {error.digest}</p>
+        )}
         <button
           onClick={reset}
           className="px-4 py-2 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors font-medium"

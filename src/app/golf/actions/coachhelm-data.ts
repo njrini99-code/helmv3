@@ -15,6 +15,10 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import {
+  verifyPlayerAccess as canonicalVerifyPlayerAccess,
+  verifyTeamAccess as canonicalVerifyTeamAccess,
+} from '@/lib/auth/verify-player-access';
 
 // Stats module
 import {
@@ -139,102 +143,37 @@ interface WhatIfData {
 
 /**
  * Verify that the authenticated user can access a given player's data.
- * Returns the user ID on success, or null with an error message.
- */
-async function verifyPlayerAccess(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  playerId: string,
-): Promise<{ authorized: boolean; error?: string }> {
-  // Check if user owns this player record
-  const { data: ownPlayer } = await supabase
-    .from('golf_players')
-    .select('id')
-    .eq('id', playerId)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (ownPlayer) return { authorized: true };
-
-  // Check if user is a coach with the player on their team
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (!coach?.organization_id) {
-    return { authorized: false, error: 'Unauthorized' };
-  }
-
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', coach.organization_id)
-    .maybeSingle();
-
-  if (!team) {
-    return { authorized: false, error: 'Unauthorized' };
-  }
-
-  const { data: membership } = await supabase
-    .from('golf_team_members')
-    .select('id')
-    .eq('team_id', team.id)
-    .eq('player_id', playerId)
-    .eq('status', 'active')
-    .maybeSingle();
-
-  if (!membership) {
-    return { authorized: false, error: 'Unauthorized' };
-  }
-
-  return { authorized: true };
-}
-
-/**
- * Verify that the authenticated user can access a given player's data.
- * Throws-style guard that returns a string error or null.
+ * Delegates to the canonical RPC-backed helper which respects
+ * golf_team_coach_staff (and therefore multi-team coaches).
  */
 async function getPlayerAccessError(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   playerId: string,
 ): Promise<string | null> {
-  const result = await verifyPlayerAccess(supabase, userId, playerId);
-  return result.authorized ? null : (result.error ?? 'Unauthorized');
+  const result = await canonicalVerifyPlayerAccess(playerId, userId, supabase);
+  return result.allowed ? null : 'Unauthorized';
 }
 
 /**
- * Verify that the authenticated user is a coach for the given team.
+ * Verify that the authenticated user staffs the given team via the canonical
+ * golf_team_coach_staff relationship. Returns the coach row id when allowed
+ * so callers can attribute writes.
+ *
+ * The canonical helper resolves coachId from golf_team_coach_staff for the
+ * verified team — no second lookup needed, which avoids picking an arbitrary
+ * coach row for multi-org users with multiple coach profiles.
  */
 async function verifyCoachAccess(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   teamId: string,
 ): Promise<{ authorized: boolean; coachId?: string; error?: string }> {
-  const { data: coach } = await supabase
-    .from('golf_coaches')
-    .select('id, organization_id')
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (!coach?.organization_id) {
-    return { authorized: false, error: 'Unauthorized — coach access required' };
-  }
-
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('id', teamId)
-    .eq('organization_id', coach.organization_id)
-    .maybeSingle();
-
-  if (!team) {
+  const result = await canonicalVerifyTeamAccess(teamId, userId, supabase);
+  if (!result.allowed) {
     return { authorized: false, error: 'Unauthorized — team not found for this coach' };
   }
-
-  return { authorized: true, coachId: coach.id };
+  return { authorized: true, coachId: result.coachId };
 }
 
 // Stat metric keys used for z-score normalization and percentile building

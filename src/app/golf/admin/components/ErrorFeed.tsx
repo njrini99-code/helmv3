@@ -71,7 +71,7 @@ const statusStyles: Record<IncidentStatus, {
     label: 'Resolved',
   },
   historical: {
-    badge: 'bg-slate-100 text-slate-600 border-slate-200',
+    badge: 'bg-warm-100 text-warm-600 border-warm-200',
     label: 'Backlog',
   },
 };

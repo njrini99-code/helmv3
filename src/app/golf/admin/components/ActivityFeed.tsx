@@ -60,8 +60,8 @@ const itemStyles: Record<TimelineKind, { icon: ReactNode; chip: string; rail: st
   },
   audit: {
     icon: <IconWrench size={13} />,
-    chip: 'bg-slate-100 text-slate-700',
-    rail: 'bg-slate-400',
+    chip: 'bg-warm-100 text-warm-700',
+    rail: 'bg-warm-400',
   },
 };
 

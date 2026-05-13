@@ -684,7 +684,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-5">
             {/* Search */}
             <div className="relative flex-1">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+              <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
               <input
                 type="search"
                 value={searchQuery}
@@ -697,7 +697,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
+                  className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 hover:text-warm-600"
                 >
                   <IconX size={14} />
                 </button>

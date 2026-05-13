@@ -81,7 +81,7 @@ export function AdminBarChart({
             return (
               <div key={i} className="flex-1 flex flex-col items-center group relative">
                 {/* Tooltip */}
-                <div className="absolute -top-9 left-1/2 -translate-x-1/2 bg-warm-900 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
+                <div className="absolute -top-9 left-1/2 -tranwarm-x-1/2 bg-warm-900 text-white text-xs px-2.5 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-lg">
                   <span className="font-medium">{d.value}</span>
                   <span className="text-warm-300 ml-1">{d.label}</span>
                 </div>

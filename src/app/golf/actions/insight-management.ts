@@ -277,6 +277,7 @@ export async function bulkDismissInsights(
         status: 'dismissed',
         dismissed: true,
         dismissed_at: new Date().toISOString(),
+        lifecycle_state: 'archived',
       })
       .eq('coach_id', coach.id)
       .in('id', insightIds)
@@ -331,12 +332,15 @@ export async function bulkAcknowledgeInsights(
       return { success: false, affectedCount: 0, error: 'Coach not found' };
     }
 
+    // Write lifecycle_state='addressed' alongside the timestamp so the
+    // lifecycle cron picks these up for the addressed→resolved progression.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase as any)
       .from('golf_coach_insights')
       .update({
         status: 'acknowledged',
         acknowledged_at: new Date().toISOString(),
+        lifecycle_state: 'addressed',
       })
       .eq('coach_id', coach.id)
       .in('id', insightIds)
@@ -395,6 +399,7 @@ export async function bulkResolveInsights(
       .update({
         status: 'resolved',
         resolved_at: new Date().toISOString(),
+        lifecycle_state: 'resolved',
       })
       .eq('coach_id', coach.id)
       .in('id', insightIds)

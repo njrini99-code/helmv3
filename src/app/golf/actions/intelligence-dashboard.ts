@@ -517,18 +517,38 @@ export async function acknowledgeInsight(
 
     const supabase = await createClient();
 
-    const { error } = await supabase
+    // Write lifecycle_state='addressed' alongside the timestamp so the
+    // lifecycle cron picks this up for the addressed→resolved progression.
+    // Defensive ownership filter on top of RLS — scope the UPDATE by the
+    // insight's team_id resolved via the canonical helper. The earlier
+    // verifyInsightAccess call above proved the user staffs that team, so we
+    // mirror it on the UPDATE itself and treat 0 affected rows as 404.
+    const { data: { user: gateUser } } = await supabase.auth.getUser();
+    const { verifyInsightAccess: verifyInsightAccessFn } = await import('@/lib/auth/verify-player-access');
+    const teamGate = await verifyInsightAccessFn(insightId, gateUser!.id, supabase);
+    if (!teamGate.allowed) {
+      return { success: false, error: teamGate.reason === 'not-found' ? 'Insight not found' : 'Not authorized' };
+    }
+
+    const { data, error } = await supabase
       .from('golf_coach_insights')
       .update({
         acknowledged_at: new Date().toISOString(),
         status: 'acknowledged',
+        lifecycle_state: 'addressed',
         updated_at: new Date().toISOString(),
       })
-      .eq('id', insightId);
+      .eq('id', insightId)
+      .eq('team_id', teamGate.teamId!)
+      .select('id');
 
     if (error) {
       await logServerError(`Failed to acknowledge insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.acknowledgeInsight' });
       return { success: false, error: 'Failed to acknowledge insight' };
+    }
+
+    if (!data || data.length === 0) {
+      return { success: false, error: 'Insight not found' };
     }
 
     return { success: true };

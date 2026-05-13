@@ -164,7 +164,7 @@ function KPICard({
   trend?: 'up' | 'down';
 }) {
   return (
-    <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200">
+    <div className="relative overflow-clip surface-matte rounded-3xl p-5 hover:hover:-tranwarm-y-0.5 transition-[transform,box-shadow] duration-200">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-warm-500 font-medium">{label}</p>
@@ -215,7 +215,7 @@ function PlayerCard({
   return (
     <button
       onClick={onClick}
-      className="w-full group surface-matte rounded-3xl p-4 hover:hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
+      className="w-full group surface-matte rounded-3xl p-4 hover:hover:-tranwarm-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
       <div className="flex items-center gap-4">
         {/* Rank badge */}
@@ -967,7 +967,7 @@ export default function StatsClient({
           <div className="bg-cream-100/60 backdrop-blur-sm rounded-2xl border border-warm-200/45 p-4 mb-4 ">
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex-1 min-w-[200px] relative">
-                <IconSearch size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
+                <IconSearch size={20} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
                 <input
                   type="search"
                   placeholder="Search players..."

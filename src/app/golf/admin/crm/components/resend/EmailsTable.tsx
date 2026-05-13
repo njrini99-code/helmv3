@@ -103,7 +103,7 @@ export function EmailsTable({
           <div className="relative flex-1 max-w-md">
             <IconSearch
               size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400 pointer-events-none"
             />
             <input
               type="text"
@@ -115,7 +115,7 @@ export function EmailsTable({
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-700"
+                className="absolute right-2 top-1/2 -tranwarm-y-1/2 p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-700"
                 aria-label="Clear search"
               >
                 <IconX size={12} />

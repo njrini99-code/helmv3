@@ -391,7 +391,7 @@ export default async function GolfRosterPage() {
             {playersWithStats.map((player) => (
               <div
                 key={player.id}
-                className="group surface-matte rounded-3xl hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-200"
+                className="group surface-matte rounded-3xl hover:shadow-card-hover hover:-tranwarm-y-0.5 transition-all duration-200"
               >
                 {/* Card Header with Avatar and Name */}
                 <div className="p-5 md:p-6">

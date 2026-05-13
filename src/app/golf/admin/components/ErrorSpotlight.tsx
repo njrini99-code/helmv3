@@ -164,7 +164,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
                 ? 'border-red-200 bg-red-100 text-red-700'
                 : leadIncident.status === 'active'
                   ? 'border-amber-200 bg-amber-100 text-amber-700'
-                  : 'border-slate-200 bg-slate-100 text-slate-600'
+                  : 'border-warm-200 bg-warm-100 text-warm-600'
             )}>
               {leadIncident.status}
             </span>
