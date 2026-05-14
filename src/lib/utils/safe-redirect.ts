@@ -14,6 +14,7 @@ export function isSafeInternalPath(path: string | null | undefined): path is str
   // variants that Chrome/Safari collapse to external origins.
   if (path.includes('//') || path.includes('\\')) return false;
   // Reject embedded whitespace / control chars that can break URL parsing.
+  // eslint-disable-next-line no-control-regex -- intentional: rejecting control chars is the whole point
   if (/[\s\u0000-\u001F\u007F-\u009F]/.test(path)) return false;
   return INTERNAL_PREFIXES.some((p) => path.startsWith(p));
 }

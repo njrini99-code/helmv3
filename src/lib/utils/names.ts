@@ -5,6 +5,7 @@
  */
 
 // RTL overrides, zero-width / paragraph separators, ASCII control chars.
+// eslint-disable-next-line no-control-regex -- intentional: stripping control chars is the whole point
 const UNSAFE_CHARS = /[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u2028-\u202F\u2066-\u2069]/g;
 const MAX_DISPLAY_LENGTH = 40;
 
