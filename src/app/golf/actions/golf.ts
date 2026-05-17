@@ -2630,11 +2630,29 @@ export async function respondToEvent(
     }
 
     const { updateRSVP, RSVPDeadlinePassedError } = await import('@/lib/calendar/rsvp');
+    const { WriteIntegrityError } = await import('@/lib/calendar/write-integrity');
     try {
       await updateRSVP(eventId, player.id, status, supabase);
     } catch (err) {
       if (err instanceof RSVPDeadlinePassedError) {
         return { success: false, error: 'RSVP deadline has passed for this event.' };
+      }
+      // 2026-05-17: closes audit Finding 4 + Q-NEW-14. Previously this
+      // catch was bare (`catch {}`) — every error returned the same
+      // "Failed to update RSVP" string with nothing logged. Now we
+      // discriminate, log via logServerError with context, and tell the
+      // user something useful when RLS / a constraint denies the write.
+      if (err instanceof WriteIntegrityError) {
+        await logServerError(`respondToEvent: ${err.message}`, {
+          action: 'respondToEvent.writeIntegrity',
+          featureArea: 'calendar',
+          playerId: player.id,
+          extra: { eventId, status, underlying: err.underlying },
+        }, 'warning');
+        return {
+          success: false,
+          error: 'Could not record your RSVP. Please try again or contact your coach.',
+        };
       }
       throw err;
     }
@@ -2644,7 +2662,12 @@ export async function respondToEvent(
     updateTag(CACHE_TAGS.CALENDAR);
     return { success: true, data: undefined };
 
-  } catch {
+  } catch (err) {
+    await logServerError(`respondToEvent failed: ${err instanceof Error ? err.message : String(err)}`, {
+      action: 'respondToEvent.unexpected',
+      featureArea: 'calendar',
+      extra: { stack: err instanceof Error ? err.stack : undefined },
+    }, 'warning');
     return { success: false, error: 'Failed to update RSVP' };
   }
 }

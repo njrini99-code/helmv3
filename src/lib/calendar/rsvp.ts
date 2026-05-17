@@ -8,6 +8,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GolfCoach, GolfEvent, GolfEventAttendance, GolfPlayer } from '@/lib/types/golf';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireWriteSuccess } from './write-integrity';
 
 // ============================================================================
 // TYPES
@@ -184,9 +185,12 @@ export async function sendEventInvitations(
     notified_at: new Date().toISOString(),
   }));
 
-  await supabase
+  // 2026-05-17: closes audit Finding 4 (same fix as updateRSVP).
+  const inviteResult = await supabase
     .from('golf_event_attendance')
-    .upsert(attendanceRecords, { onConflict: 'event_id,player_id' });
+    .upsert(attendanceRecords, { onConflict: 'event_id,player_id' })
+    .select('id');
+  requireWriteSuccess(inviteResult, 'sendEventInvitations');
 
   // Create notifications for each player
   const notifications = players
@@ -307,8 +311,12 @@ export async function updateRSVP(
     throw new RSVPDeadlinePassedError(event.rsvp_deadline);
   }
 
-  // Upsert attendance record so players can respond even if no invite exists yet
-  await supabase
+  // 2026-05-17: closes audit Finding 4. Previously this upsert discarded
+  // its `{ data, error }` return — RLS denials and constraint violations
+  // returned `success: true` to the user with zero rows persisted. Now we
+  // .select('id') so the helper can verify a row actually changed, and
+  // throw WriteIntegrityError if not.
+  const upsertResult = await supabase
     .from('golf_event_attendance')
     .upsert(
       {
@@ -318,7 +326,9 @@ export async function updateRSVP(
         rsvp_at: new Date().toISOString(),
       },
       { onConflict: 'event_id,player_id' }
-    );
+    )
+    .select('id');
+  requireWriteSuccess(upsertResult, 'updateRSVP');
 
   const { data: player } = await supabase
     .from('golf_players')
