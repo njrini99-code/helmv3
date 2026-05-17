@@ -1,8 +1,10 @@
 'use server';
 
 import { randomInt } from 'crypto';
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
 import type { HoleStats, ShotRecord } from '@/lib/types/golf';
@@ -19,9 +21,9 @@ import { formatSafeErrorResponse, CommonSchemas } from '@/lib/validation/server-
 import { notifyQualifierCreated } from '@/lib/notifications';
 import type { RSVPStatus } from '@/lib/calendar/rsvp';
 import { invalidateOnRoundComplete } from '@/lib/cache/golf-stats-calculator';
-// triggerPlayerInsightsAfterRound is no longer called directly — it's invoked
-// via fetch to /api/coachhelm/analyze-player with keepalive so the analysis
-// survives the server-action response closing.
+// 2026-05-17: CoachHelm trigger now runs via after(postRoundTrigger) — see
+// docs/architecture/coachhelm-evidence-contract.md and Plan 04. The previous
+// HTTP self-call + keepalive approach was retired (audit Finding 2/A-NEW-6).
 import { logRoundSubmitted } from '@/lib/admin-logger';
 import { logCritical, logError } from '@/lib/error-monitoring';
 import { logServerError } from '@/lib/server-error-logger';
@@ -1597,38 +1599,49 @@ export async function submitGolfRoundComprehensive(
       }
     }
 
-    // Invalidate stats cache BEFORE revalidating paths so Next.js regeneration
-    // picks up fresh data. Awaiting ensures the DB cache is rebuilt.
-    const cacheResult = await invalidateOnRoundComplete(player.id, round.id).catch((err) => {
-      void logServerError(`Failed to invalidate stats cache after round submit: ${err instanceof Error ? err.message : String(err)}`, {
-        action: 'submitGolfRoundComprehensive.invalidateStatsCache',
-        featureArea: 'stats_cache',
-        roundId: round.id,
-        playerId: player.id,
-        userId: user.id,
-        userEmail: user.email,
-        extra: {
-          stack: err instanceof Error ? err.stack : undefined,
-        },
-      }, 'critical');
-      return { warnings: ['Stats cache update failed.'] };
+    // 2026-05-17: closes audit P-HIGH-1. Previously this awaited the stats-
+    // cache invalidation inside the user-facing response, adding 0.5–2s of
+    // p99 latency to round submits. Move to after() so the user response
+    // returns immediately; warnings are still logged from the after callback.
+    const cacheRoundId = round.id;
+    const cachePlayerId = player.id;
+    const cacheHolesCount = holesPayload.length;
+    const cacheShotsCount = shotsCount;
+    const cacheUserId = user.id;
+    const cacheUserEmail = user.email;
+    after(async () => {
+      try {
+        const cacheResult = await invalidateOnRoundComplete(cachePlayerId, cacheRoundId);
+        if (cacheResult.warnings.length > 0) {
+          await logServerError(
+            `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
+            {
+              action: 'submitGolfRoundComprehensive',
+              roundId: cacheRoundId,
+              playerId: cachePlayerId,
+              userId: cacheUserId,
+              userEmail: cacheUserEmail,
+              holesCount: cacheHolesCount,
+              shotsCount: cacheShotsCount,
+              extra: { warnings: cacheResult.warnings },
+            },
+            'warning'
+          );
+        }
+      } catch (err) {
+        await logServerError(`Failed to invalidate stats cache after round submit: ${err instanceof Error ? err.message : String(err)}`, {
+          action: 'submitGolfRoundComprehensive.invalidateStatsCache',
+          featureArea: 'stats_cache',
+          roundId: cacheRoundId,
+          playerId: cachePlayerId,
+          userId: cacheUserId,
+          userEmail: cacheUserEmail,
+          extra: {
+            stack: err instanceof Error ? err.stack : undefined,
+          },
+        }, 'critical');
+      }
     });
-    if (cacheResult.warnings.length > 0) {
-      await logServerError(
-        `Stats cache warnings after round submit: ${cacheResult.warnings.join(' | ')}`,
-        {
-          action: 'submitGolfRoundComprehensive',
-          roundId: round.id,
-          playerId: player.id,
-          userId: user.id,
-          userEmail: user.email,
-          holesCount: holesPayload.length,
-          shotsCount,
-          extra: { warnings: cacheResult.warnings },
-        },
-        'warning'
-      );
-    }
 
     try {
       revalidatePath('/golf/dashboard');
@@ -1663,54 +1676,26 @@ export async function submitGolfRoundComprehensive(
       }, 'warning');
     }
 
-    // Durable CoachHelm trigger: hand off to /api/coachhelm/analyze-player via
-    // fetch+keepalive. keepalive lets Vercel's Fluid Compute runtime survive
-    // the server-action response stream closing so the analysis can finish
-    // independently of this function's lifetime (previously a raw
-    // fire-and-forget promise was being killed mid-execution, losing insights).
-    // The hourly safety-net cron re-runs any player whose latest round has no
-    // matching insight row, so a lost fetch here is eventually self-healing.
+    // 2026-05-17: closes audit Finding 2 + A-NEW-6. Previously this fetched
+    // /api/coachhelm/analyze-player with `keepalive: true`. That had three
+    // problems: (1) an extra internal HTTP hop with cold-start risk;
+    // (2) keepalive's lifetime guarantees are best-effort on Fluid Compute;
+    // (3) the COACHHELM_INTERNAL_SECRET was a credential management surface.
+    //
+    // New: use Next.js `after()` so the trigger runs post-response in the same
+    // function instance. postRoundTrigger writes terminal state to
+    // golf_rounds.coachhelm_{analyzed,failed}_at so the safety-net cron can
+    // recover deterministically if the after-callback dies.
     const backgroundPlayerId = player.id;
     const backgroundRoundId = round.id;
-    const internalSecret = process.env.COACHHELM_INTERNAL_SECRET;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://helmsportslabs.com';
-    if (!internalSecret) {
-      await logServerError('COACHHELM_INTERNAL_SECRET not set; CoachHelm trigger skipped', {
-        action: 'submitGolfRoundComprehensive.coachhelm.missingSecret',
-        featureArea: 'coachhelm',
-        extra: { playerId: backgroundPlayerId, roundId: backgroundRoundId },
-      }, 'warning');
-    } else {
-      fetch(`${siteUrl}/api/coachhelm/analyze-player`, {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          'x-internal-secret': internalSecret,
-        },
-        body: JSON.stringify({
-          playerId: backgroundPlayerId,
-          roundId: backgroundRoundId,
-          triggerReason: 'round_submitted',
-        }),
-        keepalive: true,
-      }).catch((err) => {
-        // Log only — safety-net cron (E6) re-runs analyze-player for rounds
-        // without insights, so a transient fetch failure here is recoverable.
-        void logServerError(
-          `CoachHelm analyze-player fetch failed: ${err instanceof Error ? err.message : String(err)}`,
-          {
-            action: 'submitGolfRoundComprehensive.coachhelm.fetch',
-            featureArea: 'coachhelm',
-            extra: {
-              playerId: backgroundPlayerId,
-              roundId: backgroundRoundId,
-              stack: err instanceof Error ? err.stack : undefined,
-            },
-          },
-          'warning',
-        );
+    after(async () => {
+      const admin = createAdminClient();
+      await postRoundTrigger(admin, {
+        playerId: backgroundPlayerId,
+        roundId: backgroundRoundId,
+        triggerReason: 'round_submitted',
       });
-    }
+    });
 
     // Log round submission event (fire-and-forget)
     logRoundSubmitted(user.id, user.email || '', round.id, {
