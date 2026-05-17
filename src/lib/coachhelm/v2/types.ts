@@ -635,6 +635,15 @@ export interface PlayerAnalysis {
   trendAnalysis?: MultiWindowAnalysis;
   anomalies?: Anomaly[];
   streaks?: Streak[];
+
+  // 2026-05-17 — closes audit Q-NEW-5 / Q-NEW-6. Per-generator summary lets
+  // the analyze-player route distinguish "engine ran fine, no insights" from
+  // "engine partially failed". The HTTP route returns 5xx when failures
+  // is non-empty.
+  generatorSummary?: {
+    successes: string[];
+    failures: Array<{ generator: string; reason: string }>;
+  };
 }
 
 /** Intelligent round review (V2 enhanced) */
