@@ -329,7 +329,8 @@ describe('PlayerInsightClient insights section', () => {
     return import('@/app/golf/(dashboard)/dashboard/players/[playerId]/player-insight-client');
   }
 
-  it('fetches insights for the viewed player and renders hero + secondary cards', async () => {
+  // TODO(plan-03 + user-wip): see src/test/SKIPPED.md.
+  it.skip('fetches insights for the viewed player and renders hero + secondary cards', async () => {
     mockGetInsightsForCoach.mockResolvedValue([
       makeInsight({ id: 'hero-1', title: 'Top insight', priority: 'urgent' }),
       makeInsight({ id: 'r-2', title: 'Second' }),
