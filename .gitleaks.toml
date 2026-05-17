@@ -1,0 +1,32 @@
+title = "GolfHelm gitleaks rules"
+
+# These rules complement the default gitleaks ruleset. Add project-specific
+# patterns here so the pre-commit / CI scanner catches GolfHelm-shaped leaks.
+
+[[rules]]
+description = "Legacy Supabase dev project DB password (rotated 2026-05-17)"
+id = "supabase-dev-db-password-2026-05-17"
+regex = '''EHl4yASa9zM1sb1k'''
+tags = ["supabase", "leaked-credential", "rotated"]
+
+[[rules]]
+description = "Supabase Postgres URL with embedded password"
+id = "supabase-db-url-embedded-password"
+regex = '''postgres(?:ql)?://postgres:[^@\s]{8,}@db\.[a-z0-9]+\.supabase\.co'''
+tags = ["supabase", "credential"]
+
+[[rules]]
+description = "PGPASSWORD env-var inline literal"
+id = "pgpassword-inline"
+regex = '''PGPASSWORD=['"][^'"\s]{8,}['"]'''
+tags = ["postgres", "credential"]
+
+# Allowlist for the audit and plan documents that intentionally reference
+# the rotated credential to document the finding.
+[allowlist]
+paths = [
+  '''docs/superpowers/plans/2026-05-17-.*\.md''',
+  '''\.full-review-2026-05-17-golfhelm-audit/.*\.md''',
+  '''docs/operations/2026-05-17-p0-runbook\.md''',
+  '''\.gitleaks\.toml''',
+]

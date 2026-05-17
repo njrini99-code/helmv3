@@ -1,53 +1,71 @@
 # Run System Audits on Your Machine
 
-Your machine likely has proper IPv6 routing or IPv4 access to Supabase. Run these commands there:
+> **2026-05-17 — credentials scrubbed.** The previous version of this file
+> committed a hard-coded DB password and project ref in plaintext. Both
+> have been removed; the credential is being rotated per
+> `docs/operations/2026-05-17-p0-runbook.md` Task 1. Use the patterns
+> below to connect with credentials sourced from your local environment.
 
-## Option 1: Quick - Run Critical Checks Only (2 minutes)
+## Database connection
+
+The project's database connection string is provisioned via the Supabase
+dashboard. Do not commit credentials to this repository.
+
+To connect locally:
+
+1. Run `supabase login` and pick the project.
+2. Copy the connection string from Supabase dashboard
+   (Project Settings → Database → Connection string).
+3. Set it as `SUPABASE_DB_URL` in your local `.env.local` (gitignored).
 
 ```bash
-cd /Users/ricknini/Downloads/helmv3
-
-# Run critical security check
-PGPASSWORD='EHl4yASa9zM1sb1k' psql \
-  "postgresql://postgres:EHl4yASa9zM1sb1k@db.dgvlnelygibgrrjehbyc.supabase.co:5432/postgres" \
-  -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
-
-# Run RLS policies check
-PGPASSWORD='EHl4yASa9zM1sb1k' psql \
-  "postgresql://postgres:EHl4yASa9zM1sb1k@db.dgvlnelygibgrrjehbyc.supabase.co:5432/postgres" \
-  -f AUDIT_BATCH_3_RLS_POLICIES.sql
-
-# Run functions & triggers check
-PGPASSWORD='EHl4yASa9zM1sb1k' psql \
-  "postgresql://postgres:EHl4yASa9zM1sb1k@db.dgvlnelygibgrrjehbyc.supabase.co:5432/postgres" \
-  -f AUDIT_BATCH_5_FUNCTIONS_TRIGGERS.sql
+# .env.local
+SUPABASE_DB_URL='postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres'
 ```
 
-## Option 2: Complete - Run All System Audits (5 minutes)
+## Option 1: Quick — Run Critical Checks Only (2 minutes)
 
 ```bash
 cd /Users/ricknini/Downloads/helmv3
 
-# Run the automated system audit script
+# Loads SUPABASE_DB_URL from .env.local
+set -a; source .env.local; set +a
+
+# Run critical security check
+psql "$SUPABASE_DB_URL" -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
+
+# Run RLS policies check
+psql "$SUPABASE_DB_URL" -f AUDIT_BATCH_3_RLS_POLICIES.sql
+
+# Run functions & triggers check
+psql "$SUPABASE_DB_URL" -f AUDIT_BATCH_5_FUNCTIONS_TRIGGERS.sql
+```
+
+## Option 2: Complete — Run All System Audits (5 minutes)
+
+```bash
+cd /Users/ricknini/Downloads/helmv3
+
+# Run the automated system audit script (reads SUPABASE_DB_URL from env)
 node run-system-audits.mjs
 ```
 
 ## Option 3: Supabase Dashboard (No Terminal Needed)
 
-1. Go to: https://supabase.com/dashboard/project/dgvlnelygibgrrjehbyc/sql/new
-2. Copy contents of `AUDIT_BATCH_2_SECURITY_CRITICAL.sql`
-3. Paste and run
-4. Repeat for batches 3 and 5
+1. Go to your project's SQL editor (Supabase dashboard → SQL → New query).
+2. Copy contents of `AUDIT_BATCH_2_SECURITY_CRITICAL.sql`.
+3. Paste and run.
+4. Repeat for batches 3 and 5.
 
 ---
 
-## What's Already Done ✅
+## What's Already Done
 
-I completed via REST API:
-- ✅ Account fixed (sport='golf')
-- ✅ Orphaned records check (0 found)
-- ✅ Data quality check (perfect)
-- ✅ User distribution (verified)
+Completed via REST API:
+- Account fixed (sport='golf')
+- Orphaned records check (0 found)
+- Data quality check (perfect)
+- User distribution (verified)
 
 Results saved in: `AUDIT_RESULTS_API.json`
 
@@ -56,23 +74,24 @@ Results saved in: `AUDIT_RESULTS_API.json`
 ## Expected Results
 
 ### AUDIT_BATCH_2 (CRITICAL):
-**Should return 0 rows** - all tables must have RLS enabled
+**Should return 0 rows** — all tables must have RLS enabled.
 
 ### AUDIT_BATCH_3:
-Shows all RLS policies - verify they use `auth.uid()`
+Shows all RLS policies — verify they use `auth.uid()`.
 
 ### AUDIT_BATCH_5:
-Lists functions and triggers - verify `handle_new_user` exists
+Lists functions and triggers — verify `handle_new_user` exists.
 
 ---
 
 ## If Connection Fails on Your Machine
 
-Try the IPv6 bracket notation:
+Try the IPv6 bracket notation against the same `$SUPABASE_DB_URL` host:
+
 ```bash
-PGPASSWORD='EHl4yASa9zM1sb1k' psql \
-  "postgresql://postgres:EHl4yASa9zM1sb1k@[2600:1f13:838:6e16:721e:21f6:fcf7:5acf]:5432/postgres" \
+# Resolve the IPv6 address from Supabase dashboard, then:
+psql "postgresql://postgres:<password>@[<ipv6-addr>]:5432/postgres" \
   -f AUDIT_BATCH_2_SECURITY_CRITICAL.sql
 ```
 
-Or just use Supabase Dashboard (Option 3) - guaranteed to work!
+Or just use Supabase Dashboard (Option 3) — guaranteed to work.
