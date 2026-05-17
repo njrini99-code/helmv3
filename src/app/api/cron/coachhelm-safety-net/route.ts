@@ -1,19 +1,26 @@
 /**
  * CoachHelm safety-net cron.
  *
- * If a round-submit `fetch('/api/coachhelm/analyze-player', { keepalive })`
- * call is lost (serverless exit, network blip, secret misconfigured), the
- * player never gets insights for that round. This cron finds rounds whose
- * `created_at` falls in the last 24h and that have no active insight
- * created after the round's submission timestamp, then re-triggers
- * analyze-player for the affected players.
+ * Re-runs the post-round trigger for any round whose terminal state columns
+ * are still NULL — meaning the round-submit `after(postRoundTrigger)` call
+ * never wrote success or failure for it.
+ *
+ * 2026-05-17 rewrite (Plan 04 / audit P-CRIT-2 + A-NEW-6 + Q-NEW-4):
+ *   - Replaces the previous heuristic ("any active insight after
+ *     round.created_at" wins → skip) with a deterministic state-column
+ *     query. The heuristic could be defeated by lifecycle cron refreshes
+ *     and manual acknowledgements creating unrelated newer rows.
+ *   - Replaces the sequential per-player loop with chunked Promise.allSettled
+ *     so 100+ pending rounds finish well inside the 300s function budget.
+ *   - Calls postRoundTrigger (same wrapper the round submit uses) so the
+ *     state columns get set consistently from both call sites.
  *
  * Schedule: every 30 min (see vercel.json).
  * Auth: Vercel Cron sends `Authorization: Bearer ${CRON_SECRET}`.
  */
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
+import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 
@@ -23,6 +30,7 @@ export const dynamic = 'force-dynamic';
 
 const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 const BATCH_LIMIT = 200;
+const CONCURRENCY = 5;
 
 export async function GET(req: NextRequest) {
   const unauthorized = requireCronAuth(req);
@@ -31,17 +39,18 @@ export async function GET(req: NextRequest) {
   const supabase = createAdminClient();
   const sinceIso = new Date(Date.now() - LOOKBACK_MS).toISOString();
 
-  // Filter on `created_at` (submission timestamp) rather than `round_date`
-  // (DATE column at midnight). Without this, comparing the round's date to
-  // the lookback timestamp truncates same-day rounds and the downstream
-  // "newer insight exists" check below gets a midnight floor that any
-  // earlier-in-the-day insight beats.
-  const { data: rounds, error } = await supabase
+  // Deterministic eligibility: completed rounds where postRoundTrigger
+  // never wrote a terminal state. The partial index added in migration
+  // 20260517010000 keeps this query cheap.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rounds, error } = await (supabase as any)
     .from('golf_rounds')
     .select('id, player_id, created_at')
-    .eq('status', 'completed')
+    .eq('round_status', 'completed')
+    .is('coachhelm_analyzed_at', null)
+    .is('coachhelm_failed_at', null)
     .gte('created_at', sinceIso)
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
     .limit(BATCH_LIMIT);
 
   if (error) {
@@ -60,92 +69,52 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Deduplicate: process the newest round per player. If a player has 3
-  // rounds in the window we only re-run analysis once (analyzePlayer looks
-  // at the whole player anyway). Track the round's actual submission
-  // timestamp (created_at) so the "newer insight exists" check below
-  // compares against the precise submit moment rather than midnight.
-  const latestPerPlayer = new Map<string, { id: string; submittedAt: string }>();
-  for (const r of rounds ?? []) {
-    if (!latestPerPlayer.has(r.player_id)) {
-      latestPerPlayer.set(r.player_id, {
-        id: r.id,
-        submittedAt: r.created_at ?? sinceIso,
-      });
-    }
-  }
+  const pending: Array<{ id: string; player_id: string }> = (rounds ?? []) as Array<{ id: string; player_id: string }>;
 
   let recovered = 0;
-  let skipped = 0;
   let failed = 0;
 
-  for (const [playerId, round] of latestPerPlayer.entries()) {
-    try {
-      // Has any active v2 insight been created since this round was submitted?
-      // If yes, the regular round-submit trigger worked and we skip. Using
-      // the round's created_at (full timestamp) instead of round_date (date
-      // truncated to midnight) prevents earlier-in-the-day insights from
-      // masking a missed analysis.
-      const { data: existing, error: existErr } = await supabase
-        .from('golf_coach_insights')
-        .select('id')
-        .eq('player_id', playerId)
-        .eq('status', 'active')
-        .gte('created_at', round.submittedAt)
-        .limit(1);
-
-      if (existErr) {
-        failed++;
-        await logServerError(
-          `cron.safetyNet.checkExisting failed: ${existErr.message}`,
-          {
-            action: 'cron.coachhelm.safetyNet.checkExisting',
-            featureArea: 'coachhelm',
-            extra: { playerId, roundId: round.id, code: existErr.code },
-          },
-          'warning',
-        );
-        continue;
-      }
-
-      if (existing && existing.length > 0) {
-        skipped++;
-        continue;
-      }
-
-      // Re-run analysis. Call the action directly (same Node process) rather
-      // than another HTTP hop — the cron already runs on a Fluid-Compute
-      // maxDuration=300 function so we have budget.
-      const result = await triggerPlayerInsightsAfterRound(playerId);
-      if (result.success) {
+  // Chunked Promise.allSettled — runs CONCURRENCY postRoundTrigger calls
+  // in parallel. Each call writes terminal state to its round's
+  // coachhelm_{analyzed,failed}_at column, so subsequent cron runs skip
+  // automatically.
+  for (let i = 0; i < pending.length; i += CONCURRENCY) {
+    const chunk = pending.slice(i, i + CONCURRENCY);
+    const settled = await Promise.allSettled(
+      chunk.map((round) =>
+        postRoundTrigger(supabase, {
+          playerId: round.player_id,
+          roundId: round.id,
+          triggerReason: 'safety_net',
+        }),
+      ),
+    );
+    for (let j = 0; j < settled.length; j++) {
+      const result = settled[j]!;
+      if (result.status === 'fulfilled') {
         recovered++;
       } else {
-        skipped++; // engine opted out (disabled team, etc.) — not a failure
-      }
-    } catch (err) {
-      failed++;
-      await logServerError(
-        `cron.safetyNet.recover failed: ${err instanceof Error ? err.message : String(err)}`,
-        {
-          action: 'cron.coachhelm.safetyNet.recover',
-          featureArea: 'coachhelm',
-          extra: {
-            playerId,
-            roundId: round.id,
-            stack: err instanceof Error ? err.stack : undefined,
+        failed++;
+        const round = chunk[j]!;
+        await logServerError(
+          `cron.safetyNet.postRoundTrigger rejected: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+          {
+            action: 'cron.coachhelm.safetyNet.postRoundTrigger',
+            featureArea: 'coachhelm',
+            playerId: round.player_id,
+            extra: { roundId: round.id },
           },
-        },
-        'error',
-      );
+          'error',
+        );
+      }
     }
   }
 
   return NextResponse.json({
     success: true,
-    roundsWindowed: (rounds ?? []).length,
-    uniquePlayers: latestPerPlayer.size,
+    pending: pending.length,
     recovered,
-    skipped,
     failed,
+    concurrency: CONCURRENCY,
   });
 }
