@@ -974,9 +974,20 @@ export async function generateTeamInsights() {
     // 7. Persist insights through the evidence-backed upsert contract.
     if (cleanInsights.length > 0) {
       try {
-        await Promise.all(
-          cleanInsights.map((record) => upsertInsight(supabase, toInsightInput(record))),
-        );
+        const inputs = cleanInsights
+          .map((record) => ({ record, input: toInsightInput(record) }))
+          .filter((x): x is { record: typeof cleanInsights[number]; input: NonNullable<ReturnType<typeof toInsightInput>> } => x.input !== null);
+
+        // 2026-05-17: toInsightInput now returns null when the legacy record
+        // lacks enough sample_n (audit Q-NEW-1). Log + skip rather than throw.
+        const skipped = cleanInsights.length - inputs.length;
+        if (skipped > 0) {
+          await logServerError(`generateInsightsForTeam skipped ${skipped} legacy records with insufficient sample_n`, {
+            action: 'generateInsightsForTeam.skip-insufficient',
+            featureArea: 'insights',
+          });
+        }
+        await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
         await logServerError(`generateInsightsForTeam upsert failed: ${insertError instanceof Error ? insertError.message : String(insertError)}`, {
           action: 'generateInsightsForTeam.insert',
@@ -3293,8 +3304,20 @@ export async function triggerPlayerInsightsAfterRound(
         } as InsightRecord;
       });
 
+      // 2026-05-17: toInsightInput now returns null when sample_n < MIN_SAMPLE_N.
+      // Filter + log skipped legacy records rather than upsert inflated values.
+      const inputs = cleanInsights
+        .map((record) => toInsightInput(record))
+        .filter((x): x is NonNullable<typeof x> => x !== null);
+      const skipped = cleanInsights.length - inputs.length;
+      if (skipped > 0) {
+        await logServerError(`triggerPlayerInsightsAfterRound skipped ${skipped} legacy records (insufficient sample_n)`, {
+          action: 'triggerPlayerInsightsAfterRound.skip-insufficient',
+          featureArea: 'insights',
+        });
+      }
       await Promise.all(
-        cleanInsights.map((record) => upsertInsight(admin, toInsightInput(record))),
+        inputs.map((input) => upsertInsight(admin, input)),
       );
 
       // Push notification to coach: new insights generated (fire-and-forget)
