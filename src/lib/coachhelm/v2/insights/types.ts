@@ -17,6 +17,26 @@ export type InsightCategory =
 
 export type InsightUnit = 'percent' | 'strokes' | 'count' | 'yards' | 'feet';
 
+/**
+ * Canonical set of comparison sources for evidence cards.
+ *
+ * Every generator MUST emit one of these values. The BaselineRegistry
+ * (`src/lib/coachhelm/v2/insights/baseline-registry.ts`) enforces
+ * label/source/value consistency — generators look up an entry by
+ * BaselineKey and spread the result into the evidence object so the
+ * three fields cannot disagree.
+ *
+ * - your_baseline:    compared to the player's own rolling history
+ * - team_avg:         compared to teammates' aggregated rolling stats
+ * - d1_avg / d2_avg / d3_avg / naia_avg / juco_avg: college-division benchmarks
+ * - pga_baseline:     PGA Tour benchmark
+ * - absolute_target:  a known target value (par, uniform distribution, etc.)
+ *
+ * `peer_percentile` was removed in 2026-05-17 (audit finding Q-NEW-12) —
+ * it was being used against fixed reference points (uniform 4-way
+ * distribution, balanced left/right) which are absolute targets, not
+ * percentiles.
+ */
 export type InsightComparisonSource =
   | 'd2_avg'
   | 'd1_avg'
@@ -25,9 +45,24 @@ export type InsightComparisonSource =
   | 'juco_avg'
   | 'your_baseline'
   | 'team_avg'
-  | 'peer_percentile'
   | 'pga_baseline'
   | 'absolute_target';
+
+/** Runtime tuple matching {@link InsightComparisonSource} for validation. */
+export const COMPARISON_SOURCES = [
+  'your_baseline',
+  'team_avg',
+  'd1_avg',
+  'd2_avg',
+  'd3_avg',
+  'naia_avg',
+  'juco_avg',
+  'pga_baseline',
+  'absolute_target',
+] as const satisfies readonly InsightComparisonSource[];
+
+/** Stable lookup key in the BaselineRegistry: `${source}.${bucket}`. */
+export type BaselineKey = `${InsightComparisonSource}.${string}`;
 
 export type InsightStrokesImpactMethod =
   | 'sg_baseline'

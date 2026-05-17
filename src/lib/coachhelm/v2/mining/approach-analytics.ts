@@ -440,8 +440,10 @@ async function emitDominantLieInsight(
     your_value: dominant.pct,
     your_value_display: `${Math.round(dominant.pct * 100)}%`,
     comparison_value: comparisonValue,
-    comparison_label: 'Uniform 4-way distribution (25%)',
-    comparison_source: 'peer_percentile',
+    comparison_label: 'Balanced distribution (25% each)',
+    // 2026-05-17: was 'peer_percentile' — a uniform 4-way target is an
+    // absolute reference, not a peer-percentile comparison. Audit Q-NEW-12.
+    comparison_source: 'absolute_target',
     sample_n: stats.n,
     window_days: WINDOW_DAYS,
     window_start: windowStart,
@@ -601,8 +603,9 @@ async function emitDirectionBiasInsight(
     your_value: dominantPct,
     your_value_display: `${Math.round(dominantPct * 100)}%`,
     comparison_value: 0.5,
-    comparison_label: 'Balanced left/right (50%)',
-    comparison_source: 'peer_percentile',
+    comparison_label: 'Balanced left/right (50/50)',
+    // 2026-05-17: was 'peer_percentile' — see Q-NEW-12 audit finding.
+    comparison_source: 'absolute_target',
     sample_n: directional,
     window_days: WINDOW_DAYS,
     window_start: windowStart,
