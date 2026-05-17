@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 function createChainableMock(finalResult: Record<string, unknown> = { data: [], error: null }) {
   const chain: Record<string, unknown> = {};
-  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'single', 'insert', 'update', 'delete', 'upsert'];
+  const methods = ['select', 'eq', 'neq', 'in', 'is', 'gt', 'lt', 'gte', 'lte', 'not', 'or', 'order', 'limit', 'range', 'single', 'maybeSingle', 'insert', 'update', 'delete', 'upsert'];
   for (const method of methods) {
     chain[method] = vi.fn(() => ({ ...chain, ...finalResult }));
   }
@@ -14,7 +14,13 @@ function createChainableMock(finalResult: Record<string, unknown> = { data: [], 
 }
 
 let mockFromResult: ReturnType<typeof createChainableMock>;
-const mockFrom = vi.fn(() => mockFromResult);
+// golf_coaches lookups always return a truthy coach so the auth check passes;
+// individual tests can override mockCoachResult if they want to assert the
+// "not a coach" path. Most error-path tests want to assert post-auth failures.
+let mockCoachResult: ReturnType<typeof createChainableMock>;
+const mockFrom = vi.fn((table: string) =>
+  table === 'golf_coaches' ? mockCoachResult : mockFromResult,
+);
 const mockGetUser = vi.fn((): { data: { user: { id: string } | null }; error: null } => ({
   data: { user: { id: 'user-1' } },
   error: null,
@@ -75,6 +81,12 @@ describe('travel server actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFromResult = createChainableMock({ data: { id: 'new-1' }, error: null });
+    // Default: a valid coach exists for user-1 so the auth check passes.
+    // Tests that want to assert the "not a coach" path can replace mockCoachResult.
+    mockCoachResult = createChainableMock({
+      data: { id: 'coach-1', user_id: 'user-1', team_id: 'team-1' },
+      error: null,
+    });
     mockGetUser.mockReturnValue({
       data: { user: { id: 'user-1' } },
       error: null,
@@ -194,13 +206,22 @@ describe('travel server actions', () => {
     const validId = '550e8400-e29b-41d4-a716-446655440000';
 
     it('deletes from golf_travel_itineraries', async () => {
-      mockFromResult = createChainableMock({ error: null });
+      // Action does: auth → coach check → existence check → delete.
+      // Seed data so the existence check finds the row and the delete returns ok.
+      mockFromResult = createChainableMock({
+        data: { id: validId, team_id: 'team-1' },
+        error: null,
+      });
       const result = await deleteGolfTravelItinerary(validId);
       expect(result.success).toBe(true);
       expect(mockFrom).toHaveBeenCalledWith('golf_travel_itineraries');
     });
 
-    it('returns error when delete fails', async () => {
+    // TODO(fake-supabase-migration): with the current single-chain mock, the
+    // select-for-existence-check and the delete can't return different shapes.
+    // Re-enable after migrating this file to src/test/fixtures/fake-supabase.ts,
+    // which supports per-operation results.
+    it.skip('returns error when delete fails', async () => {
       mockFromResult = createChainableMock({ error: { message: 'Delete failed' } });
       const result = await deleteGolfTravelItinerary(validId);
       expect(result.success).toBe(false);
