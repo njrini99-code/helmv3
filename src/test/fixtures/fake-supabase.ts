@@ -205,8 +205,9 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
       }
     } else if (this.op === 'delete') {
       for (let i = list.length - 1; i >= 0; i--) {
-        if (this.filters.every((f) => f(list[i]))) {
-          result.push(list[i]);
+        const row = list[i];
+        if (row !== undefined && this.filters.every((f) => f(row))) {
+          result.push(row);
           list.splice(i, 1);
         }
       }

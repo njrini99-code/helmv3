@@ -49,12 +49,12 @@ test.describe('Golf Dashboard - Player Flow', () => {
 
     // Step 1: Setup - Should see course setup form
     await expect(page.locator('h1')).toContainText('New Round');
-    await expect(page.locator('input[name="courseName"]')).toBeVisible();
+    await expect(page.locator('#courseName')).toBeVisible();
 
     // Fill in course setup
-    await page.fill('input[name="courseName"]', 'E2E Test Course');
-    await page.fill('input[name="courseCity"]', 'Test City');
-    await page.fill('input[name="courseState"]', 'CA');
+    await page.fill('#courseName', 'E2E Test Course');
+    await page.fill('#courseCity', 'Test City');
+    await page.fill('#courseState', 'CA');
 
     // Should see emerald-colored button (modern design)
     const nextButton = page.locator('button:has-text("Next: Configure Holes")');
@@ -117,7 +117,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
     await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
 
     // Check for emerald focus rings on inputs
-    const courseNameInput = page.locator('input[name="courseName"]');
+    const courseNameInput = page.locator('#courseName');
     await courseNameInput.click();
 
     // Check button has emerald background
@@ -125,7 +125,7 @@ test.describe('Golf Dashboard - Player Flow', () => {
     await expect(nextButton).toHaveClass(/bg-emerald-600/);
 
     // Navigate to holes step
-    await page.fill('input[name="courseName"]', 'Color Test Course');
+    await page.fill('#courseName', 'Color Test Course');
     await nextButton.click();
 
     // Verify hole configuration uses emerald colors

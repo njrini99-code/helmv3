@@ -29,9 +29,9 @@ test.describe('Golf Round - Complete Flow', () => {
     await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
 
     // Step 1: Course Setup
-    await page.fill('input[name="courseName"]', 'E2E Test Course');
-    await page.fill('input[name="courseCity"]', 'Test City');
-    await page.fill('input[name="courseState"]', 'CA');
+    await page.fill('#courseName', 'E2E Test Course');
+    await page.fill('#courseCity', 'Test City');
+    await page.fill('#courseState', 'CA');
 
     // Click next
     await page.click('button:has-text("Next: Configure Holes")');
@@ -66,7 +66,7 @@ test.describe('Golf Round - Complete Flow', () => {
     await nextButton.click();
 
     // Should see validation error or field focus
-    const courseInput = page.locator('input[name="courseName"]');
+    const courseInput = page.locator('#courseName');
     await expect(courseInput).toBeFocused();
   });
 
@@ -75,9 +75,9 @@ test.describe('Golf Round - Complete Flow', () => {
     await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
 
     // Setup course
-    await page.fill('input[name="courseName"]', 'Progress Test Course');
-    await page.fill('input[name="courseCity"]', 'Test City');
-    await page.fill('input[name="courseState"]', 'TX');
+    await page.fill('#courseName', 'Progress Test Course');
+    await page.fill('#courseCity', 'Test City');
+    await page.fill('#courseState', 'TX');
 
     await page.click('button:has-text("Next: Configure Holes")');
     await page.click('button:has-text("Save Course & Start Round")');
@@ -116,9 +116,9 @@ test.describe('Golf Round - Complete Flow', () => {
     await page.goto('http://localhost:3000/golf/dashboard/rounds/new');
 
     // Setup course
-    await page.fill('input[name="courseName"]', 'Network Error Test');
-    await page.fill('input[name="courseCity"]', 'Test City');
-    await page.fill('input[name="courseState"]', 'FL');
+    await page.fill('#courseName', 'Network Error Test');
+    await page.fill('#courseCity', 'Test City');
+    await page.fill('#courseState', 'FL');
 
     // Simulate offline mode
     await page.context().setOffline(true);
