@@ -63,3 +63,38 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  supabase:
+    name: Supabase lint + RLS tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Lint migrations
+        run: supabase db lint --schema public
+
+      - name: Run pgTAP RLS suites
+        run: |
+          set -e
+          for f in supabase/tests/rls/*.sql; do
+            # Skip the helpers file — it's included via \i from the others.
+            case "$f" in
+              */_helpers.sql) continue ;;
+            esac
+            echo "::group::$f"
+            supabase test db --file "$f"
+            echo "::endgroup::"
+          done
+
+      - name: Stop local Supabase stack
+        if: always()
+        run: supabase stop || true
