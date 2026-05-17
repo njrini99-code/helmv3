@@ -193,8 +193,11 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
             continue;
           }
         }
-        list.push(row);
-        result.push(row);
+        // Auto-generate an id when not supplied — mirrors Postgres
+        // DEFAULT gen_random_uuid() conventions used by golf_* tables.
+        const enriched: Row = row.id === undefined ? { ...row, id: `fake-${Math.random().toString(36).slice(2, 10)}` } : row;
+        list.push(enriched);
+        result.push(enriched);
       }
     } else if (this.op === 'update') {
       for (const row of list) {
