@@ -227,12 +227,7 @@ describe('generatePuttDistanceInsights', () => {
     expect(upsertInsightMock).not.toHaveBeenCalled();
   });
 
-  // TODO(plan-03): un-skip after Plan 03 (CoachHelm evidence contract) fixes
-  // the D2/PGA label mismatch. The audit's report Finding 1 says putt-analytics
-  // emits `comparison_source: 'pga_baseline'` while the value is from D2_BASELINE.
-  // This test was authored against the (semantically correct) d2_avg value.
-  // Plan 03 introduces a BaselineRegistry and updates the emit to match.
-  it.skip('emits insight for a noteworthy gap with correct signature + evidence', async () => {
+  it('emits insight for a noteworthy gap with correct signature + evidence', async () => {
     // 30 putts from 6-10ft, made 0 → make_pct 0, baseline 0.48 → 48pt gap.
     mockRows.current = manyRows(30, 8, false);
     await generatePuttDistanceInsights('player-1');

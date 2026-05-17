@@ -82,8 +82,9 @@ describe('mining files use only canonical comparison_source values', () => {
       const text = readFileSync(file, 'utf-8');
       text.split('\n').forEach((line, i) => {
         const m = line.match(/comparison_source:\s*['"]([^'"]+)['"]/);
-        if (m && !canonical.has(m[1])) {
-          offenders.push({ file, line: i + 1, value: m[1] });
+        const captured = m?.[1];
+        if (captured && !canonical.has(captured)) {
+          offenders.push({ file, line: i + 1, value: captured });
         }
       });
     }
