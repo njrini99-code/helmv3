@@ -5046,6 +5046,34 @@ export async function deleteShot(shotId: string): Promise<ActionResult<void>> {
     revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
     updateTag(CACHE_TAGS.ROUNDS);
 
+    // 2026-05-17: closes audit P-HIGH-4. Previously this only invalidated
+    // CACHE_TAGS.ROUNDS — leaving stats stale until the next round submit or
+    // nightly roster sweep (up to ~22h). Now we also invalidate the stats
+    // cache so coach corrections show up on the player's dashboard quickly.
+    // Run via after() to avoid blocking the user response. player_id is
+    // looked up via the round inside the callback (golf_shots has no
+    // direct player_id column).
+    const revalidateRoundId = shot.round_id;
+    after(async () => {
+      try {
+        const admin = createAdminClient();
+        const { data: roundRow } = await admin
+          .from('golf_rounds')
+          .select('player_id')
+          .eq('id', revalidateRoundId)
+          .single();
+        if (roundRow?.player_id) {
+          await invalidateOnRoundComplete(roundRow.player_id, revalidateRoundId);
+        }
+      } catch (err) {
+        void logServerError(`deleteShot stats cache invalidation failed: ${err instanceof Error ? err.message : String(err)}`, {
+          action: 'deleteShot.invalidateStatsCache',
+          featureArea: 'stats_cache',
+          roundId: revalidateRoundId,
+        }, 'warning');
+      }
+    });
+
     return { success: true, data: undefined };
 
   } catch (error) {
@@ -5236,6 +5264,28 @@ export async function updateShot(
     revalidatePath('/golf/dashboard/rounds');
     revalidatePath(`/golf/dashboard/rounds/${shot.round_id}`);
     updateTag(CACHE_TAGS.ROUNDS);
+
+    // 2026-05-17: closes audit P-HIGH-4 (same fix as deleteShot above).
+    const revalidateRoundId = shot.round_id;
+    after(async () => {
+      try {
+        const admin = createAdminClient();
+        const { data: roundRow } = await admin
+          .from('golf_rounds')
+          .select('player_id')
+          .eq('id', revalidateRoundId)
+          .single();
+        if (roundRow?.player_id) {
+          await invalidateOnRoundComplete(roundRow.player_id, revalidateRoundId);
+        }
+      } catch (err) {
+        void logServerError(`updateShot stats cache invalidation failed: ${err instanceof Error ? err.message : String(err)}`, {
+          action: 'updateShot.invalidateStatsCache',
+          featureArea: 'stats_cache',
+          roundId: revalidateRoundId,
+        }, 'warning');
+      }
+    });
 
     return { success: true, data: undefined };
 
