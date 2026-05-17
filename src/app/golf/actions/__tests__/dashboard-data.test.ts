@@ -45,9 +45,18 @@ const mockGetUser = vi.fn(() => ({
   error: null,
 }));
 
+// Closes audit Finding 8 (D-NEW dashboard RPC mock drift):
+// dashboard-data.ts:287-292 calls (supabase as any).rpc('get_coach_today_schedule', ...)
+// inside a Promise.all. Without rpc on the mock, the action throws
+// `TypeError: supabase.rpc is not a function` and 6/13 specs fail. The mock
+// returns an empty schedule by default; tests that need a non-empty schedule
+// can mockResolvedValueOnce a richer payload.
+const mockRpc = vi.fn(async () => ({ data: [], error: null }));
+
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     from: mockFrom,
+    rpc: mockRpc,
     auth: { getUser: mockGetUser },
   })),
 }));
@@ -78,6 +87,7 @@ describe('dashboard-data server actions', () => {
     mockMaybeSingle.mockResolvedValue({ data: null, error: null });
     mockLimit.mockReturnValue({ data: [], error: null });
     mockOrder.mockReturnValue({ limit: mockLimit, data: [], error: null });
+    mockRpc.mockResolvedValue({ data: [], error: null });
   });
 
   // ========================================================================
