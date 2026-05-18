@@ -120,9 +120,9 @@ Sentry.init({
     // stale closure. Resolves on the following render — not actionable.
     /module factory is not available/,
     /It might have been deleted in an HMR update/,
-    // CSP-blocked Vercel analytics script in dev (we don't ship the
-    // debug.js variant in our CSP allowlist, on purpose).
-    /va\.vercel-scripts\.com/,
+    // 2026-05-17: CSP allowlist for va.vercel-scripts.com was added in
+    // next.config.mjs (Plan 08 / audit Finding 9 + B-MED-1). Removing the
+    // ignoreErrors mask so real CSP failures surface again.
   ],
 });
 
