@@ -235,7 +235,7 @@ export default async function PlayerInsightPage({
     const metaRecommendation = typeof meta?.recommendation === 'string' ? meta.recommendation : null;
 
     let name = metaName;
-    let description = metaDescription ?? metaInsight ?? metaRecommendation;
+    const description = metaDescription ?? metaInsight ?? metaRecommendation;
     if (!name) {
       const situation = (meta?.situation as Record<string, unknown> | null) ?? null;
       const lie = typeof situation?.lie === 'string' ? situation.lie : null;
@@ -480,7 +480,7 @@ function computeTrendSummary(rounds: RoundRow[]): TrendSummary {
 
   // Compute streak
   let streakCount = 1;
-  let streakType: TrendSummary['streakType'] = (diffs[0] ?? 0) <= 0 ? 'positive' : (diffs[0] ?? 0) > 5 ? 'negative' : 'neutral';
+  const streakType: TrendSummary['streakType'] = (diffs[0] ?? 0) <= 0 ? 'positive' : (diffs[0] ?? 0) > 5 ? 'negative' : 'neutral';
   for (let i = 1; i < diffs.length; i++) {
     const currentType = (diffs[i] ?? 0) <= 0 ? 'positive' : (diffs[i] ?? 0) > 5 ? 'negative' : 'neutral';
     if (currentType === streakType) {
