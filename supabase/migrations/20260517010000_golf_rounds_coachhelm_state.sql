@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS golf_rounds_pending_coachhelm_idx
   ON public.golf_rounds (created_at)
   WHERE coachhelm_analyzed_at IS NULL
     AND coachhelm_failed_at IS NULL
-    AND round_status = 'completed';
+    AND status = 'completed';
 
 COMMENT ON COLUMN public.golf_rounds.coachhelm_analyzed_at IS
   'Timestamp when triggerPlayerInsightsAfterRound completed for this round. NULL = pending or never ran.';

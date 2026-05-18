@@ -5,7 +5,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }));
 
 vi.mock('@/lib/coachhelm/v2/post-round-trigger', () => ({
-  postRoundTrigger: vi.fn().mockResolvedValue(undefined),
+  postRoundTrigger: vi.fn().mockResolvedValue({ success: true }),
 }));
 
 vi.mock('@/lib/server-error-logger', () => ({
@@ -25,7 +25,7 @@ type PendingRound = { id: string; player_id: string; created_at: string };
 /**
  * Build a chainable mock that resolves the pending-rounds query.
  * The route's chain is:
- *   .from('golf_rounds').select(...).eq('round_status','completed')
+ *   .from('golf_rounds').select(...).eq('status','completed')
  *     .is('coachhelm_analyzed_at',null).is('coachhelm_failed_at',null)
  *     .gte('created_at',...).order(...).limit(...)
  * Each method must be chainable; the final `.limit(...)` resolves.
@@ -51,7 +51,7 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
   beforeEach(() => {
     createAdminMock.mockReset();
     postRoundTriggerMock.mockReset();
-    postRoundTriggerMock.mockResolvedValue(undefined);
+    postRoundTriggerMock.mockResolvedValue({ success: true });
     process.env.CRON_SECRET = 'cs';
   });
 
@@ -127,6 +127,25 @@ describe('GET /api/cron/coachhelm-safety-net', () => {
     ];
     createAdminMock.mockReturnValueOnce(buildSupabase(pending, null));
     postRoundTriggerMock.mockRejectedValueOnce(new Error('engine_boom'));
+
+    const res = await GET(
+      new Request('http://x/api/cron/coachhelm-safety-net', {
+        headers: { authorization: 'Bearer cs' },
+      }) as unknown as import('next/server').NextRequest,
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { recovered: number; failed: number };
+    expect(body.recovered).toBe(0);
+    expect(body.failed).toBe(1);
+  });
+
+  it('counts structured postRoundTrigger failures as failed', async () => {
+    const pending: PendingRound[] = [
+      { id: 'r1', player_id: 'p1', created_at: new Date().toISOString() },
+    ];
+    createAdminMock.mockReturnValueOnce(buildSupabase(pending, null));
+    postRoundTriggerMock.mockResolvedValueOnce({ success: false, error: 'team disabled coachhelm' });
 
     const res = await GET(
       new Request('http://x/api/cron/coachhelm-safety-net', {

@@ -24,7 +24,7 @@ WITH clusters AS (
     title,
     event_type,
     recurrence_rule,
-    MIN(id) AS root_id
+    (ARRAY_AGG(id ORDER BY start_time ASC, created_at ASC, id ASC))[1] AS root_id
   FROM public.golf_events
   WHERE recurrence_rule IS NOT NULL
     AND parent_event_id IS NULL

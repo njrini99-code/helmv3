@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';
+import type { ComponentProps } from 'react';
 
 // Cleanup after each test
 afterEach(() => {
@@ -27,6 +28,27 @@ vi.mock('next/image', () => ({
   default: ({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) => {
     return <img src={src} alt={alt} {...props} />;
   },
+}));
+
+// NumberFlow relies on browser animation internals that jsdom does not fully
+// implement. Tests only need the rendered value, not the digit transition.
+vi.mock('@number-flow/react', () => ({
+  default: ({
+    value,
+    prefix = '',
+    suffix = '',
+    className,
+  }: ComponentProps<'span'> & {
+    value: number;
+    prefix?: string;
+    suffix?: string;
+  }) => (
+    <span className={className}>
+      {prefix}
+      {value}
+      {suffix}
+    </span>
+  ),
 }));
 
 // Mock window.matchMedia

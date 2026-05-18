@@ -224,7 +224,7 @@ class CoachHelmIntelligence {
       }
     }
     // generatorSummary is attached to the analyzePlayer return below so the
-    // analyze-player route can flip 200 → 5xx on any failure (Q-NEW-6).
+    // post-round trigger and analyze-player route can surface partial failures.
     const generatorSummary = { successes: tier1Successes, failures: tier1Failures };
 
     // Extract features for the legacy pipeline
