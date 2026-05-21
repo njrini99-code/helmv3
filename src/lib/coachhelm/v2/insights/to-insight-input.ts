@@ -81,7 +81,7 @@ function stableSignature(record: InsightRecordForUpsert, category: InsightCatego
   return `${scope}:${record.insight_type}:${category}:${suffix}`;
 }
 
-function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory): InsightEvidence {
+function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory): InsightEvidence | null {
   const metadata = record.metadata ?? {};
   const now = new Date();
   const windowEnd = now.toISOString();
@@ -91,7 +91,17 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
     ?? numberValue(metadata.sampleSize)
     ?? numberValue(metadata.occurrence_count)
     ?? numberValue(metadata.support);
-  const sampleN = Math.max(MIN_SAMPLE_N, Math.round(support ?? MIN_SAMPLE_N));
+
+  // 2026-05-17: closes audit Q-NEW-1 / A-NEW-3. The previous behavior clamped
+  // sample_n UP to MIN_SAMPLE_N to satisfy upsertInsight's floor — a pattern
+  // with one real observation became an insight claiming sample_n=5. Now we
+  // refuse to emit instead of inflating; upsertInsight rejects on its own.
+  const supportRounded = support !== null && support !== undefined ? Math.round(support) : null;
+  if (supportRounded === null || supportRounded < MIN_SAMPLE_N) {
+    return null;
+  }
+  const sampleN = supportRounded;
+
   const unit = evidenceUnit(metadata);
   const strokeImpact = Math.abs(
     numberValue(metadata.stroke_impact)
@@ -102,9 +112,23 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
   const yourValue = unit === 'percent'
     ? confidence
     : strokeImpact;
-  const comparisonValue = unit === 'percent'
-    ? Math.max(0.01, Math.min(1, confidence * 0.9))
-    : Math.max(0.01, yourValue * 0.9);
+
+  // 2026-05-17: closes audit Q-NEW-1. Comparison values must come from a real
+  // baseline (BaselineRegistry or a team-aggregate query), not be fabricated
+  // as `confidence * 0.9`. If the legacy record provides them, pass through;
+  // otherwise emit a neutral "no baseline available" comparison against the
+  // player's own value so the UI shows a 0-gap rather than a misleading
+  // 10% gap against a fake baseline.
+  const providedComparisonValue = numberValue(metadata.comparison_value);
+  const providedComparisonLabel = typeof metadata.comparison_label === 'string'
+    ? metadata.comparison_label
+    : null;
+  const providedComparisonSource = typeof metadata.comparison_source === 'string'
+    ? (metadata.comparison_source as InsightEvidence['comparison_source'])
+    : null;
+  const comparisonValue = providedComparisonValue ?? yourValue;
+  const comparisonLabel = providedComparisonLabel ?? 'No baseline available';
+  const comparisonSource: InsightEvidence['comparison_source'] = providedComparisonSource ?? 'your_baseline';
 
   return {
     metric: `${record.insight_type}_${category}`,
@@ -113,8 +137,8 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
     your_value: yourValue,
     your_value_display: valueDisplay(yourValue, unit),
     comparison_value: comparisonValue,
-    comparison_label: record.player_id ? 'Recent baseline' : 'Team baseline',
-    comparison_source: record.player_id ? 'your_baseline' : 'team_avg',
+    comparison_label: comparisonLabel,
+    comparison_source: comparisonSource,
     sample_n: sampleN,
     window_days: DEFAULT_WINDOW_DAYS,
     window_start: windowStart,
@@ -136,8 +160,20 @@ function buildEvidence(record: InsightRecordForUpsert, category: InsightCategory
   };
 }
 
-export function toInsightInput(record: InsightRecordForUpsert): InsightInput {
+/**
+ * @deprecated Legacy v1 → v2 adapter. Native generators construct
+ * {@link InsightInput} directly. Returns `null` when the legacy record lacks
+ * sufficient sample_n — callers must skip + log instead of upserting.
+ *
+ * The pre-2026-05-17 behavior clamped sample_n UP to MIN_SAMPLE_N and
+ * fabricated a comparison_value at 0.9× the player's own value. That
+ * corrupted the evidence contract (audit findings Q-NEW-1 / A-NEW-3). The
+ * function now refuses to emit when data is insufficient.
+ */
+export function toInsightInput(record: InsightRecordForUpsert): InsightInput | null {
   const category = categoryFor(record);
+  const evidence = buildEvidence(record, category);
+  if (evidence === null) return null;
   return {
     player_id: record.player_id,
     coach_id: record.coach_id,
@@ -147,7 +183,7 @@ export function toInsightInput(record: InsightRecordForUpsert): InsightInput {
     signature: stableSignature(record, category),
     title: record.title,
     content: record.content,
-    evidence: buildEvidence(record, category),
+    evidence,
     metadata: {
       ...record.metadata,
       v2_adapter: true,

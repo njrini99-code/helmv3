@@ -182,19 +182,50 @@ class CoachHelmIntelligence {
     // These read directly from raw tables and don't depend on the legacy
     // feature extraction. Run them first so they fire even when the legacy
     // pipeline can't produce features for a player. Persisted via
-    // `upsertInsight` with dedup/lifecycle. Errors are logged inside the
-    // generators — we never let them break analyzePlayer.
-    await Promise.allSettled([
-      generatePuttDistanceInsights(playerId),
-      generatePuttMissBiasInsights(playerId),
-      generateApproachMissInsights(playerId),
-      generateScramblingInsights(playerId),
-      generateTeeStrategyInsights(playerId),
-      generateParTypeInsights(playerId),
-      generateWorstHolesInsights(playerId),
-      generateWarmupHoleInsight(playerId),
-      generatePressureGapInsight(playerId),
-    ]);
+    // `upsertInsight` with dedup/lifecycle.
+    //
+    // 2026-05-17: closes audit Q-NEW-5. The previous code awaited
+    // Promise.allSettled with no capture, so a throwing generator was
+    // silently ignored unless the generator's own catch path called
+    // logServerError. Now we capture the settled array, route every rejected
+    // reason through logServerError with generator + player context, and
+    // accumulate a per-generator summary that flows out via the analyze-player
+    // route response.
+    const tier1Generators: Array<{ name: string; fn: () => Promise<unknown> }> = [
+      { name: 'puttDistance', fn: () => generatePuttDistanceInsights(playerId) },
+      { name: 'puttMissBias', fn: () => generatePuttMissBiasInsights(playerId) },
+      { name: 'approachMiss', fn: () => generateApproachMissInsights(playerId) },
+      { name: 'scrambling', fn: () => generateScramblingInsights(playerId) },
+      { name: 'teeStrategy', fn: () => generateTeeStrategyInsights(playerId) },
+      { name: 'parType', fn: () => generateParTypeInsights(playerId) },
+      { name: 'worstHoles', fn: () => generateWorstHolesInsights(playerId) },
+      { name: 'warmupHole', fn: () => generateWarmupHoleInsight(playerId) },
+      { name: 'pressureGap', fn: () => generatePressureGapInsight(playerId) },
+    ];
+    const tier1Settled = await Promise.allSettled(tier1Generators.map((g) => g.fn()));
+    const tier1Successes: string[] = [];
+    const tier1Failures: Array<{ generator: string; reason: string }> = [];
+    for (let i = 0; i < tier1Settled.length; i++) {
+      const result = tier1Settled[i];
+      const generator = tier1Generators[i]!.name;
+      if (!result) continue;
+      if (result.status === 'rejected') {
+        const r = (result as PromiseRejectedResult).reason as unknown;
+        const reason = r instanceof Error ? r.message : String(r);
+        tier1Failures.push({ generator, reason });
+        await logServerError(`tier-1 generator '${generator}' rejected: ${reason}`, {
+          action: 'analyzePlayer.tier1Generator',
+          featureArea: 'coachhelm',
+          playerId,
+          extra: { generator, reason },
+        });
+      } else {
+        tier1Successes.push(generator);
+      }
+    }
+    // generatorSummary is attached to the analyzePlayer return below so the
+    // analyze-player route can flip 200 → 5xx on any failure (Q-NEW-6).
+    const generatorSummary = { successes: tier1Successes, failures: tier1Failures };
 
     // Extract features for the legacy pipeline
     const features = await extractAllFeatures(playerId);
@@ -357,6 +388,7 @@ class CoachHelmIntelligence {
       trendAnalysis,
       anomalies,
       streaks,
+      generatorSummary,
     };
   }
 

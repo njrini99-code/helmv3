@@ -79,6 +79,11 @@ export async function upsertInsight(
     Date.now() - DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
+  // 2026-05-17: dedup is now scoped to (signature, player_id, coach_id,
+  // team_id) — closes audit S-HIGH-1 / Q-NEW-2 / Q-NEW-3. The previous
+  // dedup keyed only on (signature, player_id), which allowed coach B at
+  // org Y to silently overwrite an insight authored by coach A at org X
+  // when they share a player (transferred athlete, multi-team setup).
   let lookup = supabase
     .from('golf_coach_insights')
     .select('id, evidence, metadata, lifecycle_state')
@@ -87,6 +92,12 @@ export async function upsertInsight(
   lookup = input.player_id === null
     ? lookup.is('player_id', null)
     : lookup.eq('player_id', input.player_id);
+  lookup = input.coach_id === null || input.coach_id === undefined
+    ? lookup.is('coach_id', null)
+    : lookup.eq('coach_id', input.coach_id);
+  lookup = input.team_id === null || input.team_id === undefined
+    ? lookup.is('team_id', null)
+    : lookup.eq('team_id', input.team_id);
   const { data: existingRows, error: lookupError } = await lookup
     .order('created_at', { ascending: false })
     .limit(1);

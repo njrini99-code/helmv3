@@ -17,7 +17,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '@/lib/coachhelm/v2/insights/upsert';
-import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightEvidence, BaselineKey } from '@/lib/coachhelm/v2/insights/types';
+import { baselineRegistry } from '@/lib/coachhelm/v2/insights/baseline-registry';
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 
 // ---------------------------------------------------------------------------
@@ -387,7 +388,9 @@ export async function generatePuttDistanceInsights(
       continue;
     }
 
-    const baseline = D2_BASELINE[agg.label];
+    const baselineKey: BaselineKey = `d2_avg.putting_make_pct_${agg.label}`;
+    const baselineEntry = baselineRegistry.get(baselineKey);
+    const baseline = baselineEntry.value;
     const gap = baseline - agg.makePct;
     if (Math.abs(gap) < MIN_GAP_FRACTION) continue;
 
@@ -416,9 +419,13 @@ export async function generatePuttDistanceInsights(
       unit: 'percent',
       your_value: agg.makePct,
       your_value_display: `${Math.round(agg.makePct * 100)}%`,
-      comparison_value: baseline,
-      comparison_label: 'PGA Tour avg',
-      comparison_source: 'pga_baseline',
+      // 2026-05-17: closes audit Finding 1. The previous emit read the value
+      // from D2_BASELINE but labeled it 'PGA Tour avg' / 'pga_baseline'.
+      // BaselineRegistry now provides (source, label, value) as one triple
+      // so they cannot disagree.
+      comparison_value: baselineEntry.value,
+      comparison_label: baselineEntry.label,
+      comparison_source: baselineEntry.source,
       sample_n: agg.attempts,
       window_days: DISTANCE_WINDOW_DAYS,
       window_start: windowStart,

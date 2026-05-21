@@ -110,7 +110,6 @@ const SOURCE_LABELS: Record<InsightEvidence['comparison_source'], string> = {
   juco_avg: 'JUCO average',
   your_baseline: 'Your baseline',
   team_avg: 'Team average',
-  peer_percentile: 'Peer percentile',
   pga_baseline: 'PGA baseline',
   absolute_target: 'Target',
 };
@@ -195,12 +194,12 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     <div className="space-y-2" data-testid="evidence-benchmark-scale">
       <div className="relative h-7">
         {/* Axis */}
-        <div className="absolute left-0 right-0 top-1/2 -tranwarm-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-warm-200/80 via-warm-200 to-warm-200/80" />
+        <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-[3px] rounded-full bg-gradient-to-r from-warm-200/80 via-warm-200 to-warm-200/80" />
         {positions.map((p, i) => (
           <span
             key={`${p.role}-${i}`}
             className={cn(
-              'absolute top-1/2 -tranwarm-y-1/2 -tranwarm-x-1/2',
+              'absolute top-1/2 -translate-y-1/2 -translate-x-1/2',
               'w-3 h-3 rounded-full',
               'shadow-[0_1px_3px_rgba(16,24,40,0.18)]',
               p.role === 'you' && youColor,
