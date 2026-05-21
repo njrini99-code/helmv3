@@ -71,7 +71,7 @@ CREATE POLICY "golf_task_templates_select_players"
 ON golf_task_templates FOR SELECT TO authenticated
 USING (
   team_id IN (
-    SELECT team_id FROM golf_team_members gtm
+    SELECT gtm.team_id FROM golf_team_members gtm
     JOIN golf_players gp ON gp.id = gtm.player_id
     WHERE gp.user_id = auth.uid()
   )
