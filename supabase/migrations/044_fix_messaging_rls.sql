@@ -20,11 +20,11 @@ DROP POLICY IF EXISTS "golf_participants_insert_own" ON golf_conversation_partic
 CREATE POLICY "golf_participants_insert_by_creator"
 ON golf_conversation_participants FOR INSERT TO authenticated
 WITH CHECK (
-  user_id = auth.uid()
+  user_id = auth.uid()::uuid
   OR EXISTS (
     SELECT 1 FROM golf_conversations
     WHERE id = conversation_id
-    AND created_by = auth.uid()
+    AND created_by = auth.uid()::uuid
   )
 );
 
@@ -32,8 +32,8 @@ WITH CHECK (
 DROP POLICY IF EXISTS "golf_participants_update_own" ON golf_conversation_participants;
 CREATE POLICY "golf_participants_update_own"
 ON golf_conversation_participants FOR UPDATE TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+USING (user_id = auth.uid()::uuid)
+WITH CHECK (user_id = auth.uid()::uuid);
 
 -- Fix SELECT policy to see all participants in conversations user is part of
 DROP POLICY IF EXISTS "golf_participants_select_own" ON golf_conversation_participants;
@@ -41,7 +41,7 @@ CREATE POLICY "golf_participants_select_in_conversation"
 ON golf_conversation_participants FOR SELECT TO authenticated
 USING (
   conversation_id IN (
-    SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid()
+    SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid()::uuid
   )
 );
 
@@ -55,11 +55,11 @@ CREATE POLICY "golf_messages_update_read"
 ON golf_messages FOR UPDATE TO authenticated
 USING (
   -- User must be a participant in the conversation
-  conversation_id IN (SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid())
+  conversation_id IN (SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid()::uuid)
 )
 WITH CHECK (
   -- User must be a participant in the conversation
-  conversation_id IN (SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid())
+  conversation_id IN (SELECT conversation_id FROM golf_conversation_participants WHERE user_id = auth.uid()::uuid)
 );
 
 -- ============================================================================
@@ -75,11 +75,11 @@ DROP POLICY IF EXISTS "baseball_participants_insert_own" ON baseball_conversatio
 CREATE POLICY "baseball_participants_insert_by_creator"
 ON baseball_conversation_participants FOR INSERT TO authenticated
 WITH CHECK (
-  user_id = auth.uid()
+  user_id = auth.uid()::uuid
   OR EXISTS (
     SELECT 1 FROM baseball_conversations
     WHERE id = conversation_id
-    AND created_by = auth.uid()
+    AND created_by = auth.uid()::uuid
   )
 );
 
@@ -87,8 +87,8 @@ WITH CHECK (
 DROP POLICY IF EXISTS "baseball_participants_update_own" ON baseball_conversation_participants;
 CREATE POLICY "baseball_participants_update_own"
 ON baseball_conversation_participants FOR UPDATE TO authenticated
-USING (user_id = auth.uid())
-WITH CHECK (user_id = auth.uid());
+USING (user_id = auth.uid()::uuid)
+WITH CHECK (user_id = auth.uid()::uuid);
 
 -- Fix SELECT policy to see all participants in conversations user is part of
 DROP POLICY IF EXISTS "baseball_participants_select_own" ON baseball_conversation_participants;
@@ -96,7 +96,7 @@ CREATE POLICY "baseball_participants_select_in_conversation"
 ON baseball_conversation_participants FOR SELECT TO authenticated
 USING (
   conversation_id IN (
-    SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid()
+    SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid()::uuid
   )
 );
 
@@ -110,11 +110,11 @@ CREATE POLICY "baseball_messages_update_read"
 ON baseball_messages FOR UPDATE TO authenticated
 USING (
   -- User must be a participant in the conversation
-  conversation_id IN (SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid())
+  conversation_id IN (SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid()::uuid)
 )
 WITH CHECK (
   -- User must be a participant in the conversation
-  conversation_id IN (SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid())
+  conversation_id IN (SELECT conversation_id FROM baseball_conversation_participants WHERE user_id = auth.uid()::uuid)
 );
 
 -- ============================================================================
