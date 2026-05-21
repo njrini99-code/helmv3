@@ -41,6 +41,21 @@ END $$;
 -- is added in 049_enum_value_additions.sql — must be in a separate
 -- transaction from any reference to it per Postgres 55P04.)
 
+-- 024_golf_qualifiers.sql created golf_qualifier_entries.total_score; prod
+-- renamed it to `score`. Apply rename defensively for the leaderboard index.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_qualifier_entries' AND column_name = 'total_score'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_qualifier_entries' AND column_name = 'score'
+  ) THEN
+    ALTER TABLE golf_qualifier_entries RENAME COLUMN total_score TO score;
+  END IF;
+END $$;
+
 -- ============================================================================
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
