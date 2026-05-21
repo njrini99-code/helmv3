@@ -21,6 +21,22 @@
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
 
+-- 021_golf_rounds.sql created the column as `round_status` (golf_round_status
+-- enum). Production renamed it to `status`. Apply the rename here defensively
+-- so the indexes below resolve on clean CI DBs.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_rounds' AND column_name = 'round_status'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_rounds' AND column_name = 'status'
+  ) THEN
+    ALTER TABLE golf_rounds RENAME COLUMN round_status TO status;
+  END IF;
+END $$;
+
 -- Primary composite index: player_id + status + round_date DESC
 -- Covers: Stats page queries, round history, completed rounds listing
 -- Example queries:
