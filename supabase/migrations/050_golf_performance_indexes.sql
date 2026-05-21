@@ -37,11 +37,9 @@ BEGIN
   END IF;
 END $$;
 
--- Indexes below reference 'scheduled' for events/qualifiers but the original
--- enums (001_extensions_and_enums.sql, 030_golf_calendar.sql) don't include
--- that value. Add it idempotently — prod already has these values.
-ALTER TYPE golf_event_status ADD VALUE IF NOT EXISTS 'scheduled';
-ALTER TYPE golf_qualifier_status ADD VALUE IF NOT EXISTS 'scheduled';
+-- (The 'scheduled' enum value for golf_event_status and golf_qualifier_status
+-- is added in 049_enum_value_additions.sql — must be in a separate
+-- transaction from any reference to it per Postgres 55P04.)
 
 -- ============================================================================
 -- GOLF_ROUNDS COMPOSITE INDEXES
