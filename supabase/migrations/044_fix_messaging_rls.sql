@@ -79,7 +79,7 @@ WITH CHECK (
   OR EXISTS (
     SELECT 1 FROM baseball_conversations
     WHERE id = conversation_id
-    AND created_by = auth.uid()::uuid
+    AND created_by = auth.uid()::text  -- baseball_conversations.created_by is TEXT (042); golf is UUID
   )
 );
 
