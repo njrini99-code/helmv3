@@ -19,6 +19,7 @@ import { DrillSheet } from '@/components/golf/coachhelm/insight-card/DrillSheet'
 vi.mock('framer-motion', async () => {
   const React = await import('react');
   return {
+    useReducedMotion: () => false,
     m: new Proxy(
       {},
       {

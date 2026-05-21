@@ -11,6 +11,7 @@ Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scro
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
+  useReducedMotion: () => false,
   m: {
     div: ({
       children,
