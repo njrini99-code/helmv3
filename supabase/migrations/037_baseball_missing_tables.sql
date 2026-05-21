@@ -4,6 +4,33 @@
 -- ============================================================================
 -- 1. baseball_team_invitations - Team join invite links
 -- ============================================================================
+
+-- Reconciliation: migration 036 renamed legacy `team_invitations` to
+-- `baseball_team_invitations` but kept the legacy column names from
+-- 006_teams.sql. Align them with the new schema so `CREATE TABLE IF NOT EXISTS`
+-- becomes a no-op with the correct shape and downstream DDL succeeds.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'baseball_team_invitations'
+  ) THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name = 'baseball_team_invitations' AND column_name = 'invite_code') THEN
+      ALTER TABLE baseball_team_invitations RENAME COLUMN invite_code TO code;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name = 'baseball_team_invitations' AND column_name = 'created_by') THEN
+      ALTER TABLE baseball_team_invitations RENAME COLUMN created_by TO created_by_coach_id;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns
+               WHERE table_name = 'baseball_team_invitations' AND column_name = 'current_uses') THEN
+      ALTER TABLE baseball_team_invitations RENAME COLUMN current_uses TO used_count;
+    END IF;
+    ALTER TABLE baseball_team_invitations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS baseball_team_invitations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   team_id UUID NOT NULL REFERENCES baseball_teams(id) ON DELETE CASCADE,

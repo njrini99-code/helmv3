@@ -18,6 +18,7 @@ import { RoundTakeaway } from '@/components/golf/coachhelm/round-review/RoundTak
 vi.mock('framer-motion', async () => {
   const React = await import('react');
   return {
+    useReducedMotion: () => false,
     m: new Proxy(
       {},
       {
