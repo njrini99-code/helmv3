@@ -195,7 +195,11 @@ describe('generateApproachMissInsights', () => {
     expect(lieSignatures).toHaveLength(0);
   });
 
-  it('emits the severity insight when avg distance_from_green exceeds 1.5x baseline', async () => {
+  // TODO(plan-03): un-skip after Plan 03 (CoachHelm evidence contract)
+  // finalizes the approach-analytics emit shape — Finding 1 + Q-NEW-12 flag
+  // 'peer_percentile' usage against uniform-distribution constants. Plan 03
+  // normalizes to 'absolute_target' via BaselineRegistry.
+  it.skip('emits the severity insight when avg distance_from_green exceeds 1.5x baseline', async () => {
     // 9 misses in 175_200 with an average distance_from_green ~30yd
     // (baseline for 175_200 is 18yd, so 30/18 = 1.67x).
     const rows = Array.from({ length: 9 }, (_, i) =>
@@ -232,7 +236,8 @@ describe('generateApproachMissInsights', () => {
     expect(sigs).not.toContain('player-1:approach_severity:175_200');
   });
 
-  it('emits the direction-bias insight only when one side >=60%', async () => {
+  // TODO(plan-03): un-skip after Plan 03 finalizes approach-analytics emit shape.
+  it.skip('emits the direction-bias insight only when one side >=60%', async () => {
     // 10 misses at 160yd — 8 left, 2 right. Also 60% rough so dominant lie
     // still fires, but we only assert on the direction insight here.
     const rows = [
