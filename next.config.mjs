@@ -5,17 +5,24 @@ import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
-const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
-const hasLocalStorageOption = existingNodeOptions.includes('--localstorage-file');
-const hasLocalStorageValue = /--localstorage-file=\S+/.test(existingNodeOptions);
 
-if (hasLocalStorageOption && !hasLocalStorageValue) {
-  process.env.NODE_OPTIONS = existingNodeOptions
-    .replace(/--localstorage-file(=\S+)?/, localStorageOption)
-    .trim();
-} else if (!hasLocalStorageOption) {
-  process.env.NODE_OPTIONS = `${existingNodeOptions} ${localStorageOption}`.trim();
+// `--localstorage-file=` is a Bun-only flag (https://bun.com/docs/runtime/web-apis#localstorage).
+// Node 20 rejects it from NODE_OPTIONS and exits 9 in subprocesses (Next.js
+// type-check worker), which has been breaking CI's `npm run build` step.
+// Only inject the flag when actually running under Bun.
+if (process.versions.bun) {
+  const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
+  const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
+  const hasLocalStorageOption = existingNodeOptions.includes('--localstorage-file');
+  const hasLocalStorageValue = /--localstorage-file=\S+/.test(existingNodeOptions);
+
+  if (hasLocalStorageOption && !hasLocalStorageValue) {
+    process.env.NODE_OPTIONS = existingNodeOptions
+      .replace(/--localstorage-file(=\S+)?/, localStorageOption)
+      .trim();
+  } else if (!hasLocalStorageOption) {
+    process.env.NODE_OPTIONS = `${existingNodeOptions} ${localStorageOption}`.trim();
+  }
 }
 
 const withBundleAnalyzer = bundleAnalyzer({

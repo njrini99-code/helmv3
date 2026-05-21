@@ -26,16 +26,35 @@ COMMENT ON COLUMN golf_shots.miss_direction IS 'left | right | short | long - fo
 -- Add updated_at for data integrity if not exists
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
--- Migrate existing distance_unit data to new columns if needed
-UPDATE golf_shots
-SET distance_unit_before = COALESCE(distance_unit, 'yards'),
-    distance_unit_after = COALESCE(distance_unit, 'yards')
-WHERE distance_unit_before IS NULL OR distance_unit_after IS NULL;
+-- Migrate existing distance_unit data to new columns if needed.
+-- On clean DBs the legacy `distance_unit` column never existed, so guard the
+-- UPDATE behind an information_schema check to keep this migration replay-safe.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_shots' AND column_name = 'distance_unit'
+  ) THEN
+    UPDATE golf_shots
+    SET distance_unit_before = COALESCE(distance_unit, 'yards'),
+        distance_unit_after = COALESCE(distance_unit, 'yards')
+    WHERE distance_unit_before IS NULL OR distance_unit_after IS NULL;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 2. Add CHECK constraints for enum validation
 -- These ensure data integrity matches the TypeScript types in RawShot interface
 -- ============================================================================
+
+-- Ensure the constrained columns exist before adding CHECK constraints / indexes.
+-- These columns may have been created via canonical_rls_snapshot or hand-edits
+-- in production but are absent on clean CI DBs.
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS shot_type TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS club_type TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_before TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS result TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS putt_break TEXT;
 
 -- shot_type: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty'
 ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_shot_type_check;
