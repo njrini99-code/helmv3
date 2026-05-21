@@ -46,6 +46,7 @@ vi.mock('framer-motion', async () => {
     ),
   );
   return {
+    useReducedMotion: () => false,
     motion: { div: _mockDiv, span: _mockSpan },
     m: { div: _mockDiv, span: _mockSpan },
     useSpring: () => ({ set: vi.fn() }),

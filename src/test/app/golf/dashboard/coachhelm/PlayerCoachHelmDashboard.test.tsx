@@ -22,6 +22,7 @@ import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 vi.mock('framer-motion', async () => {
   const React = await import('react');
   return {
+    useReducedMotion: () => false,
     m: new Proxy(
       {},
       {
