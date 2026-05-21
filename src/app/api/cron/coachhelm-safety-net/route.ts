@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   const { data: rounds, error } = await (supabase as any)
     .from('golf_rounds')
     .select('id, player_id, created_at')
-    .eq('round_status', 'completed')
+    .eq('status', 'completed')
     .is('coachhelm_analyzed_at', null)
     .is('coachhelm_failed_at', null)
     .gte('created_at', sinceIso)
@@ -91,13 +91,18 @@ export async function GET(req: NextRequest) {
     );
     for (let j = 0; j < settled.length; j++) {
       const result = settled[j]!;
-      if (result.status === 'fulfilled') {
+      if (result.status === 'fulfilled' && result.value.success) {
         recovered++;
       } else {
         failed++;
         const round = chunk[j]!;
+        const reason = result.status === 'fulfilled'
+          ? result.value.error
+          : result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason);
         await logServerError(
-          `cron.safetyNet.postRoundTrigger rejected: ${result.reason instanceof Error ? result.reason.message : String(result.reason)}`,
+          `cron.safetyNet.postRoundTrigger failed: ${reason ?? 'unknown failure'}`,
           {
             action: 'cron.coachhelm.safetyNet.postRoundTrigger',
             featureArea: 'coachhelm',

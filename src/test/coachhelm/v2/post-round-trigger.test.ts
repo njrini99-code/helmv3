@@ -18,7 +18,7 @@ describe('postRoundTrigger', () => {
     const admin = createFakeSupabase({
       tables: {
         golf_rounds: [
-          { id: 'r1', player_id: 'p1', round_status: 'completed', coachhelm_analyzed_at: null },
+          { id: 'r1', player_id: 'p1', status: 'completed', coachhelm_analyzed_at: null },
         ],
       },
     });

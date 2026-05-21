@@ -33,7 +33,7 @@ export interface PostRoundTriggerArgs {
 export async function postRoundTrigger(
   admin: SupabaseClient,
   args: PostRoundTriggerArgs,
-): Promise<void> {
+): Promise<{ success: boolean; error?: string }> {
   const now = new Date().toISOString();
   try {
     const result = await triggerPlayerInsightsAfterRound(args.playerId);
@@ -53,7 +53,7 @@ export async function postRoundTrigger(
         playerId: args.playerId,
         extra: { roundId: args.roundId, triggerReason: args.triggerReason ?? 'round_submitted' },
       });
-      return;
+      return { success: false, error: reason };
     }
 
     await admin
@@ -64,6 +64,7 @@ export async function postRoundTrigger(
         coachhelm_failure_reason: null,
       })
       .eq('id', args.roundId);
+    return { success: true };
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     try {
@@ -88,5 +89,6 @@ export async function postRoundTrigger(
         stack: err instanceof Error ? err.stack : undefined,
       },
     });
+    return { success: false, error: reason };
   }
 }

@@ -44,6 +44,73 @@ CREATE TABLE IF NOT EXISTS baseball_team_invitations (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Fresh local resets rename the legacy team_invitations table in 036 before
+-- this migration runs, so CREATE TABLE IF NOT EXISTS can leave the legacy
+-- column names in place. Normalize that shape before indexes/RLS reference it.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'invite_code'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'code'
+  ) THEN
+    ALTER TABLE baseball_team_invitations RENAME COLUMN invite_code TO code;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'created_by'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'created_by_coach_id'
+  ) THEN
+    ALTER TABLE baseball_team_invitations RENAME COLUMN created_by TO created_by_coach_id;
+  END IF;
+
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'current_uses'
+  ) AND NOT EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'baseball_team_invitations'
+      AND column_name = 'used_count'
+  ) THEN
+    ALTER TABLE baseball_team_invitations RENAME COLUMN current_uses TO used_count;
+  END IF;
+END $$;
+
+ALTER TABLE baseball_team_invitations
+  ADD COLUMN IF NOT EXISTS code VARCHAR(8),
+  ADD COLUMN IF NOT EXISTS created_by_coach_id UUID REFERENCES baseball_coaches(id),
+  ADD COLUMN IF NOT EXISTS used_count INTEGER DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+UPDATE baseball_team_invitations
+SET code = upper(substr(replace(id::text, '-', ''), 1, 8))
+WHERE code IS NULL;
+
+ALTER TABLE baseball_team_invitations
+  ALTER COLUMN code SET NOT NULL;
+
 CREATE INDEX IF NOT EXISTS idx_baseball_team_invitations_team ON baseball_team_invitations(team_id);
 CREATE INDEX IF NOT EXISTS idx_baseball_team_invitations_code ON baseball_team_invitations(code);
 

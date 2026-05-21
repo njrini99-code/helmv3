@@ -154,6 +154,17 @@ CREATE TABLE IF NOT EXISTS golf_insight_generation_log (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Migration 031 creates an earlier version of this table without these
+-- analytics columns. Keep 039 replay-safe on fresh databases where the table
+-- already exists before this migration runs.
+ALTER TABLE golf_insight_generation_log
+  ADD COLUMN IF NOT EXISTS player_id UUID REFERENCES golf_players(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS insight_type TEXT,
+  ADD COLUMN IF NOT EXISTS rounds_analyzed INTEGER,
+  ADD COLUMN IF NOT EXISTS insights_generated INTEGER,
+  ADD COLUMN IF NOT EXISTS engine_version TEXT,
+  ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+
 CREATE INDEX IF NOT EXISTS idx_golf_insight_log_team ON golf_insight_generation_log(team_id);
 CREATE INDEX IF NOT EXISTS idx_golf_insight_log_created ON golf_insight_generation_log(created_at DESC);
 

@@ -1,9 +1,10 @@
 /**
  * Durable analyze-player endpoint.
  *
- * Called from `submitGolfRoundComprehensive` via `fetch(..., { keepalive: true })`
- * and from the safety-net cron. Runs the V2 engine for a single player and
- * persists any new insights via `triggerPlayerInsightsAfterRound`.
+ * Kept for manual/internal callers. Round submit and the safety-net cron now
+ * call `postRoundTrigger` directly so terminal state is written to the round.
+ * This route runs the V2 engine for a single player and persists any new
+ * insights via `triggerPlayerInsightsAfterRound`.
  *
  * Auth: requires `x-internal-secret: $COACHHELM_INTERNAL_SECRET` header.
  * Runtime: Node.js (Fluid Compute); maxDuration 300s so Vercel doesn't kill the

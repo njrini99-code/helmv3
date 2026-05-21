@@ -3205,6 +3205,16 @@ export async function triggerPlayerInsightsAfterRound(
       };
     }
 
+    if (analysis.generatorSummary?.failures?.length) {
+      const failedGenerators = analysis.generatorSummary.failures
+        .map((failure) => `${failure.generator}: ${failure.reason}`)
+        .join('; ');
+      return {
+        success: false,
+        error: `Tier-1 generator failure: ${failedGenerators}`,
+      };
+    }
+
     // Archive stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
