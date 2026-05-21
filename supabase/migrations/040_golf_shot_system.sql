@@ -50,6 +50,23 @@ END $$;
 -- Ensure the constrained columns exist before adding CHECK constraints / indexes.
 -- These columns may have been created via canonical_rls_snapshot or hand-edits
 -- in production but are absent on clean CI DBs.
+--
+-- `result` was originally defined in 021_golf_rounds.sql as the `golf_shot_result`
+-- enum (excellent/good/average/poor/miss). This migration redefines it as TEXT
+-- with lie-position semantics (fairway/rough/sand/green/hole/other/penalty), so
+-- drop the legacy enum column first if found. Destructive but intentional —
+-- production has already been migrated to the new schema.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'golf_shots'
+      AND column_name = 'result' AND udt_name = 'golf_shot_result'
+  ) THEN
+    ALTER TABLE golf_shots DROP COLUMN result CASCADE;
+  END IF;
+END $$;
+
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS shot_type TEXT;
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS club_type TEXT;
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_before TEXT;
