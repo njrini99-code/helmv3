@@ -18,7 +18,7 @@
 -- ============================================================================
 
 -- ============================================================================
--- GOLF_ROUNDS COMPOSITE INDEXES
+-- ENUM RECONCILIATION (for clean CI DBs)
 -- ============================================================================
 
 -- 021_golf_rounds.sql created the column as `round_status` (golf_round_status
@@ -36,6 +36,16 @@ BEGIN
     ALTER TABLE golf_rounds RENAME COLUMN round_status TO status;
   END IF;
 END $$;
+
+-- Indexes below reference 'scheduled' for events/qualifiers but the original
+-- enums (001_extensions_and_enums.sql, 030_golf_calendar.sql) don't include
+-- that value. Add it idempotently — prod already has these values.
+ALTER TYPE golf_event_status ADD VALUE IF NOT EXISTS 'scheduled';
+ALTER TYPE golf_qualifier_status ADD VALUE IF NOT EXISTS 'scheduled';
+
+-- ============================================================================
+-- GOLF_ROUNDS COMPOSITE INDEXES
+-- ============================================================================
 
 -- Primary composite index: player_id + status + round_date DESC
 -- Covers: Stats page queries, round history, completed rounds listing
