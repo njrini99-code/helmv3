@@ -357,14 +357,22 @@ export async function editRecurringEvent(
     switch (input.scope) {
       case 'this': {
         // Edit just this single event
-        const { error: updateError } = await supabase
+        // 2026-05-17: audit Q-NEW-7. .select('id') so we can count
+        // affected rows; return a real error when the scope filter
+        // matches nothing instead of returning success: true.
+        const { data: affected, error: updateError } = await supabase
           .from('golf_events')
           .update(updates)
-          .eq('id', input.eventId);
+          .eq('id', input.eventId)
+          .select('id');
 
         if (updateError) {
           await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to edit event occurrence. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`editRecurringEvent.this matched 0 rows for eventId=${input.eventId}`, { action: 'recurring_events.editRecurringEvent.zeroRows' });
+          return { success: false, error: 'No matching event was found to update.' };
         }
         break;
       }
@@ -387,11 +395,19 @@ export async function editRecurringEvent(
             .eq('event_type', targetEvent.event_type)
             .gte('start_time', input.originalStartDate);
         }
-        const { error: updateError } = await query;
+        // 2026-05-17: audit Q-NEW-7. Select + count.
+        const { data: affected, error: updateError } = await query.select('id');
 
         if (updateError) {
           await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to update future event occurrences. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`editRecurringEvent.thisAndFuture matched 0 rows`, {
+            action: 'recurring_events.editRecurringEvent.zeroRows',
+            extra: { eventId: input.eventId, rootId, fromDate: input.originalStartDate },
+          });
+          return { success: false, error: 'No matching future events were found to update.' };
         }
         break;
       }
@@ -408,11 +424,19 @@ export async function editRecurringEvent(
             .eq('title', targetEvent.title)
             .eq('event_type', targetEvent.event_type);
         }
-        const { error: updateError } = await query;
+        // 2026-05-17: audit Q-NEW-7. Select + count.
+        const { data: affected, error: updateError } = await query.select('id');
 
         if (updateError) {
           await logServerError(`[editRecurringEvent Error]: ${updateError instanceof Error ? updateError.message : String(updateError)}`, { action: 'recurring_events.editRecurringEvent' });
           return { success: false, error: 'Failed to update all event occurrences. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`editRecurringEvent.all matched 0 rows`, {
+            action: 'recurring_events.editRecurringEvent.zeroRows',
+            extra: { eventId: input.eventId, rootId },
+          });
+          return { success: false, error: 'No matching events were found to update.' };
         }
         break;
       }
@@ -475,14 +499,20 @@ export async function deleteRecurringEvent(
 
     switch (scope) {
       case 'this': {
-        const { error: deleteError } = await supabase
+        // 2026-05-17: audit Q-NEW-7. Select + count.
+        const { data: affected, error: deleteError } = await supabase
           .from('golf_events')
           .delete()
-          .eq('id', eventId);
+          .eq('id', eventId)
+          .select('id');
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event occurrence. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`deleteRecurringEvent.this matched 0 rows for eventId=${eventId}`, { action: 'recurring_events.deleteRecurringEvent.zeroRows' });
+          return { success: false, error: 'No matching event was found to delete.' };
         }
         break;
       }
@@ -501,11 +531,19 @@ export async function deleteRecurringEvent(
             .eq('event_type', targetEvent.event_type)
             .gte('start_time', originalStartDate);
         }
-        const { error: deleteError } = await query;
+        // 2026-05-17: audit Q-NEW-7. Select + count.
+        const { data: affected, error: deleteError } = await query.select('id');
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete future event occurrences. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`deleteRecurringEvent.thisAndFuture matched 0 rows`, {
+            action: 'recurring_events.deleteRecurringEvent.zeroRows',
+            extra: { eventId, rootId, fromDate: originalStartDate },
+          });
+          return { success: false, error: 'No matching future events were found to delete.' };
         }
         break;
       }
@@ -522,11 +560,19 @@ export async function deleteRecurringEvent(
             .eq('title', targetEvent.title)
             .eq('event_type', targetEvent.event_type);
         }
-        const { error: deleteError } = await query;
+        // 2026-05-17: audit Q-NEW-7. Select + count.
+        const { data: affected, error: deleteError } = await query.select('id');
 
         if (deleteError) {
           await logServerError(`[deleteRecurringEvent Error]: ${deleteError instanceof Error ? deleteError.message : String(deleteError)}`, { action: 'recurring_events.deleteRecurringEvent' });
           return { success: false, error: 'Failed to delete event series. Please try again.' };
+        }
+        if (!affected || affected.length === 0) {
+          await logServerError(`deleteRecurringEvent.all matched 0 rows`, {
+            action: 'recurring_events.deleteRecurringEvent.zeroRows',
+            extra: { eventId, rootId },
+          });
+          return { success: false, error: 'No matching events were found to delete.' };
         }
         break;
       }
