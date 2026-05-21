@@ -73,6 +73,12 @@ ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_before TEXT;
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS result TEXT;
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS putt_break TEXT;
 
+-- 021_golf_rounds.sql linked golf_shots to golf_holes via hole_id; this
+-- migration's indexes/queries assume a denormalized round_id + hole_number
+-- shape that prod uses. Add the columns as nullable so indexes can land.
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS round_id UUID REFERENCES golf_rounds(id) ON DELETE CASCADE;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS hole_number INTEGER;
+
 -- shot_type: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty'
 ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_shot_type_check;
 ALTER TABLE golf_shots ADD CONSTRAINT golf_shots_shot_type_check
