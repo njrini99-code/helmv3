@@ -13,6 +13,7 @@ import { HeroInsightCard } from '@/components/golf/coachhelm/insight-card/HeroIn
 vi.mock('framer-motion', async () => {
   const React = await import('react');
   return {
+    useReducedMotion: () => false,
     m: new Proxy(
       {},
       {

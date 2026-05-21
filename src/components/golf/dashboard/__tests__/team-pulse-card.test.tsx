@@ -7,6 +7,7 @@ import type { TeamPulseData } from '@/app/golf/actions/dashboard-data';
 // ---------------------------------------------------------------------------
 
 vi.mock('framer-motion', () => ({
+  useReducedMotion: () => false,
   m: {
     div: ({
       children,
