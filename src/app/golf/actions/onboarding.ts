@@ -2,6 +2,7 @@
 
 import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { revalidatePath } from 'next/cache';
@@ -174,8 +175,14 @@ export async function completeCoachOnboarding(input: CoachOnboardingInput) {
 
     createdTeamId = team.id;
 
-    // Step 4: Add coach to team staff (required for RLS policies)
-    const { error: staffError } = await supabase
+    // Step 4: Add coach to team staff (required for RLS policies).
+    // The new `golf_team_coach_staff_insert` policy (PR #16) requires the caller
+    // to already be a primary coach on the team, which the bootstrap coach
+    // obviously isn't yet. Use the admin client for this single bootstrap row;
+    // the user is already authenticated server-side and we just created the
+    // coach + team records they own.
+    const admin = createAdminClient();
+    const { error: staffError } = await admin
       .from('golf_team_coach_staff')
       .insert({
         team_id: team.id,
