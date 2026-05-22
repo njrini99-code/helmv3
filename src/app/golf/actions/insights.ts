@@ -3205,14 +3205,20 @@ export async function triggerPlayerInsightsAfterRound(
       };
     }
 
+    // Tier-1 generators run independently. If some fail, others may have still
+    // produced valid insights — short-circuiting here was marking the entire
+    // round permanently failed (postRoundTrigger writes coachhelm_failed_at,
+    // safety-net cron skips rounds where it's non-null) even when 8 of 9
+    // generators succeeded. Log the failures for observability, continue with
+    // whatever the orchestrator did emit.
     if (analysis.generatorSummary?.failures?.length) {
       const failedGenerators = analysis.generatorSummary.failures
         .map((failure) => `${failure.generator}: ${failure.reason}`)
         .join('; ');
-      return {
-        success: false,
-        error: `Tier-1 generator failure: ${failedGenerators}`,
-      };
+      await logServerError(
+        `[insights.triggerPlayerInsightsAfterRound] partial generator failures (continuing): ${failedGenerators}`,
+        { action: 'insights.triggerPlayerInsightsAfterRound', playerId }
+      );
     }
 
     // Archive stale V2 insights so post-round analysis can refresh them.
