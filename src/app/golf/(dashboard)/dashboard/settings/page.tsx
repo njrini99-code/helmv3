@@ -129,7 +129,7 @@ export default function GolfSettingsPage() {
         golfUser.teamId
           ? supabase
               .from('golf_teams')
-              .select('id, name, organization:golf_organizations(name)')
+              .select('id, name, organization:organizations(name)')
               .eq('id', golfUser.teamId)
               .maybeSingle()
           : Promise.resolve({ data: null }),
@@ -1332,7 +1332,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
         if (team.organization_id) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: org } = await (supabase as any)
-            .from('golf_organizations')
+            .from('organizations')
             .select('name, city, state, division, conference')
             .eq('id', team.organization_id)
             .maybeSingle();
@@ -1366,7 +1366,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       if (organizationId) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: orgError } = await (supabase as any)
-          .from('golf_organizations')
+          .from('organizations')
           .update({
             name: orgName.trim() || undefined,
             city: city.trim() || undefined,
