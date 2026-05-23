@@ -9565,6 +9565,9 @@ export type Database = {
           ai_recap: string | null
           ai_recap_generated_at: string | null
           back_nine: number | null
+          coachhelm_analyzed_at: string | null
+          coachhelm_failed_at: string | null
+          coachhelm_failure_reason: string | null
           course_city: string | null
           course_id: string | null
           course_name: string | null
@@ -9606,6 +9609,9 @@ export type Database = {
           ai_recap?: string | null
           ai_recap_generated_at?: string | null
           back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
           course_city?: string | null
           course_id?: string | null
           course_name?: string | null
@@ -9647,6 +9653,9 @@ export type Database = {
           ai_recap?: string | null
           ai_recap_generated_at?: string | null
           back_nine?: number | null
+          coachhelm_analyzed_at?: string | null
+          coachhelm_failed_at?: string | null
+          coachhelm_failure_reason?: string | null
           course_city?: string | null
           course_id?: string | null
           course_name?: string | null
@@ -11348,6 +11357,7 @@ export type Database = {
       }
       get_users_with_auth: { Args: never; Returns: Json }
       heartbeat: { Args: never; Returns: undefined }
+      hypopg_reset: { Args: never; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       is_baseball_primary_coach: {
         Args: { p_team_id: string }
@@ -11366,6 +11376,10 @@ export type Database = {
       is_baseball_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_coach: { Args: { team_uuid: string }; Returns: boolean }
       is_golf_team_player: { Args: { team_uuid: string }; Returns: boolean }
+      is_golf_team_primary_coach: {
+        Args: { team_uuid: string }
+        Returns: boolean
+      }
       is_user_on_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean

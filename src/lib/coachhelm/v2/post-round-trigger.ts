@@ -27,6 +27,71 @@ export interface PostRoundTriggerArgs {
 }
 
 /**
+ * Map raw engine error messages to a stable short code before persisting to
+ * golf_rounds.coachhelm_failure_reason. The player can SELECT their own
+ * golf_rounds row, so the persisted value must not leak Postgres error
+ * strings, internal table names, or stack-derived text. Verbose context
+ * always goes to logServerError below.
+ */
+type FailureCode =
+  | 'engine_timeout'
+  | 'engine_session_expired'
+  | 'engine_membership_missing'
+  | 'engine_disabled'
+  | 'engine_no_recent_rounds'
+  | 'engine_generator_failure'
+  | 'engine_error';
+
+function sanitizeFailureReason(reason: string): FailureCode {
+  const lower = reason.toLowerCase();
+  if (lower.includes('timeout') || lower.includes('timed out')) return 'engine_timeout';
+  if (lower.includes('session') && lower.includes('expired')) return 'engine_session_expired';
+  if (lower.includes('membership')) return 'engine_membership_missing';
+  if (lower.includes('disabled')) return 'engine_disabled';
+  if (lower.includes('no completed rounds')) return 'engine_no_recent_rounds';
+  if (lower.includes('generator failure') || lower.includes('tier-1')) return 'engine_generator_failure';
+  return 'engine_error';
+}
+
+/**
+ * Helper: write terminal state and report any RLS / row-count failures.
+ * Defeats the original PR #19 hardening if we silently lose the write.
+ */
+async function writeTerminalState(
+  admin: SupabaseClient,
+  roundId: string,
+  patch: Record<string, string | null>,
+  contextAction: string,
+): Promise<void> {
+  const { error, count } = await admin
+    .from('golf_rounds')
+    .update(patch, { count: 'exact' })
+    .eq('id', roundId);
+
+  if (error) {
+    await logServerError(
+      `[postRoundTrigger] terminal-state write failed: ${error.message}`,
+      {
+        action: contextAction,
+        featureArea: 'coachhelm',
+        extra: { roundId, errorCode: error.code },
+      },
+    );
+    return;
+  }
+  if (count === 0) {
+    await logServerError(
+      `[postRoundTrigger] terminal-state write affected 0 rows (RLS or missing round)`,
+      {
+        action: contextAction,
+        featureArea: 'coachhelm',
+        extra: { roundId },
+      },
+    );
+  }
+}
+
+/**
  * Run the CoachHelm engine for a single round and record terminal state on
  * `golf_rounds`. Never throws — fire-and-forget safe from `after()` callbacks.
  */
@@ -40,13 +105,15 @@ export async function postRoundTrigger(
 
     if (!result.success) {
       const reason = result.error ?? 'engine reported failure';
-      await admin
-        .from('golf_rounds')
-        .update({
+      await writeTerminalState(
+        admin,
+        args.roundId,
+        {
           coachhelm_failed_at: now,
-          coachhelm_failure_reason: reason.slice(0, 500),
-        })
-        .eq('id', args.roundId);
+          coachhelm_failure_reason: sanitizeFailureReason(reason),
+        },
+        'postRoundTrigger.engineFailure',
+      );
       await logServerError(`postRoundTrigger engine failed: ${reason}`, {
         action: 'postRoundTrigger.engineFailure',
         featureArea: 'coachhelm',
@@ -56,25 +123,29 @@ export async function postRoundTrigger(
       return { success: false, error: reason };
     }
 
-    await admin
-      .from('golf_rounds')
-      .update({
+    await writeTerminalState(
+      admin,
+      args.roundId,
+      {
         coachhelm_analyzed_at: now,
         coachhelm_failed_at: null,
         coachhelm_failure_reason: null,
-      })
-      .eq('id', args.roundId);
+      },
+      'postRoundTrigger.engineSuccess',
+    );
     return { success: true };
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     try {
-      await admin
-        .from('golf_rounds')
-        .update({
+      await writeTerminalState(
+        admin,
+        args.roundId,
+        {
           coachhelm_failed_at: now,
-          coachhelm_failure_reason: reason.slice(0, 500),
-        })
-        .eq('id', args.roundId);
+          coachhelm_failure_reason: sanitizeFailureReason(reason),
+        },
+        'postRoundTrigger.throw',
+      );
     } catch {
       // If even the state-column write fails, we've lost the signal; the
       // logServerError below still captures the original failure.
