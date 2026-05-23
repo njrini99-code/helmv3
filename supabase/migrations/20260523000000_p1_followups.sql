@@ -85,16 +85,23 @@ COMMENT ON POLICY golf_team_coach_staff_insert ON public.golf_team_coach_staff I
 -- golf_rounds_update has USING (player.user_id = auth.uid()) but no
 -- column-level GRANT restriction. Player can directly:
 --   1. UPDATE coachhelm_analyzed_at to suppress the safety-net cron forever
---   2. UPDATE player_id to reassign the round to another player
--- Revoke UPDATE on the protected columns from authenticated. The user
--- still updates legitimate user-editable columns (notes, weather, etc.)
--- via the existing table-level GRANT minus this set. service_role keeps
--- full UPDATE for triggers and admin paths.
-REVOKE UPDATE (
-  coachhelm_analyzed_at,
-  coachhelm_failed_at,
-  coachhelm_failure_reason,
-  player_id
-) ON public.golf_rounds FROM authenticated;
+--   2. UPDATE player_id / team_id to reassign the round
+-- Postgres column-level REVOKE has NO effect while a table-level UPDATE
+-- grant exists — must REVOKE the whole table grant first, then GRANT only
+-- the safe user-editable columns. service_role keeps full UPDATE for
+-- triggers and admin paths.
+REVOKE UPDATE ON public.golf_rounds FROM authenticated;
+
+GRANT UPDATE (
+  course_id, course_name, course_city, course_state, course_rating, course_slope, tees_played,
+  round_date, round_type, holes_played,
+  total_score, front_nine, back_nine, score_to_par,
+  status, current_hole,
+  total_putts, total_fairways_hit, total_fairways, total_gir, total_gir_possible,
+  weather_conditions, notes,
+  total_penalties,
+  draft_data,
+  updated_at
+) ON public.golf_rounds TO authenticated;
 
 GRANT UPDATE ON public.golf_rounds TO service_role;
