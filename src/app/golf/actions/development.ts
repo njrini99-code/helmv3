@@ -660,10 +660,22 @@ export async function createFocusAreaFromInsight(
     return { success: false, error: 'Not authorized to create focus areas' };
   }
 
+  // Verify coach has access to the target player (closes 2026-05-23 audit
+  // finding: function previously trusted caller-supplied player_id/coach_id,
+  // letting a coach forge focus areas against any player on any team).
+  const access = await verifyPlayerAccess(data.player_id, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Not authorized to create a focus area for this player' };
+  }
+
+  // Always derive coach_id from auth — never trust the caller-supplied value.
+  const coachId = coach.id;
+
   // Fetch the insight to get its metadata (live columns: metadata, content).
+  // Also fetch team_id so we can scope the acknowledge update below.
   const { data: insight, error: insightError } = await supabase
     .from('golf_coach_insights')
-    .select('metadata, content')
+    .select('metadata, content, team_id')
     .eq('id', data.insight_id)
     .single();
 
@@ -693,7 +705,7 @@ export async function createFocusAreaFromInsight(
     .from('golf_player_focus_areas')
     .insert({
       player_id: data.player_id,
-      coach_id: data.coach_id,
+      coach_id: coachId,
       area_type: areaType,
       title: data.title,
       description: finalDescription || null,
@@ -712,14 +724,17 @@ export async function createFocusAreaFromInsight(
     return { success: false, error: 'Failed to create focus area. Please try again.' };
   }
 
-  // Acknowledge the insight (mark as "acknowledged" since action was taken)
-  await supabase
+  // Acknowledge the insight (mark as "acknowledged" since action was taken).
+  // Scope by team_id from the fetched insight so a malformed insight_id
+  // can't be used to acknowledge an unrelated row.
+  const ackQuery = supabase
     .from('golf_coach_insights')
     .update({
       status: 'acknowledged',
       acknowledged_at: new Date().toISOString(),
     })
     .eq('id', data.insight_id);
+  await (insight?.team_id ? ackQuery.eq('team_id', insight.team_id) : ackQuery);
 
   revalidatePath('/golf/dashboard');
   revalidatePath('/golf/dashboard/development');

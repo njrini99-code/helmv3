@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyTeamAccess as sharedVerifyTeamAccess } from '@/lib/auth/verify-player-access';
 
@@ -479,20 +480,37 @@ export async function dismissInsight(
 
     const supabase = await createClient();
 
-    const { error } = await supabase
+    // Scope the UPDATE by team_id from verifyInsightAccess (closes 2026-05-23
+    // audit finding: sister acknowledgeInsight was hardened, this one was
+    // missed; a coach with a lenient org-scope insight access result could
+    // dismiss any insight in the org).
+    const teamId = access.insight?.team_id ?? null;
+    let updateQuery = supabase
       .from('golf_coach_insights')
       .update({
         dismissed: true,
         dismissed_at: new Date().toISOString(),
         status: 'dismissed',
+        lifecycle_state: 'archived',
         updated_at: new Date().toISOString(),
       })
       .eq('id', insightId);
+    if (teamId) {
+      updateQuery = updateQuery.eq('team_id', teamId);
+    }
+    const { error } = await updateQuery;
 
     if (error) {
       await logServerError(`Failed to dismiss insight: ${error instanceof Error ? error.message : String(error)}`, { action: 'intelligence_dashboard.dismissInsight' });
       return { success: false, error: 'Failed to dismiss insight' };
     }
+
+    // Stale-data fix: also revalidate insights + intelligence + alerts pages
+    // (previously only /golf/dashboard was busted).
+    revalidatePath('/golf/dashboard');
+    revalidatePath('/golf/dashboard/insights');
+    revalidatePath('/golf/dashboard/intelligence');
+    revalidatePath('/golf/dashboard/alerts');
 
     return { success: true };
   } catch (error) {
