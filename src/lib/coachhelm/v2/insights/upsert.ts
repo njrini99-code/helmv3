@@ -31,8 +31,17 @@ import type {
   InsightMovement,
 } from './types';
 import { calcConfidence } from './types';
+import { getActiveGate } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError } from '@/lib/server-error-logger';
+
+/**
+ * Sentinel returned by `upsertInsight` when an active philosophy gate
+ * decided the insight should not be written. Callers that need to know
+ * whether a write happened can check for this constant; existing callers
+ * that ignore the return value continue to work.
+ */
+export const GATED_OUT = '__gated_out__';
 
 const DEDUP_WINDOW_DAYS = 30;
 const MOVEMENT_THRESHOLD = 0.05; // 5%
@@ -71,6 +80,23 @@ export async function upsertInsight(
     ...input.evidence,
     confidence,
   };
+
+  // 2026-05-24 Wave 7B — philosophy gate (replaces Wave 6 post-filter).
+  // If the caller wrapped this in `runWithGate(...)`, honor it BEFORE we
+  // touch the DB so we don't create a row only to archive it later. The
+  // gate uses `insight_type ?? category` to match the same value upsert
+  // would otherwise persist (see `insertNew` below). Callers that don't
+  // opt in (no active gate) get the old unconditional behavior.
+  const gate = getActiveGate();
+  if (gate) {
+    const effectiveType = input.insight_type ?? input.category;
+    if (
+      confidence < gate.confidenceThreshold ||
+      !gate.isInsightTypeEnabled(effectiveType)
+    ) {
+      return GATED_OUT;
+    }
+  }
 
   // 2026-05-23: Resolve coach/team ownership BEFORE the dedup lookup so
   // Tier-1 generators (which call upsertInsight without coach_id/team_id)
