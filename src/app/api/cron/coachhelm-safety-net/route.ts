@@ -28,7 +28,13 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
-const LOOKBACK_MS = 24 * 60 * 60 * 1000;
+// Widened from 24h → 30d on 2026-05-23 to drain the 112 pre-existing
+// completed rounds stranded with NULL state columns. The partial index
+// added in migration 20260517010000 makes the wider scan cheap, and the
+// state-column filter (.is(analyzed_at, null).is(failed_at, null))
+// guarantees each round is only processed once, so the wider window
+// doesn't cause repeated work — just initial backfill drain.
+const LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const BATCH_LIMIT = 200;
 const CONCURRENCY = 5;
 

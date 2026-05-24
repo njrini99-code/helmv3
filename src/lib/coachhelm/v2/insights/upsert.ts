@@ -72,18 +72,32 @@ export async function upsertInsight(
     confidence,
   };
 
-  // Look up the most recent row with same (player_id, signature). The partial
-  // index predicate (30-day window) is enforced in code, not in SQL, because
-  // now() isn't IMMUTABLE.
+  // 2026-05-23: Resolve coach/team ownership BEFORE the dedup lookup so
+  // Tier-1 generators (which call upsertInsight without coach_id/team_id)
+  // can dedup against rows that resolvePlayerOwnership later attached
+  // those IDs to. Without this, every Tier-1 generator multiplied insights
+  // on every analyze run because the (..., null, null) lookup never
+  // matched the (..., realCoach, realTeam) row that was inserted last time.
+  // See audit P0-3 from the 2026-05-23 multi-agent review.
+  const ownership = (input.coach_id === undefined || input.coach_id === null
+                     || input.team_id === undefined || input.team_id === null)
+    ? (input.player_id ? await resolvePlayerOwnership(supabase, input.player_id) : { coachId: null, teamId: null })
+    : { coachId: input.coach_id, teamId: input.team_id };
+  const resolvedCoachId = input.coach_id ?? ownership.coachId;
+  const resolvedTeamId = input.team_id ?? ownership.teamId;
+
+  // Look up the most recent row with same (signature, player_id, coach_id,
+  // team_id). The partial index predicate (30-day window) is enforced in
+  // code, not in SQL, because now() isn't IMMUTABLE.
   const cutoff = new Date(
     Date.now() - DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  // 2026-05-17: dedup is now scoped to (signature, player_id, coach_id,
-  // team_id) — closes audit S-HIGH-1 / Q-NEW-2 / Q-NEW-3. The previous
-  // dedup keyed only on (signature, player_id), which allowed coach B at
-  // org Y to silently overwrite an insight authored by coach A at org X
-  // when they share a player (transferred athlete, multi-team setup).
+  // 2026-05-17: dedup is scoped to (signature, player_id, coach_id, team_id)
+  // — closes audit S-HIGH-1 / Q-NEW-2 / Q-NEW-3. The previous dedup keyed
+  // only on (signature, player_id), which allowed coach B at org Y to
+  // silently overwrite an insight authored by coach A at org X when they
+  // share a player (transferred athlete, multi-team setup).
   let lookup = supabase
     .from('golf_coach_insights')
     .select('id, evidence, metadata, lifecycle_state')
@@ -92,12 +106,12 @@ export async function upsertInsight(
   lookup = input.player_id === null
     ? lookup.is('player_id', null)
     : lookup.eq('player_id', input.player_id);
-  lookup = input.coach_id === null || input.coach_id === undefined
+  lookup = resolvedCoachId === null || resolvedCoachId === undefined
     ? lookup.is('coach_id', null)
-    : lookup.eq('coach_id', input.coach_id);
-  lookup = input.team_id === null || input.team_id === undefined
+    : lookup.eq('coach_id', resolvedCoachId);
+  lookup = resolvedTeamId === null || resolvedTeamId === undefined
     ? lookup.is('team_id', null)
-    : lookup.eq('team_id', input.team_id);
+    : lookup.eq('team_id', resolvedTeamId);
   const { data: existingRows, error: lookupError } = await lookup
     .order('created_at', { ascending: false })
     .limit(1);
@@ -112,7 +126,7 @@ export async function upsertInsight(
     return updateExisting(supabase, existing, input, evidence);
   }
 
-  return insertNew(supabase, input, evidence, confidence);
+  return insertNew(supabase, input, evidence, confidence, resolvedCoachId, resolvedTeamId);
 }
 
 async function updateExisting(
@@ -245,6 +259,8 @@ async function insertNew(
   input: InsightInput,
   evidence: InsightEvidence,
   confidence: number,
+  coachId: string | null,
+  teamId: string | null,
 ): Promise<string> {
   const lifecycleState: InsightLifecycleState =
     confidence < TENTATIVE_CONFIDENCE_FLOOR ? 'tentative' : 'detected';
@@ -254,20 +270,9 @@ async function insertNew(
     movement_count: 0,
   };
 
-  // Resolve the player's active team + a coach in that team's org. Without
-  // these the row lands with coach_id=NULL/team_id=NULL and the existing
-  // "Coaches can view their own insights" RLS policy hides it from the
-  // coach UI even though the engine wrote it. This was the root cause of
-  // the player insight + team Deep Analysis tabs showing "0 insights".
-  const ownership = input.player_id
-    ? await resolvePlayerOwnership(supabase, input.player_id)
-    : { coachId: null, teamId: null };
-  const coachId = input.coach_id ?? ownership.coachId;
-  const teamId = input.team_id ?? ownership.teamId;
-
-  // `insight_type` is NOT NULL on the legacy table. Fall back to category as
-  // the type so we don't violate the pre-existing constraint while we
-  // migrate callers.
+  // coachId / teamId resolved by upsertInsight() before the dedup lookup;
+  // see 2026-05-23 P0-3 fix. `insight_type` is NOT NULL on the legacy
+  // table; fall back to category to satisfy the pre-existing constraint.
   const insertPayload = {
     player_id: input.player_id,
     coach_id: coachId,
@@ -282,17 +287,39 @@ async function insertNew(
     insight_type: input.insight_type ?? input.category,
   };
 
+  // Use ON CONFLICT against the (signature, player_id, coach_id, team_id)
+  // UNIQUE NULLS NOT DISTINCT constraint added in migration
+  // 20260523200000_coachhelm_p0_sweep.sql. This closes the TOCTOU race
+  // where two concurrent runs (e.g. post-round-trigger + safety-net cron)
+  // both passed the dedup lookup and both inserted. ignoreDuplicates means
+  // a concurrent insert leaves the existing row untouched; we then re-read
+  // the id below if data came back empty.
   const { data, error } = await supabase
     .from('golf_coach_insights')
-    .insert(insertPayload)
+    .upsert(insertPayload, {
+      onConflict: 'signature,player_id,coach_id,team_id',
+      ignoreDuplicates: true,
+    })
     .select('id')
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw new Error(`upsertInsight.insert failed: ${error.message}`);
   }
+
+  // ignoreDuplicates returns null when the conflicting row already exists;
+  // re-read by the dedup key to recover the id.
   if (!data?.id) {
-    throw new Error('upsertInsight.insert: no id returned');
+    let recover = supabase
+      .from('golf_coach_insights')
+      .select('id')
+      .eq('signature', input.signature);
+    recover = input.player_id === null ? recover.is('player_id', null) : recover.eq('player_id', input.player_id);
+    recover = coachId === null ? recover.is('coach_id', null) : recover.eq('coach_id', coachId);
+    recover = teamId === null ? recover.is('team_id', null) : recover.eq('team_id', teamId);
+    const { data: existing } = await recover.limit(1).maybeSingle();
+    if (existing?.id) return existing.id as string;
+    throw new Error('upsertInsight.insert: no id returned and recovery lookup failed');
   }
   return data.id as string;
 }

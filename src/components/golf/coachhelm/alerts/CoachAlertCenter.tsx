@@ -212,7 +212,7 @@ export function CoachAlertCenter({
 
           {alerts.length > 0 && (
             <a
-              href="/golf/dashboard/alerts"
+              href="/golf/dashboard/insights"
               className="flex items-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-700 transition-colors"
             >
               View All
@@ -254,13 +254,13 @@ export function CoachAlertCenter({
                   insight={insight}
                   density="compact"
                   audience="coach"
-                  onClick={(id) => router.push(`/golf/dashboard/alerts#${id}`)}
+                  onClick={(id) => router.push(`/golf/dashboard/insights#${id}`)}
                 />
               ))}
 
               {hiddenCount > 0 && (
                 <motion.a
-                  href="/golf/dashboard/alerts"
+                  href="/golf/dashboard/insights"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className={cn(

@@ -45,6 +45,26 @@ import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
+
+// 2026-05-23: All user-callable CoachHelm engine entrypoints rate-limit at
+// 5/min/user — the engine runs are multi-second jobs that load shots, mine
+// patterns, predict, and write multiple tables. Without this, an authenticated
+// coach can hold a function instance hostage with a tight loop across the
+// roster. Audit finding P0-11.
+const COACHHELM_ENGINE_RATE_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 60 * 1000,
+} as const;
+
+async function gateCoachHelmEngineCall(userId: string | undefined): Promise<{ allowed: true } | { allowed: false; error: string }> {
+  if (!userId) return { allowed: true }; // pre-auth callers already rejected upstream
+  const rl = await checkRateLimit(`coachhelm:engine:${userId}`, COACHHELM_ENGINE_RATE_LIMIT);
+  if (!rl.allowed) {
+    return { allowed: false, error: 'Too many analyze requests in the last minute — please wait a moment and try again.' };
+  }
+  return { allowed: true };
+}
 import { getGolfSessionProfile } from '@/lib/auth/session';
 
 // ============================================================================
@@ -1422,6 +1442,11 @@ export async function analyzePlayer(
       return { success: false, error: access.error || 'Not authorized' };
     }
 
+    const rateLimit = await gateCoachHelmEngineCall(access.userId);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
+    }
+
     // Check if CoachHelm is enabled for this player
     const status = await isCoachHelmEnabledForPlayer(playerId);
     if (!status.effectivelyEnabled) {
@@ -1467,6 +1492,11 @@ export async function generatePlayerInsight(playerId: string): Promise<{
     const access = await verifyPlayerAccess(playerId);
     if (!access.authorized) {
       return { success: false, error: access.error || 'Not authorized' };
+    }
+
+    const rateLimit = await gateCoachHelmEngineCall(access.userId);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
     }
 
     const status = await isCoachHelmEnabledForPlayer(playerId);
@@ -2233,6 +2263,14 @@ export async function generateRoundReview(
     const access = await verifyRoundAccess(roundId);
     if (!access.authorized) {
       return { success: false, error: access.error || 'Not authorized' };
+    }
+
+    // Rate-limit engine entrypoint
+    const sb = await createClient();
+    const { data: { user } } = await sb.auth.getUser();
+    const rateLimit = await gateCoachHelmEngineCall(user?.id);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
     }
 
     // Check if enabled
@@ -3403,6 +3441,13 @@ export async function refreshPlayerAnalysisAsCoach(
   const session = await getGolfSessionProfile();
   if (!session?.coach) {
     return { success: false, error: 'Unauthorized' };
+  }
+
+  // Rate-limit engine entrypoint (5/min/coach) — closes audit P0-11 DoS vector
+  // where a coach could loop refreshPlayerAnalysisAsCoach across the roster.
+  const rateLimit = await gateCoachHelmEngineCall(session.coach.id);
+  if (!rateLimit.allowed) {
+    return { success: false, error: rateLimit.error };
   }
 
   const orgId = session.coach.organization_id;
