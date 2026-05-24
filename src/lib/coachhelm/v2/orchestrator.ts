@@ -21,6 +21,7 @@ import { generateTeeStrategyInsights } from './mining/tee-strategy';
 import { generateParTypeInsights } from './mining/scoring-context';
 import { generateWorstHolesInsights, generateWarmupHoleInsight } from './mining/course-management';
 import { generatePressureGapInsight } from './mining/pressure-gap';
+import { runWithGate } from './insights/gate-context';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
 import { BehaviorLearner, CrossLearner } from './learning';
@@ -202,7 +203,16 @@ class CoachHelmIntelligence {
       { name: 'warmupHole', fn: () => generateWarmupHoleInsight(playerId) },
       { name: 'pressureGap', fn: () => generatePressureGapInsight(playerId) },
     ];
-    const tier1Settled = await Promise.allSettled(tier1Generators.map((g) => g.fn()));
+    // 2026-05-24 Wave 7B — when caller supplies a philosophyGate, run the
+    // tier-1 generators inside AsyncLocalStorage so every upsertInsight
+    // they trigger inherits the gate and skips writes the coach's
+    // philosophy would have archived after the fact. Replaces the post-
+    // write filter in triggerPlayerInsightsAfterRound (insights.ts).
+    const runTier1 = () =>
+      Promise.allSettled(tier1Generators.map((g) => g.fn()));
+    const tier1Settled = options.philosophyGate
+      ? await runWithGate(options.philosophyGate, runTier1)
+      : await runTier1();
     const tier1Successes: string[] = [];
     const tier1Failures: Array<{ generator: string; reason: string }> = [];
     for (let i = 0; i < tier1Settled.length; i++) {

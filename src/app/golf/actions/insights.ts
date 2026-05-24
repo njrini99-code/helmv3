@@ -41,6 +41,7 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-generator';
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
+import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
@@ -3200,6 +3201,18 @@ export async function triggerPlayerInsightsAfterRound(
     const philosophy = await getCoachPhilosophy(coach.id, admin);
     const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
 
+    // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
+    // that used to live below this block). Built once here so every Tier-1
+    // generator inside analyzePlayer skips writes the coach's philosophy
+    // would have archived anyway. `isInsightTypeEnabled` closes over
+    // `philosophy` so the orchestrator and upsertInsight stay decoupled
+    // from server-action code.
+    const philosophyGate: PhilosophyGate = {
+      confidenceThreshold,
+      isInsightTypeEnabled: (insightType) =>
+        shouldIncludeInsight(insightType as InsightType, philosophy),
+    };
+
     // Run analysis for this single player.
     // analyzePlayer internally uses createClient() (user-scoped) which may fail in
     // fire-and-forget context where the user session is no longer available.
@@ -3212,6 +3225,7 @@ export async function triggerPlayerInsightsAfterRound(
         includePredictions: true,
         includeShotPatterns: true,
         depth: 'standard',
+        philosophyGate,
       });
     } catch {
       return { success: false, error: 'Player analysis failed (likely session expired in background context)' };
@@ -3259,58 +3273,11 @@ export async function triggerPlayerInsightsAfterRound(
       );
     }
 
-    // 2026-05-23 Wave 6 — Tier-1 post-filter against coach philosophy.
-    //
-    // Tier-1 generators (pressure-gap, putt-analytics, course-management,
-    // tee-strategy, scrambling-analytics, approach-analytics, scoring-context)
-    // call `upsertInsight` directly without consulting the coach's philosophy
-    // (alertSensitivity threshold + alert-type toggles). The V2 layer below
-    // (`shouldIncludeInsight`) does honor philosophy, but the bulk of new
-    // production insights come from Tier-1, so ~70% of new insights ignored
-    // the coach's sensitivity setting. This post-write filter walks the
-    // Tier-1 rows written/refreshed in THIS analysis session and archives
-    // any that fall below the confidence threshold or have their insight
-    // type disabled in the coach's alert toggles. Archived rows preserve
-    // the audit trail (vs hard-delete) and stay hidden from coach UIs
-    // because VISIBLE_LIFECYCLE_STATES doesn't include 'archived'.
-    try {
-      const sessionStartIso = new Date(startTime - 1000).toISOString();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: tier1Rows } = await (admin as any)
-        .from('golf_coach_insights')
-        .select('id, insight_type, evidence')
-        .eq('player_id', playerId)
-        .not('evidence', 'is', null)
-        .gte('updated_at', sessionStartIso)
-        .in('lifecycle_state', ['tentative', 'detected']);
-
-      const toArchive: string[] = [];
-      for (const row of (tier1Rows ?? []) as Array<{ id: string; insight_type: string | null; evidence: { confidence?: number } | null }>) {
-        const confidence = typeof row.evidence?.confidence === 'number' ? row.evidence.confidence : 1.0;
-        if (confidence < confidenceThreshold) {
-          toArchive.push(row.id);
-          continue;
-        }
-        if (row.insight_type && !shouldIncludeInsight(row.insight_type as InsightType, philosophy)) {
-          toArchive.push(row.id);
-        }
-      }
-
-      if (toArchive.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (admin as any)
-          .from('golf_coach_insights')
-          .update({ lifecycle_state: 'archived' })
-          .in('id', toArchive);
-      }
-    } catch (filterErr) {
-      // Post-filter is best-effort — never let it break the main flow.
-      await logServerError(
-        `[insights.triggerPlayerInsightsAfterRound] tier-1 post-filter failed: ${filterErr instanceof Error ? filterErr.message : String(filterErr)}`,
-        { action: 'insights.triggerPlayerInsightsAfterRound.tier1Filter', featureArea: 'coachhelm', playerId },
-        'warning',
-      );
-    }
+    // 2026-05-24 Wave 7B — Tier-1 post-filter REMOVED.
+    // Replaced by upstream `philosophyGate` plumbed through analyzePlayer
+    // and read by upsertInsight via AsyncLocalStorage. See
+    // src/lib/coachhelm/v2/insights/gate-context.ts. Gated insights are
+    // now never written, instead of written-then-archived.
 
     // Archive stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.

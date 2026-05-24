@@ -609,6 +609,15 @@ export interface AnalysisOptions {
   includeShotPatterns?: boolean;
   includeLieAnalysis?: boolean;
   depth?: 'quick' | 'standard' | 'deep';
+  /**
+   * Optional philosophy gate. When provided, every Tier-1 generator that
+   * calls `upsertInsight` inherits it via AsyncLocalStorage and skips
+   * writes that fall below the coach's confidence threshold or have their
+   * insight type disabled. Replaces the post-write archive sweep in
+   * `triggerPlayerInsightsAfterRound`. Import the type from
+   * `@/lib/coachhelm/v2/insights/gate-context`.
+   */
+  philosophyGate?: import('./insights/gate-context').PhilosophyGate;
 }
 
 /** Full player analysis result */
