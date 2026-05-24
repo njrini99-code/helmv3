@@ -40,7 +40,11 @@ export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 2000;
 const MAX_ROWS_PER_RUN = 10000;
 const UPDATE_CONCURRENCY = 50;
-const STALE_EVALUATION_MS = 12 * 60 * 60 * 1000;
+// 2026-05-24: reduced 12h → 6h to cut addressed→resolved minimum lifecycle
+// from 48h to 24h. With 2 healthy-cycles required for resolution, a 6h
+// evaluation window means insights actively trending toward fix can resolve
+// within a day instead of waiting two. Coaches retain manual resolve.
+const STALE_EVALUATION_MS = 6 * 60 * 60 * 1000;
 const HEALTHY_GAP_THRESHOLD = 0.20; // within 20% of comparison = healthy
 const HEALTHY_CYCLES_TO_RESOLVE = 2;
 const ARCHIVE_DETECTED_AGE_DAYS = 30;
@@ -168,6 +172,21 @@ export async function GET(req: NextRequest) {
     if (last?.updated_at) {
       cursor = { updatedAt: last.updated_at, id: last.id };
       nextCursor = formatCursor(cursor);
+    } else {
+      // Defensive: a row in the page has null updated_at. Without advancing
+      // the cursor, the next query would re-scan the same page indefinitely
+      // until MAX_ROWS_PER_RUN. Log and break out cleanly so the run still
+      // completes with accurate metrics.
+      await logServerError(
+        `[lifecycle cron] page tail has null updated_at (id=${last?.id ?? 'unknown'}); aborting pagination to avoid infinite re-scan`,
+        {
+          action: 'cron.coachhelm.insightLifecycle.cursor',
+          featureArea: 'coachhelm',
+          extra: { lastId: last?.id ?? null, scannedCount },
+        },
+        'warning',
+      );
+      break;
     }
 
     const evaluated: EvaluatedRow[] = [];
