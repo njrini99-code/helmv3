@@ -166,9 +166,13 @@ export async function searchInsights({
         .order('priority', { ascending: priorityOrder === 'asc' })
         .order('created_at', { ascending: false });
     } else if (sortBy === 'player_name') {
-      // For player_name sorting, we need to sort by the joined player data
+      // Sort by joined player table via PostgREST foreignTable ordering. This
+      // moves the sort to the DB layer so pagination produces a correctly
+      // ordered global slice — the previous client-side sort only reordered
+      // each individual page, leading to wrong alphabetical order across pages.
       queryBuilder = queryBuilder
-        .order('created_at', { ascending: sortOrder === 'asc' });
+        .order('last_name', { foreignTable: 'player', ascending: sortOrder === 'asc' })
+        .order('first_name', { foreignTable: 'player', ascending: sortOrder === 'asc' });
     } else {
       queryBuilder = queryBuilder.order('created_at', { ascending: sortOrder === 'asc' });
     }
@@ -193,21 +197,11 @@ export async function searchInsights({
       };
     }
 
-    // Sort by player name client-side if needed
-    let sortedInsights = insights || [];
-    if (sortBy === 'player_name') {
-      sortedInsights = [...sortedInsights].sort((a, b) => {
-        const nameA = a.player
-          ? `${a.player.first_name} ${a.player.last_name}`.toLowerCase()
-          : '';
-        const nameB = b.player
-          ? `${b.player.first_name} ${b.player.last_name}`.toLowerCase()
-          : '';
-        return sortOrder === 'asc'
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
-      });
-    }
+    // Sort is now applied at the DB layer via foreignTable ordering (see
+    // queryBuilder.order(... { foreignTable: 'player' }) above). The
+    // legacy client-side re-sort is removed — it was only reordering each
+    // individual page, producing wrong alphabetical order across pages.
+    const sortedInsights = insights || [];
 
     const totalCount = count || 0;
     const totalPages = Math.ceil(totalCount / pageSize);

@@ -171,11 +171,11 @@ export function RoundTakeaway({ insight, roundScore, roundId }: RoundTakeawayPro
   const impactStrokes = Number(insight.evidence?.strokes_impact ?? 0);
   const framingLine = buildFramingLine(impactStrokes, roundScore);
 
-  // Pre-populate the focus-area create flow with this insight id so a coach
-  // (or the player's coach view) arrives on the development page primed to
-  // attach a focus area. The link is safe for both audiences — non-coaches
-  // will simply see the insight detail page if the route rejects them.
-  const focusAreaHref = `/golf/dashboard/development/new?insight=${insight.id}`;
+  // RoundTakeaway always renders for the player audience (HeroInsightCard
+  // below is hardcoded audience="player"). Point the focus-area CTA at
+  // /my-development (player view) rather than /development/new (coach-only
+  // route, which previously bounced the player with a "coach-only" redirect).
+  const focusAreaHref = `/golf/dashboard/my-development?suggested-insight=${insight.id}`;
   const coachHelmHref = `/golf/dashboard/coachhelm?focus=${insight.id}`;
 
   return (

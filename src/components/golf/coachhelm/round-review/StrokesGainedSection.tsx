@@ -1,5 +1,4 @@
-'use client';
-
+// Server component — no hooks, no event handlers; rendering only.
 import { cn } from '@/lib/utils';
 import { StrokesGainedBreakdown } from '@/lib/coachhelm/types';
 
