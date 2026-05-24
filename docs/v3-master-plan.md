@@ -1110,6 +1110,18 @@ CREATE TABLE public.golf_coachhelm_coach_weights (
 
 **Extends existing `golf_qualifiers` + `golf_qualifier_entries`.**
 
+### XV.0 Routing (resolved 2026-05-24 — Task A finding)
+
+The existing qualifier UI (coach create + list + shared detail + real-time leaderboard + coach round-breakdown + player "Play Qualifier Round" CTA) lives under `src/app/golf/(dashboard)/dashboard/qualifiers/` and `/my-qualifiers/`. It is fully functional for the create/score/view flow.
+
+**W29 does NOT modify those files except for a single link insertion.** Instead:
+
+- The new **selection workspace** lives at a fresh v3 route: `src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/[id]/` — coach-only, gated by `is_team_coach()`. This is where `selection_slots_*`, the "Top 4 LOCKED" UI, the coach-pick reasoning capture, and the travel-brief trigger render.
+- The existing `dashboard/qualifiers/[id]/page.tsx` gets a single new element added: a "Manage selections →" link (coach-only) routing to the new v3 page. That is the lone `M:1` file in the W29 ownership table.
+- The existing real-time leaderboard component (`QualifierLeaderboardRealtime`) is reused as a child component inside the v3 selection page; not duplicated.
+
+This preserves Rule 1 (namespace isolation) — all new logic lives under v3 paths — while honoring "extend, don't replace" for the existing scoring UI.
+
 ### XV.1 Schema additions
 
 ```sql
@@ -1370,7 +1382,7 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 | W26 | V2 sunset (code only — NO table drops) | Delete `v2/reasoning/*`, `v2/nlg/*` | C:0, M:0, D:~15 | 0 | W25 |
 | W27 | Coach intent + roster pill + drawer | `golf_coach_player_intent` table + UI | C:5, M:1 | 1 | W18 |
 | W28 | Composite insights v1 (12 rules + synthesis) | `v3/composite/` + 12 rules + orchestrator hook | C:14, M:1 | 0 | W25 |
-| W29 | Qualifying & travel workspace (extends existing schema) | Schema extension + `golf_qualifier_selections` + UI | C:12, M:1 | 2 | W18 |
+| W29 | Qualifying & travel workspace (new v3 route for selection; existing scoring UI untouched) | Schema extension + `golf_qualifier_selections` + new `dashboard/coachhelm/qualifying/[id]` v3 route + "Manage selections" link added to existing `qualifiers/[id]/page.tsx` | C:14, M:1 | 2 | W18 |
 | W30 | LLM service wrapper + round-review composer + budget + admin cost dashboard | `v3/llm/` + budget tables + admin page | C:14, M:1 | 2 | W9 |
 | W31 | LLM hero narrative on player dashboard | Hero card wrapper | C:2, M:1 | 0 | W30 |
 | W32 | Coach chat backend + UI + 12 tool routes + conversation schema | Chat agent + drawer + page | C:24, M:0 | 2 | W30 |
@@ -1507,20 +1519,23 @@ This section exists so the next session can resume execution without re-deriving
 - 34-wave sequence locked (Part XXIII)
 - This plan persisted to `docs/v3-master-plan.md`
 
-### Two pre-W9 verification tasks (do BEFORE W9-pt2)
+### Two pre-W9 verification tasks — RESOLVED 2026-05-24
 
-These exist as risks in Part XXVI — resolve them first so W9 ships cleanly:
+**Task A — Verify W29 qualifying UI scope — RESOLVED**
+- Finding: substantial existing UI under `dashboard/qualifiers/` (coach create + list + shared detail with real-time leaderboard + coach round-breakdown) and `dashboard/my-qualifiers/` (player list). Backed by `golf_qualifiers` + `golf_qualifier_entries`. Action validation in `golf.ts` lines 1047-1091.
+- Decision: W29 builds the **selection workspace** as a new v3 route at `dashboard/coachhelm/qualifying/[id]` (coach-only). The existing `qualifiers/[id]/page.tsx` is modified only to add a "Manage selections →" link (the single M:1 in W29's ownership table). The real-time leaderboard component is reused inside the v3 page.
+- Plan updated: Part XV new section XV.0; Part XXIII W29 row revised to `C:14, M:1` with the new route called out.
 
-**Task A — Verify W29 qualifying UI scope**
-- Existing tables: `golf_qualifiers`, `golf_qualifier_entries` (confirmed Part II)
-- Check: `src/app/golf/(dashboard)/dashboard/qualifiers/` + `src/app/golf/actions/golf.ts`
-- Question: is there existing UI we're extending, or is W29 building UI on existing schema?
-- Outcome: amend W29 spec in Part XXIII if scope changes
-
-**Task B — Verify web-push client already installed**
-- `push_subscriptions` table confirmed exists (Part II)
-- Check: `package.json` for `web-push` dep; `src/lib` for existing client
-- Outcome: if installed, W9-pt3 just documents the existing client; if not, install it
+**Task B — Verify web-push client already installed — RESOLVED**
+- Finding: `web-push@^3.6.7` ✅ installed; `resend@^6.7.0` ✅ also already installed (plan previously assumed Resend needed install); `@growthbook/growthbook` ❌ still needs install in W9-pt3.
+- Existing scaffold: `public/sw.js` service worker present, `public/manifest.json` present, `src/components/golf/PushPermissionSoftAsk.tsx` client-side ask present, VAPID env vars wired into `src/app/golf/actions/task-reminders.ts` which uses a defensive `await import('web-push').catch(...)` pattern (legacy from when the package wasn't installed).
+- Gap to verify in W9-pt3: confirm a subscription persistence endpoint exists (the `push_subscriptions` table is in Part II but the API write path wasn't located in grep — may be a real gap).
+- W9-pt3 revised scope:
+  - ✗ Don't reinstall web-push or resend
+  - ✓ Install `@growthbook/growthbook`
+  - ✓ Build `src/lib/coachhelm/v3/foundation/{push,email,flags}.ts` canonical wrappers
+  - ✓ Replace the defensive dynamic-import in `task-reminders.ts` with a normal static import via the new wrapper
+  - ✓ Confirm or build the subscription persistence endpoint (otherwise push won't actually deliver)
 
 ### Wave 9 sub-batch breakdown
 
