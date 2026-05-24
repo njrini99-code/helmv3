@@ -891,11 +891,69 @@ export class PatternMiner {
    * first failure and aborted the rest. Switch to \`Promise.allSettled\`
    * so the engine writes every pattern it can; failures are captured via
    * \`logServerError\` so the admin dashboard still surfaces the issue.
+   *
+   * 2026-05-24 Wave 8 — lifecycle_state preservation + auto-promotion.
+   * Prior behavior: \`onConflict: 'id'\` overwrites — re-upserts blew away
+   * coach-set lifecycle states (\`confirmed\` via validation UI,
+   * \`addressed\`/\`resolved\`/\`dismissed\` via management UI) every miner
+   * run. Now we:
+   *   1. Fetch existing \`lifecycle_state\` for each pattern.id in a
+   *      single batched read.
+   *   2. If a coach has already touched the row
+   *      (state ∈ {confirmed, addressed, resolved, dismissed}), preserve
+   *      that state — the miner is statistical, the coach is canonical.
+   *   3. Else if the pattern qualifies as corroborated
+   *      (occurrence_count ≥ 5 AND first_detected > 14d ago), bump to
+   *      \`confirmed\`. Mirrors the Wave 7A migration's one-time backfill
+   *      so the backlog doesn't re-accumulate.
+   *   4. Else fall through to the existing 'detected' default.
    */
   private async savePatterns(patterns: MinedPattern[]): Promise<void> {
     if (patterns.length === 0) return;
 
     const supabase = createAdminClient();
+
+    // 1. Batch-fetch existing lifecycle_state for every id we're about to
+    //    upsert, so we can preserve coach-set values.
+    const ids = patterns.map((p) => p.id);
+    type ExistingRow = { id: string; lifecycle_state: string | null };
+    const { data: existingRows } = await (supabase as unknown as {
+      from: (t: string) => {
+        select: (cols: string) => {
+          in: (col: string, ids: string[]) => Promise<{ data: ExistingRow[] | null }>;
+        };
+      };
+    })
+      .from('golf_patterns_v2')
+      .select('id, lifecycle_state')
+      .in('id', ids);
+
+    const existingByPatternId = new Map<string, string | null>(
+      (existingRows ?? []).map((r) => [r.id, r.lifecycle_state]),
+    );
+
+    // Resolve the lifecycle_state we want to write for each pattern.
+    const PRESERVED_STATES = new Set(['confirmed', 'addressed', 'resolved', 'dismissed']);
+    const AUTO_PROMOTE_MIN_OCCURRENCES = 5;
+    const AUTO_PROMOTE_MIN_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - AUTO_PROMOTE_MIN_AGE_MS;
+
+    const rows = patterns.map((p) => {
+      const existing = existingByPatternId.get(p.id);
+      let resolvedState: string;
+      if (existing && PRESERVED_STATES.has(existing)) {
+        resolvedState = existing;
+      } else if (
+        (p.lifecycleState ?? 'detected') === 'detected' &&
+        p.occurrenceCount >= AUTO_PROMOTE_MIN_OCCURRENCES &&
+        new Date(p.firstDetected).getTime() < cutoff
+      ) {
+        resolvedState = 'confirmed';
+      } else {
+        resolvedState = p.lifecycleState ?? 'detected';
+      }
+      return { ...this.toRow(p), lifecycle_state: resolvedState };
+    });
 
     const fromFn = (supabase as unknown as {
       from: (t: string) => {
@@ -907,8 +965,8 @@ export class PatternMiner {
     }).from;
 
     const results = await Promise.allSettled(
-      patterns.map((p) =>
-        fromFn.call(supabase, 'golf_patterns_v2').upsert(this.toRow(p), { onConflict: 'id' }),
+      rows.map((row) =>
+        fromFn.call(supabase, 'golf_patterns_v2').upsert(row, { onConflict: 'id' }),
       ),
     );
 

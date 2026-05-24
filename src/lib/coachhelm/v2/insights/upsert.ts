@@ -31,7 +31,7 @@ import type {
   InsightMovement,
 } from './types';
 import { calcConfidence } from './types';
-import { getActiveGate } from './gate-context';
+import { getActiveGate, incrementGatedCount } from './gate-context';
 import { notifyInsightLanded } from '@/lib/notifications/insight-notifier';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -94,6 +94,7 @@ export async function upsertInsight(
       confidence < gate.confidenceThreshold ||
       !gate.isInsightTypeEnabled(effectiveType)
     ) {
+      incrementGatedCount();
       return GATED_OUT;
     }
   }
