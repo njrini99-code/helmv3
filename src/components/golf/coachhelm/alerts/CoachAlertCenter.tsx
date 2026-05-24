@@ -142,6 +142,14 @@ export function CoachAlertCenter({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div
+            role="img"
+            aria-label={
+              criticalCount > 0
+                ? `Critical alerts: ${criticalCount}`
+                : warningCount > 0
+                  ? `Warning alerts: ${warningCount}`
+                  : 'No active alerts'
+            }
             className={cn(
               'relative p-2 rounded-xl',
               criticalCount > 0

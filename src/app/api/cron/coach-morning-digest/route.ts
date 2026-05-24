@@ -170,7 +170,14 @@ export async function GET(req: NextRequest): Promise<NextResponse | Response> {
                 (summary.reasons[result.reason] ?? 0) + 1;
             }
           } else {
+            // Failed case ALSO carries a `reason` from the per-coach pipeline
+            // ('teams-query' / 'members-query'). Previously it was dropped on
+            // the floor, losing the failure-mode signal in the digest summary.
             summary.failed += 1;
+            if (result.reason) {
+              summary.reasons[result.reason] =
+                (summary.reasons[result.reason] ?? 0) + 1;
+            }
           }
         } catch (err) {
           summary.failed += 1;

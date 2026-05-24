@@ -1,5 +1,4 @@
-'use client';
-
+// Server component — no hooks, no event handlers; rendering only.
 import { RoundReview } from '@/lib/coachhelm/types';
 
 interface ReviewSummaryProps {
