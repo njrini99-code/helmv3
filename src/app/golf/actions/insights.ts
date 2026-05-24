@@ -3539,10 +3539,10 @@ async function ensureCoachInTeamOrg(
     .maybeSingle();
   if (!team?.organization_id) return { ok: false, error: 'Team not found' };
 
-  // `golf_coaches` has no `role` column — head-coach status lives on the
-  // `golf_team_coach_staff` join row (role enum: 'head_coach' | 'assistant'
-  // | etc.). First check coach belongs to the team's org, then look up
-  // the staff record for head-coach gating.
+  // First check coach belongs to the team's org, then use the
+  // is_golf_team_primary_coach RPC for head-coach gating. The RPC is the
+  // canonical primitive (SECURITY DEFINER, search_path locked) — replaces
+  // the prior fragile `role.toLowerCase().includes('head')` string match.
   const { data: coach } = await supabase
     .from('golf_coaches')
     .select('id, organization_id')
@@ -3551,16 +3551,10 @@ async function ensureCoachInTeamOrg(
     .maybeSingle();
   if (!coach) return { ok: false, error: 'Forbidden' };
 
-  const { data: staff } = await supabase
-    .from('golf_team_coach_staff')
-    .select('role')
-    .eq('team_id', teamId)
-    .eq('coach_id', coach.id)
-    .maybeSingle();
-
-  const role = staff?.role;
-  const isHeadCoach =
-    typeof role === 'string' && role.toLowerCase().includes('head');
+  const { data: isPrimaryRaw } = await supabase.rpc('is_golf_team_primary_coach', {
+    team_uuid: teamId,
+  });
+  const isHeadCoach = isPrimaryRaw === true;
 
   return { ok: true, userId: user.id, coachId: coach.id, isHeadCoach };
 }

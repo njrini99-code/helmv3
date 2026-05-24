@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { IconWarning } from '@/components/icons';
 
 export default function MessagesError({
-  error,
+  _error,
   reset,
 }: {
-  error: Error & { digest?: string };
+  _error: Error & { digest?: string };
   reset: () => void;
 }) {
+  console.error(_error);
   return (
     <div className="min-h-full flex items-center justify-center bg-transparent p-4">
       <div className="text-center">
@@ -20,7 +21,7 @@ export default function MessagesError({
           Something went wrong
         </h2>
         <p className="text-warm-500 mb-6 max-w-md">
-          {error.message || 'We encountered an error loading messages. Please try again.'}
+          {'We encountered an error loading messages. Please try again.'}
         </p>
         <div className="flex items-center justify-center gap-3">
           <Button variant="secondary" onClick={() => window.location.href = '/golf/dashboard'}>

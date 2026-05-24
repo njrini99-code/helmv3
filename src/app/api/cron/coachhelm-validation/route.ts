@@ -18,6 +18,7 @@ import {
   type RipePrediction,
 } from '@/lib/coachhelm/v2/learning/outcome-validator';
 import { logServerError } from '@/lib/server-error-logger';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -26,11 +27,8 @@ export const dynamic = 'force-dynamic';
 const BATCH_LIMIT = 500;
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createAdminClient();
 

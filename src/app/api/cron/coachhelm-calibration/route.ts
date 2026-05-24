@@ -17,6 +17,7 @@ import {
   invalidateCalibrationCache,
 } from '@/lib/coachhelm/v2/reasoning/confidence-calibrator';
 import { logServerError } from '@/lib/server-error-logger';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -26,11 +27,8 @@ const LOOKBACK_DAYS = 90;
 const BATCH_LIMIT = 5000;
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createAdminClient();
   const sinceIso = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();

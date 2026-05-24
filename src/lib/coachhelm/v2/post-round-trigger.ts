@@ -63,10 +63,15 @@ async function writeTerminalState(
   patch: Record<string, string | null>,
   contextAction: string,
 ): Promise<void> {
-  const { error, count } = await admin
+  // Use .select('id') instead of relying on count=exact header — some
+  // Supabase SDK versions drop the count when a chained .select() isn't
+  // present or when the role's RLS returns empty without an error. Reading
+  // data.length is the authoritative signal that a row was actually written.
+  const { data, error } = await admin
     .from('golf_rounds')
-    .update(patch, { count: 'exact' })
-    .eq('id', roundId);
+    .update(patch)
+    .eq('id', roundId)
+    .select('id');
 
   if (error) {
     await logServerError(
@@ -79,7 +84,7 @@ async function writeTerminalState(
     );
     return;
   }
-  if (count === 0) {
+  if (!data || data.length === 0) {
     await logServerError(
       `[postRoundTrigger] terminal-state write affected 0 rows (RLS or missing round)`,
       {
