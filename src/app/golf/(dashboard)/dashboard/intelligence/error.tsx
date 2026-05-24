@@ -26,7 +26,7 @@ export default function IntelligenceError({
           Failed to Load Intelligence Dashboard
         </h2>
         <p className="text-warm-600 mb-6">
-          {error.message || 'An unexpected error occurred while loading the dashboard.'}
+          {'An unexpected error occurred while loading the dashboard.'}
         </p>
         <div className="flex gap-3 justify-center">
           <Button variant="secondary" onClick={() => window.location.href = '/golf/dashboard'}>

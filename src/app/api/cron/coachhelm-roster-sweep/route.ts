@@ -16,19 +16,24 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { triggerPlayerInsightsAfterRound } from '@/app/golf/actions/insights';
 import { logServerError } from '@/lib/server-error-logger';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 const CONCURRENCY = 3;
+// Skip players whose most recent round was already analyzed within this
+// window — the safety-net cron (30 min) + post-round trigger already cover
+// fresh activity, and the nightly sweep otherwise re-runs the engine on
+// every roster player every night even when nothing changed (3× per round
+// in the worst case). 12h is half the daily sweep window — gives a small
+// safety margin while skipping the obvious redundant re-runs.
+const SKIP_IF_ANALYZED_WITHIN_MS = 12 * 60 * 60 * 1000;
 
 export async function GET(req: NextRequest) {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createAdminClient();
 
@@ -57,13 +62,28 @@ export async function GET(req: NextRequest) {
     new Set((memberships ?? []).map((m) => m.player_id).filter(Boolean)),
   );
 
+  // 2026-05-23: skip players whose most recent round was analyzed within
+  // SKIP_IF_ANALYZED_WITHIN_MS (audit P1-3 — was re-running engine 3× per
+  // round between this sweep + safety-net + post-round trigger).
+  const recencyCutoff = new Date(Date.now() - SKIP_IF_ANALYZED_WITHIN_MS).toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentRounds } = await (supabase as any)
+    .from('golf_rounds')
+    .select('player_id')
+    .in('player_id', uniquePlayerIds)
+    .gte('coachhelm_analyzed_at', recencyCutoff);
+  const recentlyAnalyzedPlayerIds = new Set(
+    ((recentRounds ?? []) as Array<{ player_id: string }>).map((r) => r.player_id),
+  );
+  const playersToProcess = uniquePlayerIds.filter((id) => !recentlyAnalyzedPlayerIds.has(id));
+
   let analyzed = 0;
-  let skipped = 0;
+  let skipped = recentlyAnalyzedPlayerIds.size; // count skip-recent toward skipped
   let failed = 0;
 
   // Process players in small batches to keep engine load bounded.
-  for (let i = 0; i < uniquePlayerIds.length; i += CONCURRENCY) {
-    const batch = uniquePlayerIds.slice(i, i + CONCURRENCY);
+  for (let i = 0; i < playersToProcess.length; i += CONCURRENCY) {
+    const batch = playersToProcess.slice(i, i + CONCURRENCY);
     const pairs = await Promise.all(
       batch.map(async (playerId) => {
         try {
@@ -100,6 +120,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     success: true,
     playersTotal: uniquePlayerIds.length,
+    playersProcessed: playersToProcess.length,
+    recentlyAnalyzedSkipped: recentlyAnalyzedPlayerIds.size,
     analyzed,
     skipped,
     failed,

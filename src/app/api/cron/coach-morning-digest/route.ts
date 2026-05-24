@@ -23,6 +23,7 @@ import {
   type CoachDigestWatch,
 } from '@/lib/email/coach-digest-template';
 import { sendCoachDigest } from '@/lib/email/resend-client';
+import { requireCronAuth } from '@/lib/cron/auth';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -56,12 +57,9 @@ interface DigestSummary {
   reasons: Record<string, number>;
 }
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
-  const expected = process.env.CRON_SECRET;
-  const auth = req.headers.get('authorization');
-  if (!expected || auth !== `Bearer ${expected}`) {
-    return new NextResponse('unauthorized', { status: 401 });
-  }
+export async function GET(req: NextRequest): Promise<NextResponse | Response> {
+  const unauthorized = requireCronAuth(req);
+  if (unauthorized) return unauthorized;
 
   const supabase = createAdminClient();
   const summary: DigestSummary = {
