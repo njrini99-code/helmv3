@@ -208,11 +208,21 @@ class CoachHelmIntelligence {
     // they trigger inherits the gate and skips writes the coach's
     // philosophy would have archived after the fact. Replaces the post-
     // write filter in triggerPlayerInsightsAfterRound (insights.ts).
+    //
+    // 2026-05-24 Wave 8 — runWithGate now returns metrics. The gated-out
+    // count is stashed on `tier1GateMetrics` so it can be returned from
+    // analyzePlayer alongside `generatorSummary` for caller-side logging.
     const runTier1 = () =>
       Promise.allSettled(tier1Generators.map((g) => g.fn()));
-    const tier1Settled = options.philosophyGate
-      ? await runWithGate(options.philosophyGate, runTier1)
-      : await runTier1();
+    let tier1Settled: PromiseSettledResult<unknown>[];
+    let tier1GateMetrics: { gatedCount: number } | null = null;
+    if (options.philosophyGate) {
+      const wrapped = await runWithGate(options.philosophyGate, runTier1);
+      tier1Settled = wrapped.result;
+      tier1GateMetrics = wrapped.metrics;
+    } else {
+      tier1Settled = await runTier1();
+    }
     const tier1Successes: string[] = [];
     const tier1Failures: Array<{ generator: string; reason: string }> = [];
     for (let i = 0; i < tier1Settled.length; i++) {
@@ -399,6 +409,7 @@ class CoachHelmIntelligence {
       anomalies,
       streaks,
       generatorSummary,
+      tier1GateMetrics,
     };
   }
 

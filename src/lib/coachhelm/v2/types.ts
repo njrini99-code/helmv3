@@ -652,6 +652,12 @@ export interface PlayerAnalysis {
     successes: string[];
     failures: Array<{ generator: string; reason: string }>;
   };
+
+  // 2026-05-24 Wave 8 — observability for the Tier-1 philosophy gate
+  // (see insights/gate-context.ts). `null` when caller didn't pass a
+  // gate; otherwise reports how many upsertInsight calls the gate
+  // blocked during this run so post-round logs can show coach impact.
+  tier1GateMetrics?: { gatedCount: number } | null;
 }
 
 /** Intelligent round review (V2 enhanced) */

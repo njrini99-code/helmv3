@@ -3273,6 +3273,23 @@ export async function triggerPlayerInsightsAfterRound(
       );
     }
 
+    // 2026-05-24 Wave 8 — surface philosophy-gate filter count for
+    // post-deploy verification. Logged at info via warning level only
+    // when non-zero so log noise stays low; the count tells us how much
+    // upstream filtering replaced the Wave 6 post-write archive sweep.
+    if (analysis.tier1GateMetrics && analysis.tier1GateMetrics.gatedCount > 0) {
+      await logServerError(
+        `[insights.triggerPlayerInsightsAfterRound] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s)`,
+        {
+          action: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
+          featureArea: 'coachhelm',
+          playerId,
+          extra: { gatedCount: analysis.tier1GateMetrics.gatedCount },
+        },
+        'warning',
+      );
+    }
+
     // 2026-05-24 Wave 7B — Tier-1 post-filter REMOVED.
     // Replaced by upstream `philosophyGate` plumbed through analyzePlayer
     // and read by upsertInsight via AsyncLocalStorage. See
@@ -3282,8 +3299,7 @@ export async function triggerPlayerInsightsAfterRound(
     // Archive stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any)
+    await admin
       .from('golf_coach_insights')
       .update({ status: 'resolved' })
       .eq('coach_id', coach.id)
@@ -3293,8 +3309,7 @@ export async function triggerPlayerInsightsAfterRound(
       .contains('metadata', { v2_engine: true });
 
     // Check remaining active insights to avoid duplicates within the 3-day window
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: existingInsights } = await (admin as any)
+    const { data: existingInsights } = await admin
       .from('golf_coach_insights')
       .select('player_id, insight_type')
       .eq('coach_id', coach.id)
@@ -3302,9 +3317,11 @@ export async function triggerPlayerInsightsAfterRound(
       .eq('status', 'active');
 
     const existingKeys = new Set(
-      (existingInsights || []).map(
-        (i: { player_id: string; insight_type: string }) => `${i.player_id}:${i.insight_type}`
-      )
+      (existingInsights || [])
+        .filter((i): i is { player_id: string; insight_type: string } =>
+          i.player_id !== null && i.insight_type !== null,
+        )
+        .map((i) => `${i.player_id}:${i.insight_type}`),
     );
 
     // Convert V2 insights to records
