@@ -3259,6 +3259,59 @@ export async function triggerPlayerInsightsAfterRound(
       );
     }
 
+    // 2026-05-23 Wave 6 — Tier-1 post-filter against coach philosophy.
+    //
+    // Tier-1 generators (pressure-gap, putt-analytics, course-management,
+    // tee-strategy, scrambling-analytics, approach-analytics, scoring-context)
+    // call `upsertInsight` directly without consulting the coach's philosophy
+    // (alertSensitivity threshold + alert-type toggles). The V2 layer below
+    // (`shouldIncludeInsight`) does honor philosophy, but the bulk of new
+    // production insights come from Tier-1, so ~70% of new insights ignored
+    // the coach's sensitivity setting. This post-write filter walks the
+    // Tier-1 rows written/refreshed in THIS analysis session and archives
+    // any that fall below the confidence threshold or have their insight
+    // type disabled in the coach's alert toggles. Archived rows preserve
+    // the audit trail (vs hard-delete) and stay hidden from coach UIs
+    // because VISIBLE_LIFECYCLE_STATES doesn't include 'archived'.
+    try {
+      const sessionStartIso = new Date(startTime - 1000).toISOString();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: tier1Rows } = await (admin as any)
+        .from('golf_coach_insights')
+        .select('id, insight_type, evidence')
+        .eq('player_id', playerId)
+        .not('evidence', 'is', null)
+        .gte('updated_at', sessionStartIso)
+        .in('lifecycle_state', ['tentative', 'detected']);
+
+      const toArchive: string[] = [];
+      for (const row of (tier1Rows ?? []) as Array<{ id: string; insight_type: string | null; evidence: { confidence?: number } | null }>) {
+        const confidence = typeof row.evidence?.confidence === 'number' ? row.evidence.confidence : 1.0;
+        if (confidence < confidenceThreshold) {
+          toArchive.push(row.id);
+          continue;
+        }
+        if (row.insight_type && !shouldIncludeInsight(row.insight_type as InsightType, philosophy)) {
+          toArchive.push(row.id);
+        }
+      }
+
+      if (toArchive.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any)
+          .from('golf_coach_insights')
+          .update({ lifecycle_state: 'archived' })
+          .in('id', toArchive);
+      }
+    } catch (filterErr) {
+      // Post-filter is best-effort — never let it break the main flow.
+      await logServerError(
+        `[insights.triggerPlayerInsightsAfterRound] tier-1 post-filter failed: ${filterErr instanceof Error ? filterErr.message : String(filterErr)}`,
+        { action: 'insights.triggerPlayerInsightsAfterRound.tier1Filter', featureArea: 'coachhelm', playerId },
+        'warning',
+      );
+    }
+
     // Archive stale V2 insights so post-round analysis can refresh them.
     // Without this, insights from weeks ago block new ones via dedup, causing 0-insight generations.
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
