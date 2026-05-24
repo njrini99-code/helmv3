@@ -19,7 +19,9 @@ DROP TABLE IF EXISTS public._deprecated_golf_coach_settings;
 -- ---------------------------------------------------------------------------
 -- golf_insight_effectiveness has two UNIQUEs covering the same logical key
 -- with different column orders. Keep the natural_key (matches code use).
-DROP INDEX IF EXISTS public.golf_insight_effectiveness_team_id_period_start_period_end__key;
+-- This is a constraint-backed unique index, so drop the constraint not the index.
+ALTER TABLE public.golf_insight_effectiveness
+  DROP CONSTRAINT IF EXISTS golf_insight_effectiveness_team_id_period_start_period_end__key;
 
 -- golf_round_reviews has THREE indexes covering round_id:
 --   golf_round_reviews_round_id_key (unique)
