@@ -163,8 +163,10 @@ BEGIN
     WHERE table_schema='public' AND table_name='golf_round_reviews'
   ) THEN
     EXECUTE 'REVOKE UPDATE ON public.golf_round_reviews FROM authenticated';
-    -- Player-writable: their own viewed-at timestamp, their own rating, their notes
-    EXECUTE 'GRANT UPDATE (viewed_at_player, player_rating, player_notes, updated_at) ON public.golf_round_reviews TO authenticated';
+    -- Player-writable: their own viewed/acknowledged timestamps. Everything
+    -- else (status, coach_*, patterns_detected, engine-generated summary etc.)
+    -- can only be written by service_role / coach paths via admin client.
+    EXECUTE 'GRANT UPDATE (player_viewed_at, player_acknowledged_at, updated_at) ON public.golf_round_reviews TO authenticated';
     EXECUTE 'GRANT UPDATE ON public.golf_round_reviews TO service_role';
   END IF;
 END $$;
