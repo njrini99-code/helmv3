@@ -5526,6 +5526,51 @@ export type Database = {
           },
         ]
       }
+      golf_coach_player_intent: {
+        Row: {
+          alert_posture: string
+          coach_id: string
+          highlight_categories: string[]
+          narrative_goal: string
+          notes: string | null
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          alert_posture?: string
+          coach_id: string
+          highlight_categories?: string[]
+          narrative_goal?: string
+          notes?: string | null
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          alert_posture?: string
+          coach_id?: string
+          highlight_categories?: string[]
+          narrative_goal?: string
+          notes?: string | null
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coach_player_intent_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coach_player_intent_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coaches: {
         Row: {
           avatar_url: string | null
