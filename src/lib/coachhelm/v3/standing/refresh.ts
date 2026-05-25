@@ -42,6 +42,16 @@ export const STANDING_REFRESH_METRIC_IDS: readonly MetricId[] = [
 ] as const;
 
 /**
+ * Round-level metrics populated by the companion W24-prep RPC
+ * `refresh_player_standing_round_metrics(uuid[])`. Same return shape
+ * as `refresh_player_standing` so the cron route concatenates results.
+ */
+export const ROUND_REFRESH_METRIC_IDS: readonly MetricId[] = [
+  'practice_tournament_delta',
+  'opening_hole_delta',
+] as const;
+
+/**
  * Metrics whose v3 IDs DO NOT cleanly map to a single cache column or
  * for which we don't yet have a Tour benchmark. Each populates via:
  *   - Adjustment of v3 metric ID to align with cache bucket, OR
@@ -65,9 +75,6 @@ export const STANDING_REFRESH_DEFERRED_METRIC_IDS: readonly MetricId[] = [
   // Cache has overall scrambling_percentage + sand_save_percentage only
   'scrambling_pct_rough',
   'scrambling_pct_fairway',
-  // Need round-level computations
-  'practice_tournament_delta',
-  'opening_hole_delta',
 ] as const;
 
 /** Maximum teams the cron sends to refresh_player_standing per invocation. */

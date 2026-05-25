@@ -10594,6 +10594,13 @@ export type Database = {
           rows_upserted: number
         }[]
       }
+      refresh_player_standing_round_metrics: {
+        Args: { p_team_ids: string[] }
+        Returns: {
+          out_metric_id: string
+          out_rows_upserted: number
+        }[]
+      }
       refresh_player_stats_cache: {
         Args: { p_player_id: string }
         Returns: undefined
