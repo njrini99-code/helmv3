@@ -268,6 +268,18 @@ export default async function QualifierDetailPage({ params }: PageProps) {
                 </Link>
               </div>
             )}
+
+            {/* Coach: Manage selections link → W29 v3 workspace */}
+            {isCoach && (
+              <div className="mt-4 pt-4 border-t border-warm-200/60">
+                <Link
+                  href={`/golf/dashboard/coachhelm/qualifying/${id}`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-primary-700 hover:text-primary-800 transition"
+                >
+                  Manage selections →
+                </Link>
+              </div>
+            )}
           </div>
         </Reveal>
 
