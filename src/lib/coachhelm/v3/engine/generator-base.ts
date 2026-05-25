@@ -49,6 +49,15 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   abstract readonly category: InsightCategory;
   abstract readonly minSampleN: number;
 
+  /**
+   * Whether `run()` should require a v3 standing row for the metric.
+   * - true (default): no standing → skip insight (PGA reference required)
+   * - false: emit diagnostic insight without standing/counterfactual.
+   *   Used for metrics that are player-vs-self only (e.g. putt miss bias
+   *   — no public PGA benchmark exists).
+   */
+  protected readonly requiresStanding: boolean = true;
+
   constructor(protected readonly playerId: string) {}
 
   // Subclass-supplied work
@@ -68,8 +77,11 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         return { id: null, gated: false };
       }
 
-      const standing = await loadStandingForMetric(this.playerId, this.metricId);
-      if (!standing) {
+      const standing = this.requiresStanding
+        ? await loadStandingForMetric(this.playerId, this.metricId)
+        : null;
+
+      if (this.requiresStanding && !standing) {
         // No standing yet → no PGA reference → skip the insight. The
         // standing cron will catch up; next run picks this up.
         return { id: null, gated: false };
@@ -77,38 +89,40 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const composed = this.composeContent(agg);
 
-      // Counterfactual injection — never throws, returns suppressed
-      // projection when computation fails or threshold not met.
-      let counterfactual: ReturnType<typeof computeCounterfactual> | null = null;
-      const cfg = METRIC_RENDER_CONFIG[this.metricId];
-      if (cfg) {
-        const baseline = await loadPlayerScoringBaseline(this.playerId);
-        const cfInput: ComputeCounterfactualInput = {
-          metric_id: this.metricId,
-          direction: cfg.direction,
-          player_value: agg.playerValue,
-          pga_value: standing.pga_value,
-          player_30d_scoring_avg: baseline,
-        };
-        counterfactual = computeCounterfactual(cfInput);
-      }
+      // Counterfactual + standing injection — only when we actually have
+      // a standing row (requiresStanding=true generators). Diagnostic
+      // generators (requiresStanding=false) ship without these.
+      let evidence = composed.evidence;
+      if (standing) {
+        let counterfactual: ReturnType<typeof computeCounterfactual> | null = null;
+        const cfg = METRIC_RENDER_CONFIG[this.metricId];
+        if (cfg) {
+          const baseline = await loadPlayerScoringBaseline(this.playerId);
+          const cfInput: ComputeCounterfactualInput = {
+            metric_id: this.metricId,
+            direction: cfg.direction,
+            player_value: agg.playerValue,
+            pga_value: standing.pga_value,
+            player_30d_scoring_avg: baseline,
+          };
+          counterfactual = computeCounterfactual(cfInput);
+        }
 
-      // Evidence merge — base writes standing + counterfactual under
-      // well-known keys so consumers can find them without guessing.
-      const evidence = {
-        ...composed.evidence,
-        standing: {
-          metric_id: standing.metric_id,
-          player_value: standing.player_value,
-          team_avg: standing.team_avg,
-          team_n: standing.team_n,
-          team_pct: standing.team_pct,
-          pga_value: standing.pga_value,
-          pga_delta: standing.pga_delta,
-          computed_at: standing.computed_at,
-        },
-        counterfactual,
-      };
+        evidence = {
+          ...composed.evidence,
+          standing: {
+            metric_id: standing.metric_id,
+            player_value: standing.player_value,
+            team_avg: standing.team_avg,
+            team_n: standing.team_n,
+            team_pct: standing.team_pct,
+            pga_value: standing.pga_value,
+            pga_delta: standing.pga_delta,
+            computed_at: standing.computed_at,
+          },
+          counterfactual,
+        } as typeof composed.evidence;
+      }
 
       const supabase = createAdminClient();
       const result = await upsertInsightV3(supabase, {
