@@ -24,7 +24,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W9-pt3 | Provider clients (push/email/flags) + Web Push subscription endpoint + local seed | ✅ merged 2026-05-25 | PR #43 | + Database types regen for W9-pt2; VAPID env vars set on Vercel (prod + dev; preview pending dashboard) |
 | W10 | PGA standards table + seed | ✅ merged + applied + verified 2026-05-25 | PR #44 | Prod verify: 28 rows, 24 Tour-populated, 19 D1-populated, 0 orphan FKs. + Database types regen for `golf_pga_standards` |
 | W11 | Player standing table + nightly cron | ✅ merged + applied + verified 2026-05-25 | PR #45 | Prod verify: RPC against all teams produced 171 rows across 15 metrics for 14 active players. + Database types regen for `golf_player_standing` + `refresh_player_standing` RPC. Cron schedule added in followup PR. |
-| W12 | Standing backfill (one-shot, chunked) | 🟡 in-flight | `wave12` | `/api/cron/v3/standing-backfill` route. Iterates all teams in TEAMS_PER_CHUNK batches, calls refresh_player_standing RPC. Operator-triggered after deploy. Same idempotency guarantees as W11 cron. |
+| W12 | Standing backfill (one-shot, chunked) | ✅ merged + executed 2026-05-25 | PR #47 | `/api/cron/v3/standing-backfill` route shipped. Backfill formally executed against prod RPC: 171 rows refreshed across 15 metrics for 14 active players. Most-recent computed_at = 2026-05-25 03:36 UTC. |
 | W13 | StandingBar component (3 variants, all states) | ⬜ | — | |
 | W14 | Wire standing into v2 generators | ⬜ | — | Additive `evidence.standing` |
 | W15 | StandingBar adoption — coach surfaces | ⬜ | — | |
