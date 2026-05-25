@@ -33,7 +33,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W18 | Goals schema + RLS | 🟡 in-flight | `wave18` | golf_goals table created in prod (30 cols, 7 CHECKs, 3 indexes, 3 RLS policies, window_days generated). Database types regenerated (+142 lines). Empty until W19 service/UI + W20 focus_areas backfill. |
 | W19 | Goals service + creation flow + suggestions | 🟡 in-flight | `wave19` | golf_goal_suggestions table live + RLS. v3/goals/ types + loader, server actions (createGoal, pauseGoal, abandonGoal, resumeGoal, accept/dismiss suggestion). GoalCard + GoalCreationModal components. 6 GoalCard tests. Engine-driven suggestion writer + evaluator cron deferred to a W19-followup. |
 | W20 | Focus areas → goals migration | 🟡 in-flight | `wave20` | One-shot SQL: 5 of 7 active focus_areas mapped + migrated to golf_goals (2 unmapped — "Bounce-back %" + "Fairways hit %" have no v3 metric). All as coach-assigned mandatory + shared. Rename `_deprecated_` deferred until /my-development reads from goals. |
-| W21 | v3 generator base + `engine_version` + first generator | ⬜ | — | Putt-distance |
+| W21 | v3 generator base + `engine_version` + first generator | 🟡 in-flight | `wave21` | engine_version column + check constraint + index live; 266 existing insights labeled 'v2' via default. BaseGenerator abstract class auto-injects standing + counterfactual + v3: prefix + engine_version stamp via upsertInsightV3 wrapper. PuttDistanceGenerator (3 buckets). 5 unit tests. |
 | W22 | v3 generators: putt-bias + scrambling + approach-miss | ⬜ | — | |
 | W23 | v3 generators: tee-strategy + par-type + course-mgmt | ⬜ | — | |
 | W24 | v3 generators: pressure-gap + warmup-hole | ⬜ | — | |
