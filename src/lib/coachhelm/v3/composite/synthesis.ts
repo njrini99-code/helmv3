@@ -15,6 +15,7 @@ import { upsertInsightV3, GATED_OUT } from '@/lib/coachhelm/v3/insights/upsert-v
 import { logServerError } from '@/lib/server-error-logger';
 import { COMPOSITE_RULES } from './index';
 import { loadRecentInsightsForPlayer } from './loader';
+import { loadCompositeContext } from './hole-sequence-loader';
 import type { CompositeMatch, CompositeRule } from './types';
 
 const COMPOSITE_PREFIX = 'composite';
@@ -53,11 +54,26 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
   }
   if (insights.length === 0) return result;
 
+  // W30.5: pre-load hole-sequence + lie-typed shot context once so rules
+  // that need raw data (closing-hole fatigue, doubles-after-bogey, etc.)
+  // don't each hit the DB. Failure-isolated — empty arrays on error so
+  // those rules quietly no-op.
+  let ctx;
+  try {
+    ctx = await loadCompositeContext(playerId);
+  } catch (err) {
+    await logServerError(
+      `synthesizeForPlayer: ctx load failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'v3.composite.synthesis.ctx' },
+    );
+    ctx = { hole_scores: [], short_game_shots: [], flyer_lie_shots: [] };
+  }
+
   // Pass 1: collect all matches with their owning rule.
   const matches: Array<{ rule: CompositeRule; match: CompositeMatch }> = [];
   for (const rule of COMPOSITE_RULES) {
     try {
-      const m = rule.detect(insights);
+      const m = rule.detect(insights, ctx);
       if (m) matches.push({ rule, match: m });
     } catch (err) {
       await logServerError(
