@@ -19,6 +19,43 @@ import type {
   InsightEvidence,
   InsightUnit,
 } from '@/lib/coachhelm/v2/insights/types';
+import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { EvidenceStanding } from '@/lib/coachhelm/v2/insights/standing-injection';
+
+/**
+ * W15: When v2 generators have injected `evidence.standing` (W14), render
+ * the v3 StandingBar instead of the legacy BenchmarkScale. v3 carries
+ * cohort percentile + team_n cold-start gating + auto a11y label.
+ *
+ * Returns the v3 component when:
+ *   - `evidence.standing` is present and well-formed
+ *   - The standing's metric_id maps to a canonical v3 metric (via
+ *     metric-config), so direction + unit + scale are known
+ *
+ * Otherwise returns null — caller falls through to BenchmarkScale.
+ */
+function tryRenderV3Standing(evidence: InsightEvidence): React.ReactElement | null {
+  const standing = (evidence as InsightEvidence & { standing?: EvidenceStanding }).standing;
+  if (!standing || !standing.metric_id) return null;
+  const cfg = getMetricRenderConfig(standing.metric_id);
+  if (!cfg) return null;
+  return (
+    <StandingBar
+      metric_id={standing.metric_id}
+      metric_label={cfg.display_label}
+      player_value={standing.player_value}
+      team_avg={standing.team_avg}
+      team_n={standing.team_n}
+      team_pct={standing.team_pct}
+      pga_value={standing.pga_value}
+      direction={cfg.direction}
+      unit={cfg.unit}
+      scale={cfg.default_scale}
+      size="card"
+    />
+  );
+}
 
 export interface EvidencePanelProps {
   /** The full InsightEvidence JSON blob from golf_coach_insights.evidence. */
@@ -250,13 +287,18 @@ export function EvidencePanel({
   const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
   const colors = confidenceColor(evidence.confidence);
 
+  // W15: prefer v3 StandingBar when v14 generators have populated
+  // evidence.standing AND the metric_id resolves to a canonical v3 metric.
+  // Falls through to the legacy BenchmarkScale for v2-only insights.
+  const v3Standing = tryRenderV3Standing(evidence);
+
   if (compact) {
     return (
       <div
         data-testid={testId ?? 'evidence-panel-compact'}
         className={cn('mt-3 space-y-2.5')}
       >
-        <BenchmarkScale evidence={evidence} />
+        {v3Standing ?? <BenchmarkScale evidence={evidence} />}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-warm-500 tabular-nums">
           <span data-testid="evidence-sample">
             {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
@@ -346,6 +388,8 @@ export function EvidencePanel({
         'mt-3 bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4',
       )}
     >
+      {/* W15: v3 StandingBar above the legacy key/value grid when present. */}
+      {v3Standing && <div className="mb-3">{v3Standing}</div>}
       <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-warm-500">
         {evidence.metric_label}
       </div>
