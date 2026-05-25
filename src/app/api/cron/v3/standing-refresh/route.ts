@@ -25,6 +25,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import {
   STANDING_REFRESH_METRIC_IDS,
   STANDING_REFRESH_DEFERRED_METRIC_IDS,
+  ROUND_REFRESH_METRIC_IDS,
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 
@@ -96,7 +97,7 @@ async function handle(): Promise<NextResponse> {
       teams_in_chunk: 0,
       team_ids: [],
       rpc_rows: [],
-      metrics_covered: [...STANDING_REFRESH_METRIC_IDS],
+      metrics_covered: [...STANDING_REFRESH_METRIC_IDS, ...ROUND_REFRESH_METRIC_IDS],
       metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
       duration_ms: Date.now() - startedAt,
     } satisfies RefreshSummary);
@@ -126,13 +127,32 @@ async function handle(): Promise<NextResponse> {
         teams_in_chunk: teamIds.length,
         team_ids: teamIds,
         rpc_rows: [],
-        metrics_covered: [...STANDING_REFRESH_METRIC_IDS],
+        metrics_covered: [...STANDING_REFRESH_METRIC_IDS, ...ROUND_REFRESH_METRIC_IDS],
         metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
         duration_ms: Date.now() - startedAt,
         error: rpcResult.error.message ?? 'rpc-error',
       } satisfies RefreshSummary);
     }
     rpcRows = (rpcResult.data ?? []) as RpcRow[];
+
+    // Companion RPC for round-level metrics (practice_tournament_delta +
+    // opening_hole_delta). Different table/output shape — normalized below.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const roundResult = await (supabase as any).rpc('refresh_player_standing_round_metrics', {
+      p_team_ids: teamIds,
+    });
+    if (roundResult.error) {
+      await logServerError(
+        `standing-refresh round-RPC: ${roundResult.error.message ?? 'unknown'}`,
+        { action: 'cron.v3.standing-refresh.round-rpc' },
+      );
+      // Don't fail the whole refresh — cache metrics succeeded.
+    } else {
+      const roundRows = (roundResult.data ?? []) as Array<{ out_metric_id: string; out_rows_upserted: number }>;
+      for (const r of roundRows) {
+        rpcRows.push({ metric_id: r.out_metric_id, rows_upserted: r.out_rows_upserted });
+      }
+    }
   } catch (err) {
     await logServerError(
       `standing-refresh RPC exception: ${err instanceof Error ? err.message : String(err)}`,
@@ -142,7 +162,7 @@ async function handle(): Promise<NextResponse> {
       teams_in_chunk: teamIds.length,
       team_ids: teamIds,
       rpc_rows: [],
-      metrics_covered: [...STANDING_REFRESH_METRIC_IDS],
+      metrics_covered: [...STANDING_REFRESH_METRIC_IDS, ...ROUND_REFRESH_METRIC_IDS],
       metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
       duration_ms: Date.now() - startedAt,
       error: err instanceof Error ? err.message : String(err),
@@ -153,7 +173,7 @@ async function handle(): Promise<NextResponse> {
     teams_in_chunk: teamIds.length,
     team_ids: teamIds,
     rpc_rows: rpcRows,
-    metrics_covered: [...STANDING_REFRESH_METRIC_IDS],
+    metrics_covered: [...STANDING_REFRESH_METRIC_IDS, ...ROUND_REFRESH_METRIC_IDS],
     metrics_deferred: [...STANDING_REFRESH_DEFERRED_METRIC_IDS],
     duration_ms: Date.now() - startedAt,
   } satisfies RefreshSummary);

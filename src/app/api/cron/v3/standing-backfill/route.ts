@@ -35,6 +35,7 @@ import { logServerError } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import {
   STANDING_REFRESH_METRIC_IDS,
+  ROUND_REFRESH_METRIC_IDS,
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 
@@ -98,6 +99,7 @@ async function handle(): Promise<NextResponse> {
   // 2. Chunk + invoke RPC per chunk. Tally rows upserted per metric.
   const rowsByMetric: Record<string, number> = {};
   for (const m of STANDING_REFRESH_METRIC_IDS) rowsByMetric[m] = 0;
+  for (const m of ROUND_REFRESH_METRIC_IDS) rowsByMetric[m] = 0;
 
   let chunksProcessed = 0;
   for (let i = 0; i < teamIds.length; i += TEAMS_PER_CHUNK) {
@@ -123,6 +125,24 @@ async function handle(): Promise<NextResponse> {
       for (const row of (data ?? []) as Array<{ metric_id: string; rows_upserted: number }>) {
         rowsByMetric[row.metric_id] =
           (rowsByMetric[row.metric_id] ?? 0) + (row.rows_upserted ?? 0);
+      }
+
+      // Companion round-metrics RPC. Non-blocking on failure — cache-side
+      // metrics already succeeded for this chunk.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const roundResult = await (supabase as any).rpc('refresh_player_standing_round_metrics', {
+        p_team_ids: chunk,
+      });
+      if (!roundResult.error) {
+        for (const row of (roundResult.data ?? []) as Array<{ out_metric_id: string; out_rows_upserted: number }>) {
+          rowsByMetric[row.out_metric_id] =
+            (rowsByMetric[row.out_metric_id] ?? 0) + (row.out_rows_upserted ?? 0);
+        }
+      } else {
+        await logServerError(
+          `standing-backfill round-RPC chunk ${chunksProcessed}: ${roundResult.error.message ?? 'unknown'}`,
+          { action: 'cron.v3.standing-backfill.round-rpc' },
+        );
       }
     } catch (err) {
       await logServerError(
