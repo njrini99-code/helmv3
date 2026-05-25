@@ -990,13 +990,22 @@ Priority on budget exhaustion: `round_review` > `coach_chat` > `hero_narrative` 
 
 ### XI.5 Models (via Vercel AI Gateway)
 
-- `round_review` → `anthropic/claude-sonnet-4-6`
+> **Amended 2026-05-25 (W30 scoping)** — Haiku-only for round_review +
+> hero_narrative; Sonnet only retained for coach_chat's multi-step
+> tool-call reasoning. Cost reduction: ~$106/team/yr → ~$33/team/yr.
+
+- `round_review` → `anthropic/claude-haiku-4-5` (was Sonnet)
 - `hero_narrative` → `anthropic/claude-haiku-4-5`
-- `coach_chat` → `anthropic/claude-sonnet-4-6`
+- `coach_chat` → `anthropic/claude-sonnet-4-6` (multi-step tool calls)
 
-### XI.6 Admin cost dashboard (in W30)
+### XI.6 Admin cost dashboard — **DEFERRED past W30**
 
-`/admin/coachhelm/llm-spend` — total + per-coach + per-task daily/weekly.
+> **Amended 2026-05-25** — dropped from W30 scope. The two cost tables
+> (`golf_coachhelm_llm_calls` + `golf_coachhelm_llm_budget`) still ship
+> in W30 because they're load-bearing for budget enforcement and call
+> attribution. The admin UI at `/admin/coachhelm/llm-spend` (one page
+> rendering total + per-coach + per-task daily/weekly) is the deferred
+> piece — until it ships, query the tables directly via Supabase Studio.
 
 ### XI.7 Stale-cache decision
 
@@ -1421,7 +1430,7 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 | W27 | Coach intent + roster pill + drawer | `golf_coach_player_intent` table + UI | C:5, M:1 | 1 | W18 |
 | W28 | Composite insights v1 (12 rules + synthesis) | `v3/composite/` + 12 rules + orchestrator hook | C:14, M:1 | 0 | W25 |
 | W29 | Qualifying & travel workspace (new v3 route for selection; existing scoring UI untouched) | Schema extension + `golf_qualifier_selections` + new `dashboard/coachhelm/qualifying/[id]` v3 route + "Manage selections" link added to existing `qualifiers/[id]/page.tsx` | C:14, M:1 | 2 | W18 |
-| W30 | LLM service wrapper + round-review composer + budget + admin cost dashboard | `v3/llm/` + budget tables + admin page | C:14, M:1 | 2 | W9 |
+| W30 | LLM service wrapper (Haiku) + round-review composer + budget tables (admin dashboard deferred) | `v3/llm/` + 2 budget/call-log tables | C:9, M:1 | 2 | W9 |
 | W30.5 | **W28-followup** — remaining 7 composite rules + hole-sequence loader + lie-type shot-source | `v3/composite/rules/*` (7 new) + `v3/composite/hole-sequence-loader.ts` + `v3/engine/shot-source.ts` extension | C:10, M:0 | 0 | W28, W30 |
 | W31 | LLM hero narrative on player dashboard | Hero card wrapper | C:2, M:1 | 0 | W30, W30.5 |
 | W32 | Coach chat backend + UI + 12 tool routes + conversation schema | Chat agent + drawer + page | C:24, M:0 | 2 | W30 |

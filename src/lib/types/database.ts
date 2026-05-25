@@ -5631,6 +5631,104 @@ export type Database = {
           },
         ]
       }
+      golf_coachhelm_llm_budget: {
+        Row: {
+          budget_usd: number
+          coach_id: string
+          date: string
+          spent_usd: number
+          task_class_usage: Json
+          updated_at: string
+        }
+        Insert: {
+          budget_usd: number
+          coach_id: string
+          date: string
+          spent_usd?: number
+          task_class_usage?: Json
+          updated_at?: string
+        }
+        Update: {
+          budget_usd?: number
+          coach_id?: string
+          date?: string
+          spent_usd?: number
+          task_class_usage?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_llm_budget_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coachhelm_llm_calls: {
+        Row: {
+          citations: Json | null
+          coach_id: string | null
+          completion_tokens: number
+          cost_usd: number
+          created_at: string
+          fallback_to_template: boolean
+          id: string
+          model_id: string
+          player_id: string | null
+          prompt_hash: string
+          prompt_tokens: number
+          task: string
+          verified: boolean
+        }
+        Insert: {
+          citations?: Json | null
+          coach_id?: string | null
+          completion_tokens: number
+          cost_usd: number
+          created_at?: string
+          fallback_to_template?: boolean
+          id?: string
+          model_id: string
+          player_id?: string | null
+          prompt_hash: string
+          prompt_tokens: number
+          task: string
+          verified: boolean
+        }
+        Update: {
+          citations?: Json | null
+          coach_id?: string | null
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          fallback_to_template?: boolean
+          id?: string
+          model_id?: string
+          player_id?: string | null
+          prompt_hash?: string
+          prompt_tokens?: number
+          task?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_llm_calls_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_coachhelm_llm_calls_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coachhelm_settings: {
         Row: {
           auto_insights: boolean | null
