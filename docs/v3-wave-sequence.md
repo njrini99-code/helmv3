@@ -30,7 +30,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W15 | StandingBar adoption — coach surfaces | 🟡 in-flight | `wave15` | New `metric-config.ts` lookup; EvidencePanel renders v3 StandingBar (compact + expanded) when `evidence.standing` exists, falls through to legacy BenchmarkScale otherwise. Covers all coach insight surfaces (InsightCard → InsightsFeed → CoachAlertCenter → PlayerInsightClient). 2 new tests. |
 | W16 | StandingBar adoption — player surfaces + `/my-standing` | 🟡 in-flight | `wave16` | New `/dashboard/my-standing/{page,loading}.tsx` — player-facing matrix grouped by category (SG / Putting / Approach / Short Game / Scoring / Course Mgmt / Pressure). Player CoachHelm dashboard auto-gets StandingBar via W15's EvidencePanel modification (no new wiring needed). |
 | W17 | Counterfactual + secondary-line UI | 🟡 in-flight | `wave17` | `v3/counterfactual/` module (types + lookup-tables for 28 metrics + compute + baseline-loader) + `CounterfactualLine` component. Auto-suppressed below 0.3 strokes/round per locked decision. Wired into `/my-standing`. EvidencePanel integration deferred until parent surfaces fetch baseline. 14 unit tests. |
-| W18 | Goals schema + RLS | ⬜ | — | `golf_goals` table |
+| W18 | Goals schema + RLS | 🟡 in-flight | `wave18` | golf_goals table created in prod (30 cols, 7 CHECKs, 3 indexes, 3 RLS policies, window_days generated). Database types regenerated (+142 lines). Empty until W19 service/UI + W20 focus_areas backfill. |
 | W19 | Goals service + creation flow + suggestions | ⬜ | — | UI + `golf_goal_suggestions` |
 | W20 | Focus areas → goals migration | ⬜ | — | One-shot SQL + rename old table |
 | W21 | v3 generator base + `engine_version` + first generator | ⬜ | — | Putt-distance |

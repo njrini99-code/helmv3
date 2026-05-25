@@ -6287,6 +6287,148 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_goals: {
+        Row: {
+          baseline_value: number | null
+          category: string
+          coach_assignment_mode: string | null
+          coach_id_if_assigned: string | null
+          created_at: string
+          created_by_user_id: string
+          creator_role: string
+          current_value: number | null
+          ends_at: string
+          id: string
+          metric_id: string
+          origin: string
+          origin_insight_id: string | null
+          outcome_evaluated_at: string | null
+          player_accepted_at: string | null
+          player_decline_reason: string | null
+          player_declined_at: string | null
+          player_id: string
+          shared_at: string | null
+          shared_with_coach: boolean
+          snapshots: Json
+          started_at: string
+          state: string
+          target_source: string | null
+          target_value: number | null
+          team_id: string | null
+          title: string
+          transfer_reason: string | null
+          updated_at: string
+          window_days: number | null
+        }
+        Insert: {
+          baseline_value?: number | null
+          category: string
+          coach_assignment_mode?: string | null
+          coach_id_if_assigned?: string | null
+          created_at?: string
+          created_by_user_id: string
+          creator_role: string
+          current_value?: number | null
+          ends_at: string
+          id?: string
+          metric_id: string
+          origin?: string
+          origin_insight_id?: string | null
+          outcome_evaluated_at?: string | null
+          player_accepted_at?: string | null
+          player_decline_reason?: string | null
+          player_declined_at?: string | null
+          player_id: string
+          shared_at?: string | null
+          shared_with_coach?: boolean
+          snapshots?: Json
+          started_at?: string
+          state?: string
+          target_source?: string | null
+          target_value?: number | null
+          team_id?: string | null
+          title: string
+          transfer_reason?: string | null
+          updated_at?: string
+          window_days?: number | null
+        }
+        Update: {
+          baseline_value?: number | null
+          category?: string
+          coach_assignment_mode?: string | null
+          coach_id_if_assigned?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          creator_role?: string
+          current_value?: number | null
+          ends_at?: string
+          id?: string
+          metric_id?: string
+          origin?: string
+          origin_insight_id?: string | null
+          outcome_evaluated_at?: string | null
+          player_accepted_at?: string | null
+          player_decline_reason?: string | null
+          player_declined_at?: string | null
+          player_id?: string
+          shared_at?: string | null
+          shared_with_coach?: boolean
+          snapshots?: Json
+          started_at?: string
+          state?: string
+          target_source?: string | null
+          target_value?: number | null
+          team_id?: string | null
+          title?: string
+          transfer_reason?: string | null
+          updated_at?: string
+          window_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_goals_coach_id_if_assigned_fkey"
+            columns: ["coach_id_if_assigned"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_goals_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_goals_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
+          },
+          {
+            foreignKeyName: "golf_goals_origin_insight_id_fkey"
+            columns: ["origin_insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_goals_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_goals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_holes: {
         Row: {
           created_at: string | null
