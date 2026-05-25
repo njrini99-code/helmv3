@@ -1364,7 +1364,7 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 |---|---|---|---|---|---|
 | **W9** | Pre-Foundation Hardening | Docs + decisions + RLS helpers + `golf_metrics` table + seed + provider clients + extends `golf_coachhelm_settings` | C:18, M:2 | 6 (pt2 split per Rule 2 — see Part XXVIII) | — |
 | W10 | PGA standards table + seed | `golf_pga_standards` with FK to `golf_metrics` | C:3, M:0 | 2 (table + seed split per Rule 2 + backfill rule) | W9 |
-| W11 | Player standing table + nightly cron | `golf_player_standing` + standing-refresh cron (reads SG from cache, chunked) | C:4, M:0 | 1 | W10 |
+| W11 | Player standing table + nightly cron | `golf_player_standing` + standing-refresh cron + `refresh_player_standing(uuid[])` RPC (covers 15 of 28 metrics direct-from-cache; remaining 13 populated by W21+ generators) | C:5, M:0 | 2 (table + RPC split per Rule 2) | W10 |
 | W12 | Standing backfill (one-shot, chunked) | Backfill cron | C:1, M:0 | 0 | W11 |
 | W13 | StandingBar component (3 variants, mobile + desktop, all states) | New components | C:8, M:0 | 0 | W9 |
 | W14 | Wire standing into V2 generators (additive `evidence.standing`) | V2 generators get standing injection | C:0, M:9 | 0 | W11, W13 |

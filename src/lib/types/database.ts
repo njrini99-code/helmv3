@@ -7374,6 +7374,66 @@ export type Database = {
           },
         ]
       }
+      golf_player_standing: {
+        Row: {
+          computed_at: string
+          level_avg: number | null
+          level_n: number
+          level_pct: number | null
+          metric_id: string
+          pga_delta: number | null
+          pga_value: number
+          player_id: string
+          player_value: number
+          team_avg: number | null
+          team_n: number
+          team_pct: number | null
+        }
+        Insert: {
+          computed_at?: string
+          level_avg?: number | null
+          level_n?: number
+          level_pct?: number | null
+          metric_id: string
+          pga_delta?: number | null
+          pga_value: number
+          player_id: string
+          player_value: number
+          team_avg?: number | null
+          team_n?: number
+          team_pct?: number | null
+        }
+        Update: {
+          computed_at?: string
+          level_avg?: number | null
+          level_n?: number
+          level_pct?: number | null
+          metric_id?: string
+          pga_delta?: number | null
+          pga_value?: number
+          player_id?: string
+          player_value?: number
+          team_avg?: number | null
+          team_n?: number
+          team_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_standing_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
+          },
+          {
+            foreignKeyName: "golf_player_standing_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_player_stats_cache: {
         Row: {
           approach_miss_left_pct: number | null
@@ -10318,6 +10378,13 @@ export type Database = {
         Returns: undefined
       }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
+      refresh_player_standing: {
+        Args: { p_team_ids: string[] }
+        Returns: {
+          metric_id: string
+          rows_upserted: number
+        }[]
+      }
       refresh_player_stats_cache: {
         Args: { p_player_id: string }
         Returns: undefined
