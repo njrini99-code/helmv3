@@ -28,7 +28,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W13 | StandingBar component (3 variants, all states) | 🟡 in-flight | `wave13` | `src/components/golf/coachhelm/v3/StandingBar/` — index dispatcher + Card/Inline/Hero + types + utils. 38 tests passing (5 render-state matrix × 3 variants + utils unit tests). Visual review still needed on running dev server. |
 | W14 | Wire standing into v2 generators | 🟡 in-flight | `wave14` | 1 helper (`standing-injection.ts`) + 6 v2 mining file modifications. Active injection in PuttDistance, Scrambling, ParType, WarmupHole, PressureGap. Future-ready imports in approach-analytics + tee-strategy. Helper no-ops when standing data isn't populated yet. |
 | W15 | StandingBar adoption — coach surfaces | 🟡 in-flight | `wave15` | New `metric-config.ts` lookup; EvidencePanel renders v3 StandingBar (compact + expanded) when `evidence.standing` exists, falls through to legacy BenchmarkScale otherwise. Covers all coach insight surfaces (InsightCard → InsightsFeed → CoachAlertCenter → PlayerInsightClient). 2 new tests. |
-| W16 | StandingBar adoption — player surfaces + `/my-standing` | ⬜ | — | |
+| W16 | StandingBar adoption — player surfaces + `/my-standing` | 🟡 in-flight | `wave16` | New `/dashboard/my-standing/{page,loading}.tsx` — player-facing matrix grouped by category (SG / Putting / Approach / Short Game / Scoring / Course Mgmt / Pressure). Player CoachHelm dashboard auto-gets StandingBar via W15's EvidencePanel modification (no new wiring needed). |
 | W17 | Counterfactual + secondary-line UI | ⬜ | — | Auto-suppress < 0.3 strokes |
 | W18 | Goals schema + RLS | ⬜ | — | `golf_goals` table |
 | W19 | Goals service + creation flow + suggestions | ⬜ | — | UI + `golf_goal_suggestions` |
