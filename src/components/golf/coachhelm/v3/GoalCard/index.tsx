@@ -1,0 +1,132 @@
+/**
+ * GoalCard — render a single v3 Goal.
+ *
+ * Master plan Part VI display contract:
+ *   - Metric label + target
+ *   - Player progress (current_value → target_value) with cohort context
+ *   - Time-remaining badge
+ *   - State chip (active / paused / etc.)
+ *   - Action menu (pause / abandon / share-with-coach toggle)
+ *
+ * This is the read-side only — write actions live in
+ * src/app/golf/actions/v3/goals.ts and are called from the card's
+ * client-side action menu (separate file when needed).
+ */
+
+import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
+
+export interface GoalCardProps {
+  goal: Goal;
+  /** When false, render a compact one-line summary instead of the full card. */
+  expanded?: boolean;
+}
+
+const STATE_CHIP: Record<Goal['state'], { label: string; cls: string }> = {
+  active:            { label: 'Active',            cls: 'bg-primary-50 text-primary-700' },
+  paused:            { label: 'Paused',            cls: 'bg-warm-100 text-warm-700' },
+  achieved:          { label: 'Achieved',          cls: 'bg-emerald-50 text-emerald-700' },
+  missed:            { label: 'Missed',            cls: 'bg-red-50 text-red-700' },
+  partial:           { label: 'Partial',           cls: 'bg-amber-50 text-amber-700' },
+  abandoned:         { label: 'Abandoned',         cls: 'bg-warm-100 text-warm-500' },
+  pending_baseline:  { label: 'Pending baseline',  cls: 'bg-blue-50 text-blue-700' },
+};
+
+function daysRemaining(endsAt: string): number {
+  const ms = new Date(endsAt).getTime() - Date.now();
+  return Math.max(0, Math.ceil(ms / 86400_000));
+}
+
+function progressPct(g: Goal): number | null {
+  if (g.baseline_value === null || g.target_value === null || g.current_value === null) {
+    return null;
+  }
+  const span = g.target_value - g.baseline_value;
+  if (Math.abs(span) < 1e-6) return 100;
+  const traveled = g.current_value - g.baseline_value;
+  return Math.max(0, Math.min(100, Math.round((traveled / span) * 100)));
+}
+
+export function GoalCard({ goal, expanded = true }: GoalCardProps) {
+  const cfg = getMetricRenderConfig(goal.metric_id);
+  const stateChip = STATE_CHIP[goal.state];
+  const days = daysRemaining(goal.ends_at);
+  const pct = progressPct(goal);
+
+  if (!expanded) {
+    return (
+      <div
+        data-testid="goal-card-compact"
+        data-goal-id={goal.id}
+        className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3"
+      >
+        <span className="text-sm font-medium text-warm-900 truncate">{goal.title}</span>
+        <span className={`text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}>
+          {stateChip.label}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      data-testid="goal-card"
+      data-goal-id={goal.id}
+      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <h3 className="text-base font-medium text-warm-900 tracking-[-0.012em] truncate">
+          {goal.title}
+        </h3>
+        <span
+          className={`text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}
+        >
+          {stateChip.label}
+        </span>
+      </div>
+
+      <p className="text-xs text-warm-500 mb-3">
+        {cfg?.display_label ?? goal.metric_id} · {goal.window_days}-day window
+        {goal.state === 'active' && ` · ${days} day${days === 1 ? '' : 's'} left`}
+      </p>
+
+      {/* Values row */}
+      <div className="flex items-baseline justify-between text-xs text-warm-600 tabular-nums mb-3">
+        <span>
+          Baseline {goal.baseline_value !== null && cfg
+            ? formatValue(goal.baseline_value, cfg.unit)
+            : '—'}
+        </span>
+        <span className="text-warm-900 font-medium text-sm">
+          Now {goal.current_value !== null && cfg
+            ? formatValue(goal.current_value, cfg.unit)
+            : '—'}
+        </span>
+        <span>
+          Target {goal.target_value !== null && cfg
+            ? formatValue(goal.target_value, cfg.unit)
+            : '—'}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      {pct !== null && (
+        <div className="relative h-1.5 w-full bg-warm-100 rounded-full mb-2">
+          <div
+            className="absolute left-0 top-0 h-full bg-primary-600 rounded-full transition-all duration-300"
+            style={{ width: `${pct}%` }}
+            aria-hidden="true"
+          />
+        </div>
+      )}
+
+      {/* Footer line */}
+      <p className="text-[11px] text-warm-500">
+        {goal.creator_role === 'coach' ? 'Assigned by coach' : 'Self-set'}
+        {goal.shared_with_coach && goal.creator_role === 'player' && ' · shared with coach'}
+      </p>
+    </div>
+  );
+}

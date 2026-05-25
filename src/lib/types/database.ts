@@ -6287,6 +6287,70 @@ export type Database = {
         }
         Relationships: []
       }
+      golf_goal_suggestions: {
+        Row: {
+          acted_at: string | null
+          expires_at: string
+          id: string
+          metric_id: string
+          origin_insight_id: string | null
+          player_id: string
+          snooze_until: string | null
+          state: string
+          suggested_at: string
+          suggested_target_value: number | null
+          suggested_window_days: number
+        }
+        Insert: {
+          acted_at?: string | null
+          expires_at?: string
+          id?: string
+          metric_id: string
+          origin_insight_id?: string | null
+          player_id: string
+          snooze_until?: string | null
+          state?: string
+          suggested_at?: string
+          suggested_target_value?: number | null
+          suggested_window_days?: number
+        }
+        Update: {
+          acted_at?: string | null
+          expires_at?: string
+          id?: string
+          metric_id?: string
+          origin_insight_id?: string | null
+          player_id?: string
+          snooze_until?: string | null
+          state?: string
+          suggested_at?: string
+          suggested_target_value?: number | null
+          suggested_window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_goal_suggestions_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
+          },
+          {
+            foreignKeyName: "golf_goal_suggestions_origin_insight_id_fkey"
+            columns: ["origin_insight_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_goal_suggestions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_goals: {
         Row: {
           baseline_value: number | null
