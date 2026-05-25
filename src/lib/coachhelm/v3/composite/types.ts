@@ -62,8 +62,53 @@ export interface CompositeContent {
 }
 
 /**
+ * Per-player context pre-loaded ONCE by the synthesis runner and
+ * passed to every rule's detect(). Carries the raw-data sources that
+ * not all rules need to read — hole-sequence rows (for closing-hole
+ * fatigue, doubles-after-bogey, front-9 starter) and shot rows
+ * filtered by lie (for flyer-lie + short-side scrambling chain).
+ *
+ * Loaders return empty arrays on failure so rules can safely no-op.
+ * Insights-only rules ignore ctx entirely.
+ */
+export interface CompositeContext {
+  hole_scores: HoleScore[];
+  short_game_shots: ShortGameShot[];
+  flyer_lie_shots: ApproachShotWithLie[];
+}
+
+/** One row per (round, hole) the player completed in the window. */
+export interface HoleScore {
+  round_id: string;
+  hole_number: number;
+  par: number;
+  score: number;
+}
+
+/** Pitch/chip from rough or bunker close to the green. */
+export interface ShortGameShot {
+  round_id: string;
+  hole_number: number | null;
+  lie_before: string;
+  distance_to_hole_before: number; // yards
+  distance_to_hole_after: number;
+}
+
+/** Approach shot from a flyer-prone lie (light rough). */
+export interface ApproachShotWithLie {
+  round_id: string;
+  hole_number: number | null;
+  lie_before: string;
+  distance_to_hole_before: number; // yards
+  distance_to_hole_after: number;
+}
+
+/**
  * Rule interface. Each rule file exports one of these as default.
  * Priority controls conflict resolution: 'urgent' wins over 'high'.
+ *
+ * detect() optionally receives a CompositeContext — rules that only
+ * compose existing insights can ignore it (defaults to empty arrays).
  */
 export interface CompositeRule {
   id: string;
@@ -71,6 +116,6 @@ export interface CompositeRule {
   priority: 'high' | 'urgent';
   /** Maps to a valid InsightCategory persisted on the upserted row. */
   category: InsightCategory;
-  detect: (insights: EvidenceInsight[]) => CompositeMatch | null;
+  detect: (insights: EvidenceInsight[], ctx?: CompositeContext) => CompositeMatch | null;
   compose: (match: CompositeMatch) => CompositeContent;
 }
