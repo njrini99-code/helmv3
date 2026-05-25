@@ -1422,7 +1422,8 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 | W28 | Composite insights v1 (12 rules + synthesis) | `v3/composite/` + 12 rules + orchestrator hook | C:14, M:1 | 0 | W25 |
 | W29 | Qualifying & travel workspace (new v3 route for selection; existing scoring UI untouched) | Schema extension + `golf_qualifier_selections` + new `dashboard/coachhelm/qualifying/[id]` v3 route + "Manage selections" link added to existing `qualifiers/[id]/page.tsx` | C:14, M:1 | 2 | W18 |
 | W30 | LLM service wrapper + round-review composer + budget + admin cost dashboard | `v3/llm/` + budget tables + admin page | C:14, M:1 | 2 | W9 |
-| W31 | LLM hero narrative on player dashboard | Hero card wrapper | C:2, M:1 | 0 | W30 |
+| W30.5 | **W28-followup** — remaining 7 composite rules + hole-sequence loader + lie-type shot-source | `v3/composite/rules/*` (7 new) + `v3/composite/hole-sequence-loader.ts` + `v3/engine/shot-source.ts` extension | C:10, M:0 | 0 | W28, W30 |
+| W31 | LLM hero narrative on player dashboard | Hero card wrapper | C:2, M:1 | 0 | W30, W30.5 |
 | W32 | Coach chat backend + UI + 12 tool routes + conversation schema | Chat agent + drawer + page | C:24, M:0 | 2 | W30 |
 | W33 | Player genome schema + nightly compute (chunked) | `golf_player_genome` + 80 dim files + cron | C:14, M:0 | 1 | W11 |
 | W34 | Player genome UI (player + coach + compare) | Pages + radar component | C:8, M:0 | 0 | W33 |
