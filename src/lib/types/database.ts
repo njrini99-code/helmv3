@@ -5592,8 +5592,11 @@ export type Database = {
           disabled_reason: string | null
           enabled: boolean | null
           focus_areas: string[] | null
+          goal_assignment_default: string
           id: string
           insight_frequency: string | null
+          llm_budget_usd_per_day: number | null
+          llm_narrative_enabled: boolean
           min_rounds_for_insights: number | null
           team_id: string | null
           trend_alerts: boolean | null
@@ -5609,8 +5612,11 @@ export type Database = {
           disabled_reason?: string | null
           enabled?: boolean | null
           focus_areas?: string[] | null
+          goal_assignment_default?: string
           id?: string
           insight_frequency?: string | null
+          llm_budget_usd_per_day?: number | null
+          llm_narrative_enabled?: boolean
           min_rounds_for_insights?: number | null
           team_id?: string | null
           trend_alerts?: boolean | null
@@ -5626,8 +5632,11 @@ export type Database = {
           disabled_reason?: string | null
           enabled?: boolean | null
           focus_areas?: string[] | null
+          goal_assignment_default?: string
           id?: string
           insight_frequency?: string | null
+          llm_budget_usd_per_day?: number | null
+          llm_narrative_enabled?: boolean
           min_rounds_for_insights?: number | null
           team_id?: string | null
           trend_alerts?: boolean | null
@@ -6683,6 +6692,42 @@ export type Database = {
           },
         ]
       }
+      golf_metrics: {
+        Row: {
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          direction: string
+          display_label: string
+          introduced_in_wave: string
+          metric_id: string
+          unit: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string | null
+          direction: string
+          display_label: string
+          introduced_in_wave?: string
+          metric_id: string
+          unit: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          direction?: string
+          display_label?: string
+          introduced_in_wave?: string
+          metric_id?: string
+          unit?: string
+        }
+        Relationships: []
+      }
       golf_patterns_v2: {
         Row: {
           actionability: number | null
@@ -6835,6 +6880,65 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "golf_players"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_pga_standards: {
+        Row: {
+          display_label: string
+          div1_avg_value: number | null
+          div2_avg_value: number | null
+          div3_avg_value: number | null
+          hs_avg_value: number | null
+          korn_ferry_value: number | null
+          metric_id: string
+          pga_p25: number | null
+          pga_p50: number | null
+          pga_p75: number | null
+          pga_tour_value: number | null
+          season: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          display_label: string
+          div1_avg_value?: number | null
+          div2_avg_value?: number | null
+          div3_avg_value?: number | null
+          hs_avg_value?: number | null
+          korn_ferry_value?: number | null
+          metric_id: string
+          pga_p25?: number | null
+          pga_p50?: number | null
+          pga_p75?: number | null
+          pga_tour_value?: number | null
+          season: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          display_label?: string
+          div1_avg_value?: number | null
+          div2_avg_value?: number | null
+          div3_avg_value?: number | null
+          hs_avg_value?: number | null
+          korn_ferry_value?: number | null
+          metric_id?: string
+          pga_p25?: number | null
+          pga_p50?: number | null
+          pga_p75?: number | null
+          pga_tour_value?: number | null
+          season?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_pga_standards_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
           },
         ]
       }
@@ -9821,6 +9925,8 @@ export type Database = {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
       }
+      current_coach_id: { Args: never; Returns: string }
+      current_player_id: { Args: never; Returns: string }
       get_admin_analytics_rollup: {
         Args: { p_ago12w: string; p_ago30d: string; p_ago7d: string }
         Returns: Json
@@ -10183,6 +10289,9 @@ export type Database = {
         Args: { team_uuid: string }
         Returns: boolean
       }
+      is_in_team: { Args: { team_uuid: string }; Returns: boolean }
+      is_team_coach: { Args: { team_uuid: string }; Returns: boolean }
+      is_team_player: { Args: { team_uuid: string }; Returns: boolean }
       is_user_on_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: boolean
