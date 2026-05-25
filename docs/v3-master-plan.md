@@ -1362,7 +1362,7 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 
 | # | Wave | Scope Summary | Files: C/M/D | Migrations | Depends On |
 |---|---|---|---|---|---|
-| **W9** | Pre-Foundation Hardening | Docs + decisions + RLS helpers + `golf_metrics` table + seed + provider clients + extends `golf_coachhelm_settings` | C:18, M:2 | 3 | — |
+| **W9** | Pre-Foundation Hardening | Docs + decisions + RLS helpers + `golf_metrics` table + seed + provider clients + extends `golf_coachhelm_settings` | C:18, M:2 | 6 (pt2 split per Rule 2 — see Part XXVIII) | — |
 | W10 | PGA standards table + seed | `golf_pga_standards` with FK to `golf_metrics` | C:2, M:0 | 1 | W9 |
 | W11 | Player standing table + nightly cron | `golf_player_standing` + standing-refresh cron (reads SG from cache, chunked) | C:4, M:0 | 1 | W10 |
 | W12 | Standing backfill (one-shot, chunked) | Backfill cron | C:1, M:0 | 0 | W11 |
@@ -1549,11 +1549,17 @@ W9 ships as ONE branch (`wave9-foundation`) with three sequential PRs:
 - `docs/v3-decisions.md` — locked decisions (Part III content + provider names)
 - `docs/v3-player-transfer-playbook.md` — edge cases: transfer, multi-team, graduation, new player
 
-**W9-pt2: RLS helpers + `golf_metrics` table + seed + extend `golf_coachhelm_settings`** (~1 day, 3 migrations)
-- Migration M1: `current_player_id()`, `current_coach_id()`, `is_team_player()`, `is_team_coach()`, `is_in_team()` (corrected for `golf_team_coach_staff` — see Part II)
-- Migration M2: `golf_metrics` table + seed 28 canonical metrics
-- Migration M3: `ALTER TABLE golf_coachhelm_settings ADD COLUMN goal_assignment_default text DEFAULT 'suggested', ADD COLUMN llm_narrative_enabled boolean DEFAULT false, ADD COLUMN llm_budget_usd_per_day numeric`
-- TS: `src/lib/coachhelm/v3/metrics/registry.ts` (canonical IDs as const), `src/lib/coachhelm/v3/metrics/types.ts`, `src/lib/coachhelm/v3/metrics/load.ts` (runtime validator)
+**W9-pt2: RLS helpers + `golf_metrics` table + seed + extend `golf_coachhelm_settings`** (~1 day, 6 migrations — split per Rule 2 + backfill rule)
+
+The plan originally specified 3 migrations; in practice Rule 2 ("one purpose per migration") and the backfill rule ("Schema migration ships first, verified empty. Backfill ships in a separate PR/migration, verified populated. Never combined.") force a split. The 5 RLS helpers stay bundled (one logical access-primitive layer introduced together); everything else is one migration per DDL change. Resolved 2026-05-24.
+
+- Migration M1: `current_player_id()`, `current_coach_id()`, `is_team_player()`, `is_team_coach()`, `is_in_team()` (one file — bundled primitive layer; `plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'` matching existing `is_golf_team_primary_coach` convention; `is_team_player` filters `status='active'::team_member_status`)
+- Migration M2: `CREATE TABLE golf_metrics` only (schema; no seed)
+- Migration M3: seed 28 canonical metrics with `ON CONFLICT (metric_id) DO NOTHING`
+- Migration M4: `ALTER TABLE golf_coachhelm_settings ADD COLUMN goal_assignment_default text DEFAULT 'suggested' NOT NULL` + CHECK constraint
+- Migration M5: `ALTER TABLE golf_coachhelm_settings ADD COLUMN llm_narrative_enabled boolean DEFAULT false NOT NULL`
+- Migration M6: `ALTER TABLE golf_coachhelm_settings ADD COLUMN llm_budget_usd_per_day numeric` + non-negative CHECK constraint
+- TS: `src/lib/coachhelm/v3/metrics/registry.ts` (canonical IDs as const + `MetricId` literal-union), `src/lib/coachhelm/v3/metrics/types.ts` (`Metric` + unit/direction/category literal unions matching SQL CHECK), `src/lib/coachhelm/v3/metrics/load.ts` (`loadMetrics`, `loadMetric`, `validateMetricRegistry` CI parity check)
 
 **W9-pt3: Provider clients + local seed scaffolding** (~1-2 days)
 - (Only after Task B resolved) Verify or install `web-push`; `src/lib/coachhelm/v3/foundation/push.ts`

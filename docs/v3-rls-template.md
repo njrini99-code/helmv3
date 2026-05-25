@@ -6,49 +6,60 @@
 
 ## Helper Functions (shipped in W9-pt2)
 
+These match the existing `is_golf_team_primary_coach` codebase convention: `plpgsql STABLE SECURITY DEFINER SET search_path TO 'public'`. The `SET search_path` clause prevents search-path attacks on SECURITY DEFINER functions. `is_team_player` filters `status = 'active'::team_member_status` — the column is a named enum with values `(pending, active, inactive, removed)`; only `active` returns true.
+
 ```sql
 -- Current authenticated player row, or NULL if the user is not a player.
 CREATE OR REPLACE FUNCTION public.current_player_id()
-RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT id FROM golf_players WHERE user_id = auth.uid() LIMIT 1;
+RETURNS uuid
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE v_player_id uuid;
+BEGIN
+  SELECT id INTO v_player_id FROM golf_players WHERE user_id = auth.uid() LIMIT 1;
+  RETURN v_player_id;
+END;
 $$;
 
--- Current authenticated coach row, or NULL.
-CREATE OR REPLACE FUNCTION public.current_coach_id()
-RETURNS uuid LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT id FROM golf_coaches WHERE user_id = auth.uid() LIMIT 1;
-$$;
-
--- Is the current user a coach for the given team? (uses staff join — see Part II)
+-- Is the current user a coach for the given team? (staff join — see Part II)
 CREATE OR REPLACE FUNCTION public.is_team_coach(team_uuid uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT EXISTS (
+RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  RETURN EXISTS (
     SELECT 1
     FROM golf_team_coach_staff s
     JOIN golf_coaches c ON c.id = s.coach_id
     WHERE s.team_id = team_uuid AND c.user_id = auth.uid()
   );
+END;
 $$;
 
--- Is the current user a player on the given team?
+-- Is the current user an ACTIVE player on the given team?
 CREATE OR REPLACE FUNCTION public.is_team_player(team_uuid uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT EXISTS (
+RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  RETURN EXISTS (
     SELECT 1
     FROM golf_team_members m
     JOIN golf_players p ON p.id = m.player_id
-    WHERE m.team_id = team_uuid AND p.user_id = auth.uid() AND m.status = 'active'
+    WHERE m.team_id = team_uuid
+      AND p.user_id = auth.uid()
+      AND m.status = 'active'::team_member_status
   );
+END;
 $$;
 
--- Either-or convenience.
-CREATE OR REPLACE FUNCTION public.is_in_team(team_uuid uuid)
-RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER AS $$
-  SELECT is_team_coach(team_uuid) OR is_team_player(team_uuid);
-$$;
+-- Either-or convenience. (current_coach_id + is_in_team follow the same pattern.)
 ```
 
-These five helpers are the only sanctioned access primitives. Policies SHOULD NOT inline equivalent joins — use the helpers so a schema correction patches every policy at once.
+See `supabase/migrations/20260524190000_v3_rls_helpers.sql` for the canonical implementation of all five. These are the only sanctioned access primitives — policies SHOULD NOT inline equivalent joins. A schema correction patches every policy at once.
 
 ---
 
