@@ -6883,6 +6883,65 @@ export type Database = {
           },
         ]
       }
+      golf_pga_standards: {
+        Row: {
+          display_label: string
+          div1_avg_value: number | null
+          div2_avg_value: number | null
+          div3_avg_value: number | null
+          hs_avg_value: number | null
+          korn_ferry_value: number | null
+          metric_id: string
+          pga_p25: number | null
+          pga_p50: number | null
+          pga_p75: number | null
+          pga_tour_value: number | null
+          season: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          display_label: string
+          div1_avg_value?: number | null
+          div2_avg_value?: number | null
+          div3_avg_value?: number | null
+          hs_avg_value?: number | null
+          korn_ferry_value?: number | null
+          metric_id: string
+          pga_p25?: number | null
+          pga_p50?: number | null
+          pga_p75?: number | null
+          pga_tour_value?: number | null
+          season: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          display_label?: string
+          div1_avg_value?: number | null
+          div2_avg_value?: number | null
+          div3_avg_value?: number | null
+          hs_avg_value?: number | null
+          korn_ferry_value?: number | null
+          metric_id?: string
+          pga_p25?: number | null
+          pga_p50?: number | null
+          pga_p75?: number | null
+          pga_tour_value?: number | null
+          season?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_pga_standards_metric_id_fkey"
+            columns: ["metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
+          },
+        ]
+      }
       golf_platform_metrics_daily: {
         Row: {
           active_teams: number | null

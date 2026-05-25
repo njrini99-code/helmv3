@@ -1363,7 +1363,7 @@ Per Rule 2: each backfill is its own PR, separate from schema migration.
 | # | Wave | Scope Summary | Files: C/M/D | Migrations | Depends On |
 |---|---|---|---|---|---|
 | **W9** | Pre-Foundation Hardening | Docs + decisions + RLS helpers + `golf_metrics` table + seed + provider clients + extends `golf_coachhelm_settings` | C:18, M:2 | 6 (pt2 split per Rule 2 — see Part XXVIII) | — |
-| W10 | PGA standards table + seed | `golf_pga_standards` with FK to `golf_metrics` | C:2, M:0 | 1 | W9 |
+| W10 | PGA standards table + seed | `golf_pga_standards` with FK to `golf_metrics` | C:3, M:0 | 2 (table + seed split per Rule 2 + backfill rule) | W9 |
 | W11 | Player standing table + nightly cron | `golf_player_standing` + standing-refresh cron (reads SG from cache, chunked) | C:4, M:0 | 1 | W10 |
 | W12 | Standing backfill (one-shot, chunked) | Backfill cron | C:1, M:0 | 0 | W11 |
 | W13 | StandingBar component (3 variants, mobile + desktop, all states) | New components | C:8, M:0 | 0 | W9 |
