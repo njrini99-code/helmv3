@@ -1,19 +1,21 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { ReminderType, TaskReminderWithTask, GolfTask } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
+import {
+  sendWebPush as v3SendWebPush,
+  isWebPushAvailable,
+} from '@/lib/coachhelm/v3/foundation/push';
 
 // Email service configuration
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Helm Sports <notifications@helmsportslabs.com>';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://helmsportslabs.com';
 
-// VAPID keys for Web Push (must match the service worker)
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@helmsportslabs.com';
+// VAPID keys are now configured inside v3/foundation/push.ts. See W9-pt3.
 
 /**
  * Extended task type with user relations for notifications
@@ -523,8 +525,8 @@ function escapeHtml(text: string): string {
  * );
  */
 async function sendPushNotification(task: GolfTask): Promise<void> {
-  // Check if VAPID keys are configured
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  // Configured VAPID keys are now a precondition of the v3 push wrapper.
+  if (!isWebPushAvailable()) {
     return;
   }
 
@@ -541,8 +543,9 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
     return;
   }
 
-  // Try to get push subscriptions from the database
-  // Note: This table may not exist yet - if so, we gracefully handle it
+  // Read push subscriptions via the centralized untyped escape hatch
+  // (push_subscriptions isn't in the generated Database types yet — to be
+  // regenerated post-W9-pt2 merge).
   let subscriptions: Array<{
     id: string;
     user_id: string;
@@ -551,23 +554,22 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
   }> = [];
 
   try {
-    // Use type assertion for table that may not be in generated types yet
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase as any)
-      .from('push_subscriptions')
+    const { data, error } = await fromUntyped(supabase, 'push_subscriptions')
       .select('id, user_id, endpoint, keys')
-      .in('user_id', userIds);
+      .in('user_id', userIds) as {
+      data: typeof subscriptions | null;
+      error: { code?: string; message: string } | null;
+    };
 
     if (error) {
-      // Table might not exist yet
+      // Table might not exist yet (legacy guard — table now confirmed in prod)
       if (error.code === '42P01') {
-        // push_subscriptions table not yet created — push notifications not enabled
         return;
       }
       throw error;
     }
 
-    subscriptions = (data as typeof subscriptions) || [];
+    subscriptions = data ?? [];
   } catch (err) {
     await logServerError(`[TaskReminders] Could not fetch push subscriptions: ${err instanceof Error ? err.message : String(err)}`, { action: 'task_reminders.sendPushNotification' });
     return;
@@ -581,42 +583,41 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
     ? new Date(task.due_date).toLocaleDateString()
     : 'soon';
 
-  const payload = JSON.stringify({
-    title: 'Task Reminder',
-    body: `Reminder: "${task.title}" is due ${dueText}`,
-    tag: `task-reminder-${task.id}`,
-    data: {
-      url: `/golf/dashboard/tasks?task=${task.id}`,
-      taskId: task.id,
-      type: 'task_reminder',
-    },
-    requireInteraction: true,
-  });
-
-  // Send to each subscription
+  // Send to each subscription via the v3 wrapper
   let sentCount = 0;
   let failedCount = 0;
 
   for (const subscription of subscriptions) {
     try {
-      const pushResult = await sendWebPush(
+      const result = await v3SendWebPush(
         {
+          id: subscription.id,
+          user_id: subscription.user_id,
           endpoint: subscription.endpoint,
           keys: subscription.keys,
         },
-        payload
+        {
+          title: 'Task Reminder',
+          body: `Reminder: "${task.title}" is due ${dueText}`,
+          url: `/golf/dashboard/tasks?task=${task.id}`,
+          data: {
+            tag: `task-reminder-${task.id}`,
+            taskId: task.id,
+            type: 'task_reminder',
+            requireInteraction: true,
+          },
+        },
       );
 
-      if (pushResult.success) {
+      if (result.delivered) {
         sentCount++;
       } else {
         failedCount++;
-        await logServerError(`[TaskReminders] Push failed for subscription ${subscription.id}: ${String(pushResult.error)}`, { action: 'task_reminders.sendPushNotification' });
+        await logServerError(`[TaskReminders] Push failed for subscription ${subscription.id}: ${String(result.error)}`, { action: 'task_reminders.sendPushNotification' });
 
-        // If subscription is expired/invalid, remove it
-        if (pushResult.statusCode === 404 || pushResult.statusCode === 410) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await (supabase as any).from('push_subscriptions').delete().eq('id', subscription.id);
+        // 404/410 = subscription is dead; clean it up
+        if (result.shouldDeleteSubscription) {
+          await fromUntyped(supabase, 'push_subscriptions').delete().eq('id', subscription.id);
         }
       }
     } catch (err) {
@@ -627,56 +628,6 @@ async function sendPushNotification(task: GolfTask): Promise<void> {
 
   if (failedCount > 0) {
     console.warn(`[TaskReminders] Push notifications: ${sentCount} sent, ${failedCount} failed`);
-  }
-}
-
-/**
- * Send a Web Push notification using the Web Push protocol
- * This is a simplified implementation - for production, consider using the 'web-push' npm package
- */
-async function sendWebPush(
-  subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
-  payload: string
-): Promise<{ success: boolean; statusCode?: number; error?: string }> {
-  try {
-    // For now, we'll use a simple approach that requires the web-push library
-    // In a production environment, you would either:
-    // 1. Install and use the 'web-push' npm package
-    // 2. Use a push notification service like OneSignal, Firebase, or Pusher
-
-    // Check if we're in a Node.js environment that supports the web-push library
-    // The import will fail gracefully if web-push is not installed
-    // @ts-expect-error - web-push may not be installed, handled by .catch()
-    const webpush: { setVapidDetails: (subject: string, publicKey: string, privateKey: string) => void; sendNotification: (sub: Record<string, unknown>, payload: string) => Promise<unknown> } | null = await import('web-push').catch(() => null);
-
-    if (webpush) {
-      // Configure web-push with VAPID credentials
-      webpush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY!,
-        VAPID_PRIVATE_KEY!
-      );
-
-      await webpush.sendNotification(
-        {
-          endpoint: subscription.endpoint,
-          keys: subscription.keys,
-        },
-        payload
-      );
-
-      return { success: true };
-    }
-
-    // Fallback: If web-push is not installed, push notifications are unavailable
-    return { success: false, error: 'web-push package not installed' };
-  } catch (err) {
-    const error = err as { statusCode?: number; message?: string };
-    return {
-      success: false,
-      statusCode: error.statusCode,
-      error: error.message || 'Unknown error',
-    };
   }
 }
 
