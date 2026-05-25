@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 
 import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { CounterfactualLine } from '@/components/golf/coachhelm/v3/CounterfactualLine';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import {
   METRIC_RENDER_CONFIG,
@@ -33,6 +34,7 @@ import {
   type MetricId,
 } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
 
 export const metadata: Metadata = {
   title: 'My Standing | Helm Golf',
@@ -79,7 +81,10 @@ export default async function MyStandingPage() {
     redirect('/golf/dashboard');
   }
 
-  const standingMap = await loadPlayerStandingMap(player.id);
+  const [standingMap, playerBaseline] = await Promise.all([
+    loadPlayerStandingMap(player.id),
+    loadPlayerScoringBaseline(player.id),
+  ]);
 
   // Bucket standing rows by category.
   const byCategory = new Map<string, Array<{ id: MetricId; standing: PlayerStanding; cfg: MetricRenderConfig }>>();
@@ -135,20 +140,30 @@ export default async function MyStandingPage() {
                   <p className="text-xs text-warm-500 mb-3">{group.description}</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {rows.map(({ id, standing, cfg }) => (
-                      <StandingBar
-                        key={id}
-                        metric_id={id}
-                        metric_label={cfg.display_label}
-                        player_value={standing.player_value}
-                        team_avg={standing.team_avg}
-                        team_n={standing.team_n}
-                        team_pct={standing.team_pct}
-                        pga_value={standing.pga_value}
-                        direction={cfg.direction}
-                        unit={cfg.unit}
-                        scale={cfg.default_scale}
-                        size="card"
-                      />
+                      <div key={id}>
+                        <StandingBar
+                          metric_id={id}
+                          metric_label={cfg.display_label}
+                          player_value={standing.player_value}
+                          team_avg={standing.team_avg}
+                          team_n={standing.team_n}
+                          team_pct={standing.team_pct}
+                          pga_value={standing.pga_value}
+                          direction={cfg.direction}
+                          unit={cfg.unit}
+                          scale={cfg.default_scale}
+                          size="card"
+                        />
+                        <CounterfactualLine
+                          metric_id={id}
+                          direction={cfg.direction}
+                          player_value={standing.player_value}
+                          pga_value={standing.pga_value}
+                          player_30d_scoring_avg={playerBaseline}
+                          size="card"
+                          className="px-4"
+                        />
+                      </div>
                     ))}
                   </div>
                 </section>
