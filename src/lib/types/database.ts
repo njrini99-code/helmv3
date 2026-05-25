@@ -8310,6 +8310,55 @@ export type Database = {
           },
         ]
       }
+      golf_qualifier_selections: {
+        Row: {
+          coach_reasoning: string | null
+          player_id: string
+          qualifier_id: string
+          selected_at: string
+          selected_by_user_id: string
+          selection_type: string
+        }
+        Insert: {
+          coach_reasoning?: string | null
+          player_id: string
+          qualifier_id: string
+          selected_at?: string
+          selected_by_user_id: string
+          selection_type: string
+        }
+        Update: {
+          coach_reasoning?: string | null
+          player_id?: string
+          qualifier_id?: string
+          selected_at?: string
+          selected_by_user_id?: string
+          selection_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_qualifier_selections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_qualifier_selections_qualifier_id_fkey"
+            columns: ["qualifier_id"]
+            isOneToOne: false
+            referencedRelation: "golf_qualifiers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_qualifier_selections_selected_by_user_id_fkey"
+            columns: ["selected_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_qualifiers: {
         Row: {
           course_id: string | null
@@ -8322,9 +8371,13 @@ export type Database = {
           id: string
           name: string
           rules: string | null
+          selection_slots_coach_pick: number
+          selection_slots_total: number
+          selection_state: string
           spots_available: number | null
           start_date: string
           status: string | null
+          target_tournament_id: string | null
           team_id: string
           updated_at: string | null
         }
@@ -8339,9 +8392,13 @@ export type Database = {
           id?: string
           name: string
           rules?: string | null
+          selection_slots_coach_pick?: number
+          selection_slots_total?: number
+          selection_state?: string
           spots_available?: number | null
           start_date: string
           status?: string | null
+          target_tournament_id?: string | null
           team_id: string
           updated_at?: string | null
         }
@@ -8356,9 +8413,13 @@ export type Database = {
           id?: string
           name?: string
           rules?: string | null
+          selection_slots_coach_pick?: number
+          selection_slots_total?: number
+          selection_state?: string
           spots_available?: number | null
           start_date?: string
           status?: string | null
+          target_tournament_id?: string | null
           team_id?: string
           updated_at?: string | null
         }
@@ -8375,6 +8436,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_qualifiers_target_tournament_id_fkey"
+            columns: ["target_tournament_id"]
+            isOneToOne: false
+            referencedRelation: "golf_events"
             referencedColumns: ["id"]
           },
           {
@@ -10987,3 +11055,4 @@ export const Constants = {
     },
   },
 } as const
+
