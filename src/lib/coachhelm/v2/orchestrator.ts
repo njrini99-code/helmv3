@@ -19,11 +19,13 @@ import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, St
 // from their respective files until W26 sunset. The 3 STILL used (approach
 // miss, tee strategy, worst holes) lack v3 equivalents pending a shot-source
 // helper — they keep running through v2 until then.
-import { generateApproachMissInsights } from './mining/approach-analytics';
+// W25 + wave-3bucket-fix: only 2 v2 generators still active. approachMiss
+// has a v3 equivalent as of this wave; teeStrategy + worstHoles remain
+// pending v3 metric registration + worst-holes pattern rework.
 import { generateTeeStrategyInsights } from './mining/tee-strategy';
 import { generateWorstHolesInsights } from './mining/course-management';
 
-// v3 BaseGenerator subclasses for the 7 generators cut over in W25.
+// v3 BaseGenerator subclasses.
 import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distance';
 import { PuttBiasGenerator } from '@/lib/coachhelm/v3/generators/putt-bias';
 import { ScramblingGenerator } from '@/lib/coachhelm/v3/generators/scrambling';
@@ -31,6 +33,7 @@ import { ParTypeGenerator } from '@/lib/coachhelm/v3/generators/par-type';
 import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
+import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
 import { runWithGate } from './insights/gate-context';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
@@ -237,8 +240,12 @@ class CoachHelmIntelligence {
       // v3 — pressure + warmup
       { name: 'v3.pressureGap', fn: () => new PressureGapGenerator(playerId).run() },
       { name: 'v3.warmupHole',  fn: () => new WarmupHoleGenerator(playerId).run() },
+      // v3 — approach miss (3 distance buckets; diagnostic until standing-row
+      // population RPC lands). Reads raw golf_shots via the shot-source helper.
+      { name: 'v3.approachMiss.50_125',   fn: () => new ApproachMissGenerator(playerId, '50_125ft').run() },
+      { name: 'v3.approachMiss.125_175',  fn: () => new ApproachMissGenerator(playerId, '125_175ft').run() },
+      { name: 'v3.approachMiss.175_plus', fn: () => new ApproachMissGenerator(playerId, '175_plus_ft').run() },
       // v2 (deferred — no v3 equivalent yet)
-      { name: 'v2.approachMiss', fn: () => generateApproachMissInsights(playerId) },
       { name: 'v2.teeStrategy',  fn: () => generateTeeStrategyInsights(playerId) },
       { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];
