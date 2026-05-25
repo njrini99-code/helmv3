@@ -14,13 +14,23 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { extractAllFeatures } from './features';
 import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, StatsInsightGenerator, CorrelationDiscovery, analyzeLieSpecificMissPatterns } from './mining';
-import { generatePuttDistanceInsights, generatePuttMissBiasInsights } from './mining/putt-analytics';
+// W25 cutover: 6 v2 generator imports below are unused by the orchestrator
+// (replaced by v3 BaseGenerator runs further down). They remain importable
+// from their respective files until W26 sunset. The 3 STILL used (approach
+// miss, tee strategy, worst holes) lack v3 equivalents pending a shot-source
+// helper — they keep running through v2 until then.
 import { generateApproachMissInsights } from './mining/approach-analytics';
-import { generateScramblingInsights } from './mining/scrambling-analytics';
 import { generateTeeStrategyInsights } from './mining/tee-strategy';
-import { generateParTypeInsights } from './mining/scoring-context';
-import { generateWorstHolesInsights, generateWarmupHoleInsight } from './mining/course-management';
-import { generatePressureGapInsight } from './mining/pressure-gap';
+import { generateWorstHolesInsights } from './mining/course-management';
+
+// v3 BaseGenerator subclasses for the 7 generators cut over in W25.
+import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distance';
+import { PuttBiasGenerator } from '@/lib/coachhelm/v3/generators/putt-bias';
+import { ScramblingGenerator } from '@/lib/coachhelm/v3/generators/scrambling';
+import { ParTypeGenerator } from '@/lib/coachhelm/v3/generators/par-type';
+import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
+import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
+import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { runWithGate } from './insights/gate-context';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
@@ -192,16 +202,45 @@ class CoachHelmIntelligence {
     // reason through logServerError with generator + player context, and
     // accumulate a per-generator summary that flows out via the analyze-player
     // route response.
+    // W25 CUTOVER (2026-05-25):
+    //   - 7 generators swapped to v3 BaseGenerator runs (puttDistance,
+    //     puttMissBias, scrambling, parType, warmupHole, pressureGap,
+    //     courseMgmt). Each v3 instance writes one insight with
+    //     engine_version='v3' + 'v3:' signature prefix via
+    //     upsertInsightV3 — clean coexistence with any residual v2 rows.
+    //   - 3 stay on v2 (approachMiss, teeStrategy, worstHoles) — no v3
+    //     equivalent yet because they need a shot-source helper. Plan:
+    //     follow-up wave adds the helper, then those swap too.
+    //   - 1 NET-NEW (courseMgmt) — v3 only, no v2 equivalent.
+    //   - Coverage regression vs v2: puttDistance covers 3 buckets in
+    //     v3 (3-5, 5-10, 10-15) vs 5 in v2; puttMissBias covers 2
+    //     directions (left, right) vs 4 (high/low/left/right). The
+    //     missing buckets/directions are less actionable and will be
+    //     added when the v3 metric IDs align with cache columns.
     const tier1Generators: Array<{ name: string; fn: () => Promise<unknown> }> = [
-      { name: 'puttDistance', fn: () => generatePuttDistanceInsights(playerId) },
-      { name: 'puttMissBias', fn: () => generatePuttMissBiasInsights(playerId) },
-      { name: 'approachMiss', fn: () => generateApproachMissInsights(playerId) },
-      { name: 'scrambling', fn: () => generateScramblingInsights(playerId) },
-      { name: 'teeStrategy', fn: () => generateTeeStrategyInsights(playerId) },
-      { name: 'parType', fn: () => generateParTypeInsights(playerId) },
-      { name: 'worstHoles', fn: () => generateWorstHolesInsights(playerId) },
-      { name: 'warmupHole', fn: () => generateWarmupHoleInsight(playerId) },
-      { name: 'pressureGap', fn: () => generatePressureGapInsight(playerId) },
+      // v3 — putt distance (3 buckets)
+      { name: 'v3.puttDistance.3_5ft',   fn: () => new PuttDistanceGenerator(playerId, '3_5ft').run() },
+      { name: 'v3.puttDistance.5_10ft',  fn: () => new PuttDistanceGenerator(playerId, '5_10ft').run() },
+      { name: 'v3.puttDistance.10_15ft', fn: () => new PuttDistanceGenerator(playerId, '10_15ft').run() },
+      // v3 — putt bias (left / right; diagnostic, no PGA standing)
+      { name: 'v3.puttBias.left',  fn: () => new PuttBiasGenerator(playerId, 'left').run() },
+      { name: 'v3.puttBias.right', fn: () => new PuttBiasGenerator(playerId, 'right').run() },
+      // v3 — scrambling (sand only; rough/fairway pending cache split)
+      { name: 'v3.scrambling.sand', fn: () => new ScramblingGenerator(playerId, 'sand').run() },
+      // v3 — per-par scoring (3 instances)
+      { name: 'v3.parType.3', fn: () => new ParTypeGenerator(playerId, 3).run() },
+      { name: 'v3.parType.4', fn: () => new ParTypeGenerator(playerId, 4).run() },
+      { name: 'v3.parType.5', fn: () => new ParTypeGenerator(playerId, 5).run() },
+      // v3 — course management (NET-NEW; 2 variants)
+      { name: 'v3.courseMgmt.penalty',   fn: () => new CourseMgmtGenerator(playerId, 'penalty').run() },
+      { name: 'v3.courseMgmt.bigNumber', fn: () => new CourseMgmtGenerator(playerId, 'big_number').run() },
+      // v3 — pressure + warmup
+      { name: 'v3.pressureGap', fn: () => new PressureGapGenerator(playerId).run() },
+      { name: 'v3.warmupHole',  fn: () => new WarmupHoleGenerator(playerId).run() },
+      // v2 (deferred — no v3 equivalent yet)
+      { name: 'v2.approachMiss', fn: () => generateApproachMissInsights(playerId) },
+      { name: 'v2.teeStrategy',  fn: () => generateTeeStrategyInsights(playerId) },
+      { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];
     // 2026-05-24 Wave 7B — when caller supplies a philosophyGate, run the
     // tier-1 generators inside AsyncLocalStorage so every upsertInsight
