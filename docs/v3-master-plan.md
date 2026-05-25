@@ -368,6 +368,24 @@ Every v3 generator computes or reads SG. PGA Tour ShotLink-validated framework (
 | 20-25 ft | 12.5% |
 | 25+ ft | 5.5% |
 
+### V.1.5 Club granularity — 3-bucket model (amended 2026-05-25)
+
+The shot-tracking module persists `golf_shots.club_type` as one of:
+**`driver` · `non_driver` · `putter`**. There is NO per-iron, per-wedge,
+or per-hybrid distinction at the data layer. This is intentional — the
+mobile shot-entry UX prioritizes fast tap-input over taxonomy fidelity.
+
+Implication for v3 generators + composites:
+- "Driver vs lay-up" decisions ARE detectable (driver vs non_driver on tee).
+- "Approach proximity by distance" IS detectable (`distance_to_hole_before` buckets).
+- "Long-iron vs wedge" distinctions are NOT detectable — use approach
+  distance buckets instead.
+- "Flyer-lie under-clubbing" can become "flyer-lie over-the-green
+  consequence" (lie + result), but not a club-choice prescription.
+
+This constraint is reflected in Part IX.2 (composite rules reworked) and
+Part XXVI (risk register addition).
+
 ### V.2 Lie taxonomy
 
 ```ts
@@ -829,20 +847,40 @@ export interface CompositeRule {
 
 Synthesis pass runs after 9 v3 generators. Composites write new `golf_coach_insights` rows with `metadata.composite_rule_id` + `metadata.source_insight_ids`.
 
-### IX.2 The 12 rules (v1 library)
+### IX.1.5 Data-model constraint (amended 2026-05-25)
 
-1. Short-side scrambling chain
-2. Long-iron → 3-putt cascade
-3. Tee-club mismatch
-4. Wedge proximity gap
-5. Pressure decel chain
-6. Closing-hole fatigue
-7. Bunker miss-side amplifier
-8. Lag-distance → 3-putt
-9. Flyer-lie under-clubbing
-10. Doubles after bogey
-11. Front-9 starter
-12. Cold-weather distance miscalibration
+The original 12-rule list assumed per-iron / per-wedge club granularity. The
+shot-tracking module actually persists a **3-bucket club model**:
+
+  - `driver` (tee shots with driver)
+  - `non_driver` (everything else off the tee + every approach + chips)
+  - `putter`
+
+Players don't enter "7-iron" vs "PW" — they enter the bucket. This is by
+design (lower friction for coach-marked rounds, faster mobile entry).
+
+Implication: any composite rule that hinges on a specific club inside the
+non_driver bucket cannot fire from real data. Rules below are reworked
+or deferred to match.
+
+### IX.2 The 12 rules (v1 library — reworked for the 3-bucket club model)
+
+| # | Rule | Status | Notes |
+|---|------|--------|-------|
+| 1 | Short-side scrambling chain | ✅ | lie_before + distance_to_hole_before |
+| 2 | Long-approach → 3-putt cascade | ✅ (renamed from "Long-iron → 3-putt cascade") | Uses approach distance bucket 175+ instead of "long iron" |
+| 3 | Tee-club mismatch | ✅ | driver vs non_driver on tee + hole-level outcome |
+| 4 | Short-approach proximity gap | ✅ (renamed from "Wedge proximity gap") | Uses 50-125 yd approach bucket instead of "wedge" |
+| 5 | Pressure decel chain | ✅ | putt distance + putt_made + tournament/practice flag |
+| 6 | Closing-hole fatigue | ✅ | hole_number 13-18 vs round avg |
+| 7 | Bunker miss-side amplifier | ✅ | lie_before = bunker + miss_direction |
+| 8 | Lag-distance → 3-putt | ✅ | putt_distance_feet buckets |
+| 9 | ~~Flyer-lie under-clubbing~~ → "Flyer-lie over-the-green" | ✅ reworked | Detects when light_rough lie + dry led to long miss; can't say "wrong club" without club granularity |
+| 10 | Doubles after bogey | ✅ | sequential hole scores |
+| 11 | Front-9 starter | ✅ | hole 1-3 vs round avg |
+| 12 | ~~Cold-weather distance miscalibration~~ | ⏭ deferred | No weather/temperature tracking in shot data |
+
+**11 of 12 implementable** (one renamed for clarity, one reworked, one deferred). The deferred rule waits for a future weather-context wave (not on the v3 roadmap).
 
 ### IX.3 Conflict resolution
 
@@ -1479,6 +1517,7 @@ Every shim has a removal wave or the PR is rejected.
 | Match play / scramble breaks stats | LOW | v3 filters `round_type IN (practice, qualifier, tournament)` |
 | Round-review prose stale-cache after W30 | LOW | Locked: original preserved unless explicit refresh |
 | Schema drift between TS metric registry and DB | HIGH | `golf_metrics` real FK; CI check on diff |
+| Per-iron/wedge causal claims (Research doc) don't map to data (3-bucket club model) | MEDIUM | Documented constraint in Part V.1.5 + Part IX.1.5. Composite rules + Tier-1 generators rewritten in terms of approach distance + driver/non_driver. Per-club granularity requires shot-entry UX redesign — not on v3 roadmap. |
 | Coach turnover (data handoff) | MEDIUM | Per coach: weights archived, chat preserved, intent records preserved |
 
 ---
