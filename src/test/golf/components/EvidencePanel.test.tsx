@@ -58,6 +58,53 @@ describe('EvidencePanel', () => {
     expect(container.firstChild).toBeNull();
   });
 
+  // W15: when v2 generators inject `evidence.standing` (W14) and the
+  // metric_id resolves to a canonical v3 metric, EvidencePanel renders
+  // the v3 StandingBar instead of the legacy BenchmarkScale.
+  it('renders v3 StandingBar when evidence.standing is present (W15)', () => {
+    const evidence = makeEvidence();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (evidence as any).standing = {
+      metric_id: 'putts_made_10_15ft_pct',
+      player_value: 38,
+      team_avg: 41,
+      team_n: 6,
+      team_pct: 22,
+      pga_value: 36,
+      pga_delta: 2,
+      computed_at: '2026-05-25T00:00:00.000Z',
+    };
+    render(<EvidencePanel evidence={evidence} compact />);
+    // StandingBar renders the metric's canonical display_label from metric-config
+    expect(screen.getByText('Putts Made 10-15 ft')).toBeTruthy();
+    // And the You/PGA values
+    expect(screen.getByText(/You 38%/)).toBeTruthy();
+    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+  });
+
+  // Defense: an unknown / non-canonical metric_id in evidence.standing
+  // falls through to the legacy BenchmarkScale rather than rendering
+  // a broken v3 bar with missing direction/unit.
+  it('falls through to BenchmarkScale when standing.metric_id is unknown', () => {
+    const evidence = makeEvidence();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (evidence as any).standing = {
+      metric_id: 'made_up_metric',
+      player_value: 1,
+      team_avg: 2,
+      team_n: 6,
+      team_pct: 50,
+      pga_value: 3,
+      pga_delta: -2,
+      computed_at: '2026-05-25T00:00:00.000Z',
+    };
+    render(<EvidencePanel evidence={evidence} compact />);
+    // Canonical v3 metric display labels aren't present
+    expect(screen.queryByText('Putts Made 10-15 ft')).toBeNull();
+    // BenchmarkScale renders the legacy axis testid
+    expect(screen.getByTestId('evidence-benchmark-scale')).toBeTruthy();
+  });
+
   // TODO(plan-03 + user-wip): see src/test/SKIPPED.md.
   it.skip('compact mode renders the four key facts in a single row', () => {
     render(<EvidencePanel evidence={makeEvidence()} compact />);
