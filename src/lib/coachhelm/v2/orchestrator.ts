@@ -34,6 +34,11 @@ import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
+
+// W28: composite-rule synthesis runs after Tier-1 generators finish so
+// rules can detect cross-insight patterns in this round's freshly-written
+// Tier-1 rows. Failure-isolated — never throws; logs internally.
+import { synthesizeForPlayer } from '@/lib/coachhelm/v3/composite';
 import { runWithGate } from './insights/gate-context';
 import type { StatsInsight, MetricCorrelation, LieMissAnalysis, ShotCategoryInsight, DispersionInsight, RootCauseInsight, ShotStateAnalysis, ShotStateInsight } from './mining';
 import { PerformancePredictor, TrajectoryForecaster } from './prediction';
@@ -292,6 +297,17 @@ class CoachHelmIntelligence {
     // generatorSummary is attached to the analyzePlayer return below so the
     // post-round trigger and analyze-player route can surface partial failures.
     const generatorSummary = { successes: tier1Successes, failures: tier1Failures };
+
+    // W28: composite synthesis. Runs after the Tier-1 batch so rules
+    // can read this round's freshly-written insights. Failure-isolated.
+    const compositeSummary = await synthesizeForPlayer(playerId).catch((err) => {
+      void logServerError(
+        `composite synthesis failed for ${playerId}: ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'analyzePlayer.composite' },
+      );
+      return { player_id: playerId, rule_matches: 0, rule_suppressed: 0, rule_emitted: 0, errors: 1 };
+    });
+    void compositeSummary;
 
     // Extract features for the legacy pipeline
     const features = await extractAllFeatures(playerId);
