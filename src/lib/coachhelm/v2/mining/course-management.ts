@@ -21,6 +21,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
+import {
+  loadStandingForInsightEvidence,
+  mergeStandingIntoEvidence,
+} from '../insights/standing-injection';
 
 type Supabase = SupabaseClient<Database>;
 
@@ -548,6 +552,12 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
   const title = `Warm-up tax: +${gap.toFixed(2)} strokes on hole 1 vs holes 2-18`;
   const content = composeWarmupContent(agg, strokesImpact);
   const drillTags = ['course_management', 'pre_shot_routine', 'breath_work'];
+
+  // W14: inject evidence.standing for opening_hole_delta. Standing rows
+  // for this metric are written by W24 WarmupHoleGenerator — until then
+  // the helper returns null and this is a no-op.
+  const warmupStanding = await loadStandingForInsightEvidence(playerId, 'opening_hole_delta');
+  mergeStandingIntoEvidence(evidence, warmupStanding);
 
   try {
     const insightId = await upsertInsight(supabase, {

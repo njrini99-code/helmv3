@@ -23,6 +23,11 @@ import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import { calcConfidence } from '../insights/types';
+// W14: hook for future standing injection. No clean v3 metric_id maps
+// to driver-vs-layback decision quality today — W23 TeeStrategyGenerator
+// will define the right metric and write standing rows.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { loadStandingForInsightEvidence as _loadStandingForTeeStrategy } from '../insights/standing-injection';
 
 type Supabase = SupabaseClient<Database>;
 

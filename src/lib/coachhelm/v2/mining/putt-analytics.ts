@@ -19,6 +19,24 @@ import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '@/lib/coachhelm/v2/insights/upsert';
 import type { InsightEvidence, BaselineKey } from '@/lib/coachhelm/v2/insights/types';
 import { baselineRegistry } from '@/lib/coachhelm/v2/insights/baseline-registry';
+import {
+  loadStandingForInsightEvidence,
+  mergeStandingIntoEvidence,
+} from '@/lib/coachhelm/v2/insights/standing-injection';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+
+// W14: map v2 putt buckets to v3 standing metric IDs. Only the buckets
+// that align cleanly with golf_player_stats_cache columns get a v3
+// metric — others remain null and the standing card just doesn't
+// render. Bucket misalignment will be cleaned up post-W11 follow-up.
+const V2_BUCKET_TO_V3_METRIC: Record<string, MetricId | null> = {
+  '0_3ft':  null,
+  '3_6ft':  null,
+  '6_10ft': null,
+  '10_15ft': 'putts_made_10_15ft_pct',
+  '15_20ft': null,
+  '20+ft':   null,
+};
 import { isTransientFetchError, delay } from '@/lib/utils/transient-error';
 
 // ---------------------------------------------------------------------------
@@ -466,6 +484,13 @@ export async function generatePuttDistanceInsights(
     const content = composeDistanceContent(agg, baseline, strokesImpact, DISTANCE_WINDOW_DAYS);
 
     const drillTags: string[] = ['putting', agg.label, directionalFlavor];
+
+    // W14: inject evidence.standing if this bucket maps to a v3 metric.
+    const v3Metric = V2_BUCKET_TO_V3_METRIC[agg.label];
+    if (v3Metric) {
+      const standing = await loadStandingForInsightEvidence(playerId, v3Metric);
+      mergeStandingIntoEvidence(evidence, standing);
+    }
 
     try {
       const insightId = await upsertInsight(supabase, {

@@ -16,6 +16,10 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
+import {
+  loadStandingForInsightEvidence,
+  mergeStandingIntoEvidence,
+} from '../insights/standing-injection';
 
 type Supabase = SupabaseClient<Database>;
 
@@ -257,6 +261,11 @@ export async function generatePressureGapInsight(playerId: string): Promise<void
     `Pressure gap: +${gap.toFixed(1)} strokes in tournaments vs practice`;
   const content = composeContent(agg, gap);
   const drillTags = ['pressure', 'tournament_simulation', 'pre_shot_routine'];
+
+  // W14: inject evidence.standing for practice_tournament_delta. W24
+  // PressureGapGenerator writes standing rows; until then no-op.
+  const pressureStanding = await loadStandingForInsightEvidence(playerId, 'practice_tournament_delta');
+  mergeStandingIntoEvidence(evidence, pressureStanding);
 
   try {
     const insightId = await upsertInsight(supabase, {

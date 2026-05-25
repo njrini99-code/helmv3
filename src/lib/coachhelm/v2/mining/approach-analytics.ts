@@ -23,6 +23,14 @@ import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import { calcConfidence } from '../insights/types';
+// W14: ready to inject evidence.standing once a clean v3 metric mapping
+// lands. golf_player_stats_cache only has the aggregate
+// approach_proximity_average column today — no per-bucket data — so v2's
+// per-bucket insights don't have a matching v3 metric to read from. W22
+// ApproachMissGenerator writes its own standing rows; this import is
+// the hook for when those rows exist.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { loadStandingForInsightEvidence as _loadStandingForApproach } from '../insights/standing-injection';
 
 type Supabase = SupabaseClient<Database>;
 

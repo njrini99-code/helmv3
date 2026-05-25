@@ -22,6 +22,20 @@ import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import { calcConfidence } from '../insights/types';
+import {
+  loadStandingForInsightEvidence,
+  mergeStandingIntoEvidence,
+} from '../insights/standing-injection';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+
+// W14: map v2 scrambling lie types to v3 metric_ids. Currently only the
+// sand lie has populated standing data; rough + fairway map to v3
+// metrics whose values are populated by W22 ScramblingGenerator.
+const LIE_TO_V3_METRIC: Record<string, MetricId | null> = {
+  sand: 'scrambling_pct_sand',
+  rough: 'scrambling_pct_rough',
+  fairway: 'scrambling_pct_fairway',
+};
 
 type Supabase = SupabaseClient<Database>;
 
@@ -343,6 +357,13 @@ async function emitScrambleInsight(
     `${strokesImpact} strokes per round.`;
 
   const drillTags = DRILL_TAGS[stats.lie];
+
+  // W14: inject evidence.standing if this lie maps to a v3 metric.
+  const v3Metric = LIE_TO_V3_METRIC[stats.lie];
+  if (v3Metric) {
+    const standing = await loadStandingForInsightEvidence(playerId, v3Metric);
+    mergeStandingIntoEvidence(evidence, standing);
+  }
 
   const insightId = await upsertInsight(supabase, {
     player_id: playerId,
