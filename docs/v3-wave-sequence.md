@@ -44,6 +44,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W28 | Composite insights v1 (12 rules + synthesis) | 🟡 in-flight (partial — 3 of 10 rules implementable post-3-bucket-fix) | `wave28` | NEW `v3/composite/` module: types + loader (30-day insight window) + 3 rules (pressure_decel_chain, bunker_miss_side_amplifier, long_approach_3putt_cascade) + synthesis runner with subset-suppression conflict resolution. Wired into v2 orchestrator AFTER Tier-1 batch (failure-isolated). Composites use `v3:composite:<rule_id>:` signature prefix; rule.category drives persisted InsightCategory. 12 new tests (all detect/compose + suppression logic). Remaining 7 rules deferred to W28-followup (mostly need hole-sequence or shot-source data). |
 | W29 | Qualifying & travel workspace | ⬜ | — | **New v3 route — see Part XV.0** |
 | W30 | LLM service + round review + budget + admin dashboard | ⬜ | — | |
+| W30.5 | W28-followup: remaining 7 composite rules + hole-sequence loader + lie-type shot-source | ⬜ | — | Ships BEFORE W31 so hero narrative draws from full composite library. Adds: short_side_scrambling_chain, closing_hole_fatigue, lag_distance_to_3putt, doubles_after_bogey, flyer_lie_over_the_green + 2 hole-sequence renamed rules. Requires new hole-sequence loader (golf_holes ⨝ golf_shots ordered by hole_number) and shot-source lie-type extension. |
 | W31 | LLM hero narrative on player dashboard | ⬜ | — | |
 | W32 | Coach chat backend + UI + 12 tool routes | ⬜ | — | |
 | W33 | Player genome schema + nightly compute | ⬜ | — | |
