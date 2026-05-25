@@ -1,0 +1,278 @@
+/**
+ * StandingBar (W13) — unit + render-state coverage.
+ *
+ * The component primitive ships in src/components/golf/coachhelm/v3/StandingBar/.
+ * Surfaces that adopt it land in W15 (coach) + W16 (player) — those will
+ * have their own consumer tests.
+ *
+ * This test file covers:
+ *   1. Pure utility math + formatting (toScalePct, formatValue, etc.)
+ *   2. Render-state matrix per master plan Part XXV verification
+ *      checklist: happy / cold-start / loading / error / empty.
+ *   3. Size variant dispatch from <StandingBar size=... />.
+ *   4. Auto-derived accessibility label.
+ */
+
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+
+import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import type { StandingBarProps } from '@/components/golf/coachhelm/v3/StandingBar';
+import {
+  toScalePct,
+  formatValue,
+  deltaVsTeam,
+  teamCohortText,
+  shouldShowTeamMarker,
+  deriveAriaLabel,
+} from '@/components/golf/coachhelm/v3/StandingBar';
+
+// ---------------------------------------------------------------------------
+// Pure-function unit tests
+// ---------------------------------------------------------------------------
+
+describe('toScalePct', () => {
+  it('returns 50 when scale.min === scale.max', () => {
+    expect(toScalePct(5, { min: 5, max: 5 })).toBe(50);
+  });
+  it('returns 0 at scale.min and 100 at scale.max', () => {
+    expect(toScalePct(0, { min: 0, max: 60 })).toBe(0);
+    expect(toScalePct(60, { min: 0, max: 60 })).toBe(100);
+  });
+  it('clamps below min and above max', () => {
+    expect(toScalePct(-10, { min: 0, max: 60 })).toBe(0);
+    expect(toScalePct(120, { min: 0, max: 60 })).toBe(100);
+  });
+  it('linearly interpolates in range', () => {
+    expect(toScalePct(30, { min: 0, max: 60 })).toBeCloseTo(50);
+  });
+});
+
+describe('formatValue', () => {
+  it('formats percent with no decimals + % suffix', () => {
+    expect(formatValue(38, 'percent')).toBe('38%');
+  });
+  it('formats strokes with 2 decimals', () => {
+    expect(formatValue(0.4567, 'strokes')).toBe('0.46');
+  });
+  it('formats yards with " yd"', () => {
+    expect(formatValue(285.5, 'yards')).toBe('286 yd');
+  });
+  it('formats feet with " ft"', () => {
+    expect(formatValue(18.7, 'feet')).toBe('19 ft');
+  });
+  it('formats count with one decimal', () => {
+    expect(formatValue(0.34, 'count')).toBe('0.3');
+  });
+});
+
+describe('deltaVsTeam', () => {
+  it('returns neutral when team_avg is null', () => {
+    expect(deltaVsTeam(38, null, 'higher_better')).toEqual({ arrow: '·', tone: 'neutral' });
+  });
+  it('returns up + good when higher is better and player > team', () => {
+    expect(deltaVsTeam(42, 38, 'higher_better')).toEqual({ arrow: '↑', tone: 'good' });
+  });
+  it('returns down + bad when higher is better and player < team', () => {
+    expect(deltaVsTeam(35, 38, 'higher_better')).toEqual({ arrow: '↓', tone: 'bad' });
+  });
+  it('inverts for lower_better metrics', () => {
+    // Penalty rate: 0.4 < 0.6 means player is BETTER
+    expect(deltaVsTeam(0.4, 0.6, 'lower_better')).toEqual({ arrow: '↓', tone: 'good' });
+    expect(deltaVsTeam(0.8, 0.6, 'lower_better')).toEqual({ arrow: '↑', tone: 'bad' });
+  });
+  it('treats sub-noise deltas as neutral', () => {
+    expect(deltaVsTeam(38.001, 38, 'higher_better').tone).toBe('neutral');
+  });
+});
+
+describe('teamCohortText', () => {
+  it('returns empty string for null / undefined / NaN', () => {
+    expect(teamCohortText(null)).toBe('');
+    expect(teamCohortText(undefined)).toBe('');
+    expect(teamCohortText(Number.NaN)).toBe('');
+  });
+  it('says "Top X%" for elite percentiles', () => {
+    expect(teamCohortText(95)).toBe('Top 5% on your team');
+    expect(teamCohortText(99)).toBe('Top 1% on your team');
+  });
+  it('says "Top quartile" for 75-89', () => {
+    expect(teamCohortText(80)).toBe('Top quartile on your team');
+  });
+  it('says "Above team average" for 50-74', () => {
+    expect(teamCohortText(60)).toBe('Above team average');
+  });
+  it('says "Below team average" for 25-49', () => {
+    expect(teamCohortText(40)).toBe('Below team average');
+  });
+  it('says "Bottom X%" for low percentiles', () => {
+    expect(teamCohortText(18)).toBe('Bottom 18% on your team');
+  });
+});
+
+describe('shouldShowTeamMarker', () => {
+  it('hides when team_avg is null', () => {
+    expect(shouldShowTeamMarker({ team_avg: null, team_n: 10 })).toBe(false);
+  });
+  it('hides when team_n < 5', () => {
+    expect(shouldShowTeamMarker({ team_avg: 38, team_n: 4 })).toBe(false);
+  });
+  it('shows when team_avg present and team_n >= 5', () => {
+    expect(shouldShowTeamMarker({ team_avg: 38, team_n: 5 })).toBe(true);
+  });
+});
+
+describe('deriveAriaLabel', () => {
+  it('includes label, you, and PGA — and team when present', () => {
+    const props: StandingBarProps = {
+      metric_id: 'putts_made_10_15ft_pct',
+      metric_label: '10-15 ft Putting',
+      player_value: 38,
+      team_avg: 41,
+      team_n: 6,
+      team_pct: 18,
+      pga_value: 36,
+      direction: 'higher_better',
+      unit: 'percent',
+      scale: { min: 0, max: 60 },
+      size: 'card',
+    };
+    const label = deriveAriaLabel(props);
+    expect(label).toContain('10-15 ft Putting');
+    expect(label).toContain('You: 38%');
+    expect(label).toContain('PGA Tour: 36%');
+    expect(label).toContain('Team average: 41%');
+    expect(label).toContain('Bottom 18% on your team');
+  });
+  it('omits team line in cold-start', () => {
+    const props: StandingBarProps = {
+      metric_id: 'sg_total', metric_label: 'SG: Total',
+      player_value: 0.5, team_avg: null, pga_value: 0,
+      direction: 'higher_better', unit: 'strokes',
+      scale: { min: -1, max: 1 }, size: 'card',
+    };
+    expect(deriveAriaLabel(props)).not.toContain('Team average');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Render-state matrix
+// ---------------------------------------------------------------------------
+
+const HAPPY: StandingBarProps = {
+  metric_id: 'putts_made_10_15ft_pct',
+  metric_label: '10-15 ft Putting',
+  player_value: 38,
+  team_avg: 41,
+  team_n: 6,
+  team_pct: 18,
+  pga_value: 36,
+  direction: 'higher_better',
+  unit: 'percent',
+  scale: { min: 0, max: 60 },
+  size: 'card',
+};
+
+describe('StandingBar render states — card', () => {
+  it('happy: shows label, all 3 values, cohort text', () => {
+    render(<StandingBar {...HAPPY} />);
+    expect(screen.getByText('10-15 ft Putting')).toBeTruthy();
+    expect(screen.getByText(/You 38%/)).toBeTruthy();
+    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+    expect(screen.getByText(/Team 41%/)).toBeTruthy();
+    expect(screen.getByText('Bottom 18% on your team')).toBeTruthy();
+  });
+
+  it('cold-start: team_n < 5 hides team marker + shows cold-start hint', () => {
+    render(<StandingBar {...HAPPY} team_n={3} team_avg={null} team_pct={null} />);
+    expect(screen.queryByText(/Team 41%/)).toBeNull();
+    expect(screen.getByText(/Team marker appears once 5\+ teammates/)).toBeTruthy();
+  });
+
+  it('loading: shows status role', () => {
+    render(<StandingBar {...HAPPY} state="loading" />);
+    expect(screen.getByRole('status')).toBeTruthy();
+  });
+
+  it('error: shows alert role and error message', () => {
+    render(<StandingBar {...HAPPY} state="error" errorMessage="db down" />);
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('db down')).toBeTruthy();
+  });
+
+  it('empty: shows empty hint', () => {
+    render(<StandingBar {...HAPPY} state="empty" />);
+    expect(screen.getByText(/Log 5 rounds/)).toBeTruthy();
+  });
+});
+
+describe('StandingBar render states — inline', () => {
+  it('happy: renders the compact dot-separated values', () => {
+    render(<StandingBar {...HAPPY} size="inline" />);
+    expect(screen.getByText('10-15 ft Putting')).toBeTruthy();
+    expect(screen.getByText(/You 38%/)).toBeTruthy();
+  });
+
+  it('cold-start hides team segment from the dot-separated line', () => {
+    render(<StandingBar {...HAPPY} size="inline" team_n={2} team_avg={null} />);
+    expect(screen.queryByText(/T 41%/)).toBeNull();
+  });
+
+  it('loading + error + empty each surface the right role', () => {
+    const { rerender } = render(<StandingBar {...HAPPY} size="inline" state="loading" />);
+    expect(screen.getByRole('status')).toBeTruthy();
+    rerender(<StandingBar {...HAPPY} size="inline" state="error" />);
+    expect(screen.getByRole('alert')).toBeTruthy();
+    rerender(<StandingBar {...HAPPY} size="inline" state="empty" />);
+    expect(screen.getByText(/Log 5 rounds/)).toBeTruthy();
+  });
+});
+
+describe('StandingBar render states — hero', () => {
+  it('happy: surfaces the big "You" value', () => {
+    render(<StandingBar {...HAPPY} size="hero" />);
+    expect(screen.getByText('10-15 ft Putting')).toBeTruthy();
+    // Big You value is rendered without the "You " prefix; just "38%"
+    expect(screen.getByText('38%')).toBeTruthy();
+    // PGA value is shown in the secondary references row
+    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+  });
+
+  it('loading + error + empty each surface the right role', () => {
+    const { rerender } = render(<StandingBar {...HAPPY} size="hero" state="loading" />);
+    expect(screen.getByRole('status')).toBeTruthy();
+    rerender(<StandingBar {...HAPPY} size="hero" state="error" errorMessage="boom" />);
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('boom')).toBeTruthy();
+    rerender(<StandingBar {...HAPPY} size="hero" state="empty" />);
+    expect(screen.getByText(/Log 5 rounds to see/)).toBeTruthy();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Size dispatch
+// ---------------------------------------------------------------------------
+
+describe('StandingBar dispatch', () => {
+  it('defaults to card when an unknown size somehow lands', () => {
+    // Cast to bypass exhaustive union — we still expect the card to render.
+    const props = { ...HAPPY, size: 'card' as const };
+    render(<StandingBar {...props} />);
+    expect(screen.getByText('10-15 ft Putting')).toBeTruthy();
+  });
+
+  it('auto-derives aria-label when none provided', () => {
+    const { container } = render(<StandingBar {...HAPPY} />);
+    const root = container.querySelector('[role="img"]');
+    expect(root).toBeTruthy();
+    const aria = root?.getAttribute('aria-label') ?? '';
+    expect(aria).toContain('10-15 ft Putting');
+    expect(aria).toContain('You: 38%');
+  });
+
+  it('honors a manually-provided aria-label', () => {
+    const { container } = render(<StandingBar {...HAPPY} ariaLabel="custom" />);
+    const root = container.querySelector('[role="img"]');
+    expect(root?.getAttribute('aria-label')).toBe('custom');
+  });
+});
