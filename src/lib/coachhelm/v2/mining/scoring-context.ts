@@ -17,6 +17,19 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
+import {
+  loadStandingForInsightEvidence,
+  mergeStandingIntoEvidence,
+} from '../insights/standing-injection';
+import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+
+// W14: par (3|4|5) → v3 metric_id mapping. All three are populated by
+// W11 standing-refresh from cache.par{3,4,5}_average.
+const PAR_TO_V3_METRIC: Record<number, MetricId | null> = {
+  3: 'scoring_par_3',
+  4: 'scoring_par_4',
+  5: 'scoring_par_5',
+};
 
 type Supabase = SupabaseClient<Database>;
 
@@ -432,6 +445,13 @@ export async function generateParTypeInsights(playerId: string): Promise<void> {
       `Par ${agg.par} scoring: ${yourDisp} (${direction} vs ${titleAnchor})`;
     const content = composeParContent(agg.par, agg, baseline, baselineLabel, strokesImpact);
     const drillTags = DRILL_TAGS_BY_PAR[agg.par];
+
+    // W14: inject evidence.standing for the matching v3 metric.
+    const v3Metric = PAR_TO_V3_METRIC[agg.par];
+    if (v3Metric) {
+      const standing = await loadStandingForInsightEvidence(playerId, v3Metric);
+      mergeStandingIntoEvidence(evidence, standing);
+    }
 
     try {
       const insightId = await upsertInsight(supabase, {
