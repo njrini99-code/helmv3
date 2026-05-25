@@ -22,7 +22,7 @@ Legend: `⬜ pending` · `🟡 in-flight` · `✅ merged + deployed + verified` 
 | W9-pt1 | Foundation docs (this PR) | 🟡 in-flight | `wave9-foundation` / PR #41 | 6 docs + 3 baseline docs |
 | W9-pt2 | RLS helpers + `golf_metrics` table + seed + extend `golf_coachhelm_settings` | 🟡 in-flight | `wave9-pt2` / PR #42 | 6 migrations (split from 3 per Rule 2 + backfill rule); TS metric registry; dry-run against prod passed |
 | W9-pt3 | Provider clients (push/email/flags) + Web Push subscription endpoint + local seed | 🟡 in-flight | `wave9-pt3` | Added `/api/push-subscriptions` POST/DELETE + browser subscribe helper; refactored `task-reminders.ts` to v3 wrapper; installed `@growthbook/growthbook` + `@types/web-push` |
-| W10 | PGA standards table + seed | ⬜ | — | Depends on W9 |
+| W10 | PGA standards table + seed | 🟡 in-flight (stacked on W9) | `wave10` | 2 migrations (split from 1 per Rule 2 + backfill rule); 28-row 2024 seed; TS loader at `v3/standing/pga-standards.ts`; dry-run on W9-pt2+W10 chain green (28 rows, 24 Tour-populated, 19 D1-populated, 0 orphan FKs) |
 | W11 | Player standing table + nightly cron | ⬜ | — | Reads SG from `golf_player_stats_cache` |
 | W12 | Standing backfill (one-shot, chunked) | ⬜ | — | Separate PR from W11 |
 | W13 | StandingBar component (3 variants, all states) | ⬜ | — | |
