@@ -5288,6 +5288,7 @@ export type Database = {
           created_at: string | null
           dismissed: boolean | null
           dismissed_at: string | null
+          engine_version: string
           evidence: Json | null
           id: string
           insight_type: string
@@ -5323,6 +5324,7 @@ export type Database = {
           created_at?: string | null
           dismissed?: boolean | null
           dismissed_at?: string | null
+          engine_version?: string
           evidence?: Json | null
           id?: string
           insight_type: string
@@ -5358,6 +5360,7 @@ export type Database = {
           created_at?: string | null
           dismissed?: boolean | null
           dismissed_at?: string | null
+          engine_version?: string
           evidence?: Json | null
           id?: string
           insight_type?: string
