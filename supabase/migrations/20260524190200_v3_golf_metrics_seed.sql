@@ -1,0 +1,91 @@
+-- v3 Wave 9 part 2 — golf_metrics canonical seed (28 metrics)
+--
+-- Seeds the 28 canonical metrics referenced across v3 generators (Part V.5
+-- of the master plan), standing bars (Part VII), goals (Part VI), and the
+-- genome (Part XIII). The TS registry at src/lib/coachhelm/v3/metrics/
+-- registry.ts MUST mirror exactly these IDs — schema drift between TS
+-- and DB is risk H in Part XXVI; CI parity check defends against it.
+--
+-- This is a SEED, not a backfill. Backfills compute new rows from existing
+-- prod data; seeds are canonical reference data the schema requires to
+-- function (the FK from goals/standing/genome requires rows here to
+-- exist). The backfill rule applies to data computed from prod state;
+-- it does not require a separate PR for reference seeds.
+--
+-- The 28 metrics map to v3 generators as follows:
+--
+--   PuttDistanceGenerator (W21):   putts_made_*ft_pct          x 5
+--   PuttBiasGenerator (W22):       putt_miss_bias_*_pct        x 4
+--   ApproachMissGenerator (W22):   approach_proximity_*ft      x 3
+--   ScramblingGenerator (W22):     scrambling_pct_*            x 3
+--   ParTypeGenerator (W23):        scoring_par_*               x 3
+--   CourseMgmtGenerator (W23):     penalty_rate_per_round,
+--                                  big_number_rate             x 2
+--   PressureGapGenerator (W24):    practice_tournament_delta   x 1
+--   WarmupHoleGenerator (W24):     opening_hole_delta          x 1
+--   SG headline metrics (W14):     sg_*                        x 5
+--   Table-stakes:                  gir_pct                     x 1
+--
+-- Idempotent: ON CONFLICT (metric_id) DO NOTHING preserves any manual
+-- edits made between runs. Future seed updates ship in a NEW migration
+-- (e.g. 20260601_v3_golf_metrics_seed_update.sql), not by editing this
+-- file.
+--
+-- VERIFIED 2026-05-24: golf_metrics table created in the previous
+-- migration (20260524190100_v3_golf_metrics_table.sql) with the required
+-- columns and CHECK constraints. Seed values comply with all three CHECKs.
+--
+-- ROLLBACK:
+--   DELETE FROM public.golf_metrics
+--   WHERE introduced_in_wave = 'W9';
+--   (Safe pre-W18 — no FK references land until then.)
+
+INSERT INTO public.golf_metrics (
+  metric_id, display_label, unit, direction, category, description, introduced_in_wave
+) VALUES
+  -- Strokes Gained headline (5) — read from golf_player_stats_cache (Part V.1)
+  ('sg_total',          'SG: Total',            'strokes', 'higher_better', 'sg',          'Total strokes gained vs field average; sum of OTT + APP + ARG + PUTT.', 'W9'),
+  ('sg_ott',            'SG: Off the Tee',      'strokes', 'higher_better', 'sg',          'Strokes gained on par-4 and par-5 tee shots only. Par-3 tee shots count as approach.', 'W9'),
+  ('sg_approach',       'SG: Approach',         'strokes', 'higher_better', 'sg',          'Strokes gained on approach shots beyond ~30 yards (includes par-3 tee shots).', 'W9'),
+  ('sg_around_green',   'SG: Around the Green', 'strokes', 'higher_better', 'sg',          'Strokes gained within ~30 yards, not on the green.', 'W9'),
+  ('sg_putting',        'SG: Putting',          'strokes', 'higher_better', 'sg',          'Strokes gained on putts.', 'W9'),
+
+  -- Putt make % by distance (5) — PuttDistanceGenerator W21
+  ('putts_made_3_5ft_pct',     'Putts Made 3-5 ft',      'percent', 'higher_better', 'putting', 'Make percentage from 3-5 feet (Tour ~85%, the highest-leverage short-putt zone).', 'W9'),
+  ('putts_made_5_10ft_pct',    'Putts Made 5-10 ft',     'percent', 'higher_better', 'putting', 'Make percentage from 5-10 feet (knee-knocker zone; biggest tournament-pressure differentiator).', 'W9'),
+  ('putts_made_10_15ft_pct',   'Putts Made 10-15 ft',    'percent', 'higher_better', 'putting', 'Make percentage from 10-15 feet (Tour ~30%; primary birdie zone).', 'W9'),
+  ('putts_made_15_25ft_pct',   'Putts Made 15-25 ft',    'percent', 'higher_better', 'putting', 'Make percentage from 15-25 feet (Tour ~15%; secondary birdie zone).', 'W9'),
+  ('putts_made_25_plus_ft_pct','Putts Made 25+ ft',      'percent', 'higher_better', 'putting', 'Make percentage from 25+ feet (Tour ~5.5%; lag-putting outcome).', 'W9'),
+
+  -- Putt miss bias (4) — PuttBiasGenerator W22
+  ('putt_miss_bias_high_pct',  'Putt Miss High %',  'percent', 'lower_better', 'putting', 'Of missed putts, share that finished past the hole. Speed-control diagnostic.', 'W9'),
+  ('putt_miss_bias_low_pct',   'Putt Miss Low %',   'percent', 'lower_better', 'putting', 'Of missed putts, share that finished short. Decel / under-read diagnostic.', 'W9'),
+  ('putt_miss_bias_left_pct',  'Putt Miss Left %',  'percent', 'lower_better', 'putting', 'Of missed putts, share that missed left of hole. Aim / stroke-path diagnostic.', 'W9'),
+  ('putt_miss_bias_right_pct', 'Putt Miss Right %', 'percent', 'lower_better', 'putting', 'Of missed putts, share that missed right of hole.', 'W9'),
+
+  -- Approach proximity by distance (3) — ApproachMissGenerator W22 (unit feet, lower is better)
+  ('approach_proximity_50_125ft',   'Approach Proximity 50-125 yd',  'feet', 'lower_better', 'approach', 'Average proximity to hole from approaches 50-125 yards (Tour ~16-19 ft; college ~25-32 ft — biggest gap).', 'W9'),
+  ('approach_proximity_125_175ft',  'Approach Proximity 125-175 yd', 'feet', 'lower_better', 'approach', 'Average proximity to hole from approaches 125-175 yards.', 'W9'),
+  ('approach_proximity_175_plus_ft','Approach Proximity 175+ yd',    'feet', 'lower_better', 'approach', 'Average proximity to hole from approaches 175+ yards.', 'W9'),
+
+  -- Scrambling by lie (3) — ScramblingGenerator W22
+  ('scrambling_pct_rough',    'Scrambling % Rough',    'percent', 'higher_better', 'short_game', 'Up-and-down rate when missing the green in the rough.', 'W9'),
+  ('scrambling_pct_sand',     'Scrambling % Sand',     'percent', 'higher_better', 'short_game', 'Up-and-down rate from greenside bunker (sand save).', 'W9'),
+  ('scrambling_pct_fairway',  'Scrambling % Fairway',  'percent', 'higher_better', 'short_game', 'Up-and-down rate when missing the green from the fairway side.', 'W9'),
+
+  -- Course management (2) — CourseMgmtGenerator W23
+  ('penalty_rate_per_round',  'Penalties per Round',          'count',   'lower_better', 'course_mgmt', 'Average penalty strokes per round. 70% of double bogeys start with a penalty (Part V.4 causal chain).', 'W9'),
+  ('big_number_rate',         'Double Bogey-or-Worse Rate',   'percent', 'lower_better', 'course_mgmt', 'Percentage of holes ending double bogey or worse. #1 separator between 70s and 80s rounds.', 'W9'),
+
+  -- Per-par scoring (3) — ParTypeGenerator W23
+  ('scoring_par_3', 'Par 3 Scoring',  'strokes', 'lower_better', 'scoring', 'Average score to par on par-3 holes.', 'W9'),
+  ('scoring_par_4', 'Par 4 Scoring',  'strokes', 'lower_better', 'scoring', 'Average score to par on par-4 holes.', 'W9'),
+  ('scoring_par_5', 'Par 5 Scoring',  'strokes', 'lower_better', 'scoring', 'Average score to par on par-5 holes.', 'W9'),
+
+  -- Greens in regulation (1) — table stakes for college baseline
+  ('gir_pct', 'GIR %', 'percent', 'higher_better', 'approach', 'Greens in regulation rate. Single biggest separator between handicap brackets (Part V.4).', 'W9'),
+
+  -- Pressure + warmup (2) — PressureGapGenerator + WarmupHoleGenerator W24
+  ('practice_tournament_delta', 'Practice vs Tournament Delta', 'strokes', 'lower_better', 'pressure', 'Tournament scoring average minus practice scoring average. Typical college gap 2-5 strokes (Hickman & Metz).', 'W9'),
+  ('opening_hole_delta',        'Opening Hole Delta',           'strokes', 'lower_better', 'pressure', 'Hole 1 score vs. round average score. Captures first-tee jitters; widens for high-pressure rounds.', 'W9')
+ON CONFLICT (metric_id) DO NOTHING;
