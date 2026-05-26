@@ -70,9 +70,29 @@ function createFakeSupabase(opts: {
           : (opts.selectResult ?? { data: null, error: null });
         return Promise.resolve(recordAndReturn(terminal));
       }),
+      maybeSingle: vi.fn(() => {
+        // upsert(..., { onConflict, ignoreDuplicates }).select().maybeSingle() —
+        // shipped in upsert.ts with the 2026-05-23 P0-3 race-condition fix
+        // (UNIQUE NULLS NOT DISTINCT on signature+player_id+coach_id+team_id).
+        const terminal = state.op === 'insert'
+          ? (opts.insertResult ?? { data: { id: 'new-insight-id' }, error: null })
+          : (opts.selectResult ?? { data: null, error: null });
+        return Promise.resolve(recordAndReturn(terminal));
+      }),
 
       // INSERT
       insert: vi.fn((payload: unknown) => {
+        state.op = 'insert';
+        state.payload = payload;
+        return thenable;
+      }),
+
+      // UPSERT — prod switched .insert() → .upsert(payload, { onConflict,
+      // ignoreDuplicates }) to close the TOCTOU race when two concurrent
+      // runs (post-round-trigger + safety-net cron) both pass the dedup
+      // lookup. We record it as op='insert' so existing assertions
+      // (`calls.find(c => c.op === 'insert')`) still work.
+      upsert: vi.fn((payload: unknown) => {
         state.op = 'insert';
         state.payload = payload;
         return thenable;

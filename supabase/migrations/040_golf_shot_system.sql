@@ -26,11 +26,27 @@ COMMENT ON COLUMN golf_shots.miss_direction IS 'left | right | short | long - fo
 -- Add updated_at for data integrity if not exists
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
--- Migrate existing distance_unit data to new columns if needed
-UPDATE golf_shots
-SET distance_unit_before = COALESCE(distance_unit, 'yards'),
-    distance_unit_after = COALESCE(distance_unit, 'yards')
-WHERE distance_unit_before IS NULL OR distance_unit_after IS NULL;
+-- Migrate existing distance_unit data to new columns if needed.
+-- Guarded with information_schema so fresh CI databases (which never
+-- had the legacy `distance_unit` column) don't fail at SQLSTATE 42703.
+-- Production already ran this UPDATE successfully when the column
+-- existed; the guard is for fresh `supabase start` runs.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_shots'
+      AND column_name = 'distance_unit'
+  ) THEN
+    EXECUTE $migrate$
+      UPDATE golf_shots
+      SET distance_unit_before = COALESCE(distance_unit, 'yards'),
+          distance_unit_after = COALESCE(distance_unit, 'yards')
+      WHERE distance_unit_before IS NULL OR distance_unit_after IS NULL
+    $migrate$;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 2. Add CHECK constraints for enum validation

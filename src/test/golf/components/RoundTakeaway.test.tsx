@@ -203,9 +203,12 @@ describe('RoundTakeaway', () => {
       <RoundTakeaway insight={makeInsight()} roundScore={4} roundId="round-abc" />,
     );
     const focusLink = screen.getByTestId('round-takeaway-add-focus');
+    // RoundTakeaway component was reworked to land on the player's
+    // "My Development" surface with a suggestion query-param, replacing
+    // the older /development/new?insight= flow.
     expect(focusLink).toHaveAttribute(
       'href',
-      '/golf/dashboard/development/new?insight=insight-takeaway-1',
+      '/golf/dashboard/my-development?suggested-insight=insight-takeaway-1',
     );
 
     const coachLink = screen.getByTestId('round-takeaway-open-coachhelm');

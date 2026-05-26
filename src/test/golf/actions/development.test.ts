@@ -33,6 +33,11 @@ describe('createFocusAreaFromInsight', () => {
   });
 
   it('inserts with from_insight_id (NOT source_insight_id)', async () => {
+    // Required since the 2026-05-23 audit added verifyPlayerAccess to
+    // createFocusAreaFromInsight; without this the prod code reads
+    // `undefined.allowed` and throws.
+    verifyPlayerAccessMock.mockResolvedValue({ allowed: true, reason: 'coach' });
+
     const insertSpy = vi.fn().mockReturnValue({
       select: () => ({
         single: async () => ({ data: { id: 'fa-1' }, error: null }),
