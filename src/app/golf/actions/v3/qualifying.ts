@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import {
   transitionSelectionState,
   setCoachPick,
@@ -36,13 +37,8 @@ async function getAuthedCoachContext(qualifier_id: string) {
     .maybeSingle();
   if (!q) return { ok: false as const, error: 'Qualifier not found' };
 
-  const { data: staff } = await supabase
-    .from('golf_team_coach_staff')
-    .select('coach_id')
-    .eq('team_id', q.team_id)
-    .eq('user_id', user.id)
-    .maybeSingle();
-  if (!staff) return { ok: false as const, error: 'Not a coach of this team' };
+  const team = await verifyTeamAccess(q.team_id, user.id, supabase);
+  if (!team.allowed) return { ok: false as const, error: 'Not a coach of this team' };
 
   return { ok: true as const, supabase, user, team_id: q.team_id };
 }

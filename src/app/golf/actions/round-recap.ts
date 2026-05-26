@@ -27,7 +27,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
-import { generateText } from 'ai';
+import { compose } from '@/lib/coachhelm/v3/llm/compose';
 
 interface RoundContext {
   id: string;
@@ -55,9 +55,6 @@ interface PlayerStatContext {
   rounds_played: number | null;
 }
 
-const RECAP_MODEL =
-  process.env.AI_RECAP_MODEL ?? 'anthropic/claude-haiku-4.5';
-
 export async function generateRoundRecap(roundId: string): Promise<{ recap: string | null; cached: boolean }> {
   const supabase = await createClient();
 
@@ -81,18 +78,20 @@ export async function generateRoundRecap(roundId: string): Promise<{ recap: stri
     .eq('player_id', round.player_id)
     .maybeSingle<PlayerStatContext>();
 
-  // 3. Try LLM generation. Falls through to deterministic on any failure.
-  let recap: string | null = null;
-  try {
-    recap = await generateLLMRecap(round, stats);
-  } catch (err) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[round-recap] AI gateway unavailable, falling back:', err);
-    }
-  }
-  if (!recap) {
-    recap = buildDeterministicRecap(round, stats);
-  }
+  // 3. Build deterministic fallback first — compose() needs a fallback to
+  // return when the budget gate denies, the LLM errors, or citations fail.
+  const deterministic = buildDeterministicRecap(round, stats);
+
+  // 4. Resolve the player's primary coach so the budget gate bills the
+  // right team. If no primary coach is on file (e.g. unattached player
+  // profile), pass null — compose() still logs the call but skips the gate.
+  const coachId = await resolveBillingCoachId(supabase, round.player_id);
+
+  // 5. Route the LLM call through the v3 compose() wrapper — same
+  // budget gate + golf_coachhelm_llm_calls log + citation verifier as
+  // round-review / hero-narrative. Falls back to `deterministic` if
+  // gated or on error.
+  const recap = await generateLLMRecap(round, stats, coachId, deterministic);
 
   // 4. Persist. Cast through unknown until the generated DB types pick up
   // the new ai_recap columns (migration 20260503000000_golf_round_ai_recap).
@@ -112,10 +111,13 @@ export async function generateRoundRecap(roundId: string): Promise<{ recap: stri
 async function generateLLMRecap(
   round: RoundContext,
   stats: PlayerStatContext | null,
+  coachId: string | null,
+  fallbackText: string,
 ): Promise<string | null> {
-  // Auth is handled by the SDK via Vercel's OIDC token (auto-rotated).
-  // If the token is missing or the gateway is unreachable, the SDK throws
-  // and the caller's try/catch falls back to the deterministic recap.
+  // Auth is handled by the SDK via Vercel's OIDC token (auto-rotated)
+  // inside compose(). compose() also enforces the v3 budget gate, logs
+  // the call to golf_coachhelm_llm_calls, and falls back to the
+  // deterministic recap on any error or gate denial.
 
   const stp = round.score_to_par ?? 0;
   const scoreChip = stp === 0 ? 'E' : stp > 0 ? `+${stp}` : `${stp}`;
@@ -163,23 +165,52 @@ ${facts.join('\n')}
 
 Output only the two sentences. Nothing else.`;
 
-  const { text } = await generateText({
-    model: RECAP_MODEL,
-    prompt,
-    temperature: 0.6,
-    maxRetries: 1,
-    experimental_telemetry: {
-      isEnabled: true,
-      functionId: 'round-recap',
-      recordInputs: true,
-      recordOutputs: true,
+  const result = await compose(
+    {
+      task: 'round_review',
+      coach_id: coachId,
+      player_id: round.player_id,
+      prompt,
+      evidence: [],
+      max_completion_tokens: 120, // ~36 words × ~3 tokens/word + buffer
     },
-  });
+    fallbackText,
+  );
 
-  // Lightweight sanity check — a trimmed, two-sentence-ish string.
-  const trimmed = text.trim();
+  // compose() always returns text — either LLM or the fallback we passed.
+  // Run the same sanity check as before so a degenerate LLM reply still
+  // collapses to fallback at the persistence layer.
+  const trimmed = result.text.trim();
   if (!trimmed || trimmed.length < 30 || trimmed.length > 400) return null;
   return trimmed;
+}
+
+/**
+ * Resolve the coach to bill the LLM spend against. Picks the primary
+ * coach of the player's first active team. Returns null when no primary
+ * coach exists — compose() then skips the budget gate but still logs.
+ */
+async function resolveBillingCoachId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerId: string,
+): Promise<string | null> {
+  const { data: membership } = await supabase
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (!membership?.team_id) return null;
+
+  const { data: staff } = await supabase
+    .from('golf_team_coach_staff')
+    .select('coach_id')
+    .eq('team_id', membership.team_id)
+    .eq('is_primary', true)
+    .limit(1)
+    .maybeSingle();
+  return staff?.coach_id ?? null;
 }
 
 // --- Deterministic fallback ----------------------------------------------

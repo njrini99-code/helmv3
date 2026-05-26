@@ -1723,20 +1723,25 @@ export async function submitGolfRoundComprehensive(
             .eq('id', player.id)
             .single();
 
-          // Get coaches for this team via golf_coaches (has user_id)
-          const { data: teamCoaches } = await supabase
-            .from('golf_coaches')
-            .select('user_id')
+          // Get coaches for this team via golf_team_coach_staff → golf_coaches (user_id).
+          // golf_coaches has no team_id column; must join through the staff table.
+          const { data: staffRows } = await supabase
+            .from('golf_team_coach_staff')
+            .select('coach:golf_coaches!inner(user_id)')
             .eq('team_id', teamId);
 
-          if (teamCoaches?.length) {
+          const userIds = (staffRows ?? [])
+            .map((row: { coach: { user_id: string | null } | null }) => row.coach?.user_id)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+          if (userIds.length) {
             const { sendBulkPushNotification } = await import('@/lib/notifications/push');
             const playerName = playerInfo?.first_name && playerInfo?.last_name
               ? `${playerInfo.first_name} ${playerInfo.last_name}`
               : 'A player';
             await sendBulkPushNotification(
               'round_submitted',
-              teamCoaches.map(c => c.user_id),
+              userIds,
               { playerName, courseName: data.courseName, totalScore, scoreToPar: totalToPar }
             );
           }
@@ -3904,23 +3909,18 @@ export async function savePartialRound(
 
       roundId = round.id;
 
-      // Insert holes and shots — clean up on failure to avoid orphaned data
+      // Upsert holes and shots — feedback_golf_no_destructive_writes:
+      // never delete the user's existing data before the replacement is
+      // durable. Upsert relies on UNIQUE(round_id, hole_number) from
+      // migration 021 and UNIQUE(round_id, hole_number, shot_number)
+      // from migration 20260304000003. Orphan trim runs AFTER all
+      // upserts succeed so a mid-save failure leaves prior data intact.
       if (holesPayload.length > 0) {
-        // Delete existing holes (and cascading shots) to prevent duplicate key errors
-        // when a previous save partially completed (round+holes created but save returned failure)
-        const { error: deleteError } = await supabase.from('golf_holes').delete().eq('round_id', roundId);
-
         const holesData = holesPayload.map(h => ({ round_id: roundId, ...h }));
-        // Use upsert if delete failed (e.g. RLS or race condition) to avoid duplicate key errors
-        const { data: insertedHoles, error: holesError } = deleteError
-          ? await supabase
-              .from('golf_holes')
-              .upsert(holesData, { onConflict: 'round_id,hole_number' })
-              .select('id, hole_number')
-          : await supabase
-              .from('golf_holes')
-              .insert(holesData)
-              .select('id, hole_number');
+        const { data: insertedHoles, error: holesError } = await supabase
+          .from('golf_holes')
+          .upsert(holesData, { onConflict: 'round_id,hole_number' })
+          .select('id, hole_number');
 
         if (holesError) {
           logError(new Error(holesError.message), undefined, { action: 'savePartialRound.insertHoles' });
@@ -3964,7 +3964,15 @@ export async function savePartialRound(
               ...shot,
             }));
 
-            const { data: insertedShots, error: shotsError } = await supabase.from('golf_shots').insert(shotsData).select('id, hole_number, shot_number');
+            // Upsert on (round_id, hole_number, shot_number) — see migration
+            // 20260304000003 for the UNIQUE constraint. Prior code did .insert()
+            // which only worked because holes were deleted first (and cascaded
+            // to shots). With the destructive delete removed, we must upsert
+            // here too or re-saving the same shot_number would 409.
+            const { data: insertedShots, error: shotsError } = await supabase
+              .from('golf_shots')
+              .upsert(shotsData, { onConflict: 'round_id,hole_number,shot_number' })
+              .select('id, hole_number, shot_number');
             if (shotsError) {
               logError(new Error(shotsError.message), undefined, { action: 'savePartialRound.insertShots' });
               await logServerError(`Auto-save insert shots failed: ${shotsError.message}`, {
@@ -4033,6 +4041,48 @@ export async function savePartialRound(
               }
             }
           }
+        }
+      }
+    }
+
+    // Orphan trim — runs AFTER every upsert above has succeeded, so a
+    // mid-save failure can never strand the user with deleted data. Any
+    // trim error is logged but not surfaced: the user's current draft is
+    // intact in DB, just slightly larger than their working set, and the
+    // next autosave will trim again.
+    if (holesPayload.length > 0) {
+      const keepHoleNumbers = holesPayload.map(h => h.hole_number);
+
+      const { error: trimHolesErr } = await supabase
+        .from('golf_holes')
+        .delete()
+        .eq('round_id', roundId)
+        .not('hole_number', 'in', `(${keepHoleNumbers.join(',')})`);
+      if (trimHolesErr) {
+        await logServerError(`Auto-save orphan-hole trim failed (non-fatal): ${trimHolesErr.message}`, {
+          action: 'savePartialRound.trimHoles',
+          roundId,
+          errorCode: trimHolesErr.code,
+        });
+      }
+
+      for (const group of shotsPayload) {
+        const keepShotNumbers = group.shots.map(s => s.shot_number);
+        if (keepShotNumbers.length === 0) continue;
+
+        const { error: trimShotsErr } = await supabase
+          .from('golf_shots')
+          .delete()
+          .eq('round_id', roundId)
+          .eq('hole_number', group.hole_number)
+          .not('shot_number', 'in', `(${keepShotNumbers.join(',')})`);
+        if (trimShotsErr) {
+          await logServerError(`Auto-save orphan-shot trim failed (non-fatal): ${trimShotsErr.message}`, {
+            action: 'savePartialRound.trimShots',
+            roundId,
+            extra: { holeNumber: group.hole_number },
+            errorCode: trimShotsErr.code,
+          });
         }
       }
     }
