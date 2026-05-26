@@ -6823,6 +6823,83 @@ export type Database = {
           },
         ]
       }
+      golf_ingest_connections: {
+        Row: {
+          access_token_encrypted: string
+          created_at: string
+          expires_at: string | null
+          last_synced_at: string | null
+          player_id: string
+          provider: string
+          refresh_token_encrypted: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          access_token_encrypted: string
+          created_at?: string
+          expires_at?: string | null
+          last_synced_at?: string | null
+          player_id: string
+          provider: string
+          refresh_token_encrypted?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          access_token_encrypted?: string
+          created_at?: string
+          expires_at?: string | null
+          last_synced_at?: string | null
+          player_id?: string
+          provider?: string
+          refresh_token_encrypted?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_ingest_connections_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_ingest_sync_log: {
+        Row: {
+          error_detail: string | null
+          errors_count: number
+          id: string
+          player_id: string
+          provider: string
+          ran_at: string
+          rounds_inserted: number
+          shots_inserted: number
+        }
+        Insert: {
+          error_detail?: string | null
+          errors_count?: number
+          id?: string
+          player_id: string
+          provider: string
+          ran_at?: string
+          rounds_inserted?: number
+          shots_inserted?: number
+        }
+        Update: {
+          error_detail?: string | null
+          errors_count?: number
+          id?: string
+          player_id?: string
+          provider?: string
+          ran_at?: string
+          rounds_inserted?: number
+          shots_inserted?: number
+        }
+        Relationships: []
+      }
       golf_insight_drill_attachments: {
         Row: {
           drill_id: string
@@ -8309,6 +8386,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_practice_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          session_date: string
+          shots_data: Json
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          session_date: string
+          shots_data: Json
+          source: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          session_date?: string
+          shots_data?: Json
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_practice_sessions_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "golf_players"
             referencedColumns: ["id"]
           },
         ]
