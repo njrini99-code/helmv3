@@ -5631,6 +5631,85 @@ export type Database = {
           },
         ]
       }
+      golf_coachhelm_chat_conversations: {
+        Row: {
+          archived_at: string | null
+          coach_id: string
+          created_at: string
+          id: string
+          pinned: boolean
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          coach_id: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          coach_id?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_chat_conversations_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_coachhelm_chat_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          cost_usd: number | null
+          created_at: string
+          id: string
+          role: string
+          tool_calls: Json | null
+          tool_results: Json | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          role: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          cost_usd?: number | null
+          created_at?: string
+          id?: string
+          role?: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coachhelm_chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coachhelm_llm_budget: {
         Row: {
           budget_usd: number
