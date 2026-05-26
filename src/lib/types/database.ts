@@ -7983,6 +7983,8 @@ export type Database = {
           last_announcements_seen_at: string | null
           last_travel_seen_at: string | null
           player_id: string
+          prefs: Json
+          quiet_mode: boolean
           updated_at: string | null
         }
         Insert: {
@@ -7991,6 +7993,8 @@ export type Database = {
           last_announcements_seen_at?: string | null
           last_travel_seen_at?: string | null
           player_id: string
+          prefs?: Json
+          quiet_mode?: boolean
           updated_at?: string | null
         }
         Update: {
@@ -7999,6 +8003,8 @@ export type Database = {
           last_announcements_seen_at?: string | null
           last_travel_seen_at?: string | null
           player_id?: string
+          prefs?: Json
+          quiet_mode?: boolean
           updated_at?: string | null
         }
         Relationships: [
