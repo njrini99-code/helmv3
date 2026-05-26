@@ -2,9 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { m } from 'framer-motion';
 import { ChatMessageList } from '@/components/golf/coachhelm/v3/Chat/ChatMessageList';
 import { ChatComposer } from '@/components/golf/coachhelm/v3/Chat/ChatComposer';
 import type { ChatConversation, ChatMessage } from '@/lib/coachhelm/v3/chat/types';
+import {
+  enterVariants,
+  enterTransition,
+  stagger,
+  liftHover,
+  tapPress,
+} from '@/lib/coachhelm/v3/motion';
 
 interface Props {
   conversations: ChatConversation[];
@@ -79,50 +87,73 @@ export function ChatHistoryClient({
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">
       {/* Left rail — conversation list */}
-      <aside className="col-span-12 md:col-span-4 lg:col-span-3">
+      <m.aside
+        variants={enterVariants}
+        initial="hidden"
+        animate="visible"
+        transition={enterTransition}
+        className="col-span-12 md:col-span-4 lg:col-span-3"
+      >
         <ul className="space-y-1">
           {conversations.length === 0 && (
-            <li className="text-sm text-warm-500 px-3 py-6 text-center">
+            <li className="text-sm text-warm-400 italic px-3 py-8 text-center">
               No conversations yet. Use the chat button on any dashboard page.
             </li>
           )}
-          {conversations.map((c) => (
-            <li key={c.id}>
-              <button
+          {conversations.map((c, i) => (
+            <m.li
+              key={c.id}
+              variants={enterVariants}
+              initial="hidden"
+              animate="visible"
+              transition={{ ...enterTransition, delay: stagger(i) }}
+            >
+              <m.button
                 type="button"
                 onClick={() => loadConversation(c.id)}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm ${
+                whileHover={c.id === activeId ? undefined : liftHover}
+                whileTap={tapPress}
+                className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                   c.id === activeId
-                    ? 'bg-warm-900 text-white'
+                    ? 'bg-warm-900 text-white shadow-[0_8px_18px_-12px_rgba(28,25,23,0.45)]'
                     : 'text-warm-800 hover:bg-warm-100'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate">{c.title ?? 'Untitled'}</span>
                   <span
-                    className={`text-[11px] tabular-nums ${
+                    className={`text-[11px] tabular-nums shrink-0 ${
                       c.id === activeId ? 'text-white/70' : 'text-warm-400'
                     }`}
                   >
                     {formatDate(c.updated_at)}
                   </span>
                 </div>
-              </button>
-            </li>
+              </m.button>
+            </m.li>
           ))}
         </ul>
-        <p className="mt-4 px-3">
-          <Link href="/golf/dashboard/coachhelm" className="text-xs text-warm-500 hover:text-warm-700">
+        <p className="mt-5 px-3">
+          <Link
+            href="/golf/dashboard/coachhelm"
+            className="text-[11px] uppercase tracking-[0.14em] text-warm-500 hover:text-warm-800 transition"
+          >
             ← Back to CoachHelm
           </Link>
         </p>
-      </aside>
+      </m.aside>
 
       {/* Main pane — messages */}
-      <section className="col-span-12 md:col-span-8 lg:col-span-9 flex flex-col min-h-[60vh] bg-white border border-warm-200 rounded-2xl overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 bg-warm-50/30">
+      <m.section
+        variants={enterVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{ ...enterTransition, delay: 0.1 }}
+        className="col-span-12 md:col-span-8 lg:col-span-9 flex flex-col min-h-[60vh] surface-matte rounded-2xl overflow-hidden"
+      >
+        <div className="flex-1 overflow-y-auto p-4 bg-warm-50/40">
           {activeId === null && (
-            <p className="text-sm text-warm-500 text-center mt-12">
+            <p className="text-sm text-warm-400 italic text-center mt-12">
               Pick a conversation on the left, or start a new one with the chat button.
             </p>
           )}
@@ -134,7 +165,7 @@ export function ChatHistoryClient({
           )}
         </div>
         <ChatComposer onSend={handleSend} disabled={pending && activeId !== null} />
-      </section>
+      </m.section>
     </div>
   );
 }

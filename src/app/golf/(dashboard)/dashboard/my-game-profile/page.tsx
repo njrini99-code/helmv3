@@ -100,12 +100,26 @@ export default async function MyGameProfilePage() {
             </Reveal>
           </>
         ) : (
-          <section className="surface-matte rounded-3xl p-8 text-center">
-            <p className="text-sm text-warm-600">
-              Your genome will appear after you have 8+ completed rounds and the nightly
-              compute runs.
-            </p>
-          </section>
+          <Reveal staggerIndex={1}>
+            <section className="surface-stone rounded-3xl p-10 text-center">
+              <span
+                aria-hidden
+                className="inline-flex h-12 w-12 rounded-full bg-primary-50 text-primary-700 items-center justify-center mb-4"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M12 7 v5 l3 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-medium text-warm-900 tracking-tight">
+                Your genome is warming up
+              </h2>
+              <p className="mt-2 text-sm text-warm-600 leading-relaxed max-w-xs mx-auto">
+                It needs 8+ completed rounds before the radar lights up. Keep playing —
+                we&apos;ll surface your shape automatically.
+              </p>
+            </section>
+          </Reveal>
         )}
       </div>
     </AnimatedPage>

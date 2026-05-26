@@ -129,12 +129,14 @@ function Toggle({
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-10 items-center rounded-full transition ${
-        checked ? 'bg-primary-600' : 'bg-warm-300'
-      } ${disabled ? 'opacity-50' : 'hover:opacity-90'}`}
+      className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+        checked
+          ? 'bg-primary-600 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]'
+          : 'bg-warm-300'
+      } ${disabled ? 'opacity-50' : 'hover:opacity-90'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40`}
     >
       <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
           checked ? 'translate-x-4' : 'translate-x-0.5'
         }`}
       />

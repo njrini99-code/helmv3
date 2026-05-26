@@ -170,7 +170,7 @@ function PlayerColumn({
       <h3 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
         {heading}
       </h3>
-      <ul role="list" className="space-y-1 max-h-72 overflow-y-auto">
+      <ul role="list" className="space-y-1 max-h-72 overflow-y-auto pr-1">
         {roster.map((p) => {
           const isSelected = p.id === selectedId;
           const isOther = p.id === otherId;
@@ -185,7 +185,7 @@ function PlayerColumn({
                 aria-current={isSelected ? 'true' : undefined}
                 aria-disabled={isOther || undefined}
                 tabIndex={isOther ? -1 : undefined}
-                className={`block px-3 py-2 rounded-lg text-sm transition ${
+                className={`group block px-3 py-2 rounded-lg text-sm v3-lift transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                   isSelected
                     ? 'bg-warm-900 text-white'
                     : isOther

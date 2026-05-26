@@ -22,6 +22,7 @@ import { m } from 'framer-motion';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
+import { EASE_CINEMATIC, EASE_TAP, DURATION } from '@/lib/coachhelm/v3/motion';
 
 export interface RadarSeries {
   label: string;
@@ -100,9 +101,22 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
         aria-label="Player genome radar"
         role="img"
       >
-        {/* ----- Spider grid: 4 rings ----- */}
-        {[0.25, 0.5, 0.75, 1].map((r) => (
-          <circle
+        <defs>
+          {/* Subtle Gaussian glow for the polygon so the silhouette feels
+              like it sits IN the surface rather than on it. Stays soft —
+              we don't want it to look like Tron. */}
+          <filter id="genome-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="0.018" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* ----- Spider grid: 4 rings (animated entrance, outermost first) ----- */}
+        {[1, 0.75, 0.5, 0.25].map((r, i) => (
+          <m.circle
             key={r}
             cx={0}
             cy={0}
@@ -110,11 +124,14 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
             fill="none"
             stroke="rgba(28,25,23,0.08)"
             strokeWidth={0.005}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: DURATION.medium, delay: 0.05 * i, ease: EASE_CINEMATIC }}
           />
         ))}
-        {/* ----- Spokes ----- */}
-        {spokes.map((sp) => (
-          <line
+        {/* ----- Spokes (faint, staggered after rings) ----- */}
+        {spokes.map((sp, i) => (
+          <m.line
             key={sp.dim_id}
             x1={0}
             y1={0}
@@ -122,24 +139,35 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
             y2={sp.uy}
             stroke="rgba(28,25,23,0.08)"
             strokeWidth={0.004}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: DURATION.medium, delay: 0.25 + 0.02 * i, ease: EASE_CINEMATIC }}
           />
         ))}
-        {/* ----- Series polygons (animated entrance) ----- */}
+        {/* Center dot — visual anchor */}
+        <m.circle
+          cx={0} cy={0} r={0.012}
+          fill="rgba(28,25,23,0.35)"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: DURATION.short, delay: 0.4, ease: EASE_TAP }}
+        />
+        {/* ----- Series polygons (animated entrance + glow) ----- */}
         {series.map((s, idx) => {
           const points = project(s);
           const path = buildPolygonPath(points);
           return (
-            <g key={s.label}>
+            <g key={s.label} filter="url(#genome-glow)">
               <m.path
                 d={path}
                 fill={s.hex}
-                fillOpacity={0.12}
+                fillOpacity={0.14}
                 stroke={s.hex}
-                strokeWidth={0.012}
+                strokeWidth={0.014}
                 strokeLinejoin="round"
                 initial={{ opacity: 0, scale: 0.6 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, ease: 'easeOut', delay: idx * 0.15 }}
+                transition={{ duration: DURATION.long, ease: EASE_CINEMATIC, delay: 0.5 + idx * 0.15 }}
                 style={{ transformOrigin: '0 0' }}
               />
               {/* Per-dim dots */}
@@ -162,8 +190,9 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{
-                      duration: 0.25,
+                      duration: DURATION.short,
                       delay: 0.4 + idx * 0.15 + i * 0.03,
+                      ease: EASE_TAP,
                     }}
                     onMouseEnter={() => setHover({ dim_id: spoke.dim_id, series_idx: idx })}
                     onMouseLeave={() => setHover(null)}
@@ -191,12 +220,17 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
         ))}
       </svg>
 
-      {/* ----- Hover tooltip ----- */}
+      {/* ----- Hover tooltip — series-colored dot + label + value ----- */}
       {hover && (
         <div
           role="tooltip"
-          className="absolute top-2 left-1/2 -translate-x-1/2 bg-warm-900 text-white text-xs px-3 py-1.5 rounded-full shadow-lg pointer-events-none"
+          className="absolute top-1 left-1/2 -translate-x-1/2 bg-warm-900/95 backdrop-blur-sm text-white text-xs px-3.5 py-2 rounded-full shadow-xl pointer-events-none flex items-center gap-2 whitespace-nowrap"
         >
+          <span
+            aria-hidden
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: series[hover.series_idx]?.hex ?? '#fff' }}
+          />
           {tooltipText(series, hover)}
         </div>
       )}
