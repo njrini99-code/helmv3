@@ -5710,6 +5710,41 @@ export type Database = {
           },
         ]
       }
+      golf_coachhelm_coach_weights: {
+        Row: {
+          coach_id: string
+          insight_type: string
+          intent: string
+          sample_n: number
+          updated_at: string
+          weight: number
+        }
+        Insert: {
+          coach_id: string
+          insight_type: string
+          intent: string
+          sample_n?: number
+          updated_at?: string
+          weight?: number
+        }
+        Update: {
+          coach_id?: string
+          insight_type?: string
+          intent?: string
+          sample_n?: number
+          updated_at?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_coachhelm_coach_weights_coach_id_fkey"
+            columns: ["coach_id"]
+            isOneToOne: false
+            referencedRelation: "golf_coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_coachhelm_llm_budget: {
         Row: {
           budget_usd: number
@@ -6935,6 +6970,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "golf_teams"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_insight_outcome_attribution: {
+        Row: {
+          attributed_at: string
+          baseline_value: number
+          delta: number
+          insight_id: string
+          lift: number | null
+          n_rounds_after: number
+          n_rounds_before: number
+          post_value: number
+          surfaced_at: string
+          target_metric_id: string
+        }
+        Insert: {
+          attributed_at?: string
+          baseline_value: number
+          delta: number
+          insight_id: string
+          lift?: number | null
+          n_rounds_after: number
+          n_rounds_before: number
+          post_value: number
+          surfaced_at: string
+          target_metric_id: string
+        }
+        Update: {
+          attributed_at?: string
+          baseline_value?: number
+          delta?: number
+          insight_id?: string
+          lift?: number | null
+          n_rounds_after?: number
+          n_rounds_before?: number
+          post_value?: number
+          surfaced_at?: string
+          target_metric_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_insight_outcome_attribution_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: true
+            referencedRelation: "golf_coach_insights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_insight_outcome_attribution_target_metric_id_fkey"
+            columns: ["target_metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
           },
         ]
       }
