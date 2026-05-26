@@ -1,18 +1,27 @@
 'use client';
 
 /**
- * HeroNarrativeCard — W31. Renders the LLM-generated hero paragraph
- * above the existing HeroInsightCard on the player dashboard.
+ * HeroNarrativeCard — W31 + premium polish.
  *
- * Calls `generateHeroNarrative` on mount (one-shot, no streaming) and
- * shows the returned prose. Until it resolves, renders the fallback
- * text immediately so the surface never feels empty. On failure /
- * budget-gating the fallback stays put — the call log captures the
- * gating reason.
+ * Calls `generateHeroNarrative` on mount and renders the returned
+ * prose. Premium touches:
+ *   - Framer-motion fade-in entrance with editorial easing curve
+ *   - Soft shimmer overlay during the LLM round-trip
+ *   - Crossfade when the LLM prose swaps in
+ *   - ✨ glyph + "AI summary" badge when used_llm=true
  */
 
 import { useEffect, useState } from 'react';
+import { AnimatePresence, m } from 'framer-motion';
 import { generateHeroNarrative } from '@/app/golf/actions/v3/llm';
+import {
+  heroVariants,
+  heroTransition,
+  badgeVariants,
+  badgeTransition,
+  crossfadeVariants,
+  crossfadeTransition,
+} from '@/lib/coachhelm/v3/motion';
 
 export interface HeroNarrativeCardProps {
   playerId: string;
@@ -65,28 +74,68 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
   ]);
 
   return (
-    <section
+    <m.section
       data-testid="hero-narrative-card"
       data-used-llm={usedLlm ? 'true' : 'false'}
-      className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6"
+      variants={heroVariants}
+      initial="hidden"
+      animate="visible"
+      transition={heroTransition}
+      className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6 relative overflow-hidden"
     >
-      <div className="flex items-baseline justify-between gap-4 mb-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-warm-500">
-          Today
-        </p>
-        {usedLlm && (
-          <span className="text-[10px] uppercase tracking-[0.1em] text-warm-400">
-            AI summary
-          </span>
-        )}
+      {loading && (
+        <m.div
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <m.div
+            className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+            animate={{ x: ['0%', '400%'] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </m.div>
+      )}
+
+      <div className="relative">
+        <div className="flex items-baseline justify-between gap-4 mb-3">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500">
+            Today
+          </p>
+          <AnimatePresence>
+            {usedLlm && (
+              <m.span
+                key="ai-badge"
+                variants={badgeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={badgeTransition}
+                className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-warm-500"
+              >
+                <span aria-hidden className="text-[12px] leading-none">✦</span>
+                AI summary
+              </m.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence mode="wait">
+          <m.p
+            key={text}
+            variants={crossfadeVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={crossfadeTransition}
+            className="text-[17px] md:text-[18px] leading-relaxed text-warm-900"
+          >
+            {text}
+          </m.p>
+        </AnimatePresence>
       </div>
-      <p
-        className={`text-[17px] md:text-[18px] leading-relaxed text-warm-900 ${
-          loading ? 'opacity-80' : ''
-        }`}
-      >
-        {text}
-      </p>
-    </section>
+    </m.section>
   );
 }

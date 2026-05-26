@@ -3,19 +3,30 @@
   "buildCommand": "npm run build",
   "installCommand": "npm ci",
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
   "headers": [
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
       "source": "/manifest.json",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
       ]
     }
   ],
@@ -59,6 +70,22 @@
     {
       "path": "/api/cron/v3/standing-refresh",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/v3/genome-nightly",
+      "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/v3/causality-attribute",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/v3/ingest-sync",
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/v3/weekly-coach-email",
+      "schedule": "0 23 * * 0"
     }
   ]
 }

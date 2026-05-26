@@ -716,6 +716,72 @@
     box-shadow: var(--glass-shadow-lg);
   }
 
+  /* surface-lift — v3 Liquid Glass tier for FLOATING surfaces (chat
+     drawer, tooltips, command palettes, anything suspended above the
+     page rather than sitting on it).
+
+     Distinct from surface-stone (matte plinth) + surface-matte (mid
+     content card) — both of those are opaque-ish. surface-lift is
+     the translucent material for elements that should feel suspended.
+
+     Three optical effects compose the "liquid glass" feel:
+       1. Heavy backdrop-blur (28px) so what's behind diffuses cleanly.
+       2. A subtle inset highlight at the TOP (1px specular hairline,
+          warm-white at ~0.6 alpha) — implies a machined upper edge
+          catching ambient light.
+       3. A directional drop shadow biased downward + slightly right
+          (sun roughly at 10 o'clock) for spatial consistency with
+          the rest of the v3 surface system.
+
+     Used by: ChatDrawer, GenomeRadar tooltip, future modals. */
+  .surface-lift {
+    background:
+      linear-gradient(180deg,
+        hsl(45 22% 99% / 0.86) 0%,
+        hsl(42 18% 96% / 0.82) 100%);
+    backdrop-filter: blur(28px) saturate(1.05);
+    -webkit-backdrop-filter: blur(28px) saturate(1.05);
+    border: 1px solid hsl(40 14% 84% / 0.45);
+    box-shadow:
+      inset 0 1px 0 hsl(45 22% 100% / 0.6),
+      0 1px 2px hsl(42 14% 22% / 0.06),
+      0 12px 28px hsl(42 16% 22% / 0.14),
+      0 40px 80px hsl(42 16% 22% / 0.10);
+  }
+
+  /* surface-hairline — used for delicate dividers between rows inside
+     a card. Avoids the heaviness of border-warm-200 which can read as
+     "boxy" when stacked. */
+  .surface-hairline {
+    border-color: hsl(38 12% 76% / 0.32);
+  }
+
+  /* v3 motion system — exported as CSS vars so non-framer transitions
+     (e.g. CSS-only hover lifts) can share the same easing language. */
+  :root {
+    --v3-ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+    --v3-ease-tap: cubic-bezier(0.32, 0.72, 0, 1);
+    --v3-duration-micro: 120ms;
+    --v3-duration-short: 280ms;
+    --v3-duration-medium: 440ms;
+    --v3-duration-long: 680ms;
+  }
+
+  /* v3 interactive card lift — applied to anything tappable that
+     should physically respond. Uses transform + shadow growth rather
+     than scale, so cards lift toward the user instead of inflating. */
+  .v3-lift {
+    transition:
+      transform var(--v3-duration-short) var(--v3-ease-tap),
+      box-shadow var(--v3-duration-short) var(--v3-ease-tap);
+  }
+  .v3-lift:hover {
+    transform: translateY(-2px);
+  }
+  .v3-lift:active {
+    transform: translateY(0);
+  }
+
   /* Fallback for browsers without backdrop-filter support */
   @supports not (backdrop-filter: blur(1px)) {
     .glass-subtle {

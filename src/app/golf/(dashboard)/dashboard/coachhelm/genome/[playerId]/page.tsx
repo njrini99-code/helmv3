@@ -94,9 +94,12 @@ export default async function CoachGenomePage({ params }: PageProps) {
             <div className="mt-5 flex items-center gap-3">
               <Link
                 href={`/golf/dashboard/coachhelm/genome/compare?p1=${playerId}`}
-                className="px-4 py-2 rounded-xl bg-warm-900 text-white text-sm font-medium hover:bg-warm-800 transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-warm-900 text-white text-sm font-medium hover:bg-warm-800 transition shadow-[0_8px_18px_-10px_rgba(28,25,23,0.45)] v3-lift"
               >
-                Compare →
+                Compare
+                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+                  <path d="M3 8h9 M9 4 l4 4 l-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </Link>
             </div>
           </header>
@@ -147,19 +150,29 @@ export default async function CoachGenomePage({ params }: PageProps) {
 
         {/* ----- Empty state when no genome computed yet ----- */}
         {!genome && (
-          <section className="surface-matte rounded-3xl p-10 text-center">
-            <p className="text-sm text-warm-600">
-              Hit{' '}
-              <code className="font-mono text-xs bg-warm-100 px-1.5 py-0.5 rounded">
-                POST /api/coachhelm/v3/genome/compute
-              </code>{' '}
-              with{' '}
-              <code className="font-mono text-xs bg-warm-100 px-1.5 py-0.5 rounded">
-                player_id: {playerId}
-              </code>{' '}
-              to seed the row, or wait for the nightly cron.
-            </p>
-          </section>
+          <Reveal staggerIndex={1}>
+            <section className="surface-stone rounded-3xl p-10 text-center">
+              <span
+                aria-hidden
+                className="inline-flex h-12 w-12 rounded-full bg-primary-50 text-primary-700 items-center justify-center mb-4"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M8 12 l3 3 l5 -6" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <h2 className="text-lg font-medium text-warm-900 tracking-tight">
+                {name}&apos;s genome hasn&apos;t been computed yet
+              </h2>
+              <p className="mt-2 text-sm text-warm-600 leading-relaxed max-w-md mx-auto">
+                The nightly cron will seed this player automatically. To trigger now, hit{' '}
+                <code className="font-mono text-[11px] bg-warm-100 px-1.5 py-0.5 rounded">
+                  POST /api/coachhelm/v3/genome/compute
+                </code>{' '}
+                with player_id <span className="font-mono text-[11px]">{playerId}</span>.
+              </p>
+            </section>
+          </Reveal>
         )}
       </div>
     </AnimatedPage>

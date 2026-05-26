@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * GoalCard — render a single v3 Goal.
  *
@@ -8,14 +10,20 @@
  *   - State chip (active / paused / etc.)
  *   - Action menu (pause / abandon / share-with-coach toggle)
  *
- * This is the read-side only — write actions live in
- * src/app/golf/actions/v3/goals.ts and are called from the card's
- * client-side action menu (separate file when needed).
+ * Premium polish: card uses canonical enter motion + the progress bar
+ * scales-in from the left so progress feels EARNED, not assumed.
  */
 
+import { m } from 'framer-motion';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
+import {
+  enterVariants,
+  enterTransition,
+  EASE_CINEMATIC,
+  DURATION,
+} from '@/lib/coachhelm/v3/motion';
 
 export interface GoalCardProps {
   goal: Goal;
@@ -56,24 +64,32 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
 
   if (!expanded) {
     return (
-      <div
+      <m.div
+        variants={enterVariants}
+        initial="hidden"
+        animate="visible"
+        transition={enterTransition}
         data-testid="goal-card-compact"
         data-goal-id={goal.id}
-        className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3"
+        className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3 v3-lift"
       >
         <span className="text-sm font-medium text-warm-900 truncate">{goal.title}</span>
         <span className={`text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}>
           {stateChip.label}
         </span>
-      </div>
+      </m.div>
     );
   }
 
   return (
-    <div
+    <m.div
+      variants={enterVariants}
+      initial="hidden"
+      animate="visible"
+      transition={enterTransition}
       data-testid="goal-card"
       data-goal-id={goal.id}
-      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5"
+      className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 v3-lift"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-2">
@@ -111,12 +127,16 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         </span>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar — animates from 0 → current pct so progress
+          feels EARNED rather than asserted. Helm-green fill with a
+          soft ring at the leading edge. */}
       {pct !== null && (
-        <div className="relative h-1.5 w-full bg-warm-100 rounded-full mb-2">
-          <div
-            className="absolute left-0 top-0 h-full bg-primary-600 rounded-full transition-all duration-300"
-            style={{ width: `${pct}%` }}
+        <div className="relative h-1.5 w-full bg-warm-100 rounded-full mb-2 overflow-hidden">
+          <m.div
+            className="absolute left-0 top-0 h-full bg-primary-600 rounded-full shadow-[0_0_0_2px_rgba(22,163,74,0.12)]"
+            initial={{ width: '0%' }}
+            animate={{ width: `${pct}%` }}
+            transition={{ duration: DURATION.long, ease: EASE_CINEMATIC, delay: 0.15 }}
             aria-hidden="true"
           />
         </div>
@@ -127,6 +147,6 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         {goal.creator_role === 'coach' ? 'Assigned by coach' : 'Self-set'}
         {goal.shared_with_coach && goal.creator_role === 'player' && ' · shared with coach'}
       </p>
-    </div>
+    </m.div>
   );
 }
