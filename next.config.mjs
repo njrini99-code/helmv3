@@ -5,17 +5,27 @@ import bundleAnalyzer from '@next/bundle-analyzer';
 import { withSentryConfig } from '@sentry/nextjs';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
-const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
-const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
-const hasLocalStorageOption = existingNodeOptions.includes('--localstorage-file');
-const hasLocalStorageValue = /--localstorage-file=\S+/.test(existingNodeOptions);
 
-if (hasLocalStorageOption && !hasLocalStorageValue) {
-  process.env.NODE_OPTIONS = existingNodeOptions
-    .replace(/--localstorage-file(=\S+)?/, localStorageOption)
-    .trim();
-} else if (!hasLocalStorageOption) {
-  process.env.NODE_OPTIONS = `${existingNodeOptions} ${localStorageOption}`.trim();
+// `--localstorage-file` is a Node 22+ flag (experimental webstorage).
+// Node 20 — which the GitHub Actions `build` job currently uses — exits
+// with "is not allowed in NODE_OPTIONS" the moment Next spawns a worker
+// that inherits this env. Skip the setup on older Node so the build
+// goes through; SSR localStorage shims aren't required for the
+// production bundle to compile.
+const nodeMajor = parseInt(process.versions.node.split('.')[0] ?? '0', 10);
+if (nodeMajor >= 22) {
+  const localStorageOption = `--localstorage-file=${path.join(os.tmpdir(), 'helmv3-localstorage')}`;
+  const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
+  const hasLocalStorageOption = existingNodeOptions.includes('--localstorage-file');
+  const hasLocalStorageValue = /--localstorage-file=\S+/.test(existingNodeOptions);
+
+  if (hasLocalStorageOption && !hasLocalStorageValue) {
+    process.env.NODE_OPTIONS = existingNodeOptions
+      .replace(/--localstorage-file(=\S+)?/, localStorageOption)
+      .trim();
+  } else if (!hasLocalStorageOption) {
+    process.env.NODE_OPTIONS = `${existingNodeOptions} ${localStorageOption}`.trim();
+  }
 }
 
 const withBundleAnalyzer = bundleAnalyzer({

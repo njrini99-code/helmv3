@@ -45,7 +45,10 @@ describe('postRoundTrigger', () => {
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r2');
     expect(data?.[0]?.['coachhelm_analyzed_at']).toBeFalsy();
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
-    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/team disabled/);
+    // postRoundTrigger now sanitizes free-text reasons into a canonical
+    // enum via sanitizeFailureReason() — "team disabled coachhelm" matches
+    // the "disabled" branch and becomes 'engine_disabled'.
+    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/engine_disabled/);
   });
 
   it('sets coachhelm_failed_at + reason when trigger throws', async () => {
@@ -60,7 +63,9 @@ describe('postRoundTrigger', () => {
 
     const { data } = await admin.from('golf_rounds').select('*').eq('id', 'r3');
     expect(data?.[0]?.['coachhelm_failed_at']).toBeTruthy();
-    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/engine_boom/);
+    // Free-text "engine_boom" doesn't match any sanitizer branch → falls
+    // through to the catch-all 'engine_error' code.
+    expect(String(data?.[0]?.['coachhelm_failure_reason'])).toMatch(/engine_error/);
   });
 
   it('truncates failure reason to 500 chars', async () => {

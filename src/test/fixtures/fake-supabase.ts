@@ -177,6 +177,16 @@ class WriteBuilder implements PromiseLike<{ data: Row[] | null; error: unknown; 
     const list = data ?? [];
     return { data: list[0] ?? null, error: null };
   }
+  // .maybeSingle() — shipped in upsert.ts with the 2026-05-23 P0-3 race
+  // fix to differentiate "no rows" (existing-row case under
+  // ignoreDuplicates) from a hard error. Same semantics as single but
+  // never throws when empty.
+  async maybeSingle(): Promise<{ data: Row | null; error: unknown }> {
+    const { data, error } = await this.run();
+    if (error) return { data: null, error };
+    const list = data ?? [];
+    return { data: list[0] ?? null, error: null };
+  }
 
   private async run(): Promise<{ data: Row[] | null; error: unknown; count: number }> {
     const list = (this.tables[this.table] ??= []);

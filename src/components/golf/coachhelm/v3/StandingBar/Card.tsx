@@ -27,7 +27,7 @@ import {
 } from './utils';
 import { EASE_CINEMATIC, EASE_TAP, DURATION } from '@/lib/coachhelm/v3/motion';
 
-interface CardProps extends StandingBarProps {}
+type CardProps = StandingBarProps;
 
 export function Card(props: CardProps) {
   const state = deriveState(props);

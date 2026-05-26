@@ -19,7 +19,7 @@
 
 import type { EvidenceClaim } from './types';
 
-const NUMERIC_RE = /(?:^|\s|\()(-?\d+(?:\.\d+)?%?)(?=[\s,.;:!\?\)\]]|$)/g;
+const NUMERIC_RE = /(?:^|\s|\()(-?\d+(?:\.\d+)?%?)(?=[\s,.;:!?)\]]|$)/g;
 
 export interface CitationVerification {
   verified: boolean;
