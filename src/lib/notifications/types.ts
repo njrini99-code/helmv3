@@ -30,10 +30,15 @@ export interface NotificationPreferences {
   email_profile_views: boolean;
   email_announcements: boolean;
   email_task_reminders: boolean;
+  /** CoachHelm AI insights — opt-in by default. Routed separately from
+   *  team announcements so players can mute one without losing the other. */
+  email_coachhelm: boolean;
   // Push preferences
   push_messages: boolean;
   push_events: boolean;
   push_task_reminders: boolean;
+  /** CoachHelm AI insights via push. */
+  push_coachhelm: boolean;
 }
 
 export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
@@ -43,9 +48,11 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   email_profile_views: false, // Off by default to avoid spam
   email_announcements: true,
   email_task_reminders: true,
+  email_coachhelm: true,
   push_messages: true,
   push_events: true,
   push_task_reminders: true,
+  push_coachhelm: true,
 };
 
 export interface EmailTemplate {
