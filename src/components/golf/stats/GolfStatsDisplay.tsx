@@ -53,6 +53,10 @@ interface StatsDisplayProps {
   stats: GolfStats;
   playerName?: string;
   playerProfile?: PlayerProfile;
+  /** Used by per-tab sections that fetch their own raw shot data
+   *  (e.g. PuttingStats → PuttHeatmap). Omit for tabs that only need
+   *  the aggregated GolfStats. */
+  playerId?: string | null;
   isCoachView?: boolean;
   rounds?: RoundOption[];
   selectedRoundId?: string | 'overall';
@@ -90,7 +94,7 @@ const FILTER_PRESETS: { label: string; filter: StatsFilter }[] = [
 // ============================================================================
 
 export default function GolfStatsDisplay({
-  stats, playerName, playerProfile, isCoachView = false,
+  stats, playerName, playerProfile, playerId, isCoachView = false,
   rounds = [], selectedRoundId = 'overall', onRoundChange,
   activeFilter, onFilterChange, filterOptions,
   courseBreakdown, worstHoleData, trendData,
@@ -265,7 +269,7 @@ export default function GolfStatsDisplay({
             {activeCategory === 'scoring' && <ScoringStats stats={stats} holeFormat={holeFormat} />}
             {activeCategory === 'driving' && <DrivingStats stats={stats} />}
             {activeCategory === 'approach' && <ApproachStats stats={stats} />}
-            {activeCategory === 'putting' && <PuttingStats stats={stats} />}
+            {activeCategory === 'putting' && <PuttingStats stats={stats} playerId={playerId} selectedRoundId={selectedRoundId} />}
             {activeCategory === 'scrambling' && <ScramblingStats stats={stats} />}
             {activeCategory === 'strokes-gained' && <StrokesGainedStats stats={stats} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} />}
             {activeCategory === 'analysis' && <AnalysisStats worstHoleData={worstHoleData} courseBreakdown={courseBreakdown} trendData={trendData} />}
