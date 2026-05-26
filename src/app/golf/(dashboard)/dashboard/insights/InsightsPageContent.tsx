@@ -916,12 +916,12 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
   return (
     <div
       className={cn(
-        'bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl ',
+        'surface-matte rounded-2xl',
         'p-10 text-center',
       )}
     >
-      <div className="mx-auto w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-4">
-        <IconSparkles size={24} className="text-warm-500" />
+      <div className="mx-auto w-12 h-12 rounded-full bg-primary-50 flex items-center justify-center mb-4">
+        <IconSparkles size={24} className="text-primary-700" />
       </div>
       <p className="text-sm font-medium text-warm-900 mb-1">
         No insights match your filters

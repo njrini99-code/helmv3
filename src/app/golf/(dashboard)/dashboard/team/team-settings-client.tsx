@@ -126,7 +126,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
         />
         <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-8">
 
-        <div className="bg-white rounded-2xl border border-warm-200 p-6 space-y-6">
+        <div className="surface-matte rounded-2xl p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-warm-700 mb-2">
               Team Name
@@ -191,7 +191,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </Reveal>
 
       {/* Team Info */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-6 mb-6">
+      <div className="surface-matte rounded-2xl p-6 space-y-6 mb-6">
         <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Team Information</h2>
 
         <div>
@@ -230,7 +230,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
       </div>
 
       {/* Invite Code */}
-      <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 space-y-4">
+      <div className="surface-matte rounded-2xl p-6 space-y-4">
         <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Player Invitations</h2>
         <p className="text-sm text-warm-500">
           Share this link with players to invite them to join your team.
