@@ -25,8 +25,8 @@ const rule: CompositeRule = {
     const distinctRounds = new Set(ctx.hole_scores.map((h) => h.round_id));
     if (distinctRounds.size < MIN_ROUNDS) return null;
 
-    let early = { sum: 0, n: 0 };
-    let late = { sum: 0, n: 0 };
+    const early = { sum: 0, n: 0 };
+    const late = { sum: 0, n: 0 };
     for (const h of ctx.hole_scores) {
       const toPar = h.score - h.par;
       if (h.hole_number >= 1 && h.hole_number <= 12) {
