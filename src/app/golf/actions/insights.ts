@@ -45,6 +45,7 @@ import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
+import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
 
@@ -2526,9 +2527,11 @@ async function loadEvidenceBackedInsights(
   playerId: string,
 ): Promise<ComposedInsight[]> {
   try {
+    // W36: also pull insight_type so we can apply the per-coach
+    // ranking weight before returning.
     const { data, error } = await supabase
       .from('golf_coach_insights')
-      .select('id, title, content, evidence, category, lifecycle_state, metadata, created_at')
+      .select('id, title, content, evidence, category, insight_type, lifecycle_state, metadata, created_at')
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
       .in('lifecycle_state', ['detected', 'matured', 'addressed'])
@@ -2538,7 +2541,7 @@ async function loadEvidenceBackedInsights(
 
     if (error || !data) return [];
 
-    return data
+    const projected = data
       .filter((row): row is typeof row & { evidence: Record<string, unknown> } => !!row.evidence)
       .map((row) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -2547,12 +2550,6 @@ async function loadEvidenceBackedInsights(
           typeof evidence?.confidence === 'number' ? evidence.confidence : 0.6;
         const tone =
           row.lifecycle_state === 'matured' ? 'urgent' : 'cautionary';
-
-        // The ComposedInsight shape carries headline/body/tone; we preserve
-        // the original DB title/content so the generator's authored copy
-        // flows through unchanged. `id`, `evidence`, and `category` ride
-        // along as optional fields on the object — AIInsightsPanel reads
-        // them opportunistically.
         return {
           headline: row.title,
           body: row.content ?? '',
@@ -2562,8 +2559,24 @@ async function loadEvidenceBackedInsights(
           id: row.id,
           evidence,
           category: row.category ?? undefined,
-        } as ComposedInsight & { id: string; evidence: unknown; category?: string };
+          insight_type: row.insight_type,
+        } as ComposedInsight & { id: string; evidence: unknown; category?: string; insight_type: string };
       });
+
+    // W36 ranking: |strokes_impact| × confidence × coach_weight.
+    // Loaded weights only include rows with sample_n ≥ 10 (un-calibrated
+    // dimensions default to 1.0 inside scoreInsight).
+    const weights = await loadCoachWeightsForPlayer(supabase, playerId);
+    const ranked = rankInsights(
+      projected.map((p) => ({
+        insight_type: p.insight_type,
+        strokes_impact: p.strokeImpact ?? 0,
+        confidence: p.confidence ?? 0,
+        _ref: p,
+      })),
+      weights,
+    );
+    return ranked.map((r) => r._ref);
   } catch {
     return [];
   }
