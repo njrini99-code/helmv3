@@ -53,6 +53,13 @@ export function verifyCitations(text: string, evidence: EvidenceClaim[]): Citati
 }
 
 function normalize(s: string): string {
-  // Strip trailing % and parens, normalize whitespace.
-  return s.trim().replace(/%$/, '').replace(/\.0+$/, '').toLowerCase();
+  // Strip trailing %, unit suffixes (ft/yd/strokes/etc.), and trailing
+  // ".0..." so evidence values like "28 ft" or "1.4 strokes" normalize
+  // down to the bare number the text-extraction regex pulls out.
+  return s
+    .trim()
+    .replace(/%$/, '')
+    .replace(/\s*(ft|yd|yards|feet|inches|in|m|cm|mph|kph|strokes?)$/i, '')
+    .replace(/\.0+$/, '')
+    .toLowerCase();
 }
