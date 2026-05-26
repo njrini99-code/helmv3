@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
 import { TeamCategoryView, TeamCompositeCard, TeamShotOverview } from '@/components/golf/coachhelm/coach';
 import { PageHeader } from '@/components/ui/page-header';
@@ -27,7 +28,16 @@ export default async function IntelligenceDashboardPage() {
 
   const { coach, player } = session;
   if (!coach) {
-    if (player) redirect('/golf/dashboard/coachhelm');
+    if (player) {
+      return (
+        <FeatureUnavailable
+          title="Intelligence Hub"
+          message="The Intelligence Hub aggregates team-wide signals for coaches. Your personal AI coaching surface lives on the CoachHelm dashboard."
+          actionHref="/golf/dashboard/coachhelm"
+          actionLabel="Open CoachHelm"
+        />
+      );
+    }
     redirect('/golf/login');
   }
 

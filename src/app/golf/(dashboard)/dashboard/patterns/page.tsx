@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GlassCard } from '@/components/ui/glass-card';
-import { IconInfo, IconSparkles } from '@/components/icons';
+import { IconInfo } from '@/components/icons';
 import { getTeamPatterns, getPatternStats } from '@/app/golf/actions/pattern-management';
 import { PatternsDashboardClient } from './PatternsDashboardClient';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 
 /**
  * Error state component
@@ -32,34 +33,6 @@ function ErrorState({ error }: { error: string }) {
 }
 
 /**
- * Not a coach state - Patterns page is coach-only
- */
-function NotCoachState() {
-  return (
-    <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-      <GlassCard className="max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
-          <IconSparkles size={32} className="text-amber-500" />
-        </div>
-        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
-          Coach Dashboard Only
-        </h2>
-        <p className="text-warm-600 mb-6">
-          The Pattern Management dashboard is designed for coaches. Players can view their
-          own patterns from the CoachHelm dashboard.
-        </p>
-        <a
-          href="/golf/dashboard/coachhelm"
-          className="inline-block px-4 py-2 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Go to Your Dashboard
-        </a>
-      </GlassCard>
-    </div>
-  );
-}
-
-/**
  * Patterns Page - Server Component
  *
  * Displays AI-detected patterns for the team with management capabilities.
@@ -71,7 +44,16 @@ export default async function PatternsPage() {
 
   const { coach, player } = session;
   if (!coach) {
-    if (player) return <NotCoachState />;
+    if (player) {
+      return (
+        <FeatureUnavailable
+          title="Pattern Management"
+          message="The Pattern Management dashboard is designed for coaches. Players can view their own patterns from the CoachHelm dashboard."
+          actionHref="/golf/dashboard/coachhelm"
+          actionLabel="Open CoachHelm"
+        />
+      );
+    }
     return <ErrorState error="No coach or player profile found. Please complete onboarding." />;
   }
 
