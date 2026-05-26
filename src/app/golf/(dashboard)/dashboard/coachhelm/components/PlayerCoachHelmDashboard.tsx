@@ -34,6 +34,7 @@ import {
   InsightCard,
   type InsightAction,
 } from '@/components/golf/coachhelm/insight-card';
+import { HeroNarrativeCard } from '@/components/golf/coachhelm/v3/HeroNarrativeCard';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
@@ -363,6 +364,26 @@ export function PlayerCoachHelmDashboard({
                   transition={{ duration: 0.15 }}
                   className="space-y-6 md:space-y-8"
                 >
+                  {/* ───── W31: LLM hero narrative (Haiku) ─────
+                      One paragraph above the hero card, grounded in the
+                      same top insight. Falls back to insight.content if
+                      LLM is budget-gated or errors. */}
+                  {topInsight && (
+                    <HeroNarrativeCard
+                      playerId={playerId}
+                      metricLabel={topInsight.evidence.metric_label}
+                      yourValueDisplay={
+                        topInsight.evidence.your_value_display ||
+                        String(topInsight.evidence.your_value ?? '')
+                      }
+                      teamPct={
+                        (topInsight.evidence as { standing?: { team_pct?: number | null } })
+                          .standing?.team_pct ?? null
+                      }
+                      fallbackText={topInsight.content || topInsight.title}
+                    />
+                  )}
+
                   {/* ───── Spine — Hero insight + Focus Areas ───── */}
                   {/* On mobile this is the above-the-fold view: one hero
                       insight, then the player's actionable focus areas. */}
