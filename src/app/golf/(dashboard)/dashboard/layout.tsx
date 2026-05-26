@@ -1,14 +1,25 @@
 import type { Metadata } from 'next';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { ChatDrawer } from '@/components/golf/coachhelm/v3/Chat/ChatDrawer';
 
 export const metadata: Metadata = {
   title: 'Dashboard | GolfHelm',
   description: 'Your golf team dashboard — performance tracking, team management, and coaching tools.',
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  const session = await getGolfSessionProfile();
+  const isCoach = !!session?.coach;
+  return (
+    <>
+      {children}
+      {/* W32: persistent CoachHelm chat launcher — coach-only per
+          master plan Part XII.5 (player chat deferred). */}
+      {isCoach && <ChatDrawer />}
+    </>
+  );
 }
