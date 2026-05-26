@@ -235,10 +235,20 @@ Color is used for **state**, never decoration.
 |---|---|---|---|---|
 | Hero `<h1>` | 30px medium | 32-40px medium | tracking-tight | warm-900 |
 | Heading `<h2>` | 17px medium | 17-21px medium | tracking-[-0.012em] | warm-900 |
-| Eyebrow | 11px uppercase | 11px uppercase | tracking-[0.14em] | warm-500 |
+| Eyebrow — hero plinth | 11px font-serif uppercase | 11px font-serif uppercase | tracking-[0.16em] | warm-500 |
+| Eyebrow — section | 11px font-medium uppercase | 11px font-medium uppercase | tracking-[0.14em] | warm-500 |
 | Body | 15px | 15-18px | normal | warm-800 |
 | Caption | 13px | 13px | normal | warm-500 |
 | Tabular | 13px tabular-nums | 13px tabular-nums | normal | varies |
+
+### Two eyebrow scales — by design
+
+There are intentionally **two editorial eyebrow scales** in the system:
+
+- **Hero plinth** (Fraunces serif, tracking-0.16em) — rendered by the existing `<PageHeader eyebrow="…">` primitive. The strongest top-of-plinth marker. Use for the eyebrow that introduces an entire page.
+- **Section** (Geist sans, tracking-0.14em) — written inline in v3 surfaces. The smaller ambient marker for in-card section headings.
+
+The hero scale predates v3 and ships with the existing `PageHeader` component. The section scale is the v3 vocabulary for everything inside a card. Use both correctly and they create a clear hierarchy (page → card → section).
 
 ---
 
