@@ -48,10 +48,20 @@ export interface GenomeContext {
   player_id: string;
   /** Completed rounds in the last 90 days (used by most dimensions). */
   recent_rounds_count: number;
+  /** Per-round metadata — round_type lets pressure/practice dims split. */
+  rounds: GenomeRound[];
   /** All hole-level rows in the window (for hole-sequence dims). */
   hole_scores: GenomeHoleScore[];
   /** Shot-level rows (for miss/lie/club dims). */
   shots: GenomeShot[];
+}
+
+export interface GenomeRound {
+  id: string;
+  round_date: string;
+  round_type: string | null;
+  total_score: number | null;
+  score_to_par: number | null;
 }
 
 export interface GenomeHoleScore {
