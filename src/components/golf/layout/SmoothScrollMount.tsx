@@ -1,23 +1,61 @@
 'use client';
 
 /**
- * SmoothScrollMount — thin client wrapper that calls useSmoothScroll
- * once at the dashboard layout root.
+ * SmoothScrollMount — opt-in Lenis smooth-scroll wrapper.
  *
- * The hook itself opts out on `prefers-reduced-motion` + coarse-pointer
- * (mobile), so this is safe to mount globally — only desktop pointer
- * users with motion preferences enabled get the Lenis inertia.
+ * Lenis hijacks the document scroll; that's incompatible with surfaces
+ * that rely on native `scrollIntoView({behavior:'smooth'})` (messages
+ * auto-scroll, shot-tracking step-into) or drag-and-drop with momentum
+ * (calendar). Mounting globally would degrade those v2 flows.
  *
- * Why this matters for v3: Lenis turns harsh page-jump scrolls into
- * continuous spatial motion. Per the design language's "continuity of
- * perception" principle, the user should never feel a hard cut — every
- * navigational change should feel like an environmental shift, not a
- * teleport. Lenis is the cheapest way to get 80% of that feel.
+ * So instead of mounting at the layout root, we scope to a route
+ * ALLOWLIST — only the v3-pure surfaces where the user benefits from
+ * inertial scrolling and where no native smooth-scroll API is in play.
+ *
+ * The hook ALSO already opts out on coarse-pointer + reduced-motion,
+ * so phones + accessibility-first users keep native behavior regardless.
+ *
+ * Route allowlist (extend carefully — every new entry should be a
+ * v3 surface that doesn't call scrollIntoView or use HTML5 drag-drop):
+ *   /dashboard/coachhelm/genome/*       — radar + persona + dim grid
+ *   /dashboard/coachhelm/qualifying/*   — qualifying workspace
+ *   /dashboard/coachhelm/chat           — chat history page
+ *   /dashboard/my-standing              — standing matrix
+ *   /dashboard/my-game-profile          — player radar
+ *   /dashboard/coachhelm                — coach + player coachhelm hub
+ *   /dashboard/settings/notifications   — settings page
+ *
+ * Explicitly NOT applied to:
+ *   /dashboard/messages         (scrollIntoView for new-message auto-scroll)
+ *   /dashboard/rounds/[id]/*    (shot tracking has nested scroll + scrollIntoView)
+ *   /dashboard/calendar         (drag-drop)
+ *   /dashboard/admin/*          (CRM pipeline drag-drop)
+ *   /dashboard/hub              (heavy v2 content; conservative default)
  */
 
+import { usePathname } from 'next/navigation';
 import { useSmoothScroll } from '@/hooks/useSmoothScroll';
 
+const ALLOW_PATTERNS: ReadonlyArray<RegExp> = [
+  /^\/golf\/dashboard\/coachhelm\/genome(\/|$)/,
+  /^\/golf\/dashboard\/coachhelm\/qualifying(\/|$)/,
+  /^\/golf\/dashboard\/coachhelm\/chat(\/|$)/,
+  /^\/golf\/dashboard\/coachhelm(\/|$)/,
+  /^\/golf\/dashboard\/my-standing(\/|$)/,
+  /^\/golf\/dashboard\/my-game-profile(\/|$)/,
+  /^\/golf\/dashboard\/settings\/notifications(\/|$)/,
+];
+
+function shouldMount(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return ALLOW_PATTERNS.some((re) => re.test(pathname));
+}
+
 export function SmoothScrollMount() {
-  useSmoothScroll();
+  const pathname = usePathname();
+  const active = shouldMount(pathname);
+  // The hook itself short-circuits to a no-op when not active; this
+  // keeps the hook-call rules consistent across renders.
+  useSmoothScroll(active);
   return null;
 }
