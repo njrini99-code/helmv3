@@ -7770,6 +7770,35 @@ export type Database = {
           },
         ]
       }
+      golf_player_genome: {
+        Row: {
+          computed_at: string
+          player_id: string
+          rounds_basis: number
+          vector: Json
+        }
+        Insert: {
+          computed_at?: string
+          player_id: string
+          rounds_basis: number
+          vector: Json
+        }
+        Update: {
+          computed_at?: string
+          player_id?: string
+          rounds_basis?: number
+          vector?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_player_genome_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "golf_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       golf_player_notification_state: {
         Row: {
           created_at: string | null
