@@ -30,8 +30,9 @@ export async function loadRecentInsightsForPlayer(
 
   if (error || !data) return [];
   // Exclude composite rows so we don't synthesize composites of composites.
-  // Legacy rows (pre-W21) can have null signature — those are never composites,
-  // so let them through. Without this guard we throw on .startsWith(null) and
-  // synthesis fails for every player with a legacy row in the 30-day window.
+  // Guard against null signatures: legacy rows (pre-W21/W28) wrote insights
+  // with no signature. Sentry was firing
+  //   "synthesizeForPlayer: load failed … Cannot read properties of null (reading 'startsWith')"
+  // every time a player had any legacy row in the 30-day window.
   return data.filter((row) => !row.signature?.startsWith('v3:composite:'));
 }

@@ -415,6 +415,14 @@ export async function attachDrills(
   category: string,
   tags: string[],
 ): Promise<void> {
+  // Six v2 mining call sites (approach-analytics x3, course-management
+  // x2, tee-strategy x1) pass the result of `upsertInsight()` directly
+  // into this function. When the philosophy gate suppresses a write,
+  // upsertInsight returns the GATED_OUT sentinel string ('__gated_out__'),
+  // not a UUID. Without this guard, the next .upsert() raises
+  // 'invalid input syntax for type uuid' and the entire generator chain
+  // throws (observed in Sentry as JAVASCRIPT-NEXTJS-21/22).
+  if (insightId === GATED_OUT) return;
   if (tags.length === 0) return;
 
   const { data: drills, error } = await supabase

@@ -72,10 +72,19 @@ async function sendToAPI(event: ClientEventInput & { browserInfo: BrowserInfo })
     });
     
     if (!response.ok) {
-      console.error('[AdminLoggerClient] API error:', response.status);
+      // 401 is the expected response on unauthenticated routes (login,
+      // signup, password reset, public marketing). Browser-level error
+      // handlers were forwarding these to Sentry as
+      //   "[AdminLoggerClient] API error: 401"
+      // which produced cosmetic but actionable-looking issues. Silently
+      // swallow 401 — there's nothing useful to log when the user isn't
+      // signed in yet.
+      if (response.status !== 401) {
+        console.error('[AdminLoggerClient] API error:', response.status);
+      }
       return false;
     }
-    
+
     return true;
   } catch (err) {
     console.error('[AdminLoggerClient] Failed to send event:', err);
