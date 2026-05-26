@@ -6255,6 +6255,7 @@ export type Database = {
           difficulty: string
           duration_min: number
           id: string
+          impacts_metric_id: string | null
           slug: string
           tags: string[]
           title: string
@@ -6267,6 +6268,7 @@ export type Database = {
           difficulty: string
           duration_min: number
           id?: string
+          impacts_metric_id?: string | null
           slug: string
           tags?: string[]
           title: string
@@ -6279,12 +6281,21 @@ export type Database = {
           difficulty?: string
           duration_min?: number
           id?: string
+          impacts_metric_id?: string | null
           slug?: string
           tags?: string[]
           title?: string
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "golf_drills_impacts_metric_id_fkey"
+            columns: ["impacts_metric_id"]
+            isOneToOne: false
+            referencedRelation: "golf_metrics"
+            referencedColumns: ["metric_id"]
+          },
+        ]
       }
       golf_event_attendance: {
         Row: {
