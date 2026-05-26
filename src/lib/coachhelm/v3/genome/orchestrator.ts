@@ -19,6 +19,7 @@ import type {
   DimensionResult,
   GenomeContext,
   GenomeHoleScore,
+  GenomeRound,
   GenomeShot,
   GenomeVector,
 } from './types';
@@ -48,11 +49,18 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
   const since = new Date(Date.now() - WINDOW_DAYS * 86400_000).toISOString().slice(0, 10);
   const { data: rounds } = await supabase
     .from('golf_rounds')
-    .select('id')
+    .select('id, round_date, round_type, total_score, score_to_par')
     .eq('player_id', player_id)
     .eq('status', 'completed')
     .gte('round_date', since);
   const roundIds = (rounds ?? []).map((r) => r.id);
+  const roundMetadata: GenomeRound[] = (rounds ?? []).map((r) => ({
+    id: r.id,
+    round_date: r.round_date,
+    round_type: r.round_type,
+    total_score: r.total_score,
+    score_to_par: r.score_to_par,
+  }));
   result.rounds_basis = roundIds.length;
 
   let hole_scores: GenomeHoleScore[] = [];
@@ -87,6 +95,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
   const ctx: GenomeContext = {
     player_id,
     recent_rounds_count: roundIds.length,
+    rounds: roundMetadata,
     hole_scores,
     shots,
   };

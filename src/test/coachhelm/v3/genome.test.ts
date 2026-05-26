@@ -30,6 +30,7 @@ function ctx(overrides: Partial<GenomeContext> = {}): GenomeContext {
   return {
     player_id: 'p-1',
     recent_rounds_count: overrides.recent_rounds_count ?? 10,
+    rounds: overrides.rounds ?? [],
     hole_scores: overrides.hole_scores ?? [],
     shots: overrides.shots ?? [],
   };
