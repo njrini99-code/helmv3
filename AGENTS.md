@@ -35,6 +35,17 @@ PRs are reviewed by **two AI reviewers in parallel** on every push:
   additional-context docs). Installed via GitHub App at
   https://app.greptile.com.
 
+CI runs across two platforms:
+
+- **GitHub Actions** (`.github/workflows/ci.yml`, `review-gate.yml`)
+  — every-PR fast path (typecheck, lint, vitest, build, RLS tests,
+  Review Gate static analyzers).
+- **CircleCI** (`.circleci/config.yml`, see `.circleci/README.md`)
+  — weekly heavy jobs (Knip, Stryker, sqlfluff, npm audit, Squawk)
+  scheduled Mondays 06:00 UTC, plus iOS Capacitor compile on
+  M-series macOS runners (push to `main`, `release/*`, `ios/*`,
+  `capacitor/*`).
+
 Pre-merge gate blocks (must be `error`-clean before merge):
 - Service-role key in a client bundle
 - New table without RLS + policy in the same migration
