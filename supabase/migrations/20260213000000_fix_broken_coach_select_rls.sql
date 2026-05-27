@@ -110,6 +110,10 @@ WITH CHECK (
 -- ============================================================
 -- 8. Fix DM privacy: restrict conversation SELECT to participants + team chat only
 -- ============================================================
+ALTER TABLE golf_conversations ADD COLUMN IF NOT EXISTS team_id UUID REFERENCES golf_teams(id) ON DELETE CASCADE;
+ALTER TABLE golf_conversations ADD COLUMN IF NOT EXISTS is_team_chat BOOLEAN DEFAULT false;
+ALTER TABLE golf_conversations ADD COLUMN IF NOT EXISTS is_team_channel BOOLEAN DEFAULT false;
+
 DROP POLICY IF EXISTS "golf_conversations_select_accessible" ON golf_conversations;
 
 CREATE POLICY "golf_conversations_select_accessible"
