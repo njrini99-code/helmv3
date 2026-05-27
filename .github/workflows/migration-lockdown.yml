@@ -1,0 +1,54 @@
+name: migration-lockdown
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  block-historical-edits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect edits to historical migrations
+        id: check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          BASELINE="20260527120000"
+
+          # Files in supabase/migrations/ touched by this PR.
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "No migration files changed."
+            exit 0
+          fi
+
+          VIOLATIONS=""
+          while IFS= read -r f; do
+            base=$(basename "$f")
+            ts="${base%%_*}"
+            # Skip non-timestamped filenames defensively.
+            case "$ts" in
+              [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9])
+                if [ "$ts" \< "$BASELINE" ] || [ "$ts" = "$BASELINE" ]; then
+                  VIOLATIONS="${VIOLATIONS}${f}"$'\n'
+                fi
+                ;;
+            esac
+          done <<< "$CHANGED"
+
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::PR edits historical migrations (timestamp <= $BASELINE)."
+            echo "Historical migrations are immutable after the alignment baseline."
+            echo "Write a new forward-only migration instead."
+            echo "Offending files:"
+            printf '%s' "$VIOLATIONS"
+            exit 1
+          fi
+
+          echo "All migration edits are post-baseline. OK."
