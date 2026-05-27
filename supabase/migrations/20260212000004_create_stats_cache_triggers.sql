@@ -34,6 +34,15 @@ DROP TRIGGER IF EXISTS trg_update_player_stats_cache_enhanced ON golf_player_sta
 DROP TRIGGER IF EXISTS trg_update_player_strokes_gained ON golf_round_stats_cache;
 DROP TRIGGER IF EXISTS trg_sync_round_sg_to_cache ON golf_rounds;
 
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS holes_played INTEGER DEFAULT 18;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS score_to_par INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_putts INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_fairways_hit INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_fairways INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_gir INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_gir_possible INTEGER;
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_penalties INTEGER DEFAULT 0;
+
 -- ============================================================================
 -- 2. ROUND STATS CACHE FUNCTION
 --    Fires on golf_rounds INSERT/UPDATE when status = 'completed'
