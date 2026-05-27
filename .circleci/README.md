@@ -70,6 +70,11 @@ circleci local execute --job knip
 - **iOS TestFlight publish**: replace the compile-only step with
   Fastlane Match + `pilot upload`. Needs the 5 env vars above. ~30
   min of setup once you have a paid Apple Developer account configured.
+  Wrap the publish with **CircleCI Releases** for deploy-event tracking
+  (the `circleci run release plan` / `release update` snippet) — gives
+  you a Releases tab showing which build shipped to TestFlight when,
+  correlatable with Sentry. Don't bother for the compile-only job —
+  there's no deploy event to track yet.
 - **Parallel Playwright**: when E2E lands per `v3-testing-standards`
   Plan 02 Task 9, add a `playwright` job that uses
   `circleci tests split` to run 4-8 shards in parallel. Reports flake
