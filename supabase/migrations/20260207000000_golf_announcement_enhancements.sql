@@ -14,6 +14,9 @@ CREATE TABLE IF NOT EXISTS golf_announcement_acknowledgements (
 CREATE INDEX IF NOT EXISTS idx_golf_acknowledgements_announcement ON golf_announcement_acknowledgements(announcement_id);
 CREATE INDEX IF NOT EXISTS idx_golf_acknowledgements_player ON golf_announcement_acknowledgements(player_id);
 ALTER TABLE golf_announcement_acknowledgements ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "golf_acks_select_own" ON golf_announcement_acknowledgements;
+DROP POLICY IF EXISTS "golf_acks_select_coaches" ON golf_announcement_acknowledgements;
+DROP POLICY IF EXISTS "golf_acks_insert_own" ON golf_announcement_acknowledgements;
 CREATE POLICY "golf_acks_select_own" ON golf_announcement_acknowledgements FOR SELECT TO authenticated USING (player_id IN (SELECT id FROM golf_players WHERE user_id = auth.uid()));
 CREATE POLICY "golf_acks_select_coaches" ON golf_announcement_acknowledgements FOR SELECT TO authenticated USING (announcement_id IN (SELECT id FROM golf_announcements WHERE team_id IN (SELECT team_id FROM golf_coaches WHERE user_id = auth.uid())));
 CREATE POLICY "golf_acks_insert_own" ON golf_announcement_acknowledgements FOR INSERT TO authenticated WITH CHECK (player_id IN (SELECT id FROM golf_players WHERE user_id = auth.uid()));
@@ -29,6 +32,10 @@ CREATE TABLE IF NOT EXISTS golf_announcement_recipients (
 CREATE INDEX IF NOT EXISTS idx_golf_ann_recipients_announcement ON golf_announcement_recipients(announcement_id);
 CREATE INDEX IF NOT EXISTS idx_golf_ann_recipients_player ON golf_announcement_recipients(player_id);
 ALTER TABLE golf_announcement_recipients ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "golf_ann_recipients_select_coaches" ON golf_announcement_recipients;
+DROP POLICY IF EXISTS "golf_ann_recipients_select_own" ON golf_announcement_recipients;
+DROP POLICY IF EXISTS "golf_ann_recipients_insert_coaches" ON golf_announcement_recipients;
+DROP POLICY IF EXISTS "golf_ann_recipients_delete_coaches" ON golf_announcement_recipients;
 CREATE POLICY "golf_ann_recipients_select_coaches" ON golf_announcement_recipients FOR SELECT TO authenticated
   USING (announcement_id IN (SELECT id FROM golf_announcements WHERE team_id IN (SELECT team_id FROM golf_coaches WHERE user_id = auth.uid())));
 CREATE POLICY "golf_ann_recipients_select_own" ON golf_announcement_recipients FOR SELECT TO authenticated
@@ -50,6 +57,9 @@ CREATE TABLE IF NOT EXISTS golf_announcement_documents (
 CREATE INDEX IF NOT EXISTS idx_golf_ann_documents_announcement ON golf_announcement_documents(announcement_id);
 CREATE INDEX IF NOT EXISTS idx_golf_ann_documents_document ON golf_announcement_documents(document_id);
 ALTER TABLE golf_announcement_documents ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "golf_ann_documents_select_team" ON golf_announcement_documents;
+DROP POLICY IF EXISTS "golf_ann_documents_insert_coaches" ON golf_announcement_documents;
+DROP POLICY IF EXISTS "golf_ann_documents_delete_coaches" ON golf_announcement_documents;
 CREATE POLICY "golf_ann_documents_select_team" ON golf_announcement_documents FOR SELECT TO authenticated
   USING (announcement_id IN (SELECT id FROM golf_announcements WHERE team_id IN (
     SELECT team_id FROM golf_coaches WHERE user_id = auth.uid()
@@ -73,6 +83,9 @@ CREATE TABLE IF NOT EXISTS golf_announcement_tasks (
 CREATE INDEX IF NOT EXISTS idx_golf_ann_tasks_announcement ON golf_announcement_tasks(announcement_id);
 CREATE INDEX IF NOT EXISTS idx_golf_ann_tasks_task ON golf_announcement_tasks(task_id);
 ALTER TABLE golf_announcement_tasks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "golf_ann_tasks_select_team" ON golf_announcement_tasks;
+DROP POLICY IF EXISTS "golf_ann_tasks_insert_coaches" ON golf_announcement_tasks;
+DROP POLICY IF EXISTS "golf_ann_tasks_delete_coaches" ON golf_announcement_tasks;
 CREATE POLICY "golf_ann_tasks_select_team" ON golf_announcement_tasks FOR SELECT TO authenticated
   USING (announcement_id IN (SELECT id FROM golf_announcements WHERE team_id IN (
     SELECT team_id FROM golf_coaches WHERE user_id = auth.uid()
