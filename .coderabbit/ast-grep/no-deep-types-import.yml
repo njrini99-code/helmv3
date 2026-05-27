@@ -1,0 +1,22 @@
+# ast-grep rule: forbid imports from non-existent type paths.
+# Types live in @/lib/types (re-exported via src/lib/types/index.ts).
+# CLAUDE.md "Type Imports" calls this out explicitly.
+id: helmv3-no-deep-types-import
+language: typescript
+severity: error
+message: >
+  Import entity types from "@/lib/types" only. The paths
+  "@/types/database" and "@/types/supabase" do not exist.
+note: >
+  Re-export new types from src/lib/types/index.ts so consumers can
+  keep using the single import path.
+rule:
+  any:
+    - pattern: import $$$ from "@/types/database"
+    - pattern: import $$$ from '@/types/database'
+    - pattern: import $$$ from "@/types/supabase"
+    - pattern: import $$$ from '@/types/supabase'
+    - pattern: import $$$ from "@/types/database.types"
+    - pattern: import $$$ from '@/types/database.types'
+    - pattern: import $$$ from "../types/database"
+    - pattern: import $$$ from '../types/database'

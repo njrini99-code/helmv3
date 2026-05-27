@@ -1,0 +1,19 @@
+# ast-grep rule: prefer accessible queries in tests.
+# v3-testing-standards: "Prefer @testing-library queries (getByRole)
+# over getByTestId. Assert on user-visible state, not implementation."
+id: helmv3-prefer-getByRole
+language: typescript
+severity: warning
+message: >
+  Prefer accessible queries (getByRole, getByLabelText, getByText) over
+  getByTestId. data-testid couples tests to implementation; roles
+  surface real accessibility problems.
+note: >
+  getByTestId is allowed when no semantic role exists — leave a one-line
+  comment explaining why.
+rule:
+  any:
+    - pattern: screen.getByTestId($$$)
+    - pattern: screen.queryByTestId($$$)
+    - pattern: screen.findByTestId($$$)
+    - pattern: within($X).getByTestId($$$)

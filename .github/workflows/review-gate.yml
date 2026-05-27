@@ -1,0 +1,205 @@
+name: Review Gate
+
+# Mirrors CodeRabbit's pre-merge gate so devs catch issues before pushing.
+# Runs the same toolchain CodeRabbit invokes (ast-grep, semgrep, gitleaks,
+# ruff, shellcheck, actionlint, yamllint, markdownlint, sqlfluff, hadolint)
+# scoped to changed paths. Each tool runs in parallel.
+#
+# SECURITY: This workflow consumes ZERO untrusted user input (no
+# github.event.*.title, .body, .message, .ref, etc. in any run: block).
+# All ${{ }} expressions are either trusted refs (github.ref for
+# concurrency), platform tokens (secrets.GITHUB_TOKEN), or job-status
+# metadata (needs.*.result).
+#
+# Required status check: "Review Gate / all" - wire into
+# .github/branch-protection.md so it blocks merge alongside `build` and
+# the Supabase RLS job.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: review-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  ast-grep:
+    name: ast-grep (project rules)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ast-grep
+        run: |
+          curl -L https://github.com/ast-grep/ast-grep/releases/latest/download/app-x86_64-unknown-linux-gnu.zip -o ast-grep.zip
+          unzip -q ast-grep.zip
+          sudo mv ast-grep /usr/local/bin/sg
+          sg --version
+
+      - name: Scan repo with project rules
+        run: |
+          set -e
+          fail=0
+          for rule in .coderabbit/ast-grep/*.yml; do
+            echo "::group::$rule"
+            sg scan --rule "$rule" --error || fail=1
+            echo "::endgroup::"
+          done
+          exit $fail
+
+  semgrep:
+    name: semgrep (custom rules)
+    runs-on: ubuntu-latest
+    container: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan with helmv3 custom rules
+        run: semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions .
+      - name: Scan with default p/ci ruleset
+        run: semgrep --error --config p/ci --skip-unknown-extensions .
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+
+  yamllint:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install yamllint
+      - name: Run yamllint
+        run: |
+          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' .
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          find scripts supabase/scripts -type f \( -name "*.sh" -o -name "*.bash" \) -print0 \
+            | xargs -0 -r shellcheck --severity=warning --color=always
+
+  markdownlint:
+    name: markdownlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g markdownlint-cli2
+      - name: Run markdownlint
+        run: |
+          markdownlint-cli2 \
+            "docs/**/*.md" "CLAUDE.md" "AGENTS.md" "CLAUDE_CODE_GUIDE.md" \
+            "!**/node_modules/**" "!**/archive/**" "!**/.full-review*/**" || true
+
+  python:
+    name: ruff + pylint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff pylint
+      - name: ruff check
+        run: |
+          if [ -d tools ] && find tools -name "*.py" -print -quit | grep -q .; then
+            ruff check tools/
+          else
+            echo "No Python files to lint."
+          fi
+      - name: pylint
+        run: |
+          if [ -d tools ] && find tools -name "*.py" -print -quit | grep -q .; then
+            pylint --disable=C,R --exit-zero tools/ | tee pylint.log
+            ! grep -E "^[EF][0-9]+" pylint.log
+          else
+            echo "No Python files to lint."
+          fi
+
+  sqlfluff:
+    name: sqlfluff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install sqlfluff
+      - name: Lint Postgres SQL
+        run: |
+          sqlfluff lint --dialect postgres --rules core \
+            supabase/migrations supabase/seed || true
+
+  hadolint:
+    name: hadolint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run hadolint
+        run: |
+          if find . -name "Dockerfile*" -not -path "./node_modules/*" -not -path "./ios/App/Pods/*" -print -quit | grep -q .; then
+            curl -fsSL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o hadolint
+            chmod +x hadolint
+            find . -name "Dockerfile*" -not -path "./node_modules/*" -not -path "./ios/App/Pods/*" \
+              -exec ./hadolint --no-fail {} +
+          else
+            echo "No Dockerfiles found."
+          fi
+
+  all:
+    name: all
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - ast-grep
+      - semgrep
+      - gitleaks
+      - actionlint
+      - yamllint
+      - shellcheck
+      - markdownlint
+      - python
+      - sqlfluff
+      - hadolint
+    steps:
+      - name: Fail if any required check failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "One or more review-gate checks failed."
+          exit 1
+      - name: All checks green
+        run: echo "review-gate clean."

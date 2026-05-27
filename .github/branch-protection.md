@@ -6,6 +6,16 @@ Apply these settings to `main` (and any release branch):
 
 - `build` (from `ci.yml` build job — includes typecheck, lint, vitest, next build)
 - `Supabase lint + RLS tests` (from `ci.yml` supabase job, added in Plan 01)
+- `Review Gate / all` (from `review-gate.yml` — aggregates ast-grep, semgrep,
+  gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint,
+  sqlfluff, hadolint — mirrors the AI reviewers' pre-merge gate so merges
+  are blocked even if either reviewer is offline)
+- `CodeRabbit` (the bot's own status check — assertive review, blocking
+  custom checks defined in `.coderabbit.yaml`)
+- `Greptile` (the bot's own status check — whole-codebase review,
+  hard rules defined in `.greptile/instructions.md`; enable in the
+  Greptile dashboard at https://app.greptile.com after installing the
+  GitHub App on this repo)
 - `Playwright E2E` — to be added in a follow-up to Plan 02 Task 9 (CI workflow currently does not run Playwright)
 
 ## Other settings

@@ -1,0 +1,23 @@
+# ast-grep rule: forbid SUPABASE_SERVICE_ROLE_KEY in any path that could
+# ship to a browser bundle. The service role bypasses RLS; if it leaks
+# client-side, every user can read every row in every table.
+#
+# Allowed paths (handled via .coderabbit.yaml path_instructions): only
+# src/lib/supabase/admin* and src/app/api/**/admin/**.
+id: helmv3-no-service-role-key
+language: typescript
+severity: error
+message: >
+  SUPABASE_SERVICE_ROLE_KEY bypasses RLS and must never be referenced
+  outside an admin-only server file. Use the server cookie client
+  (await createClient() from @/lib/supabase/server) for normal
+  user-scoped queries.
+note: >
+  If you need elevated privileges (e.g. for an admin endpoint), put the
+  code under src/lib/supabase/admin* or src/app/api/**/admin/** and
+  document the auth gate that wraps it.
+rule:
+  any:
+    - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+    - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+    - pattern: process.env['SUPABASE_SERVICE_ROLE_KEY']

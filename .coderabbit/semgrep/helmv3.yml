@@ -1,0 +1,288 @@
+# Semgrep rules pack — helmv3
+# Project-specific patterns CodeRabbit runs in addition to its default
+# semgrep ruleset. Wired via .coderabbit.yaml > reviews.tools.semgrep.config_file.
+#
+# Severity guide:
+#   ERROR   — blocks the pre-merge gate. Use only for security / data-loss.
+#   WARNING — surfaces as a review comment; reviewer can resolve.
+#   INFO    — nudges, doesn't block.
+
+rules:
+  # ---------------------------------------------------------------------------
+  # SECURITY — service-role key must never leak to a browser bundle
+  # ---------------------------------------------------------------------------
+  - id: helmv3-service-role-outside-admin
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >
+      SUPABASE_SERVICE_ROLE_KEY found outside an admin-only path. The
+      service role bypasses RLS — if this file ships to the browser,
+      every row in every table is exposed.
+    pattern-either:
+      - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY
+      - pattern: process.env["SUPABASE_SERVICE_ROLE_KEY"]
+      - pattern: process.env['SUPABASE_SERVICE_ROLE_KEY']
+      - patterns:
+          - pattern: createClient($URL, $KEY, ...)
+          - metavariable-regex:
+              metavariable: $KEY
+              regex: "(?i).*service.role.*"
+    paths:
+      include:
+        - src/
+        - app/
+      exclude:
+        - "src/lib/supabase/admin*"
+        - "src/lib/supabase/service*"
+        - "src/app/api/**/admin/**"
+        - "src/app/api/admin/**"
+        - "scripts/**"
+        - "supabase/functions/**"
+
+  # ---------------------------------------------------------------------------
+  # SECURITY — never log Supabase JWTs or session tokens
+  # ---------------------------------------------------------------------------
+  - id: helmv3-no-log-supabase-token
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >
+      Don't log Supabase access tokens or refresh tokens. They give full
+      user impersonation until they expire. Strip before logging.
+    pattern-either:
+      - pattern: console.$M($X.access_token, ...)
+      - pattern: console.$M($X.refresh_token, ...)
+      - pattern: logger.$M($X.access_token, ...)
+      - pattern: logger.$M($X.refresh_token, ...)
+      - pattern: console.$M(`...${$X.access_token}...`)
+
+  # ---------------------------------------------------------------------------
+  # SECURITY — server action without auth check
+  # Heuristic: an exported async function in an actions/ file that calls
+  # .from() or .rpc() without a getUser() call earlier in the body.
+  # ---------------------------------------------------------------------------
+  - id: helmv3-server-action-missing-auth-check
+    languages: [typescript]
+    severity: ERROR
+    message: >
+      Server action calls Supabase without first checking
+      `supabase.auth.getUser()`. Every exported action under
+      src/app/**/actions/** must verify the caller is authenticated
+      before any .from()/rpc() call.
+    paths:
+      include:
+        - "src/app/**/actions/**/*.ts"
+    patterns:
+      - pattern-either:
+          - pattern: |
+              export async function $F(...) {
+                ...
+                $X.from($T)...
+                ...
+              }
+          - pattern: |
+              export async function $F(...) {
+                ...
+                $X.rpc($N, ...)
+                ...
+              }
+      - pattern-not: |
+          export async function $F(...) {
+            ...
+            $Y.auth.getUser()
+            ...
+          }
+      - pattern-not: |
+          export async function $F(...) {
+            ...
+            await $Y.auth.getUser()
+            ...
+          }
+
+  # ---------------------------------------------------------------------------
+  # DATA-LOSS — DELETE-then-INSERT in a save/sync/submit path
+  # ---------------------------------------------------------------------------
+  - id: helmv3-destructive-write-pattern
+    languages: [typescript]
+    severity: ERROR
+    message: >
+      DELETE followed by INSERT on the same table in a save/sync/submit
+      path. On a transient failure between the two statements, user data
+      is permanently lost. Use upsert/onConflict or stage-and-swap.
+      See memory note "GolfHelm — no destructive writes".
+    paths:
+      include:
+        - "src/app/**/actions/**/*.ts"
+        - "src/lib/**/*.ts"
+    pattern-either:
+      - pattern: |
+          $X.from($T).delete()...
+          ...
+          $X.from($T).insert($D)
+      - pattern: |
+          await $X.from($T).delete()...
+          ...
+          await $X.from($T).insert($D)
+
+  # ---------------------------------------------------------------------------
+  # PII — don't ship raw user.email / phone into observability spans
+  # ---------------------------------------------------------------------------
+  - id: helmv3-no-pii-in-spans
+    languages: [typescript]
+    severity: WARNING
+    message: >
+      Don't put raw email / phone / full_name into Datadog or OpenTelemetry
+      span attributes. Use a stable hashed user_id or coach_id.
+    pattern-either:
+      - pattern: $SPAN.setAttribute("user.email", ...)
+      - pattern: $SPAN.setAttribute("email", ...)
+      - pattern: $SPAN.setAttribute("phone", ...)
+      - pattern: $SPAN.setAttribute("user.phone", ...)
+      - pattern: "$SPAN.setAttributes({email: ...})"
+      - pattern: "$SPAN.setAttributes({phone: ...})"
+      - pattern: "datadogRum.addAction($N, {email: ...})"
+
+  # ---------------------------------------------------------------------------
+  # NEXT.JS — server-only modules imported into client components
+  # ---------------------------------------------------------------------------
+  - id: helmv3-server-supabase-in-client
+    languages: [typescript]
+    severity: ERROR
+    message: >
+      `@/lib/supabase/server` is server-only (uses next/headers cookies).
+      Importing it into a `'use client'` file crashes the build.
+      Use `@/lib/supabase/client` in client components.
+    paths:
+      include:
+        - "src/components/**/*.tsx"
+        - "src/app/**/*.tsx"
+    pattern-either:
+      - pattern: |
+          'use client'
+          ...
+          import { createClient } from '@/lib/supabase/server'
+      - pattern: |
+          "use client"
+          ...
+          import { createClient } from "@/lib/supabase/server"
+
+  # ---------------------------------------------------------------------------
+  # NEXT.JS — mutation in server action without revalidatePath
+  # ---------------------------------------------------------------------------
+  - id: helmv3-action-missing-revalidate
+    languages: [typescript]
+    severity: WARNING
+    message: >
+      Server action mutates (.insert / .update / .delete / .upsert) but
+      never calls revalidatePath() or revalidateTag(). The UI will show
+      stale data until the next full reload.
+    paths:
+      include:
+        - "src/app/**/actions/**/*.ts"
+    patterns:
+      - pattern-either:
+          - pattern: |
+              export async function $F(...) {
+                ...
+                await $X.from($T).insert(...)
+                ...
+              }
+          - pattern: |
+              export async function $F(...) {
+                ...
+                await $X.from($T).update(...)
+                ...
+              }
+          - pattern: |
+              export async function $F(...) {
+                ...
+                await $X.from($T).upsert(...)
+                ...
+              }
+          - pattern: |
+              export async function $F(...) {
+                ...
+                await $X.from($T).delete()
+                ...
+              }
+      - pattern-not: |
+          export async function $F(...) {
+            ...
+            revalidatePath(...)
+            ...
+          }
+      - pattern-not: |
+          export async function $F(...) {
+            ...
+            revalidateTag(...)
+            ...
+          }
+
+  # ---------------------------------------------------------------------------
+  # SQL — RLS-bypass via SECURITY DEFINER without search_path lock
+  # ---------------------------------------------------------------------------
+  - id: helmv3-security-definer-without-search-path
+    languages: [generic]
+    paths:
+      include:
+        - "supabase/migrations/**/*.sql"
+        - "supabase/functions/**/*.sql"
+    severity: ERROR
+    message: >
+      SECURITY DEFINER functions must pin `SET search_path = ''` (or
+      `pg_catalog, public`) to prevent search-path hijacking that turns
+      RLS into a one-step privilege escalation. Add a SET search_path
+      clause and document why the elevation is needed.
+    patterns:
+      - pattern: SECURITY DEFINER
+      - pattern-not-regex: "(?is)security\\s+definer[\\s\\S]{0,500}set\\s+search_path"
+
+  # ---------------------------------------------------------------------------
+  # SQL — new table without RLS enable
+  # ---------------------------------------------------------------------------
+  - id: helmv3-create-table-without-rls
+    languages: [generic]
+    paths:
+      include:
+        - "supabase/migrations/**/*.sql"
+    severity: ERROR
+    message: >
+      New table created without `ENABLE ROW LEVEL SECURITY` in the same
+      migration. Every table in this project must have RLS enabled and
+      at least one CREATE POLICY before it's used.
+    patterns:
+      - pattern-regex: "(?im)create\\s+table\\s+(if\\s+not\\s+exists\\s+)?(public\\.)?([a-z_]+golf_[a-z_]+|[a-z_]+baseball_[a-z_]+|golf_[a-z_]+|baseball_[a-z_]+)"
+      - pattern-not-regex: "(?is)create\\s+table[\\s\\S]{0,5000}enable\\s+row\\s+level\\s+security"
+
+  # ---------------------------------------------------------------------------
+  # iOS — Capacitor plugin usage without Info.plist usage description
+  # ---------------------------------------------------------------------------
+  - id: helmv3-capacitor-plugin-needs-usage-desc
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >
+      Capacitor camera / location / mic / motion APIs require a matching
+      `NS*UsageDescription` entry in ios/App/App/Info.plist. Add the
+      string before shipping or App Review will reject the build.
+    pattern-either:
+      - pattern: Camera.getPhoto(...)
+      - pattern: Geolocation.getCurrentPosition(...)
+      - pattern: Geolocation.watchPosition(...)
+      - pattern: Microphone.requestPermissions(...)
+      - pattern: Motion.addListener(...)
+
+  # ---------------------------------------------------------------------------
+  # PYTHON — hardcoded supabase URL/key in tools/
+  # ---------------------------------------------------------------------------
+  - id: helmv3-hardcoded-supabase-credentials-py
+    languages: [python]
+    severity: ERROR
+    message: >
+      Don't hardcode Supabase URLs or keys in Python helpers. Load from
+      .env via python-dotenv (`os.environ["SUPABASE_..."]`).
+    pattern-either:
+      - pattern-regex: "https://[a-z0-9]+\\.supabase\\.co"
+      - pattern-regex: "eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}"
+    paths:
+      include:
+        - "tools/**/*.py"
+        - "scripts/**/*.py"

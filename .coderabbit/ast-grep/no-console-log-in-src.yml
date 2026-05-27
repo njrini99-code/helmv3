@@ -1,0 +1,16 @@
+# ast-grep rule: console.log in src/ ships to the user. Pre-submit
+# checklist (CLAUDE.md) bans it. Use the Datadog logger
+# (@datadog/browser-logs) on the client and the structured logger in
+# src/lib/observability/ on the server.
+id: helmv3-no-console-log-in-src
+language: typescript
+severity: warning
+message: >
+  Don't ship console.log to users. Use the project logger:
+  @datadog/browser-logs on the client, the structured server logger
+  for actions and route handlers.
+note: >
+  console.warn / console.error are also stripped by the prod logger,
+  but they are tolerated for now. console.log is not.
+rule:
+  pattern: console.log($$$)
