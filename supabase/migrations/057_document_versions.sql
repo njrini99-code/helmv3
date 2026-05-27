@@ -3,6 +3,26 @@
 -- Purpose: Document version control and preview support for golf documents
 -- ============================================================================
 
+-- Dashboard-era schema bridge: prod has `is_public` on golf_documents
+-- (renamed via dashboard from `player_visible` in 027). The RLS policy
+-- at line 115 below references `is_public`, so a fresh local stack must
+-- match. database.ts (regenerated 2026-05-26 from prod) confirms only
+-- `is_public` exists.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='golf_documents'
+      AND column_name='is_public'
+  ) AND EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='golf_documents'
+      AND column_name='player_visible'
+  ) THEN
+    ALTER TABLE golf_documents RENAME COLUMN player_visible TO is_public;
+  END IF;
+END $$;
+
 -- Golf Document Versions
 -- Tracks version history for each document
 CREATE TABLE IF NOT EXISTS golf_document_versions (
