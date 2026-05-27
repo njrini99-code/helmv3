@@ -11,12 +11,13 @@
 -- ============================================================================
 
 -- Fix is_baseball_team_coach(): old version used t.head_coach_id which doesn't exist.
--- Keep original parameter name team_uuid (required for CREATE OR REPLACE with dependent policies).
-CREATE OR REPLACE FUNCTION is_baseball_team_coach(team_uuid UUID)
+-- Keep original parameter name p_team_id from 20260125000000_fix_baseball_rls_comprehensive.sql
+-- (postgres requires CREATE OR REPLACE FUNCTION to keep the same parameter name).
+CREATE OR REPLACE FUNCTION is_baseball_team_coach(p_team_id UUID)
 RETURNS BOOLEAN AS $$
   SELECT EXISTS (
     SELECT 1 FROM baseball_team_coach_staff tcs
-    WHERE tcs.team_id = team_uuid
+    WHERE tcs.team_id = p_team_id
     AND tcs.coach_id = get_my_coach_id()
   );
 $$ LANGUAGE SQL SECURITY DEFINER STABLE;
