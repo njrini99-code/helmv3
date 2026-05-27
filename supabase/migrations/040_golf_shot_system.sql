@@ -53,13 +53,25 @@ END $$;
 -- These ensure data integrity matches the TypeScript types in RawShot interface
 -- ============================================================================
 
--- shot_type: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty'
--- The column was originally added to prod via the Supabase dashboard
--- (pre-migration-discipline) and so was never declared in 021. Add it
--- here defensively with IF NOT EXISTS so a fresh local stack matches
--- prod and migration 040 applies cleanly end-to-end.
+-- Dashboard-era schema debt: prod has shot_type, round_id, hole_number on
+-- golf_shots, but 021_golf_rounds.sql only declared a minimal table. The
+-- missing columns were added to prod via the Supabase dashboard during
+-- pre-migration-discipline days. Declare them defensively here so a fresh
+-- supabase start matches prod and the constraints below apply cleanly.
+-- IF NOT EXISTS makes each statement a no-op on prod; SET NOT NULL is
+-- idempotent on already-NOT-NULL columns.
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS shot_type TEXT;
 COMMENT ON COLUMN golf_shots.shot_type IS 'tee | approach | around_green | putting | penalty - shot context for SG breakdown';
+
+ALTER TABLE golf_shots
+  ADD COLUMN IF NOT EXISTS round_id UUID REFERENCES golf_rounds(id) ON DELETE CASCADE;
+ALTER TABLE golf_shots
+  ADD COLUMN IF NOT EXISTS hole_number INTEGER;
+
+-- Apply NOT NULL last. Safe at this point because golf_shots is empty on
+-- a fresh stack and already NOT NULL on prod (idempotent in either case).
+ALTER TABLE golf_shots ALTER COLUMN round_id SET NOT NULL;
+ALTER TABLE golf_shots ALTER COLUMN hole_number SET NOT NULL;
 ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_shot_type_check;
 ALTER TABLE golf_shots ADD CONSTRAINT golf_shots_shot_type_check
   CHECK (shot_type IS NULL OR shot_type IN ('tee', 'approach', 'around_green', 'putting', 'penalty'));
