@@ -59,7 +59,7 @@ ALTER TABLE golf_task_templates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "golf_task_templates_select_coaches"
 ON golf_task_templates FOR SELECT TO authenticated
 USING (
-  team_id IN (
+  golf_task_templates.team_id IN (
     SELECT gt.id FROM golf_teams gt
     JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gc.user_id = auth.uid()
@@ -70,8 +70,8 @@ USING (
 CREATE POLICY "golf_task_templates_select_players"
 ON golf_task_templates FOR SELECT TO authenticated
 USING (
-  team_id IN (
-    SELECT team_id FROM golf_team_members gtm
+  golf_task_templates.team_id IN (
+    SELECT gtm.team_id FROM golf_team_members gtm
     JOIN golf_players gp ON gp.id = gtm.player_id
     WHERE gp.user_id = auth.uid()
   )
@@ -81,7 +81,7 @@ USING (
 CREATE POLICY "golf_task_templates_insert_coaches"
 ON golf_task_templates FOR INSERT TO authenticated
 WITH CHECK (
-  team_id IN (
+  golf_task_templates.team_id IN (
     SELECT gt.id FROM golf_teams gt
     JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gc.user_id = auth.uid()
@@ -92,14 +92,14 @@ WITH CHECK (
 CREATE POLICY "golf_task_templates_update_coaches"
 ON golf_task_templates FOR UPDATE TO authenticated
 USING (
-  team_id IN (
+  golf_task_templates.team_id IN (
     SELECT gt.id FROM golf_teams gt
     JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gc.user_id = auth.uid()
   )
 )
 WITH CHECK (
-  team_id IN (
+  golf_task_templates.team_id IN (
     SELECT gt.id FROM golf_teams gt
     JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gc.user_id = auth.uid()
@@ -110,7 +110,7 @@ WITH CHECK (
 CREATE POLICY "golf_task_templates_delete_coaches"
 ON golf_task_templates FOR DELETE TO authenticated
 USING (
-  team_id IN (
+  golf_task_templates.team_id IN (
     SELECT gt.id FROM golf_teams gt
     JOIN golf_coaches gc ON gc.organization_id = gt.organization_id
     WHERE gc.user_id = auth.uid()
