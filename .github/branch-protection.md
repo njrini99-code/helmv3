@@ -16,6 +16,11 @@ Apply these settings to `main` (and any release branch):
   hard rules defined in `.greptile/instructions.md`; enable in the
   Greptile dashboard at https://app.greptile.com after installing the
   GitHub App on this repo)
+- `ci/circleci: ios-compile` (from `.circleci/config.yml` — iOS
+  Capacitor compile on M-series macOS; required only for branches
+  that touch `ios/**` or `capacitor.config.ts`). Leave as a
+  non-blocking check until you're ready to enforce green iOS on
+  every iOS-touching PR.
 - `Playwright E2E` — to be added in a follow-up to Plan 02 Task 9 (CI workflow currently does not run Playwright)
 
 ## Other settings
