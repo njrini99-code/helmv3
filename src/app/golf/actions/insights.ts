@@ -1007,7 +1007,7 @@ export async function generateTeamInsights() {
           await logServerError(`generateInsightsForTeam skipped ${skipped} legacy records with insufficient sample_n`, {
             action: 'generateInsightsForTeam.skip-insufficient',
             featureArea: 'insights',
-          });
+          }, 'warning');
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
@@ -3418,7 +3418,7 @@ export async function triggerPlayerInsightsAfterRound(
         await logServerError(`triggerPlayerInsightsAfterRound skipped ${skipped} legacy records (insufficient sample_n)`, {
           action: 'triggerPlayerInsightsAfterRound.skip-insufficient',
           featureArea: 'insights',
-        });
+        }, 'warning');
       }
       await Promise.all(
         inputs.map((input) => upsertInsight(admin, input)),
