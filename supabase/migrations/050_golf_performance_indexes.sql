@@ -112,6 +112,25 @@ COMMENT ON INDEX idx_golf_holes_round_number IS
 -- GOLF_EVENTS COMPOSITE INDEXES
 -- ============================================================================
 
+-- Production stores event status as TEXT with `scheduled` values. Fresh replay
+-- still has the early `golf_event_status` enum, which rejects `scheduled` in
+-- the partial index predicate below.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_events'
+      AND column_name = 'status'
+      AND udt_name = 'golf_event_status'
+  ) THEN
+    ALTER TABLE golf_events ALTER COLUMN status DROP DEFAULT;
+    ALTER TABLE golf_events ALTER COLUMN status TYPE TEXT USING status::text;
+    ALTER TABLE golf_events ALTER COLUMN status SET DEFAULT 'scheduled';
+  END IF;
+END $$;
+
 -- Primary composite index: team_id + start_time for calendar queries
 -- Covers: Calendar page, upcoming events, event listings
 -- Example queries:
@@ -187,6 +206,24 @@ COMMENT ON INDEX idx_golf_qualifier_entries_player IS
 -- ============================================================================
 -- GOLF_QUALIFIERS COMPOSITE INDEXES
 -- ============================================================================
+
+-- Production stores qualifier status as TEXT. Fresh replay still has the early
+-- enum, which rejects the `scheduled` value used in the active partial index.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_qualifiers'
+      AND column_name = 'status'
+      AND udt_name = 'golf_qualifier_status'
+  ) THEN
+    ALTER TABLE golf_qualifiers ALTER COLUMN status DROP DEFAULT;
+    ALTER TABLE golf_qualifiers ALTER COLUMN status TYPE TEXT USING status::text;
+    ALTER TABLE golf_qualifiers ALTER COLUMN status SET DEFAULT 'upcoming';
+  END IF;
+END $$;
 
 -- Team qualifiers by date
 -- Covers: Team qualifier listings, upcoming qualifiers
