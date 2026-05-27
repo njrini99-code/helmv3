@@ -138,8 +138,46 @@ The migration will not `DROP` anything on data-bearing tables — additive only.
 
 ## Runtime Config Audit 2026-05-27
 
-> Filled in by Phase 7.
+### Env keys per environment
 
-## Provider stub status
+See "Vercel env baseline (Phase 1.1)" table above. Single urgent gap was Preview missing Supabase canonical vars — fixed by user via the staging provisioning + Preview env paste tasks.
 
-> Filled in by Phase 7.3.
+### LLM (AI Gateway) — VERIFIED WORKING via direct prod query
+
+The deep dive flagged "`AI_GATEWAY_API_KEY` missing → LLM falls back to template" as a risk. **This is NOT happening.** Direct queries against prod:
+
+- `public.golf_coachhelm_llm_calls` has 39 total rows.
+- Most recent 8 calls (last one 2026-05-27 00:06):
+  - All use model `anthropic/claude-haiku-4-5`.
+  - All have real `cost_usd` (~$0.0005 per call).
+  - All have `fallback_to_template = false`.
+- Conclusion: AI Gateway is wired and working, almost certainly via `VERCEL_OIDC_TOKEN` (which IS present in all three envs). Explicit `AI_GATEWAY_API_KEY` is unnecessary because OIDC is the default auth path.
+
+### `golf_coachhelm_settings`
+
+- 6 rows (one per active coach/team pair).
+- All 6 have `llm_narrative_enabled: false` and `llm_budget_usd_per_day: 5.00`.
+- Despite `llm_narrative_enabled: false`, LLM calls ARE landing in `golf_coachhelm_llm_calls` — so either:
+  - The narrative-flag gate is not on the same code path as the calls being logged, OR
+  - Those calls are from a different surface (e.g., chat conversations, not narrative summaries).
+- Action: no UPDATE needed. Setting these flags to true would be an explicit "enable narratives" decision for the user, not a fix.
+
+### Other config (per Phase 1.1 baseline)
+
+| Key | production | preview | development | Notes |
+| --- | --- | --- | --- | --- |
+| `RESEND_API_KEY` | set | (missing pre-fix) | set | Email delivery (Phase 1.4 prebuild guard does not cover this; consider adding) |
+| `VAPID_*` (push) | unverified | unverified | unverified | Not surfaced by the limited env grep; check before claiming push works |
+| `CRON_SECRET` | set | (missing pre-fix) | set | Inngest/cron auth |
+| `COACHHELM_INTERNAL_SECRET` | set | (missing pre-fix) | set | Internal route auth |
+| `ARCCOS_*` / `GARMIN_*` / `TRACKMAN_*` | unset | unset | unset | Expected — provider integrations are stubs (see Phase 7.3) |
+
+## Provider stub status (Phase 7.3)
+
+| Provider | Adapter file | Env keys present? | HTTP client impl? | Live in prod? |
+| --- | --- | --- | --- | --- |
+| Arccos | `src/lib/coachhelm/v3/ingest/providers/arccos.ts` | no | no | stub — `golf_ingest_connections` has 0 rows |
+| Garmin | `src/lib/coachhelm/v3/ingest/providers/garmin.ts` | no | no | stub |
+| TrackMan | `src/lib/coachhelm/v3/ingest/providers/trackman.ts` | no | no | stub |
+
+These are intentionally stubbed until a partnership/API agreement is reached with each vendor. Each adapter reports "unconfigured" instead of crashing. No action required from this alignment effort.
