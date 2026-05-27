@@ -5,7 +5,7 @@
 -- Drift discovered 2026-05-27 by comparing pg_dump of qmnssrrolpinvwjjnufo
 -- (Helm-Production) against a parsed reconstruction of supabase/migrations/.
 --
--- Adds 217 columns across 53 tables
+-- Adds 229 columns across 57 tables
 -- Adds 5 tables that exist in prod but were never in source
 --
 -- SKIPPED 1 columns across 1 tables because their
@@ -172,6 +172,9 @@ ALTER TABLE public.baseball_stat_uploads ADD COLUMN IF NOT EXISTS "row_count" in
 -- table: baseball_team_coach_staff (+1 cols)
 ALTER TABLE public.baseball_team_coach_staff ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
 
+-- table: baseball_team_lineups (+1 cols)
+ALTER TABLE public.baseball_team_lineups ADD COLUMN IF NOT EXISTS "created_by_coach_id" uuid;
+
 -- table: baseball_team_members (+4 cols)
 ALTER TABLE public.baseball_team_members ADD COLUMN IF NOT EXISTS "approved_at" timestamp with time zone;
 ALTER TABLE public.baseball_team_members ADD COLUMN IF NOT EXISTS "approved_by" uuid;
@@ -195,6 +198,19 @@ ALTER TABLE public.baseball_videos ADD COLUMN IF NOT EXISTS "updated_at" timesta
 
 -- table: crm_coaches (+1 cols)
 ALTER TABLE public.crm_coaches ADD COLUMN IF NOT EXISTS "athletics_url" text;
+
+-- table: golf_causal_relationships (+11 cols)
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "cause" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "cause_metric" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "confounders" jsonb DEFAULT '[]'::jsonb;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "dose_response" boolean DEFAULT false;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "effect" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "effect_metric" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "intervention_potential" numeric(5,4) DEFAULT 0;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "mechanism" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "relationship_type" text;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "strength" numeric(5,4) DEFAULT 0;
+ALTER TABLE public.golf_causal_relationships ADD COLUMN IF NOT EXISTS "validation_count" integer DEFAULT 0;
 
 -- table: golf_coach_blocked_time (+2 cols)
 ALTER TABLE public.golf_coach_blocked_time ADD COLUMN IF NOT EXISTS "all_day" boolean DEFAULT false;
@@ -224,9 +240,17 @@ ALTER TABLE public.golf_coachhelm_settings ADD COLUMN IF NOT EXISTS "team_id" uu
 ALTER TABLE public.golf_coachhelm_settings ADD COLUMN IF NOT EXISTS "trend_alerts" boolean DEFAULT true;
 ALTER TABLE public.golf_coachhelm_settings ADD COLUMN IF NOT EXISTS "weekly_summary" boolean DEFAULT true;
 
--- table: golf_conversations (+2 cols)
-ALTER TABLE public.golf_conversations ADD COLUMN IF NOT EXISTS "is_team_channel" boolean DEFAULT false;
-ALTER TABLE public.golf_conversations ADD COLUMN IF NOT EXISTS "is_team_chat" boolean DEFAULT false;
+-- table: golf_confidence_calibration (+7 cols)
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "actual_accuracy" numeric(5,4) DEFAULT 0;
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "bucket" numeric(3,1);
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "calibration_error" numeric(5,4) DEFAULT 0;
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "correct_count" integer DEFAULT 0;
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "prediction_type" text;
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "predictions_count" integer DEFAULT 0;
+ALTER TABLE public.golf_confidence_calibration ADD COLUMN IF NOT EXISTS "sample_size" integer DEFAULT 0;
+
+-- table: golf_course_holes (+1 cols)
+ALTER TABLE public.golf_course_holes ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
 
 -- table: golf_courses (+2 cols)
 ALTER TABLE public.golf_courses ADD COLUMN IF NOT EXISTS "holes" integer DEFAULT 18;
@@ -236,9 +260,6 @@ ALTER TABLE public.golf_courses ADD COLUMN IF NOT EXISTS "par" integer;
 ALTER TABLE public.golf_document_versions ADD COLUMN IF NOT EXISTS "file_name" text;
 ALTER TABLE public.golf_document_versions ADD COLUMN IF NOT EXISTS "mime_type" text;
 ALTER TABLE public.golf_document_versions ADD COLUMN IF NOT EXISTS "storage_path" text;
-
--- table: golf_documents (+1 cols)
-ALTER TABLE public.golf_documents ADD COLUMN IF NOT EXISTS "is_public" boolean DEFAULT false;
 
 -- table: golf_event_attendance (+3 cols)
 ALTER TABLE public.golf_event_attendance ADD COLUMN IF NOT EXISTS "notes" text;
@@ -253,10 +274,23 @@ ALTER TABLE public.golf_events ADD COLUMN IF NOT EXISTS "parent_event_id" uuid;
 ALTER TABLE public.golf_events ADD COLUMN IF NOT EXISTS "recurrence_rule" text;
 ALTER TABLE public.golf_events ADD COLUMN IF NOT EXISTS "recurring" boolean DEFAULT false;
 
--- table: golf_holes (+3 cols)
+-- table: golf_global_patterns (+6 cols)
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "average_impact" numeric(6,3) DEFAULT 0;
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "instance_count" integer DEFAULT 0;
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "prevalence" numeric(5,4) DEFAULT 0;
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "signature" text;
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "varied_by_handicap" jsonb DEFAULT '{}'::jsonb;
+ALTER TABLE public.golf_global_patterns ADD COLUMN IF NOT EXISTS "varied_by_tier" jsonb DEFAULT '{}'::jsonb;
+
+-- table: golf_holes (+1 cols)
 ALTER TABLE public.golf_holes ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
-ALTER TABLE public.golf_holes ADD COLUMN IF NOT EXISTS "gir" boolean;
-ALTER TABLE public.golf_holes ADD COLUMN IF NOT EXISTS "penalty_strokes" integer DEFAULT 0;
+
+-- table: golf_insight_generation_log (+5 cols)
+ALTER TABLE public.golf_insight_generation_log ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
+ALTER TABLE public.golf_insight_generation_log ADD COLUMN IF NOT EXISTS "engine_version" text;
+ALTER TABLE public.golf_insight_generation_log ADD COLUMN IF NOT EXISTS "insight_type" text;
+ALTER TABLE public.golf_insight_generation_log ADD COLUMN IF NOT EXISTS "insights_generated" integer;
+ALTER TABLE public.golf_insight_generation_log ADD COLUMN IF NOT EXISTS "rounds_analyzed" integer;
 
 -- table: golf_learned_behavior (+6 cols)
 ALTER TABLE public.golf_learned_behavior ADD COLUMN IF NOT EXISTS "entity_id" uuid;
@@ -323,10 +357,9 @@ ALTER TABLE public.golf_predictions ADD COLUMN IF NOT EXISTS "trend" text;
 ALTER TABLE public.golf_predictions ADD COLUMN IF NOT EXISTS "updated_at" timestamp with time zone DEFAULT now();
 ALTER TABLE public.golf_predictions ADD COLUMN IF NOT EXISTS "was_accurate" boolean;
 
--- table: golf_qualifier_entries (+3 cols)
+-- table: golf_qualifier_entries (+2 cols)
 ALTER TABLE public.golf_qualifier_entries ADD COLUMN IF NOT EXISTS "notes" text;
 ALTER TABLE public.golf_qualifier_entries ADD COLUMN IF NOT EXISTS "round_id" uuid;
-ALTER TABLE public.golf_qualifier_entries ADD COLUMN IF NOT EXISTS "score" integer;
 
 -- table: golf_qualifiers (+2 cols)
 ALTER TABLE public.golf_qualifiers ADD COLUMN IF NOT EXISTS "entry_deadline" date;
@@ -343,29 +376,16 @@ ALTER TABLE public.golf_round_reviews ADD COLUMN IF NOT EXISTS "published_at" ti
 ALTER TABLE public.golf_round_reviews ADD COLUMN IF NOT EXISTS "published_by" uuid;
 ALTER TABLE public.golf_round_reviews ADD COLUMN IF NOT EXISTS "version" integer DEFAULT 1;
 
--- table: golf_rounds (+13 cols)
+-- table: golf_rounds (+5 cols)
 ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "ai_recap_generated_at" timestamp with time zone;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "back_nine" integer;
 ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "coachhelm_failed_at" timestamp with time zone;
 ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "coachhelm_failure_reason" text;
 ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "current_hole" integer DEFAULT 1;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "front_nine" integer;
 ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "qualifier_round_number" integer;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "score_to_par" integer;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "status" text DEFAULT 'in_progress'::text;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "total_fairways" integer;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "total_fairways_hit" integer;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "total_gir" integer;
-ALTER TABLE public.golf_rounds ADD COLUMN IF NOT EXISTS "total_gir_possible" integer;
 
--- table: golf_shots (+7 cols)
+-- table: golf_shots (+2 cols)
 ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "distance_unit" text DEFAULT 'yards'::text;
-ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "hole_number" integer;
-ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "lie_before" text;
-ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "putt_break" text;
 ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "putt_slope" text;
-ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "round_id" uuid;
-ALTER TABLE public.golf_shots ADD COLUMN IF NOT EXISTS "shot_type" text;
 
 -- table: golf_task_assignments (+3 cols)
 ALTER TABLE public.golf_task_assignments ADD COLUMN IF NOT EXISTS "created_at" timestamp with time zone DEFAULT now();
