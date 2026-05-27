@@ -68,6 +68,14 @@ ALTER TABLE golf_shots
 ALTER TABLE golf_shots
   ADD COLUMN IF NOT EXISTS hole_number INTEGER;
 
+-- More dashboard-era columns referenced by CHECK constraints below.
+-- lie_before/lie_after were added via dashboard pre-migration; putt_break
+-- via the same path. On a fresh stack the CHECK constraints below would
+-- fail with 42703 (column does not exist) without these defensive adds.
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_before TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_after TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS putt_break TEXT;
+
 -- Apply NOT NULL last. Safe at this point because golf_shots is empty on
 -- a fresh stack and already NOT NULL on prod (idempotent in either case).
 ALTER TABLE golf_shots ALTER COLUMN round_id SET NOT NULL;
