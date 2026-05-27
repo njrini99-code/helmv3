@@ -5,6 +5,7 @@
 BEGIN;
 
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS score_to_par INTEGER;
+ALTER TABLE golf_holes ADD COLUMN IF NOT EXISTS gir BOOLEAN;
 
 -- =============================================================================
 -- Issue 1: Score Mismatch (40 of 61 rounds)
