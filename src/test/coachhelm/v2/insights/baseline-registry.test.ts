@@ -34,10 +34,12 @@ describe('baselineRegistry', () => {
   });
 
   it('throws on unknown key', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberately invalid key for error-path coverage
     expect(() => baselineRegistry.get('d2_avg.does_not_exist' as any)).toThrow(/unknown baseline/i);
   });
 
   it('tryGet returns null for unknown key', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deliberately invalid key for error-path coverage
     expect(baselineRegistry.tryGet('d2_avg.does_not_exist' as any)).toBeNull();
   });
 

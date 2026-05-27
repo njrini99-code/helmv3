@@ -172,38 +172,38 @@ export async function getSystemTabData(): Promise<SystemTabData> {
       dbTelemetrySettled,
     ] = await Promise.allSettled([
       // RPC calls
-      (adminDb.rpc('get_api_performance_summary' as never, { period_days: 7 } as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
-      (adminDb.rpc('get_enhanced_system_health' as never) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+      adminDb.rpc('get_api_performance_summary', { days_back: 7 }),
+      adminDb.rpc('get_enhanced_system_health'),
 
       // Direct table queries for hourly data
-      ((adminDb.from('error_rate_hourly' as never) as any)
+      adminDb.from('error_rate_hourly')
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .order('hour', { ascending: true }),
 
-      ((adminDb.from('auth_metrics_hourly' as never) as any)
+      adminDb.from('auth_metrics_hourly')
         .select('*')
         .gte('hour', ago7d)
-        .order('hour', { ascending: true }) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .order('hour', { ascending: true }),
 
       // Bounded: last 7 days only + hard 500-row ceiling. Downstream
       // aggregator only counts last-7-days rows for `failures_7d`, so the
       // `.gte` is consistent with existing semantics. The 500 cap protects
       // against unbounded growth on jobs that fire frequently.
-      ((adminDb.from('background_job_logs' as never) as any)
+      adminDb.from('background_job_logs')
         .select('*')
         .gte('started_at', ago7d)
         .order('started_at', { ascending: false })
-        .limit(500) as unknown) as Promise<{ data: any[] | null; error: unknown }>,
+        .limit(500),
 
       // get_db_telemetry returns a single jsonb payload (not a rowset).
-      (adminDb.rpc('get_db_telemetry' as never) as unknown) as Promise<{ data: unknown; error: unknown }>,
+      adminDb.rpc('get_db_telemetry'),
     ]);
 
-    function unwrapList(
+    function unwrapList<T>(
       label: string,
-      settled: PromiseSettledResult<{ data: any[] | null; error: unknown }>,
-    ): any[] {
+      settled: PromiseSettledResult<{ data: T[] | null; error: unknown }>,
+    ): T[] {
       if (settled.status === 'rejected') {
         void logServerError(
           `[admin-system-data] ${label} rejected: ${settled.reason instanceof Error ? settled.reason.message : String(settled.reason)}`,
@@ -263,8 +263,8 @@ export async function getSystemTabData(): Promise<SystemTabData> {
     );
 
     // Parse error trend (hourly)
-    const errorTrend: ErrorRateEntry[] = ((errorTrendRes.data ?? []) as any[]).map(
-      (row: Record<string, unknown>) => ({
+    const errorTrend: ErrorRateEntry[] = (errorTrendRes.data ?? []).map(
+      (row) => ({
         hour: String(row.hour ?? ''),
         totalErrors: Number(row.total_errors ?? 0),
         criticalErrors: Number(row.critical_errors ?? 0),
@@ -274,8 +274,8 @@ export async function getSystemTabData(): Promise<SystemTabData> {
     );
 
     // Parse auth metrics (hourly)
-    const authMetrics: AuthMetricsEntry[] = ((authMetricsRes.data ?? []) as any[]).map(
-      (row: Record<string, unknown>) => ({
+    const authMetrics: AuthMetricsEntry[] = (authMetricsRes.data ?? []).map(
+      (row) => ({
         hour: String(row.hour ?? ''),
         successfulLogins: Number(row.successful_logins ?? 0),
         failedLogins: Number(row.failed_logins ?? 0),

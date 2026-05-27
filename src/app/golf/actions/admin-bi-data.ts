@@ -93,13 +93,13 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
     const [platformMetricsRes, engagementRes, aiRoundsRes, insightLogRes, insightActionRes] =
       await Promise.all([
         // Last 30 daily snapshots
-        (adminDb.from('golf_platform_metrics_daily' as never) as any)
+        adminDb.from('golf_platform_metrics_daily')
           .select('*')
           .order('snapshot_date', { ascending: false })
-          .limit(30) as unknown as { data: any[] | null; error: unknown },
+          .limit(30),
 
         // Engagement summary for tier computation
-        adminDb.rpc('get_user_engagement_summary' as never, { period_days: 30 } as never) as unknown as { data: any[] | null; error: unknown },
+        adminDb.rpc('get_user_engagement_summary', { time_range_days: 30 }),
 
         // AI vs non-AI retention: get rounds with join to insight log
         adminDb
@@ -125,12 +125,12 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
 
     // Parse platform metrics
     const platformMetrics: PlatformMetricsEntry[] = (
-      (platformMetricsRes.data ?? []) as any[]
-    ).map((row: Record<string, unknown>) => ({
+      platformMetricsRes.data ?? []
+    ).map((row) => ({
       snapshotDate: String(row.snapshot_date ?? ''),
-      dau: Number(row.dau ?? 0),
-      wau: Number(row.wau ?? 0),
-      mau: Number(row.mau ?? 0),
+      dau: Number(row.daily_active_users ?? 0),
+      wau: Number(row.weekly_active_users ?? 0),
+      mau: Number(row.monthly_active_users ?? 0),
       newSignups: Number(row.new_signups ?? 0),
       roundsToday: Number(row.rounds_today ?? 0),
       avgEngagementScore:
@@ -226,8 +226,7 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
     // golf_coach_insights lifecycle state — the same column the lifecycle cron
     // writes to when a coach acts on an alert. Returns null when there are no
     // insights in the window (avoids a fake 0% on empty data).
-    const totalInsightsInWindow =
-      (insightActionRes as unknown as { count: number | null }).count ?? 0;
+    const totalInsightsInWindow = insightActionRes.count ?? 0;
 
     let actedOnCount = 0;
     if (totalInsightsInWindow > 0) {
@@ -236,7 +235,7 @@ export async function getEnhancedBIData(): Promise<EnhancedBIData> {
         .select('id', { count: 'exact', head: true })
         .gte('created_at', ago30d)
         .or('lifecycle_state.in.(addressed,resolved),addressed_at.not.is.null,resolved_at.not.is.null');
-      actedOnCount = (actedRes as unknown as { count: number | null }).count ?? 0;
+      actedOnCount = actedRes.count ?? 0;
     }
 
     const insightActionRate =

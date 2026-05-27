@@ -8,7 +8,7 @@
     "prebuild": "node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 43",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "db:types": "npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > src/lib/types/database.ts",
     "db:types:check": "npm run db:types && git diff --exit-code src/lib/types/database.ts || (echo '❌ Types are out of date. Run npm run db:types and commit changes.' && exit 1)",
