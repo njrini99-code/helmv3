@@ -14,9 +14,8 @@ This checks EVERYTHING:
 import asyncio
 import json
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 import re
-from datetime import datetime
 
 from enhanced_cycle_agent import HelmContext, Issue
 
@@ -128,7 +127,7 @@ class ComprehensiveAgent:
     def verify_all_platforms(self):
         """Verify fixes across ALL platforms"""
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: VERIFYING PREVIOUS CYCLE (ALL PLATFORMS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -207,7 +206,7 @@ class ComprehensiveAgent:
         """Check UNDERSTANDING.json for incomplete features"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: CHECKING FOR INCOMPLETE FEATURES
   Using UNDERSTANDING.json to find missing implementations
@@ -262,7 +261,7 @@ Find 20-40 incomplete features.
         """Use HELM_ESSAY.md to find gaps"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 3: FINDING IMPLEMENTATION GAPS
   Using HELM_ESSAY.md to check documented vs actual implementation
@@ -315,7 +314,7 @@ Find 15-30 gaps between documentation and reality.
         """Comprehensive scan of entire codebase"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 4: COMPREHENSIVE CODE SCAN
   Scanning entire codebase for issues
@@ -476,12 +475,12 @@ Be COMPREHENSIVE. Find 30-50 real issues across the entire codebase.
         with open(summary_file, "w") as f:
             json.dump(stats, f, indent=2)
         
-        print(f"\n📊 Comprehensive Summary:")
+        print("\n📊 Comprehensive Summary:")
         print(f"   Total Issues: {stats['total_issues']}")
-        print(f"   By Platform:")
+        print("   By Platform:")
         for platform, count in stats['by_platform'].items():
             print(f"     {platform}: {count}")
-        print(f"   By Source:")
+        print("   By Source:")
         for source, count in stats['by_source'].items():
             print(f"     {source}: {count}")
 

@@ -16,6 +16,17 @@ note: >
   If you need elevated privileges (e.g. for an admin endpoint), put the
   code under src/lib/supabase/admin* or src/app/api/**/admin/** and
   document the auth gate that wraps it.
+# Allowlist: server-only files where service-role use is intentional and
+# documented. Adding to this list requires a justification in the file's
+# header comment and verification that no client component imports it.
+ignores:
+  - 'src/lib/supabase/admin*.ts'
+  - 'src/lib/auth/supabase-rate-limit.ts'   # rate limiting reads across users
+  - 'src/lib/notifications/push.ts'         # server-side push fan-out
+  - 'src/app/api/**/admin/**'
+  - 'supabase/functions/**'                 # Deno runtime, uses Deno.env.get
+  - 'supabase/scripts/**'                   # one-off node scripts, not shipped
+  - 'scripts/**'                            # repo-root maintenance scripts, not shipped
 rule:
   any:
     - pattern: process.env.SUPABASE_SERVICE_ROLE_KEY

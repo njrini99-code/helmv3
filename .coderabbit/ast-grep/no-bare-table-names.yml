@@ -4,6 +4,10 @@
 # memberships, audit_log, feature_flags).
 #
 # CLAUDE.md "Table Names — ALWAYS Use Sport Prefix" is the source rule.
+#
+# Excludes `supabase.storage.from(bucketName)` — that's a Storage bucket
+# reference, not a database table. Bucket names like "documents" are
+# legitimate and unrelated to the table-prefix convention.
 id: helmv3-no-bare-table-names
 language: typescript
 severity: error
@@ -49,3 +53,9 @@ rule:
     - pattern: $X.from("travel")
     - pattern: $X.from('travel')
     - pattern: $X.from(`travel`)
+constraints:
+  X:
+    not:
+      any:
+        - pattern: $Y.storage
+        - pattern: storage

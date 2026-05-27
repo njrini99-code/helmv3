@@ -23,7 +23,6 @@ Usage:
 
 import asyncio
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
@@ -361,7 +360,7 @@ Verification Summary:
         """Find new issues using context-aware detection"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: CONTEXT-AWARE ISSUE DETECTION
   Using deep understanding to find issues...

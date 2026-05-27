@@ -8,9 +8,13 @@ message: >
   Supabase Edge Functions run on Deno. Use Deno.env.get("KEY") instead
   of process.env.KEY.
 note: >
-  This rule is scoped to supabase/functions/ via .coderabbit.yaml
-  path_instructions. If you need to share code between Node and Deno,
-  isolate the env-reading layer.
+  process.env is undefined in Deno. If you need to share code between
+  Node and Deno, isolate the env-reading layer.
+# Scope to Deno-runtime code only. Next.js instrumentation, server
+# components, and other Node-runtime files are unaffected.
+files:
+  - 'supabase/functions/**/*.ts'
+  - 'supabase/functions/**/*.js'
 rule:
   any:
     - pattern: process.env.$KEY

@@ -12,5 +12,15 @@ message: >
 note: >
   console.warn / console.error are also stripped by the prod logger,
   but they are tolerated for now. console.log is not.
+# Server-only startup files where console.log is the correct tool
+# (runs before the project logger is initialized; output goes to
+# Vercel function logs, not the user's browser).
+# Also excludes repo-root maintenance scripts (scripts/**) — they
+# run via `tsx`/`node` from the CLI, never shipped to a user.
+ignores:
+  - 'src/instrumentation.ts'
+  - 'src/instrumentation-client.ts'
+  - 'scripts/**'
+  - 'supabase/scripts/**'
 rule:
   pattern: console.log($$$)

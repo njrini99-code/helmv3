@@ -165,7 +165,7 @@ class CycleDashboard:
         
         if cycles[-1]["total_issues"] > 0:
             print(f"1. Open {issues_file}")
-            print(f"2. Let Claude Code fix the issues")
+            print("2. Let Claude Code fix the issues")
             print(f"3. Run cycle {latest_cycle + 1} to verify fixes")
         else:
             print("🎉 All issues resolved! Consider running a new analysis to find more improvements.")
@@ -203,7 +203,7 @@ class CycleDashboard:
             state = issue.get("state", "unknown")
             by_state[state] = by_state.get(state, 0) + 1
         
-        print(f"\nIssues by State:")
+        print("\nIssues by State:")
         for state, count in sorted(by_state.items()):
             print(f"  {state}: {count}")
         

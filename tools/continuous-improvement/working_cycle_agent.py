@@ -8,8 +8,6 @@ This prevents context overflow and actually produces results.
 
 import asyncio
 import json
-import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
 import re
@@ -142,7 +140,6 @@ class WorkingCycleAgent:
         
         This is the KEY fix - we verify 5 issues at a time instead of 85 at once.
         """
-        from claude_agent_sdk import query, ClaudeAgentOptions
         
         print(f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -176,7 +173,7 @@ class WorkingCycleAgent:
             print("⚠️  No matching issues found")
             return
         
-        print(f"Now verifying in batches of 5...\n")
+        print("Now verifying in batches of 5...\n")
         
         # Verify in batches
         BATCH_SIZE = 5
@@ -308,7 +305,7 @@ Be concise. Just verify if the code change exists.
         """Find new issues - simplified"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
   Using context-aware analysis...

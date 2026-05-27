@@ -21,7 +21,6 @@ import json
 import sys
 from pathlib import Path
 from typing import Dict, List
-import re
 
 
 class FeatureOrganizer:
@@ -385,7 +384,7 @@ Working on one feature at a time gives you:
         # Generate index file
         self._generate_index(feature_groups)
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   ✅ ORGANIZATION COMPLETE                                                   ║

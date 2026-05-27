@@ -32,7 +32,7 @@ try:
         messages=[{"role": "user", "content": "Hi"}]
     )
     
-    print(f"✅ API key is VALID!")
+    print("✅ API key is VALID!")
     print(f"✅ Response: {response.content[0].text}")
     print()
     

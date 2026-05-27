@@ -12,8 +12,6 @@ This is 10x simpler and actually works!
 
 import asyncio
 import json
-import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
 import re
@@ -143,7 +141,7 @@ class SimplifiedCycleAgent:
     def mark_fixes_as_verified(self, prev_cycle: Dict):
         """Simple: trust Claude Code's fixes without deep verification"""
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: PROCESSING PREVIOUS FIXES
   (Trusting Claude Code's documented fixes)
@@ -179,7 +177,7 @@ class SimplifiedCycleAgent:
         """Find new issues - same as before"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
   Using context-aware analysis...

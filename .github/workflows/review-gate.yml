@@ -43,12 +43,17 @@ jobs:
           sg --version
 
       - name: Scan repo with project rules
+        # Each rule declares its own severity in the YAML. Rules with
+        # `severity: error` fail the job; `severity: warning` rules emit
+        # diagnostics but do not block (CodeRabbit also surfaces them in
+        # the PR review). Do NOT pass --error here — that would promote
+        # every warning to a hard block and defeat the severity field.
         run: |
           set -e
           fail=0
           for rule in .coderabbit/ast-grep/*.yml; do
             echo "::group::$rule"
-            sg scan --rule "$rule" --error || fail=1
+            sg scan --rule "$rule" || fail=1
             echo "::endgroup::"
           done
           exit $fail

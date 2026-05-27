@@ -13,7 +13,6 @@ This creates the proper closed-loop: MD file → verification → next cycle.
 
 import asyncio
 import json
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
@@ -77,7 +76,7 @@ class HelmContext:
             summary.append(f"✅ ISSUES.md - {issue_count} detailed issues")
         
         if self.rls_audit:
-            summary.append(f"✅ security/RLS_AUDIT.md - Security audit available")
+            summary.append("✅ security/RLS_AUDIT.md - Security audit available")
         
         if not summary:
             summary.append("⚠️  No overnight analysis context found")
@@ -362,7 +361,7 @@ class EnhancedCycleAgent:
         Import issues from overnight analysis (ACTIONS.md, ISSUES.md, RLS_AUDIT.md)
         Only on cycle 1 - these become the initial issues to fix
         """
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 IMPORTING ISSUES FROM OVERNIGHT ANALYSIS
   These will become your initial issues to fix...
@@ -378,7 +377,7 @@ class EnhancedCycleAgent:
             max_turns=20,
         )
         
-        prompt = f"""
+        prompt = """
 You are importing issues from overnight analysis into the continuous improvement system.
 
 Read these files:
@@ -389,23 +388,23 @@ Read these files:
 Extract ALL issues and convert them to this standardized format:
 
 ```json
-{{
+{
   "id": "ISSUE-XXX" or original ID,
   "title": "Short title",
   "description": "Detailed description",
   "severity": "critical|high|medium|low",
   "category": "security|ux|performance|accessibility|code_quality",
-  "location": {{
+  "location": {
     "file": "path/to/file",
     "line": 42
-  }},
+  },
   "source": "overnight_actions" or "overnight_issues" or "rls_audit",
-  "context": {{
+  "context": {
     "original_priority": "if from ACTIONS.md",
     "vulnerability_type": "if from RLS_AUDIT.md",
     "suggested_fix": "any fix suggestions"
-  }}
-}}
+  }
+}
 ```
 
 For each issue in the files, create one JSON block.
@@ -638,7 +637,7 @@ Verification Summary:
         """Find new issues using FULL context from overnight analysis"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: CONTEXT-AWARE ISSUE DETECTION
   Using deep understanding + overnight analysis to find issues...
@@ -1003,7 +1002,7 @@ cat .helm/security/RLS_AUDIT.md
             print(f"   Regressions Found: {stats['regressions_found']}")
         
         if stats['by_source']:
-            print(f"\n   Issues by Source:")
+            print("\n   Issues by Source:")
             for src, count in stats['by_source'].items():
                 print(f"     {src}: {count}")
 

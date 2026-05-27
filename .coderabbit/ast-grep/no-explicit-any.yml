@@ -9,10 +9,18 @@ message: >
   truly cannot type something (e.g. third-party SDK with broken types),
   add `// eslint-disable-next-line @typescript-eslint/no-explicit-any`
   with a one-line justification.
+# Files where `any` is the central escape hatch by design. Each entry
+# either contains an `eslint-disable-next-line` justifying the use, or
+# is a server-side script not shipped to a user.
+ignores:
+  - 'src/lib/supabase/untyped.ts'
+  - 'src/lib/notifications/email.ts'        # untyped resend client + cross-sport queries
+  - 'scripts/**'                            # CLI maintenance scripts
+  - 'supabase/scripts/**'
 rule:
   any:
     - pattern: "const $X: any = $$$"
     - pattern: "let $X: any = $$$"
     - pattern: "function $F($$$): any { $$$ }"
     - pattern: "($X: any) => $$$"
-    - pattern: "as any"
+    - pattern: $X as any

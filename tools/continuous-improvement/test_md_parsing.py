@@ -50,7 +50,7 @@ def test_md_parsing():
     
     print()
     print("="*60)
-    print(f"📊 RESULTS:")
+    print("📊 RESULTS:")
     print(f"   Total issues with FIX STATUS sections: {len(sections) // 2}")
     print(f"   Issues marked as ✅ Fixed: {len(fixes)}")
     print("="*60)

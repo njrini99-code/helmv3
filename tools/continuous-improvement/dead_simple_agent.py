@@ -13,7 +13,6 @@ import json
 from pathlib import Path
 from typing import List, Dict
 import re
-from datetime import datetime
 import asyncio
 
 from enhanced_cycle_agent import HelmContext, Issue
@@ -176,7 +175,7 @@ class DeadSimpleAgent:
         3. Check if changes are present
         """
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: READING FILES TO VERIFY FIXES
   Reading source files and checking for documented changes
@@ -306,7 +305,7 @@ Total Checked: {len(md_fixes)}
         """Find new issues - simplified"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

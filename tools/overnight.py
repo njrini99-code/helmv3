@@ -104,7 +104,7 @@ class OvernightAnalyzer:
         """Phase 2: Write comprehensive technical essay"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  📝 PHASE 2: PLATFORM ESSAY                                                  ║
@@ -260,7 +260,7 @@ class OvernightAnalyzer:
         """Phase 4: Comprehensive RLS security audit"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  🔐 PHASE 4: RLS SECURITY AUDIT                                              ║
@@ -323,7 +323,7 @@ class OvernightAnalyzer:
         """Phase 5: Cross-reference and create action items"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  🔄 PHASE 5: SYNTHESIS & ACTION ITEMS                                        ║
@@ -452,7 +452,7 @@ class OvernightAnalyzer:
         for match in reversed(matches):  # Try last match first (usually most complete)
             try:
                 return json.loads(match)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 continue
         return None
     

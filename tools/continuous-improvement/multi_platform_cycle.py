@@ -21,10 +21,8 @@ Usage:
 import asyncio
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import List, Dict
-import subprocess
 
 
 class MultiPlatformOrchestrator:
@@ -141,7 +139,7 @@ class MultiPlatformOrchestrator:
     def _print_summary(self, results: Dict):
         """Print summary of all platform cycles"""
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   📊 MULTI-PLATFORM CYCLE SUMMARY                                            ║
@@ -193,7 +191,7 @@ class MultiPlatformOrchestrator:
         # Get latest summary for each platform
         for platform in self.platforms:
             # Find latest cycle for this platform
-            pattern = f"cycle-*-summary.json"
+            pattern = "cycle-*-summary.json"
             summaries = sorted(cycle_dir.glob(pattern))
             
             if summaries:

@@ -14,7 +14,6 @@ import json
 from pathlib import Path
 from typing import List, Dict
 import re
-from datetime import datetime
 
 from enhanced_cycle_agent import HelmContext, Issue
 
@@ -152,7 +151,7 @@ class DirectVerificationAgent:
         SIMPLE: Just check if the files mentioned actually exist and were modified
         """
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: DIRECT FILE VERIFICATION
   Checking if documented files actually exist and were modified
@@ -227,7 +226,7 @@ Note: This is a simple file existence check. Files exist = assumed fixed.
         """Find new issues - use SDK"""
         from claude_agent_sdk import query, ClaudeAgentOptions
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

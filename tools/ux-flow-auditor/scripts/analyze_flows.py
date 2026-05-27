@@ -12,7 +12,6 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass, field, asdict
-from typing import Optional
 from collections import defaultdict
 
 
@@ -440,7 +439,6 @@ class UXFlowAnalyzer:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-                lines = content.split('\n')
         except Exception as e:
             self.issues.append(Issue(
                 severity='error',
@@ -1510,7 +1508,7 @@ class UXFlowAnalyzer:
         try:
             with open(route.file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-        except:
+        except (OSError, UnicodeDecodeError):
             content = ""
 
         # 1. Infer purpose
@@ -1627,7 +1625,7 @@ class UXFlowAnalyzer:
             
             found, suggestion = self._check_route_exists(dest, known_routes)
             
-            if not found and not '${' in edge['to'] and not '[param]' in edge['to']:
+            if not found and '${' not in edge['to'] and '[param]' not in edge['to']:
                 issue = Issue(
                     severity='warning',
                     type='broken-link',
@@ -2067,8 +2065,8 @@ class TodoGenerator:
         stats = data['stats']
         lines.append('## 📊 Summary')
         lines.append('')
-        lines.append(f'| Metric | Count |')
-        lines.append(f'|--------|-------|')
+        lines.append('| Metric | Count |')
+        lines.append('|--------|-------|')
         lines.append(f'| Total Tasks | **{stats["total"]}** |')
         lines.append(f'| Critical/High Priority | **{stats["critical"]}** |')
         lines.append(f'| Findings | {stats["findings_count"]} |')
