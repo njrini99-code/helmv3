@@ -67,11 +67,14 @@ USING (
 );
 
 -- Players can view templates for their team (read-only for quick reference)
+-- NOTE: `SELECT gtm.team_id` qualified explicitly — on prod golf_players
+-- has no team_id, but on a fresh local stack 020 declares it, making
+-- `SELECT team_id` ambiguous (42702) across the JOIN.
 CREATE POLICY "golf_task_templates_select_players"
 ON golf_task_templates FOR SELECT TO authenticated
 USING (
   team_id IN (
-    SELECT team_id FROM golf_team_members gtm
+    SELECT gtm.team_id FROM golf_team_members gtm
     JOIN golf_players gp ON gp.id = gtm.player_id
     WHERE gp.user_id = auth.uid()
   )
