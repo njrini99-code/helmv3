@@ -7,11 +7,19 @@ import { Database } from '@/lib/types/database';
  * This client runs on the server and uses cookies for authentication
  */
 export async function createClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!url || /placeholder\.supabase\.co/i.test(url)) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing or a placeholder. Check Vercel env.');
+  }
+  if (!anonKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is missing. Check Vercel env.');
+  }
   const cookieStore = await cookies();
 
   return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || 'https://placeholder.supabase.co',
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || 'placeholder-anon-key',
+    url,
+    anonKey,
     {
       cookies: {
         getAll() {
@@ -30,10 +38,10 @@ export async function createClient() {
         },
       },
       global: {
-        fetch: (url: RequestInfo | URL, options: RequestInit = {}) => {
+        fetch: (fetchUrl: RequestInfo | URL, options: RequestInit = {}) => {
           // 10s HTTP abort — DB statement_timeout is 8s, so DB error bubbles up first
           const signal = options.signal ?? AbortSignal.timeout(10_000);
-          return fetch(url, { ...options, signal });
+          return fetch(fetchUrl, { ...options, signal });
         },
       },
     }
