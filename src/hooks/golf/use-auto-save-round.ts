@@ -445,7 +445,7 @@ export function useAutoSaveRound(
     }
 
     return { data: null, roundId: null, source: null };
-  }, [loadFromLocalStorage]);
+  }, [loadFromLocalStorage, currentRoundId]);
 
   /**
    * Clear local draft state only (localStorage + hook state).

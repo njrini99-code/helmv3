@@ -32,6 +32,7 @@ export function useMessages(conversationId: string) {
 
     // Mark messages as read
     markMessagesAsRead(conversationId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 13). Adding it would noise the dep array without changing behavior.
   }, [conversationId]);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export function useMessages(conversationId: string) {
     return () => {
       supabase.removeChannel(channel);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 13). Adding it would noise the dep array without changing behavior.
   }, [conversationId, fetchMessages]);
 
   const sendMessage = async (content: string) => {
@@ -227,6 +229,7 @@ export function useConversations() {
 
     setConversations(transformedConversations as unknown as ConversationWithMeta[]);
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 79). Adding it would noise the dep array without changing behavior.
   }, [user]);
 
   useEffect(() => {
@@ -254,6 +257,7 @@ export function useConversations() {
       };
     }
     return undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 79). Adding it would noise the dep array without changing behavior.
   }, [user, fetchConversations]);
 
   return { conversations, loading, refetch: fetchConversations };

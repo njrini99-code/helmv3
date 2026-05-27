@@ -189,7 +189,6 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- performSync is excluded to avoid re-subscribing event listeners on every sync function change
   }, [syncOnReconnect, onConnectionChange]);
 
   // ============================================================================
@@ -211,7 +210,6 @@ export function useOfflineSync(options: UseOfflineSyncOptions = {}): [OfflineSyn
         clearInterval(syncIntervalRef.current);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- performSync is excluded to avoid resetting the interval on every sync function change; the interval callback always calls the latest performSync
   }, [state.isIndexedDBReady, state.isOnline, state.pendingCount.total, autoSyncInterval]);
 
   // ============================================================================

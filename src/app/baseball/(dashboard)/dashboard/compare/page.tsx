@@ -56,6 +56,7 @@ function CompareContent() {
     }
 
     fetchPlayers();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable (module-scope) and `playerIds` is recomputed each render from `searchParams`; adding it would loop.
   }, [searchParams]);
 
   const MAX_PLAYERS = 4;

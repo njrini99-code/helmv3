@@ -90,7 +90,7 @@ export default function GolfClassesPage() {
       }));
 
       setClasses(processedClasses);
-    } catch (err) {
+    } catch (_err) {
       showToast('Failed to load classes. Please refresh.', 'error');
     } finally {
       setLoading(false);
@@ -338,7 +338,7 @@ export default function GolfClassesPage() {
 
       await fetchClasses();
       setShowDeleteAllConfirm(false);
-    } catch (err) {
+    } catch (_err) {
       showToast('Error deleting classes. Please try again.', 'error');
     } finally {
       setDeletingAll(false);

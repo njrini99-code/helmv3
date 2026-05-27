@@ -682,7 +682,7 @@ export default function ContinueRoundClient({
     redirectToCompletedRound,
     roundId,
     setupData,
-    showToast,
+    showAutoSaveWarning,
   ]);
 
   const handleRoundSubmit = async (allHoleStats: HoleStats[]) => {

@@ -46,6 +46,7 @@ export function useWatchlist() {
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 13). Adding it would noise the dep array without changing behavior.
   }, [coach]);
 
   useEffect(() => {

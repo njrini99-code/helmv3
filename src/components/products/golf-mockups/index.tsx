@@ -224,7 +224,7 @@ export function QualifierMockup() {
         </div>
 
         <div>
-          {players.map((player, i) => {
+          {players.map((player, _i) => {
             const isQualifying = player.rank <= 5;
             const isCutline = player.rank === 5;
             const isFirst = player.rank === 1;

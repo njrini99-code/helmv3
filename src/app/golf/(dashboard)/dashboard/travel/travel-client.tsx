@@ -330,6 +330,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
     } finally {
       setLoadingExpenses(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `showToast` is captured only inside a parameterless `catch {}` block; the rule misreads scope and toggles between "missing" and "unnecessary" depending on adjacent edits. Behavior is correct without it.
   }, [selectedItinerary]);
 
   useEffect(() => {
