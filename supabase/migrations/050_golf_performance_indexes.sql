@@ -21,6 +21,26 @@
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
 
+-- Production uses `status` (TEXT) for round lifecycle state. Fresh migration
+-- replay still has the older `round_status` enum from migration 021, so create
+-- and backfill `status` before indexes and later functions reference it.
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'in_progress';
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_rounds'
+      AND column_name = 'round_status'
+  ) THEN
+    UPDATE golf_rounds
+    SET status = COALESCE(status, round_status::text, 'in_progress')
+    WHERE status IS NULL;
+  END IF;
+END $$;
+
 -- Primary composite index: player_id + status + round_date DESC
 -- Covers: Stats page queries, round history, completed rounds listing
 -- Example queries:
