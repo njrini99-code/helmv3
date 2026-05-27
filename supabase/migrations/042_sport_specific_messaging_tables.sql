@@ -9,9 +9,14 @@
 -- ============================================================================
 
 -- Baseball Conversations
+-- created_by was originally declared TEXT here but prod was dashboard-
+-- altered to UUID (REFERENCES users(id)) so RLS policies in 044 can do
+-- created_by = auth.uid(). Declare it as UUID upfront so a fresh stack
+-- matches prod and 044's policies apply cleanly. IF NOT EXISTS means
+-- this is a no-op on prod where the table already exists with UUID.
 CREATE TABLE IF NOT EXISTS baseball_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_by TEXT NOT NULL,
+  created_by UUID NOT NULL,
   title TEXT,
   is_team_chat BOOLEAN DEFAULT FALSE,
   team_id UUID REFERENCES baseball_teams(id) ON DELETE SET NULL,
