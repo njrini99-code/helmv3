@@ -81,6 +81,68 @@ they're load-bearing for a cross-file problem.
     `golf_coaches.team_id`. Strokes-gained is cached in
     `golf_player_stats_cache`.
 
+11. **Third-party SDK call-shape must match the installed major in
+    `package.json`.** Whenever a PR adds or changes a call into an
+    SDK (Inngest, Supabase, Next.js, Sentry, Mapbox, AI SDK, Resend,
+    Upstash, Capacitor, Zod, framer-motion, recharts, anything in
+    `dependencies`), open `package.json`, read the installed major,
+    and verify the call signature/exported types match that major.
+    A diff-only reviewer can't catch this — Greptile must.
+
+    **Canonical incident (do not repeat):** PR #102 shipped
+    `inngest.createFunction(opts, trigger, handler)` — the v3
+    three-arg shape — against installed `inngest@^4.4.0` which only
+    accepts `(opts, handler)` with the trigger nested in opts as
+    `triggers: [{ cron: '…' }]` or `triggers: [{ event: '…' }]`.
+    The TS error in the Vercel build surfaced as
+    `inferred type of 'weeklyHealthPing' cannot be named without a
+    reference to '../../../node_modules/inngest/api/api'` — a
+    portability error that masked the real call-shape mismatch.
+    Production deploys failed for 9+ hours. Both AI reviewers let
+    it through. Reference shape lives at
+    `src/lib/inngest/functions.ts:26-41` (correct v4 shape) and
+    `src/lib/inngest/client.ts` (correct v4 client).
+
+    **Cross-check list per SDK** (not exhaustive — apply the same
+    pattern to anything in `package.json`):
+    - **Inngest v4** (`inngest@^4.x`): `createFunction(opts, handler)`,
+      triggers nested in opts as `triggers: [...]`. NOT
+      `createFunction(opts, trigger, handler)` (that's v3).
+    - **Supabase JS v2** (`@supabase/supabase-js@^2.x`): single
+      `data, error` return — destructure both. v1's `body`/`status`
+      shape is gone. `.from('table').select()` returns
+      `PostgrestResponse`, not a thenable of rows.
+    - **`@supabase/ssr` v0.x**: server client via `createServerClient`
+      with `cookies: { getAll, setAll }`. v0.0.x's
+      `get/set/remove` triple is gone.
+    - **Next.js 16** (`next@^16.x`): `params`/`searchParams`/`cookies()`
+      /`headers()` are async — must `await`. `middleware.ts` rename
+      to `proxy.ts` lands in v16+ — flag either name only if it
+      contradicts the installed major.
+    - **Sentry Next.js v10** (`@sentry/nextjs@^10.x`): use
+      `withSentryConfig` from `@sentry/nextjs`, not the
+      `@sentry/nextjs/config` legacy import. `Sentry.init` in
+      `instrumentation-client.ts` (not the deprecated
+      `sentry.client.config.ts`).
+    - **Mapbox GL v3** (`mapbox-gl@^3.x`): no `accessToken` static
+      property in some bundles — read the token via
+      `src/lib/mapbox/client.ts`. Don't import the v2 default export.
+    - **AI SDK v6** (`ai@^6.x`): `generateText`/`streamText` opts
+      and return shape changed from v5 — verify against the
+      installed major before approving a new call site.
+    - **Zod v4** (`zod@^4.x`): error shape and `.parse` behavior
+      shifted from v3. `z.string().email()` works, but
+      `z.string().datetime()` options changed.
+    - **framer-motion v12** (`framer-motion@^12.x`): mocks must
+      include `useReducedMotion` (project pattern after the
+      2026-05-21 CI break).
+
+    **How to flag:** quote the line from `package.json` (e.g.
+    `"inngest": "^4.4.0"`), quote the offending call site with
+    file:line, name the major it's actually written against, and
+    cite the correct shape from the SDK's installed-version docs.
+    Block the PR.
+
 ## Soft rules (comment, don't block)
 
 - Design system: use Kelly green `#16A34A`, cream `#FFFEFA`, glass

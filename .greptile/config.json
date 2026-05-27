@@ -55,6 +55,7 @@
     "**/*.DS_Store"
   ],
   "additional_context": [
+    "package.json",
     "CLAUDE.md",
     "AGENTS.md",
     "CLAUDE_CODE_GUIDE.md",
