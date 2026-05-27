@@ -208,6 +208,62 @@ jobs:
           path: ios/App/xcodebuild.log
           destination: xcodebuild-log
 
+  # ---------- On-PR: Lighthouse CI against Vercel preview ----------
+  # Polls the Vercel API for the preview deployment matching this PR's
+  # commit SHA, then runs lhci against landing + login routes. Asserts
+  # in lighthouserc.cjs — a11y + CLS are hard errors, perf is a warning.
+  # Required env vars in CircleCI project settings:
+  #   VERCEL_TOKEN, VERCEL_PROJECT_ID, (optional) VERCEL_TEAM_ID
+  lighthouse-preview:
+    executor: node
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: Install lhci + jq
+          command: |
+            sudo apt-get update -qq && sudo apt-get install -y -qq jq
+            npm install --no-save @lhci/cli
+      - run:
+          name: Wait for Vercel preview to be READY
+          command: |
+            URL=$(bash .circleci/scripts/wait-for-vercel-preview.sh)
+            echo "export PREVIEW_URL='${URL}'" >> "$BASH_ENV"
+      - run:
+          name: Run Lighthouse CI
+          command: |
+            npx lhci autorun --config=lighthouserc.cjs
+      - store_artifacts:
+          path: .lighthouseci/
+          destination: lighthouse
+
+  # ---------- Weekly: Promptfoo LLM evals ----------
+  # Scored evaluation of CoachHelm composer prompts. Catches silent
+  # prompt drift between deploys. Requires ANTHROPIC_API_KEY or
+  # OPENAI_API_KEY (or both) in CircleCI project env. If neither is
+  # set the job no-ops with a clear message.
+  promptfoo-evals:
+    executor: node
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: Run Promptfoo evals
+          command: |
+            if [ -z "${ANTHROPIC_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+              echo "Skipping evals: no LLM API key in env."
+              exit 0
+            fi
+            mkdir -p evals/results
+            npx promptfoo eval \
+              --config evals/round-review.yaml \
+              --output evals/results/round-review.json || true
+            # Print the human-readable summary to the job log
+            npx promptfoo view --no-open evals/results/round-review.json || true
+      - store_artifacts:
+          path: evals/results/
+          destination: promptfoo
+
 # ---------------------------------------------------------------------------
 # Workflows
 # ---------------------------------------------------------------------------
@@ -223,6 +279,7 @@ workflows:
       - squawk-migrations
       - npm-audit
       - stryker-coachhelm
+      - promptfoo-evals
 
   # iOS compile verification — runs on every PR that touches ios/**,
   # capacitor.config.ts, or any Capacitor plugin in package.json, plus
@@ -240,3 +297,18 @@ workflows:
                 - /release\/.*/
                 - /ios\/.*/
                 - /capacitor\/.*/
+
+  # Lighthouse runs on every push (excluding the scheduled weekly).
+  # The wait-for-vercel-preview script returns early with a useful
+  # message if Vercel isn't deploying that branch (e.g. main pushes
+  # that re-use an existing deployment).
+  lighthouse:
+    when:
+      not: << pipeline.parameters.run-weekly >>
+    jobs:
+      - lighthouse-preview:
+          filters:
+            branches:
+              ignore:
+                - /docs\/.*/
+                - /chore\/.*-noop/
