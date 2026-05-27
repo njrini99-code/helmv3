@@ -117,13 +117,3 @@ Allowed MIME Types (add all):
 
 After creating the bucket, the RLS policies above will be applied.
 */
-
--- ============================================================================
--- Documentation
--- ============================================================================
-COMMENT ON POLICY "Users can upload attachments to their conversations" ON storage.objects IS
-  'Allows authenticated users to upload files to conversation folders they are participants of';
-COMMENT ON POLICY "Users can view attachments in their conversations" ON storage.objects IS
-  'Allows authenticated users to view/download files from conversations they participate in';
-COMMENT ON POLICY "Users can delete their own attachments" ON storage.objects IS
-  'Allows users to delete only attachments from their own messages';
