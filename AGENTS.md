@@ -21,12 +21,19 @@
 
 ## Automated review
 
-PRs are reviewed by **CodeRabbit** on every push (auto-incremental).
-The config at `.coderabbit.yaml` enforces the rules above plus the
-patterns in `CLAUDE.md` and `docs/v3-*.md`. Path-specific instructions
-cover `src/app/**`, `src/components/**`, `src/lib/supabase/**`,
-`supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
-`tools/**`, `.github/workflows/**`, and `e2e/**`.
+PRs are reviewed by **two AI reviewers in parallel** on every push:
+
+- **CodeRabbit** — line-level static analysis. Config at
+  `.coderabbit.yaml` plus `.coderabbit/ast-grep/` and
+  `.coderabbit/semgrep/helmv3.yml`. Path-specific instructions cover
+  `src/app/**`, `src/components/**`, `src/lib/supabase/**`,
+  `supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
+  `tools/**`, `.github/workflows/**`, and `e2e/**`.
+- **Greptile** — whole-codebase view, catches drift from architecture
+  docs and duplicated logic. Config at `.greptile/instructions.md`
+  (natural-language rules) and `.greptile/config.json` (ignores,
+  additional-context docs). Installed via GitHub App at
+  https://app.greptile.com.
 
 Pre-merge gate blocks (must be `error`-clean before merge):
 - Service-role key in a client bundle

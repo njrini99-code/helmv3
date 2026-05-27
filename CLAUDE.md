@@ -284,22 +284,42 @@ vercel --version     # Vercel CLI (>= 54.x)
 
 ## Code Review Tooling
 
-PRs into `main`, `develop`, and `release/*` are auto-reviewed by **CodeRabbit**
-on every push. Configuration lives at the repo root:
+PRs into `main`, `develop`, and `release/*` are auto-reviewed by **two AI
+reviewers running in parallel**, plus a CI gate that mirrors them locally.
 
-- `.coderabbit.yaml` — assertive profile, pre-merge gate, every applicable
-  linter enabled (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint,
-  shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint,
-  checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce
-  the rules in this file plus AGENTS.md and `docs/v3-*.md`.
-- `.coderabbitignore` — generated/vendored paths CodeRabbit skips.
-- `.gitleaks.toml` — project-specific secret patterns (rotated 2026-05-17
-  Supabase dev DB password is allowlisted only in audit docs).
+**CodeRabbit** — line-level static-analysis view. Configuration at
+`.coderabbit.yaml`: assertive profile, pre-merge gate, every applicable
+linter enabled (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint,
+shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint,
+checkov, gitleaks, semgrep, sqlfluff). Custom ast-grep rules in
+`.coderabbit/ast-grep/`, custom semgrep pack in `.coderabbit/semgrep/`.
 
-The pre-merge gate fails the PR if any of these blocking custom checks trip:
-service-role key in a client bundle, RLS missing on a new table, server
-action without an auth check, sport-prefixed table name violation, or a
-destructive DELETE-then-INSERT in a save/submit/sync path.
+**Greptile** — whole-codebase view. Catches what diff-only review
+misses: duplicated logic, broken callers, drift from architecture docs.
+Configuration at `.greptile/` — `instructions.md` is the natural-language
+project context; `config.json` controls ignores and additional-context
+docs. Installed as a GitHub App at https://app.greptile.com.
+
+**Review Gate** (`.github/workflows/review-gate.yml`) — runs the same
+toolchain locally (ast-grep, semgrep, gitleaks, actionlint, yamllint,
+shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint) so merges
+are blocked even if either AI reviewer is offline. Aggregate status
+check: `Review Gate / all`.
+
+Shared config:
+
+- `.coderabbitignore` — generated/vendored paths CodeRabbit skips
+  (mirrored under `ignore` in `.greptile/config.json`).
+- `.gitleaks.toml` — project-specific secret patterns (rotated
+  2026-05-17 Supabase dev DB password is allowlisted only in audit
+  docs).
+
+The CodeRabbit pre-merge gate fails the PR if any of these blocking
+custom checks trip: service-role key in a client bundle, RLS missing
+on a new table, server action without an auth check, sport-prefixed
+table name violation, destructive DELETE-then-INSERT in a save/submit/
+sync path. The same hard-rule set is documented in
+`.greptile/instructions.md` "Hard rules" so Greptile blocks on them too.
 
 ---
 
