@@ -13,11 +13,18 @@
 --
 -- SECURITY DEFINER makes the function run with owner privileges, bypassing RLS
 
-ALTER FUNCTION IF EXISTS is_golf_team_player(uuid) SECURITY DEFINER;
-ALTER FUNCTION IF EXISTS is_golf_team_player(uuid) SET search_path = public;
+DO $$
+BEGIN
+  IF to_regprocedure('public.is_golf_team_player(uuid)') IS NOT NULL THEN
+    ALTER FUNCTION public.is_golf_team_player(uuid) SECURITY DEFINER;
+    ALTER FUNCTION public.is_golf_team_player(uuid) SET search_path = public;
+  END IF;
 
-ALTER FUNCTION IF EXISTS is_golf_team_coach(uuid) SECURITY DEFINER;
-ALTER FUNCTION IF EXISTS is_golf_team_coach(uuid) SET search_path = public;
+  IF to_regprocedure('public.is_golf_team_coach(uuid)') IS NOT NULL THEN
+    ALTER FUNCTION public.is_golf_team_coach(uuid) SECURITY DEFINER;
+    ALTER FUNCTION public.is_golf_team_coach(uuid) SET search_path = public;
+  END IF;
+END $$;
 
 -- ============================================================================
 -- 2. Remove problematic policies that bypass SECURITY DEFINER functions
