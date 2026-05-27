@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/stamp-sw.mjs",
+    "check:env": "node scripts/check-required-env.mjs",
+    "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings 43",
