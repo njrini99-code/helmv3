@@ -47,6 +47,11 @@ BEGIN
   END IF;
 END $$;
 
+-- golf_qualifier_entries.score was added on prod via the dashboard
+-- (database.ts shows it as `number | null`); 024 never declared it.
+-- The leaderboard index below sorts by score, so it must exist.
+ALTER TABLE golf_qualifier_entries ADD COLUMN IF NOT EXISTS score INTEGER;
+
 -- ============================================================================
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
