@@ -21,15 +21,19 @@
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
 
--- Primary composite index: player_id + status + round_date DESC
+-- Primary composite index: player_id + round_status + round_date DESC
 -- Covers: Stats page queries, round history, completed rounds listing
 -- Example queries:
---   .eq('player_id', id).eq('status', 'completed').order('round_date', { ascending: false })
---   .in('player_id', playerIds).eq('status', 'completed')
-CREATE INDEX IF NOT EXISTS idx_golf_rounds_player_status_date
-ON golf_rounds(player_id, status, round_date DESC);
-COMMENT ON INDEX idx_golf_rounds_player_status_date IS
-  'Optimizes player round queries filtered by status and sorted by date - most common query pattern';
+--   .eq('player_id', id).eq('round_status', 'completed').order('round_date', { ascending: false })
+--   .in('player_id', playerIds).eq('round_status', 'completed')
+-- NOTE: the column is `round_status`, not `status`. Earlier drafts of
+-- this file used `status` and silently failed on fresh local stacks
+-- (prod was dashboard-aliased). 033_all_indexes.sql already creates the
+-- same index with the correct column name; keeping this for parity.
+CREATE INDEX IF NOT EXISTS idx_golf_rounds_player_round_status_date
+ON golf_rounds(player_id, round_status, round_date DESC);
+COMMENT ON INDEX idx_golf_rounds_player_round_status_date IS
+  'Optimizes player round queries filtered by round_status and sorted by date - most common query pattern';
 
 -- Coach view index: rounds by multiple players sorted by date
 -- Covers: Coach dashboard viewing all team rounds
@@ -40,10 +44,10 @@ COMMENT ON INDEX idx_golf_rounds_date_player IS
   'Optimizes coach view of team rounds sorted by date';
 
 -- In-progress rounds lookup (for continue round feature)
--- Partial index for just in_progress status
+-- Partial index for just in_progress round_status
 CREATE INDEX IF NOT EXISTS idx_golf_rounds_in_progress
 ON golf_rounds(player_id, updated_at DESC)
-WHERE status = 'in_progress';
+WHERE round_status = 'in_progress';
 COMMENT ON INDEX idx_golf_rounds_in_progress IS
   'Optimizes lookup of in-progress rounds for resume functionality';
 
