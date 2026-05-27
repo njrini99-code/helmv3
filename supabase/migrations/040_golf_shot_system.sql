@@ -26,6 +26,28 @@ COMMENT ON COLUMN golf_shots.miss_direction IS 'left | right | short | long - fo
 -- Add updated_at for data integrity if not exists
 ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
+-- ---------------------------------------------------------------------------
+-- Backfill columns that prod has (added via Supabase dashboard before the
+-- migration backfill discipline was enforced) but no migration declares.
+-- Without these idempotent adds, fresh `supabase start` fails when the
+-- CHECK constraints + indexes below reference them (SQLSTATE 42703),
+-- which silently breaks every CI pgTAP suite. `IF NOT EXISTS` makes these
+-- no-ops on prod and column creations on fresh stacks.
+--
+-- Discovered via CI failure on PR #94 / #95 / #96 (2026-05-26). FK on
+-- round_id is intentionally omitted here — prod already has it; fresh
+-- stacks just need the column for the constraint/index to compile.
+-- ---------------------------------------------------------------------------
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS shot_type TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS lie_before TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS putt_break TEXT;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS round_id UUID;
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS hole_number INTEGER;
+
+COMMENT ON COLUMN golf_shots.shot_type IS 'tee | approach | around_green | putting | penalty — see CHECK constraint below.';
+COMMENT ON COLUMN golf_shots.lie_before IS 'tee | fairway | rough | sand | green | other — see CHECK constraint below.';
+COMMENT ON COLUMN golf_shots.putt_break IS 'left_to_right | right_to_left | straight | multiple — see CHECK constraint below.';
+
 -- Migrate existing distance_unit data to new columns if needed.
 -- Guarded with information_schema so fresh CI databases (which never
 -- had the legacy `distance_unit` column) don't fail at SQLSTATE 42703.
