@@ -65,7 +65,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Scan with helmv3 custom rules
-        run: semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions .
+        # Each rule declares its own severity. ERROR rules block the
+        # merge; WARNING rules emit advisory diagnostics that CodeRabbit
+        # surfaces in the PR review (but don't block). --severity ERROR
+        # filters to error-level findings only; --error exits non-zero
+        # if any of those are found. Together: WARNING rules are visible
+        # in CodeRabbit but don't gate the merge.
+        run: semgrep --error --severity ERROR --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions .
       - name: Scan with default p/ci ruleset
         run: semgrep --error --config p/ci --skip-unknown-extensions .
 

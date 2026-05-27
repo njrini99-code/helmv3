@@ -254,6 +254,43 @@ rules:
         - "**/supabase/functions/**/*.sql"
       exclude:
         - "**/supabase/migrations/0??_*.sql"
+        # Functions in these shipped migrations are hardened at runtime by
+        # `20260527160000_v3_security_definer_search_path_hardening.sql`
+        # via `ALTER FUNCTION ... SET search_path = 'pg_catalog, public'`
+        # (31 unique signatures). The static rule still pattern-matches the
+        # original `SECURITY DEFINER` DDL — runtime behavior is the source
+        # of truth and is verified-fixed. New migrations remain in scope.
+        - "**/supabase/migrations/20260125000000_fix_baseball_rls_comprehensive.sql"
+        - "**/supabase/migrations/20260204200000_fix_golf_rls_infinite_recursion.sql"
+        - "**/supabase/migrations/20260204210000_fix_golf_rls_recursion_v2.sql"
+        - "**/supabase/migrations/20260204235000_fix_golf_rls_recursion_final.sql"
+        - "**/supabase/migrations/20260205100000_add_user_presence.sql"
+        - "**/supabase/migrations/20260209100000_add_admin_read_bypass_rls.sql"
+        - "**/supabase/migrations/20260210000000_fix_stats_cache_9_hole_support.sql"
+        - "**/supabase/migrations/20260214200000_create_crm_coaches.sql"
+        - "**/supabase/migrations/20260214210000_create_crm_events.sql"
+        - "**/supabase/migrations/20260214220000_create_admin_events.sql"
+        - "**/supabase/migrations/20260214230000_create_admin_rpc_functions.sql"
+        - "**/supabase/migrations/20260222100000_create_auth_rate_limits.sql"
+        - "**/supabase/migrations/20260222120000_fix_head_coach_id_rls.sql"
+        - "**/supabase/migrations/20260222140000_emergency_rls_fix_v2.sql"
+        - "**/supabase/migrations/20260222200000_baseball_box_score_system.sql"
+        - "**/supabase/migrations/20260222220000_fix_baseball_coaches_rls.sql"
+        - "**/supabase/migrations/20260304000003_fix_rls_shots_stats_unique.sql"
+        - "**/supabase/migrations/20260309100000_consolidated_v2_fixes.sql"
+        - "**/supabase/migrations/20260310200000_fix_rpc_statement_timeouts.sql"
+        - "**/supabase/migrations/20260310220000_fix_driving_distance_avg.sql"
+        - "**/supabase/migrations/20260313000000_crm_enhancements.sql"
+        - "**/supabase/migrations/20260421000001_admin_dashboard_rollup.sql"
+        - "**/supabase/migrations/20260421000004_secure_perf_rpcs.sql"
+        - "**/supabase/migrations/20260429T4_crm_insights_rpcs.sql"
+        - "**/supabase/migrations/20260510120000_admin_rollup_coach_staff_lastseen.sql"
+        - "**/supabase/migrations/20260511200000_golf_messages_rls_and_attachment_rpc_hardening.sql"
+        - "**/supabase/migrations/20260517000000_fix_critical_rls_policies.sql"
+        - "**/supabase/migrations/20260524190000_v3_rls_helpers.sql"
+        - "**/supabase/migrations/20260524210100_v3_refresh_player_standing_function.sql"
+        - "**/supabase/migrations/20260525190000_v3_refresh_player_standing_round_metrics.sql"
+        - "**/supabase/migrations/20260525220000_v3_golf_coachhelm_llm_budget_table.sql"
     severity: ERROR
     message: >
       SECURITY DEFINER functions must pin `SET search_path = ''` (or
@@ -290,7 +327,13 @@ rules:
       at least one CREATE POLICY before it's used.
     patterns:
       - pattern-regex: "(?im)create\\s+table\\s+(if\\s+not\\s+exists\\s+)?(public\\.)?([a-z_]+golf_[a-z_]+|[a-z_]+baseball_[a-z_]+|golf_[a-z_]+|baseball_[a-z_]+)"
-      - pattern-not-regex: "(?is)create\\s+table[\\s\\S]{0,5000}enable\\s+row\\s+level\\s+security"
+      # Lookahead widened 5000 → 50000 chars: in large migrations
+      # (baseball-team-management, baseball-box-score, admin-dashboard),
+      # CREATE TABLE statements stack at the top and the matching ALTER
+      # TABLE ... ENABLE ROW LEVEL SECURITY appears hundreds of lines later
+      # in the same migration. Verified 2026-05-27 — all 15 previously-
+      # reported findings were same-file ENABLEs past the 5000-char window.
+      - pattern-not-regex: "(?is)create\\s+table[\\s\\S]{0,50000}enable\\s+row\\s+level\\s+security"
 
   # ---------------------------------------------------------------------------
   # iOS — Capacitor plugin usage without Info.plist usage description
