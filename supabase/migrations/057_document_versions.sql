@@ -27,6 +27,27 @@ ADD COLUMN IF NOT EXISTS current_version_id UUID REFERENCES golf_document_versio
 ALTER TABLE golf_documents
 ADD COLUMN IF NOT EXISTS version_count INT DEFAULT 1;
 
+-- Production uses `is_public` for document visibility; fresh replay still has
+-- the older `player_visible` column from migration 027. Add/backfill before the
+-- document-version RLS policy references `is_public`.
+ALTER TABLE golf_documents
+ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT false;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_documents'
+      AND column_name = 'player_visible'
+  ) THEN
+    UPDATE golf_documents
+    SET is_public = COALESCE(is_public, player_visible, false)
+    WHERE is_public IS NULL;
+  END IF;
+END $$;
+
 -- Indexes for efficient queries
 CREATE INDEX IF NOT EXISTS idx_golf_document_versions_document
 ON golf_document_versions(document_id);
