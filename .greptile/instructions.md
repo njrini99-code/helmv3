@@ -81,6 +81,14 @@ they're load-bearing for a cross-file problem.
     `golf_coaches.team_id`. Strokes-gained is cached in
     `golf_player_stats_cache`.
 
+11. **No edits to historical migrations.** Any PR that modifies a file under
+    `supabase/migrations/` whose timestamp prefix is ≤ `20260527120000`
+    (the schema alignment baseline) must be blocked. The correct fix for
+    replay failures is a new forward-only migration. The CI workflow
+    `.github/workflows/migration-lockdown.yml` enforces this as a hard gate.
+    Override only if the PR title contains `[migration-baseline-change]`
+    AND links to a run-log entry in `docs/operations/schema-alignment-*.md`.
+
 ## Soft rules (comment, don't block)
 
 - Design system: use Kelly green `#16A34A`, cream `#FFFEFA`, glass

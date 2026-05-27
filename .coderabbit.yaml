@@ -374,6 +374,17 @@ reviews:
           Fail if a save/submit/sync code path performs DELETE followed by
           INSERT on the same table without an explicit transaction comment
           justifying the rebuild.
+      - name: "No edits to historical migrations"
+        mode: error
+        instructions: >
+          Fail if the PR modifies any file under supabase/migrations/ whose
+          timestamp prefix is less than or equal to 20260527120000 (the
+          schema alignment baseline). The correct fix for replay failures is
+          a NEW forward-only migration, not editing history. See
+          docs/HELM_DATABASE_VERCEL_COACHHELM_DEEP_DIVE_2026-05-27.md and
+          docs/superpowers/plans/2026-05-27-helm-database-vercel-alignment.md
+          for the rationale. Override token (last resort, requires linked
+          run-log entry): `[migration-baseline-change]` in the PR title.
       - name: "Conventional Commits"
         mode: warning
         instructions: >
