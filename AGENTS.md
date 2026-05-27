@@ -18,3 +18,23 @@
 - Reduce top-of-screen chrome so users reach content earlier.
 - Empty states should stay compact: icon, short title, one sentence, one CTA.
 - Every changed mobile screen should feel visually and behaviorally consistent with the rest of the app.
+
+## Automated review
+
+PRs are reviewed by **CodeRabbit** on every push (auto-incremental).
+The config at `.coderabbit.yaml` enforces the rules above plus the
+patterns in `CLAUDE.md` and `docs/v3-*.md`. Path-specific instructions
+cover `src/app/**`, `src/components/**`, `src/lib/supabase/**`,
+`supabase/migrations/**`, `supabase/functions/**`, `ios/App/**`,
+`tools/**`, `.github/workflows/**`, and `e2e/**`.
+
+Pre-merge gate blocks (must be `error`-clean before merge):
+- Service-role key in a client bundle
+- New table without RLS + policy in the same migration
+- Server action without `supabase.auth.getUser()` before any DB call
+- Bare table names without `golf_` / `baseball_` prefix
+- DELETE-then-INSERT in any save/submit/sync write path
+
+Static analyzers enabled: ESLint, Biome, oxc, ast-grep, ruff, pylint,
+swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool,
+hadolint, checkov, gitleaks, semgrep, sqlfluff.

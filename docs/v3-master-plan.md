@@ -71,10 +71,13 @@ A v3 engine under `v3/` namespaces, 9 SG-spined generators with shared base clas
 8. **Test mocks change in the same PR as the code.** Framer-motion drift doesn't repeat.
 9. **Environment-dependent flags get explicit guards.** Wrapped in `if (process.env.X)` or equivalent.
 10. **Compatibility shims have kill dates.** Registered in `docs/v3-compatibility-shims.md` with `introduced_by`, `removed_by`, `owner`.
+11. **CodeRabbit auto-review must pass before merge.** Every wave PR is reviewed against `.coderabbit.yaml` (assertive profile, pre-merge gate). The blocking custom checks (service-role leak, missing RLS on new table, server action without auth check, unprefixed table name, destructive DELETE-then-INSERT) cannot be bypassed without a documented justification in the PR description.
 
 **Backfill rule:** Schema migration ships first, verified empty. Backfill cron ships in a separate PR, verified populated. Never combined.
 
 **Rollback discipline:** Every migration includes a `-- ROLLBACK:` comment block with the safe undo SQL. For human-eyes during incidents.
+
+**Review tooling:** `.coderabbit.yaml` enables every static analyzer relevant to this stack (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint, shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint, checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce the rules in this file plus `docs/v3-rls-template.md`, `docs/v3-testing-standards.md`, `CLAUDE.md`, and `AGENTS.md`. Update `.coderabbit.yaml`'s `knowledge_base.code_guidelines.filePatterns` whenever a new `docs/v3-*.md` spec is added.
 
 ---
 

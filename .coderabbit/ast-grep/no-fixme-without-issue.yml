@@ -1,0 +1,19 @@
+# ast-grep rule: forbid FIXME/XXX/HACK comments that don't reference an
+# issue. The v3-testing-standards explicitly says "No it.skip or xit —
+# a skipped test is a deleted test" and the same discipline applies to
+# unmarked tech debt.
+id: helmv3-no-untracked-fixme
+language: typescript
+severity: warning
+message: >
+  Tag tech debt with an issue link: `// FIXME(#123): …` or
+  `// HACK(LIN-456): …`. Untracked FIXMEs rot.
+rule:
+  any:
+    - pattern: "// FIXME"
+      not:
+        pattern: "// FIXME($$$)"
+    - pattern: "// XXX"
+    - pattern: "// HACK"
+      not:
+        pattern: "// HACK($$$)"

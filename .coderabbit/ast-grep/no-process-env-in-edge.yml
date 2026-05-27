@@ -1,0 +1,17 @@
+# ast-grep rule: Supabase Edge Functions run on Deno. process.env is
+# undefined there — use Deno.env.get(). Catching this at review time
+# prevents a class of "works locally, errors in prod" bugs.
+id: helmv3-no-process-env-in-edge
+language: typescript
+severity: error
+message: >
+  Supabase Edge Functions run on Deno. Use Deno.env.get("KEY") instead
+  of process.env.KEY.
+note: >
+  This rule is scoped to supabase/functions/ via .coderabbit.yaml
+  path_instructions. If you need to share code between Node and Deno,
+  isolate the env-reading layer.
+rule:
+  any:
+    - pattern: process.env.$KEY
+    - pattern: process.env[$KEY]

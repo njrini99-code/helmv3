@@ -6,6 +6,12 @@ Apply these settings to `main` (and any release branch):
 
 - `build` (from `ci.yml` build job — includes typecheck, lint, vitest, next build)
 - `Supabase lint + RLS tests` (from `ci.yml` supabase job, added in Plan 01)
+- `Review Gate / all` (from `review-gate.yml` — aggregates ast-grep, semgrep,
+  gitleaks, actionlint, yamllint, shellcheck, markdownlint, ruff+pylint,
+  sqlfluff, hadolint — mirrors CodeRabbit's pre-merge gate so merges are
+  blocked even if CodeRabbit is offline)
+- `CodeRabbit` (the bot's own status check — assertive review, blocking
+  custom checks defined in `.coderabbit.yaml`)
 - `Playwright E2E` — to be added in a follow-up to Plan 02 Task 9 (CI workflow currently does not run Playwright)
 
 ## Other settings

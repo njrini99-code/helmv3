@@ -127,3 +127,33 @@ npm test -- --update-snapshots  # accept new LLM prompt snapshots
 ```
 
 Tests must pass locally and in CI before merge. No `it.skip` or `xit` in v3 code — a skipped test is a deleted test; either fix it or remove it.
+
+---
+
+## Static Analysis (CodeRabbit)
+
+Every PR is also reviewed by **CodeRabbit** against `.coderabbit.yaml`. The
+following analyzers run on relevant files; failures surface as inline review
+comments and may be promoted to pre-merge blockers:
+
+| Tool          | Scope                                                                  |
+| ------------- | ---------------------------------------------------------------------- |
+| ESLint        | `src/**/*.{ts,tsx}` (project `eslint.config.mjs`)                      |
+| Biome         | `src/**/*.{ts,tsx,js,jsx}` — secondary, complements ESLint             |
+| oxc           | `src/**/*.{ts,tsx}` — fast modern AST checks                           |
+| ast-grep      | repo-wide pattern rules (essential + custom in `.coderabbit/ast-grep`) |
+| ruff + pylint | `tools/**/*.py`                                                        |
+| swiftlint     | `ios/App/**/*.{swift,m,mm,h}`                                          |
+| shellcheck    | `scripts/**/*.sh`, any `*.bash`                                        |
+| yamllint      | all `*.yml` / `*.yaml`                                                 |
+| actionlint    | `.github/workflows/*.yml`                                              |
+| markdownlint  | `docs/**/*.md`                                                         |
+| languagetool  | prose in `docs/`, `README*`, `*.md`                                    |
+| hadolint      | any `Dockerfile*`                                                      |
+| checkov       | IaC (vercel.ts, supabase config, GH workflows)                         |
+| gitleaks      | repo-wide, augmented by `.gitleaks.toml`                               |
+| semgrep       | security + correctness rules                                           |
+| sqlfluff      | `supabase/migrations/*.sql`, `supabase/seed/**/*.sql`                  |
+
+CodeRabbit also auto-generates docstrings and unit-test scaffolds via the
+finishing-touches workflow — accept those only after a human review pass.

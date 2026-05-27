@@ -1,0 +1,51 @@
+# ast-grep rule: forbid Supabase `.from()` calls against unprefixed tables.
+# In helmv3 every Supabase table is sport-prefixed (golf_*, baseball_*),
+# plus a small allowlist of cross-sport tables (users, organizations,
+# memberships, audit_log, feature_flags).
+#
+# CLAUDE.md "Table Names — ALWAYS Use Sport Prefix" is the source rule.
+id: helmv3-no-bare-table-names
+language: typescript
+severity: error
+message: >
+  Supabase queries must use sport-prefixed table names
+  (golf_* or baseball_*). Bare names like "coaches", "players",
+  "teams", "rounds", "events" do not exist in production.
+note: >
+  Allowed unprefixed tables: users, organizations, memberships,
+  audit_log, feature_flags. Anything else needs a sport prefix.
+rule:
+  any:
+    - pattern: $X.from("coaches")
+    - pattern: $X.from('coaches')
+    - pattern: $X.from(`coaches`)
+    - pattern: $X.from("players")
+    - pattern: $X.from('players')
+    - pattern: $X.from(`players`)
+    - pattern: $X.from("teams")
+    - pattern: $X.from('teams')
+    - pattern: $X.from(`teams`)
+    - pattern: $X.from("rounds")
+    - pattern: $X.from('rounds')
+    - pattern: $X.from(`rounds`)
+    - pattern: $X.from("events")
+    - pattern: $X.from('events')
+    - pattern: $X.from(`events`)
+    - pattern: $X.from("shots")
+    - pattern: $X.from('shots')
+    - pattern: $X.from(`shots`)
+    - pattern: $X.from("qualifiers")
+    - pattern: $X.from('qualifiers')
+    - pattern: $X.from(`qualifiers`)
+    - pattern: $X.from("messages")
+    - pattern: $X.from('messages')
+    - pattern: $X.from(`messages`)
+    - pattern: $X.from("tasks")
+    - pattern: $X.from('tasks')
+    - pattern: $X.from(`tasks`)
+    - pattern: $X.from("documents")
+    - pattern: $X.from('documents')
+    - pattern: $X.from(`documents`)
+    - pattern: $X.from("travel")
+    - pattern: $X.from('travel')
+    - pattern: $X.from(`travel`)

@@ -274,7 +274,32 @@ npm run dev          # Dev server (localhost:3000)
 npm run typecheck    # TypeScript check
 npm run lint         # ESLint
 npm run build        # Production build
+
+# Platform CLIs (installed via brew)
+supabase --version   # Supabase CLI (>= 2.101.0)
+vercel --version     # Vercel CLI (>= 54.x)
 ```
+
+---
+
+## Code Review Tooling
+
+PRs into `main`, `develop`, and `release/*` are auto-reviewed by **CodeRabbit**
+on every push. Configuration lives at the repo root:
+
+- `.coderabbit.yaml` — assertive profile, pre-merge gate, every applicable
+  linter enabled (ESLint, Biome, oxc, ast-grep, ruff, pylint, swiftlint,
+  shellcheck, yamllint, actionlint, markdownlint, languagetool, hadolint,
+  checkov, gitleaks, semgrep, sqlfluff). Path-scoped instructions enforce
+  the rules in this file plus AGENTS.md and `docs/v3-*.md`.
+- `.coderabbitignore` — generated/vendored paths CodeRabbit skips.
+- `.gitleaks.toml` — project-specific secret patterns (rotated 2026-05-17
+  Supabase dev DB password is allowlisted only in audit docs).
+
+The pre-merge gate fails the PR if any of these blocking custom checks trip:
+service-role key in a client bundle, RLS missing on a new table, server
+action without an auth check, sport-prefixed table name violation, or a
+destructive DELETE-then-INSERT in a save/submit/sync path.
 
 ---
 
