@@ -54,6 +54,12 @@ END $$;
 -- ============================================================================
 
 -- shot_type: 'tee' | 'approach' | 'around_green' | 'putting' | 'penalty'
+-- The column was originally added to prod via the Supabase dashboard
+-- (pre-migration-discipline) and so was never declared in 021. Add it
+-- here defensively with IF NOT EXISTS so a fresh local stack matches
+-- prod and migration 040 applies cleanly end-to-end.
+ALTER TABLE golf_shots ADD COLUMN IF NOT EXISTS shot_type TEXT;
+COMMENT ON COLUMN golf_shots.shot_type IS 'tee | approach | around_green | putting | penalty - shot context for SG breakdown';
 ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_shot_type_check;
 ALTER TABLE golf_shots ADD CONSTRAINT golf_shots_shot_type_check
   CHECK (shot_type IS NULL OR shot_type IN ('tee', 'approach', 'around_green', 'putting', 'penalty'));
