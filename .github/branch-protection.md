@@ -21,7 +21,13 @@ Apply these settings to `main` (and any release branch):
   that touch `ios/**` or `capacitor.config.ts`). Leave as a
   non-blocking check until you're ready to enforce green iOS on
   every iOS-touching PR.
-- `Playwright E2E` — to be added in a follow-up to Plan 02 Task 9 (CI workflow currently does not run Playwright)
+- `Playwright (chromium)` — from `.github/workflows/playwright.yml`. Wraps
+  failures with `|| echo` for now (suite-stabilization phase). Flip to a
+  hard `npm run test:e2e` and add as a required status check once the
+  suite has been green for a week. Closes Plan 02 Task 9.
+- `lighthouse-preview` (CircleCI) — runs Lighthouse against the Vercel
+  preview URL on every push. a11y + CLS asserts are hard errors. Add as
+  a required check after first green run.
 
 ## Other settings
 

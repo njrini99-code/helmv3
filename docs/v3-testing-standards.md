@@ -120,13 +120,90 @@ These five render states are non-negotiable per Part XXV verification checklist.
 ## Running Tests
 
 ```bash
-npm test                        # full suite
+npm test                        # unit project only (fast inner loop)
+npm run test:all                # every project (CI)
+npm run test:integration        # *.integration.test.{ts,tsx}
+npm run test:rls                # *.rls.test.{ts,tsx}
+npm run test:e2e                # Playwright (also runs in GHA)
 npm test -- generators/         # one feature area
 npm test -- --watch             # iterating
 npm test -- --update-snapshots  # accept new LLM prompt snapshots
 ```
 
+Vitest now uses **project split by file naming convention** (see
+`vitest.config.ts`):
+
+- Default `*.test.ts` / `*.spec.ts` files live in `unit`.
+- Slow files get renamed `*.integration.test.ts` or `*.rls.test.ts`.
+- `npm test` runs only `unit` — keeps the dev loop fast.
+- CI runs `npm run test:all` — every project.
+
 Tests must pass locally and in CI before merge. No `it.skip` or `xit` in v3 code — a skipped test is a deleted test; either fix it or remove it.
+
+---
+
+## Property-Based Tests (fast-check)
+
+Use `fast-check` for any function with rich invariants — SG calculation,
+qualifier scoring, lie taxonomy, date math, state machine transitions.
+Example suite at `src/lib/coachhelm/v2/shot-analysis/__tests__/shot-level-sg.property.test.ts`.
+
+Rules of thumb:
+
+1. **One invariant per `test()`.** "Holed shots have SG ≥ 0" is an
+   invariant. "calculateShotSG works correctly" is not.
+2. **`numRuns: 200` for cheap properties, 500+ for I/O-free hot paths.**
+   The default 100 is too low for catching long-tail bugs.
+3. **`Number.isFinite()` everywhere.** NaN propagation is the single
+   most common production bug fast-check finds.
+4. **Shrinking is your friend.** When a property fails, fast-check
+   reports the SIMPLEST input that triggers it — don't reach for a
+   debugger before reading the shrunk repro.
+
+---
+
+## E2E Tests (Playwright + axe)
+
+`e2e/*.spec.ts` runs via `playwright.config.ts` against a real Next.js
+dev server. The GHA workflow `.github/workflows/playwright.yml` runs the
+suite on every PR (currently in suite-stabilization mode — failures
+upload a report artifact but don't block merge yet).
+
+Accessibility audit lives at `e2e/accessibility.spec.ts` — uses
+`@axe-core/playwright` against public routes (landing, login, signup).
+Adds new public route? Add it to the `PUBLIC_ROUTES` array.
+
+---
+
+## LLM Evals (Promptfoo)
+
+Scored evals for CoachHelm composer prompts live in `evals/*.yaml`.
+Run locally with `ANTHROPIC_API_KEY=… npm run evals`, then
+`npm run evals:view` to open the HTML report.
+
+CircleCI's `promptfoo-evals` job runs these weekly (Mondays 06:00 UTC).
+Each prompt eval should cover:
+
+1. **Citation gate** — assert specific data is referenced (`contains-any`)
+2. **No-hallucination gate** — assert fields NOT in input don't appear
+   in output (`not-contains-any`)
+3. **Tone rubric** — `llm-rubric` against a behavioral description
+4. **Latency budget** — assert p95 < 15s (CoachHelm UX requirement)
+5. **Regenerate-once** — simulate verification failure, assert retry path
+
+---
+
+## Lighthouse (Core Web Vitals)
+
+`lighthouserc.cjs` config + CircleCI `lighthouse-preview` job runs against
+the Vercel preview URL on every push (auth + landing routes — dashboard
+routes require seeded login fixtures). Asserts:
+
+- **Hard errors** (block deploy via CI): a11y < 0.95, CLS > 0.1
+- **Warnings** (surface only): perf < 0.8, best-practices < 0.9, SEO < 0.9,
+  LCP > 2.5s, TBT > 200ms, INP > 200ms
+
+Add a dashboard variant once the seeded-login fixture lands.
 
 ---
 

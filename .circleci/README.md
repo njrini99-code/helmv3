@@ -36,9 +36,16 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
    This is what activates the `weekly` workflow's `when:` clause.
    Docs: https://circleci.com/docs/scheduled-pipelines/
 
-4. **Project settings → Environment Variables**: none required for
-   v1. When you add Fastlane/TestFlight (see "Future" below), you'll
-   need:
+4. **Project settings → Environment Variables**:
+   - **For Lighthouse CI** (lighthouse-preview job):
+     - `VERCEL_TOKEN` — from https://vercel.com/account/tokens
+     - `VERCEL_PROJECT_ID` — from `.vercel/project.json` or Vercel dashboard
+     - `VERCEL_TEAM_ID` — only if the project lives under a team scope
+   - **For Promptfoo evals** (weekly job):
+     - `ANTHROPIC_API_KEY` and/or `OPENAI_API_KEY` — the job no-ops
+       cleanly if neither is set.
+   When you add Fastlane/TestFlight (see "Future" below), you'll
+   additionally need:
    - `APP_STORE_CONNECT_API_KEY_ID`
    - `APP_STORE_CONNECT_API_KEY_ISSUER_ID`
    - `APP_STORE_CONNECT_API_KEY_CONTENT` (base64 .p8 file)
@@ -47,10 +54,11 @@ Org is already installed at https://app.circleci.com/organization/github/njrini9
 
 ## What runs when
 
-| Workflow  | Trigger                                  | Jobs                                                 | Cost          |
-| --------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
-| `weekly`  | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk, npm-audit, stryker | ~$1-2/week    |
-| `ios`     | Push to `main` / `release/*` / `ios/*` / `capacitor/*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
+| Workflow      | Trigger                                  | Jobs                                                 | Cost          |
+| ------------- | ---------------------------------------- | ---------------------------------------------------- | ------------- |
+| `weekly`      | Scheduled (Mondays 06:00 UTC, `run-weekly=true`) | knip, sqlfluff-full, squawk, npm-audit, stryker, promptfoo-evals | ~$2-3/week    |
+| `ios`         | Push to `main` / `release/*` / `ios/*` / `capacitor/*` | ios-compile (M-series macOS)                         | ~$0.15-0.30/run |
+| `lighthouse`  | Every push (except docs/* and noop branches) | lighthouse-preview (polls Vercel, runs lhci against landing + auth routes) | ~$0.02/run |
 
 To run iOS on a feature branch, name it `ios/<thing>` or
 `capacitor/<thing>`. Or add the `circleci/path-filtering` orb later
