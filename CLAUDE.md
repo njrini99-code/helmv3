@@ -306,6 +306,26 @@ shellcheck, markdownlint, ruff+pylint, sqlfluff, hadolint) so merges
 are blocked even if either AI reviewer is offline. Aggregate status
 check: `Review Gate / all`.
 
+**CI split — GitHub Actions vs CircleCI**
+
+GitHub Actions owns the per-PR fast path: typecheck, lint, vitest,
+next build, Supabase RLS tests (`ci.yml`), and the Review Gate above.
+
+CircleCI (`.circleci/config.yml`) owns what GHA does poorly:
+
+- `weekly` workflow — Knip dead-code, Stryker mutation tests on
+  `src/lib/coachhelm/v2/`, full-repo sqlfluff, npm audit, Squawk
+  migration safety. Scheduled Mondays 06:00 UTC; triggered via the
+  `run-weekly=true` pipeline parameter (configure in CircleCI
+  project settings → Triggers).
+- `ios` workflow — iOS Capacitor compile verification on M-series
+  macOS runners (~2× faster, ~⅓ the cost of GHA `macos-13`). Runs on
+  push to `main`, `release/*`, `ios/*`, `capacitor/*` branches.
+
+See `.circleci/README.md` for one-time project setup steps (CircleCI
+dashboard) and the planned upgrade path (TestFlight publish via
+Fastlane, parallel Playwright, Lighthouse on Vercel previews).
+
 Shared config:
 
 - `.coderabbitignore` — generated/vendored paths CodeRabbit skips

@@ -1,0 +1,242 @@
+# helmv3 CircleCI pipeline
+# Docs: https://circleci.com/docs/reference/configuration-reference
+#
+# Scope: things GitHub Actions does poorly or doesn't do at all.
+#   - weekly heavy jobs (Knip, Stryker, full sqlfluff, npm audit, Squawk)
+#   - iOS Capacitor build verification on M-series macOS runners
+#
+# GitHub Actions still owns: typecheck, lint, vitest, next build, Supabase
+# RLS tests, the Review Gate (ast-grep/semgrep/gitleaks/etc.). Don't
+# duplicate those here.
+
+version: 2.1
+
+orbs:
+  node: circleci/node@5.2.0
+
+# ---------------------------------------------------------------------------
+# Parameters — toggled by Scheduled Pipelines (Project Settings > Triggers)
+# ---------------------------------------------------------------------------
+parameters:
+  run-weekly:
+    type: boolean
+    default: false
+    description: "Set true by the weekly scheduled pipeline."
+
+# ---------------------------------------------------------------------------
+# Executors
+# ---------------------------------------------------------------------------
+executors:
+  node:
+    docker:
+      - image: cimg/node:20.16
+    resource_class: medium
+  node-large:
+    docker:
+      - image: cimg/node:20.16
+    resource_class: large
+  python:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: small
+  ios:
+    macos:
+      xcode: "15.4.0"
+    resource_class: macos.m1.medium.gen1
+
+# ---------------------------------------------------------------------------
+# Reusable commands
+# ---------------------------------------------------------------------------
+commands:
+  install-node-deps:
+    description: "npm ci with CircleCI cache"
+    steps:
+      - node/install-packages:
+          pkg-manager: npm
+          cache-version: v1-helmv3
+
+# ---------------------------------------------------------------------------
+# Jobs
+# ---------------------------------------------------------------------------
+jobs:
+  # ---------- Weekly: dead-code detection ----------
+  knip:
+    executor: node
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: Install Knip
+          command: npm install --no-save knip
+      - run:
+          name: Knip — unused exports, files, deps
+          command: npx knip --no-config-hints --reporter compact || true
+      - store_artifacts:
+          path: knip-report.txt
+          destination: knip
+
+  # ---------- Weekly: mutation testing on CoachHelm V2 engine ----------
+  stryker-coachhelm:
+    executor: node-large
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: Install Stryker
+          command: |
+            npm install --no-save \
+              @stryker-mutator/core \
+              @stryker-mutator/vitest-runner \
+              @stryker-mutator/typescript-checker
+      - run:
+          name: Mutation test src/lib/coachhelm/v2/
+          no_output_timeout: 30m
+          command: |
+            cat > stryker.conf.json <<'EOF'
+            {
+              "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+              "packageManager": "npm",
+              "reporters": ["html", "clear-text", "progress", "json"],
+              "testRunner": "vitest",
+              "coverageAnalysis": "perTest",
+              "concurrency": 4,
+              "timeoutMS": 60000,
+              "mutate": ["src/lib/coachhelm/v2/**/*.ts"],
+              "ignorePatterns": ["**/*.test.ts", "**/__tests__/**"]
+            }
+            EOF
+            npx stryker run || true
+      - store_artifacts:
+          path: reports/mutation/
+          destination: stryker
+
+  # ---------- Weekly: full-repo SQL lint ----------
+  sqlfluff-full:
+    executor: python
+    steps:
+      - checkout
+      - run: pip install --quiet sqlfluff
+      - run:
+          name: sqlfluff lint full migrations + seed
+          command: |
+            sqlfluff lint \
+              --dialect postgres \
+              --rules core \
+              --processes 4 \
+              supabase/migrations supabase/seed || true
+
+  # ---------- Weekly: Postgres migration safety scan ----------
+  squawk-migrations:
+    executor: node
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: Install Squawk
+          command: npm install --no-save squawk-cli
+      - run:
+          name: Squawk migration safety scan
+          command: |
+            shopt -s nullglob 2>/dev/null || true
+            files=(supabase/migrations/*.sql)
+            if [ ${#files[@]} -eq 0 ]; then
+              echo "No migrations to scan."
+              exit 0
+            fi
+            npx squawk \
+              --exclude=prefer-text-field,require-concurrent-index-creation,prefer-bigint-over-int \
+              "${files[@]}" || true
+
+  # ---------- Weekly: dependency vulnerability scan ----------
+  npm-audit:
+    executor: node
+    steps:
+      - checkout
+      - install-node-deps
+      - run:
+          name: npm audit (high severity and above)
+          command: |
+            # Don't fail the weekly on audit findings — they're often
+            # transitive and need manual triage. The output is the value.
+            npm audit --audit-level=high --json > npm-audit.json || true
+            npm audit --audit-level=high || true
+      - store_artifacts:
+          path: npm-audit.json
+          destination: npm-audit
+
+  # ---------- On-push: iOS Capacitor compile verification ----------
+  # Runs on M-series Mac (~2x faster, ~3x cheaper than GHA macos-13).
+  # Compile-only — no signing, no TestFlight. Add Fastlane Match + ASC
+  # API key to upgrade this to a real publish pipeline.
+  ios-compile:
+    executor: ios
+    steps:
+      - checkout
+      - node/install:
+          node-version: "20.16"
+      - install-node-deps
+      - run:
+          name: Build web bundle (for Capacitor sync)
+          command: |
+            # Capacitor needs the web bundle to exist before `cap sync`.
+            # Use the prod build so we catch SSR/Server Component breakage
+            # that wouldn't show up in dev mode.
+            npm run build
+      - run:
+          name: Capacitor sync iOS
+          command: npx cap sync ios
+      - run:
+          name: CocoaPods install
+          command: |
+            cd ios/App
+            pod install --repo-update
+      - run:
+          name: xcodebuild compile (no signing, simulator SDK)
+          command: |
+            cd ios/App
+            xcodebuild \
+              -workspace App.xcworkspace \
+              -scheme App \
+              -configuration Debug \
+              -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' \
+              CODE_SIGNING_ALLOWED=NO \
+              CODE_SIGNING_REQUIRED=NO \
+              CODE_SIGN_IDENTITY="" \
+              build | tee xcodebuild.log | xcpretty || (cat xcodebuild.log && exit 1)
+      - store_artifacts:
+          path: ios/App/xcodebuild.log
+          destination: xcodebuild-log
+
+# ---------------------------------------------------------------------------
+# Workflows
+# ---------------------------------------------------------------------------
+workflows:
+  # Weekly heavy jobs. Wire via Project Settings > Triggers > Scheduled
+  # Pipelines (Mondays 06:00 UTC = 02:00 ET), passing `run-weekly=true`.
+  # Docs: https://circleci.com/docs/scheduled-pipelines/
+  weekly:
+    when: << pipeline.parameters.run-weekly >>
+    jobs:
+      - knip
+      - sqlfluff-full
+      - squawk-migrations
+      - npm-audit
+      - stryker-coachhelm
+
+  # iOS compile verification — runs on every PR that touches ios/**,
+  # capacitor.config.ts, or any Capacitor plugin in package.json, plus
+  # on every push to main. Keeps the iOS app green without paying GHA
+  # macOS rates.
+  ios:
+    when:
+      not: << pipeline.parameters.run-weekly >>
+    jobs:
+      - ios-compile:
+          filters:
+            branches:
+              only:
+                - main
+                - /release\/.*/
+                - /ios\/.*/
+                - /capacitor\/.*/
