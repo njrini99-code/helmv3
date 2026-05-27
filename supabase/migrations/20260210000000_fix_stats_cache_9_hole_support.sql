@@ -2,6 +2,8 @@
 -- instead of hardcoding 18 holes per round. This ensures 9-hole rounds
 -- produce correct one-putt % and three-putt % calculations.
 
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS holes_played INTEGER DEFAULT 18;
+
 -- =============================================================================
 -- 1. Replace the trigger function with corrected holes calculation
 -- =============================================================================
