@@ -187,6 +187,15 @@ COMMENT ON INDEX idx_golf_team_members_active IS
 -- GOLF_QUALIFIER_ENTRIES COMPOSITE INDEXES
 -- ============================================================================
 
+-- Production has a `score` column used by the leaderboard index below. Fresh
+-- replay only has the earlier `total_score` column from migration 024.
+ALTER TABLE golf_qualifier_entries ADD COLUMN IF NOT EXISTS score INTEGER;
+
+UPDATE golf_qualifier_entries
+SET score = total_score
+WHERE score IS NULL
+  AND total_score IS NOT NULL;
+
 -- Leaderboard index: qualifier_id sorted by score for rankings
 -- Covers: Qualifier leaderboard displays, entry lookups
 -- Example queries:
