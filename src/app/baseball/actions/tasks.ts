@@ -928,6 +928,8 @@ export async function seedDefaultTemplates(
       return { success: false, error: 'Failed to seed templates' };
     }
 
+    revalidatePath('/baseball/dashboard/tasks');
+    revalidatePath('/baseball/dashboard/tasks/templates');
     return { success: true };
   } catch (error) {
     await logServerError(`[seedDefaultTemplates Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'tasks.seedDefaultTemplates' });

@@ -38,6 +38,7 @@ export interface PlayerPeekData {
 /**
  * Fetch player data for the peek panel preview.
  * Returns essential info for quick view without full profile load.
+ * SEMGREP-ALLOW: read endpoint; engagement-event insert is fire-and-forget telemetry, no UI cache to invalidate
  */
 export async function getPlayerPeekData(playerId: string): Promise<{
   success: boolean;

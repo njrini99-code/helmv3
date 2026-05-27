@@ -3150,6 +3150,7 @@ export async function dismissComposedInsight(
  * Lightweight per-player insight generation triggered after a round is submitted.
  * Runs the V2 engine for just one player and stores any new insights.
  * Designed to be called fire-and-forget (errors are logged, not thrown).
+ * SEMGREP-ALLOW: fire-and-forget post-response; caller submitGolfRoundComprehensive already revalidates dashboards
  */
 export async function triggerPlayerInsightsAfterRound(
   playerId: string

@@ -409,9 +409,6 @@ export async function saveBoxScoreBatting(
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
 
-  // Delete existing batting lines for this game before re-inserting
-  await (supabase as any).from('baseball_box_score_batting').delete().eq('game_id', gameId);
-
   const rows = battingLines.map((line) => {
     const rates = computeBattingRates(line);
     return {
@@ -441,10 +438,33 @@ export async function saveBoxScoreBatting(
     };
   });
 
-  const { error } = await (supabase as any).from('baseball_box_score_batting').insert(rows);
+  // Rule #7: upsert by (game_id, player_id) instead of delete-then-insert so a
+  // transient failure never wipes the existing box score. Then prune any
+  // players that were removed from the new list.
+  const { error: upsertError } = await (supabase as any)
+    .from('baseball_box_score_batting')
+    .upsert(rows, { onConflict: 'game_id,player_id' });
 
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+  if (upsertError) return { success: false, error: sanitizeDbError(upsertError, 'games') };
 
+  const keepPlayerIds = battingLines.map((line) => line.player_id);
+  if (keepPlayerIds.length > 0) {
+    const { error: pruneError } = await (supabase as any)
+      .from('baseball_box_score_batting')
+      .delete()
+      .eq('game_id', gameId)
+      .not('player_id', 'in', `(${keepPlayerIds.map((id) => `"${id}"`).join(',')})`);
+    if (pruneError) return { success: false, error: sanitizeDbError(pruneError, 'games') };
+  } else {
+    const { error: pruneError } = await (supabase as any)
+      .from('baseball_box_score_batting')
+      .delete()
+      .eq('game_id', gameId);
+    if (pruneError) return { success: false, error: sanitizeDbError(pruneError, 'games') };
+  }
+
+  revalidatePath('/baseball/dashboard/stats');
+  revalidateStatsPaths();
   return { success: true };
 }
 
@@ -466,8 +486,6 @@ export async function saveBoxScorePitching(
 
   const hasAccess = await verifyTeamAccess(supabase, coach.id, game.team_id);
   if (!hasAccess) return { success: false, error: 'Access denied' };
-
-  await (supabase as any).from('baseball_box_score_pitching').delete().eq('game_id', gameId);
 
   const rows = pitchingLines.map((line) => {
     const rates = computePitchingRates(line);
@@ -492,10 +510,32 @@ export async function saveBoxScorePitching(
     };
   });
 
-  const { error } = await (supabase as any).from('baseball_box_score_pitching').insert(rows);
+  // Rule #7: upsert by (game_id, player_id) instead of delete-then-insert so a
+  // transient failure never wipes the existing pitching line.
+  const { error: upsertError } = await (supabase as any)
+    .from('baseball_box_score_pitching')
+    .upsert(rows, { onConflict: 'game_id,player_id' });
 
-  if (error) return { success: false, error: sanitizeDbError(error, 'games') };
+  if (upsertError) return { success: false, error: sanitizeDbError(upsertError, 'games') };
 
+  const keepPlayerIds = pitchingLines.map((line) => line.player_id);
+  if (keepPlayerIds.length > 0) {
+    const { error: pruneError } = await (supabase as any)
+      .from('baseball_box_score_pitching')
+      .delete()
+      .eq('game_id', gameId)
+      .not('player_id', 'in', `(${keepPlayerIds.map((id) => `"${id}"`).join(',')})`);
+    if (pruneError) return { success: false, error: sanitizeDbError(pruneError, 'games') };
+  } else {
+    const { error: pruneError } = await (supabase as any)
+      .from('baseball_box_score_pitching')
+      .delete()
+      .eq('game_id', gameId);
+    if (pruneError) return { success: false, error: sanitizeDbError(pruneError, 'games') };
+  }
+
+  revalidatePath('/baseball/dashboard/stats');
+  revalidateStatsPaths();
   return { success: true };
 }
 

@@ -292,6 +292,7 @@ export async function ensurePlayerRecord() {
       return { success: false, error: insertError.message };
     }
 
+    revalidatePath('/golf/player');
     return { success: true, playerId: player.id, onboardingCompleted: false };
   } catch (error) {
     await logServerError(`[ensurePlayerRecord] Error: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.ensurePlayerRecord' });

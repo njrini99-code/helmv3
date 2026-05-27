@@ -439,6 +439,8 @@ export async function recalculatePlayerAggregates(
     .from('baseball_player_aggregates')
     .upsert(aggregates, { onConflict: 'player_id' });
 
+  revalidatePath('/baseball/dashboard/stats');
+  revalidatePath(`/baseball/dashboard/players/${playerId}`);
   return { success: true };
 }
 

@@ -11,6 +11,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 
@@ -265,6 +266,8 @@ export async function markAnnouncementsSeen(): Promise<ActionResult> {
 
     if (error) return { success: false, error: 'Failed to update notification state' };
 
+    revalidatePath('/golf/dashboard/hub');
+    revalidatePath('/golf/dashboard/announcements');
     return { success: true };
   } catch (error) {
     await logServerError(
@@ -311,6 +314,8 @@ export async function markTravelSeen(): Promise<ActionResult> {
 
     if (error) return { success: false, error: 'Failed to update notification state' };
 
+    revalidatePath('/golf/dashboard/hub');
+    revalidatePath('/golf/dashboard/travel');
     return { success: true };
   } catch (error) {
     await logServerError(

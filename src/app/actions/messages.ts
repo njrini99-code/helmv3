@@ -162,6 +162,7 @@ export async function sendMessage({
 
     // NOTE: Removed revalidatePath calls - messages page uses real-time subscriptions
     // Revalidation was causing unnecessary page reloads on every message send
+    // SEMGREP-ALLOW: realtime-subscribed messages UI; revalidate would cause reload loop
 
     return { success: true };
   } catch (err) {
@@ -368,6 +369,7 @@ export async function markBaseballMessagesAsRead(conversationId: string) {
 }
 
 // Golf-specific exports (maintain existing function signatures)
+// SEMGREP-ALLOW: realtime-subscribed messages + notifications UI; revalidate would cause reload loop
 export async function sendGolfMessage(conversationId: string, content: string) {
   const result = await sendMessage({ conversationId, content, sport: 'golf', createNotifications: false });
 
