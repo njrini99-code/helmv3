@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "check:env": "node scripts/check-required-env.mjs",
+    "check:ledger": "node scripts/check-migration-ledger.mjs",
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",
