@@ -4,6 +4,8 @@
 
 BEGIN;
 
+ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS score_to_par INTEGER;
+
 -- =============================================================================
 -- Issue 1: Score Mismatch (40 of 61 rounds)
 --
