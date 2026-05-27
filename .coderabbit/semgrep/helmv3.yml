@@ -6,6 +6,13 @@
 #   ERROR   — blocks the pre-merge gate. Use only for security / data-loss.
 #   WARNING — surfaces as a review comment; reviewer can resolve.
 #   INFO    — nudges, doesn't block.
+#
+# Scoping policy:
+#   `paths.exclude` globs use the Semgrepignore v2 convention. Patterns
+#   without a `/` are interpreted as filename-only globs anchored anywhere;
+#   patterns with a `/` are anchored at the scan root unless they start
+#   with `**/`. When in doubt, prefix with `**/` to match the path
+#   anywhere in the tree.
 
 rules:
   # ---------------------------------------------------------------------------
@@ -29,15 +36,24 @@ rules:
               regex: "(?i).*service.role.*"
     paths:
       include:
-        - src/
-        - app/
+        - "**/src/"
+        - "**/app/"
       exclude:
-        - "src/lib/supabase/admin*"
-        - "src/lib/supabase/service*"
-        - "src/app/api/**/admin/**"
-        - "src/app/api/admin/**"
-        - "scripts/**"
-        - "supabase/functions/**"
+        # Admin-only wrappers (canonical service-role holders)
+        - "**/src/lib/supabase/admin*"
+        - "**/src/lib/supabase/service*"
+        - "**/src/app/api/**/admin/**"
+        - "**/src/app/api/admin/**"
+        # Server-only auth/notification fan-out that legitimately reads
+        # across users via service role (mirrors ast-grep exclusions).
+        - "**/src/lib/auth/supabase-rate-limit.ts"
+        - "**/src/lib/notifications/push.ts"
+        # Scripts and Edge Functions never ship to the browser.
+        - "**/scripts/**"
+        - "**/supabase/functions/**"
+        # SQL DDL is not a browser bundle.
+        - "**/supabase/migrations/**"
+        - "**/supabase/scripts/**"
 
   # ---------------------------------------------------------------------------
   # SECURITY — never log Supabase JWTs or session tokens
@@ -70,7 +86,7 @@ rules:
       before any .from()/rpc() call.
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
+        - "**/src/app/**/actions/**/*.ts"
     patterns:
       - pattern-either:
           - pattern: |
@@ -111,8 +127,8 @@ rules:
       See memory note "GolfHelm — no destructive writes".
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
-        - "src/lib/**/*.ts"
+        - "**/src/app/**/actions/**/*.ts"
+        - "**/src/lib/**/*.ts"
     pattern-either:
       - pattern: |
           $X.from($T).delete()...
@@ -153,8 +169,8 @@ rules:
       Use `@/lib/supabase/client` in client components.
     paths:
       include:
-        - "src/components/**/*.tsx"
-        - "src/app/**/*.tsx"
+        - "**/src/components/**/*.tsx"
+        - "**/src/app/**/*.tsx"
     pattern-either:
       - pattern: |
           'use client'
@@ -177,7 +193,7 @@ rules:
       stale data until the next full reload.
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
+        - "**/src/app/**/actions/**/*.ts"
     patterns:
       - pattern-either:
           - pattern: |
@@ -219,13 +235,25 @@ rules:
 
   # ---------------------------------------------------------------------------
   # SQL — RLS-bypass via SECURITY DEFINER without search_path lock
+  #
+  # TODO(security-audit-followup): Legacy numbered migrations
+  # (`supabase/migrations/0??_*.sql`, files 001-069) ship pre-cutover to
+  # the timestamp-prefixed format and contain SECURITY DEFINER functions
+  # that pre-date this rule. They cannot be retroactively edited without
+  # breaking migration history; the correct fix is a dedicated security
+  # audit PR that recreates each function with `SET search_path = ''`
+  # (per Rule #6 in CLAUDE.md). Excluding the legacy range here is a
+  # scoped deferral. Timestamp-prefixed migrations (`20*`) remain in
+  # scope so any new SECURITY DEFINER function is caught at PR time.
   # ---------------------------------------------------------------------------
   - id: helmv3-security-definer-without-search-path
     languages: [generic]
     paths:
       include:
-        - "supabase/migrations/**/*.sql"
-        - "supabase/functions/**/*.sql"
+        - "**/supabase/migrations/**/*.sql"
+        - "**/supabase/functions/**/*.sql"
+      exclude:
+        - "**/supabase/migrations/0??_*.sql"
     severity: ERROR
     message: >
       SECURITY DEFINER functions must pin `SET search_path = ''` (or
@@ -238,12 +266,23 @@ rules:
 
   # ---------------------------------------------------------------------------
   # SQL — new table without RLS enable
+  #
+  # TODO(security-audit-followup): Legacy numbered migrations
+  # (`supabase/migrations/0??_*.sql`) created tables before this rule
+  # existed; many enable RLS in later consolidated migrations
+  # (e.g. 034_all_rls_policies.sql) rather than in the same file.
+  # Retroactive same-file fixes would corrupt migration history.
+  # Timestamp-prefixed migrations (`20*`) remain in scope — every new
+  # `CREATE TABLE` ships with `ENABLE ROW LEVEL SECURITY` + a
+  # `CREATE POLICY` in the same file (CLAUDE.md Rule #6).
   # ---------------------------------------------------------------------------
   - id: helmv3-create-table-without-rls
     languages: [generic]
     paths:
       include:
-        - "supabase/migrations/**/*.sql"
+        - "**/supabase/migrations/**/*.sql"
+      exclude:
+        - "**/supabase/migrations/0??_*.sql"
     severity: ERROR
     message: >
       New table created without `ENABLE ROW LEVEL SECURITY` in the same
@@ -284,5 +323,24 @@ rules:
       - pattern-regex: "eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}"
     paths:
       include:
-        - "tools/**/*.py"
-        - "scripts/**/*.py"
+        - "**/tools/**/*.py"
+        - "**/scripts/**/*.py"
+      exclude:
+        # Test fixtures and mocks legitimately use placeholder URLs/keys.
+        - "**/tools/**/test_*.py"
+        - "**/tools/**/*_test.py"
+        - "**/tools/**/tests/**"
+        - "**/tools/**/__tests__/**"
+        - "**/tools/**/mock_*.py"
+        - "**/tools/**/*_mock.py"
+        - "**/tools/**/mocks/**"
+        - "**/tools/**/fixtures/**"
+        - "**/tools/**/conftest.py"
+        - "**/scripts/**/test_*.py"
+        - "**/scripts/**/*_test.py"
+        - "**/scripts/**/tests/**"
+        - "**/scripts/**/__tests__/**"
+        - "**/scripts/**/mock_*.py"
+        - "**/scripts/**/*_mock.py"
+        - "**/scripts/**/mocks/**"
+        - "**/scripts/**/fixtures/**"
