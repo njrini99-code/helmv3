@@ -279,6 +279,17 @@ npm run build        # Production build
 npm run docs:regen   # Regenerate memory/glossary.md + memory/projects/golfhelm.md inventory
 npm run docs:check   # CI guard — fails if inventory is out of sync
 
+# Tests (Vitest workspace split by file naming)
+npm test                  # unit only (fast inner loop)
+npm run test:all          # every project (unit + integration + rls)
+npm run test:integration  # *.integration.test.{ts,tsx}
+npm run test:rls          # *.rls.test.{ts,tsx}
+npm run test:e2e          # Playwright (also runs in GHA on every PR)
+
+# Quality (one-shot)
+npm run evals             # Promptfoo LLM eval — needs ANTHROPIC_API_KEY or OPENAI_API_KEY
+npm run lighthouse        # Lighthouse CI against PREVIEW_URL (or localhost:3000)
+
 # Inngest (durable workflows — replaces scattered cron + retry loops)
 npx inngest-cli@latest dev  # Local dev server on :8288 (auto-discovers /api/inngest)
 
@@ -328,6 +339,23 @@ Approve and squash-merge.
   command palettes at `src/components/CommandPalette.tsx` and
   `src/components/golf/CommandPalette.tsx`; animated stat numbers via
   `src/components/ui/animated-number.tsx` (with mount-roll stagger).
+- **fast-check** (property-based testing) — example suite at
+  `src/lib/coachhelm/v2/shot-analysis/__tests__/shot-level-sg.property.test.ts`.
+  Pattern: generate 100s of inputs per invariant, shrink failures to
+  minimal repro. Best fit for SG calculations, qualifier scoring, state
+  machine transitions.
+- **@axe-core/playwright** (a11y in E2E) — `e2e/accessibility.spec.ts`
+  audits the public routes (landing, login, signup) against WCAG 2.1
+  AA + WCAG 2.2 AA. Extend per-route as we add seeded auth fixtures.
+- **Promptfoo** (LLM evals) — config at `evals/round-review.yaml`.
+  Run via `npm run evals` locally; runs weekly in CircleCI's
+  `promptfoo-evals` job. Catches silent prompt drift between deploys.
+- **Lighthouse CI** — config at `lighthouserc.cjs`, runs against
+  Vercel preview URLs in CircleCI's `lighthouse-preview` job on
+  every push. a11y + CLS are hard errors; perf is a warning.
+- **Sentry Session Replay** — already wired in
+  `src/instrumentation-client.ts`. 100% sample on errors, 10% session
+  sample in prod, 0% in dev. `maskAllText` on by default.
 
 ---
 

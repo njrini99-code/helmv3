@@ -1,0 +1,126 @@
+# Promptfoo eval — CoachHelm round-review composer
+#
+# Catches silent prompt drift between deploys. Run in CircleCI weekly
+# (.circleci/config.yml > promptfoo-evals job) so a prompt regression
+# surfaces within a week instead of when a player complains.
+#
+# Run locally:
+#   ANTHROPIC_API_KEY=sk-ant-... npx promptfoo eval -c evals/round-review.yaml
+#   npx promptfoo view
+#
+# Docs: https://www.promptfoo.dev/docs/getting-started/
+#
+# IMPORTANT: this file is a STARTING POINT — the prompt below is a
+# placeholder approximation of the real composeRoundReview prompt
+# (which lives in src/lib/coachhelm/v2/composers/). Replace the
+# `prompts:` block with the actual prompt template, then expand the
+# `tests:` block to cover every assertion in
+# docs/v3-testing-standards.md "LLM Layer (W30+)".
+#
+# Required CI env (or local):
+#   ANTHROPIC_API_KEY  — for Claude provider
+#   OPENAI_API_KEY     — optional, for comparison runs
+
+description: "CoachHelm round-review composer — citation + tone + safety evals"
+
+# Use a small sample size in CI to keep costs bounded. Override locally
+# with `npx promptfoo eval ... -j 5` for parallel runs.
+prompts:
+  - |
+    You are CoachHelm, the AI golf coach for {{player_name}}'s college team.
+    Below is the data for a round they just completed.
+
+    Round data:
+    - Score: {{score}} ({{score_to_par}} to par)
+    - Strokes gained total: {{sg_total}}
+    - SG breakdown: off-tee {{sg_ott}}, approach {{sg_app}}, around-green {{sg_arg}}, putting {{sg_putt}}
+    - Notable shots: {{notable_shots}}
+
+    Write a 3-paragraph review:
+    1. Headline finding (the single most important thing).
+    2. What went well — cite specific shots from the data.
+    3. The one thing to work on this week — cite specific shots.
+
+    Every claim must cite a specific shot or stat from the data above.
+    Never invent data. If the data is insufficient for a claim, say so.
+
+providers:
+  - id: anthropic:messages:claude-opus-4-7
+    config:
+      max_tokens: 800
+      temperature: 0.4
+  # Uncomment for cross-provider comparison:
+  # - id: anthropic:messages:claude-sonnet-4-6
+  # - id: openai:gpt-4o
+
+tests:
+  - description: "Citation gate — every claim references real data"
+    vars:
+      player_name: "Alex Chen"
+      score: 74
+      score_to_par: "+2"
+      sg_total: -1.2
+      sg_ott: 0.3
+      sg_app: -1.8
+      sg_arg: 0.1
+      sg_putt: 0.2
+      notable_shots: "Hole 7 — 165 yd approach finished 35 ft from pin. Hole 14 — drive into rough, recovery to 12 ft."
+    assert:
+      - type: contains-any
+        value: ["165", "approach", "Hole 7", "Hole 14"]
+      - type: latency
+        threshold: 15000 # 15s p95 — anything slower is a CoachHelm UX problem
+      - type: llm-rubric
+        value: >
+          The response cites specific shots, distances, or holes from
+          the data. It does not invent statistics not present in the
+          input. The tone is direct and technical, not flowery. The
+          three paragraphs are clearly distinguishable (headline,
+          strengths, focus).
+
+  - description: "Insufficient data — should say so, not hallucinate"
+    vars:
+      player_name: "Alex Chen"
+      score: 78
+      score_to_par: "+6"
+      sg_total: -2.4
+      sg_ott: 0
+      sg_app: 0
+      sg_arg: 0
+      sg_putt: 0
+      notable_shots: ""
+    assert:
+      - type: not-contains-any
+        # No hole numbers or distances should appear since none were provided
+        value: ["Hole 1", "Hole 2", "165 yd", "200 yd"]
+      - type: llm-rubric
+        value: >
+          The response acknowledges that no specific shot data was
+          provided. It does NOT invent shot-level details, distances,
+          or hole numbers. It may still discuss the overall SG total
+          since that was provided.
+
+  - description: "Tone — direct technical coach, not motivational speaker"
+    vars:
+      player_name: "Alex Chen"
+      score: 71
+      score_to_par: "-1"
+      sg_total: 2.1
+      sg_ott: 1.2
+      sg_app: 0.5
+      sg_arg: 0.1
+      sg_putt: 0.3
+      notable_shots: "Drove the green on Hole 9 (320 yd). Stuck a 7-iron to 4 ft on Hole 12."
+    assert:
+      - type: llm-rubric
+        value: >
+          The response avoids excessive cheerleading ("amazing!",
+          "fantastic!", multiple exclamation marks). It reads like
+          notes from a PGA-level coach reviewing a round, not a
+          motivational app. Acknowledges the good play factually.
+
+# Future tests to add when the real prompt is wired in:
+#   - Regenerate-once: simulate a verification failure → assert second call
+#   - Budget exhaustion: assert fallback-to-template path is reached
+#   - Prompt-snapshot: pin the system prompt and fail on drift
+#   - Cross-provider parity: same data → both providers cite the same shots
