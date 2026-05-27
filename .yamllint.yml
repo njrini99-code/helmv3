@@ -1,0 +1,43 @@
+---
+# Repo-wide yamllint config. Mirrors the inline rules that were embedded
+# in .github/workflows/review-gate.yml's yamllint job, plus excludes for
+# generated/vendored YAML that should not be linted.
+extends: default
+
+rules:
+  line-length:
+    max: 200
+  document-start: disable
+  truthy:
+    check-keys: false
+
+ignore: |
+  node_modules/
+  .next/
+  dist/
+  build/
+  out/
+  coverage/
+  .vercel/
+  .turbo/
+  playwright-report/
+  test-results/
+  .tmp-screenshots/
+  archive/
+  supabase/migrations_archive/
+  ios/App/Pods/
+  ios/DerivedData/
+  ios/App/build/
+  .worktrees/
+  .full-review/
+  .full-review-archive-*/
+  .full-review-2026-*/
+  .full-stack-feature/
+  .full-stack-feature-archived-*/
+  # Generated lockfile — don't lint
+  **/pnpm-lock.yaml
+  # Playwright a11y snapshots committed at repo root
+  *-snapshot.yml
+  *-snapshot2.yml
+  # Playwright MCP scratch directory (gitignored but historically tracked)
+  .playwright-mcp/

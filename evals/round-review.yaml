@@ -49,9 +49,9 @@ providers:
     config:
       max_tokens: 800
       temperature: 0.4
-  # Uncomment for cross-provider comparison:
-  # - id: anthropic:messages:claude-sonnet-4-6
-  # - id: openai:gpt-4o
+      # Uncomment for cross-provider comparison:
+      # - id: anthropic:messages:claude-sonnet-4-6
+      # - id: openai:gpt-4o
 
 tests:
   - description: "Citation gate — every claim references real data"
@@ -69,7 +69,7 @@ tests:
       - type: contains-any
         value: ["165", "approach", "Hole 7", "Hole 14"]
       - type: latency
-        threshold: 15000 # 15s p95 — anything slower is a CoachHelm UX problem
+        threshold: 15000  # 15s p95 — anything slower is a CoachHelm UX problem
       - type: llm-rubric
         value: >
           The response cites specific shots, distances, or holes from

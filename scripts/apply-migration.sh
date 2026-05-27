@@ -22,7 +22,8 @@ fi
 if [ -z "$SUPABASE_PROJECT_ID" ]; then
   # Try to get it from .env.local
   if [ -f .env.local ]; then
-    export SUPABASE_PROJECT_ID=$(grep -E "^SUPABASE_PROJECT_ID=" .env.local | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+    SUPABASE_PROJECT_ID=$(grep -E "^SUPABASE_PROJECT_ID=" .env.local | cut -d '=' -f2 | tr -d '"' | tr -d "'" | tr -d ' ')
+    export SUPABASE_PROJECT_ID
     
     # If still not set, try to extract from NEXT_PUBLIC_SUPABASE_URL
     if [ -z "$SUPABASE_PROJECT_ID" ]; then

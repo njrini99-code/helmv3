@@ -96,8 +96,9 @@ jobs:
           python-version: "3.12"
       - run: pip install yamllint
       - name: Run yamllint
-        run: |
-          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' .
+        # Rules + ignore patterns live in .yamllint.yml at repo root.
+        # Static command, no untrusted input.
+        run: yamllint -s .
 
   shellcheck:
     name: shellcheck
@@ -145,7 +146,12 @@ jobs:
         run: |
           if [ -d tools ] && find tools -name "*.py" -print -quit | grep -q .; then
             pylint --disable=C,R --exit-zero tools/ | tee pylint.log
-            ! grep -E "^[EF][0-9]+" pylint.log
+            # Fail the job if pylint emitted any Error- or Fatal-level findings.
+            # Using an explicit if guards against `!`-skipping errexit (SC2251).
+            if grep -E "^[EF][0-9]+" pylint.log; then
+              echo "::error::pylint reported E or F level findings"
+              exit 1
+            fi
           else
             echo "No Python files to lint."
           fi
