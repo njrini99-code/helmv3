@@ -68,6 +68,7 @@ export default function HelmSplashAnimation() {
         }, 800);
       }, 600);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `scope` from useAnimate() returns a stable ref; framer-motion guarantees identity across renders.
   }, [phase, animate, prefersReducedMotion]);
 
   return (
@@ -211,6 +212,7 @@ function SimpleFlipper({ currentText, isFlipping }: { currentText: string; isFli
       opacity: [0, 0.5, 0],
       transition: { duration: 0.6, ease: "easeInOut" },
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `animateFlip`, `animateShadow`, `flipScope`, `shadowScope` are all stable refs from useAnimate(); framer-motion guarantees identity across renders.
   }, [isFlipping, currentText]);
 
   return (

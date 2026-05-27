@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../crm-config';
@@ -60,11 +60,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
 
   const supabase = createClient();
 
-  useEffect(() => {
-    fetchLogs();
-  }, [coach.id]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -80,7 +76,12 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is the browser-singleton from createClient(); identity is stable across renders even though TS can't prove it.
+  }, [coach.id]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const handleAddLog = async (e: React.FormEvent) => {
     e.preventDefault();

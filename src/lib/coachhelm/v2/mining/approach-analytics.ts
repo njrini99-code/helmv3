@@ -29,7 +29,6 @@ import { calcConfidence } from '../insights/types';
 // per-bucket insights don't have a matching v3 metric to read from. W22
 // ApproachMissGenerator writes its own standing rows; this import is
 // the hook for when those rows exist.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { loadStandingForInsightEvidence as _loadStandingForApproach } from '../insights/standing-injection';
 
 type Supabase = SupabaseClient<Database>;

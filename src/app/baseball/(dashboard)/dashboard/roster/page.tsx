@@ -111,7 +111,6 @@ export default function RosterPage() {
         if (data?.id) setResolvedTeamId(data.id);
         else setLoading(false);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeamId, authLoading, coach?.organization_id]);
 
   useEffect(() => {

@@ -254,6 +254,7 @@ export default function CampsPage() {
     }
 
     fetchCamps();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `supabase` is stable across renders (useRef at line 203). Adding it would noise the dep array without changing behavior.
   }, [coach, player, isCoach, isPlayer]);
 
   const handleRegister = async (campId: string) => {

@@ -170,7 +170,6 @@ export function logError(
   if (isStaleServerActionError(error)) {
     if (!staleActionWarnedThisSession) {
       staleActionWarnedThisSession = true;
-      // eslint-disable-next-line no-console
       console.warn('[error-logging] stale server action detected — client will reload to pick up the new bundle');
     }
     return;

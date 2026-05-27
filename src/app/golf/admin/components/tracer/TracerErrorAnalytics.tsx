@@ -228,6 +228,7 @@ export default function TracerErrorAnalytics({
           return 0;
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `severityOrder` is a module-scope const lookup table; identity is stable across renders.
   }, [currentQueueIncidents, feedMode, queueTab, recentCutoff, sortBy]);
 
   const filteredDailyData = useMemo(() => {

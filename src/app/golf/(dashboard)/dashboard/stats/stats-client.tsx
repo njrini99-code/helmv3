@@ -487,7 +487,7 @@ export default function StatsClient({
     if (!detailedStats || detailedStats.roundsPlayed < 3) return null;
     try {
       return generateStatisticalStrengthsWeaknesses(detailedStats);
-    } catch (err) {
+    } catch (_err) {
       // Strengths/weaknesses computation failed — degrade gracefully
       return null;
     }
@@ -621,7 +621,7 @@ export default function StatsClient({
       const stats = await getDetailedStats(playerId, roundId, filter || undefined);
       detailedStatsCache.current.set(cacheKey, stats);
       setDetailedStats(stats);
-    } catch (error) {
+    } catch (_error) {
       setStatsError('Failed to load stats. Please try again.');
     } finally {
       loadingDetailedRef.current = false;
@@ -641,7 +641,7 @@ export default function StatsClient({
       setCourseBreakdown(courses);
       setWorstHoleData(holes);
       setTrendData(trends);
-    } catch (error) {
+    } catch (_error) {
       setStatsError('Failed to load analytics data.');
     }
   }, []);
@@ -675,7 +675,7 @@ export default function StatsClient({
       if (latestSprayChartRequest.current === cacheKey) {
         setSprayChartData(response);
       }
-    } catch (error) {
+    } catch (_error) {
       // Spray chart load failed — handled by null state below
       if (latestSprayChartRequest.current === cacheKey) {
         setSprayChartData(null);

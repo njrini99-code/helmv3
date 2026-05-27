@@ -198,7 +198,6 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   currentHoleIndexRef.current = currentHoleIndex;
   const isSubmittingRef = useRef(false);
   const serverSaveInProgressRef = useRef(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pendingServerSaveRef = useRef<{ shots: ShotRecord[]; holeIndex: number; roundData?: PartialRoundData } | null>(null);
   const consecutiveSaveFailuresRef = useRef(0);
   const lastAutoSaveWarningRef = useRef(0); // Timestamp to throttle warning toasts
