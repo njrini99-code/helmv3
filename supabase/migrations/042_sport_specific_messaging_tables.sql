@@ -11,7 +11,7 @@
 -- Baseball Conversations
 CREATE TABLE IF NOT EXISTS baseball_conversations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_by TEXT NOT NULL,
+  created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title TEXT,
   is_team_chat BOOLEAN DEFAULT FALSE,
   team_id UUID REFERENCES baseball_teams(id) ON DELETE SET NULL,
@@ -376,7 +376,7 @@ BEGIN
     c.id,
     c.created_at,
     c.updated_at,
-    c.created_by AS creator_id,
+    c.created_by::text AS creator_id,
     (
       SELECT m.content FROM baseball_messages m
       WHERE m.conversation_id = c.id
