@@ -370,7 +370,7 @@ RoundData[] = [
 supabase db push
 
 # Production (Supabase Cloud)
-SUPABASE_PROJECT_ID=dgvlnelygibgrrjehbyc supabase db push
+SUPABASE_PROJECT_ID=qmnssrrolpinvwjjnufo supabase db push
 ```
 
 **To verify migration applied:**

@@ -615,7 +615,7 @@ After applying the migration:
 1. **Test Anonymous Access**
    ```bash
    # Should return 0 rows for players
-   curl -X GET "https://dgvlnelygibgrrjehbyc.supabase.co/rest/v1/players?select=*&limit=1" \
+   curl -X GET "https://qmnssrrolpinvwjjnufo.supabase.co/rest/v1/players?select=*&limit=1" \
      -H "apikey: ${ANON_KEY}"
    ```
 

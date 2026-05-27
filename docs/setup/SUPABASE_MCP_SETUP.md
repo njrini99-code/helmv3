@@ -4,8 +4,8 @@ This guide will help you configure Claude to access your Supabase project direct
 
 ## Your Supabase Project Details
 
-- **Project Reference**: `dgvlnelygibgrrjehbyc`
-- **Project URL**: `https://dgvlnelygibgrrjehbyc.supabase.co`
+- **Project Reference**: `qmnssrrolpinvwjjnufo`
+- **Project URL**: `https://qmnssrrolpinvwjjnufo.supabase.co`
 
 ## Setup Steps
 
@@ -19,7 +19,7 @@ Cursor uses an MCP configuration file. Create or update `.cursor/mcp.json` in yo
     "supabase": {
       "url": "https://mcp.supabase.com/mcp",
       "args": {
-        "project_ref": "dgvlnelygibgrrjehbyc"
+        "project_ref": "qmnssrrolpinvwjjnufo"
       }
     }
   }
@@ -56,7 +56,7 @@ If OAuth doesn't work, you can use a Personal Access Token:
        "supabase": {
          "url": "https://mcp.supabase.com/mcp",
          "args": {
-           "project_ref": "dgvlnelygibgrrjehbyc",
+           "project_ref": "qmnssrrolpinvwjjnufo",
            "access_token": "your-pat-token-here"
          }
        }

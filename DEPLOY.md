@@ -67,7 +67,7 @@ In Vercel Dashboard → Your Project → Settings → Environment Variables:
 
 | Variable | Value |
 |----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://dgvlnelygibgrrjehbyc.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://qmnssrrolpinvwjjnufo.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your anon key from Supabase |
 | `NEXT_PUBLIC_APP_URL` | `https://your-app.vercel.app` (update after first deploy) |
 | `NEXT_PUBLIC_APP_NAME` | `Helm Sports Labs` |
