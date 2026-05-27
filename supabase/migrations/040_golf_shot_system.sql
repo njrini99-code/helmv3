@@ -94,7 +94,24 @@ ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_lie_before_check;
 ALTER TABLE golf_shots ADD CONSTRAINT golf_shots_lie_before_check
   CHECK (lie_before IS NULL OR lie_before IN ('tee', 'fairway', 'rough', 'sand', 'green', 'other'));
 
--- result: 'fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' | 'penalty'
+-- result: convert from legacy golf_shot_result enum (excellent | good | ...)
+-- to TEXT to match prod state, where the column was migrated via the
+-- Supabase dashboard to use the new lie-of-rest semantics below. On a
+-- fresh stack the table is empty so the type conversion is free; on prod
+-- the column is already TEXT and the DO block skips. Then apply the
+-- modern CHECK against the new value set.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public'
+      AND table_name='golf_shots'
+      AND column_name='result'
+      AND udt_name='golf_shot_result'
+  ) THEN
+    ALTER TABLE golf_shots ALTER COLUMN result TYPE TEXT USING result::text;
+  END IF;
+END $$;
 ALTER TABLE golf_shots DROP CONSTRAINT IF EXISTS golf_shots_result_check;
 ALTER TABLE golf_shots ADD CONSTRAINT golf_shots_result_check
   CHECK (result IS NULL OR result IN ('fairway', 'rough', 'sand', 'green', 'hole', 'other', 'penalty'));
