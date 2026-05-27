@@ -1,0 +1,63 @@
+prod tables: 175
+src tables : 214
+
+=== Column drift (in PROD, missing from source) ===
+
+  crm_email_templates: missing 1 col(s)
+    - format
+
+TOTAL missing columns: 1 across 1 tables
+
+=== Reverse drift (in SOURCE, not in prod) ===
+  auth_rate_limits: extra in source: created_at, id
+  baseball_camp_registrations: extra in source: attended_at, cancelled_at, registered_at, updated_at
+  baseball_camps: extra in source: end_time, interested_count, location_address, location_city, location_state, price, registration_count, start_time
+  baseball_coach_insights: extra in source: acknowledged_at, description, expires_at, recommendation
+  baseball_coach_philosophy: extra in source: alert_breakout_candidates, alert_performance_decline, alert_plateau, alert_position_opportunities, alert_pressure_gap, alert_streaks, priority_fielding, priority_mental_game, priority_pitching
+  baseball_coaches: extra in source: about, coach_title, college_id, conference, email_contact, primary_color, program_division, recruiting_class_needs, school_city, school_name, school_state, secondary_color, subscription_tier
+  baseball_developmental_plans: extra in source: drills, notes, sent_at
+  baseball_events: extra in source: home_away, is_all_day, is_public, level, location_address, location_city, location_state, location_venue, name, notes, opponent, organization_id, result, score_them, score_us, timezone
+  baseball_player_aggregates: extra in source: avg_exit_velocity, avg_pitch_velocity, career_obp, career_ops, career_slg, development_stage, game_sessions, last_calculated_at, max_exit_velocity, max_pitch_velocity, practice_sessions, season_avg, trend_magnitude
+  baseball_player_comparisons: extra in source: comparison_data, description
+  baseball_player_engagement_events: extra in source: is_anonymous, video_id, view_duration_seconds, viewer_user_id
+  baseball_player_settings: extra in source: is_discoverable, notify_on_eval, notify_on_interest, notify_on_message, notify_on_profile_view, notify_on_watchlist_add, show_gpa, show_location, show_test_scores
+  baseball_player_stats: extra in source: caught_stealing, hit_by_pitch, launch_angle, pitches_thrown, runs_allowed, sacrifice_bunts, sacrifice_flies, spin_rate, strikes_thrown, upload_batch_id
+  baseball_players: extra in source: club_team, commitment_date, committed_to, committed_to_org_id, high_school_id, high_school_org_id, search_vector, subscription_tier
+  baseball_recruiting_interests: extra in source: coach_name, conference, division, last_contact_at, school_name
+  baseball_stat_uploads: extra in source: matched_rows, session_date, session_name, stat_type, total_rows, unmatched_data, unmatched_rows
+  baseball_team_coach_staff: extra in source: joined_at
+  baseball_team_invitations: extra in source: status
+  baseball_team_lineups: extra in source: coach_id
+  baseball_team_members: extra in source: left_at, role
+  baseball_teams: extra in source: age_group, city, invite_code, season_year, state
+  baseball_travel_itineraries: extra in source: created_by_id
+  golf_causal_relationships: extra in source: cause_data, cause_type, effect_data, effect_type, relationship_strength, validated, validated_at
+  golf_coach_insights: extra in source: linked_focus_area_id, linked_task_id
+  golf_coaches: extra in source: team_id
+  golf_coachhelm_settings: extra in source: preferences
+  golf_confidence_calibration: extra in source: accurate_predictions, calibration_score, calibration_type, confidence_bucket, id, period_end, period_start, player_id, team_id, total_predictions
+  golf_conversations: extra in source: is_group
+  golf_courses: extra in source: created_by, default_tee_color, default_tee_name, is_public, total_par, total_yardage, updated_at
+  golf_documents: extra in source: player_visible
+  golf_event_attendance: extra in source: absence_reason, reminder_sent, responded_at, updated_at
+  golf_events: extra in source: course_name, end_date, is_cancelled, is_mandatory, start_date
+  golf_global_patterns: extra in source: description, pattern_name, team_id
+  golf_holes: extra in source: green_in_regulation, penalties, score_to_par
+  golf_insight_generation_log: extra in source: coach_id, error_message, focus_areas_updated, generated_at, generation_type, insights_created, players_analyzed
+  golf_learned_behavior: extra in source: behavior_pattern, behavior_type, coaching_suggestion, confidence, is_positive, last_observed_at, observation_count, player_id, team_id, trigger_conditions, updated_at
+  golf_patterns_v2: extra in source: coach_id, description, evidence, first_detected_at, last_detected_at, outcomes, pattern_name, team_id
+  golf_player_classes: extra in source: academic_year, course_code, course_name, day_of_week, location, semester
+  golf_player_focus_areas: extra in source: focus_area, source_insight_id, target_date
+  golf_player_notification_state: extra in source: coach_assigned_goal, coach_commented, composite_insight, email, engine_suggested_goal, goal_achieved, in_app, new_insight, round_review_ready, standing_percentile_changed, weekly_digest
+  golf_players: extra in source: major, scholarship_percentage, status, team_id, year
+  golf_predictions: extra in source: accuracy, actual_score, event_context, factors, predicted_score, prediction_date, prediction_type, team_id
+  golf_qualifiers: extra in source: holes_per_round, location, num_rounds, show_live_leaderboard, tournament_name
+  golf_round_reviews: extra in source: gap_to_next_position, goal_impacts, linked_focus_area_id, patterns_recurring, player_averages, qualifying_position_after, qualifying_position_before, strokes_gained, team_averages
+  golf_rounds: extra in source: fairways_hit, fairways_total, greens_in_regulation, greens_total, is_verified, round_number, round_status, temperature, total_to_par, verified_at, verified_by, wind_speed
+  golf_shots: extra in source: club, distance_yards, lie
+  golf_tasks: extra in source: created_by, requires_upload, urgency
+  golf_team_coachhelm_settings: extra in source: preferences
+  golf_team_members: extra in source: role
+  golf_validations: extra in source: actual, feedback, is_accurate, predicted, validation_type
+  notifications: extra in source: metadata
+  users: extra in source: sport
