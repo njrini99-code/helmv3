@@ -1,3 +1,4 @@
+import type { InngestFunction } from 'inngest';
 import { inngest } from './client';
 
 /**
@@ -22,9 +23,11 @@ import { inngest } from './client';
  * Example: scheduled health ping. Replace with a real workflow when
  * migrating one of the v3 backfills (W12/W20/W27/W33/W35).
  */
-export const weeklyHealthPing = inngest.createFunction(
-  { id: 'weekly-health-ping' },
-  { cron: '0 14 * * 1' }, // Mondays 14:00 UTC = 10:00 ET
+export const weeklyHealthPing: InngestFunction.Any = inngest.createFunction(
+  {
+    id: 'weekly-health-ping',
+    triggers: [{ cron: '0 14 * * 1' }], // Mondays 14:00 UTC = 10:00 ET
+  },
   async ({ step, logger }) => {
     const ok = await step.run('ping-self', async () => {
       // Replace with a real health check (Supabase ping, Vercel
