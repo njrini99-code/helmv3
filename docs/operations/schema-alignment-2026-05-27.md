@@ -46,7 +46,73 @@ Phase 7 follow-up: `AI_GATEWAY_API_KEY` missing across all envs, but `VERCEL_OID
   - (b) Skip the HCL artifact and use pg_dump as the snapshot format instead.
   - (c) Use Atlas SQL output (works in community: `--format '{{ sql . "  " }}'`) — captured at `/tmp/atlas-schema.sql` (5,204 lines). Less canonical than HCL but functional.
 
-### Diff approach (revised)
+### Diff results (direct-connection analysis, 2026-05-27)
+
+Computed by extracting `CREATE TABLE` targets from both `/tmp/helmv3-prod-schema.sql` (pg_dump) and `supabase/migrations/*.sql`, then taking set differences:
+
+| Bucket | Count | Meaning |
+| --- | --- | --- |
+| Tables in BOTH prod and migrations | 153 | Existing migrations correctly cover these |
+| **Tables in prod only — need alignment migration** | 22 (public) + 7 (storage) | The actual scope of Phase 3.2 |
+| Tables in migration files only — dropped or renamed in prod | 61 | Do NOT recreate; these are intentionally gone (e.g., un-prefixed `coaches/players/events` → `baseball_*`, `golf_event_rsvps` dropped, `developmental_plans` superseded) |
+
+**Prod-only public tables that the alignment migration must `CREATE TABLE IF NOT EXISTS`:**
+
+```
+admin_analytics_events
+admin_api_perf_log
+admin_client_errors
+baseball_camp_registrations
+baseball_camps
+baseball_coaches
+baseball_developmental_plans
+baseball_events
+baseball_player_comparisons
+baseball_player_engagement_events
+baseball_player_settings
+baseball_players
+baseball_recruiting_interests
+baseball_team_coach_staff
+baseball_team_members
+baseball_teams
+baseball_videos
+baseball_watchlists
+email_events
+golf_patterns_v          (may be a view, not a table — verify in dump)
+golf_player_notification_state
+golf_team_coach_staff
+```
+
+The `storage.*` set (buckets, objects, etc.) is Supabase-managed and goes in the separate Phase 3.3 storage migration.
+
+### Column-level drift to also bridge
+
+Per the deep-dive's "Why The Supabase Failure Kept Moving" section, these renames/type-changes must be handled in the alignment migration with `DO $$` guards:
+
+- `golf_rounds.round_status` → `status` (prod has `status`)
+- `golf_documents.player_visible` → `is_public`
+- `golf_shots.shot_type / round_id / hole_number` — add if missing
+- `baseball_conversations.created_by` — UUID type (some migrations had text)
+- `golf_events.status` — enum vs text mismatch
+- `golf_qualifier_entries.score` — add if missing
+- `golf_player_classes.status` — restore if dropped
+
+### Idempotent migration patterns
+
+| Category | Strategy |
+| --- | --- |
+| New tables | `CREATE TABLE IF NOT EXISTS` from the prod dump's DDL |
+| New columns | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` |
+| Renames | `DO $$ BEGIN IF EXISTS(... old column ...) THEN ALTER TABLE ... RENAME; END IF; END $$;` |
+| RLS enable | `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` (idempotent in PG ≥ 9.5) |
+| Policies | `DROP POLICY IF EXISTS` followed by `CREATE POLICY` (replacement pattern) |
+| Indexes | `CREATE INDEX IF NOT EXISTS` |
+| Functions | `CREATE OR REPLACE FUNCTION` |
+| Storage policies | Separate Phase 3.3 migration; same patterns |
+
+The migration will not `DROP` anything on data-bearing tables — additive only.
+
+### Migration approach (revised)
 
 Without Docker-backed replay, the diff strategy becomes: read the prod pg_dump and the on-disk migration files, then construct an idempotent forward-only migration whose effect is "make sure all of prod's objects exist". Statement classes:
 
