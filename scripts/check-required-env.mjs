@@ -14,7 +14,7 @@ export function checkRequiredEnv(env = process.env) {
     }
   }
 
-  if (env['NEXT_PUBLIC_SUPABASE_URL'].includes('placeholder.supabase.co')) {
+  if (/placeholder\.supabase\.co/i.test(env['NEXT_PUBLIC_SUPABASE_URL'])) {
     throw new Error(
       'NEXT_PUBLIC_SUPABASE_URL contains placeholder.supabase.co — set a real Supabase URL'
     );

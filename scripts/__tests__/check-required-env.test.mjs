@@ -46,3 +46,29 @@ test('does not throw in non-Vercel local dev', () => {
     })
   );
 });
+
+test('throws when URL is whitespace-only in production', () => {
+  assert.throws(
+    () =>
+      checkRequiredEnv({
+        VERCEL_ENV: 'production',
+        NEXT_PUBLIC_SUPABASE_URL: '   ',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+      }),
+    /NEXT_PUBLIC_SUPABASE_URL/
+  );
+});
+
+test('throws when URL has uppercase PLACEHOLDER (case-insensitive)', () => {
+  assert.throws(
+    () =>
+      checkRequiredEnv({
+        VERCEL_ENV: 'production',
+        NEXT_PUBLIC_SUPABASE_URL: 'https://PLACEHOLDER.supabase.co',
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: 'anon-key-value',
+        SUPABASE_SERVICE_ROLE_KEY: 'service-role-key-value',
+      }),
+    /placeholder/i
+  );
+});
