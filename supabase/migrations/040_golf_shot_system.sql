@@ -48,6 +48,28 @@ COMMENT ON COLUMN golf_shots.shot_type IS 'tee | approach | around_green | putti
 COMMENT ON COLUMN golf_shots.lie_before IS 'tee | fairway | rough | sand | green | other — see CHECK constraint below.';
 COMMENT ON COLUMN golf_shots.putt_break IS 'left_to_right | right_to_left | straight | multiple — see CHECK constraint below.';
 
+-- Convert `result` from enum to text. In prod this column was changed
+-- to TEXT via dashboard so the wider value set in the CHECK constraint
+-- below ('fairway' | 'rough' | 'sand' | 'green' | 'hole' | 'other' |
+-- 'penalty') would fit. In fresh stacks it's still the original enum
+-- `golf_shot_result` from migration 001 ('excellent' | 'good' |
+-- 'average' | 'poor' | 'miss'), and the constraint below rejects
+-- 'fairway' with SQLSTATE 22P02. Guarded so prod (already TEXT) is a
+-- no-op.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'golf_shots'
+      AND column_name = 'result'
+      AND udt_name = 'golf_shot_result'
+  ) THEN
+    ALTER TABLE golf_shots ALTER COLUMN result TYPE TEXT USING result::text;
+  END IF;
+END $$;
+
 -- Migrate existing distance_unit data to new columns if needed.
 -- Guarded with information_schema so fresh CI databases (which never
 -- had the legacy `distance_unit` column) don't fail at SQLSTATE 42703.
