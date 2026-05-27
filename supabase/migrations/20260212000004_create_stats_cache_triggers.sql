@@ -44,6 +44,10 @@ ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_gir_possible INTEGER;
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS total_penalties INTEGER DEFAULT 0;
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS front_nine INTEGER;
 ALTER TABLE golf_rounds ADD COLUMN IF NOT EXISTS back_nine INTEGER;
+ALTER TABLE golf_holes ADD COLUMN IF NOT EXISTS fairway_hit BOOLEAN;
+ALTER TABLE golf_holes ADD COLUMN IF NOT EXISTS gir BOOLEAN;
+ALTER TABLE golf_holes ADD COLUMN IF NOT EXISTS sand_save BOOLEAN;
+ALTER TABLE golf_holes ADD COLUMN IF NOT EXISTS penalty_strokes INTEGER DEFAULT 0;
 
 -- ============================================================================
 -- 2. ROUND STATS CACHE FUNCTION
