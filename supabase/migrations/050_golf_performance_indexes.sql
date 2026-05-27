@@ -18,6 +18,36 @@
 -- ============================================================================
 
 -- ============================================================================
+-- DASHBOARD-ERA SCHEMA DEFENSIVE FIXES
+-- ============================================================================
+-- The indexes below rely on column shapes that diverge between prod
+-- (dashboard-edited) and a fresh local stack. Specifically:
+--   * golf_events.status and golf_qualifiers.status were converted from
+--     their original enum types to TEXT on prod, allowing new values
+--     ('scheduled' etc) that the original enum didn't have. The WHERE
+--     clauses below use those new values.
+-- These DO blocks convert each column if it's still an enum on local;
+-- on prod (already TEXT) they short-circuit. Fresh-stack tables are
+-- empty at this point so the conversion is free.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='golf_events'
+      AND column_name='status' AND udt_name='golf_event_status'
+  ) THEN
+    ALTER TABLE golf_events ALTER COLUMN status TYPE TEXT USING status::text;
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='golf_qualifiers'
+      AND column_name='status' AND udt_name='golf_qualifier_status'
+  ) THEN
+    ALTER TABLE golf_qualifiers ALTER COLUMN status TYPE TEXT USING status::text;
+  END IF;
+END $$;
+
+-- ============================================================================
 -- GOLF_ROUNDS COMPOSITE INDEXES
 -- ============================================================================
 
