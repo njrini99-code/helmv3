@@ -27,22 +27,16 @@ import {
 } from '@/app/golf/actions/round-review-system';
 import { markReviewAsViewed } from '@/app/golf/actions/round-reviews';
 import {
-  CompletionCard,
-  GoalImpactCard,
-  ReviewScorecard,
-  HighlightsSection,
-  AreasToReviewSection,
-  StrokesGainedSection,
-  ReviewSummary,
   RoundTakeaway,
   V2ReviewSummary,
 } from '@/components/golf/coachhelm/round-review';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   getRoundTakeawayInsight,
   getInsightsForPlayer,
   type EvidenceInsight,
 } from '@/app/golf/actions/insight-delivery';
-import { IconSparkles, IconRefresh } from '@/components/icons';
+import { IconSparkles, IconRefresh, IconGolf } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
@@ -175,9 +169,11 @@ export default function RoundReviewPage() {
   const [takeawayInsight, setTakeawayInsight] = useState<EvidenceInsight | null>(null);
   const [supportingInsights, setSupportingInsights] = useState<EvidenceInsight[]>([]);
 
-  // Use existing CoachHelm hook for V2 features
+  // Use existing CoachHelm hook for V2 features. V1 review object is no
+  // longer rendered on this page (IA audit 2026-05-28 trimmed the dual V1/V2
+  // surface down to V2 only — the W30 LLM round-review card lives in V2);
+  // the hook still returns it for back-compat with `RoundReviewViewer.tsx`.
   const {
-    review: v1Review,
     v2Review,
     isV2Enabled,
     loading: v1Loading,
@@ -475,7 +471,7 @@ export default function RoundReviewPage() {
         </MobileNavHeader>
 
         <div className="max-w-2xl mx-auto px-4 py-6">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="rounded-2xl border border-warm-100 overflow-hidden">
               <div className="bg-primary-50/55 px-6 pt-6 pb-5">
                 <div className="flex flex-col items-center gap-3">
@@ -534,19 +530,22 @@ export default function RoundReviewPage() {
     );
   }
 
-  // No data state
+  // No data state — show the shared EmptyState primitive with a back-to-rounds
+  // recovery action instead of the bare "Round not found" paragraph (IA audit
+  // 2026-05-28 flagged this as a states-fix orphan).
   if (!round) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="text-center py-20">
-          <p className="text-warm-500">Round not found</p>
-          <Link
-            href="/golf/dashboard/rounds"
-            className="text-primary-600 hover:text-primary-700 text-sm mt-2 inline-block"
-          >
-            Back to Rounds
-          </Link>
-        </div>
+        <EmptyState
+          variant="compact"
+          icon={<IconGolf size={32} />}
+          title="Round not found"
+          description="This round may have been deleted, or you may not have access to it. Head back to your rounds list to try another."
+          action={{
+            label: 'Back to Rounds',
+            href: '/golf/dashboard/rounds',
+          }}
+        />
       </div>
     );
   }
@@ -603,8 +602,9 @@ export default function RoundReviewPage() {
       </MobileNavHeader>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-      {/* Content */}
-      <m.div variants={itemVariants} className="space-y-4">
+      {/* Content — 24px rhythm (space-y-6) to match the rest of the product
+          surfaces (IA audit 2026-05-28 normalized this from space-y-4). */}
+      <m.div variants={itemVariants} className="space-y-6">
         {/* W30 LLM round-review prose. Renders the deterministic
             fallback on mount and swaps in Haiku-composed prose once
             the server action resolves. Failure-silent — when the
@@ -649,12 +649,16 @@ export default function RoundReviewPage() {
         />
 
         {/* HERO takeaway — one insight that matters for today.
-            When V2 is enabled we let V2ReviewSummary compose the hero + the
-            AI-prose block + the collapsed "See more analysis" disclosure so
-            the round-review surface reads like a single narrative. When V2
-            is disabled we still render the RoundTakeaway so players without
-            CoachHelm V2 see the hero card on its own. */}
-        {!isV2Enabled && (
+            When V2 is enabled (and `v2Review` resolved) we let V2ReviewSummary
+            compose the hero + the AI-prose block + the collapsed "See more
+            analysis" disclosure so the round-review surface reads like a
+            single narrative. When V2 is unavailable (engine disabled or the
+            review row is still hydrating) we fall back to the standalone
+            hero so the surface is never blank. The legacy V1 prose stack
+            (CompletionCard / GoalImpactCard / HighlightsSection / etc.) was
+            removed in the 2026-05-28 IA audit — V2 is the single source of
+            truth for round-review narrative. */}
+        {!(isV2Enabled && v2Review) && (
           <RoundTakeaway
             insight={takeawayInsight}
             roundScore={roundScoreToPar}
@@ -662,28 +666,13 @@ export default function RoundReviewPage() {
           />
         )}
 
-        {/* Hole-by-hole shot path grid — data-driven (golf_shots), shown
-            for every review regardless of V1/V2 path. */}
+        {/* Hole-by-hole shot path grid — data-driven (golf_shots). */}
         {round.holes && round.holes.length > 0 && (
           <HoleByHoleShotPaths roundId={roundId} holes={round.holes} />
         )}
 
-        {/* Legacy V1 Review Components (fallback — shown when there is no
-            stored review content and V1 has something to say). */}
-        {v1Review && !storedReview?.review_content && (
-          <>
-            <CompletionCard review={v1Review} />
-            <GoalImpactCard impacts={v1Review.goalImpacts} />
-            {round.holes && <ReviewScorecard holes={round.holes} />}
-            <HighlightsSection highlights={v1Review.highlights} />
-            <AreasToReviewSection areas={v1Review.areasToReview} />
-            {v1Review.strokesGained && <StrokesGainedSection strokesGained={v1Review.strokesGained} />}
-          </>
-        )}
-
-        {/* Summary — V2 path composes the hero + supporting cards; V1 falls
-            back to the legacy text summary. */}
-        {isV2Enabled && v2Review ? (
+        {/* V2 narrative — hero + AI prose + collapsed supporting insights. */}
+        {isV2Enabled && v2Review && (
           <V2ReviewSummary
             review={v2Review}
             takeawayInsight={takeawayInsight}
@@ -691,8 +680,6 @@ export default function RoundReviewPage() {
             roundId={roundId}
             roundScore={roundScoreToPar}
           />
-        ) : (
-          v1Review && !storedReview?.review_content && <ReviewSummary review={v1Review} />
         )}
 
         {/* Promote-to-focus-area CTA. One section-level button — the bottom

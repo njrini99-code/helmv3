@@ -18,10 +18,6 @@ import {
   IconFlag,
   IconChartBar,
   IconMessage,
-  IconAirplane,
-  IconFolder,
-  IconClipboardList,
-  IconBell,
   IconSettings,
   IconLogout,
   IconGolf,
@@ -41,46 +37,53 @@ interface NavItem {
   badge?: number;
 }
 
-// Coach navigation
+// =============================================================================
+// IA Discipline — 7 primary + 3 secondary per role (Miller's 7±2)
+// =============================================================================
+// IA audit 2026-05-28 verdict: coach had 10 primary + 4 secondary, player had
+// 9 primary + 5 secondary — both 2× Miller's 7±2. The full surface area is
+// still reachable via the Cmd+K command palette and direct URL; pages are
+// untouched. Only the rail's "noise floor" was cut so the brand can breathe.
+//
+// Selection rule: daily-use destinations stay primary; weekly destinations
+// move to secondary; monthly/admin destinations are Cmd+K only.
+
+// Coach primary nav — 7 daily-use destinations (decisions + flow)
 const coachNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'CoachHelm AI', href: '/golf/dashboard/intelligence', icon: IconSparkles },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
-  { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
   { name: 'Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
-  { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
-  { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
   { name: 'Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
   { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
 ];
 
+// Coach secondary — 3 weekly-use destinations
+// Cmd+K only: Travel, Documents, Tasks, Announcements
 const coachSecondaryNav: NavItem[] = [
-  { name: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
-  { name: 'Documents', href: '/golf/dashboard/documents', icon: IconFolder },
-  { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
+  { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
+  { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
+  { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
 ];
 
-// Player navigation
+// Player primary nav — 7 daily-use destinations
 const playerNavItems: NavItem[] = [
   { name: 'Dashboard', href: '/golf/dashboard', icon: IconHome },
   { name: 'CoachHelm AI', href: '/golf/dashboard/coachhelm', icon: IconSparkles },
   { name: 'My Rounds', href: '/golf/dashboard/rounds', icon: IconGolf },
   { name: 'My Development', href: '/golf/dashboard/my-development', icon: IconTarget },
-  { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   { name: 'Calendar', href: '/golf/dashboard/calendar', icon: IconCalendar },
   { name: 'My Stats', href: '/golf/dashboard/stats', icon: IconChartBar },
-  { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
   { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
 ];
 
+// Player secondary — 3 weekly-use destinations
+// Cmd+K only: Team Info, Travel, Tasks, Announcements
 const playerSecondaryNav: NavItem[] = [
+  { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
   { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
-  { name: 'Team Info', href: '/golf/dashboard/team', icon: IconHome },
-  { name: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
-  { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
-  { name: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
+  { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
 ];
 
 interface GolfSidebarProps {
@@ -109,15 +112,12 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     });
   }, [userRole, badges.messages]);
 
+  // Secondary nav has no badge surfaces today — Tasks/Announcements/Travel
+  // moved to Cmd+K only in the 2026-05-28 IA trim. Keep the memo shape so
+  // adding a badge later is a one-line change.
   const secondaryNav = useMemo(() => {
-    const items = userRole === 'coach' ? coachSecondaryNav : playerSecondaryNav;
-    return items.map(item => {
-      if (item.name === 'Tasks' && badges.tasks > 0) return { ...item, badge: badges.tasks };
-      if (item.name === 'Announcements' && badges.announcements > 0) return { ...item, badge: badges.announcements };
-      if (item.name === 'Travel' && badges.travel > 0) return { ...item, badge: badges.travel };
-      return item;
-    });
-  }, [userRole, badges.tasks, badges.announcements, badges.travel]);
+    return userRole === 'coach' ? coachSecondaryNav : playerSecondaryNav;
+  }, [userRole]);
 
   // For mobile, always show expanded
   const isCollapsed = isMobile ? false : collapsed;

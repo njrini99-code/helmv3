@@ -19,6 +19,8 @@ import {
   IconUsers,
   IconUser,
   IconChevronRight,
+  IconChartBar,
+  IconMessage,
 } from '@/components/icons';
 
 type PlayerStatus = 'active' | 'injured' | 'redshirt' | 'inactive';
@@ -160,6 +162,32 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
             <IconChevronRight size={18} className="text-warm-500" />
             View Profile
           </DropdownMenuItem>
+
+          {/* Moved from the card body in the 2026-05-28 IA trim — the roster
+              card now exposes only the primary "View Player" CTA inline. */}
+          <DropdownMenuItem
+            onSelect={() => {
+              void triggerHaptic('light');
+              router.push(`/golf/dashboard/stats?player=${playerId}`);
+            }}
+            className="gap-3"
+          >
+            <IconChartBar size={18} className="text-warm-500" />
+            View Stats
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={() => {
+              void triggerHaptic('light');
+              router.push(`/golf/dashboard/messages?player=${playerId}`);
+            }}
+            className="gap-3"
+          >
+            <IconMessage size={18} className="text-warm-500" />
+            Message
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
 
           <DropdownMenuItem
             onSelect={() => {

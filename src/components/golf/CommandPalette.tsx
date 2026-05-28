@@ -64,6 +64,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'messages', label: 'Messages', description: 'Team communication', icon: <IconMessage size={18} />, href: '/golf/dashboard/messages', keywords: ['chat', 'communication'] },
     { id: 'travel', label: 'Travel Plans', description: 'Trip itineraries', icon: <IconAirplane size={18} />, href: '/golf/dashboard/travel', keywords: ['trips', 'itinerary'] },
     { id: 'announcements', label: 'Announcements', description: 'Team announcements', icon: <IconBook size={18} />, href: '/golf/dashboard/announcements', keywords: ['news', 'updates'] },
+    // Moved out of the sidebar in the 2026-05-28 IA trim — reachable here +
+    // via direct URL. Add icons later if a palette redesign asks for it.
+    { id: 'documents', label: 'Documents', description: 'Team files and forms', icon: <IconBook size={18} />, href: '/golf/dashboard/documents', keywords: ['files', 'forms', 'pdfs'] },
+    { id: 'tasks', label: 'Tasks', description: 'Open and assigned tasks', icon: <IconClipboardList size={18} />, href: '/golf/dashboard/tasks', keywords: ['todo', 'assignments', 'checklist'] },
+    { id: 'development', label: 'Development Plans', description: 'Player focus areas', icon: <IconTarget size={18} />, href: '/golf/dashboard/development', keywords: ['focus', 'improvement', 'plan'] },
+    { id: 'recruiting', label: 'Recruiting HQ', description: 'Recruiting pipeline', icon: <IconUsers size={18} />, href: '/golf/dashboard/recruiting', keywords: ['recruits', 'pipeline'] },
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
@@ -80,6 +86,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'announcements', label: 'Announcements', description: 'Team updates', icon: <IconBell size={18} />, href: '/golf/dashboard/announcements', keywords: ['news', 'updates', 'notices'] },
     { id: 'classes', label: 'My Classes', description: 'Class schedule', icon: <IconBook size={18} />, href: '/golf/dashboard/classes', keywords: ['schedule', 'school'] },
     { id: 'team', label: 'Team Info', description: 'Roster and coach details', icon: <IconUsers size={18} />, href: '/golf/dashboard/team', keywords: ['roster', 'team', 'coach'] },
+    // Moved out of the player sidebar in the 2026-05-28 IA trim — palette + URL only.
+    { id: 'travel', label: 'Travel', description: 'Team trip itineraries', icon: <IconAirplane size={18} />, href: '/golf/dashboard/travel', keywords: ['trips', 'itinerary'] },
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
