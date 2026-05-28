@@ -47,6 +47,7 @@ import {
   IconPlus,
 } from '@/components/icons';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
@@ -1203,7 +1204,7 @@ export default function StatsClient({
             <m.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] })}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}
               className="relative surface-matte rounded-3xl p-10 md:p-16 text-center overflow-clip"
             >
               <m.div

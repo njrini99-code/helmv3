@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -117,7 +118,7 @@ export function StrokesGainedStats({
         className="bg-blue-50 border border-blue-200 rounded-xl p-4 backdrop-blur-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, type: 'spring', stiffness: 200 })}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: DURATION.medium, ease: EASE_CINEMATIC })}
       >
         <div className="text-sm font-medium text-blue-900 mb-2">What is Strokes Gained?</div>
         <div className="text-sm text-blue-800 space-y-1">

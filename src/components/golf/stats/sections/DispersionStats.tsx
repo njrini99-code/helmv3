@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type {
   SprayChartMode,
   SprayChartResponse,
@@ -126,7 +127,7 @@ function SummaryChip({
       className={`rounded-2xl border px-3 py-2 shadow-sm backdrop-blur-sm ${toneClass}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 280, damping: 24 })}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}
     >
       <div className="text-[10px] font-medium uppercase tracking-[0.16em] opacity-70">{label}</div>
       <div className="mt-1 text-sm font-medium">{value}</div>
@@ -168,7 +169,7 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
           className={`rounded-2xl border px-4 py-3 shadow-sm ${item.className}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.04 * index, type: 'spring', stiffness: 260, damping: 22 })}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.04 * index, duration: DURATION.medium, ease: EASE_CINEMATIC })}
         >
           <div className="text-[11px] font-medium uppercase tracking-[0.16em] opacity-75">{item.label}</div>
           <div className="mt-1 flex items-end justify-between gap-3">
@@ -439,7 +440,7 @@ export function DispersionStats({
         className="space-y-3 rounded-3xl border border-white/70 bg-gradient-to-br from-white via-primary-50/40 to-amber-50/50 p-4 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 260, damping: 24 })}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}
       >
         <div className="space-y-1">
           <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">{FAMILY_LABELS[family]} spray summary</h3>
@@ -522,7 +523,7 @@ export function DispersionStats({
             className="rounded-3xl border border-white/70 bg-gradient-to-b from-white to-warm-50/70 p-3 shadow-inner"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.05, type: 'spring', stiffness: 240, damping: 22 })}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.05, duration: DURATION.medium, ease: EASE_CINEMATIC })}
           >
             {mode === 'point-cloud' ? (
               family === 'driving' ? <DrivingPointCloud group={currentGroup} /> : <ApproachPointCloud group={currentGroup} />

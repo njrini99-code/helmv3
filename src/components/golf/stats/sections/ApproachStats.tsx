@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
@@ -179,7 +180,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                 className={`text-center p-3 ${item.bg} rounded-lg hover:scale-105 transition-transform cursor-default`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 })}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55 + idx * 0.04, duration: DURATION.short, ease: EASE_CINEMATIC })}
               >
                 <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
                 <div className="text-xs text-warm-500">{item.label}</div>
