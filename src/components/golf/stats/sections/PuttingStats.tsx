@@ -136,11 +136,14 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
       <StatSection title="Make % by Distance" delay={0.1}>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mb-4">
           {[
-            { range: '0-3 ft', value: stats.puttMakePct0_3, bg: 'bg-primary-50', color: 'text-primary-600' },
-            { range: '3-5 ft', value: stats.puttMakePct3_5, bg: 'bg-primary-50', color: 'text-primary-600' },
-            { range: '5-10 ft', value: stats.puttMakePct5_10, bg: 'bg-yellow-50', color: 'text-yellow-600' },
-            { range: '10-15 ft', value: stats.puttMakePct10_15, bg: 'bg-orange-50', color: 'text-orange-600' },
-            { range: '15-20 ft', value: stats.puttMakePct15_20, bg: 'bg-red-50', color: 'text-red-600' },
+            // W5B: dropped the red→green make-% bg ramp (synthesis §5 — no
+            // gradient-coded grids); every distance cell now uses the neutral
+            // cream-elevated surface so the number, not the hue, carries the read.
+            { range: '0-3 ft', value: stats.puttMakePct0_3, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: '3-5 ft', value: stats.puttMakePct3_5, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: '5-10 ft', value: stats.puttMakePct5_10, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: '10-15 ft', value: stats.puttMakePct10_15, bg: 'bg-cream-100', color: 'text-warm-900' },
+            { range: '15-20 ft', value: stats.puttMakePct15_20, bg: 'bg-cream-100', color: 'text-warm-900' },
           ].map((item, idx) => (
             <motion.div
               key={item.range}

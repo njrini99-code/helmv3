@@ -201,25 +201,25 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
         </linearGradient>
       </defs>
       <rect x={0} y={0} width={width} height={height} rx={20} fill="#fafaf9" />
-      <motion.polygon
+      {/* W5B: dropped the looping infinite opacity pulse — the fairway
+          wedge now renders statically at its steady-state opacity. */}
+      <polygon
         points={`${width / 2},${height - padding} ${width * 0.28},${padding + 16} ${width * 0.72},${padding + 16}`}
         fill="url(#fairwayGradient)"
         stroke="#bbf7d0"
         strokeWidth="1.5"
-        initial={{ opacity: 0.78 }}
-        animate={{ opacity: [0.78, 1, 0.82] }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 4.5, repeat: Infinity, ease: 'easeInOut' })}
+        opacity={0.9}
       />
       <line x1={width / 2} y1={height - padding} x2={width / 2} y2={padding + 8} stroke="#d6d3d1" strokeDasharray="4 6" />
       <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#d6d3d1" />
-      <motion.circle
+      {/* W5B: dropped the looping landing-area pulse circle — rendered static. */}
+      <circle
         cx={width / 2}
         cy={padding + 28}
         r={14}
         fill="#dcfce7"
         fillOpacity={0.35}
-        animate={{ r: [12, 18, 12], opacity: [0.45, 0.18, 0.45] }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 3.6, repeat: Infinity, ease: 'easeInOut' })}
+        opacity={0.45}
       />
       <text x={width / 2} y={height - 8} textAnchor="middle" className="fill-warm-500 text-[10px]">Tee</text>
       <text x={width / 2} y={padding} textAnchor="middle" className="fill-warm-500 text-[10px]">Landing area</text>
@@ -266,8 +266,10 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
   return (
     <svg viewBox={`0 0 ${width} ${height}`} className="h-[19rem] w-full overflow-visible sm:h-[21rem]">
       <rect x={0} y={0} width={width} height={height} rx={20} fill="#fafaf9" />
+      {/* W5B: dropped the looping infinite opacity pulse on the
+          concentric range rings — rendered static at a steady opacity. */}
       {[0.3, 0.55, 0.85].map((ratio) => (
-        <motion.circle
+        <circle
           key={ratio}
           cx={width / 2}
           cy={height / 2}
@@ -275,21 +277,21 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
           fill="none"
           stroke="#e7e5e4"
           strokeDasharray="5 5"
-          animate={{ opacity: [0.45, 0.7, 0.45] }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 4 + ratio, repeat: Infinity, ease: 'easeInOut' })}
+          opacity={0.55}
         />
       ))}
       <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="#d6d3d1" />
       <line x1={width / 2} y1={padding} x2={width / 2} y2={height - padding} stroke="#d6d3d1" />
-      <motion.circle
+      {/* W5B: dropped the looping infinite center-target pulse —
+          rendered static at the steady-state radius/opacity. */}
+      <circle
         cx={width / 2}
         cy={height / 2}
         r={10}
         fill="#dcfce7"
         stroke="#16a34a"
         strokeWidth="2"
-        animate={{ r: [9, 13, 9], opacity: [0.9, 0.65, 0.9] }}
-        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 3.2, repeat: Infinity, ease: 'easeInOut' })}
+        opacity={0.9}
       />
       <text x={width / 2} y={padding - 4} textAnchor="middle" className="fill-warm-500 text-[10px]">Long</text>
       <text x={width / 2} y={height - 10} textAnchor="middle" className="fill-warm-500 text-[10px]">Short</text>

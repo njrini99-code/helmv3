@@ -128,10 +128,6 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
-
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Scoring Trend</h3>
@@ -236,9 +232,6 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-4">Score Distribution</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
@@ -291,9 +284,6 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Recent Rounds</h3>
         {rounds.length > 5 && (
@@ -362,9 +352,6 @@ const ProgressMetrics = memo(function ProgressMetrics({ stats }: { stats: GolfSt
           className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
           style={{ animation: `scaleIn 0.3s ease-out forwards`, animationDelay: `${i * 50}ms` }}
         >
-          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-          />
           <p className={`text-[24px] md:text-[30px] font-light tracking-[-0.025em] ${m.color}`}>{m.value}</p>
           <p className="text-xs font-medium text-warm-700 mt-1">{m.label}</p>
           <p className="text-xs text-warm-400">{m.subtext}</p>
@@ -409,9 +396,6 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <div className="p-6 pb-4">
         <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Round Comparison</h3>
         <p className="text-sm text-warm-500 mt-0.5">Click column headers to sort</p>
@@ -475,25 +459,26 @@ const RoundComparisonTable = memo(function RoundComparisonTable({ rounds }: { ro
 
 // Putting Make % by Distance Chart
 const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats }) {
+  // W5B: replaced the 9-color green→yellow→orange→red rainbow ramp with a
+  // single-hue primary ramp (synthesis §5 — one chart palette). Every bucket is
+  // the brand green, graded light→dark by distance so the ramp still reads
+  // "near vs far" without inventing a second hue. Values are token vars.
   const data = [
-    { distance: '0-3ft', pct: stats.puttMakePct0_3 ?? 0, fill: '#16a34a' },
-    { distance: '3-5ft', pct: stats.puttMakePct3_5 ?? 0, fill: '#22c55e' },
-    { distance: '5-10ft', pct: stats.puttMakePct5_10 ?? 0, fill: '#fbbf24' },
-    { distance: '10-15ft', pct: stats.puttMakePct10_15 ?? 0, fill: '#f97316' },
-    { distance: '15-20ft', pct: stats.puttMakePct15_20 ?? 0, fill: '#ef4444' },
-    { distance: '20-25ft', pct: stats.puttMakePct20_25 ?? 0, fill: '#dc2626' },
-    { distance: '25-30ft', pct: stats.puttMakePct25_30 ?? 0, fill: '#b91c1c' },
-    { distance: '30-35ft', pct: stats.puttMakePct30_35 ?? 0, fill: '#991b1b' },
-    { distance: '35+ft', pct: stats.puttMakePct35Plus ?? 0, fill: '#7f1d1d' },
+    { distance: '0-3ft', pct: stats.puttMakePct0_3 ?? 0, fill: 'var(--color-primary-300)' },
+    { distance: '3-5ft', pct: stats.puttMakePct3_5 ?? 0, fill: 'var(--color-primary-400)' },
+    { distance: '5-10ft', pct: stats.puttMakePct5_10 ?? 0, fill: 'var(--color-primary-500)' },
+    { distance: '10-15ft', pct: stats.puttMakePct10_15 ?? 0, fill: 'var(--color-primary-600)' },
+    { distance: '15-20ft', pct: stats.puttMakePct15_20 ?? 0, fill: 'var(--color-primary-600)' },
+    { distance: '20-25ft', pct: stats.puttMakePct20_25 ?? 0, fill: 'var(--color-primary-700)' },
+    { distance: '25-30ft', pct: stats.puttMakePct25_30 ?? 0, fill: 'var(--color-primary-700)' },
+    { distance: '30-35ft', pct: stats.puttMakePct30_35 ?? 0, fill: 'var(--color-primary-800)' },
+    { distance: '35+ft', pct: stats.puttMakePct35Plus ?? 0, fill: 'var(--color-primary-900)' },
   ].filter(d => d.pct > 0);
 
   if (data.length === 0) return null;
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-4">Putt Make % by Distance</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
@@ -547,9 +532,6 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-4">GIR % by Hole Type</h3>
 
       <Suspense fallback={<ChartSkeleton />}>
@@ -629,9 +611,6 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Strokes Gained (per Round)</h3>
@@ -740,9 +719,6 @@ const KeyStatsSummary = memo(function KeyStatsSummary({ stats }: { stats: GolfSt
 
   return (
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
-      <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-      />
       <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-4">Key Performance Indicators</h3>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -918,9 +894,6 @@ export default memo(function ProgressStats({ stats, rounds }: ProgressStatsProps
       {/* Empty State */}
       {stats.roundsPlayed < 3 && (
         <div className="relative text-center py-12 surface-matte rounded-3xl overflow-clip">
-          <div className="absolute inset-x-0 top-0 h-px pointer-events-none z-10"
-            style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent)' }}
-          />
           <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">&#128200;</span>
           </div>
