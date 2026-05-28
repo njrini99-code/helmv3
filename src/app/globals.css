@@ -184,21 +184,28 @@
   /* GPU acceleration for smoother animations */
   body {
     @apply text-warm-900 antialiased;
-    /* 4-stop cream gradient background */
+    /* 4-stop linen gradient background — California-modern (Apr 2026 pivot).
+       Starts at cream-100 (#F7F5F2 linen) so card glass surfaces, which
+       are tinted from cream-100, "sit on" the same base instead of
+       fighting a cooler #FFFEFA. Warms toward cream-300 (#E5DFD3) at the
+       bottom for the subtle "warm room" gradient. */
     background: linear-gradient(180deg,
-        #FFFEFA 0%,
-        /* cream */
-        #FDF9F0 33%,
-        /* warm cream */
-        #FAF5EB 66%,
-        /* deeper cream */
-        #F5F0E6 100%
-        /* warmest */
+        #F7F5F2 0%,
+        /* cream-100 (linen) */
+        #F4EFE6 33%,
+        /* warm linen */
+        #F1ECE0 66%,
+        /* deeper linen */
+        #ECE5D6 100%
+        /* warmest — cream-200/300 blend */
       );
     background-attachment: scroll;
     min-height: 100dvh;
     min-height: -webkit-fill-available;
-    font-family: var(--font-family);
+    /* Canonical body font — resolves to Geist via tokens.css.
+       Was var(--font-family) which silently fell back to system-ui
+       because Tailwind never defined that custom property. */
+    font-family: var(--font-sans);
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     letter-spacing: -0.011em;
     -webkit-tap-highlight-color: transparent;
@@ -1417,13 +1424,15 @@
     border: 1px solid rgba(255, 255, 255, 0.50);
   }
 
-  /* Dashboard cream gradient background */
+  /* Dashboard linen gradient background — matches body gradient
+     (linen-100 → warm-linen). Card glass surfaces share the same base
+     so the page doesn't read cooler than the cards. */
   .bg-dashboard {
     background: linear-gradient(180deg,
-        #FFFEFA 0%,
-        #FDF9F0 35%,
-        #F5F0E6 70%,
-        #EDE8DD 100%);
+        #F7F5F2 0%,
+        #F4EFE6 35%,
+        #F1ECE0 70%,
+        #ECE5D6 100%);
     min-height: 100dvh;
   }
 
@@ -1444,7 +1453,10 @@
 
 @layer utilities {
 
-  /* ===== PREMIUM DASHBOARD GRADIENT BACKGROUND ===== */
+  /* ===== PREMIUM DASHBOARD GRADIENT BACKGROUND =====
+     Linen base (cream-100 → warm-linen) overlaid with helm-green aurora
+     blobs. Base gradient stays in sync with body + .bg-dashboard so the
+     three page backgrounds harmonize. */
   .bg-dashboard-gradient {
     background:
         radial-gradient(ellipse 45% 35% at 15% 20%, rgba(22, 163, 74, 0.10) 0%, transparent 70%),
@@ -1453,10 +1465,10 @@
         radial-gradient(ellipse 40% 45% at 25% 80%, rgba(22, 163, 74, 0.07) 0%, transparent 70%),
         radial-gradient(ellipse 30% 35% at 90% 70%, rgba(21, 128, 61, 0.05) 0%, transparent 70%),
         linear-gradient(180deg,
-        #FFFEFA 0%,
-        #FDF9F0 33%,
-        #FAF5EB 66%,
-        #F5F0E6 100%);
+        #F7F5F2 0%,
+        #F4EFE6 33%,
+        #F1ECE0 66%,
+        #ECE5D6 100%);
     background-attachment: scroll;
     position: relative;
   }

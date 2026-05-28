@@ -12,8 +12,12 @@
   --color-primary-light: #22c55e;
   --color-primary-dark: #15803D;
 
-  /* Cream Background */
-  --color-cream: #FFFEFA;
+  /* Cream Background — California-modern linen (Apr 2026 pivot).
+     Matches Tailwind cream-100 (#F7F5F2). The previous value (#FFFEFA)
+     read too cool against cream-tinted glass cards (rgba(247,245,242,*))
+     and created a washed-out gap between page body and card surfaces.
+     See docs/operations/2026-05-28-token-unification.md. */
+  --color-cream: #F7F5F2;
 
   /* Warm Neutrals */
   --color-warm-50: #fafaf9;
@@ -35,8 +39,20 @@
 
   /* ===== TYPOGRAPHY ===== */
 
-  /* Font Family */
-  --font-family: 'DM Sans', system-ui, sans-serif;
+  /* Font Family — CANONICAL
+     The single source of truth for the body font is `--font-geist-sans`,
+     which is set by `next/font` in `src/app/layout.tsx` (GeistSans.variable).
+     `--font-sans` is the alias every other surface should reference; it
+     mirrors Tailwind's `fontFamily.sans` so CSS-only and utility-based
+     callers stay in sync. The previous --font-family pointing at 'DM Sans'
+     was broken: Tailwind never defined --font-family, and DM Sans is only
+     loaded as the editorial fallback. See
+     docs/operations/2026-05-28-token-unification.md. */
+  --font-sans: var(--font-geist-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Legacy alias — kept so any remaining `var(--font-family)` callers
+     resolve to Geist instead of falling back to system-ui. New code
+     should use --font-sans (or the Tailwind `font-sans` utility). */
+  --font-family: var(--font-sans);
 
   /* Font Sizes */
   --font-size-xs: 12px;
