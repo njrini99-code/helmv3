@@ -51,7 +51,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
   const tapProps = prefersReducedMotion || !canSend ? {} : { whileTap: tapPress };
 
   return (
-    <div className="surface-hairline border-t bg-white/80 backdrop-blur-sm p-3 flex items-end gap-2">
+    <div className="surface-hairline border-t bg-white/80 backdrop-blur-sm p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-end gap-2">
       <textarea
         value={value}
         onChange={(e) => setValue(e.target.value)}
