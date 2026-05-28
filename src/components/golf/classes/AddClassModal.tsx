@@ -265,7 +265,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
-          <DrawerTitle id="add-class-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+          <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </DrawerTitle>
           <button

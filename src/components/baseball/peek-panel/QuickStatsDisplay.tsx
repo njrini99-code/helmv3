@@ -93,7 +93,7 @@ const QuickStatsDisplayComponent = function QuickStatsDisplay({
             >
               {formatStatValue(stat.value, stat.unit)}
             </div>
-            <div className="text-[10px] font-medium text-warm-500 uppercase tracking-wide">
+            <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wide">
               {stat.label}
             </div>
           </div>

@@ -109,7 +109,7 @@ export function UploadNewVersionModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200">
           <div>
-            <DrawerTitle id="upload-version-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+            <DrawerTitle id="upload-version-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
               Upload New Version
             </DrawerTitle>
             <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>

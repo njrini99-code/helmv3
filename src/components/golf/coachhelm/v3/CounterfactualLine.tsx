@@ -38,7 +38,7 @@ export function CounterfactualLine({
   if (!text) return null;
 
   const sizeClasses =
-    size === 'inline' ? 'text-[10px]' :
+    size === 'inline' ? 'text-eyebrow' :
     size === 'hero'   ? 'text-sm' :
                         'text-xs';
 

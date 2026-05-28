@@ -33,7 +33,7 @@ export function CompletionCard({ review }: CompletionCardProps) {
         <div className="text-center mb-4">
           <div className="text-sm text-warm-400 mb-1">Round Complete</div>
           <div className="flex items-center justify-center gap-3">
-            <span className="text-[44px] md:text-[52px] font-light tracking-[-0.025em]">{review.roundScore}</span>
+            <span className="text-display font-light tracking-[-0.025em]">{review.roundScore}</span>
             <span className={cn(
               'text-2xl font-medium px-3 py-1 rounded-lg',
               scoreToPar < 0 && 'bg-primary-500/20 text-primary-400',

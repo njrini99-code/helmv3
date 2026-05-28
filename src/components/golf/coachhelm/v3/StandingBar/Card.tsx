@@ -89,7 +89,7 @@ export function Card(props: CardProps) {
       />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-[10px] text-warm-400 mt-1 tabular-nums">
+      <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1 tabular-nums">
         <span>{formatValue(props.scale.min, props.unit)}</span>
         <span>{formatValue(props.scale.max, props.unit)}</span>
       </div>
@@ -243,7 +243,7 @@ function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerPr
       initial={reduce ? false : { opacity: 0, scale: initialScale, left: '0%' }}
       animate={reduce ? false : { opacity: 1, scale: 1, left: `${leftPct}%` }}
       transition={reduce ? undefined : transition}
-      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-[8px] font-semibold ${toneClass}`}
+      className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-eyebrow font-semibold ${toneClass}`}
       style={{ left: `${leftPct}%`, transformOrigin: 'center' }}
       aria-hidden="true"
     >

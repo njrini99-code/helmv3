@@ -59,7 +59,7 @@ function InterestRow({ item }: { item: CollegeInterestItem }) {
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-warm-900 truncate">{item.schoolName}</p>
           {item.isWatchlisted && (
-            <Badge variant="success" className="text-[10px] px-1.5 py-0">
+            <Badge variant="success" className="text-eyebrow px-1.5 py-0">
               <IconStar size={8} className="mr-0.5" />
               Watchlist
             </Badge>

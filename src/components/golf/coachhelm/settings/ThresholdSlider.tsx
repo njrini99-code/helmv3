@@ -45,7 +45,7 @@ export function ThresholdSlider({
                     <p className="text-xs text-warm-500 mt-0.5">{description}</p>
                 </div>
                 <div className="text-right">
-                    <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
+                    <span className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] tabular-nums">
                         {value.toFixed(1)}
                     </span>
                     <span className="text-sm text-warm-500 ml-1">{unit}</span>

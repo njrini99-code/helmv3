@@ -85,7 +85,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
               <span className="font-mono text-sm font-medium text-primary-600">
                 {classData.course_code}
               </span>
-              <DrawerTitle id="class-detail-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mt-1">
+              <DrawerTitle id="class-detail-title" className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mt-1">
                 {classData.course_name || 'Untitled Class'}
               </DrawerTitle>
               <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>

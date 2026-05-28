@@ -107,7 +107,7 @@ export function TeamCategoryView({
           <span className="text-sm text-warm-500">Team Health:</span>
           <span
             className={cn(
-              'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
+              'text-body-lg font-medium tracking-[-0.005em] tabular-nums',
               getHealthColor(teamHealth)
             )}
           >

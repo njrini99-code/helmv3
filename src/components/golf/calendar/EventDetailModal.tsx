@@ -560,7 +560,7 @@ export function EventDetailModal({
           <div className="flex items-center justify-between mb-4">
             <DrawerTitle
               id="event-modal-title"
-              className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]"
+              className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]"
             >
               {modalTitle}
             </DrawerTitle>
@@ -638,7 +638,7 @@ export function EventDetailModal({
             autoCapitalize="sentences"
             autoCorrect="on"
             enterKeyHint="next"
-            className="w-full px-0 py-2 text-[20px] font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
+            className="w-full px-0 py-2 text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300 border-none focus:ring-0 focus:outline-none bg-transparent disabled:text-warm-500"
             required
           />
 
@@ -822,7 +822,7 @@ export function EventDetailModal({
                           <Image src={player.avatar_url} alt="" width={20} height={20} className="w-5 h-5 rounded-full object-cover" unoptimized />
                         ) : (
                           <div className={cn(
-                            'w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-medium',
+                            'w-5 h-5 rounded-full flex items-center justify-center text-eyebrow font-medium',
                             isSelected ? 'bg-white/20 text-white' : 'bg-warm-300 text-warm-500'
                           )}>
                             {player.first_name[0]}{player.last_name[0]}
@@ -1132,7 +1132,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
         <div className="px-5 py-4 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <h3
             id="series-scope-title"
-            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]"
+            className="text-h3 font-medium text-warm-900 tracking-[-0.015em]"
           >
             {verb} recurring event
           </h3>
@@ -1168,7 +1168,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
           </button>
         </div>
         {danger && (
-          <p className="px-5 pb-4 text-[11px] text-rose-600/80">
+          <p className="px-5 pb-4 text-eyebrow text-rose-600/80">
             Deletion is permanent — this can&apos;t be undone.
           </p>
         )}

@@ -158,19 +158,19 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
             <Command.Input
               autoFocus
               placeholder="Search commands…"
-              className="flex-1 bg-transparent outline-none text-[15px] text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
+              className="flex-1 bg-transparent outline-none text-body text-warm-900 placeholder:text-warm-500 tracking-[-0.005em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setOpen(false);
               }}
             />
-            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
+            <kbd className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 text-eyebrow font-medium text-warm-500 bg-cream-200/55 rounded-md border border-warm-200/40">
               ESC
             </kbd>
           </div>
 
           {/* Results */}
           <Command.List className="max-h-[60vh] overflow-y-auto p-2" data-scroll-container>
-            <Command.Empty className="text-center py-10 text-[13px] text-warm-500">
+            <Command.Empty className="text-center py-10 text-body-sm text-warm-500">
               No commands found.
             </Command.Empty>
 
@@ -194,9 +194,9 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     {cmd.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium tracking-[-0.005em] truncate">{cmd.label}</p>
+                    <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{cmd.label}</p>
                     {cmd.description && (
-                      <p className="text-[12px] text-warm-500 truncate">{cmd.description}</p>
+                      <p className="text-caption text-warm-500 truncate">{cmd.description}</p>
                     )}
                   </div>
                 </Command.Item>
@@ -220,7 +220,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 text-[11px] font-medium overflow-hidden">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-cream-200/55 text-warm-700 text-eyebrow font-medium overflow-hidden">
                       {p.avatar_url ? (
                         <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                       ) : (
@@ -228,8 +228,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium tracking-[-0.005em] truncate">{p.full_name}</p>
-                      <p className="text-[12px] text-warm-500 truncate">
+                      <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{p.full_name}</p>
+                      <p className="text-caption text-warm-500 truncate">
                         {p.status ?? 'Player'}
                         {p.handicap !== null && ` · HCP ${p.handicap}`}
                       </p>
@@ -265,8 +265,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       {severityIcon(i.severity)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium tracking-[-0.005em] truncate">{i.title}</p>
-                      <p className="text-[12px] text-warm-500 truncate">
+                      <p className="text-body-sm font-medium tracking-[-0.005em] truncate">{i.title}</p>
+                      <p className="text-caption text-warm-500 truncate">
                         {i.player_name ? `${i.player_name} · ` : ''}
                         {i.category ?? 'Insight'}
                       </p>
@@ -297,11 +297,11 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                       <IconGolf size={18} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[14px] font-medium tracking-[-0.005em] truncate">
+                      <p className="text-body-sm font-medium tracking-[-0.005em] truncate">
                         {r.course_name ?? 'Round'}
                         {r.total_score !== null && ` · ${r.total_score}`}
                       </p>
-                      <p className="text-[12px] text-warm-500 truncate">
+                      <p className="text-caption text-warm-500 truncate">
                         {isCoach && r.player_name ? `${r.player_name} · ` : ''}
                         {formatRoundDate(r.round_date)}
                       </p>
@@ -313,14 +313,14 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
 
             {/* Loading hint on first open */}
             {dataLoading && !data && (
-              <div className="text-center py-6 text-[12px] text-warm-600">
+              <div className="text-center py-6 text-caption text-warm-600">
                 Loading team data…
               </div>
             )}
           </Command.List>
 
           {/* Footer hints */}
-          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-[11px] text-warm-500">
+          <div className="px-4 py-2 border-t border-warm-200/40 flex items-center justify-between text-eyebrow text-warm-500">
             <div className="flex items-center gap-2">
               <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↑</kbd>
               <kbd className="px-1.5 py-0.5 bg-cream-200/55 rounded border border-warm-200/40">↓</kbd>

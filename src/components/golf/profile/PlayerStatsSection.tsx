@@ -379,7 +379,7 @@ function NoStatsPlaceholder() {
       <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
         <IconTarget size={28} className="text-warm-400" />
       </div>
-      <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Stats Available</h3>
+      <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No Stats Available</h3>
       <p className="text-sm text-warm-500 max-w-sm mx-auto">
         Complete rounds with shot-by-shot tracking to see detailed statistics and spray charts.
       </p>
@@ -454,7 +454,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
       {/* Section Header with Round Selector */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Performance Stats</h2>
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Performance Stats</h2>
           <p className="text-sm text-warm-500">
             {selectedRoundId === 'overall'
               ? `Overall statistics from ${rounds.length} rounds`
@@ -527,7 +527,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
           {/* Trends Section */}
           {rounds.length >= 2 && selectedRoundId === 'overall' && (
             <div>
-              <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-3">Performance Trends</h3>
+              <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em] mb-3">Performance Trends</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <ScoringTrendMini rounds={rounds} />
                 <ScoreDistribution stats={stats} />
@@ -537,7 +537,7 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
 
           {/* Detailed Stats Tabs */}
           <div>
-            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-3">Detailed Statistics</h3>
+            <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em] mb-3">Detailed Statistics</h3>
             <DetailedStatsTabs stats={stats} />
           </div>
         </>

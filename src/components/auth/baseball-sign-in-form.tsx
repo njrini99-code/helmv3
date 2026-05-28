@@ -175,7 +175,7 @@ export function BaseballSignInForm() {
         className="
           w-full min-h-[50px] py-3
           bg-primary-600 text-white
-          font-semibold text-[15px] tracking-[-0.01em]
+          font-semibold text-body tracking-[-0.01em]
           rounded-xl
           shadow-lg shadow-primary-600/25
           transition-all duration-200 ease-ios

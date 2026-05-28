@@ -133,7 +133,7 @@ export function CreateFeedSection({
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-primary-600" />
-          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Create Calendar Feed</h3>
+          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Create Calendar Feed</h3>
         </div>
         <p className="text-sm text-warm-600">
           Choose what events to include in your calendar feed
@@ -181,7 +181,7 @@ export function CreateFeedSection({
                 <div className="text-center">
                   <p
                     className={cn(
-                      'text-[11px] font-medium uppercase tracking-wide',
+                      'text-eyebrow font-medium uppercase tracking-wide',
                       isSelected ? 'text-white' : option.colorClass
                     )}
                   >

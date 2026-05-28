@@ -121,11 +121,11 @@ export function AvailabilityDayView({
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">
-              <h3 className="text-[26px] leading-tight font-medium text-warm-900">
+              <h3 className="text-h2 leading-tight font-medium text-warm-900">
                 {date.toLocaleDateString('en-US', { weekday: 'long' })}
               </h3>
               {isToday && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-[11px] font-medium tracking-wide ring-1 ring-primary-200/70">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-eyebrow font-medium tracking-wide ring-1 ring-primary-200/70">
                   Today
                 </span>
               )}
@@ -137,7 +137,7 @@ export function AvailabilityDayView({
 
           {selectedPlayers.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap" role="list" aria-label="Selected players">
-              <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-warm-400 mr-1">
+              <span className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-400 mr-1">
                 Comparing
               </span>
               {selectedPlayers.map((player) => (
@@ -148,7 +148,7 @@ export function AvailabilityDayView({
                   title={`${player.first_name} ${player.last_name}`}
                 >
                   <span
-                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-medium ring-2 ring-cream-50"
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-eyebrow font-medium ring-2 ring-cream-50"
                     style={{ background: player.color.bg }}
                   >
                     {player.avatar_url ? (
@@ -234,7 +234,7 @@ export function AvailabilityDayView({
       </div>
 
       {/* Footer hint */}
-      <footer className="px-6 py-3 bg-warm-50/40 border-t border-warm-200/60 flex items-center justify-between text-[11px] text-warm-500">
+      <footer className="px-6 py-3 bg-warm-50/40 border-t border-warm-200/60 flex items-center justify-between text-eyebrow text-warm-500">
         <span>
           Working hours · {formatHour(START_HOUR)} – {formatHour(END_HOUR)}
         </span>
@@ -271,7 +271,7 @@ function FreeSlot({ isHovered, hasComparisonContext, onClick }: FreeSlotProps) {
       <span
         className={cn(
           'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full',
-          'text-[12px] font-medium tracking-wide',
+          'text-caption font-medium tracking-wide',
           'transition-all duration-200',
           isHovered
             ? 'bg-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.25)] scale-100'
@@ -282,7 +282,7 @@ function FreeSlot({ isHovered, hasComparisonContext, onClick }: FreeSlotProps) {
         Schedule here
       </span>
       {!isHovered && hasComparisonContext && (
-        <span className="text-[11px] font-medium text-primary-600/80">
+        <span className="text-eyebrow font-medium text-primary-600/80">
           ✓ Both available
         </span>
       )}
@@ -336,7 +336,7 @@ function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockP
             {ownerInitials ? (
               <span
                 aria-hidden="true"
-                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-medium flex-shrink-0"
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-eyebrow font-medium flex-shrink-0"
                 style={{ background: colorBg }}
               >
                 {ownerInitials}
@@ -354,7 +354,7 @@ function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockP
               {period.title || (isClass ? 'Class' : isBlocked ? 'Blocked' : 'Busy')}
             </p>
           </div>
-          <p className="text-[11px] text-warm-500 tabular-nums pl-7">
+          <p className="text-eyebrow text-warm-500 tabular-nums pl-7">
             {ownerLabel} · {formatRange(period)}
           </p>
         </div>

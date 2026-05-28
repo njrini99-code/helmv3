@@ -135,12 +135,12 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
         <div className="relative px-6 py-5 border-b border-warm-200/60 bg-gradient-to-br from-white/70 via-warm-50/40 to-primary-50/15">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.1em] text-primary-700 mb-1">
+              <p className="text-eyebrow font-medium uppercase tracking-[0.1em] text-primary-700 mb-1">
                 {isEditing ? 'Edit prospect' : 'New prospect'}
               </p>
               <h2
                 id="recruit-form-title"
-                className="text-[26px] leading-tight font-medium text-warm-900"
+                className="text-h2 leading-tight font-medium text-warm-900"
               >
                 {isEditing
                   ? `${form.first_name} ${form.last_name ?? ''}`.trim() || 'Prospect'
@@ -162,7 +162,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
         <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-5">
           {/* Status selector */}
           <div>
-            <label className="block text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-2">
+            <label className="block text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-2">
               Status
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -190,7 +190,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
                       />
                       {s.label}
                     </span>
-                    <span className={cn('text-[10px] font-medium', active ? 'text-white/85' : 'text-warm-500')}>
+                    <span className={cn('text-eyebrow font-medium', active ? 'text-white/85' : 'text-warm-500')}>
                       {s.description}
                     </span>
                   </button>
@@ -385,7 +385,7 @@ function FieldShell({
 }) {
   return (
     <label className={cn('block', className)}>
-      <span className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-1.5">
+      <span className="flex items-center gap-1 text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-1.5">
         {Icon && <Icon className="w-3 h-3" />}
         {label}
         {required && <span className="text-rose-500">*</span>}

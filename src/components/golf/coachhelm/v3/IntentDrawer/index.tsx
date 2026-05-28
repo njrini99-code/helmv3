@@ -102,7 +102,7 @@ export function IntentDrawer({
             transition={drawerTransition}
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[11px] uppercase tracking-[0.08em] text-warm-500 mb-1">Set intent</p>
+            <p className="text-eyebrow uppercase tracking-[0.08em] text-warm-500 mb-1">Set intent</p>
             <h2 className="text-lg font-medium text-warm-900 mb-1">{player_name}</h2>
             <p className="text-xs text-warm-500 mb-5">Invisible to the player.</p>
 
@@ -146,7 +146,7 @@ export function IntentDrawer({
                 >
                   <span>
                     <span className="block text-sm font-medium text-warm-900">{p.label}</span>
-                    <span className="block text-[11px] text-warm-500">{p.helper}</span>
+                    <span className="block text-eyebrow text-warm-500">{p.helper}</span>
                   </span>
                   <input
                     type="radio"

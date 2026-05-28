@@ -87,7 +87,7 @@ export function PremiumEventBlock({
             <span
               className={cn(
                 'font-medium truncate leading-tight',
-                compact ? 'text-xs' : 'text-[13px]',
+                compact ? 'text-xs' : 'text-body-sm',
                 event.status === 'cancelled'
                   ? 'text-warm-400 line-through'
                   : 'text-warm-800'
@@ -189,7 +189,7 @@ function EventStatusBadge({ status, compact }: EventStatusBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[9px] font-medium uppercase tracking-wider',
+        'inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-eyebrow font-medium uppercase tracking-wider',
         config.className
       )}
     >

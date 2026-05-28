@@ -312,7 +312,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                         <span className="text-xs text-warm-700 font-mono">{m.csvName}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-green-700 font-medium">{m.playerName}</span>
-                          <span className="text-[10px] text-green-500 bg-green-100 px-1.5 py-0.5 rounded-full">
+                          <span className="text-eyebrow text-green-500 bg-green-100 px-1.5 py-0.5 rounded-full">
                             {Math.round(m.confidence * 100)}%
                           </span>
                         </div>

@@ -307,13 +307,13 @@ export function EditorialCalendarSurface({
             <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between md:gap-6">
               <div className="flex flex-col gap-3">
                 {/* Eyebrow with brand-kelly accent dot. */}
-                <p className="font-serif text-[11px] uppercase tracking-[0.16em] text-warm-500 inline-flex items-center gap-2">
+                <p className="font-serif text-eyebrow uppercase tracking-[0.16em] text-warm-500 inline-flex items-center gap-2">
                   <span aria-hidden className="h-1 w-1 rounded-full bg-primary-500" />
                   Calendar
                 </p>
 
                 {/* Animated month title — fades + slides on nav. */}
-                <h1 className="font-display text-[34px] sm:text-[40px] md:text-[48px] font-medium leading-[1.05] tracking-[-0.022em] text-warm-900 max-w-[28ch]">
+                <h1 className="font-display text-h1 sm:text-display font-medium leading-[1.05] tracking-[-0.022em] text-warm-900 max-w-[28ch]">
                   <AnimatePresence mode="wait" initial={false}>
                     <m.span
                       key={heroMonthKey}
@@ -328,7 +328,7 @@ export function EditorialCalendarSurface({
                   </AnimatePresence>
                 </h1>
 
-                <p className="text-[16px] sm:text-[17px] leading-[1.55] text-warm-500 max-w-[52ch]">
+                <p className="text-body sm:text-body-lg leading-[1.55] text-warm-500 max-w-[52ch]">
                   {events.length === 0
                     ? 'Practice, tournaments, qualifiers — once events are scheduled they show up here.'
                     : `${eventsInWindow.length} event${eventsInWindow.length === 1 ? '' : 's'} this ${view === 'month' ? 'month' : 'week'} · ${upcomingCount} upcoming.`}

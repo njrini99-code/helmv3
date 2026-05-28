@@ -130,8 +130,8 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                     <div className="w-16 h-16 rounded-2xl bg-primary-50/70 flex items-center justify-center mb-6">
                         <IconCalendar size={24} className="text-primary-600/70" />
                     </div>
-                    <p className="text-[18px] font-medium tracking-[-0.012em] text-warm-900 mb-2">Clear schedule today</p>
-                    <p className="text-[13px] leading-relaxed text-warm-500 mb-7 max-w-[260px]">No events on the books. A perfect window for practice or recovery.</p>
+                    <p className="text-h3 font-medium tracking-[-0.012em] text-warm-900 mb-2">Clear schedule today</p>
+                    <p className="text-body-sm leading-relaxed text-warm-500 mb-7 max-w-[260px]">No events on the books. A perfect window for practice or recovery.</p>
                     <Link
                         href="/golf/dashboard/calendar"
                         className="pill-soft pill-soft-primary"
@@ -160,16 +160,16 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-3">
                 <div className="flex items-center gap-3">
-                    <h3 className="text-[15px] md:text-[17px] font-medium tracking-[-0.012em] text-warm-700">
+                    <h3 className="text-body md:text-body-lg font-medium tracking-[-0.012em] text-warm-700">
                         Today&apos;s Schedule
                     </h3>
-                    <span className="text-[12px] font-medium text-warm-400 tabular-nums">
+                    <span className="text-caption font-medium text-warm-400 tabular-nums">
                         {events.length}
                     </span>
                 </div>
                 <Link
                     href="/golf/dashboard/calendar"
-                    className="group flex items-center gap-1 text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300"
+                    className="group flex items-center gap-1 text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300"
                 >
                     Calendar
                     <IconArrowRight size={12} className="transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -203,13 +203,13 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                         >
                             <div className="flex items-start justify-between gap-2 mb-1.5">
                                 <p className={cn(
-                                    'text-[14px] font-medium tracking-[-0.005em]',
+                                    'text-body-sm font-medium tracking-[-0.005em]',
                                     isCurrent ? 'text-warm-900' : 'text-warm-700'
                                 )}>
                                     {event.title}
                                 </p>
                                 {isCurrent && (
-                                    <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.06em] bg-primary-50/80 text-primary-700">
+                                    <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-medium uppercase tracking-[0.06em] bg-primary-50/80 text-primary-700">
                                         <span className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
                                         Live
                                     </span>
@@ -232,18 +232,18 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
 
                             <div className="flex items-center gap-2 mt-2">
                                 <span className={cn(
-                                    'inline-flex px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.06em]',
+                                    'inline-flex px-2 py-0.5 rounded-full text-eyebrow font-medium uppercase tracking-[0.06em]',
                                     config.bg, config.text
                                 )}>
                                     {config.label}
                                 </span>
                                 {isNext && (
-                                    <span className="text-[11px] text-primary-600 font-medium tabular-nums">
+                                    <span className="text-eyebrow text-primary-600 font-medium tabular-nums">
                                         {getTimeUntil(event.start_time, nowTs)}
                                     </span>
                                 )}
                                 {role === 'coach' && event.rsvp_total !== undefined && (
-                                    <span className="text-[11px] text-warm-400 tabular-nums">
+                                    <span className="text-eyebrow text-warm-400 tabular-nums">
                                         {event.rsvp_yes}/{event.rsvp_total} confirmed
                                     </span>
                                 )}
@@ -377,7 +377,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                                         {event.title}
                                                     </p>
                                                     {isCurrent && (
-                                                        <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-[0.06em] bg-primary-50/80 text-primary-700">
+                                                        <span className="flex-shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-medium uppercase tracking-[0.06em] bg-primary-50/80 text-primary-700">
                                                             <span className="w-1 h-1 rounded-full bg-primary-500 animate-pulse" />
                                                             Live
                                                         </span>
@@ -400,18 +400,18 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
 
                                                 <div className="flex items-center gap-2 mt-1.5">
                                                     <span className={cn(
-                                                        'inline-flex px-2 py-0.5 rounded-full text-[9px] font-medium uppercase tracking-[0.06em]',
+                                                        'inline-flex px-2 py-0.5 rounded-full text-eyebrow font-medium uppercase tracking-[0.06em]',
                                                         config.bg, config.text
                                                     )}>
                                                         {config.label}
                                                     </span>
                                                     {isNext && (
-                                                        <span className="text-[10px] text-primary-600 font-medium tabular-nums">
+                                                        <span className="text-eyebrow text-primary-600 font-medium tabular-nums">
                                                             {getTimeUntil(event.start_time, nowTs)}
                                                         </span>
                                                     )}
                                                     {role === 'coach' && event.rsvp_total !== undefined && (
-                                                        <span className="text-[10px] text-warm-400 tabular-nums">
+                                                        <span className="text-eyebrow text-warm-400 tabular-nums">
                                                             {event.rsvp_yes}/{event.rsvp_total} confirmed
                                                         </span>
                                                     )}

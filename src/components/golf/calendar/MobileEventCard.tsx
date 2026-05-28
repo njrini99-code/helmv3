@@ -137,7 +137,7 @@ export function MobileEventCard({
               <div className="flex items-center gap-2 mb-1.5">
                 {relativeLabel && (
                   <span className={cn(
-                    'text-[11px] font-medium uppercase tracking-wide px-2 py-0.5 rounded-md',
+                    'text-eyebrow font-medium uppercase tracking-wide px-2 py-0.5 rounded-md',
                     relativeLabel === 'Today'
                       ? 'bg-primary-500/10 text-primary-700'
                       : 'bg-warm-100 text-warm-500'

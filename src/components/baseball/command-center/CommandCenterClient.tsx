@@ -81,20 +81,20 @@ function getWeekDays(): Array<{ date: Date; dayNum: number; dayLabel: string; is
 function TrendIndicator({ trend }: { trend: string | null | undefined }) {
   if (trend === 'improving') {
     return (
-      <span className="flex items-center gap-0.5 text-primary-600 text-[11px] font-medium">
+      <span className="flex items-center gap-0.5 text-primary-600 text-eyebrow font-medium">
         <IconTrendingUp size={12} />↑
       </span>
     );
   }
   if (trend === 'declining') {
     return (
-      <span className="flex items-center gap-0.5 text-red-500 text-[11px] font-medium">
+      <span className="flex items-center gap-0.5 text-red-500 text-eyebrow font-medium">
         <IconTrendingDown size={12} />↓
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-0.5 text-warm-400 text-[11px] font-medium">
+    <span className="flex items-center gap-0.5 text-warm-400 text-eyebrow font-medium">
       <IconMinus size={12} />—
     </span>
   );
@@ -103,7 +103,7 @@ function TrendIndicator({ trend }: { trend: string | null | undefined }) {
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col items-center px-2 py-1 bg-warm-50 rounded-lg">
-      <span className="text-[9px] font-semibold text-warm-400 uppercase tracking-wide">{label}</span>
+      <span className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide">{label}</span>
       <span className="text-xs font-bold text-warm-800 tabular-nums">{value}</span>
     </div>
   );
@@ -148,7 +148,7 @@ function PlayerRosterCard({
           {player.jersey_number != null && (
             <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1
                              flex items-center justify-center
-                             bg-primary-600 text-white text-[9px] font-bold rounded-full border-[1.5px] border-white">
+                             bg-primary-600 text-white text-eyebrow font-bold rounded-full border-[1.5px] border-white">
               #{player.jersey_number}
             </span>
           )}
@@ -182,7 +182,7 @@ function PlayerRosterCard({
 function TeamStatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
     <div className={`rounded-2xl p-4 ${accent ? 'bg-primary-600 text-white' : 'bg-cream-100/75 backdrop-blur-xl border border-white/20 shadow-sm'}`}>
-      <p className={`text-[10px] font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-warm-400'}`}>{label}</p>
+      <p className={`text-eyebrow font-semibold uppercase tracking-wide mb-1 ${accent ? 'text-primary-100' : 'text-warm-400'}`}>{label}</p>
       <p className={`text-2xl font-bold tabular-nums leading-none ${accent ? 'text-white' : 'text-warm-900'}`}>{value}</p>
       {sub && <p className={`text-xs mt-1 ${accent ? 'text-primary-200' : 'text-warm-400'}`}>{sub}</p>}
     </div>
@@ -385,7 +385,7 @@ export function CommandCenterClient({
                     onClick={() => router.push('/baseball/dashboard/calendar')}
                     className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-warm-50"
                   >
-                    <span className={`text-[10px] font-semibold uppercase tracking-wide mb-1.5 ${
+                    <span className={`text-eyebrow font-semibold uppercase tracking-wide mb-1.5 ${
                       day.isToday ? 'text-primary-600' : 'text-warm-400'
                     }`}>
                       {day.dayLabel}
@@ -631,27 +631,27 @@ export function CommandCenterClient({
                         <thead>
                           <tr className="border-b border-warm-100 bg-warm-50/60">
                             <th
-                              className="px-4 py-3 text-left text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
+                              className="px-4 py-3 text-left text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('name')}
                             >
                               Player {statSortKey === 'name' && '↓'}
                             </th>
-                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide">Pos</th>
+                            <th className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Pos</th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
+                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('avg')}
                             >
                               AVG {statSortKey === 'avg' && '↓'}
                             </th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
+                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('ops')}
                             >
                               OPS {statSortKey === 'ops' && '↓'}
                             </th>
-                            <th className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide">Sessions</th>
+                            <th className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide">Sessions</th>
                             <th
-                              className="px-3 py-3 text-center text-[11px] font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
+                              className="px-3 py-3 text-center text-eyebrow font-semibold text-warm-500 uppercase tracking-wide cursor-pointer hover:text-warm-700"
                               onClick={() => setStatSortKey('trend')}
                             >
                               Trend {statSortKey === 'trend' && '↓'}
@@ -676,7 +676,7 @@ export function CommandCenterClient({
                                 <td className="px-4 py-3">
                                   <div className="flex items-center gap-2.5">
                                     <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center flex-shrink-0">
-                                      <span className="text-[9px] font-bold text-white">
+                                      <span className="text-eyebrow font-bold text-white">
                                         {(player.first_name?.[0] ?? '') + (player.last_name?.[0] ?? '')}
                                       </span>
                                     </div>

@@ -120,7 +120,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-200">
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             Invite Player to {teamName}
           </h2>
         </div>

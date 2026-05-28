@@ -141,7 +141,7 @@ export function PatternValidationModal({
                     <IconSparkles size={20} className="text-primary-600" />
                   </div>
                   <div>
-                    <h2 id="pattern-validation-modal-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+                    <h2 id="pattern-validation-modal-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
                       Validate Pattern
                     </h2>
                     <p className="text-sm text-warm-500">

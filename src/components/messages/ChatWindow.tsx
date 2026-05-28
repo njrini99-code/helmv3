@@ -103,8 +103,8 @@ export function ChatWindow({
           <>
             <Avatar name={participant.name} src={participant.avatar} size="md" />
             <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-semibold text-warm-900 tracking-[-0.01em] truncate">{participant.name}</p>
-              <p className="text-[12px] text-warm-500 truncate">{participant.subtitle}</p>
+              <p className="text-body font-semibold text-warm-900 tracking-[-0.01em] truncate">{participant.name}</p>
+              <p className="text-caption text-warm-500 truncate">{participant.subtitle}</p>
             </div>
           </>
         )}
@@ -121,8 +121,8 @@ export function ChatWindow({
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-100/60 to-emerald-100/50 flex items-center justify-center mb-4">
               <IconSend size={22} className="text-primary-600/80" />
             </div>
-            <p className="text-[15px] font-semibold text-warm-900">No messages yet</p>
-            <p className="text-[13px] text-warm-500 mt-1">Send a message to start the conversation</p>
+            <p className="text-body font-semibold text-warm-900">No messages yet</p>
+            <p className="text-body-sm text-warm-500 mt-1">Send a message to start the conversation</p>
           </div>
         ) : (
           messages.map((message, index) => {
@@ -152,9 +152,9 @@ export function ChatWindow({
                       : 'bg-warm-100 text-warm-900 rounded-bl-[6px]'
                   )}
                 >
-                  <p className="text-[15px] whitespace-pre-wrap break-words leading-snug">{decodeMessageContent(message.content)}</p>
+                  <p className="text-body whitespace-pre-wrap break-words leading-snug">{decodeMessageContent(message.content)}</p>
                   <p className={cn(
-                    'text-[11px] mt-1 flex items-center',
+                    'text-eyebrow mt-1 flex items-center',
                     isOwn ? 'text-primary-100/90 justify-end' : 'text-warm-400'
                   )}>
                     {formatTime(message.created_at)}
@@ -180,7 +180,7 @@ export function ChatWindow({
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Message"
-            className="flex-1 px-4 py-2.5 bg-warm-100/80 border border-warm-200/60 rounded-full text-[15px] text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:bg-white transition-colors"
+            className="flex-1 px-4 py-2.5 bg-warm-100/80 border border-warm-200/60 rounded-full text-body text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:bg-white transition-colors"
             disabled={sending}
           />
           <Button

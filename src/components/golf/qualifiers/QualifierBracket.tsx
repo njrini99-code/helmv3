@@ -114,7 +114,7 @@ function PlayerBracketCard({
       {/* Position */}
       <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cream-100/82 shadow-sm">
         {getPositionIcon(position) || (
-          <span className={cn('text-[13px] font-medium', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
+          <span className={cn('text-body-sm font-medium', isAboveCutline ? 'text-warm-700' : 'text-warm-400')}>
             {position}
             {entry.isTied && <span className="text-xs">T</span>}
           </span>
@@ -152,7 +152,7 @@ function PlayerBracketCard({
 
       {/* Score */}
       <div className="text-right">
-        <p className={cn('text-[17px] font-medium tracking-[-0.005em] tabular-nums', styles.score)}>
+        <p className={cn('text-body-lg font-medium tracking-[-0.005em] tabular-nums', styles.score)}>
           {entry.totalScore > 0 ? entry.totalScore : '-'}
         </p>
         <p className="text-xs text-warm-400">
@@ -264,13 +264,13 @@ export function QualifierBracket({
       <div className="mt-6 pt-4 border-t border-warm-100">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
           <div className="p-3 bg-primary-50 rounded-xl">
-            <p className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em]">
+            <p className="text-h1 font-light text-primary-700 tracking-[-0.025em]">
               {leaderboard.filter((_, i) => i < effectiveCutline).length}
             </p>
             <p className="text-xs text-warm-500 mt-1">Qualifying</p>
           </div>
           <div className="p-3 bg-amber-50 rounded-xl">
-            <p className="text-[28px] md:text-[32px] font-light text-amber-700 tracking-[-0.025em]">
+            <p className="text-h1 font-light text-amber-700 tracking-[-0.025em]">
               {leaderboard.filter((entry, i) => {
                 if (i < effectiveCutline) return false;
                 return cutlineScore > 0 && entry.totalScore > 0 && entry.totalScore - cutlineScore <= 3;
@@ -279,7 +279,7 @@ export function QualifierBracket({
             <p className="text-xs text-warm-500 mt-1">On Bubble</p>
           </div>
           <div className="p-3 bg-warm-50 rounded-xl">
-            <p className="text-[28px] md:text-[32px] font-light text-warm-700 tracking-[-0.025em]">
+            <p className="text-h1 font-light text-warm-700 tracking-[-0.025em]">
               {leaderboard.length}
             </p>
             <p className="text-xs text-warm-500 mt-1">Total Players</p>

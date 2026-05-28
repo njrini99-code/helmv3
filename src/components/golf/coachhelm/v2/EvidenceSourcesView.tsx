@@ -224,7 +224,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
           {/* Score display */}
           <div className="flex flex-col items-end gap-2">
             <div className="text-right">
-              <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+              <p className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
                 {totalScore}
               </p>
               <span

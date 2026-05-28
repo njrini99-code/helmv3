@@ -130,7 +130,7 @@ export function ExpenseSummary({
         <div className="flex items-start justify-between">
           <div>
             <p className="text-sm font-medium text-primary-700 mb-1">Total Expenses</p>
-            <p className="text-[32px] md:text-[36px] font-light tracking-[-0.025em] text-primary-900 tabular-nums">{formatCurrency(summary.total)}</p>
+            <p className="text-h1 md:text-display font-light tracking-[-0.025em] text-primary-900 tabular-nums">{formatCurrency(summary.total)}</p>
             {totalBudget > 0 && (
               <div className="flex items-center gap-2 mt-2">
                 {summary.total <= totalBudget ? (
@@ -323,25 +323,25 @@ export function ExpenseSummary({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="p-4 bg-primary-50 rounded-xl">
             <p className="text-sm text-primary-700 mb-1">Team Paid</p>
-            <p className="text-[20px] font-medium tracking-[-0.012em] text-primary-900">
+            <p className="text-h3 font-medium tracking-[-0.012em] text-primary-900">
               {formatCurrency(summary.byPaidBy.team)}
             </p>
           </div>
           <div className="p-4 bg-blue-50 rounded-xl">
             <p className="text-sm text-blue-700 mb-1">Player Paid</p>
-            <p className="text-[20px] font-medium tracking-[-0.012em] text-blue-900">
+            <p className="text-h3 font-medium tracking-[-0.012em] text-blue-900">
               {formatCurrency(summary.byPaidBy.player)}
             </p>
           </div>
           <div className="p-4 bg-amber-50 rounded-xl">
             <p className="text-sm text-amber-700 mb-1">Pending Reimbursement</p>
-            <p className="text-[20px] font-medium tracking-[-0.012em] text-amber-900">
+            <p className="text-h3 font-medium tracking-[-0.012em] text-amber-900">
               {formatCurrency(summary.byPaidBy.pending_reimbursement)}
             </p>
           </div>
           <div className="p-4 bg-warm-50 rounded-xl">
             <p className="text-sm text-warm-700 mb-1">Split</p>
-            <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em]">
+            <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em]">
               {formatCurrency(summary.byPaidBy.split)}
             </p>
           </div>

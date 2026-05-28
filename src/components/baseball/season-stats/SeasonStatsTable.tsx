@@ -213,7 +213,7 @@ export function SeasonStatsTable({
                         <span className="flex items-center justify-center gap-0.5">
                           {col.label}
                           {isActive && (
-                            <span className="text-[10px]">{sortDir === 'desc' ? '↓' : '↑'}</span>
+                            <span className="text-eyebrow">{sortDir === 'desc' ? '↓' : '↑'}</span>
                           )}
                         </span>
                       </th>
@@ -234,7 +234,7 @@ export function SeasonStatsTable({
                           href={`/baseball/dashboard/players/${s.player_id}/stats`}
                           className="flex items-center gap-2 group"
                         >
-                          <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-[10px] font-bold text-warm-500 shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-warm-100 flex items-center justify-center text-eyebrow font-bold text-warm-500 shrink-0">
                             {i + 1}
                           </div>
                           <div>
@@ -242,7 +242,7 @@ export function SeasonStatsTable({
                               {playerName}
                             </span>
                             {pos && (
-                              <span className="ml-1.5 text-[10px] text-warm-400">{pos}</span>
+                              <span className="ml-1.5 text-eyebrow text-warm-400">{pos}</span>
                             )}
                           </div>
                         </Link>

@@ -64,7 +64,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
 
   const triggerClassName = cn(
     'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
-    'text-[11px] font-medium text-warm-600',
+    'text-eyebrow font-medium text-warm-600',
     'bg-cream-100/75 border border-warm-200/55 hover:bg-cream-50/92',
     'transition-colors',
     className,
@@ -145,7 +145,7 @@ function ExplanationBody({ insight, explanation }: ExplanationBodyProps) {
       >
         {chain.slice(0, 5).map((step, i) => (
           <li key={i} className="flex items-start gap-2">
-            <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[11px] font-medium flex items-center justify-center flex-shrink-0 mt-0.5">
+            <span className="w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-eyebrow font-medium flex items-center justify-center flex-shrink-0 mt-0.5">
               {step.stepNumber ?? i + 1}
             </span>
             <span className="leading-relaxed">{step.conclusion ?? ''}</span>

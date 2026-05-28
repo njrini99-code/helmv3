@@ -76,7 +76,7 @@ export function DrillChips({
           className,
         )}
       >
-        <span className="flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-warm-500 flex-shrink-0">
+        <span className="flex items-center gap-1 text-eyebrow font-medium uppercase tracking-wide text-warm-500 flex-shrink-0">
           <IconTarget size={12} />
           Drills
         </span>
@@ -88,7 +88,7 @@ export function DrillChips({
           />
         ))}
         {drills.length < 3 && (
-          <span className="text-[11px] text-warm-400 flex-shrink-0">
+          <span className="text-eyebrow text-warm-400 flex-shrink-0">
             tap to expand
           </span>
         )}

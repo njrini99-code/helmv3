@@ -267,14 +267,14 @@ function DrillRow({
         <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span
             className={cn(
-              'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border',
+              'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border',
               priorityStyles,
             )}
           >
             {humanizeAreaType(drill.areaType)}
           </span>
           {drill.impactLabel && (
-            <span className="inline-flex items-center text-[10px] font-medium text-warm-500 tabular-nums">
+            <span className="inline-flex items-center text-eyebrow font-medium text-warm-500 tabular-nums">
               {drill.impactLabel}
             </span>
           )}
@@ -292,14 +292,14 @@ function DrillRow({
 
       {drill.drillText && (
         <div className="rounded-lg bg-primary-50/70 border border-primary-100 px-3 py-2">
-          <p className="text-[11px] font-medium uppercase tracking-wider text-primary-700 mb-1">
+          <p className="text-eyebrow font-medium uppercase tracking-wider text-primary-700 mb-1">
             Drill
           </p>
           <p className="text-xs text-primary-900 leading-relaxed">
             {drill.drillText}
           </p>
           {drill.timeMin && (
-            <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary-600">
+            <p className="mt-1.5 inline-flex items-center gap-1 text-eyebrow font-medium text-primary-600">
               <IconClock size={12} /> {drill.timeMin} min
             </p>
           )}
@@ -330,7 +330,7 @@ function DrillRow({
       </div>
 
       {state.kind === 'error' && (
-        <p className="text-[11px] text-red-600">{state.message}</p>
+        <p className="text-eyebrow text-red-600">{state.message}</p>
       )}
     </div>
   );
@@ -390,7 +390,7 @@ export function PrescribedPracticePlanCard({
             <IconSparkles size={18} className="text-primary-600" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] leading-tight">
+            <h3 className="text-body font-medium text-warm-900 tracking-[-0.005em] leading-tight">
               Prescribed Practice Plan
             </h3>
             <p className="text-xs text-warm-500 mt-0.5">

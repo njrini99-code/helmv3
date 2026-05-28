@@ -21,7 +21,7 @@ export function QualifyingBoard({ workspace }: { workspace: QualifyingWorkspace 
     <div className="space-y-6">
       <Reveal>
         <header className="surface-stone rounded-3xl p-6 md:p-8">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
+          <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
             Selection workspace
           </p>
           <h1 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">

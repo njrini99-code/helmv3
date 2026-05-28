@@ -180,14 +180,14 @@ export const PremiumStatCard = memo(function PremiumStatCard({
         >
             <div className="relative flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-medium text-warm-500 mb-1.5 tracking-wide uppercase opacity-80">{label}</p>
+                    <p className="text-caption font-medium text-warm-500 mb-1.5 tracking-wide uppercase opacity-80">{label}</p>
                     <div className="flex items-baseline gap-2">
-                        <p className="text-[32px] md:text-[36px] font-light leading-none tracking-[-0.025em] text-warm-900 tabular-nums" suppressHydrationWarning>
+                        <p className="text-h1 md:text-display font-light leading-none tracking-[-0.025em] text-warm-900 tabular-nums" suppressHydrationWarning>
                             {isNumeric ? numericValue.toLocaleString(undefined, { maximumFractionDigits: 1 }) : value}
                         </p>
                         {trend && (
                             <span className={cn(
-                                'inline-flex items-center gap-0.5 text-[11px] font-medium tabular-nums',
+                                'inline-flex items-center gap-0.5 text-eyebrow font-medium tabular-nums',
                                 trend.positive ? 'text-primary-600' : 'text-red-500'
                             )}>
                                 {trend.positive ? <IconTrendingUp size={11} /> : <IconTrendingDown size={11} />}
@@ -196,7 +196,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                         )}
                     </div>
                     {subValue && (
-                        <p className="text-[12px] text-warm-400 mt-1.5">{subValue}</p>
+                        <p className="text-caption text-warm-400 mt-1.5">{subValue}</p>
                     )}
                 </div>
                 <div className={cn(
@@ -324,13 +324,13 @@ export function SectionHeader({
         <div className={cn('flex items-end justify-between mb-4 md:mb-5', className)}>
             <div className="flex items-center gap-2.5 min-w-0">
                 {icon && <span className="text-primary-600 flex-shrink-0">{icon}</span>}
-                <h2 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] truncate">
+                <h2 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em] truncate">
                     {title}
                 </h2>
             </div>
             {action && (
                 <Link href={action.href} prefetch={true} className="flex-shrink-0">
-                    <button className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-[13px] font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                    <button className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                         {action.label}
                         <IconArrowRight
                             size={13}
@@ -386,13 +386,13 @@ export function RoundRow({
                 'bg-amber-50/70'
             )}>
                 <span className={cn(
-                    'text-[16px] font-medium tabular-nums leading-none tracking-[-0.012em]',
+                    'text-body font-medium tabular-nums leading-none tracking-[-0.012em]',
                     toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-warm-700' : 'text-amber-700'
                 )}>
                     {score}
                 </span>
                 <span className={cn(
-                    'text-[10px] font-medium mt-0.5',
+                    'text-eyebrow font-medium mt-0.5',
                     toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-400' : 'text-amber-500'
                 )}>
                     {toPar > 0 ? '+' : ''}{toPar}
@@ -400,15 +400,15 @@ export function RoundRow({
             </div>
             <div className="flex-1 min-w-0">
                 {showPlayer && playerName && (
-                    <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">{playerName}</p>
+                    <p className="font-medium text-body text-warm-900 tracking-[-0.005em] truncate">{playerName}</p>
                 )}
                 <p className={cn(
                     'truncate',
-                    showPlayer ? 'text-[13px] text-warm-500' : 'font-medium text-[15px] text-warm-900 tracking-[-0.005em]'
+                    showPlayer ? 'text-body-sm text-warm-500' : 'font-medium text-body text-warm-900 tracking-[-0.005em]'
                 )}>
                     {courseName}
                 </p>
-                <p className="text-[12px] text-warm-400 mt-0.5" suppressHydrationWarning>
+                <p className="text-caption text-warm-400 mt-0.5" suppressHydrationWarning>
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
@@ -526,23 +526,23 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     <div className="flex-1 min-w-0">
                         {/* Top row: Player name + relative date */}
                         <div className="flex items-center justify-between gap-2 mb-1">
-                            <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">
+                            <p className="font-medium text-body text-warm-900 tracking-[-0.005em] truncate">
                                 {playerName}
                             </p>
-                            <span className="text-[12px] text-warm-400 flex-shrink-0 tabular-nums" suppressHydrationWarning>
+                            <span className="text-caption text-warm-400 flex-shrink-0 tabular-nums" suppressHydrationWarning>
                                 {formatRelativeDate(date, now)}
                             </span>
                         </div>
 
                         {/* Course name + round type */}
                         <div className="flex items-center gap-2 mb-3">
-                            <p className="text-[13px] text-warm-500 truncate">
+                            <p className="text-body-sm text-warm-500 truncate">
                                 {courseName}
                             </p>
                             {roundType && (
                                 <>
                                     <span className="text-warm-300 flex-shrink-0" aria-hidden>&middot;</span>
-                                    <span className="text-[12px] text-warm-400 flex-shrink-0">
+                                    <span className="text-caption text-warm-400 flex-shrink-0">
                                         {formatRoundType(roundType)}
                                     </span>
                                 </>
@@ -559,13 +559,13 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                                 'bg-amber-50/70'
                             )}>
                                 <span className={cn(
-                                    'text-[15px] font-medium tabular-nums leading-none tracking-[-0.01em]',
+                                    'text-body font-medium tabular-nums leading-none tracking-[-0.01em]',
                                     toPar < 0 ? 'text-primary-700' : toPar === 0 ? 'text-warm-700' : 'text-amber-700'
                                 )}>
                                     {score}
                                 </span>
                                 <span className={cn(
-                                    'text-[11px] font-medium tabular-nums leading-none',
+                                    'text-eyebrow font-medium tabular-nums leading-none',
                                     toPar < 0 ? 'text-primary-500' : toPar === 0 ? 'text-warm-400' : 'text-amber-500'
                                 )}>
                                     {toParLabel}
@@ -574,7 +574,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
 
                             {/* Stat pills — minimal, no fill, just text */}
                             {hasStats && (
-                                <div className="flex items-center gap-3 text-[12px] text-warm-500">
+                                <div className="flex items-center gap-3 text-caption text-warm-500">
                                     {totalPutts !== null && (
                                         <span className="tabular-nums">{totalPutts} putts</span>
                                     )}
@@ -634,18 +634,18 @@ export function TopPerformerRow({
             tabIndex={0}
         >
             <div className={cn(
-                'w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-medium tabular-nums',
+                'w-9 h-9 rounded-full flex items-center justify-center text-body-sm font-medium tabular-nums',
                 colors.bg, colors.text
             )}>
                 {colors.icon || rank}
             </div>
             <div className="flex-1 min-w-0">
-                <p className="font-medium text-[15px] text-warm-900 tracking-[-0.005em] truncate">{name}</p>
-                <p className="text-[12px] text-warm-500">{rounds} rounds</p>
+                <p className="font-medium text-body text-warm-900 tracking-[-0.005em] truncate">{name}</p>
+                <p className="text-caption text-warm-500">{rounds} rounds</p>
             </div>
             <div className="text-right">
-                <p className="font-medium text-warm-900 tabular-nums text-[17px] tracking-[-0.012em]">{avgScore.toFixed(1)}</p>
-                <p className="text-[11px] text-warm-400 tracking-wide">avg</p>
+                <p className="font-medium text-warm-900 tabular-nums text-body-lg tracking-[-0.012em]">{avgScore.toFixed(1)}</p>
+                <p className="text-eyebrow text-warm-400 tracking-wide">avg</p>
             </div>
         </m.div>
     );

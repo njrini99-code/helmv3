@@ -153,7 +153,7 @@ export function TaskCard({ task }: TaskCardProps) {
               style={{ overflow: 'hidden' }}
               className="mt-4 pt-4 border-t border-warm-200"
             >
-              <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">
                 Player Progress
               </p>
               <motion.div

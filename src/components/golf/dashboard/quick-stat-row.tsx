@@ -42,7 +42,7 @@ export const QuickStatRow = memo(function QuickStatRow({ stats }: QuickStatRowPr
                         <p className="text-label font-medium text-warm-400 uppercase tracking-wider mb-0.5 truncate">
                             {stat.label}
                         </p>
-                        <p className="text-[15px] font-medium text-warm-900 tabular-nums truncate">
+                        <p className="text-body font-medium text-warm-900 tabular-nums truncate">
                             {stat.value !== null ? `${stat.value}${stat.suffix || ''}` : '--'}
                         </p>
                     </div>

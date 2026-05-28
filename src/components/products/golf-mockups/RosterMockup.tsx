@@ -33,7 +33,7 @@ function PlayerRow({ name, status }: { name: 'wide' | 'medium' | 'short'; status
 
       {/* Status badge */}
       <div className={cn(
-        "ml-auto px-1.5 py-0.5 rounded text-[9px] font-medium",
+        "ml-auto px-1.5 py-0.5 rounded text-eyebrow font-medium",
         status === 'active'
           ? "bg-emerald-100 text-emerald-700"
           : "bg-amber-100 text-amber-700"

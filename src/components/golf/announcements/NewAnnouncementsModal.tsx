@@ -177,7 +177,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     {ann.title}
                   </h3>
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[10px] font-medium uppercase tracking-wider flex-shrink-0 mt-0.5',
+                    'inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-eyebrow font-medium uppercase tracking-wider flex-shrink-0 mt-0.5',
                     urg.badgeBg, urg.badgeText,
                   )}>
                     <span className={cn('w-1.5 h-1.5 rounded-full', urg.badgeDot)} />
@@ -187,7 +187,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
 
                 {/* Body preview */}
                 <p className={cn(
-                  'text-[14px] text-warm-600 line-clamp-3 leading-relaxed mb-2.5',
+                  'text-body-sm text-warm-600 line-clamp-3 leading-relaxed mb-2.5',
                   isAcked && 'text-warm-400',
                 )}>
                   {ann.body}
@@ -211,7 +211,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
                     </Button>
                   )}
                   {isAcked && (
-                    <span className="inline-flex items-center gap-1 text-[12px] text-primary-600 font-medium">
+                    <span className="inline-flex items-center gap-1 text-caption text-primary-600 font-medium">
                       <IconCheck size={12} />
                       Acknowledged
                     </span>

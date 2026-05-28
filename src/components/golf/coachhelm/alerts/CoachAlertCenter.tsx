@@ -166,7 +166,7 @@ export function CoachAlertCenter({
                 animate={{ scale: 1 }}
                 className={cn(
                   'absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center',
-                  'text-[11px] font-medium text-white rounded-full',
+                  'text-eyebrow font-medium text-white rounded-full',
                   criticalCount > 0 ? 'bg-red-600' : 'bg-amber-600',
                 )}
                 role="status"

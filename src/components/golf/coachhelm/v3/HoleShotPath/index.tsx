@@ -166,17 +166,17 @@ export function HoleShotPath({
           <div className="flex items-baseline justify-between mb-2 px-1">
             <div className="flex items-baseline gap-2">
               {hole_number !== undefined && (
-                <span className="text-[11px] uppercase tracking-[0.14em] text-warm-500">
+                <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-500">
                   Hole {hole_number}
                 </span>
               )}
               {par !== undefined && (
-                <span className="text-[11px] text-warm-400 tabular-nums">
+                <span className="text-eyebrow text-warm-400 tabular-nums">
                   Par {par}
                 </span>
               )}
               {plot.total_yardage > 0 && (
-                <span className="text-[11px] text-warm-400 tabular-nums">
+                <span className="text-eyebrow text-warm-400 tabular-nums">
                   · {Math.round(plot.total_yardage)}y
                 </span>
               )}
@@ -308,7 +308,7 @@ export function HoleShotPath({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, ease: EASE_CINEMATIC }}
-            className="absolute left-1/2 -translate-x-1/2 mt-2 z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-[11px] text-warm-800 whitespace-nowrap shadow-lg"
+            className="absolute left-1/2 -translate-x-1/2 mt-2 z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
             role="tooltip"
           >
             <div className="flex items-baseline gap-2">
@@ -339,7 +339,7 @@ export function HoleShotPath({
             transition={enterTransition}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
-            <span className="text-[11px] uppercase tracking-[0.14em] text-warm-100/70">
+            <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-100/70">
               No shots logged
             </span>
           </m.div>

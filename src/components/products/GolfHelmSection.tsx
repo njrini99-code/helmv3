@@ -200,7 +200,7 @@ export function GolfHelmSection() {
                   {/* Mini round review mockup */}
                   <div className="bg-black/30 rounded-lg p-3.5 mb-3">
                     <div className="flex items-center justify-between mb-2.5">
-                      <span className="text-[10px] text-white/40 font-medium">Pebble Beach GL</span>
+                      <span className="text-eyebrow text-white/40 font-medium">Pebble Beach GL</span>
                       <span className="text-lg font-bold text-white">72 <span className="text-xs text-white/40 font-normal">Even</span></span>
                     </div>
                     {/* Mini scorecard */}
@@ -209,7 +209,7 @@ export function GolfHelmSection() {
                         const pars = [4,4,3,5,4,4,3,5,4];
                         const diff = s - pars[i]!;
                         return (
-                          <div key={i} className={`flex-1 h-5 rounded text-[8px] font-bold flex items-center justify-center ${
+                          <div key={i} className={`flex-1 h-5 rounded text-eyebrow font-bold flex items-center justify-center ${
                             diff < 0 ? 'bg-emerald-500/30 text-emerald-300' :
                             diff === 0 ? 'bg-white/10 text-white/50' :
                             'bg-amber-500/20 text-amber-300'
@@ -218,7 +218,7 @@ export function GolfHelmSection() {
                       })}
                     </div>
                     <div className="bg-white/[0.04] rounded-md p-2 ring-1 ring-white/[0.06]">
-                      <p className="text-[10px] text-white/50 font-medium leading-relaxed">
+                      <p className="text-eyebrow text-white/50 font-medium leading-relaxed">
                         Short game improved 18% this round. Approach shots within 120yds averaged 12ft from pin.
                       </p>
                     </div>
@@ -232,7 +232,7 @@ export function GolfHelmSection() {
                     ].map((s) => (
                       <div key={s.label} className="flex-1 bg-black/20 rounded-md px-2 py-1.5 text-center">
                         <p className={`text-xs font-bold ${s.color}`}>{s.value}</p>
-                        <p className="text-[9px] text-white/30 mt-0.5">{s.label}</p>
+                        <p className="text-eyebrow text-white/30 mt-0.5">{s.label}</p>
                       </div>
                     ))}
                   </div>
@@ -252,7 +252,7 @@ export function GolfHelmSection() {
                   {/* Mini trend chart */}
                   <div className="bg-black/30 rounded-lg p-3.5 mb-3">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] text-white/40 font-medium">Team Avg (Last 7 rounds)</span>
+                      <span className="text-eyebrow text-white/40 font-medium">Team Avg (Last 7 rounds)</span>
                       <span className="text-xs font-bold text-emerald-400">+1.8 ↓</span>
                     </div>
                     {/* Sparkline bars */}
@@ -263,7 +263,7 @@ export function GolfHelmSection() {
                             className={`w-full rounded-sm ${i === 6 ? 'bg-emerald-500' : 'bg-emerald-500/30'}`}
                             style={{ height: `${((80 - v) / 10) * 100}%`, minHeight: '12%' }}
                           />
-                          <span className="text-[7px] text-white/25">{v}</span>
+                          <span className="text-eyebrow text-white/25">{v}</span>
                         </div>
                       ))}
                     </div>
@@ -276,8 +276,8 @@ export function GolfHelmSection() {
                       { label: '1 stable', icon: '—', color: 'text-white/40 bg-white/5' },
                     ].map((t) => (
                       <div key={t.label} className="flex items-center gap-2">
-                        <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${t.color}`}>{t.icon}</span>
-                        <span className="text-[11px] text-white/50">{t.label}</span>
+                        <span className={`w-5 h-5 rounded flex items-center justify-center text-eyebrow font-bold ${t.color}`}>{t.icon}</span>
+                        <span className="text-eyebrow text-white/50">{t.label}</span>
                       </div>
                     ))}
                   </div>
@@ -298,7 +298,7 @@ export function GolfHelmSection() {
                   </div>
                   {/* Strokes gained breakdown */}
                   <div className="bg-black/30 rounded-lg p-3.5 mb-3">
-                    <p className="text-[10px] text-white/40 font-medium mb-3">Strokes Gained vs Field</p>
+                    <p className="text-eyebrow text-white/40 font-medium mb-3">Strokes Gained vs Field</p>
                     <div className="space-y-2">
                       {[
                         { label: 'SG: Approach', value: '+1.3', pct: 65, positive: true },
@@ -307,8 +307,8 @@ export function GolfHelmSection() {
                       ].map((s) => (
                         <div key={s.label}>
                           <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[10px] text-white/50">{s.label}</span>
-                            <span className="text-[10px] font-bold text-emerald-400">{s.value}</span>
+                            <span className="text-eyebrow text-white/50">{s.label}</span>
+                            <span className="text-eyebrow font-bold text-emerald-400">{s.value}</span>
                           </div>
                           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                             <div className="h-full bg-emerald-500/60 rounded-full" style={{ width: `${s.pct}%` }} />
@@ -317,7 +317,7 @@ export function GolfHelmSection() {
                       ))}
                     </div>
                     <div className="h-px bg-white/5 my-3" />
-                    <p className="text-[9px] text-red-400/60 font-semibold uppercase tracking-wider mb-2">Areas to Improve</p>
+                    <p className="text-eyebrow text-red-400/60 font-semibold uppercase tracking-wider mb-2">Areas to Improve</p>
                     <div className="space-y-2">
                       {[
                         { label: 'SG: Putting', value: '-2.0', pct: 70, positive: false },
@@ -325,8 +325,8 @@ export function GolfHelmSection() {
                       ].map((s) => (
                         <div key={s.label}>
                           <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[10px] text-white/50">{s.label}</span>
-                            <span className="text-[10px] font-bold text-red-400">{s.value}</span>
+                            <span className="text-eyebrow text-white/50">{s.label}</span>
+                            <span className="text-eyebrow font-bold text-red-400">{s.value}</span>
                           </div>
                           <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
                             <div className="h-full bg-red-500/50 rounded-full" style={{ width: `${s.pct}%` }} />
@@ -335,7 +335,7 @@ export function GolfHelmSection() {
                       ))}
                     </div>
                   </div>
-                  <p className="text-[10px] text-white/30 leading-relaxed">AI-identified from your strokes gained data across 14 rounds.</p>
+                  <p className="text-eyebrow text-white/30 leading-relaxed">AI-identified from your strokes gained data across 14 rounds.</p>
                 </div>
               </div>
 

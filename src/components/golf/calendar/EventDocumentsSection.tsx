@@ -138,7 +138,7 @@ export function EventDocumentsSection({
           <Paperclip className="w-4 h-4 text-warm-500" />
           Documents
           {attached.length > 0 && (
-            <span className="text-[11px] text-warm-500 tabular-nums font-medium">
+            <span className="text-eyebrow text-warm-500 tabular-nums font-medium">
               ({attached.length})
             </span>
           )}
@@ -189,7 +189,7 @@ export function EventDocumentsSection({
                     {row.document.title}
                     <ExternalLink className="inline-block w-3 h-3 ml-1 align-middle text-warm-400" />
                   </a>
-                  <p className="text-[11px] text-warm-500 truncate">
+                  <p className="text-eyebrow text-warm-500 truncate">
                     {[row.document.category, sizeLabel].filter(Boolean).join(' · ')}
                   </p>
                 </div>
@@ -319,7 +319,7 @@ function DocumentPickerDialog({
               <p className="text-sm text-warm-500">
                 {query ? 'No documents match that search.' : 'Your team library is empty.'}
               </p>
-              <p className="text-[11px] text-warm-400 mt-1">
+              <p className="text-eyebrow text-warm-400 mt-1">
                 Visit Documents to upload one first.
               </p>
             </div>
@@ -352,14 +352,14 @@ function DocumentPickerDialog({
                         <p className="text-sm font-medium text-warm-900 truncate">
                           {d.title}
                         </p>
-                        <p className="text-[11px] text-warm-500 truncate">
+                        <p className="text-eyebrow text-warm-500 truncate">
                           {[d.category, sizeLabel].filter(Boolean).join(' · ') || 'Document'}
                         </p>
                       </div>
                       {pending ? (
                         <Loader2 className="w-4 h-4 animate-spin text-warm-400 flex-shrink-0" />
                       ) : alreadyAttached ? (
-                        <span className="text-[11px] text-warm-500 flex-shrink-0 font-medium">
+                        <span className="text-eyebrow text-warm-500 flex-shrink-0 font-medium">
                           Attached
                         </span>
                       ) : (

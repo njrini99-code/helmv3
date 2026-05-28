@@ -244,7 +244,7 @@ export function RoundReviewDisplay({
           <div className="flex items-center gap-4 mb-4 pb-4 border-b border-white/20">
             {score !== undefined && (
               <div className="text-center">
-                <div className="text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em]">{score}</div>
+                <div className="text-h1 md:text-display font-light text-warm-900 tracking-[-0.025em]">{score}</div>
                 {scoreToPar !== undefined && (
                   <div
                     className={cn(
@@ -364,8 +364,8 @@ export function RoundReviewDisplay({
                       <span
                         className={
                           highlight.source === 'trend'
-                            ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
-                            : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
+                            ? 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
+                            : 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
                         }
                       >
                         {highlight.source === 'trend' ? '90-day trend' : 'This round'}
@@ -407,8 +407,8 @@ export function RoundReviewDisplay({
                   <span
                     className={
                       area.source === 'trend'
-                        ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
-                        : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
+                        ? 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200 flex-shrink-0'
+                        : 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200 flex-shrink-0'
                     }
                   >
                     {area.source === 'trend' ? '90-day trend' : 'This round'}
@@ -446,7 +446,7 @@ export function RoundReviewDisplay({
                     {stat.label}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[20px] font-medium text-warm-900 tracking-[-0.012em]">
+                    <span className="text-h3 font-medium text-warm-900 tracking-[-0.012em]">
                       {stat.value}
                     </span>
                     <div className={cn('flex items-center gap-1', comparison.color)}>
@@ -517,11 +517,11 @@ export function RoundReviewDisplay({
                   return (
                     <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                       <div className="text-micro opacity-70">H{h.hole}</div>
-                      <div className="text-[13px] font-medium">{h.score}</div>
+                      <div className="text-body-sm font-medium">{h.score}</div>
                       <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
-                        {h.threePutt && <span className="text-[8px]">3P</span>}
-                        {h.onePutt && <span className="text-[8px]">1P</span>}
-                        {h.penalties > 0 && <span className="text-[8px]">P</span>}
+                        {h.threePutt && <span className="text-eyebrow">3P</span>}
+                        {h.onePutt && <span className="text-eyebrow">1P</span>}
+                        {h.penalties > 0 && <span className="text-eyebrow">P</span>}
                       </div>
                     </div>
                   );
@@ -529,7 +529,7 @@ export function RoundReviewDisplay({
                 {/* Front 9 total */}
                 <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
                   <div className="text-micro opacity-70">OUT</div>
-                  <div className="text-[13px] font-medium">
+                  <div className="text-body-sm font-medium">
                     {review.holeByHole.filter(h => h.hole <= 9).reduce((s, h) => s + h.score, 0)}
                   </div>
                   <div className="min-h-[12px]" />
@@ -551,11 +551,11 @@ export function RoundReviewDisplay({
                     return (
                       <div key={h.hole} className={cn('rounded-lg text-center py-1.5 px-0.5', bg)}>
                         <div className="text-micro opacity-70">H{h.hole}</div>
-                        <div className="text-[13px] font-medium">{h.score}</div>
+                        <div className="text-body-sm font-medium">{h.score}</div>
                         <div className="flex justify-center gap-0.5 mt-0.5 min-h-[12px]">
-                          {h.threePutt && <span className="text-[8px]">3P</span>}
-                          {h.onePutt && <span className="text-[8px]">1P</span>}
-                          {h.penalties > 0 && <span className="text-[8px]">P</span>}
+                          {h.threePutt && <span className="text-eyebrow">3P</span>}
+                          {h.onePutt && <span className="text-eyebrow">1P</span>}
+                          {h.penalties > 0 && <span className="text-eyebrow">P</span>}
                         </div>
                       </div>
                     );
@@ -563,7 +563,7 @@ export function RoundReviewDisplay({
                   {/* Back 9 total */}
                   <div className="rounded-lg text-center py-1.5 px-0.5 bg-warm-200/60 text-warm-800 border border-warm-300/50">
                     <div className="text-micro opacity-70">IN</div>
-                    <div className="text-[13px] font-medium">
+                    <div className="text-body-sm font-medium">
                       {review.holeByHole.filter(h => h.hole >= 10).reduce((s, h) => s + h.score, 0)}
                     </div>
                     <div className="min-h-[12px]" />
@@ -698,12 +698,12 @@ export function RoundReviewDisplay({
               {review.puttingBreakdown.avgFirstPuttDist !== null && (
                 <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                   <div className="text-xs text-warm-500">Avg 1st Putt</div>
-                  <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
+                  <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{review.puttingBreakdown.avgFirstPuttDist}ft</div>
                 </div>
               )}
               <div className="p-2 rounded-lg bg-cream-100/68 text-center">
                 <div className="text-xs text-warm-500">One-Putts</div>
-                <div className="text-[17px] font-medium tracking-[-0.005em] text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
+                <div className="text-body-lg font-medium tracking-[-0.005em] text-primary-600">{review.puttingBreakdown.onePuttCount}</div>
               </div>
             </div>
 
@@ -752,7 +752,7 @@ export function RoundReviewDisplay({
                 className="flex items-start gap-3 p-3 rounded-lg bg-cream-100/68 border border-warm-200/45"
               >
                 <div className={cn(
-                  'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-[11px] font-medium',
+                  'w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-eyebrow font-medium',
                   index === 0 ? 'bg-red-100 text-red-700' :
                   index === 1 ? 'bg-amber-100 text-amber-700' :
                   'bg-warm-100 text-warm-600'
@@ -763,7 +763,7 @@ export function RoundReviewDisplay({
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-sm text-warm-900">{item.category}</span>
                     <span className={cn(
-                      'text-[13px] font-medium',
+                      'text-body-sm font-medium',
                       item.potentialStrokes >= 2 ? 'text-red-600' :
                       item.potentialStrokes >= 1 ? 'text-amber-600' :
                       'text-warm-600'
@@ -836,7 +836,7 @@ export function RoundReviewDisplay({
                   </div>
                 </div>
                 {/* Hole labels */}
-                <div className="flex justify-between pl-4 text-[9px] text-warm-400">
+                <div className="flex justify-between pl-4 text-eyebrow text-warm-400">
                   {data.map(d => (
                     <span key={d.hole} className="text-center" style={{ flex: 1 }}>{d.hole}</span>
                   ))}
@@ -879,13 +879,13 @@ export function RoundReviewDisplay({
                   {review.drivingAnalysis.avgDistance !== null && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Avg Distance</div>
-                      <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
+                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.avgDistance}y</div>
                     </div>
                   )}
                   {review.drivingAnalysis.longestDrive && (
                     <div className="p-2.5 rounded-lg bg-cream-100/68 border border-warm-200/45">
                       <div className="text-xs text-warm-500">Longest Drive</div>
-                      <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
+                      <div className="text-body-lg font-medium tracking-[-0.005em] text-warm-900">{review.drivingAnalysis.longestDrive.distance}y</div>
                       <div className="text-micro text-warm-400">Hole #{review.drivingAnalysis.longestDrive.hole}</div>
                     </div>
                   )}
@@ -924,7 +924,7 @@ export function RoundReviewDisplay({
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-lg bg-red-50/50 border border-red-200/50">
                     <div className="text-xs text-red-600">Strokes Lost</div>
-                    <div className="text-[20px] font-medium text-red-700 tracking-[-0.012em]">{review.penaltyAnalysis.strokesLost}</div>
+                    <div className="text-h3 font-medium text-red-700 tracking-[-0.012em]">{review.penaltyAnalysis.strokesLost}</div>
                   </div>
                   <div className="flex flex-wrap gap-1.5 flex-1">
                     {review.penaltyAnalysis.holes.map(p => (

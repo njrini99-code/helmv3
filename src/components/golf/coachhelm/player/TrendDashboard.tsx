@@ -130,7 +130,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
               <IconActivity size={20} className="text-primary-600" />
             </div>
             <div>
-              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Trend Analysis</h3>
+              <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Trend Analysis</h3>
               <p className="text-sm text-warm-500">{formatMetricLabel(resolvedTrends.metric)}</p>
             </div>
           </div>

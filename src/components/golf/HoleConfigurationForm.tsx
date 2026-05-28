@@ -85,25 +85,25 @@ export function HoleConfigurationForm({
           </svg>
           Back
         </button>
-        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{courseName}</h2>
+        <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{courseName}</h2>
         <div className="w-16" /> {/* Spacer */}
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em] tabular-nums">{totalPar}</div>
-          <div className="text-[11px] font-medium text-warm-500 uppercase tracking-wider">Total Par</div>
+          <div className="text-h1 font-light text-primary-700 tracking-[-0.025em] tabular-nums">{totalPar}</div>
+          <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Total Par</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+          <div className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {totalYards.toLocaleString()}
           </div>
-          <div className="text-[11px] font-medium text-warm-500 uppercase tracking-wider">Total Yards</div>
+          <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Total Yards</div>
         </div>
         <div className="bg-white rounded-lg p-4 border border-warm-200 shadow-sm shadow-primary-950/5 ring-1 ring-warm-100 text-center">
-          <div className="text-[28px] md:text-[32px] font-light text-warm-700 tracking-[-0.025em] tabular-nums">{holesPerRound}</div>
-          <div className="text-[11px] font-medium text-warm-500 uppercase tracking-wider">Holes</div>
+          <div className="text-h1 font-light text-warm-700 tracking-[-0.025em] tabular-nums">{holesPerRound}</div>
+          <div className="text-eyebrow font-medium text-warm-500 uppercase tracking-wider">Holes</div>
         </div>
       </div>
 
@@ -137,13 +137,13 @@ export function HoleConfigurationForm({
       <div className="bg-white rounded-lg border border-warm-200 overflow-hidden shadow-sm shadow-primary-950/5 ring-1 ring-warm-100">
         {/* Header */}
         <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-50 border-b border-warm-200">
-          <div className="px-3 py-2 text-[11px] font-medium text-warm-500 uppercase tracking-wider">
+          <div className="px-3 py-2 text-eyebrow font-medium text-warm-500 uppercase tracking-wider">
             Hole
           </div>
-          <div className="px-3 py-2 text-[11px] font-medium text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
+          <div className="px-3 py-2 text-eyebrow font-medium text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
             Par
           </div>
-          <div className="px-3 py-2 text-[11px] font-medium text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
+          <div className="px-3 py-2 text-eyebrow font-medium text-warm-500 uppercase tracking-wider text-center border-l border-warm-200">
             Yardage
           </div>
         </div>
@@ -159,7 +159,7 @@ export function HoleConfigurationForm({
             {/* Hole Number */}
             <div className="px-3 py-3 flex items-center">
               <span className={`w-8 h-8 rounded-full flex items-center justify-center
-                text-[13px] font-medium
+                text-body-sm font-medium
                 ${hole.par === 3 ? 'bg-rose-50 text-rose-600 ring-1 ring-rose-200' : ''}
                 ${hole.par === 4 ? 'bg-warm-100 text-warm-700 ring-1 ring-warm-200' : ''}
                 ${hole.par === 5 ? 'bg-primary-50 text-primary-600 ring-1 ring-primary-200' : ''}
@@ -175,7 +175,7 @@ export function HoleConfigurationForm({
                   <button
                     key={par}
                     onClick={() => updateHole(hole.holeNumber, 'par', par)}
-                    className={`w-10 h-10 rounded-lg text-[13px] font-medium transition-all
+                    className={`w-10 h-10 rounded-lg text-body-sm font-medium transition-all
                       ${hole.par === par
                         ? par === 3
                           ? 'bg-rose-600 text-white shadow-sm shadow-rose-950/10 ring-1 ring-rose-700'
@@ -209,13 +209,13 @@ export function HoleConfigurationForm({
 
         {/* Nine Total */}
         <div className="grid grid-cols-[60px_1fr_1fr] gap-0 bg-warm-100 border-t border-warm-200">
-          <div className="px-3 py-3 text-[13px] font-medium text-warm-700">
+          <div className="px-3 py-3 text-body-sm font-medium text-warm-700">
             {is9Hole ? 'TOTAL' : (activeTab === 'front' ? 'OUT' : 'IN')}
           </div>
-          <div className="px-3 py-3 text-center text-[13px] font-medium text-warm-900 border-l border-warm-200">
+          <div className="px-3 py-3 text-center text-body-sm font-medium text-warm-900 border-l border-warm-200">
             {is9Hole ? totalPar : (activeTab === 'front' ? frontPar : backPar)}
           </div>
-          <div className="px-3 py-3 text-center text-[13px] font-medium text-warm-900 border-l border-warm-200">
+          <div className="px-3 py-3 text-center text-body-sm font-medium text-warm-900 border-l border-warm-200">
             {(is9Hole ? totalYards : (activeTab === 'front' ? frontYards : backYards)).toLocaleString()}
           </div>
         </div>

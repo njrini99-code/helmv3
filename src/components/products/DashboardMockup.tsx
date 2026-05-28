@@ -166,13 +166,13 @@ function ActivityRow({ name, action, time }: { name: string; action: string; tim
   return (
     <div className="flex items-center gap-2">
       <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-        <span className="text-[9px] font-semibold text-emerald-600">{name.split(' ').map(n => n[0]).join('')}</span>
+        <span className="text-eyebrow font-semibold text-emerald-600">{name.split(' ').map(n => n[0]).join('')}</span>
       </div>
       <div className="flex-1 min-w-0">
         <span className="text-label text-warm-900 font-medium">{name}</span>
         <span className="text-label text-warm-500"> {action}</span>
       </div>
-      <span className="text-[9px] text-warm-400 flex-shrink-0">{time}</span>
+      <span className="text-eyebrow text-warm-400 flex-shrink-0">{time}</span>
     </div>
   );
 }

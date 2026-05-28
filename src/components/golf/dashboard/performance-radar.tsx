@@ -100,7 +100,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                     </div>
                     {data.sg_total !== null && (
                         <div className={cn(
-                            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[13px] font-medium tabular-nums',
+                            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-body-sm font-medium tabular-nums',
                             data.sg_total >= 0
                                 ? 'bg-primary-50 text-primary-700'
                                 : 'bg-red-50 text-red-700'
@@ -142,7 +142,7 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                         )}
                                     </div>
                                     <span className={cn(
-                                        'text-[11px] font-medium tabular-nums',
+                                        'text-eyebrow font-medium tabular-nums',
                                         isPositive ? 'text-primary-700' : 'text-red-600'
                                     )}>
                                         {isPositive ? '+' : ''}{value.toFixed(2)}

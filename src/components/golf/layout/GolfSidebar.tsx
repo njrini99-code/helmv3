@@ -206,7 +206,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             />
           </div>
           {!isCollapsed && (
-            <span className="text-[17px] font-medium leading-none tracking-[-0.012em] text-white">
+            <span className="text-body-lg font-medium leading-none tracking-[-0.012em] text-white">
               Golf<span className="text-primary-400/85">Helm</span>
             </span>
           )}
@@ -231,13 +231,13 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 className="w-10 h-10 rounded-2xl object-cover"
               />
             ) : (
-              <span className="text-white font-medium text-[13px] tracking-[-0.005em]">
+              <span className="text-white font-medium text-body-sm tracking-[-0.005em]">
                 {userName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U'}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-white truncate tracking-[-0.005em]">
+            <p className="text-body-sm font-medium text-white truncate tracking-[-0.005em]">
               {userName || 'User'}
             </p>
             <p className="text-[11.5px] text-white/45 truncate flex items-center gap-1.5">
