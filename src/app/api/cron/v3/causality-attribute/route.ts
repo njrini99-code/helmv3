@@ -26,7 +26,25 @@ const MIN_AGE_DAYS = 21;
 interface CronSummary {
   considered: number;
   attributed: number;
-  deferred: number; // metric not yet wired through averageInWindow
+  /** Window had no rows pre/post — retry tomorrow once another round lands. */
+  no_data: number;
+  /**
+   * Metric is intentionally not attributed (diagnostic-only, needs
+   * shot-level data, or a between-cohort comparison). These will never
+   * produce a lift; do NOT retry.
+   */
+  intentional_no_lift: number;
+  /**
+   * Insight surface tagged us with a metric we've never heard of. This
+   * is a coverage gap — the metric should either be added to the
+   * registry or aliased. Logged structured for observability.
+   */
+  unknown_metric: number;
+  /**
+   * Insight is missing `evidence.metric` / `player_id` / `created_at` —
+   * insight surface bug.
+   */
+  malformed: number;
   errors: number;
   duration_ms: number;
 }
@@ -48,7 +66,10 @@ async function handle(): Promise<NextResponse> {
   const summary: CronSummary = {
     considered: 0,
     attributed: 0,
-    deferred: 0,
+    no_data: 0,
+    intentional_no_lift: 0,
+    unknown_metric: 0,
+    malformed: 0,
     errors: 0,
     duration_ms: 0,
   };
@@ -88,19 +109,32 @@ async function handle(): Promise<NextResponse> {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const metric = (c.evidence as any)?.metric as string | undefined;
       if (!metric || !c.player_id || !c.created_at) {
-        summary.deferred += 1;
+        summary.malformed += 1;
         continue;
       }
-      const row = await computeAttribution(sb, {
+      const result = await computeAttribution(sb, {
         insight_id: c.id,
         player_id: c.player_id,
         surfaced_at: c.created_at,
         target_metric_id: metric,
       });
-      if (!row) {
-        summary.deferred += 1;
+      if (!result.ok) {
+        if (result.reason === 'intentional-null') {
+          summary.intentional_no_lift += 1;
+        } else if (result.reason === 'unknown-metric') {
+          summary.unknown_metric += 1;
+          // Structured log so we can spot insight surface ↔ metric registry drift.
+          await logServerError(
+            `causality unknown metric '${metric}' on insight ${c.id}`,
+            { action: 'cron.v3.causality.unknown-metric' },
+            'warning',
+          );
+        } else {
+          summary.no_data += 1;
+        }
         continue;
       }
+      const row = result.row;
       const { error: insErr } = await sb
         .from('golf_insight_outcome_attribution')
         .insert({
