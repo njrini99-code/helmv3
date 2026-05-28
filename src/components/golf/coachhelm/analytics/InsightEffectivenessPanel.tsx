@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   BarChart,
   Bar,
@@ -34,6 +34,7 @@ export function InsightEffectivenessPanel({
   compact = false,
   className,
 }: InsightEffectivenessPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const chartData = useMemo(() => {
     return data.byType.map((m) => ({
       name: m.insightType,
@@ -83,7 +84,7 @@ export function InsightEffectivenessPanel({
                 key={m.insightType}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.1 })}
                 className="flex items-center justify-between p-2 bg-warm-50 rounded-lg"
               >
                 <span className="text-sm text-warm-700">{m.insightType}</span>

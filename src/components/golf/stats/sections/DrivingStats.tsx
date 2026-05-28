@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 
 export function DrivingStats({ stats }: { stats: GolfStats }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       className="space-y-4"
@@ -68,7 +69,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             className="text-center"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25, type: 'spring' }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, type: 'spring' })}
           >
             <div className="text-[32px] md:text-[36px] font-light text-blue-700 tabular-nums tracking-[-0.025em]">{formatStat(stats.missLeftPct, '%')}</div>
             <div className="text-sm text-warm-500">← Left</div>
@@ -77,13 +78,13 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             className="w-px h-12 bg-warm-200"
             initial={{ scaleY: 0 }}
             animate={{ scaleY: 1 }}
-            transition={{ delay: 0.3, duration: 0.3 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.3 })}
           />
           <motion.div
             className="text-center"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.25, type: 'spring' }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, type: 'spring' })}
           >
             <div className="text-[32px] md:text-[36px] font-light tracking-[-0.025em] text-orange-600 tabular-nums">{formatStat(stats.missRightPct, '%')}</div>
             <div className="text-sm text-warm-500">Right →</div>
@@ -93,7 +94,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
           className="text-center text-xs text-warm-400"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
         >
           {stats.missLeftCount} left / {stats.missRightCount} right
         </motion.div>

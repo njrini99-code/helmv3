@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, ReactNode } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { AdminSparkline } from './AdminChart';
@@ -61,6 +61,7 @@ export const AdminStatCard = memo(function AdminStatCard({
   sparklineData,
   sparklineColor,
 }: AdminStatCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
   const isNumeric = !isNaN(numericValue);
   const hasSparkline = sparklineData && sparklineData.length >= 2;
@@ -84,7 +85,7 @@ export const AdminStatCard = memo(function AdminStatCard({
         accentBorders[accentColor]
       )}
       whileHover={{ y: -3 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}
     >
       {/* Subtle inner gradient for depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none rounded-2xl" />

@@ -9,7 +9,7 @@
  * metadata is present — parent components don't need to guard the slot.
  */
 import { useMemo } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import type { InsightMovement } from '@/lib/coachhelm/v2/insights/types';
@@ -22,6 +22,7 @@ export interface MovementPillProps {
 }
 
 export function MovementPill({ insight, className }: MovementPillProps) {
+  const prefersReducedMotion = useReducedMotion();
   const movement = (insight.metadata?.movement ?? null) as InsightMovement | null;
 
   // Memoize the derived label so we don't re-build the string on every
@@ -46,7 +47,7 @@ export function MovementPill({ insight, className }: MovementPillProps) {
       data-testid="movement-pill"
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25, ease: 'easeOut' })}
       className={cn(
         'gap-1 px-2 py-0.5 text-eyebrow tabular-nums',
         // Preserve the original softened /60 border alpha.

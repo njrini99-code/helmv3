@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
@@ -45,6 +45,7 @@ export function ExpenseSummary({
   isCoach,
   onBudgetUpdated,
 }: ExpenseSummaryProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [editingBudget, setEditingBudget] = useState<ExpenseCategory | null>(null);
   const [budgetValue, setBudgetValue] = useState('');
   const [savingBudget, setSavingBudget] = useState(false);
@@ -174,7 +175,7 @@ export function ExpenseSummary({
                 animate={{
                   width: `${Math.min((summary.total / totalBudget) * 100, 100)}%`,
                 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, ease: 'easeOut' })}
               />
             </div>
             <p className="text-xs text-warm-500 mt-1 text-right">
@@ -308,7 +309,7 @@ export function ExpenseSummary({
                           ? '100%'
                           : '0%',
                       }}
-                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
                     />
                   </div>
                 </div>

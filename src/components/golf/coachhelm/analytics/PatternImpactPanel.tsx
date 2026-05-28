@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 import {
@@ -46,6 +46,7 @@ export function PatternImpactPanel({
   compact = false,
   className,
 }: PatternImpactPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const hasPatterns = data.patternsDetected > 0;
 
   // Prepare pie chart data
@@ -106,7 +107,7 @@ export function PatternImpactPanel({
               )}
               initial={{ width: 0 }}
               animate={{ width: `${Math.min(data.conversionRate * 100, 100)}%` }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, ease: 'easeOut' })}
             />
           </div>
         </div>
@@ -297,6 +298,7 @@ function StatCardLarge({
 }
 
 function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
+  const prefersReducedMotion = useReducedMotion();
   const stages = [
     { key: 'detected', label: 'Detected', value: data.detected, color: LIFECYCLE_COLORS.detected },
     { key: 'confirmed', label: 'Confirmed', value: data.confirmed, color: LIFECYCLE_COLORS.confirmed },
@@ -326,14 +328,14 @@ function LifecycleFunnel({ data }: { data: PatternImpactData['lifecycle'] }) {
               className="h-6 rounded-lg overflow-hidden bg-warm-100"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: index * 0.1 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
             >
               <motion.div
                 className="h-full rounded-lg flex items-center justify-end pr-2"
                 style={{ backgroundColor: stage.color }}
                 initial={{ width: 0 }}
                 animate={{ width: `${widthPercent}%` }}
-                transition={{ duration: 0.6, delay: index * 0.1, ease: 'easeOut' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: index * 0.1, ease: 'easeOut' })}
               >
                 {widthPercent > 20 && (
                   <span className="text-xs font-medium text-white">{stage.value}</span>
@@ -373,6 +375,7 @@ function PatternRow({
   index: number;
   compact?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const stateColors: Record<string, { bg: string; text: string }> = {
     detected: { bg: 'bg-warm-100', text: 'text-warm-600' },
     confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
@@ -388,7 +391,7 @@ function PatternRow({
       <motion.div
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: index * 0.1 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
         className="flex items-center justify-between p-2 bg-warm-50 rounded-lg"
       >
         <div className="flex-1 min-w-0">
@@ -414,7 +417,7 @@ function PatternRow({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
       className="px-4 py-3 hover:bg-warm-50 active:bg-warm-100 transition-colors"
     >
       <div className="flex items-start justify-between gap-4">

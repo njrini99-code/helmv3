@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconBuilding } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
   teamCount,
   className,
 }: DiscoverToggleProps) {
+  const prefersReducedMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
 
@@ -76,11 +77,11 @@ export const DiscoverToggle = memo(function DiscoverToggle({
             left: indicatorStyle.left,
             width: indicatorStyle.width,
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             type: 'spring',
             stiffness: 500,
             damping: 35,
-          }}
+          })}
           style={{
             boxShadow: `
               0 1px 3px rgba(0,0,0,0.08),
@@ -129,7 +130,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                     initial={{ scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ duration: 0.15 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
                     className={cn(
                       'ml-1 px-2 py-0.5 text-xs font-semibold rounded-full',
                       'transition-colors duration-200',
@@ -154,7 +155,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
           initial={{ opacity: 0, y: -4 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 4 }}
-          transition={{ duration: 0.15 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
           className="mt-2 text-xs text-warm-400"
         >
           {options.find(o => o.value === mode)?.description}

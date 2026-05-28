@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useTransition, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
@@ -57,6 +57,7 @@ function getDaysUntil(dateStr: string): { days: number; label: string; isOverdue
 
 // Confetti celebration component
 function CelebrationConfetti({ show }: { show: boolean }) {
+  const prefersReducedMotion = useReducedMotion();
   if (!show) return null;
 
   const particles = Array.from({ length: 50 }, (_, i) => ({
@@ -74,9 +75,9 @@ function CelebrationConfetti({ show }: { show: boolean }) {
           key={p.id}
           className="absolute w-2 h-2 rounded-full"
           style={{ left: `${p.x}%`, backgroundColor: p.color }}
-          initial={{ y: -20, opacity: 1, scale: 1 }}
+          initial={prefersReducedMotion ? false : ({ y: -20, opacity: 1, scale: 1 })}
           animate={{ y: '100vh', opacity: 0, scale: 0, rotate: 360 }}
-          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: p.duration, delay: p.delay, ease: 'easeIn' })}
         />
       ))}
     </div>
@@ -97,6 +98,7 @@ function GoalCard({
   onUncomplete: (goalId: string) => void;
   isPending: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(false);
   const isCompleted = goal.status === 'completed';
   const dueInfo = goal.target_date ? getDaysUntil(goal.target_date) : null;
@@ -104,7 +106,7 @@ function GoalCard({
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 20 })}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       className={cn(
@@ -131,7 +133,7 @@ function GoalCard({
           <AnimatePresence>
             {isCompleted && (
               <motion.span
-                initial={{ scale: 0 }}
+                initial={prefersReducedMotion ? false : ({ scale: 0 })}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0 }}
               >
@@ -198,9 +200,9 @@ function GoalCard({
                       ? 'bg-amber-500'
                       : 'bg-warm-300'
                   )}
-                  initial={{ width: 0 }}
+                  initial={prefersReducedMotion ? false : ({ width: 0 })}
                   animate={{ width: `${goal.progress}%` }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
                 />
               </div>
             </div>
@@ -221,7 +223,7 @@ function GoalCard({
           <AnimatePresence>
             {isExpanded && (
               <motion.div
-                initial={{ height: 0, opacity: 0 }}
+                initial={prefersReducedMotion ? false : ({ height: 0, opacity: 0 })}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
@@ -373,6 +375,7 @@ function GoalsList({
 }
 
 export default function PlayerDevPlanPage() {
+  const prefersReducedMotion = useReducedMotion();
   const { user, player, loading: authLoading } = useAuth();
   const [plan, setPlan] = useState<DevelopmentalPlanWithGoals | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -729,7 +732,7 @@ export default function PlayerDevPlanPage() {
             {/* All goals completed celebration */}
             {activeCount === 0 && upcomingCount === 0 && completedCount > 0 && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95 })}
                 animate={{ opacity: 1, scale: 1 }}
                 className="mt-6"
               >

@@ -3,7 +3,7 @@
 import { Button, IconButton } from '@/components/ui/button';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { m, LazyMotion, domAnimation, AnimatePresence } from 'framer-motion'
+import { m, LazyMotion, domAnimation, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import { submitDemoRequest } from '@/app/actions/demo-request'
@@ -19,6 +19,7 @@ const navLinks = [
 const smooth = [0.32, 0.72, 0, 1] as const
 
 export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
+  const prefersReducedMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [showDemoForm, setShowDemoForm] = useState(false)
@@ -131,7 +132,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3, ease: smooth }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: smooth })}
               className="fixed inset-0 z-tooltip md:hidden bg-[#ECE5D6]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
@@ -230,7 +231,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: smooth, delay: 0.35 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: smooth, delay: 0.35 })}
                   className="shrink-0 pb-4"
                 >
                   <AnimatePresence mode="wait">
@@ -265,7 +266,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                        transition={{ duration: 0.3, ease: smooth }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: smooth })}
                         onSubmit={handleDemoSubmit}
                         className="rounded-2xl p-5 space-y-4"
                         style={{
@@ -335,7 +336,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         key="success"
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.35, ease: smooth }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.35, ease: smooth })}
                         className="text-center space-y-4 py-2"
                       >
                         <div className="w-14 h-14 mx-auto rounded-2xl bg-primary-500/10 flex items-center justify-center">
@@ -363,7 +364,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                 <m.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.5, delay: 0.45 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.45 })}
                   className="shrink-0 flex items-center justify-center gap-2.5 pb-2 pt-3 border-t border-warm-200/50"
                 >
                   <Image

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   type BaseballExpenseSummary,
   type ExpenseCategory,
@@ -29,6 +29,7 @@ const PAID_BY_LABELS: Record<string, string> = {
 };
 
 export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
+  const prefersReducedMotion = useReducedMotion();
   function formatCurrency(amount: number) {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -86,7 +87,7 @@ export function ExpenseSummary({ summary }: ExpenseSummaryProps) {
                     style={{ backgroundColor: config.color }}
                     initial={{ width: 0 }}
                     animate={{ width: spent > 0 ? `${percentage}%` : '0%' }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
                   />
                 </div>
               </div>

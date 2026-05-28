@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useSpring } from 'framer-motion';
+import { motion, useSpring, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AdminSparkline } from './AdminChart';
 
@@ -97,14 +97,15 @@ export function StatCardV2({
   isLive,
   severity = 'success',
 }: StatCardV2Props) {
+  const prefersReducedMotion = useReducedMotion();
   const config = severityConfig[severity];
   const isNumeric = typeof value === 'number';
 
   return (
     <motion.div
       onClick={onClick}
-      whileHover={{ y: -2, scale: 1.01 }}
-      whileTap={onClick ? { scale: 0.99 } : undefined}
+      whileHover={prefersReducedMotion ? undefined : ({ y: -2, scale: 1.01 })}
+      whileTap={prefersReducedMotion ? undefined : (onClick ? { scale: 0.99 } : undefined)}
       className={cn(
         'relative glass-standard rounded-2xl p-8',
         'border-l-[4px]',

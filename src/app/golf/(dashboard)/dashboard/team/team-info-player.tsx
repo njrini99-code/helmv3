@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
 import { SectionHeader } from '@/components/golf/dashboard';
 import { Card } from '@/components/ui/card';
@@ -61,6 +61,7 @@ const itemVariants = {
 };
 
 export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] }: TeamInfoPlayerProps) {
+  const prefersReducedMotion = useReducedMotion();
   const pendingTasks = tasks.filter(t => t.status !== 'completed');
   const completedTasks = tasks.filter(t => t.status === 'completed');
   return (
@@ -89,7 +90,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
 
       <m.div
         variants={containerVariants}
-        initial="hidden"
+        initial={prefersReducedMotion ? false : "hidden"}
         animate="visible"
         className="space-y-6"
       >

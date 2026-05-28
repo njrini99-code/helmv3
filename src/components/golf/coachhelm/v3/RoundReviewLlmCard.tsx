@@ -20,7 +20,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { generateLlmRoundReview } from '@/app/golf/actions/v3/llm';
 import {
   heroVariants,
@@ -42,6 +42,7 @@ export interface RoundReviewLlmCardProps {
 }
 
 export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [text, setText] = useState(props.fallbackText);
   const [usedLlm, setUsedLlm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -80,7 +81,7 @@ export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
       variants={heroVariants}
       initial="hidden"
       animate="visible"
-      transition={heroTransition}
+      transition={prefersReducedMotion ? { duration: 0 } : (heroTransition)}
       className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6 relative overflow-hidden"
     >
       {loading && (
@@ -94,7 +95,7 @@ export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
           <m.div
             className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
             animate={{ x: ['0%', '400%'] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1.6, repeat: Infinity, ease: 'easeInOut' })}
           />
         </m.div>
       )}
@@ -112,7 +113,7 @@ export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                transition={badgeTransition}
+                transition={prefersReducedMotion ? { duration: 0 } : (badgeTransition)}
                 className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
               >
                 <span aria-hidden className="text-caption leading-none">✦</span>
@@ -129,7 +130,7 @@ export function RoundReviewLlmCard(props: RoundReviewLlmCardProps) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={crossfadeTransition}
+            transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
             className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
           >
             {text}

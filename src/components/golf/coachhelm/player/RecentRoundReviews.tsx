@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -45,6 +45,7 @@ function RoundReviewCard({
   round: RecentRound;
   index: number;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const scoreToPar = round.scoreToPar;
   const isUnderPar = scoreToPar < 0;
   const isOverPar = scoreToPar > 0;
@@ -53,7 +54,7 @@ function RoundReviewCard({
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.08 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: index * 0.08 })}
     >
       <Link
         href={`/golf/dashboard/rounds/${round.id}`}
@@ -119,6 +120,7 @@ function RoundReviewCard({
 }
 
 export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Empty state
   if (rounds.length === 0) {
     return (
@@ -183,7 +185,7 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
           className="mt-4 pt-4 border-t border-white/20 text-center"
         >
           <p className="text-xs text-warm-500 mb-2">

@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
   IconArrowLeft,
   IconTrendingUp,
@@ -182,6 +182,7 @@ export function PlayerProfileClient({
   teamName,
   coachId: _coachId,
 }: PlayerProfileClientProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<MainTab>('overview');
   const [statFilter, setStatFilter] = useState<StatFilter>('all');
   const [videoFilter, setVideoFilter] = useState<VideoFilter>('all');
@@ -1016,7 +1017,7 @@ export function PlayerProfileClient({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4"
             onClick={() => setSelectedVideo(null)}
           >
@@ -1025,7 +1026,7 @@ export function PlayerProfileClient({
               initial={{ opacity: 0, scale: 0.95, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 32 })}
               className="relative w-full max-w-4xl bg-warm-900 rounded-2xl overflow-hidden shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >

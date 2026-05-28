@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import {
@@ -69,6 +69,7 @@ function formatFullDate(date: string): string {
 // ============================================================================
 
 export function PatternTimeline({ patterns }: PatternTimelineProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Build timeline events from patterns
   const timelineEvents = useMemo(() => {
     const events: TimelineEvent[] = [];
@@ -373,7 +374,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
                   key={`${event.patternId}-${event.type}-${index}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
                   className="flex items-start gap-3 relative"
                 >
                   {/* Event dot */}

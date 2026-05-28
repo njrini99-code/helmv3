@@ -12,7 +12,7 @@
  * The static span variant stays motionless — it's ambient context.
  */
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { NARRATIVE_GOAL_PRESENTATION, type NarrativeGoal } from '@/lib/coachhelm/v3/intent/types';
 import { liftHover, tapPress } from '@/lib/coachhelm/v3/motion';
 
@@ -29,6 +29,7 @@ export function IntentPill({
   onClick,
   ariaLabel,
 }: IntentPillProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Cold-start: no intent set → render a neutral "no intent" chip
   // that still invites a click to set it.
   const goal = narrative_goal;
@@ -62,8 +63,8 @@ export function IntentPill({
         type="button"
         onClick={onClick}
         aria-label={ariaLabel ?? `Set intent (currently ${label})`}
-        whileHover={liftHover}
-        whileTap={tapPress}
+        whileHover={prefersReducedMotion ? undefined : (liftHover)}
+        whileTap={prefersReducedMotion ? undefined : (tapPress)}
         className={`${baseClasses} ${sizeClasses} ${stateClasses} cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40`}
         data-testid="intent-pill"
         data-intent={goal ?? 'none'}

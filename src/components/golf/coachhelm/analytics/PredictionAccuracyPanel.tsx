@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   LineChart,
   Line,
@@ -457,6 +457,7 @@ function ConfidenceIndicator({
 }
 
 function ProgressBar({ value, color }: { value: number; color: 'amber' | 'blue' }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="mt-2">
       <div className="h-1.5 bg-cream-100/60 rounded-full overflow-hidden">
@@ -464,7 +465,7 @@ function ProgressBar({ value, color }: { value: number; color: 'amber' | 'blue' 
           className={cn('h-full rounded-full', color === 'amber' ? 'bg-amber-400' : 'bg-blue-400')}
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(value * 100, 100)}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, ease: 'easeOut' })}
         />
       </div>
     </div>

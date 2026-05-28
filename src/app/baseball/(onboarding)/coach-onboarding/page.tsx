@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Fragment, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -143,6 +143,7 @@ function StepIndicator({ currentStep, steps }: { currentStep: Step; steps: typeo
 // ─── Plan Comparison Modal ──────────────────────────────────────────────────
 
 function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const prefersReducedMotion = useReducedMotion();
   const features = [
     {
       category: 'Recruiting',
@@ -177,7 +178,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       {isOpen && (
         <>
           <m.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0 })}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
@@ -185,7 +186,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <m.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95, y: 20 })}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="auth-glass-card rounded-2xl shadow-2xl max-w-[768px] w-full max-h-[85vh] overflow-clip"
@@ -238,6 +239,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function BaseballCoachOnboarding() {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const supabaseRef = useRef(createClient());
 
@@ -450,9 +452,9 @@ export default function BaseballCoachOnboarding() {
         <LazyMotion features={domAnimation}>
           {/* Logo */}
           <m.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
@@ -474,9 +476,9 @@ export default function BaseballCoachOnboarding() {
           {/* Step Indicator - only after type selection */}
           {step !== 'type' && (
             <m.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
             >
               <StepIndicator currentStep={step} steps={existingUser ? STEPS_CONFIG_AUTH : STEPS_CONFIG_FULL} />
             </m.div>
@@ -489,12 +491,12 @@ export default function BaseballCoachOnboarding() {
                 key="type"
                 custom={direction}
                 variants={slideVariants}
-                initial="initial"
+                initial={prefersReducedMotion ? false : "initial"}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
                   <m.div variants={staggerItem} className="text-center">
                     <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-warm-900">
                       What type of coach are you?
@@ -534,12 +536,12 @@ export default function BaseballCoachOnboarding() {
                 key="program"
                 custom={direction}
                 variants={slideVariants}
-                initial="initial"
+                initial={prefersReducedMotion ? false : "initial"}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
                     <Button variant="ghost"
                       onClick={() => goBack('type')}
@@ -639,12 +641,12 @@ export default function BaseballCoachOnboarding() {
                 key="account"
                 custom={direction}
                 variants={slideVariants}
-                initial="initial"
+                initial={prefersReducedMotion ? false : "initial"}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[460px]"
               >
-                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
                     <Button variant="ghost"
                       onClick={() => goBack('program')}
@@ -724,12 +726,12 @@ export default function BaseballCoachOnboarding() {
                 key="plan"
                 custom={direction}
                 variants={slideVariants}
-                initial="initial"
+                initial={prefersReducedMotion ? false : "initial"}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[560px]"
               >
-                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
                     <Button variant="ghost"
                       onClick={() => goBack(existingUser ? 'program' : 'account')}
@@ -809,7 +811,7 @@ export default function BaseballCoachOnboarding() {
 
                   {error && (
                     <m.p
-                      initial={{ opacity: 0, y: -8 }}
+                      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -8 })}
                       animate={{ opacity: 1, y: 0 }}
                       className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-center"
                     >
@@ -826,12 +828,12 @@ export default function BaseballCoachOnboarding() {
                 key="complete"
                 custom={direction}
                 variants={slideVariants}
-                initial="initial"
+                initial={prefersReducedMotion ? false : "initial"}
                 animate="animate"
                 exit="exit"
                 className="w-full max-w-[480px]"
               >
-                <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-6">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "initial"} animate="animate" className="space-y-6">
                   <m.div variants={staggerItem} className="flex justify-center">
                     <div className="relative">
                       {[...Array(8)].map((_, i) => (
@@ -841,27 +843,27 @@ export default function BaseballCoachOnboarding() {
                           style={{
                             background: i % 2 === 0 ? 'rgb(22, 163, 74)' : 'rgb(74, 222, 128)',
                           }}
-                          initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                          initial={prefersReducedMotion ? false : ({ scale: 0, opacity: 1, x: 0, y: 0 })}
                           animate={{
                             scale: [0, 1.2, 0],
                             opacity: [0, 1, 0],
                             x: Math.cos((i / 8) * Math.PI * 2) * 50,
                             y: Math.sin((i / 8) * Math.PI * 2) * 50,
                           }}
-                          transition={{ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' })}
                         />
                       ))}
                       <div className="absolute inset-0 bg-primary-500/20 blur-2xl rounded-full scale-[2]" />
                       <m.div
-                        initial={{ scale: 0, rotate: -20 }}
+                        initial={prefersReducedMotion ? false : ({ scale: 0, rotate: -20 })}
                         animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
                         className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
                       >
                         <m.div
-                          initial={{ scale: 0, opacity: 0 }}
+                          initial={prefersReducedMotion ? false : ({ scale: 0, opacity: 0 })}
                           animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
                         >
                           <IconCheck size={40} className="text-white" />
                         </m.div>

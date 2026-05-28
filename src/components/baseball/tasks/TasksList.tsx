@@ -1,9 +1,9 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { TaskCard } from './TaskCard';
 import { IconClipboardList } from '@/components/icons';
-import { staggerContainer } from '@/lib/motion';
+import { staggerContainer } from '@/lib/coachhelm/v3/motion';
 
 interface Assignment {
   id: string;
@@ -36,6 +36,7 @@ interface TasksListProps {
 }
 
 export function TasksList({ tasks, filter, isCoach, currentPlayerId, onRefresh }: TasksListProps) {
+  const prefersReducedMotion = useReducedMotion();
   const now = new Date();
 
   const filteredTasks = tasks.filter(task => {
@@ -71,7 +72,7 @@ export function TasksList({ tasks, filter, isCoach, currentPlayerId, onRefresh }
   return (
     <motion.div
       variants={staggerContainer}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
       className="space-y-4"
     >

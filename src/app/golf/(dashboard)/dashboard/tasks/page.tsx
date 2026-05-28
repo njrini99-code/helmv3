@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { IconPlus, IconClipboardList, IconChevronRight, IconChevronDown } from '@/components/icons';
@@ -47,6 +47,7 @@ interface Player {
 }
 
 export default function GolfTasksPage() {
+  const prefersReducedMotion = useReducedMotion();
   const golfUser = useGolfUser();
   const [initialLoading, setInitialLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -235,7 +236,7 @@ export default function GolfTasksPage() {
         <m.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
           className="pills-scroll mb-6"
         >
           <m.button
@@ -297,7 +298,7 @@ export default function GolfTasksPage() {
               <m.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
                 className="sticky top-6"
               >
                 {/* Templates Section */}
@@ -323,7 +324,7 @@ export default function GolfTasksPage() {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                         className="border-t border-warm-200"
                       >
                         <div className="p-4">
@@ -341,7 +342,7 @@ export default function GolfTasksPage() {
                 <m.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
                   className="mt-4 surface-matte rounded-3xl p-4"
                 >
                   <h3 className="text-sm font-medium text-warm-400 uppercase tracking-wider mb-3">

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -16,6 +16,7 @@ export function StrokesGainedStats({
   statisticalStrengths?: StatisticalStrengthWeakness[];
   statisticalWeaknesses?: StatisticalStrengthWeakness[];
 }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       className="space-y-4"
@@ -63,7 +64,7 @@ export function StrokesGainedStats({
           className="mb-4 text-sm text-warm-600"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.15 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
         >
           Average strokes gained per round. Positive numbers indicate better than PGA Tour average.
         </motion.div>
@@ -116,7 +117,7 @@ export function StrokesGainedStats({
         className="bg-blue-50 border border-blue-200 rounded-xl p-4 backdrop-blur-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, type: 'spring', stiffness: 200 })}
       >
         <div className="text-sm font-medium text-blue-900 mb-2">What is Strokes Gained?</div>
         <div className="text-sm text-blue-800 space-y-1">

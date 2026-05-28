@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import {
   setQualifierCoachPick,
   removeQualifierCoachPick,
@@ -26,6 +26,7 @@ function formatToPar(p: number | null): string {
 }
 
 export function CoachPickPanel({ qualifierId, candidates, slotsCoachPick, state }: Props) {
+  const prefersReducedMotion = useReducedMotion();
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [pendingPlayer, setPendingPlayer] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -149,7 +150,7 @@ export function CoachPickPanel({ qualifierId, candidates, slotsCoachPick, state 
                 <m.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.28, ease: [0.16, 1, 0.3, 1] })}
                   className="ml-12 mt-3 space-y-2.5"
                 >
                   <textarea

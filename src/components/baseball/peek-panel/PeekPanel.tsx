@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { motion, AnimatePresence, type Variants, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
@@ -55,6 +55,7 @@ const backdropVariants: Variants = {
 };
 
 const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { isOpen, panelType, selectedId, closePanel } = usePeekPanelStore();
   const { modalRef } = useFocusTrap(isOpen, closePanel);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -153,8 +154,8 @@ const PeekPanelComponent = function PeekPanel({ className }: PeekPanelProps) {
                 'transition-colors duration-200',
                 'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
               )}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={prefersReducedMotion ? undefined : ({ scale: 1.05 })}
+              whileTap={prefersReducedMotion ? undefined : ({ scale: 0.95 })}
               aria-label="Close panel"
             >
               <IconX size={18} />

@@ -18,7 +18,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { BaseballPlayerStats } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -57,6 +57,7 @@ function CustomTooltip({ active, payload }: {
   payload?: TooltipPayload[];
   label?: string;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   if (!active || !payload?.length) return null;
 
   const data = payload[0]?.payload;
@@ -68,7 +69,7 @@ function CustomTooltip({ active, payload }: {
         initial={{ opacity: 0, y: 4 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
         className="bg-cream-50/92 backdrop-blur-xl border border-warm-200/45 rounded-xl shadow-lg px-4 py-3 min-w-[160px]"
       >
         <p className="text-sm font-medium text-warm-900 mb-2">

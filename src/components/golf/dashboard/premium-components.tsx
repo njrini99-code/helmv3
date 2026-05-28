@@ -21,7 +21,7 @@
 
 import { ReactNode, memo, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
@@ -110,6 +110,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
     accent = false,
     ariaLabel
 }: PremiumStatCardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const numericValue = typeof value === 'number' ? value : parseFloat(String(value));
     const isNumeric = !isNaN(numericValue);
     const accessibleLabel = ariaLabel || `${label}: ${value}${trend ? `, ${trend.positive ? 'up' : 'down'} ${Math.abs(trend.value)}` : ''}`;
@@ -125,7 +126,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                 accent && 'before:absolute before:inset-y-6 before:left-0 before:w-[2px] before:bg-primary-500/70 before:rounded-r-full'
             )}
             whileHover={{ y: -2 }}
-            transition={{ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] })}
         >
             <div className="relative flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -189,6 +190,7 @@ export const QuickActionCard = memo(function QuickActionCard({
     href,
     variant = 'default'
 }: QuickActionCardProps) {
+  const prefersReducedMotion = useReducedMotion();
     return (
         <Link href={href} prefetch={true} aria-label={`${label}${description ? `: ${description}` : ''}`}>
             <m.div
@@ -213,7 +215,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                     scale: 1.01,
                 }}
                 whileTap={{ scale: 0.97 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}
             >
                 <div className={cn(
                     'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', // Standardized: 12px
@@ -315,6 +317,7 @@ export function RoundRow({
     date,
     showPlayer = true
 }: RoundRowProps) {
+  const prefersReducedMotion = useReducedMotion();
     const toParLabel = toPar === 0 ? 'even' : toPar > 0 ? `${toPar} over par` : `${Math.abs(toPar)} under par`;
     const accessibleLabel = showPlayer && playerName
         ? `${playerName} scored ${score} (${toParLabel}) at ${courseName}`
@@ -326,7 +329,7 @@ export function RoundRow({
             tabIndex={id ? undefined : 0}
             aria-label={accessibleLabel}
             className="group flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
-            whileHover={{ x: 3 }}
+            whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
         >
             <div className={cn(
                 'w-12 h-12 rounded-2xl flex flex-col items-center justify-center flex-shrink-0',
@@ -433,6 +436,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
     totalGir,
     totalGirPossible,
 }: RecentRoundCardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const [now, setNow] = useState<Date | null>(null);
     useEffect(() => { setNow(new Date()); }, []);
     const toParLabel = toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : `${toPar}`;
@@ -458,8 +462,8 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     'hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer',
                     'focus-within:ring-1 focus-within:ring-primary-400/30'
                 )}
-                whileHover={{ x: 3 }}
-                transition={{ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }}
+                whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] })}
             >
                 <div className="flex items-start gap-4">
                     {/* Player Avatar */}
@@ -565,6 +569,7 @@ export function TopPerformerRow({
     avgScore,
     rounds
 }: TopPerformerRowProps) {
+  const prefersReducedMotion = useReducedMotion();
     const rankColors: Record<number, { bg: string; text: string; icon?: string }> = {
         1: { bg: 'bg-gradient-to-br from-amber-100 to-amber-200', text: 'text-amber-700', icon: '🥇' },
         2: { bg: 'bg-warm-100/65', text: 'text-warm-600', icon: '🥈' },
@@ -579,7 +584,7 @@ export function TopPerformerRow({
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
             className="flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
-            whileHover={{ x: 3 }}
+            whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
             tabIndex={0}
         >
             <div className={cn(

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import type { PerformancePrediction } from '@/lib/coachhelm/v2/types';
@@ -18,6 +18,7 @@ function formatLabel(text: string): string {
 }
 
 export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const predictedValue = Number.isFinite(prediction.predictedValue) ? prediction.predictedValue : 0;
   const rawConfidence = prediction.confidence;
   const confidencePercent = Number.isFinite(rawConfidence) ? Math.round(rawConfidence * 100) : 0;
@@ -49,7 +50,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
       className="rounded-2xl bg-cream-100/82 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm"
     >
       {/* Header */}
@@ -74,7 +75,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.45, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.45, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
             className="flex items-center gap-3"
           >
             <div className={cn(
@@ -140,7 +141,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
                 key={i}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.06, duration: 0.25 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 + i * 0.06, duration: 0.25 })}
                 className="text-label px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-md font-medium border border-blue-100/50"
               >
                 {formatLabel(driver)}

@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconChevronDown,
@@ -34,6 +34,7 @@ const reasoningTypeLabels: Record<ReasoningType, { label: string; color: string 
 };
 
 export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expandedStep, setExpandedStep] = useState<number | null>(null);
   const [showAlternatives, setShowAlternatives] = useState(false);
   const [showSensitivities, setShowSensitivities] = useState(false);
@@ -128,7 +129,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
             </div>
             <motion.div
               animate={{ rotate: showAlternatives ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
@@ -139,7 +140,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 className="overflow-hidden"
               >
                 <div className="p-4 space-y-3 border-t border-warm-200">
@@ -184,7 +185,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
             </div>
             <motion.div
               animate={{ rotate: showSensitivities ? 180 : 0 }}
-              transition={{ duration: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
@@ -195,7 +196,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 className="overflow-hidden"
               >
                 <div className="p-4 space-y-3 border-t border-warm-200">
@@ -243,6 +244,7 @@ function ReasoningStepCard({
   isExpanded,
   onToggle,
 }: ReasoningStepCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const typeStyle = reasoningTypeLabels[step.type];
   const confidencePercent = Math.round(step.confidence * 100);
 
@@ -322,7 +324,7 @@ function ReasoningStepCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               className="overflow-hidden"
             >
               <div className="mt-4 ml-13 pl-4 border-l-2 border-primary-200 space-y-3">

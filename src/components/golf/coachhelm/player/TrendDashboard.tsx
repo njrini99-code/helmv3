@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -98,6 +98,7 @@ function getSignalBadgeStyle(signal: string): string {
 }
 
 export function TrendDashboard({ trends, streaks, volatility, trendData, playerState: _playerState }: TrendDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Resolve props: prefer typed props, fall back to parsing from trendData
   const resolvedTrends = trends ?? (trendData?.trends as typeof trends | undefined) ?? { metric: '', windows: [], signal: '', description: '' };
   const resolvedStreaks = streaks ?? (trendData?.streaks as typeof streaks | undefined) ?? [];
@@ -161,7 +162,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                 className="flex items-center gap-3"
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.1 })}
               >
                 <div className="w-20 shrink-0">
                   <p className="text-sm font-medium text-warm-700">{meta.label}</p>
@@ -173,7 +174,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                     className={cn('h-full rounded-full', config.barColor)}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(Number(window.magnitude ?? 0) * 100, 100)}%` }}
-                    transition={{ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' })}
                   />
                 </div>
 
@@ -204,7 +205,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
                 )}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.5 + i * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 + i * 0.1 })}
               >
                 {streak.type === 'hot' ? (
                   <IconFlame size={16} className="text-amber-500" />
@@ -228,7 +229,7 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
             className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-700"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.7 })}
           >
             <IconWarning size={16} className="text-amber-500 shrink-0" />
             <span>Performance volatility is elevated</span>

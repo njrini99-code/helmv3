@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import type { MinedPattern } from '@/lib/coachhelm/v2/types';
@@ -34,13 +34,14 @@ const trendLabels: Record<string, string> = {
 };
 
 export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (patterns.length === 0) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.25, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
       className="rounded-2xl bg-cream-100/82 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm"
     >
       {/* Header */}
@@ -65,7 +66,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
               key={pattern.id}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * index, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
               className={cn(
                 'p-4 rounded-xl border transition-colors',
                 isNegative
@@ -92,7 +93,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                 <motion.span
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.12 * index + 0.2, duration: 0.3 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.12 * index + 0.2, duration: 0.3 })}
                   className={cn(
                     'text-eyebrow font-medium px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
                     isNegative

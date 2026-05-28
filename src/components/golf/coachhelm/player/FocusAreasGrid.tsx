@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -96,6 +96,7 @@ function FocusAreaCardContent({
   index: number;
   interactive: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const trendConfig = getTrendConfig(focusArea.trend);
   const TrendIcon = trendConfig.icon;
   const strokesColor = getStrokesColor(focusArea.strokesGained);
@@ -149,7 +150,7 @@ function FocusAreaCardContent({
           animate={{
             width: `${Math.min(Math.abs(Number(focusArea.strokesGained ?? 0)) * 20, 100)}%`,
           }}
-          transition={{ duration: 0.4, delay: 0.05 + index * 0.03, ease: [0.25, 0.1, 0.25, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.05 + index * 0.03, ease: [0.25, 0.1, 0.25, 1] })}
           className={cn(
             'absolute h-full rounded-full',
             isPositive ? 'bg-primary-400' : 'bg-red-400'
@@ -215,6 +216,7 @@ function FocusAreaCard({
 }
 
 export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Empty state
   if (focusAreas.length === 0) {
     return (
@@ -269,7 +271,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
       <m.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 })}
         className="flex items-center justify-center gap-6 mt-5 pt-4 border-t border-white/20"
       >
         <div className="flex items-center gap-2">

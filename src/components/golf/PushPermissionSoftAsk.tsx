@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -33,6 +33,7 @@ import { useToast } from '@/components/ui/sonner';
  * and shows the sheet exactly once until the user decides.
  */
 export function PushPermissionSoftAsk() {
+  const prefersReducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { showToast } = useToast();
@@ -88,7 +89,7 @@ export function PushPermissionSoftAsk() {
         <m.div
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 320, damping: 22 })}
           className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/30 mb-5"
         >
           <IconBell size={28} className="text-white" />

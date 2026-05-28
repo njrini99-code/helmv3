@@ -15,7 +15,7 @@
  */
 
 import { useState } from 'react';
-import { m, AnimatePresence, LazyMotion, domAnimation } from 'framer-motion';
+import { m, AnimatePresence, LazyMotion, domAnimation, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatTime } from '@/lib/calendar/premium-utils';
 import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
@@ -103,6 +103,7 @@ export function PlayerRSVPCard({
   className,
   compact = false,
 }: PlayerRSVPCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [selectedResponse, setSelectedResponse] = useState<RSVPOption | null>(
     currentResponse || null
   );
@@ -294,7 +295,7 @@ export function PlayerRSVPCard({
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25, ease: [0.16, 1, 0.3, 1] })}
                     className="mt-4 p-3.5 bg-primary-50 border border-primary-200 rounded-lg"
                   >
                     <p className="text-sm text-primary-800 text-center font-medium">

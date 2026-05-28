@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { m, AnimatePresence, type PanInfo } from 'framer-motion';
+import { m, AnimatePresence, type PanInfo, useReducedMotion } from 'framer-motion';
 import {
   IconBell,
   IconCheck,
@@ -85,6 +85,7 @@ function groupByDay(notifications: Notification[], now: Date | null) {
 // ============================================================================
 
 export function NotificationCenter() {
+  const prefersReducedMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
   const router = useRouter();
@@ -186,7 +187,7 @@ export function NotificationCenter() {
               initial={{ opacity: 0, y: -8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.18, ease: [0.32, 0.72, 0, 1] })}
               className="fixed left-4 right-4 top-full mt-2 sm:absolute sm:left-auto sm:right-0 sm:w-[380px] surface-matte rounded-3xl shadow-[0_12px_40px_rgba(16,24,40,0.18)] z-50 overflow-clip"
             >
               {/* Header */}
@@ -324,6 +325,7 @@ function NotificationRow({
   onSelect: (n: Notification) => void;
   onDismiss: (id: string) => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const handleDragEnd = (
     _e: MouseEvent | TouchEvent | PointerEvent,
     info: PanInfo,
@@ -341,7 +343,7 @@ function NotificationRow({
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, x: -120, height: 0 }}
-      transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.32, 0.72, 0, 1] })}
       className="relative"
     >
       {/* Swipe-reveal background (iOS red) */}

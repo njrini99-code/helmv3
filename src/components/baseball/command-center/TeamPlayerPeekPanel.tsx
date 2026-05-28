@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { IconX, IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
 import { IconButton } from '@/components/ui/button';
@@ -52,6 +52,7 @@ function formatAvg(v: number | null | undefined): string {
 }
 
 export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const fullName = player
     ? `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim()
     : '';
@@ -104,7 +105,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="fixed inset-0 bg-black/40 z-40"
             onClick={onClose}
           />
@@ -115,7 +116,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', stiffness: 380, damping: 36 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 380, damping: 36 })}
             className="fixed right-0 top-0 h-full w-full sm:w-[400px] bg-cream-100
                        shadow-2xl z-50 flex flex-col overflow-hidden"
           >

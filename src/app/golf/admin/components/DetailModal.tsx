@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState, ReactNode } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 
@@ -89,6 +89,7 @@ export function DetailModal({
   onExport,
   width = 'full',
 }: DetailModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [timeRange, setTimeRange] = useState<TimeRange>(selectedTimeRange);
 
   const handleTimeRangeChange = (range: TimeRange) => {
@@ -105,7 +106,7 @@ export function DetailModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             onClick={onClose}
             className="fixed inset-0 bg-warm-900/30 backdrop-blur-sm z-50"
           />
@@ -115,7 +116,7 @@ export function DetailModal({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
             className={cn(
               'fixed inset-y-0 right-0 z-50 flex flex-col',
               'bg-white/95 backdrop-blur-2xl border-l border-white/30 shadow-2xl',

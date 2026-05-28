@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -82,6 +82,7 @@ function CompositeRatingCardImpl({
   playerState: _playerState,
   playerName: _playerName,
 }: CompositeRatingCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Resolve props: prefer typed props, fall back to parsing from profileData
   const resolvedComposite = composite ?? (profileData?.composite as number | undefined);
   const resolvedCategories = categories ?? (profileData?.categories as typeof categories | undefined);
@@ -129,7 +130,7 @@ function CompositeRatingCardImpl({
           className="relative flex items-center justify-center"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
         >
           <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
             <circle
@@ -151,7 +152,7 @@ function CompositeRatingCardImpl({
               strokeDasharray={circumference}
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset }}
-              transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, ease: 'easeOut', delay: 0.2 })}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -170,7 +171,7 @@ function CompositeRatingCardImpl({
             className={cn('flex items-center gap-1.5 text-sm font-medium', trendConfig[resolvedTrend.direction].color)}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 })}
           >
             {(() => {
               const TrendIcon = trendConfig[resolvedTrend.direction].icon;
@@ -203,7 +204,7 @@ function CompositeRatingCardImpl({
                     className={cn('h-full rounded-full', getBarColor(value))}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(Math.max(value, 0), 100)}%` }}
-                    transition={{ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.1 + i * 0.04, ease: [0.25, 0.1, 0.25, 1] })}
                   />
                 </div>
                 <span className="text-sm font-medium text-warm-900 tabular-nums w-8 text-right">

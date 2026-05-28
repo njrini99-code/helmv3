@@ -12,7 +12,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -129,6 +129,7 @@ function ExpandableSection({
   children,
   badge,
 }: ExpandableSectionProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
@@ -158,7 +159,7 @@ function ExpandableSection({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
           >
             <div className="px-4 pb-4 pt-1">{children}</div>
           </motion.div>
@@ -183,6 +184,7 @@ export function RoundReviewDisplay({
   isShared = false,
   className,
 }: RoundReviewDisplayProps) {
+  const prefersReducedMotion = useReducedMotion();
   const sentimentStyle = sentimentConfig[review.sentiment];
   const gradeStyle = gradeConfig[review.overallGrade];
 
@@ -351,7 +353,7 @@ export function RoundReviewDisplay({
                   key={index}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
                   className="flex gap-3 p-3 rounded-lg bg-primary-50/50 border border-primary-100"
                 >
                   <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -400,7 +402,7 @@ export function RoundReviewDisplay({
                 key={index}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
                 className="p-3 rounded-lg bg-amber-50/50 border border-amber-100"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -437,7 +439,7 @@ export function RoundReviewDisplay({
                   key={index}
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.08 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.08 })}
                   className={cn(
                     'p-3 rounded-lg border',
                     'bg-cream-100/68 border-warm-200/45'
@@ -474,7 +476,7 @@ export function RoundReviewDisplay({
                 key={index}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
                 className="flex items-start gap-3 py-2"
               >
                 <div className="w-5 h-5 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -676,7 +678,7 @@ export function RoundReviewDisplay({
                   key={range.label}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.08 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.08 })}
                 >
                   <div className="flex items-center justify-between text-xs mb-1">
                     <span className="font-medium text-warm-700">{range.label}</span>
@@ -687,7 +689,7 @@ export function RoundReviewDisplay({
                       className="h-full bg-primary-500 rounded-full"
                       initial={{ width: 0 }}
                       animate={{ width: `${range.pct}%` }}
-                      transition={{ delay: i * 0.08 + 0.2, duration: 0.5 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.08 + 0.2, duration: 0.5 })}
                     />
                   </div>
                 </motion.div>
@@ -749,7 +751,7 @@ export function RoundReviewDisplay({
                 key={item.category}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 })}
                 className="flex items-start gap-3 p-3 rounded-lg bg-cream-100/68 border border-warm-200/45"
               >
                 <div className={cn(

@@ -8,7 +8,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Popover,
   PopoverTrigger,
@@ -83,6 +83,7 @@ export function OfflineIndicator({
   variant = 'compact',
   position = 'header',
 }: OfflineIndicatorProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [lastSyncText, setLastSyncText] = useState('');
 
@@ -233,7 +234,7 @@ export function OfflineIndicator({
   if (!isOnline || syncError || pendingCount.total > 0) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -20 })}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
         className={`

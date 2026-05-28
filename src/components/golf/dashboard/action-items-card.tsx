@@ -2,7 +2,7 @@
 
 import { useState, useEffect, memo } from 'react';
 import Link from 'next/link';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconClipboardList, IconBell, IconClock, IconCheck, IconAlertCircle } from '@/components/icons';
 import type { ActionItem } from '@/app/golf/actions/dashboard-data';
@@ -53,6 +53,7 @@ interface ActionItemsCardProps {
 // ============================================================================
 
 export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: ActionItemsCardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const [activeTab, setActiveTab] = useState<TabKey>('tasks');
 
     // Defer time-dependent rendering to client to avoid hydration mismatch
@@ -103,7 +104,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                 <m.span
                                     layoutId="action-tab-indicator"
                                     className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full bg-primary-500/80"
-                                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.45, ease: [0.16, 1, 0.3, 1] })}
                                 />
                             )}
                         </Button>
@@ -119,7 +120,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -6 }}
-                        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.35, ease: [0.16, 1, 0.3, 1] })}
                     >
                         {activeItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-14 px-6 text-center">

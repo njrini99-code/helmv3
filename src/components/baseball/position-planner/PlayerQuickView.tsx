@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,7 @@ const STAGE_CONFIG: Record<PipelineStage, {
 };
 
 export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const fullName = getFullName(player.first_name, player.last_name);
   const stage = watchlistItem?.pipeline_stage as PipelineStage | undefined;
   const stageConfig = stage ? STAGE_CONFIG[stage] : null;
@@ -40,7 +41,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25 })}
         onClick={onClose}
         className="fixed inset-0 bg-warm-900/30 backdrop-blur-md z-40"
       />
@@ -50,7 +51,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
         initial={{ x: '100%', opacity: 0.5 }}
         animate={{ x: 0, opacity: 1 }}
         exit={{ x: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 35, stiffness: 350 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 35, stiffness: 350 })}
         className={cn(
           'fixed right-0 top-0 bottom-0 w-full max-w-md z-50',
           'bg-gradient-to-b from-white via-white to-warm-50/50',
@@ -70,7 +71,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
             onClick={onClose}
             className={cn(
               'absolute top-4 right-4 z-10',
@@ -91,7 +92,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 300, damping: 25 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1, type: 'spring', stiffness: 300, damping: 25 })}
               className="relative inline-block"
             >
               {/* Glow ring behind avatar */}
@@ -115,7 +116,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.3, type: 'spring', stiffness: 500 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, type: 'spring', stiffness: 500 })}
                   className={cn(
                     'absolute -bottom-1 -right-1',
                     'w-5 h-5 rounded-full',
@@ -130,7 +131,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
               className="mt-4"
             >
               <h2 className="text-2xl font-bold text-warm-900 tracking-tight">
@@ -156,7 +157,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
                 className="mt-3"
               >
                 <Badge
@@ -179,7 +180,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25 })}
             className="grid grid-cols-3 gap-3"
           >
             <StatBox label="Class" value={player.grad_year?.toString() || '—'} />
@@ -191,7 +192,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
             className="space-y-2"
           >
             {/* School */}
@@ -238,7 +239,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 })}
             >
               <SectionHeader title="Performance" />
               <div className="grid grid-cols-2 gap-3 mt-3">
@@ -282,7 +283,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
             >
               <SectionHeader title="Profile" />
               <div className="flex items-center gap-6 mt-3">
@@ -307,7 +308,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.45 })}
             >
               <SectionHeader title="Your Notes" />
               <div className={cn(
@@ -326,7 +327,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 })}
               className="text-xs text-warm-400 text-center"
             >
               Added {new Date(watchlistItem.added_at).toLocaleDateString('en-US', {
@@ -342,7 +343,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
           className={cn(
             'p-4 border-t border-warm-100',
             'bg-gradient-to-t from-warm-50/80 to-white/50',

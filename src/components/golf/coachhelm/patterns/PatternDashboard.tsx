@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card, StatCard } from '@/components/ui/card';
 import {
@@ -63,6 +63,7 @@ export function PatternDashboard({
   stats,
   onRefresh,
 }: PatternDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [lifecycleFilter, setLifecycleFilter] = useState<PatternLifecycleState | 'all'>('all');
   const [severityFilter, setSeverityFilter] = useState<PatternSeverity | 'all'>('all');
@@ -276,7 +277,7 @@ export function PatternDashboard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             style={{ overflow: 'hidden' }}
           >
             <Card variant="overlay" padding="md" hover={false}>

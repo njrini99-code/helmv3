@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import { EmptyState } from '@/components/ui/empty-state';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface MissPatternData {
@@ -75,6 +75,7 @@ export function MissPatternChart({
   showLegend = true,
   animated = true,
 }: MissPatternChartProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { viewBox, center, radius, labelRadius } = sizes[size];
 
   // Sort data by percentage for consistent rendering
@@ -212,7 +213,7 @@ export function MissPatternChart({
               strokeWidth={2}
               initial={animated ? { scale: 0, opacity: 0 } : undefined}
               animate={animated ? { scale: 1, opacity: 1 } : undefined}
-              transition={animated ? { delay: index * 0.1, duration: 0.4, ease: 'easeOut' } : undefined}
+              transition={prefersReducedMotion ? { duration: 0 } : (animated ? { delay: index * 0.1, duration: 0.4, ease: 'easeOut' } : undefined)}
               className="cursor-pointer hover:fill-opacity-100 transition-all"
             />
           ))}
@@ -254,7 +255,7 @@ export function MissPatternChart({
           <motion.div
             initial={animated ? { opacity: 0, scale: 0.8 } : undefined}
             animate={animated ? { opacity: 1, scale: 1 } : undefined}
-            transition={animated ? { delay: 0.5, duration: 0.3 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0 } : (animated ? { delay: 0.5, duration: 0.3 } : undefined)}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
             <div className="text-center bg-cream-50/92 backdrop-blur-sm rounded-full px-2 py-1 shadow-sm">
@@ -274,7 +275,7 @@ export function MissPatternChart({
         <motion.div
           initial={animated ? { opacity: 0, y: 10 } : undefined}
           animate={animated ? { opacity: 1, y: 0 } : undefined}
-          transition={animated ? { delay: 0.6, duration: 0.3 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { delay: 0.6, duration: 0.3 } : undefined)}
           className="mt-4 flex flex-wrap gap-3 justify-center"
         >
           {sortedData.slice(0, 4).map((item) => (

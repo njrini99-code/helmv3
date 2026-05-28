@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -31,6 +31,7 @@ export function CreateItineraryModal({
   teamId,
   itinerary,
 }: CreateItineraryModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -137,7 +138,7 @@ export function CreateItineraryModal({
       >
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
             className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
           >

@@ -19,7 +19,7 @@
  * Motion 12 honors `prefers-reduced-motion` automatically.
  */
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
@@ -64,6 +64,7 @@ function progressPct(g: Goal): number | null {
 }
 
 export function GoalCard({ goal, expanded = true }: GoalCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const cfg = getMetricRenderConfig(goal.metric_id);
   const stateChip = STATE_CHIP[goal.state];
   const days = daysRemaining(goal.ends_at);
@@ -75,7 +76,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         variants={enterVariants}
         initial="hidden"
         animate="visible"
-        transition={enterTransition}
+        transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
         whileHover={liftHover}
         whileTap={tapPress}
         data-testid="goal-card-compact"
@@ -95,7 +96,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
       variants={enterVariants}
       initial="hidden"
       animate="visible"
-      transition={enterTransition}
+      transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
       whileHover={liftHover}
       whileTap={tapPress}
       data-testid="goal-card"
@@ -147,7 +148,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
             className="absolute left-0 top-0 h-full bg-primary-600 rounded-full shadow-[0_0_0_2px_rgba(22,163,74,0.12)]"
             initial={{ width: '0%' }}
             animate={{ width: `${pct}%` }}
-            transition={{ duration: DURATION.long, ease: EASE_CINEMATIC, delay: 0.15 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.long, ease: EASE_CINEMATIC, delay: 0.15 })}
             aria-hidden="true"
           />
         </div>

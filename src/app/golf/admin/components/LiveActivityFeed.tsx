@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -113,14 +113,15 @@ function ActivityEventItem({
   onClick?: () => void;
   isNew?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const config = eventTypeConfig[event.type];
 
   return (
     <motion.div
-      initial={isNew ? { opacity: 0, y: -20, scale: 0.95 } : false}
+      initial={prefersReducedMotion ? false : (isNew ? { opacity: 0, y: -20, scale: 0.95 } : false)}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, x: -20, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
       onClick={onClick}
       className={cn(
         'flex items-start gap-3 p-3 rounded-xl border transition-all duration-200',
@@ -181,6 +182,7 @@ export function LiveActivityFeed({
   isLoading,
   emptyMessage = 'No activity yet',
 }: LiveActivityFeedProps) {
+  const prefersReducedMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isScrolledDown, setIsScrolledDown] = useState(false);
   const [newEventsCount, setNewEventsCount] = useState(0);
@@ -247,7 +249,7 @@ export function LiveActivityFeed({
       <AnimatePresence>
         {newEventsCount > 0 && isScrolledDown && (
           <motion.button
-            initial={{ y: -40, opacity: 0 }}
+            initial={prefersReducedMotion ? false : ({ y: -40, opacity: 0 })}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -40, opacity: 0 }}
             onClick={scrollToTop}

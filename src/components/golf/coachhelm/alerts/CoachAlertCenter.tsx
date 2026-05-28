@@ -12,7 +12,7 @@
  * — evidence-backed rows only. No more legacy `AlertCard`.
  */
 import { useState, useTransition, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconBell, IconChevronRight, IconSparkles, IconRefresh } from '@/components/icons';
@@ -48,6 +48,7 @@ export function CoachAlertCenter({
   initialAlerts = [],
   maxVisible = 5,
 }: CoachAlertCenterProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [alerts, setAlerts] = useState<EvidenceInsight[]>(initialAlerts);
@@ -163,7 +164,7 @@ export function CoachAlertCenter({
             <IconBell size={18} className="text-white" aria-hidden="true" />
             {totalNeedAttention > 0 && (
               <motion.span
-                initial={{ scale: 0 }}
+                initial={prefersReducedMotion ? false : ({ scale: 0 })}
                 animate={{ scale: 1 }}
                 className={cn(
                   'absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center',
@@ -205,7 +206,7 @@ export function CoachAlertCenter({
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })}
                 >
                   <IconRefresh size={14} />
                 </motion.div>
@@ -234,10 +235,10 @@ export function CoachAlertCenter({
       {/* Error Banner */}
       {error && (
         <motion.div
-          initial={{ opacity: 0, height: 0 }}
+          initial={prefersReducedMotion ? false : ({ opacity: 0, height: 0 })}
           animate={{ opacity: 1, height: 'auto' }}
           exit={{ opacity: 0, height: 0 }}
-          transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
           className="p-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600"
         >
           {error}
@@ -270,7 +271,7 @@ export function CoachAlertCenter({
               {hiddenCount > 0 && (
                 <motion.a
                   href="/golf/dashboard/insights"
-                  initial={{ opacity: 0 }}
+                  initial={prefersReducedMotion ? false : ({ opacity: 0 })}
                   animate={{ opacity: 1 }}
                   className={cn(
                     'flex items-center justify-center gap-2 py-3 rounded-xl',
@@ -295,9 +296,10 @@ export function CoachAlertCenter({
 }
 
 function EmptyAlertState() {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10 })}
       animate={{ opacity: 1, y: 0 }}
       className="flex flex-col items-center justify-center py-8 text-center"
     >

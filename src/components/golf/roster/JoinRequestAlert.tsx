@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { IconUsers, IconChevronRight, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -26,6 +26,7 @@ interface JoinRequestAlertProps {
  * Alert banner for pending join requests - displays on coach dashboard
  */
 export function JoinRequestAlert({ className, onDismiss, dismissible = true }: JoinRequestAlertProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
@@ -61,7 +62,7 @@ export function JoinRequestAlert({ className, onDismiss, dismissible = true }: J
   return (
     <AnimatePresence>
       <m.div
-        initial={{ opacity: 0, y: -10, scale: 0.98 }}
+        initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10, scale: 0.98 })}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -10, scale: 0.98 }}
         className={cn(

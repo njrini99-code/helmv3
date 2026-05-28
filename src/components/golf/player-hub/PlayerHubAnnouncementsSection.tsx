@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ interface PlayerHubAnnouncementsSectionProps {
 }
 
 export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnouncementsSectionProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { showToast } = useToast();
   const badges = useNotificationBadges();
   const [acknowledged, setAcknowledged] = useState<Set<string>>(new Set());
@@ -87,7 +88,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
     <m.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
     >
       {/* Section header */}
       <div className="flex items-center justify-between mb-3">
@@ -124,7 +125,7 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
               key={ann.id}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, type: 'spring', stiffness: 400, damping: 30 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.05, type: 'spring', stiffness: 400, damping: 30 })}
               className={cn(
                 'relative surface-matte rounded-3xl overflow-clip transition-all duration-200',
                 unread

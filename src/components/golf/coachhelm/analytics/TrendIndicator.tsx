@@ -8,7 +8,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -31,6 +31,7 @@ export function TrendIndicator({
   animated = true,
   className,
 }: TrendIndicatorProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [showTooltip, setShowTooltip] = useState(false);
 
   const isPositive = trend.isImprovement;
@@ -58,7 +59,7 @@ export function TrendIndicator({
       <motion.div
         initial={animated ? { scale: 0 } : undefined}
         animate={{ scale: 1 }}
-        transition={animated ? { duration: 0.2, type: 'spring' } : undefined}
+        transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.2, type: 'spring' } : undefined)}
         className={cn(
           'flex items-center justify-center rounded-full',
           size === 'xs' && 'w-4 h-4',
@@ -91,7 +92,7 @@ export function TrendIndicator({
         <motion.span
           initial={animated ? { opacity: 0, x: -5 } : undefined}
           animate={{ opacity: 1, x: 0 }}
-          transition={animated ? { duration: 0.2, delay: 0.1 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.2, delay: 0.1 } : undefined)}
           className={cn(
             'font-medium tabular-nums',
             textSizes[size],
@@ -116,7 +117,7 @@ export function TrendIndicator({
             initial={{ opacity: 0, y: 5, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
             className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50"
           >
             <div className="bg-warm-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap">
@@ -146,6 +147,7 @@ interface TrendSummaryProps {
 }
 
 export function TrendSummary({ trends, className, animated = true }: TrendSummaryProps) {
+  const prefersReducedMotion = useReducedMotion();
   const improvements = trends.filter(t => t.isImprovement).length;
   const declines = trends.filter(t => !t.isImprovement && t.direction !== 'flat').length;
   const flat = trends.filter(t => t.direction === 'flat').length;
@@ -171,7 +173,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
           <motion.div
             initial={animated ? { opacity: 0, scale: 0.9 } : undefined}
             animate={{ opacity: 1, scale: 1 }}
-            transition={animated ? { delay: 0.1 } : undefined}
+            transition={prefersReducedMotion ? { duration: 0 } : (animated ? { delay: 0.1 } : undefined)}
             className="flex items-center gap-2"
           >
             <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
@@ -202,7 +204,7 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
             key={trend.metric}
             initial={animated ? { opacity: 0, x: -10 } : undefined}
             animate={{ opacity: 1, x: 0 }}
-            transition={animated ? { delay: 0.05 * index } : undefined}
+            transition={prefersReducedMotion ? { duration: 0 } : (animated ? { delay: 0.05 * index } : undefined)}
             className={cn(
               'flex items-center justify-between p-2 rounded-lg',
               trend.isImprovement && trend.direction !== 'flat' && 'bg-primary-50',

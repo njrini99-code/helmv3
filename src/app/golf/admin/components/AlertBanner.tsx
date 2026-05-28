@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 
@@ -80,6 +80,7 @@ function AlertItem({
   alert: Alert;
   onDismiss: () => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const config = severityConfig[alert.severity];
 
   // Auto-dismiss timer
@@ -95,10 +96,10 @@ function AlertItem({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: -20, scale: 0.95 })}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -20, scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}
       className={cn(
         'flex items-start gap-3 p-4 rounded-2xl border shadow-lg',
         config.bgColor,
@@ -160,9 +161,9 @@ function AlertItem({
       {/* Auto-dismiss progress bar */}
       {alert.autoDismissMs && (
         <motion.div
-          initial={{ scaleX: 1 }}
+          initial={prefersReducedMotion ? false : ({ scaleX: 1 })}
           animate={{ scaleX: 0 }}
-          transition={{ duration: alert.autoDismissMs / 1000, ease: 'linear' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: alert.autoDismissMs / 1000, ease: 'linear' })}
           className={cn(
             'absolute bottom-0 left-0 right-0 h-1 rounded-b-2xl origin-left',
             config.buttonBg,
@@ -183,6 +184,7 @@ export function AlertBanner({
   onDismiss,
   maxVisible = 5,
 }: AlertBannerProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Sort by severity (error > warning > info)
   const sortedAlerts = [...alerts].sort((a, b) => {
     const order = { error: 0, warning: 1, info: 2 };
@@ -208,7 +210,7 @@ export function AlertBanner({
 
       {hiddenCount > 0 && (
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={prefersReducedMotion ? false : ({ opacity: 0 })}
           animate={{ opacity: 1 }}
           className="text-center text-sm text-warm-500"
         >

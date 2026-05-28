@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconFile, IconCheck, IconDownload, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,7 @@ interface AnnouncementsPlayerViewProps {
 }
 
 export function AnnouncementsPlayerView({ announcements, playerId }: AnnouncementsPlayerViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Defer time-dependent values to client to avoid hydration mismatch
   const [nowTs, setNowTs] = useState(0);
   useEffect(() => { setNowTs(Date.now()); }, []);
@@ -75,7 +76,7 @@ export function AnnouncementsPlayerView({ announcements, playerId }: Announcemen
   return (
     <motion.div
       variants={containerVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
       className="space-y-3"
     >
@@ -101,6 +102,7 @@ function isUnread(ann: GolfAnnouncementMeta, now: number): boolean {
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announcement: GolfAnnouncementMeta; playerId: string; nowTs: number }) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -266,7 +268,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
         {/* Expand chevron */}
         <motion.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           className="flex-shrink-0 mt-1 w-7 h-7 rounded-lg flex items-center justify-center bg-warm-50 group-hover:bg-warm-100 transition-colors"
         >
           <IconChevronDown size={14} className="text-warm-500" />
@@ -277,10 +279,10 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
+            initial={prefersReducedMotion ? false : ({ height: 0, opacity: 0 })}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             className="overflow-hidden"
           >
             <div className="pl-5 pr-4 pb-5 border-t border-warm-100">

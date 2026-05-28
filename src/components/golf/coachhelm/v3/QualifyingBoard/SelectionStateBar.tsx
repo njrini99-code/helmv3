@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import {
   advanceSelectionState,
   confirmQualifierSelection,
@@ -36,6 +36,7 @@ interface Props {
 }
 
 export function SelectionStateBar({ qualifierId, state, canConfirm }: Props) {
+  const prefersReducedMotion = useReducedMotion();
   const [pending, startTransition] = useTransition();
   const next = nextState(state);
 
@@ -63,7 +64,7 @@ export function SelectionStateBar({ qualifierId, state, canConfirm }: Props) {
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={badgeTransition}
+          transition={prefersReducedMotion ? { duration: 0 } : (badgeTransition)}
           className={`shrink-0 inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-full ${STATE_PILL[state]}`}
         >
           {STATE_LABEL[state]}

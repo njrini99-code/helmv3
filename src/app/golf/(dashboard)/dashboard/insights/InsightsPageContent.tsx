@@ -15,7 +15,7 @@
  */
 import { useState, useEffect, useCallback, useMemo, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { StatCard } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
@@ -283,6 +283,7 @@ export function InsightsPageContent({
   initialSearchParams,
   filterOptions,
 }: InsightsPageContentProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const initialState = parseSearchParams(initialSearchParams);
 
@@ -662,7 +663,7 @@ export function InsightsPageContent({
         <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
           className="sticky top-[var(--golf-mobile-header-offset)] z-10 bg-cream-100/68 backdrop-blur-xl -mx-4 md:-mx-6 px-4 md:px-6 py-4 mb-6 lg:top-[89px]"
         >
           <div className="space-y-4">
@@ -699,7 +700,7 @@ export function InsightsPageContent({
         <m.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
         >
           {!isLoading && triageActiveCount > 0 && totalCount === 0 ? (
             <TriageEmptyState onClearAll={handleClearTriage} />

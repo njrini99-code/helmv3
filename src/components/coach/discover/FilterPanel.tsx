@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
 import { Button, IconButton } from '@/components/ui/button';
 import { useSavedSearches } from '@/hooks/use-dashboard';
@@ -44,6 +44,7 @@ interface FilterPanelProps {
 }
 
 export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -243,7 +244,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
               className="overflow-hidden"
             >
               {/* Save Current Search */}
@@ -338,7 +339,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           >
             {/* Grad Year */}
             <div className="mb-6">
@@ -519,7 +520,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           >
             {/* Team Type */}
             <div className="mb-6">

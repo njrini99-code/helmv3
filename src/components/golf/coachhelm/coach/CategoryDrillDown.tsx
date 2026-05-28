@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconMinus, IconChevronRight, IconWarning } from '@/components/icons';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 
@@ -49,6 +49,7 @@ export function CategoryDrillDown({
   lowerIsBetter = false,
   onPlayerClick,
 }: CategoryDrillDownProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
 
   const sortedPlayers = useMemo(() => {
@@ -87,7 +88,7 @@ export function CategoryDrillDown({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: 'easeOut', delay: 0.1 })}
       className="surface-matte rounded-3xl overflow-hidden"
     >
       {/* Section title */}

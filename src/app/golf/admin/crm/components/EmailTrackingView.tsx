@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -186,6 +186,7 @@ const FILTER_TABS: { id: FilterTab; label: string }[] = [
 // MAIN COMPONENT
 // ============================================================================
 export function EmailTrackingView() {
+  const prefersReducedMotion = useReducedMotion();
   const [stats, setStats] = useState<EmailStats>(EMPTY_STATS);
   const [emails, setEmails] = useState<EmailRecord[]>([]);
   const [allOutreach, setAllOutreach] = useState<EmailRecord[]>([]);
@@ -508,7 +509,7 @@ export function EmailTrackingView() {
                   <motion.div
                     layoutId="email-tab-underline"
                     className="absolute bottom-0 left-1 right-1 h-[2px] bg-primary-500 rounded-full"
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />
                 )}
               </Button>

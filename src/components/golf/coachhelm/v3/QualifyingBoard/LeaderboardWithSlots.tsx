@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import type { SelectionCandidate } from '@/lib/coachhelm/v3/qualifying/types';
 import {
   enterVariants,
@@ -20,6 +20,7 @@ function formatToPar(p: number | null): string {
 }
 
 export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
+  const prefersReducedMotion = useReducedMotion();
   const ranked = [...candidates].sort((a, b) => {
     if (a.leaderboard_rank === null && b.leaderboard_rank === null) return 0;
     if (a.leaderboard_rank === null) return 1;
@@ -47,7 +48,7 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
               variants={enterVariants}
               initial="hidden"
               animate="visible"
-              transition={{ ...enterTransition, delay: stagger(i) }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ ...enterTransition, delay: stagger(i) })}
               className={`flex items-center gap-4 px-6 py-3 transition-colors ${
                 locked
                   ? 'bg-gradient-to-r from-emerald-50/40 via-emerald-50/20 to-transparent'

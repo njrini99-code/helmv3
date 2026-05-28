@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -58,6 +58,7 @@ export function TeamShotOverview({
   deadZones,
   topWeaknesses,
 }: TeamShotOverviewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const hasSomething = yardageCurve.length > 0 || topWeaknesses.length > 0;
 
   if (!hasSomething) {
@@ -112,7 +113,7 @@ export function TeamShotOverview({
                     )}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.05 })}
                   >
                     <span className="text-xs font-medium text-warm-600 w-20 shrink-0 tabular-nums">
                       {Number(bucket.rangeStart)}-{Number(bucket.rangeEnd)}y
@@ -126,7 +127,7 @@ export function TeamShotOverview({
                             className="h-3 rounded-l-sm bg-red-400"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2 + i * 0.05 })}
                           />
                         )}
                       </div>
@@ -137,7 +138,7 @@ export function TeamShotOverview({
                             className="h-3 rounded-r-sm bg-primary-500"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2 + i * 0.05 })}
                           />
                         )}
                       </div>
@@ -199,7 +200,7 @@ export function TeamShotOverview({
                   className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 + i * 0.1 })}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-warm-800 truncate">

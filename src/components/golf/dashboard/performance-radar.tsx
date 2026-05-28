@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChartBar, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import type { StrokesGainedSnapshot } from '@/app/golf/actions/dashboard-data';
@@ -44,6 +44,7 @@ function getMaxAbsValue(data: StrokesGainedSnapshot): number {
 // ============================================================================
 
 export const PerformanceRadar = memo(function PerformanceRadar({ data }: PerformanceRadarProps) {
+  const prefersReducedMotion = useReducedMotion();
     const hasData = SG_CATEGORIES.some(c => data[c.key] !== null);
     const maxVal = getMaxAbsValue(data);
 
@@ -159,14 +160,14 @@ export const PerformanceRadar = memo(function PerformanceRadar({ data }: Perform
                                             className="absolute left-1/2 top-0 bottom-0 bg-primary-500 rounded-r-full"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${barWidth}%` }}
-                                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.35, ease: [0.16, 1, 0.3, 1] })}
                                         />
                                     ) : (
                                         <m.div
                                             className="absolute right-1/2 top-0 bottom-0 bg-red-400 rounded-l-full"
                                             initial={{ width: 0 }}
                                             animate={{ width: `${barWidth}%` }}
-                                            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.35, ease: [0.16, 1, 0.3, 1] })}
                                         />
                                     )}
                                 </div>

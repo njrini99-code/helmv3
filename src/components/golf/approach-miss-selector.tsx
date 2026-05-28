@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ApproachMissDirection, APPROACH_MISS_CONFIG } from '@/lib/types/golf';
 
@@ -15,6 +15,7 @@ export function ApproachMissSelector({
   onDirectionChange,
   disabled
 }: ApproachMissSelectorProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Grid layout mimics a green from player's perspective
   // Player is at bottom, green is the center
   const gridLayout: (ApproachMissDirection | 'green' | null)[][] = [
@@ -88,7 +89,7 @@ export function ApproachMissSelector({
                     layoutId="miss-selection"
                     className="absolute inset-0 rounded-xl border-2 border-white/20"
                     initial={false}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />
                 )}
               </motion.button>

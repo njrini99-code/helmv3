@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import { Button, IconButton } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -36,6 +36,7 @@ interface JoinRequestsModalProps {
  * Modal that pops up on roster page showing pending join requests
  */
 export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { addToast } = useToast();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
@@ -150,7 +151,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 300 })}
         className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg z-50"
         onClick={(e) => e.stopPropagation()}
       >

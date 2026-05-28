@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import {
@@ -145,6 +145,7 @@ interface EvidenceRoundCardProps {
 }
 
 function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const formattedDate = new Date(round.round_date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -175,7 +176,7 @@ function EvidenceRoundCard({ round, index }: EvidenceRoundCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
     >
       <Link
         href={`/golf/dashboard/rounds/${round.id}`}

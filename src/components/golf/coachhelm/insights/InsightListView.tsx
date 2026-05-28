@@ -9,7 +9,7 @@
  * changed. The selection checkbox is rendered beside the primitive rather
  * than inside it to avoid touching the primitive's API surface.
  */
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -104,10 +104,11 @@ interface InsightRowProps {
 }
 
 function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRowProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10 })}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
       className={cn(

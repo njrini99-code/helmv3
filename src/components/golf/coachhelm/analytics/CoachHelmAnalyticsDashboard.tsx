@@ -8,7 +8,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import {
@@ -77,6 +77,7 @@ export function CoachHelmAnalyticsDashboard({
   initialPerformance,
   initialPatternImpact,
 }: CoachHelmAnalyticsDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
   // coachId is available for future use (e.g., coach-specific analytics)
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [selectedRange, setSelectedRange] = useState<DateRangeType>('30d');
@@ -168,7 +169,7 @@ export function CoachHelmAnalyticsDashboard({
             <>
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })}
               >
                 <IconRefresh size={16} />
               </motion.div>
@@ -214,7 +215,7 @@ export function CoachHelmAnalyticsDashboard({
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4 })}
             className="mb-8"
           >
             <AnalyticsSummaryCards data={overview} />

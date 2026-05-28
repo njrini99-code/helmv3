@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconCheck, IconArrowRight, IconSparkles } from '@/components/icons';
@@ -80,6 +80,7 @@ export function TodaysMissionCard({
   playerId,
   loader = getPlayerFocusAreas,
 }: TodaysMissionCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(true);
   const [topArea, setTopArea] = useState<{
     id: string;
@@ -179,7 +180,7 @@ export function TodaysMissionCard({
     <m.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.35, ease: [0.22, 1, 0.36, 1] })}
       className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-primary-50/80 via-white/70 to-primary-50/30 border border-primary-100/60 shadow-glow-green"
     >
       {/* Kelly green rail — the signature visual element that sets this

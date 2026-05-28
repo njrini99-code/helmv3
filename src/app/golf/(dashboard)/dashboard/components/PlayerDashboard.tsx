@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import {
     IconUsers,
     IconChartBar,
@@ -82,12 +82,13 @@ export interface PlayerDashboardData {
 // ============================================================================
 
 function JoinTeamBanner() {
+  const prefersReducedMotion = useReducedMotion();
     return (
         <m.div
             className="mb-7 md:mb-9"
-            initial={{ opacity: 0, y: 14 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: 14 })}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] })}
         >
             {/* Cream-on-cream banner — no accent rail, no saturated tile.
                 Reads as a section-level advisory, the kind a magazine
@@ -140,6 +141,7 @@ interface PlayerDashboardProps {
 }
 
 export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const { player, team, stats, recentRounds } = data;
 
     // Defer time-dependent values to client to avoid hydration mismatch
@@ -192,7 +194,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
             <m.div
                 className="max-w-[1280px] mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
-                initial="hidden"
+                initial={prefersReducedMotion ? false : "hidden"}
                 animate="visible"
             >
                 {!team && <JoinTeamBanner />}

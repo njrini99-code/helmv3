@@ -7,7 +7,7 @@
  * with color-coded performance indicators.
  */
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import type { TeeStats, ApproachStats, AroundGreenStats, PuttingAnalytics } from '@/app/golf/actions/shot-analytics';
@@ -89,6 +89,7 @@ function BarItem({
   animated = true,
   delay = 0,
 }: BarItemProps) {
+  const prefersReducedMotion = useReducedMotion();
   const percentage = Math.min((value / maxValue) * 100, 100);
 
   return (
@@ -122,7 +123,7 @@ function BarItem({
           style={{ backgroundColor: color }}
           initial={animated ? { width: 0 } : { width: `${percentage}%` }}
           animate={{ width: `${percentage}%` }}
-          transition={animated ? { duration: 0.6, delay, ease: 'easeOut' } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.6, delay, ease: 'easeOut' } : undefined)}
         />
       </div>
 
@@ -141,6 +142,7 @@ export function ShotTypeBreakdown({
   className,
   animated = true,
 }: ShotTypeBreakdownProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className={cn('space-y-6', className)}>
       {/* Tee Shots */}
@@ -148,7 +150,7 @@ export function ShotTypeBreakdown({
         <motion.div
           initial={animated ? { opacity: 0, y: 10 } : undefined}
           animate={animated ? { opacity: 1, y: 0 } : undefined}
-          transition={animated ? { duration: 0.3 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.3 } : undefined)}
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
@@ -183,7 +185,7 @@ export function ShotTypeBreakdown({
                       className="h-full bg-blue-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${teeStats.leftMissPct}%` }}
-                      transition={animated ? { duration: 0.4, delay: 0.2 } : undefined}
+                      transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.2 } : undefined)}
                     />
                   </div>
                 </div>
@@ -197,7 +199,7 @@ export function ShotTypeBreakdown({
                       className="h-full bg-purple-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${teeStats.rightMissPct}%` }}
-                      transition={animated ? { duration: 0.4, delay: 0.25 } : undefined}
+                      transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.25 } : undefined)}
                     />
                   </div>
                 </div>
@@ -219,7 +221,7 @@ export function ShotTypeBreakdown({
         <motion.div
           initial={animated ? { opacity: 0, y: 10 } : undefined}
           animate={animated ? { opacity: 1, y: 0 } : undefined}
-          transition={animated ? { duration: 0.3, delay: 0.1 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.3, delay: 0.1 } : undefined)}
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
@@ -281,7 +283,7 @@ export function ShotTypeBreakdown({
         <motion.div
           initial={animated ? { opacity: 0, y: 10 } : undefined}
           animate={animated ? { opacity: 1, y: 0 } : undefined}
-          transition={animated ? { duration: 0.3, delay: 0.2 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.3, delay: 0.2 } : undefined)}
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
@@ -323,7 +325,7 @@ export function ShotTypeBreakdown({
         <motion.div
           initial={animated ? { opacity: 0, y: 10 } : undefined}
           animate={animated ? { opacity: 1, y: 0 } : undefined}
-          transition={animated ? { duration: 0.3, delay: 0.3 } : undefined}
+          transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.3, delay: 0.3 } : undefined)}
           className="space-y-3"
         >
           <div className="flex items-center gap-2">
@@ -384,7 +386,7 @@ export function ShotTypeBreakdown({
                       className="h-full bg-warm-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${puttingStats.fiveTo10ft.pct}%` }}
-                      transition={animated ? { duration: 0.4, delay: 0.4 } : undefined}
+                      transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.4 } : undefined)}
                     />
                   </div>
                   <span className="text-xs text-warm-400">
@@ -404,7 +406,7 @@ export function ShotTypeBreakdown({
                       className="h-full bg-warm-300 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
                       animate={{ width: `${puttingStats.outside10ft.pct}%` }}
-                      transition={animated ? { duration: 0.4, delay: 0.45 } : undefined}
+                      transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.45 } : undefined)}
                     />
                   </div>
                   <span className="text-xs text-warm-400">

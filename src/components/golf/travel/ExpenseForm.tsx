@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -66,6 +66,7 @@ export function ExpenseForm({
   itineraryId,
   expense,
 }: ExpenseFormProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -225,7 +226,7 @@ export function ExpenseForm({
       >
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
             className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
           >
@@ -244,8 +245,8 @@ export function ExpenseForm({
                   key={cat.value}
                   type="button"
                   onClick={() => setCategory(cat.value)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
+                  whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
                   className={`p-3 rounded-xl border-2 text-left transition-all ${
                     category === cat.value
                       ? 'border-primary-600 bg-primary-50 shadow-sm'
@@ -311,8 +312,8 @@ export function ExpenseForm({
                 key={option.value}
                 type="button"
                 onClick={() => setPaidBy(option.value)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
+                whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
                 className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                   paidBy === option.value
                     ? 'border-primary-600 bg-primary-50 text-primary-700'
@@ -331,7 +332,7 @@ export function ExpenseForm({
           <AnimatePresence mode="wait">
             {receiptFile || receiptUrl ? (
               <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95 })}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="flex items-center gap-3 p-3 bg-warm-50 rounded-lg"
@@ -358,7 +359,7 @@ export function ExpenseForm({
               </motion.div>
             ) : (
               <motion.label
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95 })}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-warm-200 rounded-xl hover:border-primary-300 hover:bg-primary-50/50 transition-all cursor-pointer"

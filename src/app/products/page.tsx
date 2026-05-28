@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import Image from "next/image"
 import Link from "next/link"
-import { m, LazyMotion, domAnimation } from "framer-motion"
+import { m, LazyMotion, domAnimation, useReducedMotion } from "framer-motion"
 import { Navigation } from "@/components/landing/Navigation"
 import { Footer } from "@/components/landing/Footer"
 import { HelmFlipAnimation } from "@/components/products/HelmFlipAnimation"
@@ -43,6 +43,7 @@ const staggerContainer = {
 };
 
 export default function ProductsPage() {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <LazyMotion features={domAnimation}>
     <main className="min-h-screen bg-background overflow-x-hidden">
@@ -71,7 +72,7 @@ export default function ProductsPage() {
         {/* Content below animation */}
         <m.div
           className="relative px-5 sm:px-6 pt-7 pb-12 sm:pt-10 sm:pb-16 md:pt-14 md:pb-24 max-w-5xl mx-auto"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
           variants={staggerContainer}
         >
@@ -143,7 +144,7 @@ export default function ProductsPage() {
           <m.div
             className="pt-10 border-t border-warm-200"
             variants={staggerContainer}
-            initial="hidden"
+            initial={prefersReducedMotion ? false : "hidden"}
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
           >

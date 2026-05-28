@@ -4,13 +4,14 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
 function LoginContent() {
+  const prefersReducedMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const router = useRouter();
   // Use predefined message codes to prevent content injection via query params
@@ -75,11 +76,11 @@ function LoginContent() {
             y: [0, -20, 0],
             scale: [1, 1.05, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 15,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
         {/* Medium orb - bottom left */}
         <motion.div
@@ -89,12 +90,12 @@ function LoginContent() {
             y: [0, 25, 0],
             scale: [1, 0.95, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 18,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
-          }}
+          })}
         />
         {/* Small accent orb - top left */}
         <motion.div
@@ -103,12 +104,12 @@ function LoginContent() {
             x: [0, 20, 0],
             y: [0, -15, 0],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 12,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 1
-          }}
+          })}
         />
         {/* Tiny floating dot */}
         <motion.div
@@ -117,11 +118,11 @@ function LoginContent() {
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 4,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
       </div>
 
@@ -140,7 +141,7 @@ function LoginContent() {
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
           className="auth-glass-card rounded-3xl p-8 sm:p-10"
         >
           {/* Logo with glow effect */}
@@ -148,7 +149,7 @@ function LoginContent() {
             className="flex flex-col items-center mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-helm-amber-500/30 rounded-full blur-xl scale-150" />
@@ -174,7 +175,7 @@ function LoginContent() {
             className="text-center mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-h2 sm:text-h1 leading-tight font-bold tracking-[-0.02em] text-warm-900 mb-2">
               Welcome back
@@ -197,7 +198,7 @@ function LoginContent() {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
             {checkingAuth ? (
               <div className="flex justify-center py-8">
@@ -236,7 +237,7 @@ function LoginContent() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >
           {!isLoggedIn && !checkingAuth && !isNative && (
             <p className="text-center mt-6 text-warm-600 text-sm">

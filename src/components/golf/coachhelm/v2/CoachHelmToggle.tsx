@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconCheck, IconX } from '@/components/icons';
 import { Shimmer } from '@/components/ui/shimmer';
@@ -14,6 +14,7 @@ interface CoachHelmToggleProps {
 }
 
 export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
+  const prefersReducedMotion = useReducedMotion();
   const { settings, loading, saving, enable, disable } = useCoachHelmSettings(coachId);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -122,7 +123,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
             <motion.div
               initial={false}
               animate={{ x: enabled ? 32 : 4 }}
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
               className="absolute top-1 h-6 w-6 rounded-full bg-white "
             />
           </IconButton>

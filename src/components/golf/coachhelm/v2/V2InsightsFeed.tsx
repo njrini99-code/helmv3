@@ -10,7 +10,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { Card } from '@/components/ui/card';
@@ -45,6 +45,7 @@ export function InsightsFeed({
   initialPatterns = [],
   initialPredictions = [],
 }: InsightsFeedProps) {
+  const prefersReducedMotion = useReducedMotion();
   void _teamId;
 
   const [isPending, startTransition] = useTransition();
@@ -162,7 +163,7 @@ export function InsightsFeed({
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })}
                 >
                   <IconRefresh size={14} />
                 </motion.div>

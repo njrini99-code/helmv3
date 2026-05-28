@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 
 export function ApproachStats({ stats }: { stats: GolfStats }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       className="space-y-4"
@@ -124,7 +125,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
             className="w-full text-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 })}
           >
             <thead>
               <tr className="border-b border-warm-200">
@@ -150,7 +151,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                   className="border-b border-warm-100 last:border-0 hover:bg-warm-50/50 transition-colors"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.55 + idx * 0.03 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55 + idx * 0.03 })}
                 >
                   <td className="py-2 px-2 text-warm-600">{row.label}</td>
                   <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(row.data.fairway, '', 2)}</td>
@@ -178,7 +179,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                 className={`text-center p-3 ${item.bg} rounded-lg hover:scale-105 transition-transform cursor-default`}
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55 + idx * 0.04, type: 'spring', stiffness: 300 })}
               >
                 <div className={`text-[20px] font-medium tracking-[-0.012em] ${item.color} tabular-nums`}>{formatStat(item.value, '%', 0)}</div>
                 <div className="text-xs text-warm-500">{item.label}</div>
@@ -201,7 +202,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
                   className="text-center p-2 bg-warm-50 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors cursor-default"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + idx * 0.04 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 + idx * 0.04 })}
                 >
                   <div className="text-[17px] font-medium tracking-[-0.005em] text-warm-700 tabular-nums">
                     <span className="text-warm-400 mr-1">{item.icon}</span>

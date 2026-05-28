@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -77,6 +77,7 @@ export function ShotAnalysisCard({
   shotData,
   playerId: _playerId,
 }: ShotAnalysisCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Resolve props: prefer typed props, fall back to parsing from shotData
   const resolvedYardageCurve = yardageCurve ?? (shotData?.yardageCurve as typeof yardageCurve | undefined);
   const resolvedDeadZones = deadZones ?? (shotData?.deadZones as typeof deadZones | undefined);
@@ -148,7 +149,7 @@ export function ShotAnalysisCard({
                     )}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.05 })}
                   >
                     <span className="text-xs font-medium text-warm-600 w-20 shrink-0 tabular-nums">
                       {bucket.rangeStart}-{bucket.rangeEnd}y
@@ -162,7 +163,7 @@ export function ShotAnalysisCard({
                             className="h-3 rounded-l-sm bg-red-400"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2 + i * 0.05 })}
                           />
                         )}
                       </div>
@@ -173,7 +174,7 @@ export function ShotAnalysisCard({
                             className="h-3 rounded-r-sm bg-primary-500"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.6, delay: 0.2 + i * 0.05 }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2 + i * 0.05 })}
                           />
                         )}
                       </div>
@@ -246,7 +247,7 @@ export function ShotAnalysisCard({
                   className="flex items-center justify-between p-3 rounded-xl bg-white/40 border border-white/20"
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + i * 0.1 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 + i * 0.1 })}
                 >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-warm-800 truncate">
@@ -283,7 +284,7 @@ export function ShotAnalysisCard({
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6 })}
               >
                 <div className="relative w-12 h-12 shrink-0">
                   <svg viewBox="0 0 48 48" className="w-12 h-12 -rotate-90">
@@ -329,7 +330,7 @@ export function ShotAnalysisCard({
                 className="flex items-center gap-3 p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.7 })}
               >
                 <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
                   <IconActivity size={20} className="text-primary-600" />

@@ -15,7 +15,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -185,6 +185,7 @@ export function OfflineSyncStatus({
   onRetryFailed,
   onDismissError,
 }: OfflineSyncStatusProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Store state
   const {
     isOnline,
@@ -353,7 +354,7 @@ export function OfflineSyncStatus({
     return (
       <div className={cn(positionClasses[position], className)}>
         <motion.div
-          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10, scale: 0.95 })}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 10, scale: 0.95 }}
         >
@@ -507,7 +508,7 @@ export function OfflineSyncStatus({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 20 })}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       className={cn(

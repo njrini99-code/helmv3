@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSearch,
@@ -405,6 +405,7 @@ function RoundRow({
   onToggle: () => void;
   onDiagnose: () => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const stuck = isStuckRound(round);
   const checks = getChecks(round);
   const issueCount = round.errors.length;
@@ -559,7 +560,7 @@ function RoundRow({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: 'easeInOut' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: 'easeInOut' })}
                 className="overflow-hidden"
               >
                 <div className="px-3 py-3 sm:px-6 sm:py-4">

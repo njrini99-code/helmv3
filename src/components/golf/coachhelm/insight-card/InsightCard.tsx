@@ -19,7 +19,7 @@
  *     mounts `<LazyMotion>` at the shell layer.
  */
 import { forwardRef, useState, useTransition } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import {
@@ -361,6 +361,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
     { insight, tone, config, audience, showDrills, hasActions, onAction, onClick, className },
     ref,
   ) {
+  const prefersReducedMotion = useReducedMotion();
     const [expanded, setExpanded] = useState(false);
     const Icon = config.icon;
     const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
@@ -438,7 +439,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               onClick={() => setExpanded((s) => !s)}
               className="flex-shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
-              <m.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="block">
+              <m.span animate={{ rotate: expanded ? 180 : 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })} className="block">
                 <IconChevronDown size={18} />
               </m.span>
             </IconButton>
@@ -463,7 +464,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               className="overflow-hidden"
             >
               <div className="px-4 pb-4 space-y-3 border-t border-warm-200/55">

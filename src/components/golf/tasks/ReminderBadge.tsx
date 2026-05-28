@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { IconBell } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
@@ -22,6 +22,7 @@ const REMINDER_TONE: Record<'upcoming' | 'soon' | 'imminent' | 'past', BadgeTone
 };
 
 export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => { setNow(new Date()); }, []);
 
@@ -86,7 +87,7 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
       tone={REMINDER_TONE[variant]}
       size="none"
       icon={<IconBell size={iconSize} />}
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.9 })}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
         sizeStyles[size],
@@ -104,6 +105,7 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
 
 // Compact version for use in cards/lists
 export function ReminderIcon({ reminderAt, className }: { reminderAt: string; className?: string }) {
+  const prefersReducedMotion = useReducedMotion();
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => { setNow(new Date()); }, []);
 
@@ -144,7 +146,7 @@ export function ReminderIcon({ reminderAt, className }: { reminderAt: string; cl
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.8 })}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
         'inline-flex items-center justify-center',

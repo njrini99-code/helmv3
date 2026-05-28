@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { fadeUp } from '@/lib/motion';
+import { fadeUp } from '@/lib/coachhelm/v3/motion';
 import { ReminderIcon } from './ReminderBadge';
 import { Button } from '@/components/ui/button';
 
@@ -33,6 +33,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [now, setNow] = useState<Date | null>(null);
 
@@ -150,7 +151,7 @@ export function TaskCard({ task }: TaskCardProps) {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               style={{ overflow: 'hidden' }}
               className="mt-4 pt-4 border-t border-warm-200"
             >
@@ -185,7 +186,7 @@ export function TaskCard({ task }: TaskCardProps) {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 })}
                         className="flex items-center gap-2 text-primary-600"
                       >
                         <IconCheck size={16} />

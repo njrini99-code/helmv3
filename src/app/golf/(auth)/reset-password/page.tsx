@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
@@ -12,6 +12,7 @@ import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
 export default function ResetPasswordPage() {
+  const prefersReducedMotion = useReducedMotion();
   const isNative = isNativeApp();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -68,11 +69,11 @@ export default function ResetPasswordPage() {
             y: [0, -20, 0],
             scale: [1, 1.05, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 15,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
         {/* Medium orb - bottom left */}
         <m.div
@@ -82,12 +83,12 @@ export default function ResetPasswordPage() {
             y: [0, 25, 0],
             scale: [1, 0.95, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 18,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
-          }}
+          })}
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
         <m.div
@@ -96,12 +97,12 @@ export default function ResetPasswordPage() {
             x: [0, 20, 0],
             y: [0, -15, 0],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 12,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 1
-          }}
+          })}
         />
         {/* Tiny floating dot */}
         <m.div
@@ -110,11 +111,11 @@ export default function ResetPasswordPage() {
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 4,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
       </div>
 
@@ -133,7 +134,7 @@ export default function ResetPasswordPage() {
         <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
           {/* Logo with glow effect */}
@@ -141,7 +142,7 @@ export default function ResetPasswordPage() {
             className="flex flex-col items-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
@@ -167,7 +168,7 @@ export default function ResetPasswordPage() {
             className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               Reset your password
@@ -181,7 +182,7 @@ export default function ResetPasswordPage() {
           <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
             <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5" noValidate>
               {error && (
@@ -302,7 +303,7 @@ export default function ResetPasswordPage() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >
           <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
             Remember your password?{' '}

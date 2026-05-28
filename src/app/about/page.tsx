@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { m, LazyMotion, domAnimation } from 'framer-motion';
+import { m, LazyMotion, domAnimation, useReducedMotion } from 'framer-motion';
 import { Navigation } from '@/components/landing/Navigation';
 import { Footer } from '@/components/landing/Footer';
 import { Button } from '@/components/ui/button';
@@ -59,6 +59,7 @@ const staggerContainer = {
 };
 
 export default function AboutPage() {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <LazyMotion features={domAnimation}>
     <main className="min-h-screen bg-background overflow-x-hidden">
@@ -83,7 +84,7 @@ export default function AboutPage() {
       >
         <m.div
           className="relative max-w-3xl mx-auto px-5 sm:px-6 text-center"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           animate="visible"
           variants={staggerContainer}
         >
@@ -123,7 +124,7 @@ export default function AboutPage() {
       >
         <m.div
           className="max-w-5xl mx-auto"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
@@ -191,7 +192,7 @@ export default function AboutPage() {
       >
         <m.div
           className="max-w-5xl mx-auto"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
@@ -250,7 +251,7 @@ export default function AboutPage() {
       >
         <m.div
           className="max-w-5xl mx-auto"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={staggerContainer}
@@ -306,7 +307,7 @@ export default function AboutPage() {
       >
         <m.div
           className="max-w-3xl mx-auto"
-          initial="hidden"
+          initial={prefersReducedMotion ? false : "hidden"}
           whileInView="visible"
           viewport={{ once: true, margin: "-80px" }}
           variants={fadeInUp}

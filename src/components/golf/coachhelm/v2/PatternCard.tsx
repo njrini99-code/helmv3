@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconChevronDown,
@@ -20,6 +20,7 @@ interface PatternCardProps {
 }
 
 export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
 
   const isNegative = pattern.strokeImpact > 0;
@@ -99,7 +100,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
         {/* Expand Icon */}
         <motion.div
           animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           className="text-warm-400"
         >
           <IconChevronDown size={20} />
@@ -113,7 +114,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-0 border-t border-warm-100">

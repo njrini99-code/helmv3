@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +33,7 @@ const graduationYears = Array.from({ length: 8 }, (_, i) => new Date().getFullYe
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function GolfPlayerOnboarding() {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -191,7 +192,7 @@ export default function GolfPlayerOnboarding() {
           <m.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
             className="mb-6 sm:mb-8"
           >
             <div className="relative">
@@ -212,7 +213,7 @@ export default function GolfPlayerOnboarding() {
           <m.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
           >
             <StepIndicator currentStep={step} steps={STEPS_CONFIG} />
           </m.div>
@@ -450,7 +451,7 @@ export default function GolfPlayerOnboarding() {
                             x: Math.cos((i / 8) * Math.PI * 2) * 50,
                             y: Math.sin((i / 8) * Math.PI * 2) * 50,
                           }}
-                          transition={{ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.3 + i * 0.04, ease: 'easeOut' })}
                         />
                       ))}
 
@@ -461,13 +462,13 @@ export default function GolfPlayerOnboarding() {
                       <m.div
                         initial={{ scale: 0, rotate: -20 }}
                         animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200, damping: 12, delay: 0.15 })}
                         className="relative w-20 h-20 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl flex items-center justify-center shadow-xl shadow-primary-900/20"
                       >
                         <m.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: 0.4, type: 'spring', stiffness: 300 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, type: 'spring', stiffness: 300 })}
                         >
                           <IconCheck size={40} className="text-white" />
                         </m.div>

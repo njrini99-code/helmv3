@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { validateAccessCode } from '@/app/golf/actions/access-code';
@@ -27,6 +27,7 @@ function SignInLink() {
 }
 
 export default function SignupPage() {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   // Defer native detection to useEffect to avoid hydration mismatch.
   const [isNative, setIsNative] = useState(false);
@@ -91,12 +92,12 @@ export default function SignupPage() {
             <m.div
               className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
               animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
-              transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 15, repeat: Infinity, ease: "easeInOut" })}
             />
             <m.div
               className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
               animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
-              transition={{ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 })}
             />
           </div>
 
@@ -104,14 +105,14 @@ export default function SignupPage() {
             <m.div
               initial={{ opacity: 0, y: 20, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
               className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
             >
               <m.div
                 className="flex flex-col items-center mb-6 sm:mb-8"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
               >
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
@@ -179,7 +180,7 @@ export default function SignupPage() {
             <m.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
             >
               <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
                 Already have an account?{' '}
@@ -214,11 +215,11 @@ export default function SignupPage() {
             y: [0, -20, 0],
             scale: [1, 1.05, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 15,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
         {/* Medium orb - bottom left */}
         <m.div
@@ -228,12 +229,12 @@ export default function SignupPage() {
             y: [0, 25, 0],
             scale: [1, 0.95, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 18,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
-          }}
+          })}
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
         <m.div
@@ -242,12 +243,12 @@ export default function SignupPage() {
             x: [0, 20, 0],
             y: [0, -15, 0],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 12,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 1
-          }}
+          })}
         />
         {/* Tiny floating dot */}
         <m.div
@@ -256,11 +257,11 @@ export default function SignupPage() {
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 4,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
       </div>
 
@@ -279,7 +280,7 @@ export default function SignupPage() {
         <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
           {/* Logo with glow effect */}
@@ -287,7 +288,7 @@ export default function SignupPage() {
             className="flex flex-col items-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
@@ -313,7 +314,7 @@ export default function SignupPage() {
             className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               Create your account
@@ -325,7 +326,7 @@ export default function SignupPage() {
           <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
             <Suspense fallback={
               <div className="space-y-4 animate-pulse">
@@ -348,7 +349,7 @@ export default function SignupPage() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >
           <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">
             Already have an account?{' '}

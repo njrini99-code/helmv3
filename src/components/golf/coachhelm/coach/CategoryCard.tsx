@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { EmptyState } from '@/components/ui/empty-state';
 
 interface TeamCategory {
@@ -60,6 +60,7 @@ const insightDotColor = {
 } as const;
 
 export function CategoryCard({ category }: CategoryCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const trend = trendConfig[category.trend];
   const TrendIcon = trend.icon;
 
@@ -79,7 +80,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: 'easeOut' })}
       className="surface-matte rounded-3xl p-6 space-y-5"
     >
       {/* Header: Team average + trend */}

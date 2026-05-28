@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface BaseballDiamondProps {
   children?: React.ReactNode;
@@ -29,11 +29,12 @@ export function BaseballDiamond({
   children,
   className,
 }: BaseballDiamondProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
       className={cn('relative w-full aspect-[4/3] max-w-4xl mx-auto', className)}
     >
       {/* Ambient glow behind the field */}

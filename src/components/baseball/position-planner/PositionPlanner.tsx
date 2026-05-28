@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { BaseballDiamond, POSITION_COORDS } from './BaseballDiamond';
 import { PositionPlayerStack } from './PositionPlayerPill';
 import { PlayerQuickView } from './PlayerQuickView';
@@ -54,6 +54,7 @@ export function PositionPlanner({
   gradYearFilter = '',
   onGradYearChange,
 }: PositionPlannerProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expandedPosition, setExpandedPosition] = useState<string | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [stageFilter, setStageFilter] = useState('all');
@@ -132,7 +133,7 @@ export function PositionPlanner({
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4 })}
       >
         <EmptyState
           icon={<IconTarget size={28} />}
@@ -149,7 +150,7 @@ export function PositionPlanner({
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4 })}
         className="mb-8"
       >
         <div className="flex items-center justify-between mb-4">
@@ -256,7 +257,7 @@ export function PositionPlanner({
               initial={{ height: 0, opacity: 0, y: -10 }}
               animate={{ height: 'auto', opacity: 1, y: 0 }}
               exit={{ height: 0, opacity: 0, y: -10 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
               className="overflow-hidden"
             >
               <div className={cn(
@@ -393,7 +394,7 @@ export function PositionPlanner({
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.4 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.4 })}
         className={cn(
           'mt-8 flex items-center justify-center gap-6 px-6 py-3',
           'bg-gradient-to-r from-transparent via-white/50 to-transparent',
@@ -428,6 +429,7 @@ function PositionEmptyMarker({
   onClick: () => void;
   isActive: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.button
       onClick={onClick}
@@ -469,11 +471,11 @@ function PositionEmptyMarker({
           scale: [1, 1.1, 1],
           opacity: [0.5, 0, 0.5]
         }}
-        transition={{
+        transition={prefersReducedMotion ? { duration: 0 } : ({
           duration: 2.5,
           repeat: Infinity,
           ease: 'easeInOut'
-        }}
+        })}
       />
     </motion.button>
   );
@@ -491,11 +493,12 @@ function LegendItem({
   glow: string;
   index: number;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       initial={{ opacity: 0, y: 5 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 + index * 0.08 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 + index * 0.08 })}
       className="flex items-center gap-2"
     >
       <motion.span

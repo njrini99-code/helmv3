@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconActivity } from '@/components/icons';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -17,6 +17,7 @@ interface TeamPulseCardProps {
 }
 
 export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const { improving, stable, declining, topMover, roundsThisWeek } = data;
     const total = improving + stable + declining;
 
@@ -60,19 +61,19 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                                 className="bg-primary-500/85 rounded-l-full"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${improvingPct}%` }}
-                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+                                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.15 })}
                             />
                             <m.div
                                 className="bg-warm-300/85"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${stablePct}%` }}
-                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+                                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.25 })}
                             />
                             <m.div
                                 className="bg-red-400/85 rounded-r-full"
                                 initial={{ width: 0 }}
                                 animate={{ width: `${decliningPct}%` }}
-                                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 }}
+                                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.35 })}
                             />
                         </div>
 

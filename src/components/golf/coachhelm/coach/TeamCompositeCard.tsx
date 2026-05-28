@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -63,6 +63,7 @@ export function TeamCompositeCard({
   playerCount,
   statsRowCount,
 }: TeamCompositeCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const displayComposite = Math.max(0, Math.min(100, Number(composite)));
 
   // Only claim "not enough data" when we honestly have none — i.e. no player
@@ -129,7 +130,7 @@ export function TeamCompositeCard({
           className="relative flex items-center justify-center"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: 'easeOut' })}
         >
           <svg width="140" height="140" viewBox="0 0 140 140" className="-rotate-90">
             <circle
@@ -151,7 +152,7 @@ export function TeamCompositeCard({
               strokeDasharray={circumference}
               initial={{ strokeDashoffset: circumference }}
               animate={{ strokeDashoffset }}
-              transition={{ duration: 1, ease: 'easeOut', delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, ease: 'easeOut', delay: 0.2 })}
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -175,7 +176,7 @@ export function TeamCompositeCard({
                   className="flex items-center gap-3"
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 + i * 0.08 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 + i * 0.08 })}
                 >
                   <span className="text-sm font-medium text-warm-700 w-24 shrink-0">
                     {categoryLabels[key]}
@@ -185,7 +186,7 @@ export function TeamCompositeCard({
                       className={cn('h-full rounded-full', getBarColor(displayValue))}
                       initial={{ width: 0 }}
                       animate={{ width: `${displayValue}%` }}
-                      transition={{ duration: 0.8, delay: 0.4 + i * 0.08, ease: 'easeOut' }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.4 + i * 0.08, ease: 'easeOut' })}
                     />
                   </div>
                   <span className="text-sm font-medium text-warm-900 tabular-nums w-8 text-right">

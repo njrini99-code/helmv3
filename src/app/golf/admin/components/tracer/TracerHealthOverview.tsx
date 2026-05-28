@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconCircleDot,
@@ -194,6 +194,7 @@ export default function TracerHealthOverview({
   sparklineData,
   onNavigate,
 }: TracerHealthOverviewProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Build breakdown items for HealthRing
   const breakdown: HealthBreakdown[] = [
     {
@@ -262,7 +263,7 @@ export default function TracerHealthOverview({
       <m.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.15 })}
         className={cn(
           'bg-white/65 backdrop-blur-[16px] border border-white/30 rounded-2xl',
           'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.7)]',
