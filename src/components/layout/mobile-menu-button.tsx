@@ -12,7 +12,7 @@ function AnimatedMenuIcon({ open }: { open: boolean }) {
       <span
         className={cn(
           'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && 'rotate-45 tranwarm-y-[7px]'
+          open && 'rotate-45 translate-y-[7px]'
         )}
       />
       <span
@@ -24,7 +24,7 @@ function AnimatedMenuIcon({ open }: { open: boolean }) {
       <span
         className={cn(
           'block h-[2px] w-5 bg-current rounded-full transition-all duration-300 ease-out origin-center',
-          open && '-rotate-45 -tranwarm-y-[7px]'
+          open && '-rotate-45 -translate-y-[7px]'
         )}
       />
     </div>

@@ -122,7 +122,7 @@ export function QuickActionsToolbar({
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
             'bg-white/60 border border-white/20 shadow-sm',
-            'hover:shadow-md hover:-tranwarm-y-0.5',
+            'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >
@@ -142,7 +142,7 @@ export function QuickActionsToolbar({
           className={cn(
             'flex items-center gap-3 p-4 rounded-xl transition-all text-left',
             'bg-white/60 border border-white/20 shadow-sm',
-            'hover:shadow-md hover:-tranwarm-y-0.5',
+            'hover:shadow-md hover:-translate-y-0.5',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
         >

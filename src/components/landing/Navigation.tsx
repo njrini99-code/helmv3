@@ -37,7 +37,7 @@ export function Navigation() {
         </div>
 
         {/* Floating pill nav — fixed center on desktop */}
-        <div className="hidden md:fixed md:top-4 md:left-1/2 md:-tranwarm-x-1/2 md:z-[70] md:grid grid-cols-3 items-center gap-1
+        <div className="hidden md:fixed md:top-4 md:left-1/2 md:-translate-x-1/2 md:z-[70] md:grid grid-cols-3 items-center gap-1
                         backdrop-blur-xl bg-[rgba(237,232,221,0.55)] border border-white/50 rounded-full px-1.5 py-1.5">
           {navLinks.map((link) => (
             <Link

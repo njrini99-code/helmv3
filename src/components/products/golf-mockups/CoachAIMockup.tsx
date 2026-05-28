@@ -104,7 +104,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow backdrop */}
-      <div className="absolute -bottom-6 left-1/2 -tranwarm-x-1/2 w-2/3 h-12 bg-emerald-400/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-400/10 blur-2xl rounded-full" />
     </div>
   );
 }

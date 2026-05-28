@@ -151,7 +151,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-tranwarm-x-1/2 md:w-full md:max-w-lg z-50"
+        className="fixed inset-x-4 top-[10%] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-lg z-50"
         onClick={(e) => e.stopPropagation()}
       >
         <div

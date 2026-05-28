@@ -203,7 +203,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Search */}
         <div className="relative w-full sm:w-auto sm:flex-1 min-w-0 sm:min-w-[200px]">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             placeholder="Search player or course..."
@@ -235,7 +235,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
             <option value="in_progress">In Progress</option>
             <option value="draft">Draft</option>
           </select>
-          <IconChevronDown size={14} className="absolute right-2.5 top-1/2 -tranwarm-y-1/2 text-warm-400 pointer-events-none" />
+          <IconChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none" />
         </div>
 
         {/* Stuck only toggle */}

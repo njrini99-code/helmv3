@@ -40,7 +40,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
       className={cn(
         'group relative w-full text-left rounded-3xl surface-matte',
         'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-        'hover:-tranwarm-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
+        'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
       )}
       aria-label={`Edit ${fullName}`}

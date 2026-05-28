@@ -133,7 +133,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
           href="/baseball/dashboard/roster" 
           className="text-xs text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group"
         >
-          Player Stats <IconChevronRight size={12} className="group-hover:tranwarm-x-0.5 transition-transform" />
+          Player Stats <IconChevronRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
 

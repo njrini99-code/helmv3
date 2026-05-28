@@ -59,8 +59,8 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
         className={cn(
           'bg-white border border-warm-200 rounded-2xl cursor-pointer',
           'shadow-card transition-[transform,box-shadow,border-color] duration-200 ease-out',
-          'hover:shadow-card-hover hover:-tranwarm-y-1 hover:border-primary-200',
-          'active:tranwarm-y-0 active:shadow-card active:duration-75',
+          'hover:shadow-card-hover hover:-translate-y-1 hover:border-primary-200',
+          'active:translate-y-0 active:shadow-card active:duration-75',
           paddingClasses[padding],
           className
         )}
@@ -78,7 +78,7 @@ export function Card({ className, variant = 'base', padding = 'lg', loading = fa
         className={cn(
           'bg-white border border-warm-100 rounded-2xl shadow-md',
           'transition-[transform,box-shadow] duration-200 ease-out',
-          'hover:shadow-lg hover:-tranwarm-y-0.5',
+          'hover:shadow-lg hover:-translate-y-0.5',
           paddingClasses[padding],
           className
         )}

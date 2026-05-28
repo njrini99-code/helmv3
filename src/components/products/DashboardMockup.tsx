@@ -25,7 +25,7 @@ export function DashboardMockup() {
             {/* Screen container */}
             <div className="relative w-full h-full bg-white rounded-[2.4rem] overflow-hidden">
               {/* Dynamic Island / Notch */}
-              <div className="absolute top-3 left-1/2 -tranwarm-x-1/2 z-20">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20">
                 <div className="w-[90px] sm:w-[110px] h-[28px] sm:h-[32px] bg-warm-900 rounded-full flex items-center justify-center gap-2">
                   {/* Camera */}
                   <div className="w-3 h-3 rounded-full bg-warm-800 ring-1 ring-warm-700">
@@ -110,7 +110,7 @@ export function DashboardMockup() {
               </div>
 
               {/* Home Indicator */}
-              <div className="absolute bottom-2 left-1/2 -tranwarm-x-1/2 w-32 h-1 bg-warm-900 rounded-full" />
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-warm-900 rounded-full" />
             </div>
           </div>
         </div>

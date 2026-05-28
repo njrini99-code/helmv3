@@ -202,7 +202,7 @@ export function AutomationsList() {
                             <span
                               className={cn(
                                 'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
-                                a.is_active ? 'tranwarm-x-4' : 'tranwarm-x-0.5',
+                                a.is_active ? 'translate-x-4' : 'translate-x-0.5',
                               )}
                             />
                           </button>

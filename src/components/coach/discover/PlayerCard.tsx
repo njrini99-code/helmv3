@@ -93,7 +93,7 @@ const PlayerCardComponent = function PlayerCard({
           "flex items-center gap-3 p-3 rounded-[16px] cursor-pointer relative",
           "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
           "transition-[transform,box-shadow,border-color] duration-200",
-          "hover:-tranwarm-y-0.5 hover:shadow-md hover:border-warm-200/55",
+          "hover:-translate-y-0.5 hover:shadow-md hover:border-warm-200/55",
           isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
           className
         )}
@@ -142,7 +142,7 @@ const PlayerCardComponent = function PlayerCard({
         "relative overflow-hidden rounded-[20px]",
         "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
         "transition-[transform,box-shadow,border-color] duration-200",
-        "hover:-tranwarm-y-1 hover:shadow-xl hover:border-warm-200/55",
+        "hover:-translate-y-1 hover:shadow-xl hover:border-warm-200/55",
         isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
         isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",
         className
@@ -263,7 +263,7 @@ const PlayerCardComponent = function PlayerCard({
       "relative overflow-hidden rounded-[20px]",
       "bg-cream-100/75 backdrop-blur-md border border-warm-200/55",
       "transition-[transform,box-shadow,border-color] duration-200",
-      "hover:-tranwarm-y-1 hover:shadow-lg hover:border-warm-200/55",
+      "hover:-translate-y-1 hover:shadow-lg hover:border-warm-200/55",
       "group",
       isSelected && "ring-2 ring-primary-500 ring-offset-2 border-primary-200",
       isFeatured && "ring-2 ring-amber-400/50 ring-offset-2 ring-offset-white shadow-amber-100",

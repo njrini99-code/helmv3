@@ -168,7 +168,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           'h-dvh w-72 max-w-[85vw]',
           'pl-[env(safe-area-inset-left)]',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          mobileOpen ? 'tranwarm-x-0' : '-tranwarm-x-full'
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <GolfSidebar

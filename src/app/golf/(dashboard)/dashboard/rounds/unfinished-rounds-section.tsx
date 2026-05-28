@@ -67,7 +67,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                 onClick={() => handleRoundClick(round)}
                 className="w-full text-left"
               >
-                <div className="relative surface-matte rounded-3xl overflow-clip hover:shadow-lg hover:-tranwarm-y-0.5 transition-all duration-200 border-2 border-amber-200 bg-amber-50/30 p-4 flex flex-col">
+                <div className="relative surface-matte rounded-3xl overflow-clip hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 border-2 border-amber-200 bg-amber-50/30 p-4 flex flex-col">
                   <div className="relative z-10 flex flex-col">
                     {/* Top row: type + time since */}
                     <div className="flex items-center justify-between mb-3">

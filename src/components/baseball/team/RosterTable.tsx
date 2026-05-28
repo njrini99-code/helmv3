@@ -56,7 +56,7 @@ export function RosterTable({ roster }: RosterTableProps) {
           </p>
         </div>
         <div className="w-full md:max-w-xs relative">
-          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <Input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}

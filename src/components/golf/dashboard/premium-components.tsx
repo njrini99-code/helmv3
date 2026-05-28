@@ -285,7 +285,7 @@ export const QuickActionCard = memo(function QuickActionCard({
                 <IconArrowRight
                     size={16}
                     className={cn(
-                        'flex-shrink-0 opacity-100 tranwarm-x-0 md:opacity-0 md:-tranwarm-x-2 md:group-hover:opacity-100 md:group-hover:tranwarm-x-0 transition-[opacity,transform]',
+                        'flex-shrink-0 opacity-100 translate-x-0 md:opacity-0 md:-translate-x-2 md:group-hover:opacity-100 md:group-hover:translate-x-0 transition-[opacity,transform]',
                         variant === 'primary' ? 'text-white/60' : 'text-primary-500'
                     )}
                 />
@@ -325,7 +325,7 @@ export function SectionHeader({
                         {action.label}
                         <IconArrowRight
                             size={13}
-                            className="transition-transform duration-300 group-hover:tranwarm-x-0.5"
+                            className="transition-transform duration-300 group-hover:translate-x-0.5"
                         />
                     </button>
                 </Link>
@@ -403,7 +403,7 @@ export function RoundRow({
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
-            <div className="flex-shrink-0 opacity-0 -tranwarm-x-1 group-hover:opacity-100 group-hover:tranwarm-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+            <div className="flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                 <IconArrowRight size={14} className="text-primary-500" />
             </div>
         </m.div>
@@ -581,7 +581,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     </div>
 
                     {/* Arrow indicator */}
-                    <div className="flex-shrink-0 mt-2 opacity-0 -tranwarm-x-1 group-hover:opacity-100 group-hover:tranwarm-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
                         <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                 </div>

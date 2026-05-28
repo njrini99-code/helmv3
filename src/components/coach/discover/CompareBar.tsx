@@ -64,7 +64,7 @@ export function CompareBar({
   return (
     <div
       className={cn(
-        'fixed bottom-6 left-1/2 -tranwarm-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
+        'fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pb-[env(safe-area-inset-bottom)]',
         'flex items-center gap-4 px-5 py-3 rounded-2xl',
         'bg-warm-900/95 backdrop-blur-lg border border-warm-700/50',
         'shadow-2xl shadow-black/20',
@@ -95,7 +95,7 @@ export function CompareBar({
               <IconX size={10} />
             </button>
             {/* Tooltip */}
-            <div className="absolute bottom-full left-1/2 -tranwarm-x-1/2 mb-2 
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
                             px-2 py-1 rounded bg-warm-800 text-white text-xs
                             whitespace-nowrap opacity-0 group-hover:opacity-100
                             transition-opacity pointer-events-none">

@@ -158,7 +158,7 @@ export function ReminderPicker({
           <span
             className={cn(
               'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-lg ring-0 transition-transform',
-              isEnabled ? 'tranwarm-x-4' : 'tranwarm-x-0'
+              isEnabled ? 'translate-x-4' : 'translate-x-0'
             )}
           />
         </button>

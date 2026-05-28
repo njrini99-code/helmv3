@@ -68,7 +68,7 @@ function getPercentageColor(pct: number | null, goodThreshold: number = 50): str
 function MetricCard({ label, value, subtext, colorClass = 'text-warm-900', index }: MetricCardProps) {
   return (
     <div
-      className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5"
+      className="relative surface-matte rounded-xl overflow-clip p-4 text-center transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
       style={{
         animation: 'fadeInUp 0.4s ease-out forwards',
         animationDelay: `${index * 60}ms`,

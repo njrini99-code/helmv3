@@ -314,7 +314,7 @@ function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockP
         'group/block relative overflow-hidden rounded-xl px-3.5 py-2.5',
         'border ring-1 ring-inset',
         'transition-transform duration-200',
-        'hover:-tranwarm-y-[1px]',
+        'hover:-translate-y-[1px]',
       )}
       style={{
         background: `linear-gradient(135deg, ${colorLight} 0%, rgba(255,255,255,0.4) 100%)`,

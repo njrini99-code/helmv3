@@ -933,7 +933,7 @@ export function StatsUploadClient({
                               <div className="relative mb-2">
                                 <IconSearch
                                   size={16}
-                                  className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400"
+                                  className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400"
                                 />
                                 <input
                                   type="text"

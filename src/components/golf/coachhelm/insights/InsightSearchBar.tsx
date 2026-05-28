@@ -80,7 +80,7 @@ export function InsightSearchBar({
   return (
     <div className={cn('relative', className)}>
       {/* Search Icon */}
-      <div className="absolute left-3.5 top-1/2 -tranwarm-y-1/2 pointer-events-none">
+      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
         <IconSearch size={18} className="text-warm-400" />
       </div>
 
@@ -114,7 +114,7 @@ export function InsightSearchBar({
           type="button"
           onClick={handleClear}
           className={cn(
-            'absolute right-2 top-1/2 -tranwarm-y-1/2',
+            'absolute right-2 top-1/2 -translate-y-1/2',
             'p-1.5 rounded-lg',
             'text-warm-400 hover:text-warm-600',
             'hover:bg-warm-100 active:bg-warm-200',

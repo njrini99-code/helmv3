@@ -134,8 +134,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 'pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-xl',
                 'transition-all duration-200 ease-out',
                 isRemoving
-                  ? 'opacity-0 tranwarm-x-4'
-                  : 'opacity-100 tranwarm-x-0',
+                  ? 'opacity-0 translate-x-4'
+                  : 'opacity-100 translate-x-0',
                 config.containerClass,
               )}
               style={{ minWidth: 260, maxWidth: 380 }}

@@ -53,7 +53,7 @@ export function PipelineCard({ item, isDragging = false }: PipelineCardProps) {
     >
       <div className={cn(
         'relative bg-cream-100/75 backdrop-blur-md rounded-[20px] border border-warm-200/55 shadow-sm overflow-clip',
-        'hover:shadow-lg hover:-tranwarm-y-1 transition-all duration-200',
+        'hover:shadow-lg hover:-translate-y-1 transition-all duration-200',
         isActuallyDragging && 'rotate-2 shadow-xl scale-105'
       )}>
         {/* Shine effect */}

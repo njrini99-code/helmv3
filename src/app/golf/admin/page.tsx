@@ -504,7 +504,7 @@ function AdminDashboardContent() {
                   )}
                 >
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -tranwarm-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary-500 rounded-r-full" />
                   )}
                   <TabIcon
                     size={20}
@@ -711,7 +711,7 @@ function AdminDashboardContent() {
           'fixed left-0 top-0 bottom-0 z-50 w-[260px]',
           'flex flex-col bg-[#1C1917] border-r border-white/5',
           'transition-transform duration-300 ease-in-out lg:hidden',
-          mobileMenuOpen ? 'tranwarm-x-0' : '-tranwarm-x-full'
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex items-center justify-between px-4 h-16">

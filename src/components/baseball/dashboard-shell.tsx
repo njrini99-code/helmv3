@@ -129,7 +129,7 @@ export function BaseballDashboardShell({ children, role }: Props) {
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:hidden',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          mobileOpen ? 'tranwarm-x-0' : '-tranwarm-x-full'
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <Sidebar isMobile />

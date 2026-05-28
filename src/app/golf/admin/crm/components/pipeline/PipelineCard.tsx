@@ -68,7 +68,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
       <div
         className={cn(
           'relative bg-white/80 backdrop-blur-md rounded-xl border border-white/40 overflow-hidden',
-          'hover:shadow-md hover:-tranwarm-y-0.5 transition-all duration-200',
+          'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200',
           isOverlay && 'ring-2 ring-primary-500',
         )}
       >

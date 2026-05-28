@@ -285,7 +285,7 @@ export function PlayerRow({
 
       {/* Hover Preview Card */}
       {showPreview && aggregates && (
-        <td className="absolute right-full top-1/2 -tranwarm-y-1/2 mr-2 z-50 pointer-events-none">
+        <td className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 pointer-events-none">
           <div className="bg-white rounded-xl shadow-xl border border-warm-200 p-4 w-64 animate-in fade-in slide-in-from-right-2 duration-150">
             <div className="flex items-center gap-3 mb-3 pb-3 border-b border-warm-100">
               <Avatar name={fullName} src={player.avatar_url || undefined} size="md" />
