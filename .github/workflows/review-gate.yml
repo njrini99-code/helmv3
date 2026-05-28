@@ -50,30 +50,92 @@ jobs:
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx)$' || true)
-          if [ "${#files[@]}" -eq 0 ]; then
+          # Exclude rule-pack positive fixtures from CI scans — they exist
+          # only to exercise the rules locally and are intentionally broken.
+          mapfile -t all_files < <(bash .github/scripts/changed-files.sh \
+            | grep -E '\.(ts|tsx)$' \
+            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
+            || true)
+          if [ "${#all_files[@]}" -eq 0 ]; then
             echo "No changed TypeScript files for ast-grep."
             exit 0
           fi
 
+          # filter_files <include_regex> <exclude_regex>
+          # Returns the changed-files list filtered to paths matching the include
+          # regex and NOT matching the exclude regex. Both are extended grep
+          # regexes; pass "" to skip either filter. Output is one path per line.
+          filter_files() {
+            local include_re="$1"
+            local exclude_re="$2"
+            for f in "${all_files[@]}"; do
+              if [ -n "$include_re" ] && ! printf '%s\n' "$f" | grep -Eq "$include_re"; then
+                continue
+              fi
+              if [ -n "$exclude_re" ] && printf '%s\n' "$f" | grep -Eq "$exclude_re"; then
+                continue
+              fi
+              printf '%s\n' "$f"
+            done
+          }
+
+          # Each rule below has a path scope baked in here so the rule fires
+          # only on the paths it is meant for. Without this filter the rules
+          # ran repo-wide and produced hundreds of false positives. See
+          # docs/operations/2026-05-28-coderabbit-fails-investigation.md.
           fail=0
-          rules=(
-            .coderabbit/ast-grep/no-bare-table-names.yml
-            .coderabbit/ast-grep/no-deep-types-import.yml
-            .coderabbit/ast-grep/no-process-env-in-edge.yml
-            .coderabbit/ast-grep/no-service-role-in-client.yml
-          )
-          for rule in "${rules[@]}"; do
-            echo "::group::$rule"
-            sg scan --rule "$rule" --error "${files[@]}" || fail=1
+
+          run_rule() {
+            local rule="$1"
+            local include_re="$2"
+            local exclude_re="$3"
+            local label="$4"
+
+            mapfile -t scoped < <(filter_files "$include_re" "$exclude_re")
+            echo "::group::$rule (${label})"
+            if [ "${#scoped[@]}" -eq 0 ]; then
+              echo "No in-scope files for $rule"
+              echo "::endgroup::"
+              return 0
+            fi
+            printf '  scope-hit: %s\n' "${scoped[@]}"
+            if ! sg scan --rule "$rule" --error "${scoped[@]}"; then
+              fail=1
+            fi
             echo "::endgroup::"
-          done
+          }
+
+          # Repo-wide rules — match every changed TS/TSX file.
+          run_rule .coderabbit/ast-grep/no-bare-table-names.yml \
+            '' '' 'repo-wide'
+          run_rule .coderabbit/ast-grep/no-deep-types-import.yml \
+            '' '' 'repo-wide'
+
+          # Edge-Functions-only rule — Deno runtime, process.env is undefined.
+          # Mirrors .coderabbit.yaml > path_instructions for supabase/functions/.
+          run_rule .coderabbit/ast-grep/no-process-env-in-edge.yml \
+            '^supabase/functions/.*\.ts$' '' 'supabase/functions/**'
+
+          # Service-role rule — must skip admin-only / server-only / cron /
+          # rate-limit / push-notification / Edge Function paths. Mirrors the
+          # exclude list in .coderabbit/semgrep/helmv3.yml for the equivalent
+          # semgrep rule (helmv3-service-role-outside-admin).
+          run_rule .coderabbit/ast-grep/no-service-role-in-client.yml \
+            '\.(ts|tsx)$' \
+            '^(src/lib/supabase/admin|src/lib/supabase/service|src/lib/auth/supabase-rate-limit|src/lib/notifications/push|src/app/api/admin/|src/app/api/.+/admin/|scripts/|supabase/functions/)' \
+            'no-admin/scripts/edge'
+
           exit $fail
 
   semgrep:
     name: semgrep (custom rules)
     runs-on: ubuntu-latest
-    container: returntocorp/semgrep
+    # The legacy `returntocorp/semgrep` namespace is deprecated and pinned to
+    # an older semgrep that fails to parse `pattern-inside` blocks used by
+    # helmv3-server-action-missing-auth-check and helmv3-destructive-write-pattern.
+    # Use the modern `semgrep/semgrep` image and pin to a known-good tag.
+    # See docs/operations/2026-05-28-coderabbit-fails-investigation.md.
+    container: semgrep/semgrep:1.157.0
     steps:
       - uses: actions/checkout@v4
         with:
@@ -84,7 +146,14 @@ jobs:
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -eu
-          files="$(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx|js|jsx|sql|py)$' || true)"
+          # Skip the `.coderabbit/semgrep/__test__/` positive fixtures —
+          # they are intentionally broken code that exists only to verify
+          # rule-pack behaviour locally. Letting them flow into CI would
+          # block every PR that touches the rule pack.
+          files="$(bash .github/scripts/changed-files.sh \
+            | grep -E '\.(ts|tsx|js|jsx|sql|py)$' \
+            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
+            || true)"
           if [ -z "$files" ]; then
             echo "No changed files for semgrep."
             exit 0
@@ -96,7 +165,10 @@ jobs:
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           set -eu
-          files="$(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' || true)"
+          files="$(bash .github/scripts/changed-files.sh \
+            | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' \
+            | grep -vE '^\.coderabbit/(semgrep|ast-grep)/__test__/' \
+            || true)"
           if [ -z "$files" ]; then
             echo "No changed files for semgrep p/ci."
             exit 0

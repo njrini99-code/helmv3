@@ -27,17 +27,18 @@ rules:
           - metavariable-regex:
               metavariable: $KEY
               regex: "(?i).*service.role.*"
+    # Unanchored globs (no leading `/`) for Semgrepignore v2 compatibility.
     paths:
       include:
-        - src/
-        - app/
+        - "src/**"
+        - "app/**"
       exclude:
-        - "/src/lib/supabase/admin*"
-        - "/src/lib/supabase/service*"
-        - "/src/app/api/**/admin/**"
-        - "/src/app/api/admin/**"
-        - "/scripts/**"
-        - "/supabase/functions/**"
+        - "src/lib/supabase/admin*"
+        - "src/lib/supabase/service*"
+        - "src/app/api/**/admin/**"
+        - "src/app/api/admin/**"
+        - "scripts/**"
+        - "supabase/functions/**"
 
   # ---------------------------------------------------------------------------
   # SECURITY — never log Supabase JWTs or session tokens
@@ -68,39 +69,31 @@ rules:
       `supabase.auth.getUser()`. Every exported action under
       src/app/**/actions/** must verify the caller is authenticated
       before any .from()/rpc() call.
+    # Use top-level `paths.include` without a leading `/` — Semgrepignore
+    # v2 anchors leading-slash globs to the scan root, which historically
+    # silently matched nothing under the CI container. The unanchored
+    # form matches the file by suffix, which is what we want.
     paths:
       include:
-        - "/src/app/**/actions/**/*.ts"
+        - "src/app/**/actions/**/*.ts"
+    # Rewritten 2026-05-28 to use `pattern-inside` + simple sub-patterns
+    # so the rule parses on every semgrep version >= 1.50 (the CI
+    # container's previous pattern form raised a "Stdlib.Parsing.Parse_error"
+    # on older semgrep). See
+    # docs/operations/2026-05-28-coderabbit-fails-investigation.md.
     patterns:
-      - pattern-either:
-          - pattern: |
-              export async function $F(...) {
-                ...
-                $X.from($T)
-                ...
-              }
-          - pattern: |
-              export async function $F(...) {
-                ...
-                $X.rpc($N)
-                ...
-              }
-          - pattern: |
-              export async function $F(...) {
-                ...
-                $X.rpc($N, $ARGS)
-                ...
-              }
-      - pattern-not: |
+      - pattern-inside: |
           export async function $F(...) {
-            ...
-            $Y.auth.getUser()
             ...
           }
-      - pattern-not: |
+      - pattern-either:
+          - pattern: $X.from($T)
+          - pattern: $X.rpc($N)
+          - pattern: $X.rpc($N, $ARGS)
+      - pattern-not-inside: |
           export async function $F(...) {
             ...
-            await $Y.auth.getUser()
+            $Y.auth.getUser(...)
             ...
           }
 
@@ -115,19 +108,27 @@ rules:
       path. On a transient failure between the two statements, user data
       is permanently lost. Use upsert/onConflict or stage-and-swap.
       See memory note "GolfHelm — no destructive writes".
+    # Unanchored globs (no leading `/`) for Semgrepignore v2 compatibility.
     paths:
       include:
-        - "/src/app/**/actions/**/*.ts"
-        - "/src/lib/**/*.ts"
-    pattern-either:
-      - pattern: |
-          $X.from($T).delete()
-          ...
-          $X.from($T).insert($D)
-      - pattern: |
-          await $X.from($T).delete()
-          ...
-          await $X.from($T).insert($D)
+        - "src/app/**/actions/**/*.ts"
+        - "src/lib/**/*.ts"
+    # Rewritten 2026-05-28: the previous `await $X.from(...).delete() ... await
+    # $X.from(...).insert(...)` form failed to parse on older semgrep
+    # ("Stdlib.Parsing.Parse_error"). The version below splits the two
+    # statements into separate `pattern-either` branches and lets `...`
+    # (ellipsis) handle the intervening lines and the optional `await`.
+    # See docs/operations/2026-05-28-coderabbit-fails-investigation.md.
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $X.from($T).delete();
+              ...
+              $X.from($T).insert($D);
+          - pattern: |
+              await $X.from($T).delete();
+              ...
+              await $X.from($T).insert($D);
 
   # ---------------------------------------------------------------------------
   # PII — don't ship raw user.email / phone into observability spans
@@ -159,8 +160,8 @@ rules:
       Use `@/lib/supabase/client` in client components.
     paths:
       include:
-        - "/src/components/**/*.tsx"
-        - "/src/app/**/*.tsx"
+        - "src/components/**/*.tsx"
+        - "src/app/**/*.tsx"
     pattern-either:
       - pattern: |
           'use client'
@@ -183,7 +184,7 @@ rules:
       stale data until the next full reload.
     paths:
       include:
-        - "/src/app/**/actions/**/*.ts"
+        - "src/app/**/actions/**/*.ts"
     patterns:
       - pattern-either:
           - pattern: |
@@ -230,8 +231,8 @@ rules:
     languages: [generic]
     paths:
       include:
-        - "/supabase/migrations/**/*.sql"
-        - "/supabase/functions/**/*.sql"
+        - "supabase/migrations/**/*.sql"
+        - "supabase/functions/**/*.sql"
     severity: ERROR
     message: >
       SECURITY DEFINER functions must pin `SET search_path = ''` (or
@@ -249,7 +250,7 @@ rules:
     languages: [generic]
     paths:
       include:
-        - "/supabase/migrations/**/*.sql"
+        - "supabase/migrations/**/*.sql"
     severity: ERROR
     message: >
       New table created without `ENABLE ROW LEVEL SECURITY` in the same
@@ -290,5 +291,5 @@ rules:
       - pattern-regex: "eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}"
     paths:
       include:
-        - "/tools/**/*.py"
-        - "/scripts/**/*.py"
+        - "tools/**/*.py"
+        - "scripts/**/*.py"

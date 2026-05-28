@@ -4,6 +4,12 @@
 # memberships, audit_log, feature_flags).
 #
 # CLAUDE.md "Table Names — ALWAYS Use Sport Prefix" is the source rule.
+#
+# IMPORTANT: this rule must NOT match `supabase.storage.from('<bucket>')`.
+# Storage buckets live in a separate namespace from DB tables, and several
+# buckets share their name with the bare-table pattern (e.g. 'documents',
+# 'baseball_videos'). We exclude any receiver whose source text ends in
+# `.storage` via a metavariable regex constraint on `$X`.
 id: helmv3-no-bare-table-names
 language: typescript
 severity: error
@@ -14,6 +20,8 @@ message: >
 note: >
   Allowed unprefixed tables: users, organizations, memberships,
   audit_log, feature_flags. Anything else needs a sport prefix.
+  Storage bucket calls (`supabase.storage.from('<bucket>')`) are
+  excluded — they reference Supabase Storage buckets, not DB tables.
 rule:
   any:
     - pattern: $X.from("coaches")
@@ -49,3 +57,13 @@ rule:
     - pattern: $X.from("travel")
     - pattern: $X.from('travel')
     - pattern: $X.from(`travel`)
+constraints:
+  # Skip `supabase.storage.from(...)` — Storage bucket access lives in a
+  # different namespace than DB tables and shares some names with the
+  # bare-table pattern (e.g. 'documents'). The regex matches against the
+  # source text of the receiver `$X`; `\.storage\b` catches both
+  # `supabase.storage` (single-line) and the multi-line `await supabase\n
+  # .storage` form because ast-grep flattens AST nodes to source text.
+  X:
+    not:
+      regex: "\\.storage\\b"
