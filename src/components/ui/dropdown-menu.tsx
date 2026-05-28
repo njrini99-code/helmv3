@@ -53,6 +53,7 @@ const DropdownMenuItem = React.forwardRef<
     className={cn(
       'relative flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
       'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       selected
         ? 'text-primary-700 bg-primary-50/55 font-medium'
@@ -73,6 +74,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     className={cn(
       'relative flex cursor-pointer select-none items-center pl-9 pr-4 py-2.5 text-[13px] outline-none',
       'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[highlighted]:bg-cream-50/70 data-[highlighted]:text-warm-900',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       className,
@@ -126,6 +128,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     className={cn(
       'flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
       'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[state=open]:bg-cream-50/70 data-[highlighted]:bg-cream-50/70',
       className,
     )}

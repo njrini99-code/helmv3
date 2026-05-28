@@ -107,6 +107,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       'placeholder:text-warm-400',
       'transition-all duration-200',
       'focus:outline-none',
+      'focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'disabled:opacity-50 disabled:cursor-not-allowed',
     );
 
@@ -182,9 +183,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               aria-label="Clear input"
               className={cn(
                 'absolute right-1 top-1/2 -translate-y-1/2',
-                'min-w-[44px] min-h-[44px] flex items-center justify-center',
+                'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg',
                 'text-warm-400 hover:text-warm-600 active:text-warm-600',
                 'transition-all duration-150',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
                 'opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100',
               )}
             >
@@ -203,9 +205,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               aria-pressed={showPassword}
               className={cn(
                 'absolute right-1 top-1/2 -translate-y-1/2',
-                'min-w-[44px] min-h-[44px] flex items-center justify-center',
+                'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg',
                 'text-warm-400 hover:text-warm-600',
                 'transition-colors duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
               )}
             >
               {showPassword ? (
@@ -312,6 +315,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             'placeholder:text-warm-400',
             'transition-all duration-200 resize-none',
             'focus:outline-none focus:ring-2 focus:border-primary-500 focus:ring-primary-500/30',
+            'focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
             'hover:border-warm-300',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             error

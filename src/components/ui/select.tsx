@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, forwardRef } from 'react';
+import { useState, useRef, useEffect, useCallback, useId, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconCheck } from '@/components/icons';
 
@@ -45,6 +45,7 @@ export function Select({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const triggerId = useId();
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -158,13 +159,14 @@ export function Select({
   return (
     <div className="w-full" ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">
+        <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
         </label>
       )}
       <div className="relative">
         <button
           type="button"
+          id={triggerId}
           onClick={() => !disabled && (isOpen ? closeDropdown() : openDropdown())}
           onKeyDown={handleKeyDown}
           disabled={disabled}
@@ -175,6 +177,7 @@ export function Select({
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
+            'focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
               ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
@@ -235,6 +238,7 @@ export function Select({
                   placeholder="Search..."
                   className="w-full h-10 px-3 rounded-lg border border-warm-200 text-base lg:text-sm
                              focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30
+                             focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2
                              transition-colors duration-200"
                   autoCorrect="off"
                   autoCapitalize="none"
@@ -261,6 +265,7 @@ export function Select({
                     className={cn(
                       'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm text-left flex items-center justify-between gap-2',
                       'transition-colors duration-100',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
                       option.disabled
                         ? 'text-warm-300 cursor-not-allowed'
                         : 'text-warm-700',
@@ -328,6 +333,7 @@ export function MultiSelect({
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerId = useId();
 
   const selectedOptions = options.filter((opt) => value.includes(opt.value));
 
@@ -379,13 +385,14 @@ export function MultiSelect({
   return (
     <div className="w-full" ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">
+        <label htmlFor={triggerId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
         </label>
       )}
       <div className="relative">
         <button
           type="button"
+          id={triggerId}
           onClick={() => !disabled && (isOpen ? closeDropdown() : openDropdown())}
           disabled={disabled}
           aria-haspopup="listbox"
@@ -395,6 +402,7 @@ export function MultiSelect({
             'flex items-center justify-between gap-2',
             'transition-all duration-200',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
+            'focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
             'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
             error
               ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
@@ -457,6 +465,7 @@ export function MultiSelect({
                     className={cn(
                       'w-full min-h-[44px] px-3 py-2 text-base lg:text-sm text-left flex items-center gap-3',
                       'transition-colors duration-100',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
                       option.disabled
                         ? 'text-warm-300 cursor-not-allowed'
                         : 'text-warm-700 hover:bg-warm-50',
@@ -490,7 +499,7 @@ export function MultiSelect({
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2"
                 >
                   Clear all
                 </button>
@@ -524,19 +533,24 @@ interface NativeSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement
 }
 
 export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
-  ({ className, label, error, hint, options, placeholder, children, ...props }, ref) => (
+  ({ className, label, error, hint, options, placeholder, children, id, ...props }, ref) => {
+  const generatedId = useId();
+  const selectId = id || generatedId;
+  return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-warm-700 mb-1.5">
+        <label htmlFor={selectId} className="block text-sm font-medium text-warm-700 mb-1.5">
           {label}
         </label>
       )}
       <select
         ref={ref}
+        id={selectId}
         className={cn(
           'w-full min-h-[48px] px-4 rounded-xl border bg-cream-50/92 text-warm-900 text-base lg:text-sm',
           'transition-all duration-200 appearance-none cursor-pointer',
           'focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500',
+          'focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
           'disabled:bg-warm-50 disabled:text-warm-400 disabled:cursor-not-allowed',
           error
             ? 'border-red-400 focus:border-red-500 focus:ring-red-500/20'
@@ -577,6 +591,7 @@ export const NativeSelect = forwardRef<HTMLSelectElement, NativeSelectProps>(
         </p>
       )}
     </div>
-  )
+  );
+  }
 );
 NativeSelect.displayName = 'NativeSelect';
