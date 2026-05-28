@@ -44,6 +44,7 @@ import {
 } from '@/app/golf/actions/insight-delivery';
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
+import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 
 // ============================================================================
 // TYPES
@@ -83,6 +84,27 @@ function mapCategoryToAreaType(input: string | null | undefined): string {
   if (v.includes('chip') || v.includes('short') || v.includes('scramble') || v.includes('sand')) return 'short_game';
   if (v.includes('mental') || v.includes('pressure') || v.includes('course')) return 'mental_game';
   return 'other';
+}
+
+/** Deterministic 1-sentence opener used as the LLM round-review
+ *  card's fallback. Always renders something specific (score +
+ *  score-to-par + optional course) so the surface is never empty
+ *  when the W30 budget gate trips or the action errors. */
+function buildRoundReviewFallback(
+  totalScore: number,
+  scoreToPar: number | null,
+  courseName: string | null,
+): string {
+  const toParStr =
+    scoreToPar === null || scoreToPar === undefined
+      ? ''
+      : scoreToPar === 0
+        ? ' (even)'
+        : scoreToPar > 0
+          ? ` (+${scoreToPar})`
+          : ` (${scoreToPar})`;
+  const courseClause = courseName ? ` at ${courseName}` : '';
+  return `You shot ${totalScore}${toParStr}${courseClause}. Review the stats and takeaways below.`;
 }
 
 interface PromoteSuggestion {
@@ -581,6 +603,23 @@ export default function RoundReviewPage() {
       <div className="max-w-2xl mx-auto px-4 py-6">
       {/* Content */}
       <m.div variants={itemVariants} className="space-y-4">
+        {/* W30 LLM round-review prose. Renders the deterministic
+            fallback on mount and swaps in Haiku-composed prose once
+            the server action resolves. Failure-silent — when the
+            budget gate trips or the action errors, the fallback stays
+            verbatim. Mirrors HeroNarrativeCard placement (above the
+            primary review surface so it reads as the editorial opener). */}
+        {round && round.total_score !== null && round.score_to_par !== null && (
+          <RoundReviewLlmCard
+            roundId={roundId}
+            fallbackText={buildRoundReviewFallback(
+              round.total_score,
+              roundScoreToPar,
+              round.course_name,
+            )}
+          />
+        )}
+
         {/* Primary Review Display - New Component */}
         {storedReview && storedReview.review_content && (
           <RoundReviewDisplay
