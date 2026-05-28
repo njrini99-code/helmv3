@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { IconTarget, IconFlag, IconCircleDot, IconMap, IconBrain } from '@/components/icons';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { PRIORITY_METRICS, PriorityMetric, CoachPhilosophy } from '@/lib/coachhelm/types';
+import { IconButton } from '@/components/ui/button';
 
 const METRIC_ICONS: Record<string, React.ReactNode> = {
     priorityBallStriking: <IconTarget size={18} />,
@@ -63,7 +64,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
             )}
         >
             {/* Drag handle */}
-            <button
+            <IconButton variant="default"
                 {...attributes}
                 {...listeners}
                 className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded hover:bg-warm-100 transition-colors cursor-grab active:cursor-grabbing touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
@@ -72,7 +73,7 @@ function SortableItem({ metric, rank }: { metric: PriorityMetric; rank: number }
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-warm-400">
                     <path d="M4 6h8M4 10h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
-            </button>
+            </IconButton>
 
             {/* Rank badge */}
             <div

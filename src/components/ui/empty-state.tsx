@@ -390,12 +390,14 @@ export function SearchEmptyState({ query, filters, onClearFilters }: SearchEmpty
         </div>
       )}
       {onClearFilters && (
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onClearFilters}
           className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline underline-offset-2"
         >
           Clear all filters
-        </button>
+        </Button>
       )}
     </div>
   );

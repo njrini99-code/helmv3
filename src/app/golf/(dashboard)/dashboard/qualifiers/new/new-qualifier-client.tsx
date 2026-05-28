@@ -225,20 +225,20 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={selectAll}
                   className="text-sm text-primary-600 hover:text-primary-700 font-medium px-3 py-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 transition-colors"
                 >
                   Select All
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   onClick={deselectAll}
                   className="text-sm text-warm-500 hover:text-warm-700 font-medium px-3 py-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -255,7 +255,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                 {players.map(player => {
                   const isSelected = selectedPlayers.includes(player.id);
                   return (
-                    <button
+                    <Button variant="primary"
                       key={player.id}
                       type="button"
                       onClick={() => togglePlayer(player.id)}
@@ -279,7 +279,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
                       <span className={`font-medium ${isSelected ? 'text-primary-700' : 'text-warm-700'}`}>
                         {player.first_name} {player.last_name}
                       </span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

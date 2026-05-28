@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { Calendar, Users, Trophy, Globe, Sparkles } from 'lucide-react';
 import { type FeedType } from './CalendarFeedManager';
 import '@/styles/calendar-tokens.css';
+import { Button } from '@/components/ui/button';
 
 interface CreateFeedSectionProps {
   onCreate: (type: FeedType, name: string) => Promise<void>;
@@ -151,7 +152,7 @@ export function CreateFeedSection({
             const isSelected = selectedType === option.type;
 
             return (
-              <button
+              <Button variant="ghost"
                 key={option.type}
                 type="button"
                 onClick={() => handleTypeSelect(option.type)}
@@ -196,7 +197,7 @@ export function CreateFeedSection({
                     {option.description}
                   </p>
                 </div>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -254,7 +255,7 @@ export function CreateFeedSection({
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-warm-200">
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onCancel}
           disabled={loading}
@@ -265,8 +266,8 @@ export function CreateFeedSection({
                    transition-colors"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button variant="primary"
           type="button"
           onClick={handleCreate}
           disabled={loading || !selectedType || (showNameInput && !feedName.trim())}
@@ -276,7 +277,7 @@ export function CreateFeedSection({
                    transition-colors"
         >
           {loading ? 'Creating...' : 'Create Feed'}
-        </button>
+        </Button>
       </div>
     </div>
   );

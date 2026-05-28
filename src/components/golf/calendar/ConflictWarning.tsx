@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Clock, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -140,7 +141,7 @@ export function ConflictWarning({
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {suggestions.map((time, i) => (
-                  <button
+                  <Button variant="ghost"
                     key={i}
                     onClick={() => onSelectTime(time)}
                     className="px-3 py-2 bg-white hover:bg-amber-50 text-left rounded-lg text-sm border border-amber-200 hover:border-amber-400 transition-all shadow-sm hover:shadow group"
@@ -153,7 +154,7 @@ export function ConflictWarning({
                         Select →
                       </span>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>

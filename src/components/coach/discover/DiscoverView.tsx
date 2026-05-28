@@ -551,12 +551,12 @@ export function DiscoverView({
                         : `${filters.states.length} states`}
                     </span>{' '}
                     selected —{' '}
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setViewMode('grid')}
                       className="underline hover:no-underline font-medium"
                     >
                       View {mode === 'players' ? 'players' : 'teams'} from {filters.states.length === 1 ? 'this state' : 'these states'} →
-                    </button>
+                    </Button>
                   </p>
                 </motion.div>
               )}
@@ -679,7 +679,7 @@ export function DiscoverView({
               }
 
               return (
-                <button
+                <Button variant="primary"
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
                   className={cn(
@@ -690,7 +690,7 @@ export function DiscoverView({
                   )}
                 >
                   {pageNum}
-                </button>
+                </Button>
               );
             })}
           </div>

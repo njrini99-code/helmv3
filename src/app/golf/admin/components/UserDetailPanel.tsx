@@ -6,6 +6,7 @@ import { IconX, IconMail, IconCalendar, IconTarget, IconSparkles, IconUser, Icon
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo, formatDate } from './admin-utils';
+import { IconButton } from '@/components/ui/button';
 
 type TeamMember = AdminDashboardData['userActivity']['teams'][0]['members'][0];
 
@@ -98,13 +99,13 @@ export function UserDetailPanel({ userId, teams, unassigned, userDirectory, onCl
         <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-xl border-b border-warm-200/40 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-warm-900">User Profile</h2>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close user profile"
               className="p-2 rounded-xl text-warm-400 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
             >
               <IconX size={20} aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
         </div>
 

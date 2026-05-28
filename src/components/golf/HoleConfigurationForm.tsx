@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { HoleConfig } from '@/lib/types/golf-course';
+import { Button } from '@/components/ui/button';
 
 interface HoleConfigurationFormProps {
   initialHoles?: HoleConfig[];
@@ -75,7 +76,7 @@ export function HoleConfigurationForm({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <button
+        <Button variant="ghost"
           onClick={onBack}
           className="flex items-center gap-2 text-warm-600 hover:text-warm-900"
         >
@@ -84,7 +85,7 @@ export function HoleConfigurationForm({
                   d="M15 19l-7-7 7-7" />
           </svg>
           Back
-        </button>
+        </Button>
         <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{courseName}</h2>
         <div className="w-16" /> {/* Spacer */}
       </div>
@@ -110,7 +111,7 @@ export function HoleConfigurationForm({
       {/* Front/Back Nine Tabs — only for 18-hole rounds */}
       {!is9Hole && (
         <div className="flex bg-warm-100 rounded-lg p-1">
-          <button
+          <Button variant="ghost"
             onClick={() => setActiveTab('front')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
               ${activeTab === 'front'
@@ -119,8 +120,8 @@ export function HoleConfigurationForm({
               }`}
           >
             Front 9 <span className="text-warm-400">({frontPar} par)</span>
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => setActiveTab('back')}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all
               ${activeTab === 'back'
@@ -129,7 +130,7 @@ export function HoleConfigurationForm({
               }`}
           >
             Back 9 <span className="text-warm-400">({backPar} par)</span>
-          </button>
+          </Button>
         </div>
       )}
 
@@ -172,7 +173,7 @@ export function HoleConfigurationForm({
             <div className="px-2 py-2 border-l border-warm-100 flex items-center justify-center">
               <div className="flex gap-1">
                 {[3, 4, 5].map(par => (
-                  <button
+                  <Button variant="primary"
                     key={par}
                     onClick={() => updateHole(hole.holeNumber, 'par', par)}
                     className={`w-10 h-10 rounded-lg text-body-sm font-medium transition-all
@@ -186,7 +187,7 @@ export function HoleConfigurationForm({
                       }`}
                   >
                     {par}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -226,13 +227,13 @@ export function HoleConfigurationForm({
       )}
 
       {/* Save Button */}
-      <button
+      <Button variant="primary"
         onClick={handleSubmit}
         className="w-full py-4 bg-primary-600 text-white font-medium rounded-lg
                    hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700"
       >
         Save Course & Start Round
-      </button>
+      </Button>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   IconCheckCircle2,
 } from '@/components/icons';
 import type { TracerAlert, TracerSubTab, AlertSeverityLevel } from './tracer-types';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TRACER ALERT PANEL
@@ -93,7 +94,7 @@ function AlertRow({
   const hasNavigation = alert.navigateTo != null;
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => {
         if (alert.navigateTo) {
@@ -128,6 +129,6 @@ function AlertRow({
       {hasNavigation && (
         <IconChevronRight size={16} className="text-warm-400 flex-shrink-0" />
       )}
-    </button>
+    </Button>
   );
 }

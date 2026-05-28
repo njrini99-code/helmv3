@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar } from '@/components/ui/avatar';
 import { PageLoading } from '@/components/ui/loading';
@@ -203,7 +203,7 @@ function CompareContent() {
                     {searchResults.map((player) => {
                       const name = getFullName(player.first_name, player.last_name);
                       return (
-                        <button
+                        <Button variant="ghost"
                           key={player.id}
                           onClick={() => addPlayer(player)}
                           className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left"
@@ -216,7 +216,7 @@ function CompareContent() {
                             </p>
                           </div>
                           <IconPlus size={16} className="text-primary-600" />
-                        </button>
+                        </Button>
                       );
                     })}
                   </div>
@@ -238,13 +238,13 @@ function CompareContent() {
                     >
                       <Avatar name={name} src={player.avatar_url} size="xs" />
                       <span className="text-sm font-medium text-primary-800">{name}</span>
-                      <button
+                      <IconButton variant="primary"
                         onClick={() => removePlayer(player.id)}
                         className="min-w-[44px] min-h-[44px] p-2 flex items-center justify-center rounded-full hover:bg-primary-200 transition-colors"
                         aria-label={`Remove ${name} from comparison`}
                       >
                         <IconX size={14} className="text-primary-600" />
-                      </button>
+                      </IconButton>
                     </div>
                   );
                 })}

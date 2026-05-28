@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { IconChevronRight, IconTrash, IconPlay } from '@/components/icons';
 import type { CrmSequence } from '@/app/golf/actions/crm-sequences';
+import { IconButton } from '@/components/ui/button';
 
 interface SequenceCardProps {
   sequence: CrmSequence;
@@ -103,7 +104,7 @@ export function SequenceCard({
         onClick={(e) => e.stopPropagation()}
       >
         {onToggleActive && (
-          <button
+          <IconButton variant="primary" aria-label="Play"
             type="button"
             onClick={() => onToggleActive(!sequence.is_active)}
             title={sequence.is_active ? 'Pause sequence' : 'Activate sequence'}
@@ -115,17 +116,17 @@ export function SequenceCard({
             )}
           >
             <IconPlay size={14} />
-          </button>
+          </IconButton>
         )}
         {onDelete && (
-          <button
+          <IconButton variant="default" aria-label="Delete"
             type="button"
             onClick={onDelete}
             title="Delete sequence"
             className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
           >
             <IconTrash size={14} />
-          </button>
+          </IconButton>
         )}
         <IconChevronRight size={14} className="text-warm-300" />
       </div>

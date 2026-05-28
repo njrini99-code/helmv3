@@ -19,6 +19,7 @@ import { PatternCard } from './PatternCard';
 import { PatternByPlayerView } from './PatternByPlayerView';
 import { PatternTimeline } from './PatternTimeline';
 import { PatternValidationModal } from './PatternValidationModal';
+import { Button } from '@/components/ui/button';
 import type {
   ExtendedPattern,
   PatternSeverity,
@@ -200,7 +201,7 @@ export function PatternDashboard({
       <div className="flex flex-wrap items-center gap-3">
         {/* View mode tabs */}
         <div className="flex bg-cream-100/60 rounded-lg p-1 border border-white/20 overflow-x-auto scrollbar-none">
-          <button
+          <Button variant="ghost"
             onClick={() => setViewMode('all')}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
@@ -211,8 +212,8 @@ export function PatternDashboard({
           >
             <IconList size={16} />
             <span className="hidden sm:inline">All Patterns</span><span className="sm:hidden">All</span>
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => setViewMode('by-player')}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
@@ -223,8 +224,8 @@ export function PatternDashboard({
           >
             <IconUsers size={16} />
             <span className="hidden sm:inline">By Player</span><span className="sm:hidden">Player</span>
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => setViewMode('by-type')}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
@@ -235,8 +236,8 @@ export function PatternDashboard({
           >
             <IconLayoutGrid size={16} />
             <span className="hidden sm:inline">By Type</span><span className="sm:hidden">Type</span>
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => setViewMode('timeline')}
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
@@ -247,11 +248,11 @@ export function PatternDashboard({
           >
             <IconActivity size={16} />
             Timeline
-          </button>
+          </Button>
         </div>
 
         {/* Filter toggle */}
-        <button
+        <Button variant="primary"
           onClick={() => setShowFilters(!showFilters)}
           className={cn(
             'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ml-auto',
@@ -265,7 +266,7 @@ export function PatternDashboard({
           {(lifecycleFilter !== 'all' || severityFilter !== 'all') && (
             <span className="w-2 h-2 rounded-full bg-primary-500" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Filter panel */}
@@ -287,7 +288,7 @@ export function PatternDashboard({
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {(['all', 'detected', 'confirmed', 'addressed', 'resolved', 'dismissed'] as const).map(state => (
-                      <button
+                      <Button variant="primary"
                         key={state}
                         onClick={() => setLifecycleFilter(state)}
                         className={cn(
@@ -298,7 +299,7 @@ export function PatternDashboard({
                         )}
                       >
                         {state.charAt(0).toUpperCase() + state.slice(1)}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -310,7 +311,7 @@ export function PatternDashboard({
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {(['all', 'critical', 'high', 'medium', 'low'] as const).map(sev => (
-                      <button
+                      <Button variant="danger"
                         key={sev}
                         onClick={() => setSeverityFilter(sev)}
                         className={cn(
@@ -325,14 +326,14 @@ export function PatternDashboard({
                         )}
                       >
                         {sev.charAt(0).toUpperCase() + sev.slice(1)}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
 
                 {/* Clear filters */}
                 {(lifecycleFilter !== 'all' || severityFilter !== 'all') && (
-                  <button
+                  <Button variant="ghost"
                     onClick={() => {
                       setLifecycleFilter('all');
                       setSeverityFilter('all');
@@ -341,7 +342,7 @@ export function PatternDashboard({
                   >
                     <IconX size={14} />
                     Clear Filters
-                  </button>
+                  </Button>
                 )}
               </div>
             </Card>

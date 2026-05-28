@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { timeAgo } from './admin-utils';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   auditLog: AdminDashboardData['auditLog'];
@@ -102,7 +103,7 @@ function DiffSection({ oldData, newData }: { oldData: Record<string, unknown> | 
 
   return (
     <div className="mt-1.5">
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className="text-label text-warm-400 hover:text-warm-600 transition-colors flex items-center gap-1"
       >
@@ -116,7 +117,7 @@ function DiffSection({ oldData, newData }: { oldData: Record<string, unknown> | 
           <path d="M3.5 2L6.5 5L3.5 8" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
         </svg>
         {expanded ? 'Hide' : 'Show'} changes
-      </button>
+      </Button>
       {expanded && (
         <div className="mt-1.5 bg-warm-50/50 rounded-lg p-2 text-label font-mono space-y-0.5 max-h-[120px] overflow-y-auto">
           {[...allKeys].map((key) => {
@@ -168,7 +169,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
             </span>
           </div>
           <div className="flex gap-1 bg-white/50 rounded-lg p-0.5">
-            <button
+            <Button variant="ghost"
               onClick={() => setFilter('all')}
               className={cn(
                 'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
@@ -178,8 +179,8 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
               )}
             >
               All
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => setFilter('admin')}
               className={cn(
                 'px-2.5 py-1 text-xs font-medium rounded-md transition-all',
@@ -189,7 +190,7 @@ export function AuditFeed({ auditLog, loginSecurity }: Props) {
               )}
             >
               Admin Actions
-            </button>
+            </Button>
           </div>
         </div>
 

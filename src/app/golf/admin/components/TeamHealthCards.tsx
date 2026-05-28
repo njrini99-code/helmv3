@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { IconUsers } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   teams: AdminDashboardData['userActivity']['teams'];
@@ -32,7 +33,7 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
           : 0;
 
         return (
-          <button
+          <Button variant="ghost"
             key={team.teamId}
             onClick={() => onSelectTeam?.(team.teamId)}
             className={cn(
@@ -88,7 +89,7 @@ export function TeamHealthCards({ teams, onSelectTeam }: Props) {
                 style={{ width: `${Math.max(activePct, 3)}%` }}
               />
             </div>
-          </button>
+          </Button>
         );
       })}
     </div>

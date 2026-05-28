@@ -35,6 +35,7 @@ import { useTeams } from '@/hooks/use-teams';
 import { usePlayerTeams } from '@/hooks/use-player-teams';
 import { useUnreadCount } from '@/hooks/use-unread-count';
 import { useSidebar } from '@/contexts/sidebar-context';
+import { Button } from '@/components/ui/button';
 
 // ARCHIVED: Recruiting features hidden — re-enable when recruiting is ready
 // College/JUCO Coach - Recruiting Mode
@@ -258,7 +259,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
     >
       {/* Collapse Toggle Button (desktop only) */}
       {!isMobile && (
-        <button
+        <Button variant="ghost"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
@@ -275,7 +276,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           ) : (
             <IconChevronLeft size={14} className="text-white/70" aria-hidden="true" />
           )}
-        </button>
+        </Button>
       )}
       {/* Logo */}
       <div className={cn(
@@ -545,7 +546,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         </div>
 
         {/* Sign out */}
-        <button
+        <Button variant="danger"
           onClick={handleSignOut}
           aria-label="Sign out"
           title={isCollapsed ? 'Sign out' : undefined}
@@ -565,7 +566,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           >
             Sign out
           </span>
-        </button>
+        </Button>
       </div>
     </aside>
   );

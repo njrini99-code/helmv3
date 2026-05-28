@@ -364,12 +364,12 @@ export function PositionNeedsMatrix({
       {/* Footer */}
       <div className="px-6 py-3 bg-warm-50/50 border-t border-warm-100/50 flex items-center justify-between">
         {positionData.length > 6 && (
-          <button
+          <Button variant="ghost"
             onClick={() => setShowAllPositions(!showAllPositions)}
             className="text-sm text-warm-600 hover:text-primary-600 transition-colors"
           >
             {showAllPositions ? 'Show less' : `Show all ${positionData.length} positions`}
-          </button>
+          </Button>
         )}
         <Link
           href={`/baseball/dashboard/discover?grad_year=${gradYear}`}

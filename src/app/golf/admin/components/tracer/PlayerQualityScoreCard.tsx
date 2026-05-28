@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import type { PlayerQualityScore } from './tracer-types';
+import { Button } from '@/components/ui/button';
 
 interface PlayerQualityScoreCardProps {
   score: PlayerQualityScore;
@@ -22,7 +23,7 @@ function getBarColor(score: number): string {
 
 export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityScoreCardProps) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => onFilterPlayer?.(score.player_id)}
       className={cn(
@@ -73,6 +74,6 @@ export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityS
           </div>
         )}
       </div>
-    </button>
+    </Button>
   );
 }

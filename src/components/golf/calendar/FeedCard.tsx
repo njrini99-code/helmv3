@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import '@/styles/calendar-tokens.css';
+import { Button, IconButton } from '@/components/ui/button';
 
 export interface CalendarFeed {
   id: string;
@@ -181,7 +182,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
             </div>
 
             {/* Copy button */}
-            <button
+            <Button variant="primary"
               type="button"
               onClick={handleCopy}
               className={cn(
@@ -198,12 +199,12 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
               ) : (
                 <Copy className="w-4 h-4" aria-hidden="true" />
               )}
-            </button>
+            </Button>
           </div>
         </div>
 
         {/* Subscription instructions toggle */}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setShowInstructions(!showInstructions)}
           className="mt-3 w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg
@@ -217,7 +218,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           ) : (
             <ChevronDown className="w-4 h-4 ml-auto" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Subscription instructions (collapsible) */}
@@ -234,7 +235,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
           <>
             <p className="text-xs text-warm-600">Delete this feed?</p>
             <div className="flex items-center gap-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setShowDeleteConfirm(false)}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium
@@ -242,8 +243,8 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                          hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 type="button"
                 onClick={handleDelete}
                 disabled={loading}
@@ -253,7 +254,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                          transition-colors"
               >
                 {loading ? 'Deleting...' : 'Delete'}
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -264,7 +265,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
             </p>
             <div className="flex items-center gap-2">
               {/* Regenerate button */}
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={handleRegenerate}
                 disabled={loading}
@@ -278,10 +279,10 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 aria-label="Regenerate feed URL"
               >
                 <RefreshCw className="w-4 h-4" aria-hidden="true" />
-              </button>
+              </IconButton>
 
               {/* Delete button */}
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={loading}
@@ -292,7 +293,7 @@ export function FeedCard({ feed, onRegenerate, onDelete, className }: FeedCardPr
                 aria-label="Delete feed"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />
-              </button>
+              </IconButton>
             </div>
           </>
         )}

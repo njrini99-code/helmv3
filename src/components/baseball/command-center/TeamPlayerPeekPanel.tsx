@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IconX, IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
 import type { BaseballRosterPlayer } from '@/lib/types';
+import { IconButton } from '@/components/ui/button';
 
 interface TeamPlayerPeekPanelProps {
   player: BaseballRosterPlayer | null;
@@ -121,14 +122,14 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
             {/* Close button */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-warm-200/80">
               <span className="text-sm font-medium text-warm-500">Player Details</span>
-              <button
+              <IconButton variant="default"
                 onClick={onClose}
                 aria-label="Close panel"
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400
                            hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Scrollable content */}

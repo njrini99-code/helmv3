@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { IconUsers, IconSearch } from '@/components/icons';
 import { DataExportButton } from './DataExportButton';
 import { timeAgo, formatDate } from './admin-utils';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   users: AdminDashboardData['userDirectory'];
@@ -172,7 +173,7 @@ export function UserActivityTable({ users }: Props) {
           />
         </div>
         <div className="flex gap-1.5">
-          <button
+          <Button variant="primary"
             onClick={() => { setRoleFilter('all'); setPage(0); }}
             className={cn(
               'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
@@ -180,9 +181,9 @@ export function UserActivityTable({ users }: Props) {
             )}
           >
             All ({users.length})
-          </button>
+          </Button>
           {Object.entries(roleCounts).sort(([a], [b]) => a.localeCompare(b)).map(([role, count]) => (
-            <button
+            <Button variant="primary"
               key={role}
               onClick={() => { setRoleFilter(role); setPage(0); }}
               className={cn(
@@ -191,7 +192,7 @@ export function UserActivityTable({ users }: Props) {
               )}
             >
               {role}s ({count})
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -309,20 +310,20 @@ export function UserActivityTable({ users }: Props) {
             Showing {page * PAGE_SIZE + 1}\u2013{Math.min((page + 1) * PAGE_SIZE, filtered.length)} of {filtered.length}
           </p>
           <div className="flex gap-1">
-            <button
+            <Button variant="ghost"
               onClick={() => setPage(Math.max(0, page - 1))}
               disabled={page === 0}
               className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Prev
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => setPage(Math.min(pageCount - 1, page + 1))}
               disabled={page >= pageCount - 1}
               className="px-3 py-1.5 text-xs rounded-lg bg-white/50 text-warm-600 hover:bg-white/70 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       )}

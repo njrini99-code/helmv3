@@ -11,6 +11,7 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 import { useNotificationBadges } from '@/contexts/notification-badge-context';
 import { CountBadge } from '@/components/ui/badge';
 import { TooltipRoot, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import {
   IconHome,
   IconUsers,
@@ -167,7 +168,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     >
       {/* Collapse Toggle Button (desktop only) */}
       {!isMobile && (
-        <button
+        <Button variant="ghost"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           className={cn(
@@ -184,7 +185,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           ) : (
             <IconChevronLeft size={14} className="text-white/65" aria-hidden="true" />
           )}
-        </button>
+        </Button>
       )}
 
       {/* Logo */}
@@ -409,7 +410,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             Settings
           </span>
         </Link>
-        <button
+        <Button variant="danger"
           onClick={handleSignOut}
           disabled={isSigningOut}
           title={isCollapsed ? 'Sign out' : undefined}
@@ -430,7 +431,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           >
             {isSigningOut ? 'Signing out...' : 'Sign out'}
           </span>
-        </button>
+        </Button>
       </div>
     </aside>
   );

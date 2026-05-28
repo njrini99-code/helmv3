@@ -7,6 +7,7 @@ import { format, addDays, addHours, parseISO } from 'date-fns';
 import type { Coach } from '../crm-config';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 import { IconX, IconCalendar, IconVideo, IconPhone, IconMail, IconUsers, IconMapPin, IconTrash } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -247,13 +248,13 @@ export function ScheduleEventModal({
               )}
             </div>
           </div>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
             className="text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -281,7 +282,7 @@ export function ScheduleEventModal({
                 {coachSearchResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-warm-200 rounded-xl shadow-xl z-10 max-h-48 overflow-y-auto">
                     {coachSearchResults.map((c) => (
-                      <button
+                      <Button variant="ghost"
                         key={c.id}
                         onClick={() => {
                           setSelectedCoach(c);
@@ -301,7 +302,7 @@ export function ScheduleEventModal({
                           <div className="font-medium text-warm-800">{c.school}</div>
                           <div className="text-xs text-warm-500">{c.name}</div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 )}
@@ -323,7 +324,7 @@ export function ScheduleEventModal({
                 <div className="text-xs text-warm-500">{selectedCoach.name}</div>
               </div>
               {!isEditing && (
-                <button
+                <IconButton variant="default" aria-label="Close"
                   onClick={() => {
                     setSelectedCoach(null);
                     setForm(f => ({ ...f, coachId: null }));
@@ -331,7 +332,7 @@ export function ScheduleEventModal({
                   className="text-warm-400 hover:text-warm-600 transition-colors"
                 >
                   <IconX size={14} />
-                </button>
+                </IconButton>
               )}
             </div>
           )}
@@ -343,7 +344,7 @@ export function ScheduleEventModal({
               {EVENT_TYPES.map((type) => {
                 const TypeIcon = type.icon;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={type.value}
                     onClick={() => setForm(f => ({ ...f, type: type.value }))}
                     className={cn(
@@ -355,7 +356,7 @@ export function ScheduleEventModal({
                   >
                     <span className="flex justify-center mb-1"><TypeIcon size={18} /></span>
                     <span className="text-xs font-medium">{type.label}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -379,7 +380,7 @@ export function ScheduleEventModal({
               <label className={labelClass}>Quick Select</label>
               <div className="flex flex-wrap gap-2">
                 {QUICK_TIMES.map((qt) => (
-                  <button
+                  <Button variant="ghost"
                     key={qt.label}
                     onClick={() => {
                       const { date, time } = qt.getValue();
@@ -388,7 +389,7 @@ export function ScheduleEventModal({
                     className="px-3 py-2 bg-warm-100 hover:bg-warm-200 rounded-xl text-sm font-medium text-warm-700 transition-colors"
                   >
                     {qt.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -421,7 +422,7 @@ export function ScheduleEventModal({
             <label className={labelClass}>Duration</label>
             <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
-                <button
+                <Button variant="primary"
                   key={d.value}
                   onClick={() => setForm(f => ({ ...f, duration: d.value }))}
                   className={cn(
@@ -432,7 +433,7 @@ export function ScheduleEventModal({
                   )}
                 >
                   {d.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -483,32 +484,32 @@ export function ScheduleEventModal({
         {/* Footer */}
         <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between flex-shrink-0">
           {isEditing ? (
-            <button
+            <Button variant="danger"
               onClick={handleDelete}
               disabled={submitting}
               className="flex items-center gap-1.5 px-4 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
             >
               <IconTrash size={14} />
               Delete
-            </button>
+            </Button>
           ) : (
             <div />
           )}
 
           <div className="flex items-center gap-3">
-            <button
+            <Button variant="ghost"
               onClick={onClose}
               className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               onClick={handleSubmit}
               disabled={submitting || !form.title || !form.date || !form.time}
               className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? 'Saving...' : isEditing ? 'Save Changes' : 'Schedule'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

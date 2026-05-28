@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { IconStar, IconArrowRight, IconRocket, IconZap, IconUsers } from '@/components/icons';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
 import { STATUS_COLORS, PRIORITY_CONFIG } from '../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface PipelineViewProps {
   coaches: Coach[];
@@ -161,22 +162,22 @@ export function PipelineView({
             All {stats.total} coaches are new leads. Start by contacting your top prospects and moving them through the pipeline.
           </p>
           <div className="flex items-center justify-center gap-2">
-            <button
+            <Button variant="primary"
               type="button"
               onClick={() => handleResearchNext(10)}
               disabled={processing}
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-colors text-sm shadow-sm shadow-primary-500/20 disabled:opacity-50"
             >
               <IconZap size={14} /> Research Top 10
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               type="button"
               onClick={() => handleResearchNext(25)}
               disabled={processing}
               className="px-4 py-2 bg-white/60 border border-warm-200/60 text-warm-700 rounded-xl font-medium hover:bg-white/80 transition-colors text-sm disabled:opacity-50"
             >
               Research Top 25
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -272,22 +273,22 @@ export function PipelineView({
                       />
                     ))}
                     {hasMore && (
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => toggleExpanded(stage.id)}
                         className="w-full py-2 text-center text-sm font-medium text-primary-600 hover:bg-primary-50/60 rounded-xl transition-colors"
                       >
                         Show {columnCoaches.length - CARDS_PER_PAGE} more…
-                      </button>
+                      </Button>
                     )}
                     {isExpanded && columnCoaches.length > CARDS_PER_PAGE && (
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => toggleExpanded(stage.id)}
                         className="w-full py-2 text-center text-sm font-medium text-warm-500 hover:bg-warm-50/60 rounded-xl transition-colors"
                       >
                         Show less
-                      </button>
+                      </Button>
                     )}
                   </>
                 )}
@@ -354,7 +355,7 @@ function KanbanCard({
       {/* Name + Star */}
       <div className="flex items-start justify-between gap-2 mb-1">
         <p className="text-sm font-semibold text-warm-900 leading-tight line-clamp-1 tracking-tight">{coach.name}</p>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={(e) => { e.stopPropagation(); onToggleStar(coach.id, coach.is_starred); }}
           className="flex-shrink-0 mt-0.5 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
@@ -367,7 +368,7 @@ function KanbanCard({
           ) : (
             <IconStar size={14} className="text-warm-300 opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true" />
           )}
-        </button>
+        </Button>
       </div>
 
       {/* School */}
@@ -398,7 +399,7 @@ function KanbanCard({
       {/* Quick advance button */}
       {nextStatus && (
         <div className="flex justify-end mt-1.5">
-          <button
+          <IconButton variant="primary"
             type="button"
             onClick={(e) => { e.stopPropagation(); onStatusChange(coach.id, nextStatus); }}
             className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-6 h-6 rounded-md flex items-center justify-center hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-all"
@@ -407,7 +408,7 @@ function KanbanCard({
             tabIndex={-1}
           >
             <IconArrowRight size={12} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       )}
     </div>

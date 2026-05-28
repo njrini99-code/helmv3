@@ -478,7 +478,7 @@ export default function GolfSettingsPage() {
 
         {/* Sign Out */}
         <AnimatedItem>
-          <button
+          <Button variant="danger"
             onClick={handleSignOut}
             className="relative w-full surface-matte rounded-3xl overflow-clip p-4 flex items-center gap-3 hover:border-red-200 hover:bg-red-50/50 transition-colors group" aria-label="Sign out of your account"
           >
@@ -486,7 +486,7 @@ export default function GolfSettingsPage() {
               <IconLogout size={18} className="text-red-600" />
             </div>
             <span className="font-medium text-red-600">Sign Out</span>
-          </button>
+          </Button>
         </AnimatedItem>
 
         {/* App Info */}
@@ -541,7 +541,7 @@ function SettingsExpandableRow({
 }) {
   return (
     <div className={cn(!isLast && !isExpanded && 'border-b border-warm-100')}>
-      <button
+      <Button variant="ghost"
         onClick={onToggle}
         className={cn(
           'w-full flex items-center gap-4 p-4 text-left transition-colors',
@@ -564,7 +564,7 @@ function SettingsExpandableRow({
         >
           <IconChevronDown size={18} className="text-warm-300" />
         </m.div>
-      </button>
+      </Button>
 
       <AnimatePresence initial={false}>
         {isExpanded && (
@@ -638,7 +638,7 @@ function ToggleSwitch({
   description?: string;
 }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => {
         void triggerHaptic('light');
@@ -670,7 +670,7 @@ function ToggleSwitch({
           )}
         />
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -975,7 +975,7 @@ function AppearancePanel() {
         <p className="text-sm font-medium text-warm-700 mb-2">Display Density</p>
         <div className="grid grid-cols-2 gap-2">
           {(['comfortable', 'compact'] as const).map((opt) => (
-            <button
+            <Button variant="primary"
               key={opt}
               onClick={() => updatePreferences({ displayDensity: opt })}
               className={cn(
@@ -985,7 +985,7 @@ function AppearancePanel() {
             >
               <p className="text-sm font-medium text-warm-900 capitalize">{opt}</p>
               <p className="text-xs text-warm-500 mt-0.5">{opt === 'comfortable' ? 'More spacing' : 'Denser layout'}</p>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -999,7 +999,7 @@ function AppearancePanel() {
             { val: 'DD/MM/YYYY' as const, ex: '28/01/2026' },
             { val: 'YYYY-MM-DD' as const, ex: '2026-01-28' },
           ]).map(({ val, ex }) => (
-            <button
+            <Button variant="primary"
               key={val}
               onClick={() => updatePreferences({ dateFormat: val })}
               className={cn(
@@ -1009,7 +1009,7 @@ function AppearancePanel() {
             >
               <span className="font-medium text-warm-900 whitespace-nowrap">{val}</span>
               <span className="text-warm-500 text-xs whitespace-nowrap">{ex}</span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -1018,7 +1018,7 @@ function AppearancePanel() {
       <div>
         <p className="text-sm font-medium text-warm-700 mb-2">Score Display</p>
         <div className="grid grid-cols-2 gap-2">
-          <button
+          <Button variant="primary"
             onClick={() => updatePreferences({ scoreDisplay: 'to_par' })}
             className={cn(
               'p-3 rounded-lg border-2 text-left transition-colors min-h-[48px]',
@@ -1027,8 +1027,8 @@ function AppearancePanel() {
           >
             <p className="text-sm font-medium text-warm-900">Score to Par</p>
             <p className="text-xs text-warm-500 mt-0.5">E, +2, -1</p>
-          </button>
-          <button
+          </Button>
+          <Button variant="primary"
             onClick={() => updatePreferences({ scoreDisplay: 'raw' })}
             className={cn(
               'p-3 rounded-lg border-2 text-left transition-colors min-h-[48px]',
@@ -1037,7 +1037,7 @@ function AppearancePanel() {
           >
             <p className="text-sm font-medium text-warm-900">Raw Score</p>
             <p className="text-xs text-warm-500 mt-0.5">72, 74, 71</p>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1124,7 +1124,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
             { val: 'stroke_play', label: 'Stroke Play', desc: 'Total strokes' },
             { val: 'match_play', label: 'Match Play', desc: 'Hole-by-hole' },
           ].map(({ val, label, desc }) => (
-            <button
+            <Button variant="primary"
               key={val}
               onClick={() => setScoringFormat(val)}
               className={cn(
@@ -1134,7 +1134,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
             >
               <p className="text-sm font-medium text-warm-900">{label}</p>
               <p className="text-xs text-warm-500">{desc}</p>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -1156,7 +1156,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
         <label className="text-sm font-medium text-warm-700 block mb-2">Default Tees</label>
         <div className="grid grid-cols-4 gap-1.5">
           {['black', 'blue', 'white', 'gold'].map((tee) => (
-            <button
+            <Button variant="primary"
               key={tee}
               onClick={() => setDefaultTees(tee)}
               className={cn(
@@ -1165,7 +1165,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
               )}
             >
               {tee}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -1196,7 +1196,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
           {BENCHMARK_LEVELS.map((level) => {
             const meta = BENCHMARK_METADATA[level];
             return (
-              <button
+              <Button variant="primary"
                 key={level}
                 onClick={() => setSgBenchmark(level)}
                 className={cn(
@@ -1211,7 +1211,7 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
                   <span className="text-xs text-warm-400">~{meta.approximateHandicap > 0 ? '+' : ''}{meta.approximateHandicap} hcp</span>
                 </div>
                 <p className="text-xs text-warm-500 mt-0.5">{meta.description}</p>
-              </button>
+              </Button>
             );
           })}
         </div>

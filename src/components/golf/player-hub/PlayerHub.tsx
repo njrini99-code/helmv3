@@ -436,7 +436,7 @@ const PlayerTaskCard = memo(function PlayerTaskCard({
       <div className="p-5">
         <div className="flex items-start gap-4">
           {/* Completion button */}
-          <button
+          <Button variant="primary"
             onClick={handleComplete}
             disabled={isCompleted || completing}
             aria-label={isCompleted ? 'Task completed' : 'Mark task complete'}
@@ -449,7 +449,7 @@ const PlayerTaskCard = memo(function PlayerTaskCard({
             )}
           >
             {isCompleted && <IconCheck size={14} />}
-          </button>
+          </Button>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -589,7 +589,7 @@ const EventRSVPCard = memo(function EventRSVPCard({
             {/* RSVP buttons */}
             {!isPast && (
               <div className="flex items-center gap-2">
-                <button
+                <Button variant="primary"
                   onClick={() => handleRSVP('accepted')}
                   disabled={submitting !== null}
                   className={cn(
@@ -601,8 +601,8 @@ const EventRSVPCard = memo(function EventRSVPCard({
                   )}
                 >
                   {event.rsvp_status === 'accepted' ? <span className="flex items-center gap-1"><IconCheck size={12} /> Going</span> : 'Going'}
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   onClick={() => handleRSVP('tentative')}
                   disabled={submitting !== null}
                   className={cn(
@@ -614,8 +614,8 @@ const EventRSVPCard = memo(function EventRSVPCard({
                   )}
                 >
                   Maybe
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   onClick={() => handleRSVP('declined')}
                   disabled={submitting !== null}
                   className={cn(
@@ -627,7 +627,7 @@ const EventRSVPCard = memo(function EventRSVPCard({
                   )}
                 >
                   Can&apos;t go
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -675,12 +675,12 @@ function OverviewSection({
             </StatusPill>
           )}
         </div>
-        <button
+        <Button variant="ghost"
           onClick={onViewAll}
           className="text-caption font-medium text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
         >
           View all →
-        </button>
+        </Button>
       </div>
       {children}
     </m.div>
@@ -807,12 +807,12 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     </p>
                     <p className="text-caption text-red-600">Please complete these as soon as possible</p>
                   </div>
-                  <button
+                  <Button variant="danger"
                     onClick={() => setActiveTab('tasks')}
                     className="text-caption font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
-                  </button>
+                  </Button>
                 </m.div>
               )}
 

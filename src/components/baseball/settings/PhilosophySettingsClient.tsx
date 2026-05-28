@@ -168,7 +168,7 @@ export function PhilosophySettingsClient({
 
             <div className="grid grid-cols-3 gap-3">
               {(['conservative', 'balanced', 'aggressive'] as const).map((level) => (
-                <button
+                <Button variant="primary"
                   key={level}
                   onClick={() => setAlertSensitivity(level)}
                   className={`p-4 rounded-xl border-2 transition-all ${
@@ -187,7 +187,7 @@ export function PhilosophySettingsClient({
                     {level === 'balanced' && 'Important changes'}
                     {level === 'aggressive' && 'All notable changes'}
                   </p>
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -305,20 +305,20 @@ export function PhilosophySettingsClient({
                     <p className="text-xs text-warm-500">{priority.description}</p>
                   </div>
                   <div className="flex gap-1">
-                    <button
+                    <Button variant="ghost"
                       onClick={() => handlePriorityChange(priority.key, 'up')}
                       disabled={index === 0}
                       className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↑
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="ghost"
                       onClick={() => handlePriorityChange(priority.key, 'down')}
                       disabled={index === sortedPriorities.length - 1}
                       className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       ↓
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { IconLoader, IconTrash } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import {
   upsertSequenceStep,
   deleteSequenceStep,
@@ -244,7 +245,7 @@ export function SequenceStepEditor({
       <div className="flex items-center justify-between gap-2">
         <div>
           {step?.id && onDeleted && (
-            <button
+            <Button variant="danger"
               type="button"
               onClick={handleDelete}
               disabled={deleting}
@@ -260,21 +261,21 @@ export function SequenceStepEditor({
                 <IconTrash size={14} />
               )}
               Delete step
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex items-center gap-2">
           {onCancel && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onCancel}
               disabled={submitting}
               className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
             >
               Cancel
-            </button>
+            </Button>
           )}
-          <button
+          <Button variant="primary"
             type="submit"
             disabled={submitting}
             className={cn(
@@ -285,7 +286,7 @@ export function SequenceStepEditor({
           >
             {submitting && <IconLoader size={14} className="animate-spin" />}
             Save step
-          </button>
+          </Button>
         </div>
       </div>
     </form>

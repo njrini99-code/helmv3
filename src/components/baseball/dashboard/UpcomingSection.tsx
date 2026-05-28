@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { Skeleton } from '@/components/ui/skeleton-loader';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   IconCalendar,
   IconClipboardList,
@@ -165,9 +166,9 @@ export function UpcomingSection({
               <p className="text-3xl font-bold text-warm-900 tabular-nums">{pendingTasks}</p>
               <p className="text-xs text-warm-500 mt-1">tasks pending</p>
               <Link href="/baseball/dashboard/tasks">
-                <button className="mt-3 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                <Button variant="ghost" className="mt-3 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
                   View All →
-                </button>
+                </Button>
               </Link>
             </div>
           )}
@@ -205,9 +206,9 @@ export function UpcomingSection({
               <p className="text-3xl font-bold text-warm-900 tabular-nums">{unreadMessages}</p>
               <p className="text-xs text-warm-500 mt-1">unread messages</p>
               <Link href="/baseball/dashboard/messages">
-                <button className="mt-3 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                <Button variant="ghost" className="mt-3 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors">
                   View All →
-                </button>
+                </Button>
               </Link>
             </div>
           )}

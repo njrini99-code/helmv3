@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SearchAutocomplete } from '@/components/ui/search-autocomplete';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { useSavedSearches } from '@/hooks/use-dashboard';
 import type { Player } from '@/lib/types';
 import { IconUsers, IconBuilding, IconBookmark, IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
@@ -164,12 +164,12 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
           </h2>
         </div>
         {hasActiveFilters && (
-          <button
+          <Button variant="ghost"
             onClick={clearAllFilters}
             className="text-xs text-warm-500 hover:text-warm-900 transition-colors duration-200"
           >
             Clear all
-          </button>
+          </Button>
         )}
       </div>
 
@@ -217,7 +217,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
 
       {/* Saved Searches */}
       <div className="mb-6">
-        <button
+        <Button variant="ghost"
           onClick={() => setShowSavedSearches(!showSavedSearches)}
           className="flex items-center justify-between w-full text-sm font-medium text-warm-700 mb-2 group"
         >
@@ -235,7 +235,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
           ) : (
             <IconChevronDown size={14} className="text-warm-400" />
           )}
-        </button>
+        </Button>
 
         <AnimatePresence>
           {showSavedSearches && (
@@ -307,7 +307,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                           {getSearchDescription(savedSearch.filters)}
                         </p>
                       </div>
-                      <button
+                      <IconButton variant="default"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteSearch(savedSearch.id);
@@ -317,7 +317,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                         aria-label="Delete saved search"
                       >
                         <IconTrash size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   ))}
                 </div>
@@ -347,7 +347,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               </label>
               <div className="flex flex-wrap gap-2">
                 {GRAD_YEARS.map((year) => (
-                  <button
+                  <Button variant="primary"
                     key={year}
                     onClick={() => updateFilter('gradYear',
                       currentFilters.gradYear === year ? undefined : year.toString()
@@ -359,7 +359,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                       }`}
                   >
                     {year}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -422,7 +422,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               {currentFilters.states && currentFilters.states.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentFilters.states.map(stateCode => (
-                    <button
+                    <Button variant="primary"
                       key={stateCode}
                       onClick={() => {
                         const newStates = currentFilters.states!.filter(s => s !== stateCode);
@@ -434,7 +434,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                     >
                       {stateCode}
                       <span className="text-primary-500">×</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -528,7 +528,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               </label>
               <div className="flex flex-wrap gap-2">
                 {TEAM_TYPES.map((type) => (
-                  <button
+                  <Button variant="primary"
                     key={type.value}
                     onClick={() => updateFilter('teamType',
                       currentFilters.teamType === type.value ? undefined : type.value
@@ -540,7 +540,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                       }`}
                   >
                     {type.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -584,7 +584,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
               {currentFilters.states && currentFilters.states.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {currentFilters.states.map(stateCode => (
-                    <button
+                    <Button variant="primary"
                       key={stateCode}
                       onClick={() => {
                         const newStates = currentFilters.states!.filter(s => s !== stateCode);
@@ -596,7 +596,7 @@ export function FilterPanel({ currentFilters, mode = 'players' }: FilterPanelPro
                     >
                       {stateCode}
                       <span className="text-primary-500">×</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}

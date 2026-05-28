@@ -8,6 +8,7 @@ import { containerVariants, StatCard, StatRow, StatSection } from './shared-prim
 import { PuttHeatmap } from '@/components/golf/coachhelm/v3/PuttHeatmap';
 import type { PuttRecord } from '@/components/golf/coachhelm/v3/PuttHeatmap/types';
 import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
 
 interface PuttingStatsProps {
   stats: GolfStats;
@@ -214,7 +215,7 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
             { key: 'straight', label: 'Straight' },
             { key: 'multiple', label: 'Multiple' },
           ] as const).map(({ key, label }) => (
-            <button
+            <Button variant="primary"
               key={key}
               onClick={() => setSelectedBreak(selectedBreak === key ? null : key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
@@ -224,7 +225,7 @@ export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: P
               }`}
             >
               {label}
-            </button>
+            </Button>
           ))}
         </div>
 

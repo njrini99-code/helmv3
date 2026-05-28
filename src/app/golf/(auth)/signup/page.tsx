@@ -8,6 +8,7 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { validateAccessCode } from '@/app/golf/actions/access-code';
+import { Button } from '@/components/ui/button';
 
 // Component to render sign-in link with returnTo param preserved
 function SignInLink() {
@@ -138,12 +139,12 @@ export default function SignupPage() {
                     </p>
                   )}
                 </div>
-                <button
+                <Button variant="primary"
                   type="submit"
                   className="w-full h-12 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 active:bg-primary-800 transition-colors"
                 >
                   Continue
-                </button>
+                </Button>
               </form>
             </m.div>
 

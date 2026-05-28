@@ -15,6 +15,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, HelpCircle, XCircle, Loader2, Lock } from 'lucide-react';
 import { useHapticFeedback } from '@/hooks/use-mobile-detection';
+import { Button } from '@/components/ui/button';
 
 export type RSVPResponse = 'accepted' | 'tentative' | 'declined';
 
@@ -163,7 +164,7 @@ export function MobileRSVPButtons({
           const isLoading = loadingResponse === option.value;
 
           return (
-            <button
+            <Button variant="ghost"
               key={option.value}
               type="button"
               onClick={() => handleRespond(option.value)}
@@ -203,7 +204,7 @@ export function MobileRSVPButtons({
               {isPending && isActive && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full animate-pulse" />
               )}
-            </button>
+            </Button>
           );
         })}
       </div>

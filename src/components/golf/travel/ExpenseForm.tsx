@@ -9,7 +9,7 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconUpload,
   IconX,
@@ -347,14 +347,14 @@ export function ExpenseForm({
                     {receiptFile ? `${(receiptFile.size / 1024).toFixed(1)} KB` : 'Uploaded'}
                   </p>
                 </div>
-                <button
+                <IconButton variant="default"
                   type="button"
                   onClick={removeReceipt}
                   aria-label="Remove receipt"
                   className="p-1.5 hover:bg-warm-200 rounded-lg transition-colors"
                 >
                   <IconX size={16} className="text-warm-500" />
-                </button>
+                </IconButton>
               </motion.div>
             ) : (
               <motion.label

@@ -46,6 +46,7 @@ import {
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
+import { Button, IconButton } from '@/components/ui/button';
 
 async function loadCoachHelmActions() {
   const [{ getPlayerCoachHelmDashboard }, { getPlayerShotAnalytics }] = await Promise.all([
@@ -299,7 +300,7 @@ export function PlayerCoachHelmDashboard({
         title="CoachHelm AI"
         subtitle="Your personal golf intelligence"
       >
-        <button
+        <IconButton variant="default"
           onClick={handleRefresh}
           disabled={refreshing}
           className={cn(
@@ -309,7 +310,7 @@ export function PlayerCoachHelmDashboard({
           aria-label="Refresh insights"
         >
           <IconRefresh size={18} className={refreshing ? 'animate-spin' : undefined} />
-        </button>
+        </IconButton>
         <Link
           href="/golf/dashboard/settings"
           className="p-2 rounded-lg text-warm-500 hover:text-warm-700 hover:bg-cream-100/60 active:bg-cream-100/75 transition-all flex-shrink-0"
@@ -482,7 +483,7 @@ export function PlayerCoachHelmDashboard({
                       heavy panels that distract from the spine when always
                       open. Players opt in via the disclosure button. */}
                   <section>
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => setDeepDiveOpen((v) => !v)}
                       aria-expanded={deepDiveOpen}
@@ -513,7 +514,7 @@ export function PlayerCoachHelmDashboard({
                       ) : (
                         <IconChevronDown size={18} className="text-warm-500 flex-shrink-0" />
                       )}
-                    </button>
+                    </Button>
 
                     <AnimatePresence initial={false}>
                       {deepDiveOpen && (

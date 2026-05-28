@@ -2,6 +2,7 @@
 
 import { IconClock } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ReminderBannerProps {
   overdueCount: number;
@@ -28,12 +29,12 @@ export function ReminderBanner({ overdueCount, onViewOverdue, className }: Remin
           Review and update tasks that are past their due date
         </p>
       </div>
-      <button
+      <Button variant="danger"
         onClick={onViewOverdue}
         className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
       >
         View
-      </button>
+      </Button>
     </div>
   );
 }

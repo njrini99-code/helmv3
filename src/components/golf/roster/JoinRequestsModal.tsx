@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/sonner';
 import { IconUsers, IconCheck, IconX, IconClock } from '@/components/icons';
@@ -179,13 +179,13 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                   </p>
                 </div>
               </div>
-              <button
+              <IconButton variant="default"
                 onClick={onClose}
                 className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Close"
               >
                 <IconX size={20} />
-              </button>
+              </IconButton>
             </div>
           </div>
 
@@ -311,12 +311,12 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
 
           {/* Footer */}
           <div className="border-t border-warm-200 px-4 py-3 bg-warm-50">
-            <button
+            <Button variant="ghost"
               onClick={onClose}
               className="w-full py-2 text-sm text-warm-500 hover:text-warm-700 transition-colors"
             >
               Review later
-            </button>
+            </Button>
           </div>
         </div>
       </motion.div>

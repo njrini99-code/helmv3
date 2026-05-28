@@ -48,6 +48,7 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Button } from '@/components/ui/button';
 import {
   emergencySave,
   loadEmergencySave,
@@ -1516,18 +1517,18 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               Hole {existingInProgressRound.currentHole} of {existingInProgressRound.holesPlayed}
             </p>
             <div className="flex flex-col gap-3">
-              <button
+              <Button variant="primary"
                 onClick={() => router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)}
                 className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors shadow-sm"
               >
                 Continue Round
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 onClick={() => setShowResumePrompt(false)}
                 className="w-full py-3 rounded-xl bg-warm-100 text-warm-600 font-medium hover:bg-warm-200 transition-colors"
               >
                 Start Fresh Round
-              </button>
+              </Button>
             </div>
           </div>
           </div>
@@ -1664,7 +1665,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             const location = [course.courseCity, course.courseState].filter(Boolean).join(', ');
 
                             return (
-                              <button
+                              <Button variant="primary"
                                 key={course.id}
                                 type="button"
                                 onClick={() => handleSavedCourseSelect(isSelected ? null : course.id)}
@@ -1735,7 +1736,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                                     {formatRelativeTime(course.lastUsedAt)}
                                   </span>
                                 </div>
-                              </button>
+                              </Button>
                             );
                           })
                         )}
@@ -1754,7 +1755,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       <IconCheck size={16} className="text-primary-600" />
                       Course ready
                     </h2>
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => {
                         setSelectedCourseId(null);
@@ -1772,7 +1773,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
                     >
                       Change
-                    </button>
+                    </Button>
                   </div>
                   <p className="text-body font-medium text-warm-900 tracking-[-0.005em]">{selectedCourse.courseName}</p>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-warm-500">
@@ -1905,7 +1906,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
                     {/* Save Course — premium toggle callout for new courses */}
                     {courseMode === 'new' && (
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => setSaveCourseChecked(!saveCourseChecked)}
                         className={`w-full flex items-center gap-3 p-3.5 rounded-xl border transition-colors duration-150 ${
@@ -1929,7 +1930,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             Remembers hole pars, yardages & course details
                           </p>
                         </div>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -1945,7 +1946,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                   <p className="text-xs text-purple-700/70 mb-3">Tap to start a qualifier round</p>
                   <div className="space-y-2 max-h-[220px] overflow-y-auto">
                     {allActiveQualifiers.map(q => (
-                      <button
+                      <Button variant="ghost"
                         key={q.id}
                         type="button"
                         onClick={() => {
@@ -1971,7 +1972,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                             Play
                           </span>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -2168,15 +2169,15 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               )}
 
               <div className="flex gap-4">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => router.back()}
                   disabled={isStartingRound}
                   className="flex-1 px-4 py-2.5 rounded-lg border border-warm-200 font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   type="submit"
                   disabled={isStartingRound}
                   className="flex-1 px-4 py-2.5 rounded-lg bg-primary-600 font-medium text-white hover:bg-primary-700 transition-colors shadow-sm shadow-primary-950/10 ring-1 ring-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -2193,7 +2194,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                   ) : preloadedHoleConfigs && preloadedHoleConfigs.length > 0
                     ? 'Start Round →'
                     : 'Next: Configure Holes →'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -2246,12 +2247,12 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       {pendingFinalStats && !showFinishConfirm && step === 'tracking' && (
         <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
-          <button
+          <Button variant="primary"
             onClick={() => setShowFinishConfirm(true)}
             className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
           >
             Submit Round
-          </button>
+          </Button>
         </div>
       )}
 
@@ -2287,7 +2288,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
 
       {/* Back to Setup - always available during tracking */}
       <div className="fixed left-4 z-40 top-[max(1rem,env(safe-area-inset-top,0px))]">
-        <button
+        <Button variant="ghost"
           onClick={() => {
             const hasCompletedHoles = completedHoleStats.some(s => s?.score != null);
             if (hasCompletedHoles) {
@@ -2304,7 +2305,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
-        </button>
+        </Button>
       </div>
 
       {/* Emergency Save Recovery Dialog (new round) */}
@@ -2330,7 +2331,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               This data may have been saved when the app was interrupted.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => {
                   clearEmergencySave(null);
                   setShowNewRoundRecovery(false);
@@ -2339,8 +2340,8 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
               >
                 Discard
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={() => {
                   const rd = newRoundRecoveryData;
                   if (!rd) return;
@@ -2360,7 +2361,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
               >
                 Restore
-              </button>
+              </Button>
             </div>
           </div>
         </DrawerContent>
@@ -2400,13 +2401,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               </div>
             </div>
             <div className="flex gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => setShowBackToSetupModal(false)}
                 className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]"
               >
                 Keep Playing
-              </button>
-              <button
+              </Button>
+              <Button variant="danger"
                 onClick={() => {
                   setShowBackToSetupModal(false);
                   setCompletedHoleStats([]);
@@ -2420,7 +2421,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                 className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 active:bg-red-700 transition-colors min-h-[44px]"
               >
                 Reset & Go Back
-              </button>
+              </Button>
             </div>
           </div>
         </DrawerContent>
@@ -2593,13 +2594,13 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       transition={{ delay: 0.4, duration: 0.3 }}
                       className="flex gap-3"
                     >
-                      <button
+                      <Button variant="ghost"
                         onClick={() => setShowFinishConfirm(false)}
                         className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                       >
                         Go Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="primary"
                         onClick={async () => {
                           if (!pendingFinalStats) return;
                           setShowFinishConfirm(false);
@@ -2608,7 +2609,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                         className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm shadow-primary-950/10"
                       >
                         Submit Round
-                      </button>
+                      </Button>
                     </m.div>
                   </div>
                   </m.div>

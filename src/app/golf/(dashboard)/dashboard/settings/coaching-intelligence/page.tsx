@@ -16,6 +16,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { IconCheck } from '@/components/icons';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
+import { Button } from '@/components/ui/button';
 import {
     getOrCreateTeamCoachHelmSettings,
     updateTeamCoachHelmSettings,
@@ -458,7 +459,7 @@ export default function CoachingIntelligenceSettingsPage() {
                             </label>
                             <div className="flex gap-2">
                                 {(['brief', 'detailed'] as const).map((option) => (
-                                    <button
+                                    <Button variant="primary"
                                         key={option}
                                         onClick={() => handleDisplayChange('insightVerbosity', option)}
                                         className={`flex-1 py-2.5 px-4 min-h-[44px] rounded-lg text-sm font-medium transition-colors capitalize active:scale-[0.98] ${
@@ -468,7 +469,7 @@ export default function CoachingIntelligenceSettingsPage() {
                                         }`}
                                     >
                                         {option}
-                                    </button>
+                                    </Button>
                                 ))}
                             </div>
                         </div>

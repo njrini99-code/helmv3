@@ -170,7 +170,7 @@ export function PromoteToFocusAreaButton({
 
   return (
     <>
-      <button
+      <Button variant="primary"
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -187,7 +187,7 @@ export function PromoteToFocusAreaButton({
       >
         <IconTarget size={14} />
         {label}
-      </button>
+      </Button>
 
       <Drawer
         open={open}

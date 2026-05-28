@@ -20,6 +20,7 @@ import type { CoachEngagement } from '../../types/foundations';
 import { PipelineColumn } from './PipelineColumn';
 import { PipelineCard } from './PipelineCard';
 import { WinLossDialog, type WinLossSubmission } from './WinLossDialog';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // PipelineKanban — DnD-based kanban for the 7 coach_status values.
@@ -296,13 +297,13 @@ export function PipelineKanban({
       {error && (
         <div className="mb-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-100 flex items-center justify-between gap-3">
           <p className="text-xs text-red-700">{error}</p>
-          <button
+          <Button variant="danger"
             type="button"
             onClick={() => setError(null)}
             className="text-xs text-red-600 hover:text-red-800 font-semibold"
           >
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 

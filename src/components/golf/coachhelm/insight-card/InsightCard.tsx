@@ -41,6 +41,7 @@ import { DrillChips } from './DrillChips';
 import { ResolutionCelebration } from './ResolutionCelebration';
 import { PromoteToFocusAreaButton } from '../PromoteToFocusAreaButton';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Button, IconButton } from '@/components/ui/button';
 
 export type InsightAction =
   | 'rate_helpful'
@@ -234,7 +235,7 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(function
   const hasActions = effectiveShowActions && !!onAction;
 
   if (density === 'compact') {
-    // Compact renders a <button>, so we intentionally drop the forwarded ref
+    // Compact renders an interactive row, so we intentionally drop the forwarded ref
     // here — the primitive's public forwardRef is typed as HTMLDivElement to
     // serve the default + hero (GlassCard-based) surfaces. Compact callers
     // rarely need a ref; if they do, they can render their own wrapper.
@@ -306,7 +307,7 @@ const CompactInsightRow = forwardRef<HTMLButtonElement, CompactInsightRowProps>(
     const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
 
     return (
-      <button
+      <Button variant="ghost"
         ref={ref}
         type="button"
         data-testid="insight-card-compact"
@@ -334,7 +335,7 @@ const CompactInsightRow = forwardRef<HTMLButtonElement, CompactInsightRowProps>(
           </p>
         </div>
         <IconChevronDown size={16} className="text-warm-400 -rotate-90 flex-shrink-0" aria-hidden />
-      </button>
+      </Button>
     );
   },
 );
@@ -431,7 +432,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               </div>
             </div>
 
-            <button
+            <IconButton variant="default"
               type="button"
               aria-label={expanded ? 'Collapse insight' : 'Expand insight'}
               onClick={() => setExpanded((s) => !s)}
@@ -440,7 +441,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               <m.span animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }} className="block">
                 <IconChevronDown size={18} />
               </m.span>
-            </button>
+            </IconButton>
           </div>
 
           {/* Drill chips inline on collapsed default (Rule 3). */}
@@ -632,7 +633,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
     <div className={cn('flex flex-wrap items-center gap-2 pt-3', emphasis && 'gap-3')}>
       {audience === 'player' ? (
         <>
-          <button
+          <Button variant="ghost"
             type="button"
             disabled={helpfulPending}
             data-testid="action-rate-helpful"
@@ -647,8 +648,8 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
           >
             <IconHelp size={13} />
             Helpful
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             disabled={ackPending}
             data-testid="action-acknowledged"
@@ -663,7 +664,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
           >
             <IconCheck size={13} />
             Got it
-          </button>
+          </Button>
           {promotable && (
             <PromoteToFocusAreaButton
               source="insight"
@@ -674,7 +675,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               suggestedAreaType={mapInsightCategoryToAreaType(insight.category)}
             />
           )}
-          <button
+          <Button variant="ghost"
             type="button"
             disabled={dismissPending}
             data-testid="action-dismissed"
@@ -689,11 +690,11 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
           >
             <IconX size={13} />
             Dismiss
-          </button>
+          </Button>
         </>
       ) : (
         <>
-          <button
+          <Button variant="ghost"
             type="button"
             disabled={ackPending}
             data-testid="action-acknowledged"
@@ -708,7 +709,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
           >
             <IconCheck size={13} />
             Acknowledge
-          </button>
+          </Button>
           {promotable ? (
             <PromoteToFocusAreaButton
               source="insight"
@@ -721,7 +722,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               label="Create focus area"
             />
           ) : (
-            <button
+            <Button variant="primary"
               type="button"
               disabled={focusPending}
               data-testid="action-create-focus-area"
@@ -739,9 +740,9 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               )}
             >
               Create focus area
-            </button>
+            </Button>
           )}
-          <button
+          <Button variant="ghost"
             type="button"
             disabled={dismissPending}
             data-testid="action-dismissed"
@@ -756,7 +757,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
           >
             <IconX size={13} />
             Dismiss
-          </button>
+          </Button>
         </>
       )}
     </div>

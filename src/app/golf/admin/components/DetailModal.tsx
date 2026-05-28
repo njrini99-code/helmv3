@@ -3,6 +3,7 @@
 import { Fragment, useState, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +56,7 @@ function TimeRangeTabs({
   return (
     <div className="flex bg-warm-100/80 rounded-xl p-1">
       {TIME_RANGES.map((range) => (
-        <button
+        <Button variant="ghost"
           key={range.id}
           onClick={() => onChange(range.id)}
           className={cn(
@@ -66,7 +67,7 @@ function TimeRangeTabs({
           )}
         >
           {range.label}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -132,7 +133,7 @@ export function DetailModal({
                   )}
                 </div>
                 
-                <button
+                <IconButton variant="default"
                   onClick={onClose}
                   aria-label="Close panel"
                   className="p-2 -mt-1 -mr-2 rounded-xl hover:bg-warm-100 active:bg-warm-200 text-warm-400 hover:text-warm-600 transition-colors"
@@ -140,7 +141,7 @@ export function DetailModal({
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
 
               {/* Time range & Export row */}
@@ -154,7 +155,7 @@ export function DetailModal({
                   )}
                   
                   {onExport && (
-                    <button
+                    <Button variant="ghost"
                       onClick={onExport}
                       className={cn(
                         'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium',
@@ -165,7 +166,7 @@ export function DetailModal({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                       Export
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -179,7 +180,7 @@ export function DetailModal({
             {/* Footer */}
             <div className="flex-shrink-0 px-6 py-4 border-t border-warm-100/80">
               <div className="flex items-center justify-end gap-3">
-                <button
+                <Button variant="ghost"
                   onClick={onClose}
                   className={cn(
                     'px-5 py-2.5 rounded-xl text-sm font-medium',
@@ -187,7 +188,7 @@ export function DetailModal({
                   )}
                 >
                   Close
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>

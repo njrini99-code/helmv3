@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconSearch } from '@/components/icons';
+import { IconButton } from '@/components/ui/button';
 
 const STORAGE_KEY = 'helm-shortcut-hint-dismissed';
 
@@ -46,13 +47,13 @@ export function KeyboardShortcutHint() {
       <span className="text-sm">
         Press <kbd className="px-1.5 py-0.5 bg-warm-800 rounded text-xs mx-1">⌘K</kbd> for quick actions
       </span>
-      <button
+      <IconButton variant="default"
         onClick={handleDismiss}
         className="p-1 hover:bg-warm-800 rounded transition-colors"
         aria-label="Dismiss hint"
       >
         <IconX size={14} aria-hidden="true" />
-      </button>
+      </IconButton>
     </div>
   );
 }

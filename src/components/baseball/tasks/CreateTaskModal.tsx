@@ -178,7 +178,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
             </label>
             <div className="flex gap-2">
               {PRIORITIES.map((p) => (
-                <button
+                <Button variant="ghost"
                   key={p.value}
                   type="button"
                   onClick={() => setPriority(p.value)}
@@ -190,7 +190,7 @@ export function CreateTaskModal({ isOpen, onClose, onTaskCreated, teamId, player
                   )}
                 >
                   {p.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

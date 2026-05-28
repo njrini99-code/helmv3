@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface PlayerDropoffFunnelProps {
   funnel: {
@@ -136,7 +137,7 @@ export default function PlayerDropoffFunnel({
                 className="border border-white/30 rounded-xl overflow-hidden"
               >
                 {/* Expandable header */}
-                <button
+                <Button variant="ghost"
                   onClick={() => toggleStage(stageGroup.stage)}
                   className={cn(
                     'w-full flex items-center justify-between px-4 py-3',
@@ -169,7 +170,7 @@ export default function PlayerDropoffFunnel({
                       d="M19 9l-7 7-7-7"
                     />
                   </svg>
-                </button>
+                </Button>
 
                 {/* Expanded user list */}
                 {expandedStage === stageGroup.stage && (

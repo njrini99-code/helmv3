@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { IconButton } from '@/components/ui/button';
 import {
   IconTarget,
   IconTrendingUp,
@@ -197,9 +198,9 @@ function FocusAreaCard({
 
   if (interactive) {
     return (
-      <button onClick={onClick} className={sharedClassName}>
+      <IconButton variant="default" aria-label="Focus Area Card Content" onClick={onClick} className={sharedClassName}>
         <FocusAreaCardContent focusArea={focusArea} index={index} interactive />
-      </button>
+      </IconButton>
     );
   }
 

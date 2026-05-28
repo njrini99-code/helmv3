@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -197,12 +197,12 @@ export function LineupBuilder({ roster, onSave }: LineupBuilderProps) {
                           </p>
                         </div>
                       </div>
-                      <button
+                      <IconButton variant="default" aria-label="Close"
                         onClick={() => removePlayerFromLineup(index)}
                         className="p-2 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                       >
                         <IconX size={18} />
-                      </button>
+                      </IconButton>
                     </>
                   ) : (
                     <div className="flex-1 py-3 px-4 border-2 border-dashed border-warm-200 rounded-lg">

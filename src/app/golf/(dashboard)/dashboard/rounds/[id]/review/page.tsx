@@ -40,6 +40,7 @@ import { IconSparkles, IconRefresh, IconGolf } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -460,14 +461,14 @@ export default function RoundReviewPage() {
               CoachHelm AI
             </span>
           )}
-          <button
+          <Button variant="ghost"
             onClick={() => generateReview()}
             disabled={isGenerating}
             className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </Button>
         </MobileNavHeader>
 
         <div className="max-w-2xl mx-auto px-4 py-6">
@@ -518,13 +519,13 @@ export default function RoundReviewPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center py-20">
           <p className="text-red-500 mb-4">{error}</p>
-          <button
+          <Button variant="primary"
             onClick={() => generateReview()}
             className="px-5 py-3 min-h-[48px] bg-primary-600 text-white rounded-xl hover:bg-primary-700 active:scale-95 transition-all flex items-center gap-2 mx-auto font-medium"
           >
             <IconRefresh size={16} />
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -591,14 +592,14 @@ export default function RoundReviewPage() {
             CoachHelm AI
           </span>
         )}
-        <button
+        <Button variant="ghost"
           onClick={() => generateReview()}
           disabled={isGenerating}
           className="flex items-center gap-1.5 px-3 py-2.5 min-h-[44px] text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
         >
           <IconRefresh size={14} className={isGenerating ? 'animate-spin' : ''} />
           Refresh
-        </button>
+        </Button>
       </MobileNavHeader>
 
       <div className="max-w-2xl mx-auto px-4 py-6">

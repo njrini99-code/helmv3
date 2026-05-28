@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/popover';
 import { IconUsers } from '@/components/icons';
 import { type AdminPresenceInfo, getAdminInitials, getAdminColor } from '@/hooks/useAdminPresence';
+import { Button } from '@/components/ui/button';
 
 // ============================================
 // TYPES
@@ -41,7 +42,7 @@ export function AdminOnlineIndicator({
     <div className={className}>
       <Popover>
         <PopoverTrigger asChild>
-          <button
+          <Button variant="ghost"
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
               'bg-white/50 hover:bg-white/70 border border-white/20',
@@ -96,7 +97,7 @@ export function AdminOnlineIndicator({
                 )}
               </div>
             )}
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="w-80 p-0 overflow-clip">
           {/* Header */}

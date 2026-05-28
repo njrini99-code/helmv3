@@ -32,6 +32,7 @@ import { MobileEventCard } from './MobileEventCard';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPResponse } from './MobileRSVPButtons';
 import { useHapticFeedback } from '@/hooks/use-mobile-detection';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface CalendarDayViewSwipeableProps {
   events: CalendarEvent[];
@@ -272,7 +273,7 @@ export function CalendarDayViewSwipeable({
           <div className="flex items-center gap-1">
             {/* Today button (only when not on today) */}
             {!isTodayDate && (
-              <button
+              <IconButton variant="primary"
                 type="button"
                 onClick={goToToday}
                 className={cn(
@@ -286,11 +287,11 @@ export function CalendarDayViewSwipeable({
                 aria-label="Go to today"
               >
                 <Calendar className="w-4 h-4" />
-              </button>
+              </IconButton>
             )}
 
             {/* Nav buttons */}
-            <button
+            <IconButton variant="default"
               type="button"
               onClick={goToPrevDay}
               disabled={isTransitioning}
@@ -306,8 +307,8 @@ export function CalendarDayViewSwipeable({
               aria-label="Previous day"
             >
               <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
+            </IconButton>
+            <IconButton variant="default"
               type="button"
               onClick={goToNextDay}
               disabled={isTransitioning}
@@ -323,7 +324,7 @@ export function CalendarDayViewSwipeable({
               aria-label="Next day"
             >
               <ChevronRight className="w-5 h-5" />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>
@@ -355,7 +356,7 @@ export function CalendarDayViewSwipeable({
                 Your {format(currentDate, 'EEEE')} is free
               </p>
               {isCoach && onAddEvent && (
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={onAddEvent}
                   className={cn(
@@ -371,7 +372,7 @@ export function CalendarDayViewSwipeable({
                 >
                   <span className="text-lg leading-none">+</span>
                   <span>Add Event</span>
-                </button>
+                </Button>
               )}
             </div>
           ) : (

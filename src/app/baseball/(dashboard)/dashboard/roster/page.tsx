@@ -366,7 +366,7 @@ export default function RosterPage() {
       <div className="p-6 lg:p-8">
         {/* View Tabs */}
         <div className="flex items-center gap-2 mb-6">
-          <button
+          <Button variant="primary"
             onClick={() => setActiveView('roster')}
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'roster'
@@ -378,8 +378,8 @@ export default function RosterPage() {
               <IconUsers size={18} />
               <span>Roster</span>
             </div>
-          </button>
-          <button
+          </Button>
+          <Button variant="primary"
             onClick={() => setActiveView('lineup')}
             className={`px-4 py-2.5 rounded-lg font-medium transition-all ${
               activeView === 'lineup'
@@ -391,7 +391,7 @@ export default function RosterPage() {
               <IconClipboardList size={18} />
               <span>Lineup Builder</span>
             </div>
-          </button>
+          </Button>
         </div>
 
         {/* Roster View */}
@@ -528,13 +528,13 @@ export default function RosterPage() {
 
                       {/* Clear Filters */}
                       {activeFilterCount > 0 && (
-                        <button
+                        <Button variant="ghost"
                           onClick={clearFilters}
                           className="flex items-center gap-1 px-3 py-2 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded-lg transition-colors mt-auto"
                         >
                           <IconX size={14} />
                           Clear filters
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}

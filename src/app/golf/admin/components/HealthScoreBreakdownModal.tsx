@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconActivity } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface Props {
   score: number;
@@ -74,13 +75,13 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
                 </p>
               </div>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
               className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconX size={18} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Body */}
@@ -163,13 +164,13 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
 
           {/* Footer */}
           <div className="shrink-0 border-t border-warm-100 bg-white/80 px-6 py-3 flex justify-end">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors"
             >
               Close
-            </button>
+            </Button>
           </div>
         </div>
       </div>

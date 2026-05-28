@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconMail, IconPlus, IconSend, IconArrowLeft, IconMessageSquare, IconAlertCircle, IconPencil, IconTrash, IconCheck, IconX, IconUsers } from '@/components/icons';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
@@ -456,13 +456,13 @@ export default function GolfMessagesPage() {
                 paddingBottom: '0.75rem',
               }}
             >
-              <button
+              <IconButton variant="default"
                 onClick={handleBack}
                 className="lg:hidden p-2 -ml-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-600 hover:text-warm-900 active:bg-warm-100 transition-colors"
                 aria-label="Back to conversations"
               >
                 <IconArrowLeft size={22} />
-              </button>
+              </IconButton>
               {selectedConversation.is_group ? (
                 <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
                   <IconUsers size={20} className="text-primary-600" />
@@ -561,55 +561,55 @@ export default function GolfMessagesPage() {
                                 'absolute hidden lg:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
                                 'right-full mr-1 top-1/2 -translate-y-1/2'
                               )}>
-                                <button
+                                <IconButton variant="default" aria-label="Edit"
                                   onClick={() => handleStartEdit(msg.id, msg.content)}
                                   className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                                   title="Edit message"
                                 >
                                   <IconPencil size={14} />
-                                </button>
-                                <button
+                                </IconButton>
+                                <IconButton variant="default" aria-label="Delete"
                                   onClick={() => handleDeleteClick(msg.id)}
                                   className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                                   title="Delete message"
                                 >
                                   <IconTrash size={14} />
-                                </button>
+                                </IconButton>
                               </div>
                               {/* Mobile: "..." button that expands edit/delete */}
                               <div className="relative flex lg:hidden items-center mt-0.5">
                                 {mobileActionsId === msg.id ? (
                                   <div className="flex items-center gap-1 bg-warm-50 rounded-lg px-1 py-0.5">
-                                    <button
+                                    <IconButton variant="default"
                                       onClick={() => { handleStartEdit(msg.id, msg.content); setMobileActionsId(null); }}
                                       className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 active:bg-warm-100 transition-colors"
                                       aria-label="Edit message"
                                     >
                                       <IconPencil size={18} />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton variant="default"
                                       onClick={() => { handleDeleteClick(msg.id); setMobileActionsId(null); }}
                                       className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-red-500 active:bg-red-50 transition-colors"
                                       aria-label="Delete message"
                                     >
                                       <IconTrash size={18} />
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton variant="default"
                                       onClick={() => setMobileActionsId(null)}
                                       className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-400 active:text-warm-600 transition-colors"
                                       aria-label="Close"
                                     >
                                       <IconX size={16} />
-                                    </button>
+                                    </IconButton>
                                   </div>
                                 ) : (
-                                  <button
+                                  <IconButton variant="default"
                                     onClick={() => setMobileActionsId(msg.id)}
                                     className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-warm-300 active:text-warm-500 transition-colors"
                                     aria-label="Message actions"
                                   >
                                     <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
-                                  </button>
+                                  </IconButton>
                                 )}
                               </div>
                             </>
@@ -619,22 +619,22 @@ export default function GolfMessagesPage() {
                           {deleteConfirmId === msg.id && (
                             <div className="flex items-center gap-1 mr-2 bg-red-50 rounded-lg px-2.5 py-1.5">
                               <span className="text-xs text-red-600 mr-1">Delete?</span>
-                              <button
+                              <IconButton variant="default"
                                 onClick={handleConfirmDelete}
                                 className="p-2 min-w-[40px] min-h-[40px] rounded-lg text-red-600 hover:bg-red-100 active:bg-red-100 transition-colors flex items-center justify-center"
                                 title="Confirm delete"
                                 aria-label="Confirm delete"
                               >
                                 <IconCheck size={18} />
-                              </button>
-                              <button
+                              </IconButton>
+                              <IconButton variant="default"
                                 onClick={handleCancelDelete}
                                 className="p-2 min-w-[40px] min-h-[40px] rounded-lg text-warm-500 hover:bg-warm-200 active:bg-warm-200 transition-colors flex items-center justify-center"
                                 title="Cancel"
                                 aria-label="Cancel delete"
                               >
                                 <IconX size={18} />
-                              </button>
+                              </IconButton>
                             </div>
                           )}
 
@@ -653,14 +653,14 @@ export default function GolfMessagesPage() {
                                 autoFocus
                               />
                               <div className="flex items-center justify-end gap-1 mt-2 pt-2 border-t border-primary-200">
-                                <button
+                                <Button variant="ghost"
                                   onClick={handleCancelEdit}
                                   className="px-2 py-1 text-xs text-warm-500 hover:text-warm-700 rounded transition-colors"
                                   disabled={isEditSaving}
                                 >
                                   Cancel
-                                </button>
-                                <button
+                                </Button>
+                                <Button variant="primary"
                                   onClick={handleSaveEdit}
                                   disabled={isEditSaving || !editContent.trim()}
                                   className={cn(
@@ -671,7 +671,7 @@ export default function GolfMessagesPage() {
                                   )}
                                 >
                                   {isEditSaving ? 'Saving...' : 'Save'}
-                                </button>
+                                </Button>
                               </div>
                             </div>
                           ) : (
@@ -1002,7 +1002,7 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
           )}
           style={{ minHeight: '40px', maxHeight: '120px' }}
         />
-        <button
+        <Button variant="primary"
           type="submit"
           disabled={!canSend}
           aria-label="Send message"
@@ -1023,7 +1023,7 @@ function MessageInput({ onSend, onSendWithAttachments, onTyping }: MessageInputP
           ) : (
             <IconSend size={18} />
           )}
-        </button>
+        </Button>
       </div>
       <p className="text-xs text-warm-400 mt-1.5 px-2">
         Press Enter to send, Shift+Enter for new line
@@ -1135,7 +1135,7 @@ function ConversationRow({
     : conv.other_participant?.name || 'Unknown User';
 
   return (
-    <button
+    <Button variant="primary"
       onClick={onSelect}
       className={cn(
         'w-full p-3 min-h-[72px] flex items-start gap-3 text-left rounded-xl',
@@ -1203,6 +1203,6 @@ function ConversationRow({
           {conv.last_message?.content ? decodeMessageContent(conv.last_message.content) : 'No messages yet'}
         </p>
       </div>
-    </button>
+    </Button>
   );
 }

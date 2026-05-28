@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../crm-config';
 import { IconX, IconMail, IconPhone, IconCalendar, IconPlus, IconVideo, IconUsers, IconNote } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface ContactLogModalProps {
   coach: Coach;
@@ -161,13 +162,13 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
             </div>
             <p className="text-sm text-warm-500 ml-6">{coach.school} &middot; {coach.conference}</p>
           </div>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
             className="text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Coach Details */}
@@ -199,13 +200,13 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-medium text-warm-900">Contact History</h3>
             {!showAddForm && (
-              <button
+              <Button variant="primary"
                 onClick={() => setShowAddForm(true)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-sm font-medium transition-colors"
               >
                 <IconPlus className="w-4 h-4" />
                 Log Contact
-              </button>
+              </Button>
             )}
           </div>
 
@@ -216,7 +217,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                 {CONTACT_TYPES.map((type) => {
                   const TypeIcon = type.icon;
                   return (
-                    <button
+                    <Button variant="primary"
                       key={type.value}
                       type="button"
                       onClick={() => setNewLog({ ...newLog, contact_type: type.value })}
@@ -229,7 +230,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
                     >
                       <TypeIcon size={14} />
                       {type.label}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -279,20 +280,20 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
               </div>
 
               <div className="flex justify-end gap-3">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setShowAddForm(false)}
                   className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   type="submit"
                   disabled={submitting}
                   className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Save Log'}
-                </button>
+                </Button>
               </div>
             </form>
           )}

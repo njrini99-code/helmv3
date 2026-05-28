@@ -7,6 +7,7 @@ import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { IconChevronLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 interface LargeTitleHeaderProps {
   title: string;
@@ -105,7 +106,7 @@ export function LargeTitleHeader({
         )}
       </Link>
     ) : (
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={() => {
           void triggerHaptic('light');
@@ -127,7 +128,7 @@ export function LargeTitleHeader({
         {backLabel && (
           <span className="text-subhead font-medium max-w-[120px] truncate">{backLabel}</span>
         )}
-      </button>
+      </Button>
     )
   ) : null;
 
@@ -207,7 +208,7 @@ export function LargeTitleHeader({
             </div>
 
             {/* Center (mobile): compact title — tap to scroll to top */}
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={handleTapTitle}
               aria-hidden={!scrolled}
@@ -221,7 +222,7 @@ export function LargeTitleHeader({
               <span className="block text-headline text-warm-900 truncate">
                 {title}
               </span>
-            </button>
+            </Button>
 
             {/* Desktop: always-visible full title block on the left.
                 Apple-native minimal — Geist regular at iOS-equivalent

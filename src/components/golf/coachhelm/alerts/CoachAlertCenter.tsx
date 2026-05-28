@@ -31,6 +31,7 @@ import {
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { generateAlerts } from '@/app/golf/actions/alerts';
+import { Button } from '@/components/ui/button';
 
 interface CoachAlertCenterProps {
   coachId: string;
@@ -189,7 +190,7 @@ export function CoachAlertCenter({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="primary"
             onClick={handleRefresh}
             disabled={isPending}
             aria-label={isPending ? 'Scanning team for alerts' : 'Scan team for alerts'}
@@ -216,7 +217,7 @@ export function CoachAlertCenter({
                 <span className="hidden sm:inline">Scan Team</span>
               </>
             )}
-          </button>
+          </Button>
 
           {alerts.length > 0 && (
             <a

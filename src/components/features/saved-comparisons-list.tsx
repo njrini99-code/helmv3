@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconUsers, IconTrash, IconCalendar, IconNote, IconLayoutGrid } from '@/components/icons';
 import { deleteComparison } from '@/app/baseball/(dashboard)/dashboard/compare/actions';
 import { toast } from '@/components/ui/sonner';
@@ -120,7 +120,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
               <h3 className="text-base font-semibold text-warm-900 group-hover:text-primary-600 transition-colors line-clamp-2">
                 {comparison.name || 'Untitled Comparison'}
               </h3>
-              <button
+              <IconButton variant="default" aria-label="Delete"
                 onClick={(e) => handleDelete(comparison.id, e)}
                 disabled={deletingId === comparison.id}
                 className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors active:bg-red-100
@@ -128,7 +128,7 @@ export function SavedComparisonsList({ comparisons }: SavedComparisonsListProps)
                 title="Delete comparison"
               >
                 <IconTrash size={16} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Notes */}

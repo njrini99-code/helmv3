@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconMinus, IconChevronRight, IconWarning } from '@/components/icons';
 import { motion } from 'framer-motion';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 
 interface Player {
   playerId: string;
@@ -105,7 +106,7 @@ export function CategoryDrillDown({
 
           return (
             <li key={player.playerId}>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => handleClick(player.playerId)}
                 className={cn(
@@ -167,7 +168,7 @@ export function CategoryDrillDown({
                 <span className="text-warm-300 group-hover:text-primary-500 transition-colors shrink-0">
                   <IconChevronRight size={16} />
                 </span>
-              </button>
+              </Button>
             </li>
           );
         })}

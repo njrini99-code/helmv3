@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconFileText,
   IconSearch,
@@ -151,9 +152,9 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
     <div className="bg-white/80 backdrop-blur-xl rounded-xl border border-primary-200 p-4 space-y-3">
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold text-warm-800">Create Template</h4>
-        <button onClick={onCancel} aria-label="Cancel" className="text-warm-400 hover:text-warm-600 transition-colors">
+        <IconButton variant="default" onClick={onCancel} aria-label="Cancel" className="text-warm-400 hover:text-warm-600 transition-colors">
           <IconX size={16} aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
 
       <div className="space-y-2">
@@ -195,20 +196,20 @@ function NewTemplateForm({ onSave, onCancel }: { onSave: () => void; onCancel: (
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex justify-end gap-2">
-        <button
+        <Button variant="ghost"
           onClick={onCancel}
           className="px-3 py-1.5 rounded-lg text-sm text-warm-600 hover:bg-warm-100 transition-colors"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button variant="primary"
           onClick={handleSave}
           disabled={saving}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 transition-colors"
         >
           {saving && <IconLoader size={14} className="animate-spin" />}
           Save Template
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -288,12 +289,12 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
             className="w-full pl-9 pr-8 py-1.5 bg-white/60 border border-warm-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 outline-none"
           />
           {search && (
-            <button
+            <IconButton variant="default" aria-label="Close"
               onClick={() => setSearch('')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconX size={14} />
-            </button>
+            </IconButton>
           )}
         </div>
       </div>
@@ -304,7 +305,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
           const colors = cat.key !== 'all' ? getCategoryColor(cat.key) : null;
           const isActive = activeCategory === cat.key;
           return (
-            <button
+            <Button variant="ghost"
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
               className={cn(
@@ -317,7 +318,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
               )}
             >
               {cat.label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -336,7 +337,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
               const colors = getCategoryColor(template.category);
               const isSelected = selectedId === template.id;
               return (
-                <button
+                <Button variant="ghost"
                   key={template.id}
                   onClick={() => handleSelect(template)}
                   className={cn(
@@ -366,7 +367,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                   <p className="text-eyebrow text-warm-400 mt-2">
                     Used {template.usage_count ?? 0} times
                   </p>
-                </button>
+                </Button>
               );
             })
           )}
@@ -380,13 +381,13 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
               />
             </div>
           ) : (
-            <button
+            <Button variant="ghost"
               onClick={() => setShowNewForm(true)}
               className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-warm-200/50 p-4 cursor-pointer transition-all duration-200 hover:border-warm-300 hover:bg-warm-50/30 min-h-[120px]"
             >
               <IconPlus size={20} className="text-warm-400" />
               <span className="text-sm font-medium text-warm-500">Create Template</span>
-            </button>
+            </Button>
           )}
         </div>
       )}

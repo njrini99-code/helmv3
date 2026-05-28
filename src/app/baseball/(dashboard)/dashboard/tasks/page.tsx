@@ -184,7 +184,7 @@ export default function BaseballTasksPage() {
         {!loading && tasks.length > 0 && (
           <div className="flex gap-2 mb-6">
             {filters.map(f => (
-              <button
+              <Button variant="primary"
                 key={f.value}
                 onClick={() => setFilter(f.value)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
@@ -194,7 +194,7 @@ export default function BaseballTasksPage() {
                 }`}
               >
                 {f.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}

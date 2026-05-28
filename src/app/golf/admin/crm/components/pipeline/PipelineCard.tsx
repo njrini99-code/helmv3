@@ -7,6 +7,7 @@ import { IconStar, IconClock } from '@/components/icons';
 import type { Coach } from '../../crm-config';
 import type { CoachEngagement } from '../../types/foundations';
 import { EngagementBadge } from '../badges/EngagementBadge';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // PipelineCard — DnD-draggable coach card for the kanban.
@@ -82,7 +83,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           />
         )}
 
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={(e) => {
             // Skip click handling if the user just finished a drag.
@@ -142,7 +143,7 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
               </span>
             )}
           </div>
-        </button>
+        </Button>
       </div>
     </div>
   );

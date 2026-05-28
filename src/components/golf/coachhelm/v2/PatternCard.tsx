@@ -12,6 +12,7 @@ import {
   IconStar,
 } from '@/components/icons';
 import type { MinedPattern } from '@/lib/coachhelm/v2/types';
+import { Button } from '@/components/ui/button';
 
 interface PatternCardProps {
   pattern: MinedPattern;
@@ -62,7 +63,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
       )}
     >
       {/* Header */}
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className="w-full p-4 text-left flex items-start gap-3"
       >
@@ -103,7 +104,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
         >
           <IconChevronDown size={20} />
         </motion.div>
-      </button>
+      </Button>
 
       {/* Expanded Details */}
       <AnimatePresence>
@@ -170,7 +171,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
               {/* Actions */}
               <div className="flex gap-2 mt-4">
                 {onDismiss && (
-                  <button
+                  <Button variant="ghost"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDismiss();
@@ -178,7 +179,7 @@ export function PatternCard({ pattern, onDismiss }: PatternCardProps) {
                     className="text-xs text-warm-500 hover:text-warm-700 px-3 py-1.5 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   >
                     Dismiss
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

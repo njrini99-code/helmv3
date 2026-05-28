@@ -11,6 +11,7 @@ import {
 } from '@/components/icons';
 import { createFocusArea } from '@/app/golf/actions/development';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { Button } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -312,7 +313,7 @@ function DrillRow({
             <IconCheck size={14} /> Added to Focus Areas
           </span>
         ) : (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={handleClick}
             disabled={state.kind === 'saving'}
@@ -325,7 +326,7 @@ function DrillRow({
           >
             <IconPlus size={14} />
             {state.kind === 'saving' ? 'Saving…' : 'Add to Focus Areas'}
-          </button>
+          </Button>
         )}
       </div>
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { Button, IconButton } from '@/components/ui/button';
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { m, LazyMotion, domAnimation, AnimatePresence } from 'framer-motion'
@@ -89,7 +90,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
   return (
     <LazyMotion features={domAnimation}>
       {/* Hamburger */}
-      <button
+      <IconButton variant="default"
         onClick={() => setIsOpen(!isOpen)}
         className={`md:hidden relative z-toast w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
@@ -119,7 +120,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               }`}
           />
         </div>
-      </button>
+      </IconButton>
 
       {/* Full-screen overlay — portaled to body to escape backdrop-filter containing block */}
       {mounted && createPortal(
@@ -153,7 +154,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               />
 
               {/* Close button */}
-              <button
+              <IconButton variant="default"
                 onClick={close}
                 className="absolute top-4 right-5 z-10 w-10 h-10 flex items-center justify-center rounded-xl
                            active:scale-90 transition-transform duration-150"
@@ -163,7 +164,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                 <svg className="w-6 h-6 text-warm-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </IconButton>
 
               <nav
                 className="relative h-full flex flex-col px-7"
@@ -241,7 +242,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         exit={{ opacity: 0, transition: { duration: 0.12 } }}
                         className="space-y-3"
                       >
-                        <button
+                        <Button variant="ghost"
                           onClick={() => setShowDemoForm(true)}
                           className="w-full py-4 rounded-2xl text-white font-semibold text-body tracking-wide
                                      active:scale-[0.98] transition-transform duration-150"
@@ -251,7 +252,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           }}
                         >
                           Get Early Access
-                        </button>
+                        </Button>
                         <p className="text-center text-xs text-warm-400 tracking-wide">
                           BaseballHelm & GolfHelm
                         </p>
@@ -297,7 +298,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           <p className="text-body-sm text-red-600 font-medium">{error}</p>
                         )}
                         <div className="flex gap-3">
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             onClick={() => setShowDemoForm(false)}
                             className="flex-1 py-3.5 rounded-xl border border-warm-200
@@ -305,8 +306,8 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                                      active:scale-[0.98] transition-all duration-150"
                           >
                             Cancel
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="ghost"
                             type="submit"
                             disabled={isSubmitting || !email.trim()}
                             className="flex-1 py-3.5 rounded-xl text-white font-semibold text-body-sm
@@ -324,7 +325,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                                 Sending
                               </span>
                             ) : 'Submit'}
-                          </button>
+                          </Button>
                         </div>
                       </m.form>
                     )}
@@ -346,13 +347,13 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           <h3 className="text-xl font-semibold text-warm-900 mb-1">You&apos;re in</h3>
                           <p className="text-sm text-warm-500">We&apos;ll reach out shortly.</p>
                         </div>
-                        <button
+                        <Button variant="ghost"
                           onClick={close}
                           className="w-full py-3.5 rounded-xl bg-warm-100 text-warm-700
                                    font-medium text-body-sm active:scale-[0.98] transition-transform duration-150"
                         >
                           Back to Home
-                        </button>
+                        </Button>
                       </m.div>
                     )}
                   </AnimatePresence>

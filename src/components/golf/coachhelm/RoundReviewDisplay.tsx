@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+import { Button } from '@/components/ui/button';
 import {
   IconSparkles,
   IconChevronDown,
@@ -132,7 +133,7 @@ function ExpandableSection({
 
   return (
     <div className="border border-white/20 rounded-xl overflow-clip bg-cream-100/60 backdrop-blur-sm">
-      <button
+      <Button variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           'w-full flex items-center justify-between px-4 py-3',
@@ -150,7 +151,7 @@ function ExpandableSection({
         <div className="text-warm-400">
           {isExpanded ? <IconChevronUp size={18} /> : <IconChevronDown size={18} />}
         </div>
-      </button>
+      </Button>
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -287,7 +288,7 @@ export function RoundReviewDisplay({
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             {onShare && !isShared && (
-              <button
+              <Button variant="ghost"
                 onClick={onShare}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
@@ -296,7 +297,7 @@ export function RoundReviewDisplay({
                 )}
               >
                 Share with Coach
-              </button>
+              </Button>
             )}
             {isShared && (
               <span className="flex items-center gap-2 text-xs text-primary-600 font-medium">
@@ -305,7 +306,7 @@ export function RoundReviewDisplay({
               </span>
             )}
             {onExport && (
-              <button
+              <Button variant="ghost"
                 onClick={onExport}
                 className={cn(
                   'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium',
@@ -314,7 +315,7 @@ export function RoundReviewDisplay({
                 )}
               >
                 Export
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -28,6 +28,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { KeyMetricsGrid } from './KeyMetricsGrid';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
 import { Shimmer } from '@/components/ui/shimmer';
+import { Button } from '@/components/ui/button';
 import {
   IconChevronDown,
   IconTrendingUp,
@@ -468,13 +469,13 @@ export const PlayerStatsSection = memo(function PlayerStatsSection({
         {rounds.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button variant="ghost"
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-warm-200 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors data-[state=open]:bg-warm-50"
                 aria-label="Select round"
               >
                 {selectedRoundId === 'overall' ? 'Overall' : 'Single Round'}
                 <IconChevronDown size={16} className="transition-transform data-[state=open]:rotate-180" />
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 max-h-80 overflow-auto">
               <DropdownMenuItem

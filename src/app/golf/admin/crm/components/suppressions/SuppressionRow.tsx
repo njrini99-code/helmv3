@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { IconTrash } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import type {
   EmailSuppression,
   SuppressionReason,
@@ -105,7 +106,7 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
         {rel || absolute}
       </td>
       <td className="px-4 py-2.5 text-right">
-        <button
+        <Button variant="danger"
           type="button"
           onClick={handleRemove}
           disabled={busy}
@@ -113,7 +114,7 @@ export function SuppressionRow({ row, onRemove }: SuppressionRowProps) {
         >
           <IconTrash size={12} />
           {busy ? 'Removing...' : 'Remove'}
-        </button>
+        </Button>
         {error && <p className="mt-1 text-eyebrow text-red-600">{error}</p>}
       </td>
     </tr>

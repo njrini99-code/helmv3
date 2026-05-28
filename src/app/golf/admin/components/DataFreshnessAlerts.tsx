@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface DataFreshnessAlertsProps {
   churnRiskPlayers: {
@@ -76,7 +77,7 @@ function SectionHeader({
   onToggle: () => void;
 }) {
   return (
-    <button
+    <Button variant="ghost"
       onClick={onToggle}
       className="flex w-full items-center justify-between rounded-xl px-4 py-3 transition-colors duration-200 hover:bg-white/40"
     >
@@ -102,7 +103,7 @@ function SectionHeader({
       <span className="text-warm-400">
         <ChevronIcon open={open} />
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -239,14 +240,14 @@ export default function DataFreshnessAlerts({
                     </table>
                   </div>
                   {sortedChurnPlayers.length > INITIAL_LIMIT && (
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setChurnShowAll(!churnShowAll)}
                       className="mt-2 px-4 py-1.5 text-xs font-medium text-warm-500 hover:text-warm-900 transition-colors duration-200"
                     >
                       {churnShowAll
                         ? 'Show less'
                         : `Show all ${sortedChurnPlayers.length}`}
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -315,14 +316,14 @@ export default function DataFreshnessAlerts({
                     </table>
                   </div>
                   {sortedInactiveTeams.length > INITIAL_LIMIT && (
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setTeamsShowAll(!teamsShowAll)}
                       className="mt-2 px-4 py-1.5 text-xs font-medium text-warm-500 hover:text-warm-900 transition-colors duration-200"
                     >
                       {teamsShowAll
                         ? 'Show less'
                         : `Show all ${sortedInactiveTeams.length}`}
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -397,14 +398,14 @@ export default function DataFreshnessAlerts({
                     </table>
                   </div>
                   {sortedDisengagedCoaches.length > INITIAL_LIMIT && (
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setCoachesShowAll(!coachesShowAll)}
                       className="mt-2 px-4 py-1.5 text-xs font-medium text-warm-500 hover:text-warm-900 transition-colors duration-200"
                     >
                       {coachesShowAll
                         ? 'Show less'
                         : `Show all ${sortedDisengagedCoaches.length}`}
-                    </button>
+                    </Button>
                   )}
                 </>
               )}

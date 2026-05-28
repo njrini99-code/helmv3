@@ -3,6 +3,7 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { IconWarning, IconRefresh } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 // ============================================
 // TYPES
@@ -143,7 +144,7 @@ function ErrorFallback({
       )}
 
       {/* Retry button */}
-      <button
+      <Button variant="ghost"
         onClick={onReset}
         className={cn(
           'flex items-center gap-2 px-4 py-2 rounded-lg',
@@ -154,7 +155,7 @@ function ErrorFallback({
       >
         <IconRefresh size={iconSizes[size] - 4} />
         Try again
-      </button>
+      </Button>
     </div>
   );
 }

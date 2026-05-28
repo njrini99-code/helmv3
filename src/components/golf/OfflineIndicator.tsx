@@ -15,6 +15,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -112,7 +113,7 @@ export function OfflineIndicator({
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
+          <Button variant="danger"
             className={cn(
               'flex items-center gap-2 px-2 py-1 rounded-md text-xs font-medium transition-all duration-200',
               !isOnline
@@ -159,7 +160,7 @@ export function OfflineIndicator({
                 {pendingCount.total}
               </span>
             )}
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="end" sideOffset={8} className="w-64 bg-warm-800/95 border border-warm-700 p-3 space-y-3">
           {/* Connection Status */}
@@ -193,12 +194,12 @@ export function OfflineIndicator({
             <div className="p-2 bg-red-500/10 border border-red-500/20 rounded-md">
               <p className="text-xs text-red-400">{syncError}</p>
               {onRetrySync && (
-                <button
+                <Button variant="danger"
                   onClick={onRetrySync}
                   className="mt-2 text-xs text-red-300 hover:text-red-200 underline"
                 >
                   Retry sync
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -206,19 +207,19 @@ export function OfflineIndicator({
           {/* Actions */}
           <div className="flex gap-2 pt-1 border-t border-warm-700">
             {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
-              <button
+              <Button variant="primary"
                 onClick={onSyncNow}
                 className="flex-1 px-3 py-1.5 text-xs font-medium text-primary-400 bg-primary-500/10 hover:bg-primary-500/20 rounded transition-colors"
               >
                 Sync Now
-              </button>
+              </Button>
             )}
-            <button
+            <Button variant="ghost"
               onClick={() => setOpen(false)}
               className="flex-1 inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-warm-500 hover:text-warm-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         </PopoverContent>
       </Popover>
@@ -282,24 +283,24 @@ export function OfflineIndicator({
             </div>
             <div className="flex items-center gap-2">
               {isOnline && pendingCount.total > 0 && onSyncNow && !isSyncing && (
-                <button
+                <Button variant="ghost"
                   onClick={onSyncNow}
                   className="px-3 py-1.5 text-xs font-medium text-white bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
                 >
                   Sync
-                </button>
+                </Button>
               )}
               {isSyncing && (
                 <SyncingIcon className="w-5 h-5 text-white animate-spin" />
               )}
               {(syncError || (!isOnline && pendingCount.total === 0)) && onDismissError && (
-                <button
+                <IconButton variant="default"
                   onClick={onDismissError}
                   aria-label="Dismiss"
                   className="p-1 text-white/60 hover:text-white transition-colors"
                 >
                   <CloseIcon className="w-4 h-4" aria-hidden="true" />
-                </button>
+                </IconButton>
               )}
             </div>
           </div>

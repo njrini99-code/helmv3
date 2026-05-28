@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconBell } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 const PRESETS = [
   { value: '1_day', label: '1 day before', offsetDays: 1 },
@@ -93,7 +94,7 @@ export function ReminderPicker({
           <IconBell size={16} className="text-warm-500" />
           Set Reminder
         </label>
-        <button
+        <IconButton variant="primary" aria-label="Button"
           type="button"
           role="switch"
           aria-checked={isEnabled}
@@ -112,7 +113,7 @@ export function ReminderPicker({
               isEnabled ? 'translate-x-4' : 'translate-x-0'
             )}
           />
-        </button>
+        </IconButton>
       </div>
 
       {!dueDate && (
@@ -128,7 +129,7 @@ export function ReminderPicker({
             </label>
             <div className="flex flex-wrap gap-2">
               {PRESETS.map((preset) => (
-                <button
+                <Button variant="primary"
                   key={preset.value}
                   type="button"
                   onClick={() => handlePresetChange(preset.value)}
@@ -143,7 +144,7 @@ export function ReminderPicker({
                   )}
                 >
                   {preset.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

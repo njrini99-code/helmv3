@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { IconVideo, IconPlay, IconClock, IconEye } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -138,12 +139,12 @@ export function VideoShowcase({
             </div>
           </div>
           {showViewAll && videos.length > 0 && (
-            <button
+            <Button variant="ghost"
               onClick={onViewAll}
               className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors"
             >
               View All →
-            </button>
+            </Button>
           )}
         </div>
 
@@ -183,7 +184,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
   const [imageError, setImageError] = useState(false);
 
   return (
-    <button
+    <Button variant="ghost"
       onClick={onClick}
       className="group relative bg-warm-100 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 aspect-video"
     >
@@ -238,7 +239,7 @@ function VideoCard({ video, formatDuration, formatViews, onClick }: VideoCardPro
           </div>
         )}
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -288,7 +289,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
                 </p>
               )}
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close video"
               className="ml-4 p-2 rounded-lg hover:bg-warm-100 transition-colors"
@@ -307,7 +308,7 @@ function VideoModal({ video, onClose }: VideoModalProps) {
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-            </button>
+            </IconButton>
           </div>
 
           {/* Meta */}

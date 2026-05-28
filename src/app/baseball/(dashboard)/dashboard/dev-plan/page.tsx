@@ -23,6 +23,7 @@ import {
   IconList,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
+import { Button } from '@/components/ui/button';
 import {
   getActiveDevPlan,
   completeGoal,
@@ -115,7 +116,7 @@ function GoalCard({
     >
       <div className="flex items-start gap-3">
         {/* Checkbox */}
-        <button
+        <Button variant="primary"
           onClick={() => (isCompleted ? onUncomplete(goal.id) : onComplete(goal.id))}
           disabled={isPending}
           className={cn(
@@ -138,7 +139,7 @@ function GoalCard({
               </motion.span>
             )}
           </AnimatePresence>
-        </button>
+        </Button>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
@@ -207,13 +208,13 @@ function GoalCard({
 
           {/* Expand button for description/notes */}
           {(goal.description || goal.coach_notes) && (
-            <button
+            <Button variant="ghost"
               onClick={() => setIsExpanded(!isExpanded)}
               className="mt-2 flex items-center gap-1 text-xs text-warm-500 hover:text-warm-700 transition-colors"
             >
               {isExpanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
               {isExpanded ? 'Show less' : 'Show more'}
-            </button>
+            </Button>
           )}
 
           {/* Expanded content */}

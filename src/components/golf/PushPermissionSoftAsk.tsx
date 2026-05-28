@@ -130,13 +130,13 @@ export function PushPermissionSoftAsk() {
           >
             Enable Notifications
           </Button>
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={handleDismiss}
             className="w-full text-sm text-warm-500 hover:text-warm-700 py-2.5 font-medium transition-colors"
           >
             Not now
-          </button>
+          </Button>
         </div>
 
         <p className="text-eyebrow text-warm-600 mt-2 max-w-xs leading-relaxed">

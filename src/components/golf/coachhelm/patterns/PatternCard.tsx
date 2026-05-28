@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -311,7 +312,7 @@ export function PatternCard({
             </div>
 
             {/* Expand button */}
-            <button
+            <IconButton variant="default"
               onClick={() => setExpanded(!expanded)}
               aria-label={expanded ? 'Collapse pattern details' : 'Expand pattern details'}
               className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
@@ -322,7 +323,7 @@ export function PatternCard({
               >
                 <IconChevronDown size={20} />
               </motion.div>
-            </button>
+            </IconButton>
           </div>
 
           {/* Expanded section */}
@@ -433,54 +434,54 @@ export function PatternCard({
                     {pattern.lifecycleState === 'detected' && (
                       <>
                         {onValidate && (
-                          <button
+                          <Button variant="primary"
                             onClick={() => onValidate(pattern)}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 transition-colors"
                           >
                             <IconCheck size={14} />
                             Validate
-                          </button>
+                          </Button>
                         )}
                         {onDismiss && (
-                          <button
+                          <Button variant="ghost"
                             onClick={() => onDismiss(pattern)}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                           >
                             <IconX size={14} />
                             Dismiss
-                          </button>
+                          </Button>
                         )}
                       </>
                     )}
 
                     {pattern.lifecycleState === 'confirmed' && onMarkAddressed && (
-                      <button
+                      <Button variant="ghost"
                         onClick={() => onMarkAddressed(pattern)}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-amber-600 hover:bg-amber-50 transition-colors"
                       >
                         <IconTarget size={14} />
                         Mark as Working On
-                      </button>
+                      </Button>
                     )}
 
                     {pattern.lifecycleState === 'addressed' && onResolve && (
-                      <button
+                      <Button variant="primary"
                         onClick={() => onResolve(pattern)}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-primary-600 hover:bg-primary-50 active:bg-primary-100 transition-colors"
                       >
                         <IconCheck size={14} />
                         Mark Resolved
-                      </button>
+                      </Button>
                     )}
 
                     {onViewEvidence && (
-                      <button
+                      <Button variant="ghost"
                         onClick={() => onViewEvidence(pattern)}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-500 hover:bg-warm-100 active:bg-warm-200 transition-colors ml-auto"
                       >
                         <IconEye size={14} />
                         View Evidence
-                      </button>
+                      </Button>
                     )}
                   </div>
 

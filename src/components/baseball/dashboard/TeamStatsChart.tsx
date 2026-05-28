@@ -19,6 +19,7 @@ import {
   IconChevronRight,
 } from '@/components/icons';
 import type { TeamStatsTrendPoint } from '@/app/baseball/actions/team-dashboard';
+import { Button } from '@/components/ui/button';
 
 interface TeamStatsChartProps {
   data: TeamStatsTrendPoint[];
@@ -148,9 +149,9 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
               Upload player stats to see team performance trends
             </p>
             <Link href="/baseball/dashboard/stats/upload">
-              <button className="mt-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+              <Button variant="ghost" className="mt-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
                 Upload Stats →
-              </button>
+              </Button>
             </Link>
           </div>
         ) : (
@@ -158,7 +159,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
             {/* Metric toggles */}
             <div className="flex items-center gap-2 mb-4">
               {metrics.map(metric => (
-                <button
+                <Button variant="primary"
                   key={metric.key}
                   onClick={() => toggleMetric(metric.key)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
@@ -172,7 +173,7 @@ export function TeamStatsChart({ data, loading }: TeamStatsChartProps) {
                     style={{ backgroundColor: metric.color }}
                   />
                   {metric.label}
-                </button>
+                </Button>
               ))}
             </div>
 

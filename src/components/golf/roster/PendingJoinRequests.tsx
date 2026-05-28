@@ -130,7 +130,7 @@ export function PendingJoinRequests() {
         className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl overflow-hidden"
       >
         {/* Header */}
-        <button
+        <Button variant="ghost"
           onClick={() => setExpanded(!expanded)}
           className="w-full flex items-center justify-between p-4 hover:bg-amber-100/50 transition-colors"
         >
@@ -163,7 +163,7 @@ export function PendingJoinRequests() {
               <IconChevronDown size={20} className="text-amber-700" />
             )}
           </div>
-        </button>
+        </Button>
 
         {/* Requests List */}
         <AnimatePresence>

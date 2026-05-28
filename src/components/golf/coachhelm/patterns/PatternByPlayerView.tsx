@@ -11,6 +11,7 @@ import {
 } from '@/components/icons';
 import { PatternCard } from './PatternCard';
 import type { ExtendedPattern } from '@/app/golf/actions/pattern-management';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -68,7 +69,7 @@ function PlayerPatternCard({
     <motion.div layout>
       <Card variant="overlay" padding="none" hover={false}>
         {/* Player header - clickable to expand */}
-        <button
+        <Button variant="ghost"
           onClick={() => setExpanded(!expanded)}
           className="w-full p-4 flex items-center gap-4 text-left"
         >
@@ -130,7 +131,7 @@ function PlayerPatternCard({
           >
             <IconChevronDown size={20} />
           </motion.div>
-        </button>
+        </Button>
 
         {/* Expanded patterns */}
         <AnimatePresence>

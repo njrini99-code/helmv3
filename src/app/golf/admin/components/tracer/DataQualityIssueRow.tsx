@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconWarning, IconAlertCircle, IconInfo, IconWrench, IconLoader, IconChevronDown, IconChevronRight } from '@/components/icons';
 import type { DataQualityIssue, FixResult } from './tracer-types';
+import { Button } from '@/components/ui/button';
 
 interface DataQualityIssueRowProps {
   issue: DataQualityIssue;
@@ -41,9 +42,9 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
       {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
         {/* Expand toggle */}
-        <button type="button" className="text-warm-300 flex-shrink-0">
+        <Button variant="ghost" type="button" className="text-warm-300 flex-shrink-0">
           {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
-        </button>
+        </Button>
 
         {/* Severity badge */}
         <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold flex-shrink-0', style.bg, style.text)}>
@@ -75,7 +76,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
 
         {/* Fix button */}
         {issue.fixable && onFix && (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={(e) => { e.stopPropagation(); onFix(issue); }}
             disabled={fixing}
@@ -88,7 +89,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
           >
             {fixing ? <IconLoader size={10} className="animate-spin" /> : <IconWrench size={10} />}
             Fix
-          </button>
+          </Button>
         )}
       </div>
 

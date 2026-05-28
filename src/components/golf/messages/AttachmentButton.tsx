@@ -3,6 +3,7 @@
 import { useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { IconButton } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -103,7 +104,7 @@ export function AttachmentButton({
   const acceptTypes = Object.keys(ALLOWED_MIME_TYPES).join(',');
 
   const triggerButton = (
-    <button
+    <IconButton variant="default"
       type="button"
       onClick={showDropdown ? undefined : handleSimpleClick}
       disabled={disabled}
@@ -118,7 +119,7 @@ export function AttachmentButton({
       aria-label="Attach files"
     >
       <IconPaperclip size={20} />
-    </button>
+    </IconButton>
   );
 
   return (

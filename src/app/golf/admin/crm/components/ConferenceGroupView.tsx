@@ -13,6 +13,7 @@ import {
   IconMail,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface ConferenceGroupViewProps {
   coaches: Coach[];
@@ -174,20 +175,20 @@ export function ConferenceGroupView({
           <span className="font-semibold text-warm-700">{coaches.length}</span> coaches
         </p>
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={expandAll}
             className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
           >
             Expand All
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={collapseAll}
             className="px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-800 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
           >
             Collapse All
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -216,7 +217,7 @@ export function ConferenceGroupView({
                 className="w-4 h-4 rounded-lg border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
               />
 
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => toggleConference(group.conference)}
                 aria-expanded={isExpanded}
@@ -269,7 +270,7 @@ export function ConferenceGroupView({
                       </span>
                     ))}
                 </span>
-              </button>
+              </Button>
             </div>
 
             {/* Expanded Coach List */}
@@ -321,7 +322,7 @@ export function ConferenceGroupView({
                             />
                           </td>
                           <td className="px-2 py-2.5" onClick={e => e.stopPropagation()}>
-                            <button
+                            <IconButton variant="default"
                               type="button"
                               onClick={() => onToggleStar(coach.id, coach.is_starred)}
                               aria-label={coach.is_starred ? `Unstar ${coach.name}` : `Star ${coach.name}`}
@@ -332,7 +333,7 @@ export function ConferenceGroupView({
                               )}
                             >
                               <IconStar size={14} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300')} />
-                            </button>
+                            </IconButton>
                           </td>
                           <td className="px-4 py-2.5">
                             <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
@@ -351,7 +352,7 @@ export function ConferenceGroupView({
                           </td>
                           <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                             <div className="relative">
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setOpenStatusDropdown(openStatusDropdown === coach.id ? null : coach.id); setOpenActionMenu(null); }}
                                 aria-haspopup="menu"
@@ -366,14 +367,14 @@ export function ConferenceGroupView({
                               >
                                 {statusConfig[coach.status]?.icon}
                                 <span>{statusConfig[coach.status]?.label}</span>
-                              </button>
+                              </Button>
                               {openStatusDropdown === coach.id && (
                                 <div
                                   role="menu"
                                   className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl"
                                 >
                                   {ALL_STATUSES.map(status => (
-                                    <button
+                                    <Button variant="primary"
                                       type="button"
                                       role="menuitem"
                                       key={status}
@@ -383,7 +384,7 @@ export function ConferenceGroupView({
                                       )}>
                                       {statusConfig[status]?.icon}
                                       <span>{statusConfig[status]?.label}</span>
-                                    </button>
+                                    </Button>
                                   ))}
                                 </div>
                               )}
@@ -399,7 +400,7 @@ export function ConferenceGroupView({
                           </td>
                           <td className="px-4 py-2.5" onClick={e => e.stopPropagation()}>
                             <div className="relative">
-                              <button
+                              <IconButton variant="default"
                                 type="button"
                                 onClick={e => { e.stopPropagation(); setOpenActionMenu(openActionMenu === coach.id ? null : coach.id); setOpenStatusDropdown(null); }}
                                 aria-haspopup="menu"
@@ -408,20 +409,20 @@ export function ConferenceGroupView({
                                 className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30 transition-all"
                               >
                                 <IconMoreHorizontal size={14} />
-                              </button>
+                              </IconButton>
                               {openActionMenu === coach.id && (
                                 <div
                                   role="menu"
                                   className="absolute right-0 top-full mt-1 z-50 w-44 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/80 shadow-xl"
                                 >
-                                  <button
+                                  <Button variant="ghost"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onLogContact(coach); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                                   >
                                     <IconMessageSquare size={14} /> Log Contact
-                                  </button>
+                                  </Button>
                                   {coach.email && (
                                     <a
                                       role="menuitem"
@@ -432,22 +433,22 @@ export function ConferenceGroupView({
                                       <IconMail size={14} /> Send Email
                                     </a>
                                   )}
-                                  <button
+                                  <Button variant="ghost"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onStatusChange(coach.id, 'contacted'); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                                   >
                                     <IconArrowRight size={14} /> Move to Contacted
-                                  </button>
-                                  <button
+                                  </Button>
+                                  <Button variant="ghost"
                                     type="button"
                                     role="menuitem"
                                     onClick={() => { onToggleStar(coach.id, coach.is_starred); setOpenActionMenu(null); }}
                                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                                   >
                                     <IconStar size={14} /> {coach.is_starred ? 'Unstar' : 'Star'}
-                                  </button>
+                                  </Button>
                                 </div>
                               )}
                             </div>

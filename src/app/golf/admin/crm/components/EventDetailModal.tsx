@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
 import type { CRMEvent, CRMEventType } from './CalendarView';
 import { IconX, IconVideo, IconPhone, IconUsers, IconMail, IconMapPin, IconCalendar, IconCheck, IconEdit, IconTrash, IconUser, IconLink, IconClock } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -164,13 +165,13 @@ export function EventDetailModal({
                 <p className="text-sm text-warm-500">{typeConfig.label}</p>
               </div>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
               className="text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconX size={18} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -254,7 +255,7 @@ export function EventDetailModal({
               {STATUS_OPTIONS.map((opt) => {
                 const OptIcon = opt.icon;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={opt.value}
                     onClick={() => handleStatusChange(opt.value)}
                     disabled={submitting}
@@ -267,7 +268,7 @@ export function EventDetailModal({
                   >
                     <OptIcon size={14} />
                     {opt.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -289,7 +290,7 @@ export function EventDetailModal({
                 autoFocus
               />
               <div className="flex justify-end gap-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => {
                     setShowOutcomeForm(false);
                     setStatus(event.status);
@@ -297,14 +298,14 @@ export function EventDetailModal({
                   className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   onClick={handleComplete}
                   disabled={submitting}
                   className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {submitting ? 'Saving...' : 'Complete'}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -322,22 +323,22 @@ export function EventDetailModal({
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-warm-100 flex items-center justify-between">
-          <button
+          <Button variant="danger"
             onClick={handleDelete}
             disabled={submitting}
             className="flex items-center gap-1.5 px-3 py-2 text-red-600 hover:text-red-700 font-medium text-sm disabled:opacity-50 transition-colors"
           >
             <IconTrash size={14} />
             Delete
-          </button>
+          </Button>
 
-          <button
+          <Button variant="primary"
             onClick={onEdit}
             className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors flex items-center gap-1.5"
           >
             <IconEdit size={14} />
             Edit
-          </button>
+          </Button>
         </div>
       </div>
     </div>

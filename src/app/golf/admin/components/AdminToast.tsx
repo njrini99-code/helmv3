@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCheck, IconX, IconInfo, IconWarning, IconActivity } from '@/components/icons';
+import { IconButton } from '@/components/ui/button';
 
 // ============================================
 // TYPES
@@ -286,7 +287,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
       </div>
 
       {/* Close Button */}
-      <button
+      <IconButton variant="default" aria-label="Close"
         onClick={(e) => {
           e.stopPropagation();
           handleClose();
@@ -294,7 +295,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
         className="flex-shrink-0 p-1.5 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 active:bg-warm-200 transition-all duration-200"
       >
         <IconX size={14} />
-      </button>
+      </IconButton>
 
       {/* Progress bar for auto-dismiss */}
       {toast.duration !== null && (

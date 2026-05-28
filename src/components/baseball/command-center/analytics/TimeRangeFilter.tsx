@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconCalendar } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -50,7 +51,7 @@ export function TimeRangeFilter({
         className="text-warm-400 mr-1 hidden sm:block"
       />
       {TIME_RANGE_OPTIONS.map((option) => (
-        <button
+        <Button variant="primary"
           key={option.value}
           onClick={() => onChange(option.value)}
           className={cn(
@@ -65,7 +66,7 @@ export function TimeRangeFilter({
         >
           <span className="hidden sm:inline">{option.label}</span>
           <span className="sm:hidden">{option.shortLabel}</span>
-        </button>
+        </Button>
       ))}
     </div>
   );

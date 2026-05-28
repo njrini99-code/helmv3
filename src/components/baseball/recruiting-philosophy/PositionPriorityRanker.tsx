@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { POSITIONS } from '@/lib/types';
 import { GripVertical, X, Plus } from 'lucide-react';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface PositionPriorityRankerProps {
   priorities: string[];
@@ -94,12 +95,12 @@ export function PositionPriorityRanker({
           </p>
         </div>
         {priorities.length > 0 && (
-          <button
+          <Button variant="ghost"
             onClick={handleClear}
             className="text-sm text-warm-500 hover:text-warm-700 underline"
           >
             Clear all
-          </button>
+          </Button>
         )}
       </div>
 
@@ -179,12 +180,12 @@ export function PositionPriorityRanker({
                 </div>
 
                 {/* Remove button */}
-                <button
+                <IconButton variant="default" aria-label="Close"
                   onClick={() => handleRemove(index)}
                   className="p-1 text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded transition-colors flex-shrink-0"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </IconButton>
               </div>
             );
           })
@@ -194,7 +195,7 @@ export function PositionPriorityRanker({
       {/* Add button */}
       {availablePositions.length > 0 && priorities.length < maxPositions && (
         <div className="relative">
-          <button
+          <Button variant="primary"
             onClick={() => setShowAddMenu(!showAddMenu)}
             className={cn(
               'w-full flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-dashed transition-colors',
@@ -205,7 +206,7 @@ export function PositionPriorityRanker({
           >
             <Plus className="w-4 h-4" />
             <span className="font-medium">Add Position Priority</span>
-          </button>
+          </Button>
 
           {/* Dropdown menu */}
           {showAddMenu && (
@@ -214,14 +215,14 @@ export function PositionPriorityRanker({
                 {availablePositions.map((position) => {
                   const info = POSITION_INFO[position];
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={position}
                       onClick={() => handleAdd(position)}
                       className="w-full flex items-center gap-3 p-3 hover:bg-warm-50 active:bg-warm-100 transition-colors text-left"
                     >
                       <span className="font-semibold text-warm-900 w-10">{position}</span>
                       <span className="text-sm text-warm-600">{info?.label}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>

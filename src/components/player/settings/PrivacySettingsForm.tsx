@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -284,7 +284,7 @@ export function PrivacySettingsForm({
 
                 {/* Toggle Switch */}
                 <div className="relative">
-                <button
+                <IconButton variant="primary" aria-label="Button"
                   id={setting.key}
                   type="button"
                   role="switch"
@@ -303,7 +303,7 @@ export function PrivacySettingsForm({
                       ${settings[setting.key] ? 'translate-x-5' : 'translate-x-0'}
                     `}
                   />
-                </button>
+                </IconButton>
                 </div>
               </div>
             ))}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { BaseballBoxScoreBatting, BaseballBoxScorePitching, BaseballGame } from '@/lib/types';
 import { IconCalendar } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 type BattingWithGame = BaseballBoxScoreBatting & { game: Partial<BaseballGame> };
 type PitchingWithGame = BaseballBoxScorePitching & { game: Partial<BaseballGame> };
@@ -84,30 +85,30 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
           {hasBatting && (
-            <button
+            <Button variant="ghost"
               onClick={() => setActiveTab('batting')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
                 activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Batting
-            </button>
+            </Button>
           )}
           {hasPitching && (
-            <button
+            <Button variant="ghost"
               onClick={() => setActiveTab('pitching')}
               className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
                 activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500'
               }`}
             >
               Pitching
-            </button>
+            </Button>
           )}
         </div>
 
         <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
           {(['all', 'game', 'scrimmage'] as GameTypeFilter[]).map((f) => (
-            <button
+            <Button variant="ghost"
               key={f}
               onClick={() => setGameTypeFilter(f)}
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-all capitalize ${
@@ -115,7 +116,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
               }`}
             >
               {f === 'all' ? 'All' : f === 'scrimmage' ? 'Scrimmages' : 'Games'}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

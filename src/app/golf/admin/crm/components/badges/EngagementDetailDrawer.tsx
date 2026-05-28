@@ -19,6 +19,7 @@ import type {
   TimelineItem as TimelineItemType,
 } from '@/app/golf/admin/crm/types/foundations';
 import { EngagementSparkline } from './EngagementSparkline';
+import { IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // EngagementDetailDrawer — right-side slide-out shown when an engagement
@@ -199,14 +200,14 @@ export function EngagementDetailDrawer({
               )}
             </div>
           </div>
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={onClose}
             aria-label="Close"
             className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
           >
             <IconX size={14} />
-          </button>
+          </IconButton>
         </header>
 
         {/* Body */}

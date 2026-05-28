@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
   IconFilter,
@@ -92,7 +92,7 @@ function FilterChip({ label, onRemove, colorClass = 'bg-primary-100 text-primary
       )}
     >
       {label}
-      <button
+      <IconButton variant="default"
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -102,7 +102,7 @@ function FilterChip({ label, onRemove, colorClass = 'bg-primary-100 text-primary
         aria-label={`Remove ${label} filter`}
       >
         <IconX size={12} />
-      </button>
+      </IconButton>
     </motion.span>
   );
 }
@@ -415,7 +415,7 @@ export function InsightFiltersPanel({
       <div className="hidden md:block">
         <Card variant="overlay" padding="none" hover={false}>
           {/* Header */}
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-warm-50/50 transition-colors rounded-t-2xl"
@@ -434,7 +434,7 @@ export function InsightFiltersPanel({
             ) : (
               <IconChevronDown size={16} className="text-warm-400" />
             )}
-          </button>
+          </Button>
 
           {/* Filter Chips (always visible when filters are active) */}
           <AnimatePresence>
@@ -485,7 +485,7 @@ export function InsightFiltersPanel({
       {/* Mobile View - Collapsible Drawer */}
       <div className="md:hidden">
         {/* Toggle Button */}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setIsMobileOpen(true)}
           className={cn(
@@ -502,7 +502,7 @@ export function InsightFiltersPanel({
               {activeFilterCount}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Filter Chips (visible when filters are active) */}
         {filterChips.length > 0 && (
@@ -544,13 +544,13 @@ export function InsightFiltersPanel({
                   <div className="w-10 h-1 bg-warm-300 rounded-full mx-auto mb-4" />
                   <div className="flex items-center justify-between">
                     <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Filters</h3>
-                    <button
+                    <IconButton variant="default" aria-label="Close"
                       type="button"
                       onClick={() => setIsMobileOpen(false)}
                       className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors active:bg-warm-200"
                     >
                       <IconX size={20} />
-                    </button>
+                    </IconButton>
                   </div>
                 </div>
 

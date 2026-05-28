@@ -37,6 +37,7 @@ import type {
   SectionData,
 } from '@/app/golf/actions/player-fingerprint';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
+import { Button } from '@/components/ui/button';
 
 export interface FingerprintHeroProps {
   player: PlayerFingerprint['player'];
@@ -135,7 +136,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 mt-6 non-print">
-          <button
+          <Button variant="primary"
             type="button"
             onClick={handlePrint}
             disabled={printing}
@@ -148,7 +149,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
           >
             <PrinterIcon size={16} />
             {printing ? 'Opening...' : 'Print scouting report'}
-          </button>
+          </Button>
 
           <Link
             href={`/golf/dashboard/messages?player=${player.id}`}

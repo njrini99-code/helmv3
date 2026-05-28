@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/drawer';
 import { IconPlay, IconCheck } from '@/components/icons';
 import { toast } from '@/components/ui/sonner';
+import { Button } from '@/components/ui/button';
 import {
   recordDrillView as defaultRecordDrillView,
   recordDrillAddedToPlan,
@@ -185,7 +186,7 @@ export function DrillSheet({
           </section>
 
           <footer className="flex flex-col gap-2 pt-2">
-            <button
+            <Button variant="primary"
               type="button"
               data-testid="drill-sheet-add-to-plan"
               disabled={addPending}
@@ -199,8 +200,8 @@ export function DrillSheet({
             >
               <IconPlay size={16} aria-hidden />
               Add to my practice plan
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               type="button"
               data-testid="drill-sheet-log-drill"
               disabled={logPending}
@@ -214,7 +215,7 @@ export function DrillSheet({
             >
               <IconCheck size={16} aria-hidden />
               Done — log this drill
-            </button>
+            </Button>
           </footer>
         </div>
       </DrawerContent>

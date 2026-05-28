@@ -336,7 +336,7 @@ export default function CampDetailPage() {
             {/* Filter Tabs */}
             <div className="flex gap-1 p-1 bg-warm-100 rounded-lg">
               {(['all', 'registered', 'attended', 'no_show'] as const).map(f => (
-                <button
+                <Button variant="ghost"
                   key={f}
                   onClick={() => setFilter(f)}
                   className={cn(
@@ -347,7 +347,7 @@ export default function CampDetailPage() {
                   )}
                 >
                   {f === 'all' ? 'All' : f === 'registered' ? 'Pending' : f === 'attended' ? 'Checked In' : 'No Show'}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

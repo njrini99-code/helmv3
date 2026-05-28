@@ -6,6 +6,7 @@ import { Player, Team } from '@/lib/types';
 import { createClient } from '@/lib/supabase/client';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/button';
 import {
   IconUser,
   IconActivity,
@@ -273,7 +274,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
         <div className="border-b border-border">
           <div className="flex gap-1 p-2 overflow-x-auto">
             {TABS.map((tab) => (
-              <button
+              <Button variant="ghost"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
@@ -285,7 +286,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
               >
                 {tab.icon}
                 <span className="hidden sm:inline">{tab.label}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -687,7 +688,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                 </p>
               )}
             </div>
-            <button
+            <Button variant="ghost"
               onClick={handleSave}
               disabled={isSaving}
               className={cn(
@@ -696,7 +697,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
               )}
             >
               {isSaving ? 'Saving...' : 'Save Changes'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

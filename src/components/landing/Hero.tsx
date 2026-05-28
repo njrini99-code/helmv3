@@ -1,5 +1,6 @@
 'use client'
 
+import { Button } from '@/components/ui/button';
 import { m, LazyMotion, domAnimation, useScroll, useTransform, useReducedMotion } from 'framer-motion'
 import { useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
@@ -71,7 +72,7 @@ function EmailCapture() {
           disabled={loading}
           className="px-5 py-3.5 rounded-xl bg-white/[0.1] border border-white/[0.18] text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500/50 focus:bg-white/[0.14] focus:ring-1 focus:ring-primary-500/20 transition-[background-color,border-color,box-shadow] duration-150 disabled:opacity-50 text-sm w-full sm:w-72"
         />
-        <button
+        <Button variant="primary"
           type="submit"
           disabled={loading}
           className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
@@ -87,7 +88,7 @@ function EmailCapture() {
           ) : (
             'Request Demo'
           )}
-        </button>
+        </Button>
       </form>
 
       {error && (

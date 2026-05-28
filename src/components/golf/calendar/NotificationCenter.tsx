@@ -16,6 +16,7 @@ import { useNotifications, type Notification } from '@/hooks/useNotifications';
 import { useRouter } from 'next/navigation';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { clearPushBadge } from '@/lib/utils/push-registration';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // HELPERS
@@ -147,7 +148,7 @@ export function NotificationCenter() {
   return (
     <div className="relative">
       {/* Bell Button */}
-      <button
+      <Button variant="ghost"
         onClick={handleToggle}
         className="relative p-2.5 rounded-xl bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 shadow-sm text-warm-500 hover:text-warm-800 hover:bg-cream-50/92 hover:shadow-md active:scale-95 transition-all duration-200"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
@@ -165,7 +166,7 @@ export function NotificationCenter() {
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
-      </button>
+      </Button>
 
       {/* Notification Popover */}
       <AnimatePresence>
@@ -199,13 +200,13 @@ export function NotificationCenter() {
                   )}
                 </div>
                 {unreadCount > 0 && (
-                  <button
+                  <Button variant="ghost"
                     onClick={handleMarkAllRead}
                     className="text-footnote text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 active:scale-95 transition-transform"
                   >
                     <IconCheck size={12} />
                     Clear all
-                  </button>
+                  </Button>
                 )}
               </div>
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   IconSearch, IconUsers, IconCalendar, IconChart, IconMessage,
   IconSettings, IconTarget, IconChevronRight
@@ -239,7 +240,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
               </div>
             ) : (
               filteredCommands.map((cmd, index) => (
-                <button
+                <Button variant="primary"
                   key={cmd.id}
                   id={`cmd-${cmd.id}`}
                   role="option"
@@ -271,7 +272,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     )}
                   </div>
                   <IconChevronRight size={16} className="text-warm-400" aria-hidden="true" />
-                </button>
+                </Button>
               ))
             )}
           </div>

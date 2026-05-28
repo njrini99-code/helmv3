@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -291,7 +292,7 @@ export function LiveActivityFeed({
 
         {/* Load more */}
         {onLoadMore && events.length >= maxEvents && (
-          <button
+          <Button variant="ghost"
             onClick={onLoadMore}
             className={cn(
               'w-full py-3 text-sm font-medium text-warm-500',
@@ -299,7 +300,7 @@ export function LiveActivityFeed({
             )}
           >
             Load more
-          </button>
+          </Button>
         )}
       </div>
     </div>

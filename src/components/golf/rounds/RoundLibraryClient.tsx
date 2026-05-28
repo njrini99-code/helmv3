@@ -29,6 +29,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Avatar } from '@/components/ui/avatar';
 import { IconGolf, IconFlag, IconTrophy, IconTrendingDown, IconTrendingUp, IconArrowRight } from '@/components/icons';
 import { Sparkline } from './Sparkline';
+import { Button } from '@/components/ui/button';
 
 // -- Types -------------------------------------------------------------------
 
@@ -577,7 +578,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                 const active = filter === f;
                 const count = filterCounts[f];
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={f}
                     onClick={() => setFilter(f)}
                     type="button"
@@ -597,7 +598,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     >
                       {count}
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>

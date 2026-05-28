@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { m } from 'framer-motion';
 import { DiscoveryMockup, CompareMockup, VideoMockup, PipelineMiniMockup } from './baseball-mockups';
 import { IconArrowRight, IconVideo } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 /**
  * BaseballHelm Product Section - Multi-Feature Showcase
@@ -67,18 +68,18 @@ export function BaseballHelmSection() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/baseball/signup">
-              <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-lg
+              <Button variant="primary" className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-lg
                                bg-emerald-600 text-white font-semibold
                                hover:bg-emerald-700 active:scale-[0.98] transition-all">
                 Start Recruiting Smarter
                 <IconArrowRight size={16} />
-              </button>
+              </Button>
             </Link>
-            <button className="w-full sm:w-auto px-6 py-3 rounded-lg
+            <Button variant="ghost" className="w-full sm:w-auto px-6 py-3 rounded-lg
                              text-warm-700 font-medium border border-warm-200
                              hover:bg-white active:scale-[0.98] transition-all">
               Request Demo
-            </button>
+            </Button>
           </div>
         </m.div>
 

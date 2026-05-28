@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconX, IconTrophy, IconXCircle, IconActivity as Sprout } from '@/components/icons';
 import type { Coach, CoachStatus } from '../../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // WinLossDialog — modal prompt shown when a coach card is dropped into one of
@@ -135,12 +136,12 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
       aria-labelledby="winloss-dialog-title"
       className="fixed inset-0 z-modal flex items-center justify-center px-4"
     >
-      <button
+      <IconButton variant="default"
         type="button"
         aria-label="Close dialog"
         onClick={() => !submitting && onClose()}
         className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
-      />
+      ><span className="sr-only">Close dialog</span></IconButton>
 
       <form
         onSubmit={handleSubmit}
@@ -163,14 +164,14 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
             <p className="text-xs text-warm-500 mt-0.5">{coach.name} · {coach.school}</p>
             <p className="text-xs text-warm-500 mt-2">{meta.description}</p>
           </div>
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={() => !submitting && onClose()}
             aria-label="Close"
             className="p-1.5 rounded-md hover:bg-warm-100 text-warm-400 hover:text-warm-700"
           >
             <IconX size={14} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="px-5 py-3 space-y-4">
@@ -223,15 +224,15 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
         </div>
 
         <div className="px-5 pb-5 pt-2 flex items-center justify-end gap-2">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onClose}
             disabled={submitting}
             className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="submit"
             disabled={submitting}
             className={cn(
@@ -241,7 +242,7 @@ export function WinLossDialog({ coach, newStatus, onClose, onSubmit }: WinLossDi
             )}
           >
             {submitting ? 'Saving…' : meta.submitLabel}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

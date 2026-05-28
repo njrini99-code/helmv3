@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { IconX, IconClock, IconMapPin, IconUser } from '@/components/icons';
 import { formatTimeDisplay, formatDaysDisplay } from '@/lib/utils/schedule-parser';
@@ -90,13 +90,13 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
               </DrawerTitle>
               <p className="text-sm text-warm-500 mt-1">{classData.semester}</p>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
               className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
             >
               <IconX size={20} />
-            </button>
+            </IconButton>
           </div>
         </div>
         

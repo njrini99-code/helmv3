@@ -6,6 +6,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconClipboardList, IconBell, IconClock, IconCheck, IconAlertCircle } from '@/components/icons';
 import type { ActionItem } from '@/app/golf/actions/dashboard-data';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // HELPERS
@@ -79,7 +80,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.key;
                     return (
-                        <button
+                        <Button variant="ghost"
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={cn(
@@ -105,7 +106,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                                 />
                             )}
-                        </button>
+                        </Button>
                     );
                 })}
             </div>

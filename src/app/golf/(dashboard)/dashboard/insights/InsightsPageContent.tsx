@@ -18,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { StatCard } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconSparkles,
   IconRefresh,
@@ -576,7 +576,7 @@ export function InsightsPageContent({
           <span className="sm:hidden">{isGenerating ? '...' : 'New'}</span>
         </Button>
 
-        <button
+        <IconButton variant="default"
           onClick={handleRefresh}
           disabled={isRefreshing || isGenerating}
           className={cn(
@@ -587,7 +587,7 @@ export function InsightsPageContent({
           aria-label="Refresh insights"
         >
           <IconRefresh size={18} />
-        </button>
+        </IconButton>
 
         <a
           href="/golf/dashboard/settings/coaching-intelligence"
@@ -805,7 +805,7 @@ function TriageFilterStrip({
         </label>
 
         {activeCount > 0 && (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={onClearAll}
             className={cn(
@@ -824,7 +824,7 @@ function TriageFilterStrip({
               <IconX size={12} />
               Clear
             </span>
-          </button>
+          </Button>
         )}
       </div>
 
@@ -880,7 +880,7 @@ function ChipGroup<T extends string>({ label, options, selected, onToggle }: Chi
         {options.map((option) => {
           const isSelected = selected.has(option.value);
           return (
-            <button
+            <Button variant="primary"
               key={option.value}
               type="button"
               onClick={() => onToggle(option.value)}
@@ -896,7 +896,7 @@ function ChipGroup<T extends string>({ label, options, selected, onToggle }: Chi
             >
               {isSelected && <IconCheck size={12} />}
               {option.label}
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -929,7 +929,7 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
       <p className="text-sm text-warm-500 mb-4">
         Try adjusting the chip filters above to widen your triage view.
       </p>
-      <button
+      <Button variant="primary"
         type="button"
         onClick={onClearAll}
         className={cn(
@@ -940,7 +940,7 @@ function TriageEmptyState({ onClearAll }: TriageEmptyStateProps) {
         )}
       >
         Clear all filters
-      </button>
+      </Button>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
+import { Button } from '@/components/ui/button';
 
 interface GolfJoinTeamClientProps {
   inviteCode: string;
@@ -190,7 +191,7 @@ export function GolfJoinTeamClient({
                 )}
 
                 <div className="space-y-3">
-                  <button
+                  <Button variant="primary"
                     onClick={handleJoinTeam}
                     disabled={loading || success}
                     className="w-full px-6 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
@@ -219,14 +220,14 @@ export function GolfJoinTeamClient({
                         Confirm &amp; Join Team
                       </>
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     onClick={() => router.push('/golf/dashboard')}
                     disabled={success}
                     className="w-full px-6 py-3 bg-cream-100/68 text-warm-700 font-semibold rounded-xl border border-warm-200/50 hover:bg-cream-100/82 active:bg-warm-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-warm-200/50">

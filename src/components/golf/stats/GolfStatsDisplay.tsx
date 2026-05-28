@@ -16,6 +16,7 @@ import {
 import type { CourseBreakdownResponse, WorstHoleResponse, TrendAnalysisResponse, PlayerProfile } from './sections/types';
 import { generateStatsPDF } from './exportPdf';
 import { GolfTabBar } from '@/components/golf/GolfTabBar';
+import { Button } from '@/components/ui/button';
 
 // Re-export Sparkline so existing imports continue to work
 export { Sparkline } from './sections/shared-primitives';
@@ -189,7 +190,7 @@ export default function GolfStatsDisplay({
             <motion.div className="flex items-center gap-2 mb-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
               <span className="text-xs text-warm-500">Filtered by:</span>
               <span className="px-2.5 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full">{getActiveFilterLabel()}</span>
-              <button onClick={clearFilters} className="text-xs text-warm-400 hover:text-red-500 transition-colors">Clear</button>
+              <Button variant="danger" onClick={clearFilters} className="text-xs text-warm-400 hover:text-red-500 transition-colors">Clear</Button>
             </motion.div>
           )}
           <AnimatePresence>
@@ -197,7 +198,7 @@ export default function GolfStatsDisplay({
               <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-warm-700">Quick Filters</h3>
-                  <button onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</button>
+                  <Button variant="ghost" onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {FILTER_PRESETS.map((preset, idx) => (
@@ -207,15 +208,15 @@ export default function GolfStatsDisplay({
                 {filterOptions && filterOptions.courses.length > 0 && (
                   <div className="relative">
                     <label className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5 block">Filter by Course</label>
-                    <button onClick={() => setShowCourseDropdown(!showCourseDropdown)} className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-colors ${activeFilter?.courseName ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'}`}>
+                    <Button variant="primary" onClick={() => setShowCourseDropdown(!showCourseDropdown)} className={`w-full px-3 py-2 rounded-lg border text-sm font-medium text-left flex items-center justify-between transition-colors ${activeFilter?.courseName ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-warm-200 text-warm-600 hover:border-primary-300'}`}>
                       <span>{activeFilter?.courseName || 'All Courses'}</span>
                       <IconChevronDown size={16} className={`transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`} />
-                    </button>
+                    </Button>
                     <AnimatePresence>
                       {showCourseDropdown && (
                         <motion.div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-warm-200 shadow-lg z-20 max-h-48 overflow-y-auto" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                          <button onClick={() => { onFilterChange?.(null); setShowCourseDropdown(false); }} className="w-full px-3 py-2 text-sm text-left hover:bg-warm-50 transition-colors active:bg-warm-100 text-warm-600">All Courses</button>
-                          {filterOptions.courses.map(course => <button key={course} onClick={() => handleCourseFilter(course)} className={`w-full px-3 py-2 text-sm text-left transition-colors ${activeFilter?.courseName === course ? 'bg-primary-50 text-primary-700' : 'hover:bg-warm-50 active:bg-warm-100 text-warm-600'}`}>{course}</button>)}
+                          <Button variant="ghost" onClick={() => { onFilterChange?.(null); setShowCourseDropdown(false); }} className="w-full px-3 py-2 text-sm text-left hover:bg-warm-50 transition-colors active:bg-warm-100 text-warm-600">All Courses</Button>
+                          {filterOptions.courses.map(course => <Button variant="primary" key={course} onClick={() => handleCourseFilter(course)} className={`w-full px-3 py-2 text-sm text-left transition-colors ${activeFilter?.courseName === course ? 'bg-primary-50 text-primary-700' : 'hover:bg-warm-50 active:bg-warm-100 text-warm-600'}`}>{course}</Button>)}
                         </motion.div>
                       )}
                     </AnimatePresence>

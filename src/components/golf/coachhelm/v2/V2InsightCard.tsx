@@ -24,6 +24,7 @@ import {
 } from '@/components/icons';
 import { InsightDrillDownModal } from './InsightDrillDownModal';
 import type { ComposedInsight, MinedPattern, CausalRelationship } from '@/lib/coachhelm/v2/types';
+import { Button } from '@/components/ui/button';
 
 
 interface InsightCardProps {
@@ -121,7 +122,7 @@ export function InsightCard({
         <div className={cn('h-1', style.accent)} />
 
         {/* Header */}
-        <button
+        <Button variant="ghost"
           onClick={() => setExpanded(!expanded)}
           className="w-full p-4 text-left flex items-start gap-3"
         >
@@ -164,7 +165,7 @@ export function InsightCard({
           >
             <IconChevronDown size={20} />
           </motion.div>
-        </button>
+        </Button>
 
         {/* Expanded Details */}
         <AnimatePresence>
@@ -225,7 +226,7 @@ export function InsightCard({
 
                 {/* View Full Analysis Button */}
                 {playerId && (
-                  <button
+                  <Button variant="ghost"
                     onClick={handleViewDetails}
                     className="w-full flex items-center justify-between p-3 mb-4 bg-cream-100/75 hover:bg-white rounded-lg border border-warm-200 hover:border-primary-200 transition-all group"
                   >
@@ -239,13 +240,13 @@ export function InsightCard({
                       size={16}
                       className="text-warm-400 group-hover:text-primary-600 transition-colors"
                     />
-                  </button>
+                  </Button>
                 )}
 
                 {/* Actions */}
                 {onAction && (
                   <div className="flex gap-2">
-                    <button
+                    <Button variant="primary"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAction('acknowledge');
@@ -254,8 +255,8 @@ export function InsightCard({
                     >
                       <IconCheck size={14} />
                       Got It
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
                         onAction('dismiss');
@@ -264,7 +265,7 @@ export function InsightCard({
                     >
                       <IconX size={14} />
                       Dismiss
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

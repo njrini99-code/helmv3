@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconChevronDown } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface DeepDiveAccordionProps {
   title: string;
@@ -21,7 +22,7 @@ export function DeepDiveAccordion({
 
   return (
     <div className="glass-premium rounded-2xl">
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className="min-h-[44px] w-full flex items-center justify-between px-5 py-4 text-left"
@@ -41,7 +42,7 @@ export function DeepDiveAccordion({
         >
           <IconChevronDown size={16} />
         </motion.span>
-      </button>
+      </Button>
 
       <AnimatePresence initial={false}>
         {isOpen && (

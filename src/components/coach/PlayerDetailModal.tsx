@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Player } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconStar, IconMapPin, IconCalendar, IconMail } from '@/components/icons';
@@ -64,13 +64,13 @@ export function PlayerDetailModal({ player, coachId, onClose }: PlayerDetailModa
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-warm-200 p-6 flex items-center justify-between z-10">
           <h2 className="text-xl font-semibold text-warm-900">Player Profile</h2>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             aria-label="Close player profile"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="p-6 space-y-6">

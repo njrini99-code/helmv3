@@ -29,6 +29,7 @@ import { ToastProvider, useToast } from './Toast';
 import { CoachTimeline } from './timeline/CoachTimeline';
 import { NotesPanel } from './notes/NotesPanel';
 import { TasksPanel } from './tasks/TasksPanel';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -283,16 +284,16 @@ function CoachDetailPanelInner({
                       placeholder="Phone number" className="flex-1 bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
                   </div>
                   <div className="flex gap-2 pt-1">
-                    <button onClick={saveContactInfo} disabled={!contactForm.name.trim() || !contactForm.school.trim()}
+                    <Button variant="primary" onClick={saveContactInfo} disabled={!contactForm.name.trim() || !contactForm.school.trim()}
                       className="px-3 py-1.5 bg-primary-600 text-white rounded-xl text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
                       Save
-                    </button>
-                    <button onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</button>
+                    </Button>
+                    <Button variant="ghost" onClick={cancelEditContact} className="px-3 py-1.5 text-xs text-warm-600 hover:text-warm-800">Cancel</Button>
                   </div>
                 </div>
-                <button onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2">
+                <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900 ml-2">
                   <IconX size={14} aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
             </div>
           ) : (
@@ -300,7 +301,7 @@ function CoachDetailPanelInner({
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <button
+                    <IconButton variant="default"
                       onClick={() => onUpdate({ is_starred: !coach.is_starred })}
                       aria-label={coach.is_starred ? 'Unstar coach' : 'Star coach'}
                       aria-pressed={coach.is_starred}
@@ -310,7 +311,7 @@ function CoachDetailPanelInner({
                         'transition-all duration-200',
                         coach.is_starred ? 'fill-amber-400 text-amber-400 drop-shadow-sm' : 'text-warm-300 hover:text-amber-300'
                       )} />
-                    </button>
+                    </IconButton>
                     <h2 className="text-lg font-semibold text-warm-900 truncate">{coach.name}</h2>
                   </div>
                   <p className="text-sm text-warm-500 ml-[26px]">
@@ -350,15 +351,15 @@ function CoachDetailPanelInner({
                   </div>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => setEditingContact(true)}
+                  <IconButton variant="default" onClick={() => setEditingContact(true)}
                     aria-label="Edit contact info"
                     className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900"
                     title="Edit contact info">
                     <Pencil size={14} aria-hidden="true" />
-                  </button>
-                  <button onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+                  </IconButton>
+                  <IconButton variant="default" onClick={handleClose} aria-label="Close" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
                     <IconX size={14} aria-hidden="true" />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
@@ -383,18 +384,18 @@ function CoachDetailPanelInner({
                 <IconMail size={12} /> {coach.email}
               </a>
             ) : (
-              <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
+              <Button variant="ghost" onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
                 <IconMail size={12} /> Add email
-              </button>
+              </Button>
             )}
             {coach.phone ? (
               <a href={`tel:${coach.phone}`} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-medium transition-colors">
                 <IconPhone size={12} /> {coach.phone}
               </a>
             ) : (
-              <button onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
+              <Button variant="ghost" onClick={() => setEditingContact(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-warm-300 text-xs text-warm-400 hover:border-warm-400 hover:text-warm-500 transition-colors">
                 <IconPhone size={12} /> Add phone
-              </button>
+              </Button>
             )}
             {coach.athletics_url && (
               <a href={coach.athletics_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-violet-50 text-violet-700 hover:bg-violet-100 text-xs font-medium transition-colors">
@@ -408,7 +409,7 @@ function CoachDetailPanelInner({
             3. QUICK INFO (collapsible, default collapsed)
             ================================================================ */}
         <div className="flex-shrink-0 border-b border-warm-200/30">
-          <button
+          <Button variant="ghost"
             onClick={() => setShowInfo(!showInfo)}
             className="w-full flex items-center justify-between px-5 py-2.5 text-xs font-medium text-warm-500 hover:text-warm-700 hover:bg-white/30 transition-colors"
           >
@@ -419,7 +420,7 @@ function CoachDetailPanelInner({
             <svg className={cn('w-3.5 h-3.5 text-warm-400 transition-transform duration-200', showInfo && 'rotate-180')} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
-          </button>
+          </Button>
 
           {showInfo && (
             <div className="px-5 pb-3 space-y-2">
@@ -434,14 +435,14 @@ function CoachDetailPanelInner({
                       <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={3}
                         className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" placeholder="Add notes..." />
                       <div className="flex gap-1.5">
-                        <button onClick={saveNotes} className="px-2 py-1 bg-primary-600 text-white rounded-md text-eyebrow font-semibold hover:bg-primary-700 transition-colors">Save</button>
-                        <button onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className="px-2 py-1 text-eyebrow text-warm-500 hover:text-warm-700">Cancel</button>
+                        <Button variant="primary" onClick={saveNotes} className="px-2 py-1 bg-primary-600 text-white rounded-md text-eyebrow font-semibold hover:bg-primary-700 transition-colors">Save</Button>
+                        <Button variant="ghost" onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className="px-2 py-1 text-eyebrow text-warm-500 hover:text-warm-700">Cancel</Button>
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => setEditingNotes(true)} className="text-xs text-warm-600 text-left hover:text-warm-800 transition-colors w-full">
+                    <Button variant="ghost" onClick={() => setEditingNotes(true)} className="text-xs text-warm-600 text-left hover:text-warm-800 transition-colors w-full">
                       {coach.notes || <span className="text-warm-400 italic">Add notes...</span>}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -455,13 +456,13 @@ function CoachDetailPanelInner({
                   {(coach.tags || []).map((tag, i) => (
                     <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-700 rounded-md text-eyebrow font-medium">
                       {tag}
-                      <button onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-red-600 transition-colors"><IconX size={8} aria-hidden="true" /></button>
+                      <IconButton variant="default" onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-red-600 transition-colors"><IconX size={8} aria-hidden="true" /></IconButton>
                     </span>
                   ))}
                   <div className="flex items-center gap-0.5">
                     <input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
                       placeholder="+" className="bg-transparent border-none text-eyebrow text-warm-400 w-12 focus:outline-none focus:w-20 transition-all placeholder:text-warm-300" />
-                    {newTag && <button onClick={addTag} aria-label="Add tag" className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} aria-hidden="true" /></button>}
+                    {newTag && <IconButton variant="primary" onClick={addTag} aria-label="Add tag" className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} aria-hidden="true" /></IconButton>}
                   </div>
                 </div>
               </div>
@@ -481,14 +482,14 @@ function CoachDetailPanelInner({
                   <div className="flex items-center gap-1">
                     <input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)}
                       className="bg-white/50 border border-warm-200/60 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500/30" />
-                    <button onClick={saveFollowUp} aria-label="Save follow-up date" className="text-primary-600"><IconCheck size={12} aria-hidden="true" /></button>
-                    <button onClick={() => setEditingFollowUp(false)} aria-label="Cancel" className="text-warm-400"><IconX size={12} aria-hidden="true" /></button>
+                    <IconButton variant="default" onClick={saveFollowUp} aria-label="Save follow-up date" className="text-primary-600"><IconCheck size={12} aria-hidden="true" /></IconButton>
+                    <IconButton variant="default" onClick={() => setEditingFollowUp(false)} aria-label="Cancel" className="text-warm-400"><IconX size={12} aria-hidden="true" /></IconButton>
                   </div>
                 ) : (
-                  <button onClick={() => setEditingFollowUp(true)}
+                  <Button variant="danger" onClick={() => setEditingFollowUp(true)}
                     className={cn('text-xs font-medium', isOverdue ? 'text-red-600' : coach.next_follow_up_at ? 'text-warm-700' : 'text-primary-600 hover:text-primary-700')}>
                     {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : '+ Set date'}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -521,10 +522,10 @@ function CoachDetailPanelInner({
             <h3 className="text-xs font-medium text-warm-500 uppercase tracking-wider flex items-center gap-1.5">
               <History size={13} className="text-warm-400" /> Timeline
             </h3>
-            <button onClick={() => setShowContactForm(!showContactForm)}
+            <Button variant="ghost" onClick={() => setShowContactForm(!showContactForm)}
               className="text-xs text-primary-600 hover:text-primary-700 font-semibold flex items-center gap-1">
               <IconPlus size={12} /> Log
-            </button>
+            </Button>
           </div>
 
           {/* ================================================================
@@ -536,21 +537,21 @@ function CoachDetailPanelInner({
                 {CONTACT_TYPES.map(type => {
                   const TypeIcon = type.Icon;
                   return (
-                    <button key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
+                    <Button variant="primary" key={type.value} onClick={() => setNewContact({ ...newContact, type: type.value })}
                       className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 inline-flex items-center gap-1.5',
                         newContact.type === type.value ? 'bg-primary-600 text-white shadow-sm' : 'bg-white/60 border border-warm-200/60 text-warm-600 hover:bg-warm-50 active:bg-warm-100')}>
                       <TypeIcon size={12} /> {type.label}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
               <textarea placeholder="Notes..." value={newContact.notes} onChange={e => setNewContact({ ...newContact, notes: e.target.value })}
                 className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" rows={2} />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setShowContactForm(false)} className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800">Cancel</button>
-                <button onClick={submitContact} disabled={submitting} className="px-4 py-1.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
+                <Button variant="ghost" onClick={() => setShowContactForm(false)} className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800">Cancel</Button>
+                <Button variant="primary" onClick={submitContact} disabled={submitting} className="px-4 py-1.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shadow-sm">
                   {submitting ? 'Saving...' : 'Save'}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -573,10 +574,10 @@ function CoachDetailPanelInner({
                 <IconMail size={14} /> Email
               </a>
             ) : (
-              <button onClick={() => setEditingContact(true)}
+              <Button variant="primary" onClick={() => setEditingContact(true)}
                 className="bg-primary-500 text-white rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-primary-600 transition-colors shadow-sm">
                 <IconMail size={14} /> Email
-              </button>
+              </Button>
             )}
             {coach.phone ? (
               <a href={`tel:${coach.phone}`}
@@ -584,19 +585,19 @@ function CoachDetailPanelInner({
                 <IconPhone size={14} /> Call
               </a>
             ) : (
-              <button onClick={() => setEditingContact(true)}
+              <Button variant="ghost" onClick={() => setEditingContact(true)}
                 className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
                 <IconPhone size={14} /> Call
-              </button>
+              </Button>
             )}
-            <button onClick={() => setEditingFollowUp(true)}
+            <Button variant="ghost" onClick={() => setEditingFollowUp(true)}
               className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
               <IconCalendar size={14} /> Schedule
-            </button>
-            <button onClick={() => { setShowContactForm(true); setNewContact({ ...newContact, type: 'note' }); }}
+            </Button>
+            <Button variant="ghost" onClick={() => { setShowContactForm(true); setNewContact({ ...newContact, type: 'note' }); }}
               className="bg-white/60 border border-warm-200 text-warm-700 rounded-xl px-4 py-2 text-sm font-medium inline-flex items-center gap-1.5 hover:bg-warm-50 transition-colors">
               <IconFileText size={14} /> Note
-            </button>
+            </Button>
           </div>
         </div>
       </aside>

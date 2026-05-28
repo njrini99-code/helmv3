@@ -34,6 +34,7 @@ import {
 } from '@/app/golf/actions/event-documents';
 import { getDocuments } from '@/app/golf/actions/documents';
 import type { GolfDocument } from '@/lib/types/golf';
+import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -144,14 +145,14 @@ export function EventDocumentsSection({
           )}
         </h4>
         {isCoach && (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setShowPicker(true)}
             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 hover:bg-primary-100 text-primary-700 text-xs font-medium ring-1 ring-primary-100 transition-colors"
           >
             <Plus className="w-3 h-3" />
             Attach
-          </button>
+          </Button>
         )}
       </div>
 
@@ -194,7 +195,7 @@ export function EventDocumentsSection({
                   </p>
                 </div>
                 {isCoach && (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => handleDetach(row.document.id)}
                     disabled={pendingAction === row.document.id}
@@ -210,7 +211,7 @@ export function EventDocumentsSection({
                     ) : (
                       <X className="w-4 h-4" />
                     )}
-                  </button>
+                  </Button>
                 )}
               </li>
             );
@@ -332,7 +333,7 @@ function DocumentPickerDialog({
                 const pending = pendingAction === d.id;
                 return (
                   <li key={d.id}>
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => !alreadyAttached && !pending && onPick(d.id)}
                       disabled={alreadyAttached || pending}
@@ -365,7 +366,7 @@ function DocumentPickerDialog({
                       ) : (
                         <Plus className="w-4 h-4 text-warm-400 flex-shrink-0" />
                       )}
-                    </button>
+                    </Button>
                   </li>
                 );
               })}
@@ -374,13 +375,13 @@ function DocumentPickerDialog({
         </div>
 
         <DrawerFooter className="border-t border-warm-200/60 flex-row justify-end">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onCancel}
             className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
           >
             Done
-          </button>
+          </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

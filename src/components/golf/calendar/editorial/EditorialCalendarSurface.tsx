@@ -47,6 +47,7 @@ import { EventDetailDrawer } from './EventDetailDrawer';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { Button, IconButton } from '@/components/ui/button';
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
 
@@ -337,7 +338,7 @@ export function EditorialCalendarSurface({
 
               {/* Nav cluster — Prev / Today / Next on the right rail at md+. */}
               <div className="flex items-center gap-1.5 md:flex-shrink-0">
-                <button
+                <IconButton variant="default"
                   type="button"
                   onClick={() => navigate('prev')}
                   aria-label="Previous"
@@ -350,8 +351,8 @@ export function EditorialCalendarSurface({
                   )}
                 >
                   <IconChevronLeft size={16} />
-                </button>
-                <button
+                </IconButton>
+                <Button variant="primary"
                   type="button"
                   onClick={() => navigate('today')}
                   className={cn(
@@ -367,8 +368,8 @@ export function EditorialCalendarSurface({
                   )}
                 >
                   Today
-                </button>
-                <button
+                </Button>
+                <IconButton variant="default"
                   type="button"
                   onClick={() => navigate('next')}
                   aria-label="Next"
@@ -381,7 +382,7 @@ export function EditorialCalendarSurface({
                   )}
                 >
                   <IconChevronRight size={16} />
-                </button>
+                </IconButton>
               </div>
             </div>
 

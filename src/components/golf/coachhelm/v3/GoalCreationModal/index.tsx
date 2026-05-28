@@ -32,6 +32,7 @@ import {
   type MetricId,
 } from '@/lib/coachhelm/v3/metrics/registry';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import { Button } from '@/components/ui/button';
 import {
   drawerVariants,
   drawerTransition,
@@ -188,22 +189,22 @@ export function GoalCreationModal({
 
             {/* Actions */}
             <div className="mt-6 flex items-center justify-end gap-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={onClose}
                 disabled={pending}
                 className="text-sm text-warm-700 px-4 py-2 rounded-xl hover:bg-warm-100 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="button"
                 onClick={submit}
                 disabled={pending}
                 className="text-sm bg-primary-600 text-white px-4 py-2 rounded-xl hover:bg-primary-700 disabled:opacity-60 transition-colors"
               >
                 {pending ? 'Saving…' : 'Start goal'}
-              </button>
+              </Button>
             </div>
           </m.div>
         </m.div>

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { IconTrendingUp, IconTrendingDown, IconEdit } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   type ExpenseSummary as ExpenseSummaryType,
   type ExpenseCategory,
@@ -256,14 +257,14 @@ export function ExpenseSummary({
                             placeholder="Budget"
                             autoFocus
                           />
-                          <button
+                          <Button variant="primary"
                             onClick={() => handleSaveBudget(category)}
                             disabled={savingBudget}
                             className="px-2 py-1 text-xs bg-primary-600 text-white rounded hover:bg-primary-700 transition-colors"
                           >
                             Save
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="ghost"
                             onClick={() => {
                               setEditingBudget(null);
                               setBudgetValue('');
@@ -271,7 +272,7 @@ export function ExpenseSummary({
                             className="px-2 py-1 text-xs text-warm-500 hover:text-warm-700"
                           >
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <>
@@ -279,12 +280,12 @@ export function ExpenseSummary({
                             / {budget > 0 ? formatCurrency(budget) : '-'}
                           </span>
                           {isCoach && (
-                            <button
+                            <IconButton variant="default" aria-label="Edit"
                               onClick={() => startEditBudget(category)}
                               className="p-1 hover:bg-warm-100 active:bg-warm-200 rounded transition-colors"
                             >
                               <IconEdit size={12} className="text-warm-400" />
-                            </button>
+                            </IconButton>
                           )}
                         </>
                       )}

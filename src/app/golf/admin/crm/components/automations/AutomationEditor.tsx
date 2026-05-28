@@ -15,6 +15,7 @@ import type {
   CrmAutomationTrigger,
 } from '@/lib/crm/automations-engine';
 import { TRIGGER_EVENTS, ACTION_KINDS } from './AutomationsSeed';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // AutomationEditor — modal form for creating or editing a crm_automations row.
@@ -208,14 +209,14 @@ export function AutomationEditor({
                   {isEdit ? 'Edit automation' : 'New automation'}
                 </h2>
               </div>
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
                 className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
               >
                 <IconX size={14} />
-              </button>
+              </IconButton>
             </div>
 
             {/* Body */}
@@ -309,13 +310,13 @@ export function AutomationEditor({
                   <span className="text-xs font-semibold uppercase tracking-wider text-warm-500">
                     Conditions <span className="font-normal normal-case text-warm-400">(all must match)</span>
                   </span>
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={addCondition}
                     className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     <IconPlus size={12} /> Add condition
-                  </button>
+                  </Button>
                 </div>
                 {conditions.length === 0 ? (
                   <p className="text-xs text-warm-500 px-3 py-2 bg-warm-50/40 rounded-lg border border-dashed border-warm-200">
@@ -359,14 +360,14 @@ export function AutomationEditor({
                             className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                           />
                         )}
-                        <button
+                        <IconButton variant="default"
                           type="button"
                           onClick={() => removeCondition(idx)}
                           aria-label="Remove condition"
                           className="p-1.5 rounded-md text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <IconTrash size={14} />
-                        </button>
+                        </IconButton>
                       </div>
                     ))}
                   </div>
@@ -379,13 +380,13 @@ export function AutomationEditor({
                   <span className="text-xs font-semibold uppercase tracking-wider text-warm-500">
                     Actions <span className="font-normal normal-case text-warm-400">(run in order)</span>
                   </span>
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={addAction}
                     className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
                   >
                     <IconPlus size={12} /> Add action
-                  </button>
+                  </Button>
                 </div>
                 <div className="space-y-2">
                   {actions.map((action, idx) => {
@@ -422,7 +423,7 @@ export function AutomationEditor({
                           placeholder={meta?.paramPlaceholder ?? ''}
                           className="px-3 py-1.5 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 placeholder:text-warm-400 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                         />
-                        <button
+                        <IconButton variant="default"
                           type="button"
                           onClick={() => removeAction(idx)}
                           aria-label="Remove action"
@@ -435,7 +436,7 @@ export function AutomationEditor({
                           )}
                         >
                           <IconTrash size={14} />
-                        </button>
+                        </IconButton>
                       </div>
                     );
                   })}
@@ -444,13 +445,13 @@ export function AutomationEditor({
 
               {/* Advanced JSON view */}
               <div className="border-t border-warm-100 pt-3">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
                   className="text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
                 >
                   {showAdvanced ? '▾' : '▸'} Advanced JSON view
-                </button>
+                </Button>
                 {showAdvanced && (
                   <pre className="mt-2 p-3 bg-warm-50 border border-warm-200 rounded-lg text-eyebrow text-warm-700 overflow-x-auto whitespace-pre">
                     {advancedJson}
@@ -467,15 +468,15 @@ export function AutomationEditor({
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
                 className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="submit"
                 disabled={submitting || !name.trim()}
                 className={cn(
@@ -485,7 +486,7 @@ export function AutomationEditor({
                 )}
               >
                 {submitting ? 'Saving...' : isEdit ? 'Save changes' : 'Create automation'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

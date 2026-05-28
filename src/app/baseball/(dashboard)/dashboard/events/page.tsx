@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { createClient } from '@/lib/supabase/client';
 import { Header } from '@/components/layout/header';
 import { PageLoading } from '@/components/ui/loading';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -328,13 +328,13 @@ export default function EventsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
+                          <IconButton variant="default"
                             onClick={() => handleDeleteEvent(event.id)}
                             className="min-w-[44px] min-h-[44px] p-3 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                             aria-label="Delete event"
                           >
                             <IconTrash size={16} aria-hidden="true" />
-                          </button>
+                          </IconButton>
                         </div>
                       </div>
                     </div>

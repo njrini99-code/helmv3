@@ -60,6 +60,7 @@ import { SuppressionsAdminPanel } from './components/suppressions/SuppressionsAd
 import type { CRMEvent } from './components/CalendarView';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import type { CoachEngagement } from './types/foundations';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // SIDEBAR TABS
@@ -586,12 +587,12 @@ export default function CRMPage() {
           </div>
           <h2 className="text-xl font-bold text-warm-900 mb-2">Error Loading CRM</h2>
           <p className="text-warm-600 mb-6">{error}</p>
-          <button
+          <Button variant="primary"
             onClick={() => { setError(null); fetchAllCoaches(); }}
             className="px-6 py-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 font-medium transition-all duration-200 shadow-sm"
           >
             Try Again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -613,7 +614,7 @@ export default function CRMPage() {
               const isActive = activeTab === tab.id;
               const TabIcon = tab.Icon;
               return (
-                <button
+                <Button variant="ghost"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
@@ -625,16 +626,16 @@ export default function CRMPage() {
                 >
                   <TabIcon size={14} />
                   {tab.label}
-                </button>
+                </Button>
               );
             })}
           </div>
-          <button
+          <IconButton variant="primary" aria-label="Add"
             onClick={() => setShowAddModal(true)}
             className="flex-shrink-0 p-1.5 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-all duration-200 shadow-sm"
           >
             <IconPlus size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -676,7 +677,7 @@ export default function CRMPage() {
               const isActive = activeTab === tab.id;
               const TabIcon = tab.Icon;
               return (
-                <button
+                <Button variant="ghost"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
@@ -698,7 +699,7 @@ export default function CRMPage() {
                       {tab.label}
                     </div>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -713,7 +714,7 @@ export default function CRMPage() {
 
         {/* Action Buttons */}
         <div className="p-3 border-t border-white/10 space-y-2">
-          <button
+          <Button variant="primary"
             onClick={() => setShowAddModal(true)}
             className={cn(
               'w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-medium transition-all duration-200',
@@ -722,26 +723,26 @@ export default function CRMPage() {
           >
             <IconPlus size={16} className="flex-shrink-0" />
             {!sidebarCollapsed && <span>Add Coach</span>}
-          </button>
+          </Button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              <Button variant="ghost" onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconUpload size={14} /> Import
-              </button>
-              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              </Button>
+              <Button variant="ghost" onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconDownload size={14} /> Export
-              </button>
+              </Button>
             </div>
           )}
         </div>
 
         {/* Collapse Toggle */}
-        <button
+        <Button variant="ghost"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-all duration-200 shadow-lg"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        </Button>
       </aside>
 
       {/* ═══════════════════ Main Content ═══════════════════ */}

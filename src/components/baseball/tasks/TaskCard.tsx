@@ -8,6 +8,7 @@ import { fadeUp } from '@/lib/motion';
 import { ReminderBadge } from './ReminderBadge';
 import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions/tasks';
 import { useToast } from '@/components/ui/sonner';
+import { Button, IconButton } from '@/components/ui/button';
 
 const categoryColors: Record<string, string> = {
   general: 'bg-warm-100 text-warm-600',
@@ -147,7 +148,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           <div className="flex items-start gap-3 flex-1">
             {/* Player checkbox */}
             {!isCoach && playerAssignment && (
-              <button
+              <Button variant="primary"
                 onClick={handleToggleComplete}
                 disabled={completing}
                 className={cn(
@@ -158,7 +159,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                 )}
               >
                 {isCompletedByPlayer && <IconCheck size={12} />}
-              </button>
+              </Button>
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
@@ -188,14 +189,14 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               </span>
             )}
             {isCoach && (
-              <button
+              <IconButton variant="default" aria-label="Delete"
                 onClick={handleDelete}
                 disabled={deleting}
                 className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 transition-colors"
                 title="Delete task"
               >
                 <IconTrash size={14} />
-              </button>
+              </IconButton>
             )}
           </div>
         </div>
@@ -248,13 +249,13 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
           </div>
 
           {isCoach && totalCount > 0 && (
-            <button
+            <Button variant="ghost"
               onClick={() => setExpanded(!expanded)}
               className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
             >
               {expanded ? 'Hide' : 'View'} details
               {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-            </button>
+            </Button>
           )}
         </div>
 

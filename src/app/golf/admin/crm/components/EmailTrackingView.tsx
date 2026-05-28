@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   IconMail,
   IconCheckCircle2,
@@ -491,7 +492,7 @@ export function EmailTrackingView() {
           {SUB_TABS.map(tab => {
             const isActive = subTab === tab.id;
             return (
-              <button
+              <Button variant="ghost"
                 key={tab.id}
                 role="tab"
                 aria-selected={isActive}
@@ -510,7 +511,7 @@ export function EmailTrackingView() {
                     transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                   />
                 )}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -640,7 +641,7 @@ export function EmailTrackingView() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex gap-1" role="group" aria-label="Filter campaigns by status">
                   {FILTER_TABS.map(tab => (
-                    <button
+                    <Button variant="ghost"
                       key={tab.id}
                       onClick={() => setFilterTab(tab.id)}
                       aria-pressed={filterTab === tab.id}
@@ -652,16 +653,16 @@ export function EmailTrackingView() {
                       )}
                     >
                       {tab.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
-                <button
+                <Button variant="ghost"
                   onClick={() => setSortField(sortField === 'date' ? 'status' : 'date')}
                   aria-label={`Sort campaigns by ${sortField === 'date' ? 'status' : 'date'}`}
                   className="text-xs font-medium text-warm-500 hover:text-warm-700 px-2.5 py-1.5 rounded-lg hover:bg-warm-50 transition-colors"
                 >
                   Sort: {sortField === 'date' ? 'Date' : 'Status'}
-                </button>
+                </Button>
               </div>
 
               {campaigns.length === 0 ? (
@@ -684,7 +685,7 @@ export function EmailTrackingView() {
 
                     return (
                       <div key={campaign.key} className="rounded-xl border border-warm-100/60 bg-white/50 overflow-hidden">
-                        <button
+                        <Button variant="ghost"
                           onClick={() => toggleCampaign(campaign.key)}
                           className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-warm-50/50 transition-colors"
                         >
@@ -724,7 +725,7 @@ export function EmailTrackingView() {
                               )}
                             </div>
                           </div>
-                        </button>
+                        </Button>
 
                         {isExpanded && (
                           <div className="border-t border-warm-100/60 px-4 py-2 space-y-1 bg-warm-50/30">
@@ -738,7 +739,7 @@ export function EmailTrackingView() {
 
                               return (
                                 <div key={email.id}>
-                                  <button
+                                  <Button variant="ghost"
                                     onClick={() => toggleExpanded(email.id)}
                                     className="w-full text-left flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-white/60 transition-colors"
                                   >
@@ -759,7 +760,7 @@ export function EmailTrackingView() {
                                         : <IconChevronRight size={12} className="text-warm-300" />
                                       }
                                     </div>
-                                  </button>
+                                  </Button>
 
                                   {isEmailExpanded && sortedEvents.length > 0 && (
                                     <div className="pl-10 pb-2 pt-1">
@@ -830,7 +831,7 @@ export function EmailTrackingView() {
                         <p className="text-sm font-medium text-warm-900 truncate">{coach.name}</p>
                         <p className="text-xs text-warm-500 truncate">{coach.school} · {coach.email}</p>
                       </div>
-                      <button
+                      <Button variant="danger"
                         onClick={() => handleSuppress(coach.id)}
                         disabled={suppressingIds.has(coach.id)}
                         className={cn(
@@ -841,7 +842,7 @@ export function EmailTrackingView() {
                       >
                         <Ban size={12} />
                         {suppressingIds.has(coach.id) ? 'Suppressing...' : 'Suppress'}
-                      </button>
+                      </Button>
                     </div>
                   ))}
                 </div>

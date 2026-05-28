@@ -28,6 +28,7 @@ import {
   IconSettings,
 } from '@/components/icons';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import {
   generateTeamInsight,
   recordInteraction,
@@ -321,7 +322,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
       <div className={cn(isPage ? 'h-1' : 'h-0.5', tone.accentBar)} />
 
       {/* Header - always visible */}
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className={cn(
           'w-full text-left flex items-start',
@@ -387,7 +388,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
         <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
         </div>
-      </button>
+      </Button>
 
       {/* Expanded content */}
       {expanded && (
@@ -572,7 +573,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
               {/* Action buttons */}
               {onAction && (
                 <div className={cn('flex gap-2 pt-1', isPage && 'gap-2 pt-2')}>
-                  <button
+                  <Button variant="primary"
                     onClick={(e) => { e.stopPropagation(); onAction('acknowledge'); }}
                     className={cn(
                       'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
@@ -580,8 +581,8 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     )}
                   >
                     <IconCheck size={isPage ? 14 : 12} /> Got It
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     onClick={(e) => { e.stopPropagation(); onAction('dismiss'); }}
                     className={cn(
                       'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
@@ -589,7 +590,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     )}
                   >
                     <IconX size={isPage ? 14 : 12} /> Dismiss
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -660,7 +661,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
       <div className={cn(isPage ? 'h-1' : 'h-0.5', tone.accentBar)} />
 
       {/* Header */}
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className={cn(
           'w-full text-left flex items-start',
@@ -767,7 +768,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
         <div className={cn('flex-shrink-0 mt-1 text-warm-300', expanded && 'rotate-180')}>
           <IconChevronDown size={isPage ? 18 : 14} />
         </div>
-      </button>
+      </Button>
 
       {/* Expanded content */}
       {expanded && (
@@ -843,7 +844,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {(onAcknowledgeGroup || onDismissGroup) && (
                 <div className={cn('flex gap-2 pt-1', isPage && 'gap-2 pt-2')}>
                   {onAcknowledgeGroup && (
-                    <button
+                    <Button variant="primary"
                       onClick={(e) => { e.stopPropagation(); onAcknowledgeGroup(group); }}
                       className={cn(
                         'flex items-center gap-1 font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded-lg transition-colors',
@@ -851,10 +852,10 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       )}
                     >
                       <IconCheck size={isPage ? 14 : 12} /> Got It
-                    </button>
+                    </Button>
                   )}
                   {onDismissGroup && (
-                    <button
+                    <Button variant="ghost"
                       onClick={(e) => { e.stopPropagation(); onDismissGroup(group); }}
                       className={cn(
                         'flex items-center gap-1 text-warm-500 hover:text-warm-700 hover:bg-cream-100/68 rounded-lg transition-colors',
@@ -862,7 +863,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       )}
                     >
                       <IconX size={isPage ? 14 : 12} /> Dismiss
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -908,7 +909,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         'shadow-sm hover:shadow-md transition-shadow'
       )}
     >
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className={cn('w-full text-left', isPage ? 'p-5' : 'p-3')}
       >
@@ -966,7 +967,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
             />
           </div>
         </div>
-      </button>
+      </Button>
 
       {/* Expanded */}
       {expanded && (
@@ -1322,7 +1323,7 @@ export function IntelligenceCommandCenter({
             >
               <IconSettings size={16} className="text-warm-400" />
             </Link>
-            <button
+            <Button variant="primary"
               onClick={handleAnalyze}
               disabled={isPending}
               className={cn(
@@ -1343,7 +1344,7 @@ export function IntelligenceCommandCenter({
                   {hasData ? 'Re-Analyze' : 'Analyze Team'}
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

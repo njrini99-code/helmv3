@@ -192,9 +192,9 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
             >
               <div className="flex items-center justify-between p-6 border-b border-warm-200">
                 <h2 className="text-xl font-bold text-warm-900">Compare Plans</h2>
-                <button onClick={onClose} className="p-2 hover:bg-warm-100 rounded-lg transition-colors" aria-label="Close">
+                <Button variant="ghost" onClick={onClose} className="p-2 hover:bg-warm-100 rounded-lg transition-colors" aria-label="Close">
                   <span className="text-warm-500 text-lg">&times;</span>
-                </button>
+                </Button>
               </div>
               <div className="overflow-y-auto max-h-[calc(85vh-80px)] p-6 space-y-6">
                 <div className="grid grid-cols-3 gap-4 sticky top-0 bg-white/90 backdrop-blur-sm pb-4">
@@ -506,7 +506,7 @@ export default function BaseballCoachOnboarding() {
 
                   <m.div variants={staggerItem} className="space-y-3">
                     {COACH_TYPES.map((opt) => (
-                      <button
+                      <Button variant="ghost"
                         key={opt.value}
                         onClick={() => { setCoachType(opt.value); goForward('program'); }}
                         className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
@@ -521,7 +521,7 @@ export default function BaseballCoachOnboarding() {
                           </div>
                           <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </m.div>
                 </m.div>
@@ -541,13 +541,13 @@ export default function BaseballCoachOnboarding() {
               >
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('type')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   <m.div variants={staggerItem} className="text-center">
@@ -646,13 +646,13 @@ export default function BaseballCoachOnboarding() {
               >
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('program')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   <m.div variants={staggerItem} className="text-center">
@@ -731,13 +731,13 @@ export default function BaseballCoachOnboarding() {
               >
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack(existingUser ? 'program' : 'account')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   <m.div variants={staggerItem} className="text-center">
@@ -750,7 +750,7 @@ export default function BaseballCoachOnboarding() {
                   </m.div>
 
                   <m.div variants={staggerItem} className="grid sm:grid-cols-2 gap-4">
-                    <button
+                    <Button variant="ghost"
                       onClick={() => handlePlanSelectAndSubmit('free')}
                       disabled={loading || !authChecked}
                       className={cn(
@@ -769,9 +769,9 @@ export default function BaseballCoachOnboarding() {
                           </div>
                         ))}
                       </div>
-                    </button>
+                    </Button>
 
-                    <button
+                    <Button variant="ghost"
                       onClick={() => handlePlanSelectAndSubmit('elite')}
                       disabled={loading || !authChecked}
                       className={cn(
@@ -795,16 +795,16 @@ export default function BaseballCoachOnboarding() {
                           </div>
                         ))}
                       </div>
-                    </button>
+                    </Button>
                   </m.div>
 
                   <m.div variants={staggerItem} className="text-center">
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setShowComparison(true)}
                       className="text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
                     >
                       Compare all features
-                    </button>
+                    </Button>
                   </m.div>
 
                   {error && (

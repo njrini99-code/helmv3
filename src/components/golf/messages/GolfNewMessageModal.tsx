@@ -290,7 +290,7 @@ export function GolfNewMessageModal({
           ) : noTeamError ? null : results.length > 0 ? (
             <div className="divide-y divide-warm-100">
               {results.map(result => (
-                <button
+                <Button variant="primary"
                   key={result.id}
                   onClick={() => handleSelect(result)}
                   className={cn(
@@ -311,7 +311,7 @@ export function GolfNewMessageModal({
                       <IconCheck size={14} className="text-white" />
                     </div>
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           ) : (

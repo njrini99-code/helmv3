@@ -4,6 +4,7 @@ import { useState, useMemo, ReactNode, Component, ErrorInfo } from 'react';
 import type { AdminDashboardData, BIFunnelStep } from '@/app/golf/actions/admin-data';
 import { AdminStatCard } from './AdminStatCard';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   IconHeart,
   IconArrowDown,
@@ -301,7 +302,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
       <div className="sticky top-0 z-10 bg-cream-100/80 backdrop-blur-md py-2">
       <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-full sm:w-fit overflow-x-auto">
         {SUB_TABS.map((tab) => (
-          <button
+          <Button variant="ghost"
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={cn(
@@ -313,7 +314,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
           >
             {tab.icon}
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
       </div>
@@ -1029,7 +1030,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
 
   return (
     <div>
-      <button
+      <Button variant="ghost"
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center gap-3 py-3 px-1 hover:bg-warm-50/50 transition-colors text-left"
       >
@@ -1049,7 +1050,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
         {area.recentErrors.length > 0 && (
           expanded ? <IconChevronUp className="w-3.5 h-3.5 text-warm-400 shrink-0" /> : <IconChevronDown className="w-3.5 h-3.5 text-warm-400 shrink-0" />
         )}
-      </button>
+      </Button>
       {expanded && area.recentErrors.length > 0 && (
         <div className="ml-8 sm:ml-[132px] mb-3 space-y-1.5">
           {area.recentErrors.map((err, i) => (

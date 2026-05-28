@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -167,9 +167,9 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <h3 className="font-semibold text-warm-900">Upload Video</h3>
         {onCancel && (
-          <button onClick={onCancel} className="text-warm-400 hover:text-warm-600 p-1 rounded-lg hover:bg-cream-100 transition-colors active:bg-cream-200">
+          <IconButton variant="default" aria-label="Close" onClick={onCancel} className="text-warm-400 hover:text-warm-600 p-1 rounded-lg hover:bg-cream-100 transition-colors active:bg-cream-200">
             <IconX size={20} />
-          </button>
+          </IconButton>
         )}
       </CardHeader>
       <CardContent className="space-y-4">
@@ -204,9 +204,9 @@ export function VideoUpload({ onUploadComplete, onCancel }: VideoUploadProps) {
             {preview && (
               <div className="relative rounded-xl overflow-hidden bg-black aspect-video">
                 <video src={preview} controls className="w-full h-full" />
-                <button onClick={clearFile} className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors">
+                <IconButton variant="default" aria-label="Close" onClick={clearFile} className="absolute top-3 right-3 p-2 bg-black/60 rounded-full text-white hover:bg-black/80 transition-colors">
                   <IconX size={16} />
-                </button>
+                </IconButton>
               </div>
             )}
             <Input

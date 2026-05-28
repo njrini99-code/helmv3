@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface RecentActivityFeedProps {
   activity: AdminDashboardData['activity'];
@@ -338,12 +339,12 @@ export function RecentActivityFeed({ activity }: RecentActivityFeedProps) {
         {/* Show more link */}
         {hasMore && !showAll && (
           <div className="text-center pt-1">
-            <button
+            <Button variant="primary"
               onClick={() => setShowAll(true)}
               className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors px-3 py-1.5 rounded-lg hover:bg-primary-50/60"
             >
               Show {allItems.length - VISIBLE_LIMIT} more items
-            </button>
+            </Button>
           </div>
         )}
       </div>

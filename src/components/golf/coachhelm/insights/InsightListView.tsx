@@ -27,6 +27,7 @@ import {
   type InsightAction,
 } from '@/components/golf/coachhelm/insight-card';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -67,7 +68,7 @@ function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: Sort
   const isActive = currentSort === sortKey;
 
   return (
-    <button
+    <Button variant="primary"
       type="button"
       onClick={() => onClick(sortKey)}
       className={cn(
@@ -85,7 +86,7 @@ function SortButton({ label, sortKey, currentSort, currentOrder, onClick }: Sort
           <IconChevronDown size={12} />
         )
       )}
-    </button>
+    </Button>
   );
 }
 
@@ -116,7 +117,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRo
     >
       {/* Selection checkbox overlay — positioned absolute so it doesn't
           interfere with the primitive's internal layout. */}
-      <button
+      <Button variant="primary"
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -131,7 +132,7 @@ function InsightRow({ insight, isSelected, onToggleSelect, onAction }: InsightRo
         )}
       >
         {isSelected && <IconCheck size={12} />}
-      </button>
+      </Button>
 
       {/* Slight left inset to leave room for the checkbox. */}
       <div className="pl-8">
@@ -171,7 +172,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
         Showing {startItem}-{endItem} of {totalCount}
       </div>
       <div className="flex items-center gap-2">
-        <button
+        <IconButton variant="default" aria-label="Previous"
           type="button"
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
@@ -183,7 +184,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
           )}
         >
           <IconChevronLeft size={18} />
-        </button>
+        </IconButton>
 
         <div className="flex items-center gap-1">
           {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -199,7 +200,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
             }
 
             return (
-              <button
+              <Button variant="primary"
                 key={pageNum}
                 type="button"
                 onClick={() => onPageChange(pageNum)}
@@ -211,12 +212,12 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
                 )}
               >
                 {pageNum}
-              </button>
+              </Button>
             );
           })}
         </div>
 
-        <button
+        <IconButton variant="default" aria-label="Next"
           type="button"
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
@@ -228,7 +229,7 @@ function Pagination({ page, totalPages, totalCount, pageSize, onPageChange }: Pa
           )}
         >
           <IconChevronRight size={18} />
-        </button>
+        </IconButton>
       </div>
     </div>
   );

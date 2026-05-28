@@ -12,6 +12,7 @@ import {
 } from '@/components/baseball/recruiting-philosophy';
 import { saveRecruitingPhilosophy } from '@/app/baseball/actions/recruiting-philosophy';
 import { IconCheck, IconSave, IconMapPin, IconGraduationCap } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface RecruitingPreferencesClientProps {
   coachId: string;
@@ -103,7 +104,7 @@ export function RecruitingPreferencesClient({
       {/* Section navigation (mobile) */}
       <div className="lg:hidden flex gap-2 overflow-x-auto pb-2 -mx-2 px-2">
         {sections.map((section) => (
-          <button
+          <Button variant="primary"
             key={section.id}
             onClick={() => setActiveSection(section.id)}
             className={cn(
@@ -115,7 +116,7 @@ export function RecruitingPreferencesClient({
           >
             <span>{section.icon}</span>
             <span>{section.label}</span>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -168,18 +169,18 @@ export function RecruitingPreferencesClient({
               </p>
             </div>
             {preferredStates.length > 0 && (
-              <button
+              <Button variant="ghost"
                 onClick={() => setPreferredStates([])}
                 className="text-sm text-warm-500 hover:text-warm-700 underline"
               >
                 Clear all
-              </button>
+              </Button>
             )}
           </div>
 
           <div className="flex flex-wrap gap-2">
             {STATES.map((state) => (
-              <button
+              <Button variant="primary"
                 key={state}
                 onClick={() => toggleState(state)}
                 className={cn(
@@ -190,7 +191,7 @@ export function RecruitingPreferencesClient({
                 )}
               >
                 {state}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -221,18 +222,18 @@ export function RecruitingPreferencesClient({
               </p>
             </div>
             {targetGradYears.length > 0 && (
-              <button
+              <Button variant="ghost"
                 onClick={() => setTargetGradYears([])}
                 className="text-sm text-warm-500 hover:text-warm-700 underline"
               >
                 Clear all
-              </button>
+              </Button>
             )}
           </div>
 
           <div className="flex flex-wrap gap-2">
             {GRAD_YEARS.map((year) => (
-              <button
+              <Button variant="primary"
                 key={year}
                 onClick={() => toggleGradYear(year)}
                 className={cn(
@@ -243,7 +244,7 @@ export function RecruitingPreferencesClient({
                 )}
               >
                 Class of {year}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -272,7 +273,7 @@ export function RecruitingPreferencesClient({
               )}
             </div>
 
-            <button
+            <Button variant="primary"
               onClick={handleSave}
               disabled={isPending}
               className={cn(
@@ -284,7 +285,7 @@ export function RecruitingPreferencesClient({
             >
               <IconSave size={16} />
               {isPending ? 'Saving...' : 'Save Preferences'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

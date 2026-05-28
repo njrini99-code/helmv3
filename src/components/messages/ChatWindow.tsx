@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { decodeMessageContent } from '@/lib/utils/decode-message-content';
 import { Avatar } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconSend, IconArrowLeft, IconCheck } from '@/components/icons';
 import type { Message } from '@/lib/types';
 import type { ParticipantDetails } from '@/lib/types/messages';
@@ -91,13 +91,13 @@ export function ChatWindow({
       {/* Header — iOS-native chat title bar with back chevron on mobile */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-cream-50/92 backdrop-blur-xl sticky top-0 z-10">
         {onBack && (
-          <button
+          <IconButton variant="default"
             onClick={onBack}
             aria-label="Back"
             className="lg:hidden p-2 -ml-2 text-warm-500 hover:text-warm-800 hover:bg-warm-100 rounded-lg active:scale-95 transition-all"
           >
             <IconArrowLeft size={20} />
-          </button>
+          </IconButton>
         )}
         {participant && (
           <>

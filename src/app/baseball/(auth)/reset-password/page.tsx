@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -228,9 +229,9 @@ export default function ResetPasswordPage() {
                   </div>
                 </div>
                 <Link href="/baseball/login">
-                  <button className="w-full py-2.5 sm:py-3 bg-white text-warm-700 font-medium text-sm rounded-xl border border-warm-200 transition-all duration-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98]">
+                  <Button variant="ghost" className="w-full py-2.5 sm:py-3 bg-white text-warm-700 font-medium text-sm rounded-xl border border-warm-200 transition-all duration-200 hover:bg-warm-50 active:bg-warm-100 hover:border-warm-300 active:scale-[0.98]">
                     Back to Sign In
-                  </button>
+                  </Button>
                 </Link>
               </div>
             ) : (
@@ -311,7 +312,7 @@ export default function ResetPasswordPage() {
                   )}
                 </div>
 
-                <button
+                <Button variant="primary"
                   type="submit"
                   disabled={loading || !password || !confirmPassword}
                   className="
@@ -337,7 +338,7 @@ export default function ResetPasswordPage() {
                   ) : (
                     'Update password'
                   )}
-                </button>
+                </Button>
               </form>
             )}
           </motion.div>

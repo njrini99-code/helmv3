@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
@@ -133,13 +133,13 @@ export function CreateCampModal({ open, onClose, camp }: CreateCampModalProps) {
           <h2 className="text-lg font-semibold text-warm-900">
             {isEditing ? 'Edit Camp' : 'Create Camp'}
           </h2>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             aria-label={isEditing ? 'Close edit camp modal' : 'Close create camp modal'}
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Form */}

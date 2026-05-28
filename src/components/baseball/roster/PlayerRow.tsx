@@ -14,6 +14,7 @@ import {
   IconUser,
 } from '@/components/icons';
 import type { BaseballPlayerAggregates } from '@/lib/types';
+import { IconButton } from '@/components/ui/button';
 
 type MemberStatus = 'pending' | 'active' | 'inactive' | 'removed' | 'injured' | 'alumni';
 
@@ -255,27 +256,27 @@ export function PlayerRow({
       {/* Actions */}
       <td className="py-4 px-4">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
+          <IconButton variant="primary" aria-label="Chart"
             onClick={handleViewStats}
             className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="View Stats"
           >
             <IconChart size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton variant="primary" aria-label="Message"
             onClick={handleMessage}
             className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="Message"
           >
             <IconMessage size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton variant="primary" aria-label="Profile"
             onClick={handleViewProfile}
             className="p-2 rounded-lg text-warm-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
             title="View Profile"
           >
             <IconUser size={16} />
-          </button>
+          </IconButton>
           <IconChevronRight
             size={16}
             className="text-warm-300 group-hover:text-warm-500 transition-colors ml-1"

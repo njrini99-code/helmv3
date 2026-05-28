@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 /**
  * Animated hamburger icon that transforms to X when open.
@@ -94,7 +95,7 @@ export function MobileMenuButton({
   'aria-label': ariaLabel = 'Toggle menu',
 }: MobileMenuButtonProps) {
   return (
-    <button
+    <Button variant="ghost"
       onClick={onClick}
       className={cn(
         'min-w-[44px] min-h-[44px] p-3 rounded-xl',
@@ -112,7 +113,7 @@ export function MobileMenuButton({
       ) : (
         <StaticMenuIcon />
       )}
-    </button>
+    </Button>
   );
 }
 

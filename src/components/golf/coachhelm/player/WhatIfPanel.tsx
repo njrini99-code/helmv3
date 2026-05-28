@@ -5,6 +5,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 import {
   IconSparkles,
   IconZap,
@@ -182,7 +183,7 @@ export function WhatIfPanel({
                   </div>
 
                   {onSimulate && (
-                    <button
+                    <Button variant="primary"
                       onClick={() => handleSimulate(item.metric, item.projectedScoringImpact)}
                       disabled={simulating === item.metric}
                       className={cn(
@@ -194,7 +195,7 @@ export function WhatIfPanel({
                     >
                       <IconZap size={12} />
                       {simulating === item.metric ? 'Simulating...' : 'Simulate'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </m.div>

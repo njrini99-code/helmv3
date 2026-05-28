@@ -351,7 +351,7 @@ export default function TeamsPage() {
                           <code className="flex-1 text-sm font-mono text-warm-700 truncate">
                             {invite.code}
                           </code>
-                          <button
+                          <Button variant="ghost"
                             onClick={() => handleCopyInvite(invite.code)}
                             className="min-w-[44px] min-h-[44px] p-2.5 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors flex items-center justify-center"
                             title="Copy invite link"
@@ -361,7 +361,7 @@ export default function TeamsPage() {
                             ) : (
                               <IconCopy size={16} className="text-warm-500" />
                             )}
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <Button

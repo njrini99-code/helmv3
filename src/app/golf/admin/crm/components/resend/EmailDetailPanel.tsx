@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconX,
   IconExternalLink,
@@ -140,14 +141,14 @@ export function EmailDetailPanel({
 
               <div className="flex items-center gap-1">
                 {onSendFollowup && email && (email.to_addresses?.length ?? 0) > 0 && (
-                  <button
+                  <Button variant="ghost"
                     onClick={handleSendFollowup}
                     className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 transition-colors"
                     title="Send follow-up email to this recipient"
                   >
                     <IconSend size={14} />
                     Send follow-up
-                  </button>
+                  </Button>
                 )}
                 {resendMessageId && (
                   <a
@@ -160,13 +161,13 @@ export function EmailDetailPanel({
                     <IconExternalLink size={14} />
                   </a>
                 )}
-                <button
+                <IconButton variant="default"
                   onClick={onClose}
                   className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
                   aria-label="Close"
                 >
                   <IconX size={14} />
-                </button>
+                </IconButton>
               </div>
             </div>
 
@@ -325,7 +326,7 @@ function Label({ children }: { children: React.ReactNode }) {
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <button
+    <IconButton variant="default"
       onClick={(e) => {
         e.stopPropagation();
         navigator.clipboard.writeText(text);
@@ -337,7 +338,7 @@ function CopyButton({ text }: { text: string }) {
       aria-label="Copy to clipboard"
     >
       <IconCopy size={11} />
-    </button>
+    </IconButton>
   );
 }
 

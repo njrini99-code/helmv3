@@ -4,6 +4,7 @@ import { useState, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { IconDownload, IconFilter, IconChevronDown } from '@/components/icons';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +57,7 @@ export const RosterToolbar = memo(function RosterToolbar({
     <div className="flex items-center justify-between gap-3 mb-5">
       <DropdownMenu open={showSortMenu} onOpenChange={setShowSortMenu}>
         <DropdownMenuTrigger asChild>
-          <button
+          <Button variant="ghost"
             onClick={handleToggleMenu}
             className="pill-soft"
             aria-label="Sort roster"
@@ -65,7 +66,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             <span>Sort: {selectedSort?.label}</span>
             <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
             <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[220px]">
           {SORT_OPTIONS.map((option) => (
@@ -85,7 +86,7 @@ export const RosterToolbar = memo(function RosterToolbar({
       </DropdownMenu>
 
       {onExport && (
-        <button
+        <Button variant="ghost"
           onClick={() => {
             void triggerHaptic('light');
             onExport();
@@ -95,7 +96,7 @@ export const RosterToolbar = memo(function RosterToolbar({
         >
           <IconDownload size={13} />
           <span className="hidden sm:inline">Export</span>
-        </button>
+        </Button>
       )}
     </div>
   );

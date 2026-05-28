@@ -20,6 +20,7 @@ import {
   IconChevronLeft,
 } from '@/components/icons';
 import { MobileMenuButton } from './mobile-menu-button';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface HeaderProps {
   title?: string;
@@ -115,7 +116,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
         </div>
 
         {/* Center: Command Palette Trigger (desktop) */}
-        <button
+        <Button variant="ghost"
           onClick={() => {
             document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
           }}
@@ -126,7 +127,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           <kbd className="hidden sm:inline-flex px-1.5 py-0.5 text-micro font-medium text-warm-400 bg-white rounded border border-warm-200">
             ⌘K
           </kbd>
-        </button>
+        </Button>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
@@ -139,7 +140,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
           )}
 
           {/* Mobile search button */}
-          <button
+          <IconButton variant="default"
             onClick={() => {
               document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
             }}
@@ -147,7 +148,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
             className="md:hidden p-2 text-warm-500 hover:text-warm-700 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconSearch size={20} aria-hidden="true" />
-          </button>
+          </IconButton>
 
           {/* Notifications */}
           <NotificationCenter
@@ -159,7 +160,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
 
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
-            <button
+            <Button variant="ghost"
               onClick={() => setShowUserMenu(!showUserMenu)}
               aria-label="User menu"
               aria-expanded={showUserMenu}
@@ -180,7 +181,7 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
                   showUserMenu && "rotate-180"
                 )}
               />
-            </button>
+            </Button>
 
             {/* User Dropdown */}
             {showUserMenu && (
@@ -220,13 +221,13 @@ export function Header({ title, subtitle, children, backHref }: HeaderProps) {
 
                 {/* Sign out */}
                 <div className="p-2 border-t border-white/20">
-                  <button
+                  <Button variant="danger"
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-600 hover:bg-cream-100/60 active:bg-warm-50 rounded-lg transition-colors"
                   >
                     <IconLogOut size={16} />
                     Sign out
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

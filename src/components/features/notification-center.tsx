@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { IconBell, IconX, IconCheck } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface Notification {
@@ -93,7 +93,7 @@ export function NotificationCenter({
   return (
     <div className={cn('relative', className)}>
       {/* Bell Button */}
-      <button
+      <Button variant="ghost"
         ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="relative p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
@@ -102,7 +102,7 @@ export function NotificationCenter({
         {unreadCount > 0 && (
           <span className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full animate-pulse" />
         )}
-      </button>
+      </Button>
 
       {/* Dropdown Panel */}
       {isOpen && (
@@ -141,7 +141,7 @@ export function NotificationCenter({
 
             {/* Filter Tabs */}
             <div className="flex gap-1 bg-cream-50 p-1 rounded-lg">
-              <button
+              <Button variant="ghost"
                 onClick={() => setFilter('all')}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
@@ -151,8 +151,8 @@ export function NotificationCenter({
                 )}
               >
                 All
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 onClick={() => setFilter('unread')}
                 className={cn(
                   'flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
@@ -162,7 +162,7 @@ export function NotificationCenter({
                 )}
               >
                 Unread {unreadCount > 0 && `(${unreadCount})`}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -230,21 +230,21 @@ export function NotificationCenter({
                           {/* Actions */}
                           <div className="flex-shrink-0 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {!notification.read && (
-                              <button
+                              <IconButton variant="default" aria-label="Confirm"
                                 onClick={() => onMarkAsRead(notification.id)}
                                 className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
                                 title="Mark as read"
                               >
                                 <IconCheck size={14} className="text-warm-400 hover:text-warm-600" />
-                              </button>
+                              </IconButton>
                             )}
-                            <button
+                            <IconButton variant="default" aria-label="Close"
                               onClick={() => onDelete(notification.id)}
                               className="p-1 hover:bg-white active:bg-cream-100/75 rounded transition-colors"
                               title="Delete"
                             >
                               <IconX size={14} className="text-warm-400 hover:text-red-600" />
-                            </button>
+                            </IconButton>
                           </div>
                         </div>
 

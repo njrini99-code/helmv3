@@ -16,6 +16,7 @@ import {
 } from '@/components/icons';
 import type { Coach } from '../crm-config';
 import { TemplatePicker } from './TemplatePicker';
+import { Button, IconButton } from '@/components/ui/button';
 
 type PrefilledRecipient = {
   email: string;
@@ -542,31 +543,31 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
             </div>
             <div className="flex items-center gap-3">
               {mode === 'helm' && (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => { setMode('gmail'); setError(null); setHelmResult(null); }}
                   className="text-xs text-warm-400 hover:text-warm-600 font-medium transition-colors underline"
                 >
                   Use Gmail BCC instead
-                </button>
+                </Button>
               )}
               {mode === 'gmail' && (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => { setMode('helm'); setError(null); setHelmResult(null); }}
                   className="text-xs text-primary-500 hover:text-primary-700 font-medium transition-colors underline"
                 >
                   Back to Send from Helm
-                </button>
+                </Button>
               )}
-              <button
+              <IconButton variant="default"
                 onClick={onClose}
                 disabled={sending}
                 aria-label="Close"
                 className="p-2 rounded-xl hover:bg-warm-50 text-warm-400 hover:text-warm-600 transition-colors disabled:opacity-50"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
           </div>
 
@@ -624,7 +625,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 rounded-lg text-xs font-medium border border-primary-200/50">
                       <IconCheck size={12} />
                       Template applied
-                      <button
+                      <IconButton variant="default" aria-label="Close"
                         onClick={() => {
                           setSelectedTemplateId(null);
                           setSubject('');
@@ -634,7 +635,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         className="ml-1 text-primary-400 hover:text-primary-600"
                       >
                         <IconX size={12} />
-                      </button>
+                      </IconButton>
                     </span>
                   )}
                 </div>
@@ -643,7 +644,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {/* AI Personalize */}
               {mode === 'helm' && body.trim() && (
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={coachesWithEmail.length === 1 ? handlePersonalize : handlePersonalizeBulk}
                     disabled={personalizing || !body.trim()}
@@ -662,9 +663,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                         {coachesWithEmail.length === 1 ? 'Personalize with AI' : `Personalize All (${coachesWithEmail.length})`}
                       </>
                     )}
-                  </button>
+                  </Button>
                   {originalBody && !personalizing && (
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => {
                         if (showOriginal) {
@@ -676,7 +677,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       className="text-xs text-warm-500 hover:text-warm-700 font-medium underline"
                     >
                       {showOriginal ? 'Showing original' : 'View original'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -705,14 +706,14 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                   </label>
                   <div className="flex flex-wrap gap-1.5">
                     {MERGE_TAGS.map(tag => (
-                      <button
+                      <Button variant="ghost"
                         key={tag.value}
                         type="button"
                         onClick={() => insertMergeTag(tag.value)}
                         className="px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200 hover:bg-violet-100 cursor-pointer transition-colors"
                       >
                         {tag.label}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -743,7 +744,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               {/* Gmail Copy Buttons */}
               {mode === 'gmail' && (
                 <div className="flex gap-2">
-                  <button
+                  <Button variant="ghost"
                     onClick={() => copyToClipboard(bccList, 'bcc')}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100/60 hover:bg-warm-100 text-warm-600 transition-colors border border-warm-200/50"
                   >
@@ -752,9 +753,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     ) : (
                       <><IconCopy size={12} />Copy BCC List</>
                     )}
-                  </button>
+                  </Button>
                   {body.trim() && (
-                    <button
+                    <Button variant="ghost"
                       onClick={() => copyToClipboard(body.trim(), 'body')}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-warm-100/60 hover:bg-warm-100 text-warm-600 transition-colors border border-warm-200/50"
                     >
@@ -763,7 +764,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       ) : (
                         <><IconCopy size={12} />Copy Body</>
                       )}
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -831,12 +832,12 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                       </div>
                     )}
                     {helmResult.details && helmResult.details.length > 0 && (
-                      <button
+                      <Button variant="ghost"
                         onClick={() => setShowResultDetails(!showResultDetails)}
                         className="ml-auto text-xs text-warm-500 hover:text-warm-700 font-medium transition-colors"
                       >
                         {showResultDetails ? 'Hide details' : 'Show details'}
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {showResultDetails && helmResult.details && (
@@ -1001,27 +1002,27 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               <div className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium bg-red-50 text-red-700 border-b border-red-200/50">
                 <IconAlertCircle size={16} className="shrink-0" />
                 <span className="flex-1">{error}</span>
-                <button
+                <IconButton variant="default" aria-label="Close"
                   type="button"
                   onClick={() => setError(null)}
                   className="shrink-0 p-0.5 rounded hover:bg-red-100 transition-colors"
                 >
                   <IconX size={14} />
-                </button>
+                </IconButton>
               </div>
             )}
             <div className="flex items-center justify-between px-6 py-4">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onClose}
               disabled={sending}
               className="px-4 py-2 text-sm text-warm-600 hover:text-warm-800 font-medium transition-colors disabled:opacity-50"
             >
               Cancel
-            </button>
+            </Button>
 
             {mode === 'gmail' ? (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={openInGmail}
                 disabled={coachesWithEmail.length === 0}
@@ -1033,9 +1034,9 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
               >
                 <IconExternalLink size={16} />
                 Open in Gmail ({coachesWithEmail.length} BCC)
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button variant="primary"
                 type="button"
                 onClick={handleSendViaHelm}
                 disabled={sending || coachesWithEmail.length === 0 || !!helmResult}
@@ -1061,7 +1062,7 @@ export function BulkEmailModal({ coaches, onClose, onSuccess, prefilledRecipient
                     Send to {coachesWithEmail.length} Coach{coachesWithEmail.length !== 1 ? 'es' : ''}
                   </>
                 )}
-              </button>
+              </Button>
             )}
             </div>
           </div>

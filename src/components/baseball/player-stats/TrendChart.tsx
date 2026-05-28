@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { BaseballPlayerStats } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 interface TrendChartProps {
   stats: BaseballPlayerStats[];
@@ -183,7 +184,7 @@ export function TrendChart({ stats, className }: TrendChartProps) {
         </div>
         <div className="flex gap-1 bg-warm-100 rounded-lg p-1" role="tablist" aria-label="Metric selection">
           {(Object.keys(METRIC_CONFIG) as MetricKey[]).map((key) => (
-            <button
+            <Button variant="ghost"
               key={key}
               role="tab"
               aria-selected={selectedMetric === key}
@@ -196,7 +197,7 @@ export function TrendChart({ stats, className }: TrendChartProps) {
               )}
             >
               {METRIC_CONFIG[key].label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconX, IconUpload, IconFileText, IconSparkles } from '@/components/icons';
 import { parseScheduleText, type ParsedClass } from '@/lib/utils/schedule-parser';
 import {
@@ -237,20 +237,20 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               <p className="text-sm text-warm-500">Upload or paste your class schedule</p>
             </div>
           </div>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
             className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
         <div className="p-6">
           {/* Toggle */}
           <div className="flex gap-2 mb-6">
-            <button
+            <Button variant="primary"
               onClick={() => setPasteMode(false)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 !pasteMode 
@@ -259,8 +259,8 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               }`}
             >
               Upload File
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               onClick={() => setPasteMode(true)}
               className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
                 pasteMode 
@@ -269,7 +269,7 @@ export function UploadScheduleModal({ isOpen, onClose, onParsed }: UploadSchedul
               }`}
             >
               Paste Text
-            </button>
+            </Button>
           </div>
 
           {!pasteMode ? (

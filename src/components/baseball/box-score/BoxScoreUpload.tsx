@@ -155,7 +155,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
       {/* Tab selector */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
         {(['manual', 'csv', 'pdf'] as UploadTab[]).map((tab) => (
-          <button
+          <Button variant="ghost"
             key={tab}
             onClick={() => {
               setActiveTab(tab);
@@ -172,7 +172,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
             }`}
           >
             {tab === 'manual' ? '✏️ Manual Entry' : tab === 'csv' ? '📄 CSV Upload' : '📑 PDF Upload'}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -197,7 +197,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                 {/* Batting/Pitching switch */}
                 <div className="flex gap-1 p-1 bg-warm-100 rounded-lg">
                   {(['batting', 'pitching'] as CSVType[]).map((t) => (
-                    <button
+                    <Button variant="ghost"
                       key={t}
                       onClick={() => setCsvType(t)}
                       className={`px-3 py-1 text-xs font-medium rounded-md transition-all capitalize ${
@@ -205,10 +205,10 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                       }`}
                     >
                       {t}
-                    </button>
+                    </Button>
                   ))}
                 </div>
-                <button
+                <Button variant="ghost"
                   onClick={() =>
                     downloadTemplate(
                       csvType === 'batting' ? BATTING_TEMPLATE : PITCHING_TEMPLATE,
@@ -218,7 +218,7 @@ export function BoxScoreUpload({ game, teamPlayers }: BoxScoreUploadProps) {
                   className="text-xs text-primary-600 hover:text-primary-700 font-medium underline"
                 >
                   Download template
-                </button>
+                </Button>
               </div>
             </div>
 

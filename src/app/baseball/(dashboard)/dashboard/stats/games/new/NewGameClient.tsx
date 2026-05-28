@@ -67,7 +67,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
             <label className="text-sm font-medium text-warm-700 block mb-2">Type</label>
             <div className="flex gap-3">
               {(['game', 'scrimmage'] as BaseballGameType[]).map((t) => (
-                <button
+                <Button variant="primary"
                   key={t}
                   type="button"
                   onClick={() => setGameType(t)}
@@ -80,7 +80,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                   }`}
                 >
                   {t}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -117,7 +117,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
             <label className="text-sm font-medium text-warm-700 block mb-2">Location</label>
             <div className="flex gap-2">
               {(['home', 'away', 'neutral'] as BaseballHomeAway[]).map((ha) => (
-                <button
+                <Button variant="ghost"
                   key={ha}
                   type="button"
                   onClick={() => setHomeAway(ha)}
@@ -128,7 +128,7 @@ export function NewGameClient({ teamId, teamName }: NewGameClientProps) {
                   }`}
                 >
                   {ha}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

@@ -38,6 +38,7 @@ import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
 import { EventDocumentsSection } from './EventDocumentsSection';
 import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { Button, IconButton } from '@/components/ui/button';
 
 type GolfEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -327,14 +328,14 @@ export function MobileEventSheet({
           <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
           </h2>
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={handleClose}
             aria-label="Close"
             className="p-2 -mr-2 rounded-full hover:bg-warm-100 active:bg-warm-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-5 h-5 text-warm-500" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Scrollable Content */}
@@ -355,7 +356,7 @@ export function MobileEventSheet({
                   const Icon = pill.icon;
                   const isActive = formData.eventType === pill.type;
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={pill.type}
                       type="button"
                       role="radio"
@@ -376,7 +377,7 @@ export function MobileEventSheet({
                     >
                       <Icon className="w-4 h-4" aria-hidden="true" />
                       {pill.label}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -460,7 +461,7 @@ export function MobileEventSheet({
               {/* All Day Toggle */}
               <div className="flex items-center justify-between pl-12">
                 <span id="all-day-label" className="text-sm text-warm-600">All day</span>
-                <button
+                <IconButton variant="primary" aria-label="Button"
                   type="button"
                   role="switch"
                   aria-checked={formData.allDay}
@@ -482,7 +483,7 @@ export function MobileEventSheet({
                     'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
                     formData.allDay && 'translate-x-5'
                   )} />
-                </button>
+                </IconButton>
               </div>
 
               {/* Time Row */}
@@ -660,7 +661,7 @@ export function MobileEventSheet({
           {!isCreating && isCoach && rsvpSummary && rsvpSummary.total > 0 && (
             <div className="px-5 pb-4">
               <div className="bg-warm-50 rounded-2xl p-4">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => rsvpSummary.attendees && setShowRoster((v) => !v)}
                   disabled={!rsvpSummary.attendees}
@@ -686,7 +687,7 @@ export function MobileEventSheet({
                       />
                     </span>
                   )}
-                </button>
+                </Button>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
@@ -764,7 +765,7 @@ export function MobileEventSheet({
           {!isCreating && isCoach && (onSendReminder || onDelete) && (
             <div className="px-5 pb-4 space-y-2">
               {onSendReminder && (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={onSendReminder}
                   className={cn(
@@ -777,11 +778,11 @@ export function MobileEventSheet({
                 >
                   <Bell className="w-4.5 h-4.5" />
                   Send Reminder
-                </button>
+                </Button>
               )}
 
               {onDelete && !showDeleteConfirm && (
-                <button
+                <Button variant="danger"
                   type="button"
                   onClick={() => setShowDeleteConfirm(true)}
                   className={cn(
@@ -794,7 +795,7 @@ export function MobileEventSheet({
                 >
                   <Trash2 className="w-4.5 h-4.5" />
                   Cancel Event
-                </button>
+                </Button>
               )}
 
               {showDeleteConfirm && (
@@ -803,7 +804,7 @@ export function MobileEventSheet({
                     Are you sure you want to cancel this event?
                   </p>
                   <div className="flex gap-2">
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => setShowDeleteConfirm(false)}
                       disabled={isDeleting}
@@ -814,8 +815,8 @@ export function MobileEventSheet({
                       )}
                     >
                       Keep Event
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="danger"
                       type="button"
                       onClick={handleDelete}
                       disabled={isDeleting}
@@ -827,7 +828,7 @@ export function MobileEventSheet({
                       )}
                     >
                       {isDeleting ? 'Canceling...' : 'Yes, Cancel'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -841,7 +842,7 @@ export function MobileEventSheet({
           style={{ paddingBottom: Math.max(safeAreaBottom, 16) }}
         >
           {canEdit ? (
-            <button
+            <Button variant="primary"
               type="button"
               onClick={handleSubmit}
               disabled={isSaving}
@@ -854,9 +855,9 @@ export function MobileEventSheet({
               )}
             >
               {isSaving ? 'Saving...' : isCreating ? 'Create Event' : 'Save Changes'}
-            </button>
+            </Button>
           ) : (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={handleClose}
               className={cn(
@@ -866,7 +867,7 @@ export function MobileEventSheet({
               )}
             >
               Close
-            </button>
+            </Button>
           )}
         </div>
       </div>

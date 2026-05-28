@@ -38,6 +38,7 @@ import type { DataQualityIssue, FixResult } from './tracer/tracer-types';
 import { useAdminRealtimeContext } from './AdminRealtimeProvider';
 import type { AdminEvent } from '@/hooks/useAdminRealtime';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
+import { Button } from '@/components/ui/button';
 
 function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -223,12 +224,12 @@ export function TracerTab() {
       <div className="bg-red-50/80 backdrop-blur-sm border border-red-200 rounded-2xl p-8 text-center">
         <p className="text-warm-900 font-semibold">Failed to load tracer data</p>
         <p className="text-warm-500 text-sm mt-1 max-w-md mx-auto">{error}</p>
-        <button
+        <Button variant="ghost"
           onClick={() => loadData()}
           className="mt-4 px-5 py-2.5 bg-white/90 border border-warm-200 rounded-xl text-sm font-medium hover:bg-white hover:shadow-sm transition-all"
         >
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -257,7 +258,7 @@ export function TracerTab() {
             </span>
           )}
         </div>
-        <button
+        <Button variant="ghost"
           onClick={() => loadData(true)}
           disabled={refreshing}
           className={cn(
@@ -268,7 +269,7 @@ export function TracerTab() {
         >
           <IconRefresh size={12} className={cn(refreshing && 'animate-spin')} />
           {refreshing ? 'Refreshing...' : 'Refresh'}
-        </button>
+        </Button>
       </div>
 
       {/* Sub-tab Navigation */}

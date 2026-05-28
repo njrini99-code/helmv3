@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { StatusDot } from '@/components/ui/status-dot';
 import { usePeekPanelStore } from '@/stores/peek-panel-store';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconHeart,
   IconHeartFilled,
@@ -100,7 +101,7 @@ const PlayerCardComponent = function PlayerCard({
       >
         {/* Checkbox for compare mode */}
         {showCheckbox && (
-          <button
+          <Button variant="primary"
             type="button"
             aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
@@ -112,7 +113,7 @@ const PlayerCardComponent = function PlayerCard({
             )}
           >
             {isSelected && <IconCheck size={12} />}
-          </button>
+          </Button>
         )}
         
         <PlayerAvatar player={player} size="sm" />
@@ -150,7 +151,7 @@ const PlayerCardComponent = function PlayerCard({
         {/* Checkbox for compare mode */}
         {showCheckbox && (
           <div className="absolute top-3 left-3 z-10">
-            <button
+            <Button variant="primary"
               type="button"
               aria-label="Select player for comparison"
               onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
@@ -162,7 +163,7 @@ const PlayerCardComponent = function PlayerCard({
               )}
             >
               {isSelected && <IconCheck size={14} />}
-            </button>
+            </Button>
           </div>
         )}
 
@@ -272,7 +273,7 @@ const PlayerCardComponent = function PlayerCard({
       {/* Checkbox for compare mode */}
       {showCheckbox && (
         <div className="absolute top-3 left-3 z-10">
-          <button
+          <Button variant="primary"
             type="button"
             aria-label="Select player for comparison"
             onClick={(e) => { e.stopPropagation(); onSelect?.(); }}
@@ -284,7 +285,7 @@ const PlayerCardComponent = function PlayerCard({
             )}
           >
             {isSelected && <IconCheck size={14} />}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -482,7 +483,7 @@ const ActionButton = memo(function ActionButton({
   };
 
   return (
-    <button
+    <IconButton variant="default"
       type="button"
       aria-label={label}
       onClick={(e) => {
@@ -500,7 +501,7 @@ const ActionButton = memo(function ActionButton({
       )}
     >
       <Icon size={16} />
-    </button>
+    </IconButton>
   );
 });
 

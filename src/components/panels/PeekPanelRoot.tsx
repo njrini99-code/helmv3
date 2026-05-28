@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/ui/button';
 
 interface PeekPanelProps {
   isOpen: boolean;
@@ -87,13 +88,13 @@ export function PeekPanelRoot({
             {title && (
               <div className="flex items-center justify-between px-6 py-4 border-b border-warm-200 flex-shrink-0">
                 <h2 className="text-lg font-semibold text-warm-900">{title}</h2>
-                <button
+                <IconButton variant="default"
                   onClick={onClose}
                   className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   aria-label="Close panel"
                 >
                   <IconX size={20} />
-                </button>
+                </IconButton>
               </div>
             )}
 

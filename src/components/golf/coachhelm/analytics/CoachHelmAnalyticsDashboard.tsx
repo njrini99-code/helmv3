@@ -39,6 +39,7 @@ import {
 } from '@/app/golf/actions/coachhelm-analytics';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Button } from '@/components/ui/button';
 
 interface CoachHelmAnalyticsDashboardProps {
   teamId: string;
@@ -153,7 +154,7 @@ export function CoachHelmAnalyticsDashboard({
             ))}
           </ToggleGroup>
         </div>
-        <button
+        <Button variant="primary"
           onClick={handleRefresh}
           disabled={isPending}
           className={cn(
@@ -179,7 +180,7 @@ export function CoachHelmAnalyticsDashboard({
               <span className="hidden sm:inline">Refresh</span>
             </>
           )}
-        </button>
+        </Button>
       </LargeTitleHeader>
 
       {/* Main Content */}
@@ -342,13 +343,13 @@ export function CoachHelmAnalyticsDashboard({
             <p className="text-sm text-warm-500 max-w-sm mx-auto mb-4">
               Start using CoachHelm to generate insights and track their effectiveness over time.
             </p>
-            <button
+            <Button variant="primary"
               onClick={handleRefresh}
               className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
             >
               <IconRefresh size={16} />
               Load Data
-            </button>
+            </Button>
           </Card>
         )}
       </div>

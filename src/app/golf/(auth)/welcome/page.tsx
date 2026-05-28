@@ -8,6 +8,7 @@ import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { getGreeting, getTimeOfDay, type TimeOfDay } from '@/lib/utils/time-of-day';
 import { extractFirstName, extractLastName } from '@/lib/utils/names';
 import { useSequencedNavigation } from '@/hooks/use-sequenced-navigation';
+import { Button } from '@/components/ui/button';
 
 // Animation timing (ms), measured from the moment `ready` becomes true.
 // Full motion: name fades in, holds ~1.5s legible, fades out, navigates.
@@ -209,7 +210,7 @@ function WelcomeContent() {
             Only shown once ready; positioned low-contrast so it doesn't
             distract from the hero line. */}
         {ready && (
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onSkip}
             aria-label="Skip welcome animation and continue to dashboard"
@@ -221,7 +222,7 @@ function WelcomeContent() {
             style={{ backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)' }}
           >
             Skip →
-          </button>
+          </Button>
         )}
       </main>
     </LazyMotion>

@@ -29,6 +29,7 @@ import {
   Globe,
 } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
+import { Button } from '@/components/ui/button';
 
 interface SubscriptionInstructionsProps {
   feedUrl: string;
@@ -92,7 +93,7 @@ export function SubscriptionInstructions({
             const isSelected = selectedPlatform === platform.id;
 
             return (
-              <button
+              <Button variant="primary"
                 key={platform.id}
                 type="button"
                 onClick={() => setSelectedPlatform(platform.id)}
@@ -106,7 +107,7 @@ export function SubscriptionInstructions({
               >
                 <Icon className="w-4 h-4" />
                 <span>{platform.name}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -124,7 +125,7 @@ export function SubscriptionInstructions({
                 {feedUrl}
               </code>
             </div>
-            <button
+            <Button variant="primary"
               type="button"
               onClick={handleCopy}
               className={cn(
@@ -145,7 +146,7 @@ export function SubscriptionInstructions({
                   Copy
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       )}

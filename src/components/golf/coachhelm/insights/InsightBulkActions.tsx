@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import {
@@ -162,7 +162,7 @@ export function InsightBulkActions({
                 </div>
 
                 {/* Select All / Deselect All */}
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={isAllSelected ? onDeselectAll : onSelectAll}
                   className={cn(
@@ -173,7 +173,7 @@ export function InsightBulkActions({
                   )}
                 >
                   {isAllSelected ? 'Deselect all' : 'Select all'}
-                </button>
+                </Button>
               </div>
 
               {/* Actions */}
@@ -239,7 +239,7 @@ export function InsightBulkActions({
                 </Button>
 
                 {/* Close */}
-                <button
+                <IconButton variant="default"
                   type="button"
                   onClick={onDeselectAll}
                   className={cn(
@@ -250,7 +250,7 @@ export function InsightBulkActions({
                   aria-label="Close bulk actions"
                 >
                   <IconX size={18} />
-                </button>
+                </IconButton>
               </div>
             </div>
           </motion.div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 export function CoachAIMockup() {
   const insights = [
@@ -89,14 +90,14 @@ export function CoachAIMockup() {
               <div className="flex-1">
                 <h4 className="font-medium text-warm-900 text-sm">{insight.title}</h4>
                 <p className="text-xs text-warm-500 mt-0.5">{insight.desc}</p>
-                <button className={cn(
+                <Button variant="ghost" className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
                   insight.color === 'emerald' && "text-emerald-600",
                   insight.color === 'blue' && "text-blue-600"
                 )}>
                   {insight.action} →
-                </button>
+                </Button>
               </div>
             </div>
           </div>

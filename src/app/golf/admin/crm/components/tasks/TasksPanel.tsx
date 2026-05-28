@@ -9,6 +9,7 @@ import type {
 } from '@/app/golf/admin/crm/types/foundations';
 import { CreateTaskDialog } from './CreateTaskDialog';
 import { TaskCard } from './TaskCard';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TasksPanel — coach-scoped task list. Splits into Open and Completed sections.
@@ -100,13 +101,13 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
             </span>
           )}
         </div>
-        <button
+        <Button variant="primary"
           type="button"
           onClick={() => setDialogOpen(true)}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
         >
           <IconPlus size={12} /> New task
-        </button>
+        </Button>
       </div>
 
       {loading && (

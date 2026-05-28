@@ -22,6 +22,7 @@ import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatComposer } from './ChatComposer';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   drawerVariants,
   drawerTransition,
@@ -169,13 +170,13 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                     <span className="font-medium tracking-[-0.01em]">CoachHelm chat</span>
                   </span>
                   {conversationId && (
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={newChat}
                       className="text-eyebrow uppercase tracking-[0.1em] text-warm-500 hover:text-warm-800 transition"
                     >
                       New
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="flex items-center gap-4">
@@ -185,7 +186,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                   >
                     History →
                   </Link>
-                  <button
+                  <IconButton variant="default"
                     type="button"
                     onClick={() => setOpen(false)}
                     aria-label="Close chat"
@@ -199,7 +200,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                         strokeLinecap="round"
                       />
                     </svg>
-                  </button>
+                  </IconButton>
                 </div>
               </header>
 

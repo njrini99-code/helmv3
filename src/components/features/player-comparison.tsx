@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { IconX, IconCheck, IconDownload, IconBookmark, IconChartRadar } from '@/components/icons';
 import { getFullName, formatHeight, cn } from '@/lib/utils';
 import type { Player } from '@/lib/types';
@@ -349,12 +349,12 @@ export function PlayerComparison({
                             ring
                           />
                           {onRemovePlayer && players.length > 1 && (
-                            <button
+                            <IconButton variant="default" aria-label="Close"
                               onClick={() => onRemovePlayer(player.id)}
                               className="absolute -top-1 -right-1 w-5 h-5 bg-warm-700 text-white rounded-full flex items-center justify-center hover:bg-warm-800 transition-colors shadow-sm"
                             >
                               <IconX size={12} />
-                            </button>
+                            </IconButton>
                           )}
                         </div>
                         <div className="text-center">

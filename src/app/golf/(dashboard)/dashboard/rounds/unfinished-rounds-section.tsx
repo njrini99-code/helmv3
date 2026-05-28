@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { IconEdit } from '@/components/icons';
 import { UnfinishedRoundModal } from '@/components/golf/UnfinishedRoundModal';
 import type { GolfRound } from '@/lib/types/golf';
+import { Button } from '@/components/ui/button';
 
 interface RoundWithPlayer extends GolfRound {
   player: {
@@ -62,7 +63,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
             const isSetup = !round.current_hole || round.current_hole === 0;
 
             return (
-              <button
+              <Button variant="ghost"
                 key={round.id}
                 onClick={() => handleRoundClick(round)}
                 className="w-full text-left"
@@ -100,7 +101,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                     </div>
                   </div>
                 </div>
-              </button>
+              </Button>
             );
           })}
         </div>

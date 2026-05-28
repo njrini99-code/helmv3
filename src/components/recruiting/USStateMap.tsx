@@ -5,6 +5,7 @@ import { scaleQuantize } from 'd3-scale';
 import { cn } from '@/lib/utils';
 import { IconX } from '@/components/icons';
 import { US_STATE_PATHS } from './us-state-paths';
+import { IconButton } from '@/components/ui/button';
 
 // State name to code mapping
 const STATE_NAME_TO_CODE: Record<string, string> = {
@@ -131,13 +132,13 @@ export const USStateMap = memo(function USStateMap({
             <div className="relative w-px h-8 bg-white/20" />
 
             {/* Clear button */}
-            <button
+            <IconButton variant="default"
               onClick={onClearSelection}
               className="relative p-2 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 transition-all duration-150"
               aria-label="Clear selection"
             >
               <IconX size={16} className="text-white" />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}

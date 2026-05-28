@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 type Sensitivity = 'aggressive' | 'balanced' | 'conservative';
 
@@ -48,7 +49,7 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
                 {/* Buttons */}
                 <div className="relative flex h-full">
                     {OPTIONS.map((option) => (
-                        <button
+                        <Button variant="ghost"
                             key={option.value}
                             onClick={() => onChange(option.value)}
                             className={cn(
@@ -57,7 +58,7 @@ export function SensitivitySlider({ value, onChange }: SensitivitySliderProps) {
                             )}
                         >
                             {option.label}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>

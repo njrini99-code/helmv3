@@ -169,7 +169,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
       )}
 
       {/* Card header */}
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={handleExpand}
         className="w-full text-left pl-5 pr-4 py-4 flex items-start gap-3"
@@ -271,7 +271,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
         >
           <IconChevronDown size={14} className="text-warm-500" />
         </motion.div>
-      </button>
+      </Button>
 
       {/* Expanded detail */}
       <AnimatePresence>
@@ -303,7 +303,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                       <p className="text-label font-medium text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
                       <div className="space-y-1.5">
                         {detail.documents.map((d) => (
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             key={d.document_id}
                             onClick={() => {
@@ -323,7 +323,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
                               </p>
                             </div>
                             <IconDownload size={14} className="text-warm-300 group-hover/doc:text-primary-600 transition-colors flex-shrink-0" />
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>

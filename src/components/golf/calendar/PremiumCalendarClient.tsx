@@ -36,6 +36,7 @@ import { useCalendarKeyboard } from '@/hooks/golf/use-calendar-keyboard';
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { calendarSpring } from '@/lib/motion';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { Button } from '@/components/ui/button';
 
 export interface TeamMember {
   id: string;
@@ -760,7 +761,7 @@ export function PremiumCalendarClient({
             {/* Mobile Player Filter Header */}
             {isMobile && (
               <div className="px-4 py-3 border-b border-white/20 flex items-center justify-between">
-                <button
+                <Button variant="ghost"
                   onClick={() => setShowPlayerFilter(!showPlayerFilter)}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cream-100/60 text-warm-700 text-sm font-medium min-h-[44px]"
                 >
@@ -769,7 +770,7 @@ export function PremiumCalendarClient({
                       ? `${selectedPlayerIds.length} player${selectedPlayerIds.length > 1 ? 's' : ''}`
                       : 'All Players'}
                   </span>
-                </button>
+                </Button>
                 <NotificationCenter />
               </div>
             )}
@@ -777,7 +778,7 @@ export function PremiumCalendarClient({
             {/* Mobile Player Filter Chips */}
             {isMobile && showPlayerFilter && (
               <div className="pills-scroll px-4 py-3 border-b border-white/20">
-                  <button
+                  <Button variant="primary"
                     onClick={() => {
                       setSelectedPlayerIds([]);
                       setShowPlayerFilter(false);
@@ -789,13 +790,13 @@ export function PremiumCalendarClient({
                     }`}
                   >
                     <span className="text-sm font-medium">All</span>
-                  </button>
+                  </Button>
                   {teamMembers.map((member) => {
                     const isSelected = selectedPlayerIds.includes(member.id);
                     const colorIndex = selectedPlayerIds.indexOf(member.id);
                     const color = colorIndex >= 0 ? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length] : null;
                     return (
-                      <button
+                      <Button variant="ghost"
                         key={member.id}
                         onClick={() => {
                           if (isSelected) {
@@ -826,7 +827,7 @@ export function PremiumCalendarClient({
                         <span className="text-sm font-medium">
                           {member.first_name} {member.last_name[0]}
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
               </div>
