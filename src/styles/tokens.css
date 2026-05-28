@@ -1,144 +1,327 @@
 /**
- * Design Tokens - Batch 1
- * CSS custom properties for Helm Sports Labs
- * These can be used outside of Tailwind utility classes
+ * Design Tokens — CANONICAL SOURCE OF TRUTH
+ * =========================================
+ * This file is the single canonical source for every visual design token
+ * in GolfHelm. globals.css, tailwind.config.ts, and every component
+ * surface read from these CSS custom properties.
+ *
+ * Wave 0 unification (2026-05-28): consolidated previously-conflicting
+ * declarations in src/app/globals.css (radius scale, shadow tiers, type
+ * scale) into this file. See docs/operations/2026-05-28-ultra-audit-
+ * MASTER-synthesis.md §5 ("Canonical token proposal") for the spec
+ * driving these values, and CLAUDE.md "Design System" for the consumer-
+ * facing summary.
+ *
+ * NEVER redeclare any --color-*, --radius-*, --shadow-*, --text-*,
+ * --z-*, --font-*, --duration-*, --ease-* variable below the :root
+ * block in this file. The regression test at
+ * scripts/__tests__/token-files-no-conflict.test.mjs enforces this.
  */
 
 :root {
-  /* ===== COLORS ===== */
+  /* ============================================================
+   * COLORS
+   * ============================================================ */
 
-  /* Primary Brand */
-  --color-primary: #16A34A;
-  --color-primary-light: #22c55e;
-  --color-primary-dark: #15803D;
+  /* Primary — helm green (single canonical scale)
+     #16A34A is the brand kelly green. Wave 1 sweeps consumer code
+     from `helm-green-*`, `sf-green`, `emerald-*`, `green-*`, `field`,
+     and `fairway` onto this scale. */
+  --color-primary-50:  #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-300: #86efac;
+  --color-primary-400: #4ade80;
+  --color-primary-500: #22c55e;
+  --color-primary-600: #16A34A;  /* CANONICAL brand green */
+  --color-primary-700: #15803d;
+  --color-primary-800: #166534;
+  --color-primary-900: #14532d;
 
-  /* Cream Background — California-modern linen (Apr 2026 pivot).
-     Matches Tailwind cream-100 (#F7F5F2). The previous value (#FFFEFA)
-     read too cool against cream-tinted glass cards (rgba(247,245,242,*))
-     and created a washed-out gap between page body and card surfaces.
-     See docs/operations/2026-05-28-token-unification.md. */
-  --color-cream: #F7F5F2;
+  /* Convenience aliases for existing CSS-var callers */
+  --color-primary: var(--color-primary-600);
+  --color-primary-light: var(--color-primary-500);
+  --color-primary-dark: var(--color-primary-700);
 
-  /* Warm Neutrals */
-  --color-warm-50: #fafaf9;
+  /* Cream / linen — California-modern brief (Apr 2026 pivot).
+     #F7F5F2 is the warm linen page backdrop. Card surfaces tint from
+     here so the page body and card surfaces share a base. */
+  --color-cream:     #F7F5F2;  /* page backdrop alias */
+  --color-cream-50:  #FBFAF7;  /* card-elevated surface, inset highlights */
+  --color-cream-100: #F7F5F2;  /* CANONICAL linen — primary backdrop */
+  --color-cream-200: #F0EBE3;  /* tab backgrounds, pressed states */
+  --color-cream-300: #E5DFD3;  /* warm divider tone, row alternation */
+  --color-cream-400: #CFC8B8;  /* sand inset, subtle borders */
+
+  /* Warm neutrals — Tailwind warm/stone family.
+     NOTE: --color-warm-400 (#A8A29E) is intentionally NOT used for
+     product body text — its 2.59:1 contrast against cream fails WCAG
+     AA (synthesis §9, A7 finding). Use warm-500 for tertiary text. */
+  --color-warm-50:  #fafaf9;
   --color-warm-100: #f5f5f4;
   --color-warm-200: #e7e5e4;
   --color-warm-300: #d6d3d1;
-  --color-warm-400: #a8a29e;
-  --color-warm-500: #78716c;
-  --color-warm-600: #57534e;
+  --color-warm-400: #a8a29e;  /* DO NOT use for product body text */
+  --color-warm-500: #78716c;  /* tertiary text — passes AA */
+  --color-warm-600: #57534e;  /* secondary text + "Team" in data viz */
   --color-warm-700: #44403c;
   --color-warm-800: #292524;
-  --color-warm-900: #1c1917;
+  --color-warm-900: #1c1917;  /* primary text */
 
-  /* Semantic Colors */
-  --color-success: #16A34A;
-  --color-warning: #F59E0B;
-  --color-danger: #DC2626;
-  --color-info: #3B82F6;
+  /* Borders — derived from cream-400 so card edges feel like sand
+     inset, not a stark white hairline. */
+  --color-border-subtle: rgba(207, 200, 184, 0.40);
+  --color-border-strong: rgba(207, 200, 184, 0.80);
 
-  /* ===== TYPOGRAPHY ===== */
+  /* Semantic colors (per synthesis §5 — single source of truth) */
+  --color-destructive: #FF3B30;  /* one red, only — replaces #DC2626 */
+  --color-warning:     #F59E0B;
+  --color-success:     var(--color-primary-600);
+  --color-info:        #0EA5E9;
 
-  /* Font Family — CANONICAL
+  /* Data viz reference colors */
+  --color-pga-tour: #A7A29A;     /* PGA Tour reference line in charts */
+
+  /* Focus ring — primary-600 at 40% alpha */
+  --focus-ring: rgba(22, 163, 74, 0.40);
+
+  /* Legacy aliases — kept for backward compatibility while Wave 1
+     sweeps. New code should reach for the canonical names above. */
+  --color-danger:  var(--color-destructive);
+
+  /* ============================================================
+   * TYPOGRAPHY
+   * ============================================================ */
+
+  /* Font family — CANONICAL
      The single source of truth for the body font is `--font-geist-sans`,
-     which is set by `next/font` in `src/app/layout.tsx` (GeistSans.variable).
-     `--font-sans` is the alias every other surface should reference; it
-     mirrors Tailwind's `fontFamily.sans` so CSS-only and utility-based
-     callers stay in sync. The previous --font-family pointing at 'DM Sans'
-     was broken: Tailwind never defined --font-family, and DM Sans is only
-     loaded as the editorial fallback. See
-     docs/operations/2026-05-28-token-unification.md. */
+     set by next/font in src/app/layout.tsx (GeistSans.variable).
+     `--font-sans` is the alias every CSS surface references; it mirrors
+     Tailwind's `fontFamily.sans` so utility-based and CSS-only callers
+     stay in sync. */
   --font-sans: var(--font-geist-sans), 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces, var(--font-serif)), 'Playfair Display', Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   /* Legacy alias — kept so any remaining `var(--font-family)` callers
-     resolve to Geist instead of falling back to system-ui. New code
-     should use --font-sans (or the Tailwind `font-sans` utility). */
+     resolve to Geist instead of falling back to system-ui. */
   --font-family: var(--font-sans);
 
-  /* Font Sizes */
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-base: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-h3: 24px;
-  --font-size-h2: 28px;
-  --font-size-h1: 30px;
-  --font-size-display: 36px;
+  /* CANONICAL 9-step type scale (synthesis §5 — replaces ~24 ad-hoc
+     sizes). Tailwind utility classes `text-display` / `text-h1` /
+     `text-h2` / `text-h3` / `text-body-lg` / `text-body` /
+     `text-body-sm` / `text-caption` / `text-eyebrow` map onto these
+     via tailwind.config.ts fontSize. */
+  --text-display-size:    40px;
+  --text-display-line:    48px;
+  --text-display-track:   -0.025em;
+  --text-display-weight:  600;
 
-  /* Font Weights */
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
+  --text-h1-size:    32px;
+  --text-h1-line:    40px;
+  --text-h1-track:   -0.022em;
+  --text-h1-weight:  600;
+
+  --text-h2-size:    24px;
+  --text-h2-line:    32px;
+  --text-h2-track:   -0.018em;
+  --text-h2-weight:  600;
+
+  --text-h3-size:    18px;
+  --text-h3-line:    26px;
+  --text-h3-track:   -0.015em;
+  --text-h3-weight:  600;
+
+  --text-body-lg-size:   17px;
+  --text-body-lg-line:   26px;
+  --text-body-lg-weight: 400;
+
+  --text-body-size:   15px;
+  --text-body-line:   24px;
+  --text-body-weight: 400;
+
+  --text-body-sm-size:   13px;
+  --text-body-sm-line:   20px;
+  --text-body-sm-weight: 400;
+
+  --text-caption-size:   12px;
+  --text-caption-line:   18px;
+  --text-caption-weight: 500;
+
+  --text-eyebrow-size:   11px;
+  --text-eyebrow-line:   16px;
+  --text-eyebrow-track:  0.06em;
+  --text-eyebrow-weight: 600;
+
+  /* Legacy --font-size-* aliases — kept while consumer code migrates */
+  --font-size-xs:      12px;
+  --font-size-sm:      14px;
+  --font-size-base:    16px;
+  --font-size-lg:      18px;
+  --font-size-xl:      20px;
+  --font-size-h3:      var(--text-h3-size);
+  --font-size-h2:      var(--text-h2-size);
+  --font-size-h1:      var(--text-h1-size);
+  --font-size-display: var(--text-display-size);
+
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  --font-weight-bold:     700;
 
-  /* ===== SPACING ===== */
+  /* ============================================================
+   * SPACING (4 / 8 / 12 / 16 / 20 / 24 / 32 / 40 / 48 / 64 / 80px)
+   * Canonical scale per synthesis §5.
+   * ============================================================ */
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
   --space-10: 40px;
   --space-12: 48px;
   --space-16: 64px;
+  --space-20: 80px;
 
-  /* ===== BORDER RADIUS ===== */
+  /* ============================================================
+   * BORDER RADIUS — CANONICAL (single source of truth)
+   * --------------------------------------------------------------
+   * Wave 0 reconciled the previously-conflicting scale that lived in
+   * both src/styles/tokens.css and src/app/globals.css. Globals
+   * loaded after tokens, so the old globals values silently
+   * overrode the spec. This block is now the only --radius-*
+   * declaration in the codebase (enforced by
+   * scripts/__tests__/token-files-no-conflict.test.mjs).
+   * ============================================================ */
 
-  --radius-sm: 8px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-  --radius-3xl: 24px;
+  --radius-sm:   6px;   /* tags, chips */
+  --radius-md:   10px;  /* buttons, inputs */
+  --radius-lg:   12px;  /* small cards */
+  --radius-xl:   16px;  /* cards (CANONICAL — not 20px, not 24px) */
+  --radius-2xl:  20px;  /* modals */
+  --radius-3xl:  24px;  /* hero plinths only */
   --radius-full: 9999px;
 
-  /* ===== SHADOWS (CANONICAL — tokens.css is the source of truth) =====
-     Note: globals.css also defines --shadow-sm/md/lg/xl with slightly different
-     values for the cinematic hero section. Those are legacy overrides.
-     The --shadow-elevation-* system in globals.css is separate (tinted shadows). */
+  /* ============================================================
+   * SHADOWS — CANONICAL 4-tier (synthesis §5: collapse 13 → 4)
+   * --------------------------------------------------------------
+   * Warm-shifted natural-light shadows. Light source ≈ 11am sun
+   * through linen at hue ~42°. Two layers (tight umbra + diffused
+   * penumbra) so surfaces never look stamped.
+   * --shadow-focus is the visible focus ring per WCAG 2.1.
+   * ============================================================ */
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-default: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.08);
-  --shadow-card-hover: 0 12px 24px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 2px hsl(42 14% 22% / 0.04), 0 6px 18px hsl(42 16% 22% / 0.05);
+  --shadow-md: 0 1px 3px hsl(42 14% 22% / 0.05), 0 12px 28px hsl(42 16% 22% / 0.06), 0 24px 48px hsl(42 16% 22% / 0.03);
+  --shadow-lg: 0 2px 4px hsl(42 14% 22% / 0.06), 0 16px 36px hsl(42 16% 22% / 0.08), 0 32px 64px hsl(42 16% 22% / 0.04);
+  --shadow-focus: 0 0 0 3px rgba(22, 163, 74, 0.35);
 
-  /* ===== MOTION/ANIMATION ===== */
+  /* Legacy shadow aliases — kept for backward compatibility while
+     consumer code migrates to canonical tiers above. */
+  --shadow-default:    var(--shadow-sm);
+  --shadow-xl:         var(--shadow-lg);
+  --shadow-glass:      var(--shadow-md);
+  --shadow-card-hover: var(--shadow-lg);
 
-  /* Duration */
-  --duration-fast: 150ms;
-  --duration-default: 200ms;
-  --duration-slow: 300ms;
+  /* ============================================================
+   * Z-INDEX TIER (synthesis §5: replaces 17 ad-hoc z-[N] values)
+   * --------------------------------------------------------------
+   * Wave 1+ will sweep arbitrary z-[N] callsites onto these tiers.
+   * Use the `z-base` / `z-raised` / `z-overlay` / `z-modal` /
+   * `z-toast` / `z-toolbar` / `z-tooltip` Tailwind utilities.
+   * ============================================================ */
 
-  /* Easing */
-  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 20;
+  --z-modal:   30;
+  --z-toast:   40;
+  --z-toolbar: 50;
+  --z-tooltip: 60;
 
-  /* ===== GLASS EFFECTS ===== */
+  /* ============================================================
+   * MOTION (4 durations + 2 easings — synthesis §5)
+   * --------------------------------------------------------------
+   * v3 canonical motion tokens. Every framer-motion call should
+   * reach for these; consumer code that wants CSS-only transitions
+   * uses the matching --duration-* and --ease-* CSS vars below.
+   * ============================================================ */
 
-  /* Glass Card (Primary - for content cards) */
-  --glass-card-bg: rgba(255, 255, 255, 0.7);
-  --glass-card-border: rgba(255, 255, 255, 0.3);
-  --glass-card-blur: 16px;
+  --duration-instant: 100ms;
+  --duration-short:   150ms;
+  --duration-medium:  250ms;
+  --duration-long:    400ms;
+  --duration-hero:    600ms;
+  --stagger-step:     70ms;
 
-  /* Glass Card Strong (for auth pages, modals) */
-  --glass-strong-bg: rgba(255, 255, 255, 0.85);
-  --glass-strong-border: rgba(255, 255, 255, 0.4);
-  --glass-strong-blur: 20px;
-  --glass-strong-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  /* Canonical easings */
+  --ease-tap:       cubic-bezier(0.2, 0, 0, 1);
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Legacy aliases retained so existing callers (DropdownMenu, Tabs,
+     Drawer, hover lifts) keep compiling while Wave 1 sweeps. */
+  --duration-fast:    var(--duration-short);
+  --duration-default: var(--duration-medium);
+  --duration-base:    220ms;
+  --duration-normal:  220ms;
+  --duration-slow:    var(--duration-long);
+  --duration-slower:  500ms;
+  --ease-default:     cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce:      cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --ease-out:         cubic-bezier(0.33, 1, 0.68, 1);
+  --ease-in-out:      cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring:      cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
-  /* Glass Navigation (for sidebar, headers) */
-  --glass-nav-bg: rgba(28, 25, 23, 0.97);
+  /* ============================================================
+   * GLASS / SURFACE TINTS (California-modern matte system)
+   * --------------------------------------------------------------
+   * Tints derive from cream-100 so every surface picks up the same
+   * linen base. Borders use cream-400 (rgba(207,200,184,*)) so the
+   * edge feels like sand inset, not a hairline rule.
+   * ============================================================ */
+
+  /* Glass Subtle — large surfaces, filter panels */
+  --glass-subtle-bg:     rgba(247, 245, 242, 0.62);
+  --glass-subtle-border: rgba(207, 200, 184, 0.40);
+  --glass-subtle-blur:   12px;
+
+  /* Glass Standard — cards, panels, metrics (most common) */
+  --glass-standard-bg:     rgba(247, 245, 242, 0.78);
+  --glass-standard-border: rgba(207, 200, 184, 0.45);
+  --glass-standard-blur:   14px;
+
+  /* Glass Prominent — navigation, modals, overlays */
+  --glass-prominent-bg:     rgba(251, 250, 247, 0.92);
+  --glass-prominent-border: rgba(207, 200, 184, 0.55);
+  --glass-prominent-blur:   18px;
+
+  /* Glass Card (legacy alias) */
+  --glass-card-bg:     var(--glass-standard-bg);
+  --glass-card-border: var(--glass-standard-border);
+  --glass-card-blur:   16px;
+
+  /* Glass Strong (auth pages, modals) */
+  --glass-strong-bg:     rgba(255, 255, 255, 0.85);
+  --glass-strong-border: rgba(255, 255, 255, 0.40);
+  --glass-strong-blur:   20px;
+  --glass-strong-shadow: var(--shadow-md);
+
+  /* Glass Navigation (dark surfaces — sidebar, mobile header) */
+  --glass-nav-bg:   rgba(28, 25, 23, 0.97);
   --glass-nav-blur: 12px;
 
-  /* Glass Input (for search, select) */
-  --glass-input-bg: rgba(255, 255, 255, 0.6);
-  --glass-input-bg-focus: rgba(255, 255, 255, 0.8);
-  --glass-input-border: rgba(255, 255, 255, 0.3);
-  --glass-input-blur: 8px;
-  --glass-input-shadow-focus: 0 0 0 3px rgba(22, 163, 74, 0.1);
+  /* Glass Input (search, select) */
+  --glass-input-bg:           rgba(255, 255, 255, 0.60);
+  --glass-input-bg-focus:     rgba(255, 255, 255, 0.80);
+  --glass-input-border:       rgba(255, 255, 255, 0.30);
+  --glass-input-blur:         8px;
+  --glass-input-shadow-focus: 0 0 0 3px rgba(22, 163, 74, 0.10);
+
+  /* Warm-shifted natural-light shadows for glass surfaces (matches the
+     canonical --shadow-{sm,md,lg} recipe so glass surfaces share the
+     same daylight tint as solid surfaces). */
+  --glass-shadow-sm: var(--shadow-sm);
+  --glass-shadow-md: var(--shadow-md);
+  --glass-shadow-lg: var(--shadow-lg);
 }

@@ -7,33 +7,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // HELM BRAND COLORS (OKLCH for modern color gamut)
-        'helm-green': {
-          DEFAULT: 'oklch(0.65 0.19 150)',
-          50: 'oklch(0.95 0.05 150)',
-          100: 'oklch(0.90 0.08 150)',
-          200: 'oklch(0.82 0.12 150)',
-          300: 'oklch(0.74 0.15 150)',
-          400: 'oklch(0.70 0.17 150)',
-          500: 'oklch(0.65 0.19 150)',
-          600: 'oklch(0.58 0.19 150)',
-          700: 'oklch(0.50 0.18 150)',
-          800: 'oklch(0.42 0.16 150)',
-          900: 'oklch(0.35 0.13 150)',
-        },
-        'helm-amber': {
-          DEFAULT: 'oklch(0.70 0.18 45)',
-          50: 'oklch(0.95 0.05 45)',
-          100: 'oklch(0.90 0.08 45)',
-          200: 'oklch(0.85 0.12 45)',
-          300: 'oklch(0.78 0.15 45)',
-          400: 'oklch(0.74 0.17 45)',
-          500: 'oklch(0.70 0.18 45)',
-          600: 'oklch(0.62 0.18 45)',
-          700: 'oklch(0.54 0.17 45)',
-          800: 'oklch(0.46 0.15 45)',
-          900: 'oklch(0.38 0.12 45)',
-        },
+        // W0 token unification (2026-05-28): `helm-green-*` and
+        // `helm-amber-*` OKLCH scales were deleted. The single canonical
+        // brand green lives under `primary-*` below (sourced from
+        // src/styles/tokens.css `--color-primary-*`). Wave 1 sweeps
+        // consumer code from `helm-green-*` onto `primary-*`.
         // PRIMARY BRAND COLORS
         primary: {
           50: '#f0fdf4',
@@ -78,41 +56,36 @@ const config: Config = {
           400: '#CFC8B8',     // Sand inset, subtle borders
         },
 
-        // SAGE / OLIVE — the muted accent that replaces saturated brand
-        // green where the brief wants "muted sage or deep olive." Brand
-        // primary stays the kelly green for hard CTAs; sage is for
-        // hover-secondary, accent rails, and quiet status pills.
-        sage: {
-          50: '#F4F6F1',
-          100: '#E7ECDF',
-          200: '#D0D9C1',
-          300: '#B1BFA0',
-          400: '#94A586',
-          500: '#7D8F6E',
-          600: '#6F7E5B',     // Deep olive (the brushed-metal-adjacent accent)
-          700: '#5A6849',
-          800: '#48543C',
-          900: '#3A4530',
-        },
+        // W0 token unification (2026-05-28): `sage-*` scale deleted.
+        // The brief's "muted accent" need is served by the cream-300/400
+        // tier + a hint of primary-700; sage-as-its-own-scale created
+        // ambiguity with primary. Wave 1 sweeps consumer code.
 
-        // SEMANTIC COLORS
-        success: '#16A34A',  // Same as primary (brand)
-        warning: '#FF9500',  // SF Orange (iOS system)
-        danger: '#FF3B30',   // SF Red (iOS system)
-        info: '#007AFF',     // SF Blue (iOS system)
+        // SEMANTIC COLORS — canonical (synthesis §5)
+        // Sourced from src/styles/tokens.css.
+        success: '#16A34A',  // Same as primary-600 (brand)
+        warning: '#F59E0B',  // amber — replaces SF Orange #FF9500
+        danger: '#FF3B30',   // SF Red — same as destructive
+        destructive: '#FF3B30',
+        info: '#0EA5E9',     // sky-500 — replaces SF Blue #007AFF
+
+        // Data viz reference colors (synthesis §5)
+        // pgaTour utility ("text-pgaTour", "bg-pgaTour") is the canonical
+        // way to color the PGA Tour reference line in player charts.
+        // Mirrors --color-pga-tour in tokens.css.
+        pgaTour: '#A7A29A',
 
         // ═══════════════════════════════════════════════════════════════
-        // iOS SYSTEM COLORS — use for semantic UI (alerts/errors/toggles)
-        // Brand primary stays `primary-600` (#16A34A) for primary actions
+        // iOS SYSTEM COLORS — narrowed in W0.
+        // Deleted: sf-red, sf-orange, sf-green, sf-blue (replaced by
+        // destructive / warning / primary / info above). The remaining
+        // sf-* aliases are kept for surfaces that need iOS-native tints
+        // (e.g. mobile system status icons); Wave 1 may sweep further.
         // ═══════════════════════════════════════════════════════════════
-        'sf-red': '#FF3B30',
-        'sf-orange': '#FF9500',
         'sf-yellow': '#FFCC00',
-        'sf-green': '#34C759',
         'sf-mint': '#00C7BE',
         'sf-teal': '#30B0C7',
         'sf-cyan': '#32ADE6',
-        'sf-blue': '#007AFF',
         'sf-indigo': '#5856D6',
         'sf-purple': '#AF52DE',
         'sf-pink': '#FF2D55',
@@ -165,8 +138,9 @@ const config: Config = {
           600: 'rgb(var(--golden-600) / <alpha-value>)',
           700: 'rgb(var(--golden-700) / <alpha-value>)',
         },
-        'field': 'rgb(var(--field) / <alpha-value>)',
-        'fairway': 'rgb(var(--fairway) / <alpha-value>)',
+        // W0 token unification (2026-05-28): `field` and `fairway`
+        // (deeper greens used in landing-page hero) deleted. Wave 1
+        // sweeps consumer code onto primary-700 / primary-800.
         border: {
           light: '#ECEAE6',
           DEFAULT: '#E0DED9',
@@ -180,11 +154,33 @@ const config: Config = {
         // scale. Fraunces stays available as the editorial serif
         // companion for eyebrows and quotes (used sparingly).
         sans: ['var(--font-geist-sans)', 'DM Sans', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-        serif: ['var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
+        // Wave 6 will use Fraunces for editorial accents (one italicized
+        // hero word, eyebrows, pull quotes). `--font-fraunces` is loaded
+        // by next/font in src/app/layout.tsx; `--font-serif` is the
+        // legacy alias kept for backward-compat.
+        serif: ['var(--font-fraunces)', 'var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
         display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
       },
       fontSize: {
+        // ═══════════════════════════════════════════════════════════════
+        // CANONICAL 9-STEP TYPE SCALE (W0 — synthesis §5)
+        // -------------------------------------------------------------
+        // Replaces ~24 ad-hoc fontSize tokens + 1,540 `text-[Npx]`
+        // arbitrary overrides. Wave 1 sweeps consumer code to these
+        // utilities. Mirrors --text-{display,h1,h2,h3,body-lg,body,
+        // body-sm,caption,eyebrow}-* in src/styles/tokens.css.
+        // ═══════════════════════════════════════════════════════════════
+        'display':   ['40px', { lineHeight: '48px', letterSpacing: '-0.025em', fontWeight: '600' }],
+        'h1':        ['32px', { lineHeight: '40px', letterSpacing: '-0.022em', fontWeight: '600' }],
+        'h2':        ['24px', { lineHeight: '32px', letterSpacing: '-0.018em', fontWeight: '600' }],
+        'h3':        ['18px', { lineHeight: '26px', letterSpacing: '-0.015em', fontWeight: '600' }],
+        'body-lg':   ['17px', { lineHeight: '26px', fontWeight: '400' }],
+        'body':      ['15px', { lineHeight: '24px', fontWeight: '400' }],
+        'body-sm':   ['13px', { lineHeight: '20px', fontWeight: '400' }],
+        'caption':   ['12px', { lineHeight: '18px', fontWeight: '500' }],
+        'eyebrow':   ['11px', { lineHeight: '16px', letterSpacing: '0.06em', fontWeight: '600' }],
+
         // ═══════════════════════════════════════════════════════════════
         // iOS TYPE SCALE — Apple HIG (San Francisco)
         // Use these on mobile/native surfaces for authentic iOS feel
@@ -194,7 +190,9 @@ const config: Config = {
         'title-2':     ['22px', { lineHeight: '1.2',  letterSpacing: '-0.018em', fontWeight: '700' }],
         'title-3':     ['20px', { lineHeight: '1.2',  letterSpacing: '-0.015em', fontWeight: '600' }],
         'headline':    ['17px', { lineHeight: '1.25', letterSpacing: '-0.01em',  fontWeight: '600' }],
-        'body':        ['17px', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '400' }],
+        // iOS `body` (17px) merged with canonical `body-lg` above — text-body
+        // now resolves to the canonical 15px scale. Use `text-body-lg` for the
+        // old iOS body. (W0 token unification)
         'callout':     ['16px', { lineHeight: '1.3',  letterSpacing: '-0.01em',  fontWeight: '400' }],
         'subhead':     ['15px', { lineHeight: '1.35', letterSpacing: '-0.006em', fontWeight: '400' }],
         'footnote':    ['13px', { lineHeight: '1.4',  letterSpacing: '0em',      fontWeight: '400' }],
@@ -208,10 +206,9 @@ const config: Config = {
         'base': '16px',      // Body text
         'lg': '18px',
         'xl': '20px',
-        'h3': '24px',
-        'h2': '28px',
-        'h1': '30px',        // Dashboard H1 (text-3xl)
-        'display': '36px',
+        // W0: legacy `h1/h2/h3/display` simple sizes (24/28/30/36) deleted —
+        // the canonical scale at the top of this fontSize block now owns
+        // those utility names with synthesis §5 values (32/24/18/40).
         // Legacy sizes for backward compatibility
         '2xs': '11px',
         '2xl': '24px',
@@ -252,13 +249,28 @@ const config: Config = {
         '22': '5.5rem',   // 88px
       },
       borderRadius: {
-        'sm': '8px',
-        'md': '10px',      // Buttons, inputs
-        'lg': '14px',
-        'xl': '16px',
-        '2xl': '20px',     // Cards (rounded-xl = 20px)
-        '3xl': '24px',
+        // CANONICAL radius scale (W0 — synthesis §5). Mirrors --radius-*
+        // in src/styles/tokens.css. Wave 0 reconciled the prior conflict
+        // between tokens.css (10/12/16/20) and globals.css (12/16/24/32).
+        // `rounded-lg` shifted from 14 → 12 to match canonical.
+        'sm':   '6px',      // tags, chips
+        'md':   '10px',     // buttons, inputs
+        'lg':   '12px',     // small cards (CANONICAL — was 14px)
+        'xl':   '16px',     // cards (CANONICAL — not 20px, not 24px)
+        '2xl':  '20px',     // modals
+        '3xl':  '24px',     // hero plinths only
         'full': '9999px',
+      },
+      zIndex: {
+        // CANONICAL z-index tier (W0 — synthesis §5: replaces 17 ad-hoc
+        // z-[N] values). Mirrors --z-* in src/styles/tokens.css.
+        'base':    '0',
+        'raised':  '10',
+        'overlay': '20',
+        'modal':   '30',
+        'toast':   '40',
+        'toolbar': '50',
+        'tooltip': '60',
       },
       boxShadow: {
         // ═══════════════════════════════════════════════════════════════
