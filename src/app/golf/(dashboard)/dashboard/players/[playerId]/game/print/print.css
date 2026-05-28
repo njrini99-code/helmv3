@@ -14,7 +14,7 @@
 .print-shell {
   background: #ffffff;
   color: #1c1917;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 @page {

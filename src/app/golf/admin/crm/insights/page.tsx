@@ -9,7 +9,7 @@ export const metadata = {
 // The parent CRM layout (../layout.tsx) already enforces admin auth.
 export default function CrmInsightsPage() {
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="px-4 sm:px-6 lg:px-8 py-6">
         <InsightsDashboard />
       </div>

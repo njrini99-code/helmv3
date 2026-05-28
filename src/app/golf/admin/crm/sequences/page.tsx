@@ -18,7 +18,7 @@ export default function CrmSequencesPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="min-h-screen bg-[#FFFEF8] p-6">
+    <div className="min-h-dvh bg-[#FFFEF8] p-6">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-warm-500">

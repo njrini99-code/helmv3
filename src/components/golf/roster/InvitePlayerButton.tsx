@@ -113,7 +113,7 @@ export function InvitePlayerButton({ teamName, existingCode }: InvitePlayerButto
           maxWidth: '32rem',
           width: '100%',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          maxHeight: 'calc(100vh - 32px)',
+          maxHeight: 'calc(100dvh - 32px)',
           overflow: 'auto',
         }}
         onClick={(e) => e.stopPropagation()}

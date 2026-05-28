@@ -13,7 +13,7 @@ export const metadata = {
 
 export default function CRMInboxPage() {
   return (
-    <div className="min-h-screen bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-[#FFFEFA]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-8">
         <InboxView />
       </div>
