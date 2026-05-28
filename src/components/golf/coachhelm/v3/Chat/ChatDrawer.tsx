@@ -124,7 +124,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
             transition={badgeTransition}
             whileHover={prefersReducedMotion ? undefined : liftHover}
             whileTap={prefersReducedMotion ? undefined : tapPress}
-            className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 flex items-center justify-center"
+            className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 flex items-center justify-center"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
               <path

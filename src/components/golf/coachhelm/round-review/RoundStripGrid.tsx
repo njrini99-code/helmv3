@@ -43,7 +43,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
       <div className="text-eyebrow uppercase tracking-[0.18em] text-warm-500 mb-2 px-1">
         {label}
       </div>
-      <div className="flex gap-1.5 md:gap-2">
+      <div className="flex gap-1.5 md:gap-2 overflow-x-auto snap-x snap-mandatory md:snap-none -mx-1 px-1 md:mx-0 md:px-0">
         {nine.map((h) => {
           const par = h.par === 3 || h.par === 4 || h.par === 5 ? h.par : undefined;
           const label = scoreToParLabel(h.score, h.par ?? undefined);
@@ -71,7 +71,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
           };
 
           return (
-            <div key={h.hole_number} className="flex flex-col items-center gap-1">
+            <div key={h.hole_number} className="flex flex-col items-center gap-1 shrink-0 snap-start">
               <span className="text-eyebrow tabular-nums text-warm-400">
                 {h.hole_number}
               </span>
@@ -91,7 +91,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
           );
         })}
         {/* Nine total */}
-        <div className="ml-1 flex flex-col items-center justify-end gap-1 self-stretch">
+        <div className="ml-1 flex flex-col items-center justify-end gap-1 self-stretch shrink-0 snap-start">
           <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-400">
             Tot
           </span>
@@ -107,7 +107,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
   );
 
   return (
-    <div className="surface-matte rounded-2xl p-4 md:p-6 overflow-x-auto">
+    <div className="surface-matte rounded-2xl p-4 md:p-6">
       <div className="flex flex-col gap-5">
         {front.length > 0 && renderNine(front, 'Front nine')}
         {back.length > 0 && renderNine(back, 'Back nine')}

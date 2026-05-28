@@ -1091,7 +1091,7 @@ export default function ShotTrackingComprehensive({
                     )}
                     {/* Quick-select buttons for common putting distances */}
                     {isPutting && (
-                      <div className="grid grid-cols-6 gap-2">
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
                         {[5, 10, 15, 20, 30, 40].map((ft) => (
                           <Button variant="primary"
                             key={ft}
@@ -1100,7 +1100,7 @@ export default function ShotTrackingComprehensive({
                               dispatch({ type: 'SET_DISTANCE_AFTER', payload: String(ft) });
                               dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' });
                             }}
-                            className={`py-2 rounded-lg text-eyebrow font-medium transition-colors ${
+                            className={`py-2 min-h-[44px] rounded-lg text-eyebrow font-medium transition-colors ${
                               distanceAfterShot === String(ft) && distanceAfterUnit === 'feet'
                                 ? 'bg-primary-600 text-white shadow-sm'
                                 : 'bg-white text-primary-700 border border-primary-200 hover:bg-primary-50 active:bg-primary-100'
@@ -1231,7 +1231,7 @@ export default function ShotTrackingComprehensive({
 
         {/* Right Sidebar - Overhead Course View */}
         <div className="hidden xl:block w-44 p-4">
-          <div className="relative sticky top-32 surface-matte rounded-3xl overflow-clip p-4 transition-colors duration-300">
+          <div className="relative sticky surface-matte rounded-3xl overflow-clip p-4 transition-colors duration-300" style={{ top: 'calc(var(--scorecard-height, 105px) + 1.5rem)' }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -1782,13 +1782,13 @@ export default function ShotTrackingComprehensive({
                           <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Distance After</p>
                           {/* Quick-select distance presets */}
                           {editingShot.shotType === 'putting' ? (
-                            <div className="grid grid-cols-6 gap-2 mb-3">
+                            <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
                               {[3, 5, 10, 15, 20, 30].map((ft) => (
                                 <Button variant="primary"
                                   key={ft}
                                   type="button"
                                   onClick={() => updateEditForm({ distanceToHoleAfter: String(ft), distanceUnitAfter: 'feet' })}
-                                  className={`py-2 rounded-lg text-eyebrow font-medium transition-colors ${
+                                  className={`py-2 min-h-[44px] rounded-lg text-eyebrow font-medium transition-colors ${
                                     editFormData.distanceToHoleAfter === String(ft) && editFormData.distanceUnitAfter === 'feet'
                                       ? 'bg-primary-600 text-white shadow-sm'
                                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-primary-300'

@@ -62,8 +62,10 @@ const SIZES = {
     interactive: true,
   },
   hero: {
-    /** ~280×560 — primary visual on a hole-detail page */
-    className: 'w-[280px] h-[560px] md:w-[320px] md:h-[640px]',
+    /** ~280×560 — primary visual on a hole-detail page. Fluid on narrow
+     *  screens (w-full) but capped at 280px so it never overflows a
+     *  320px viewport, growing back to the desktop size at md. */
+    className: 'w-full max-w-[280px] h-[560px] md:max-w-[320px] md:h-[640px]',
     showShotNumbers: true,
     showScore: true,
     showHeader: true,

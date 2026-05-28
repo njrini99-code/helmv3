@@ -115,7 +115,7 @@ export function GoalCreationModal({
           onClick={onClose}
         >
           <m.div
-            className="surface-lift w-full max-w-md rounded-t-3xl md:rounded-3xl p-6"
+            className="surface-lift w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-t-3xl md:rounded-3xl p-6"
             variants={drawerVariants}
             initial="hidden"
             animate="visible"
