@@ -9,7 +9,7 @@
 -- Source: docs/operations/2026-05-27-baseball-tables-scope.md
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(8);
 
@@ -63,12 +63,16 @@ DECLARE
   v_user_id uuid := '00000000-0000-0000-0000-000000000aaa';
   v_team_id uuid := '00000000-0000-0000-0000-000000000bbb';
 BEGIN
-  INSERT INTO public.users (id, email)
-    VALUES (v_user_id, 'noncoach@helm.test')
+  INSERT INTO auth.users (id, email, role)
+    VALUES (v_user_id, 'noncoach@helm.test', 'authenticated')
     ON CONFLICT DO NOTHING;
 
-  INSERT INTO public.baseball_teams (id, name, team_type, organization_id)
-    VALUES (v_team_id, 'pgtap-team', 'college', NULL)
+  INSERT INTO public.users (id, email, role)
+    VALUES (v_user_id, 'noncoach@helm.test', 'player')
+    ON CONFLICT DO NOTHING;
+
+  INSERT INTO public.baseball_teams (id, name, team_type, join_code, organization_id)
+    VALUES (v_team_id, 'pgtap-team', 'college', 'PGTAP', NULL)
     ON CONFLICT DO NOTHING;
 END $$;
 
@@ -105,6 +109,7 @@ RESET request.jwt.claims;
 -- ============================================================================
 
 SET LOCAL role TO service_role;
+SET LOCAL request.jwt.claims TO '{"role": "service_role"}';
 
 SELECT lives_ok(
   $$ SELECT public.recalculate_team_baseball_season_stats(
@@ -123,6 +128,7 @@ SELECT is(
 );
 
 RESET role;
+RESET request.jwt.claims;
 
 SELECT * FROM finish();
 ROLLBACK;

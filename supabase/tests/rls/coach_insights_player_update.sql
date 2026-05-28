@@ -9,7 +9,7 @@
 -- `acknowledged_at` and `dismissed_at` (the legitimate user-facing columns).
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(4);
 

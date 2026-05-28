@@ -2,14 +2,15 @@
 """
 Quick test run of multi-platform cycle
 """
-import sys
 import asyncio
+import sys
 from pathlib import Path
 
 # Add the continuous-improvement directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from multi_platform_cycle import MultiPlatformOrchestrator
+
 
 async def test_run():
     project_path = "/Users/ricknini/Downloads/helmv3"

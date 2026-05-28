@@ -995,9 +995,9 @@ This should be THE file someone opens to know what to work on.
 
 # Export all prompts
 __all__ = [
-    "DEEP_UNDERSTANDING_PROMPT",
-    "DEEP_ESSAY_PROMPT", 
+    "DEEP_CROSS_REFERENCE_PROMPT",
+    "DEEP_ESSAY_PROMPT",
     "DEEP_FEATURE_SPEC_PROMPT",
     "DEEP_RLS_PROMPT",
-    "DEEP_CROSS_REFERENCE_PROMPT"
+    "DEEP_UNDERSTANDING_PROMPT"
 ]

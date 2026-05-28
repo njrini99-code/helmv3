@@ -199,6 +199,11 @@ BEGIN
 END;
 $function$;
 
+REVOKE ALL ON FUNCTION public.recalculate_baseball_season_stats(uuid, uuid, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.recalculate_baseball_season_stats(uuid, uuid, integer) FROM anon;
+GRANT EXECUTE ON FUNCTION public.recalculate_baseball_season_stats(uuid, uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.recalculate_baseball_season_stats(uuid, uuid, integer) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.recalculate_team_baseball_season_stats(
   p_team_id uuid,
   p_season_year integer DEFAULT (EXTRACT(year FROM now()))::integer
@@ -227,3 +232,8 @@ BEGIN
   END LOOP;
 END;
 $function$;
+
+REVOKE ALL ON FUNCTION public.recalculate_team_baseball_season_stats(uuid, integer) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.recalculate_team_baseball_season_stats(uuid, integer) FROM anon;
+GRANT EXECUTE ON FUNCTION public.recalculate_team_baseball_season_stats(uuid, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.recalculate_team_baseball_season_stats(uuid, integer) TO service_role;

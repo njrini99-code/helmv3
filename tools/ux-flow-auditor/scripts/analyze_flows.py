@@ -4,16 +4,15 @@ UX Flow Auditor - Static analysis tool for Next.js App Router applications.
 Analyzes routes and interactive elements to build an interaction graph.
 """
 
+import argparse
+import json
 import os
 import re
-import json
 import sys
-import argparse
-from pathlib import Path
-from datetime import datetime
-from dataclasses import dataclass, field, asdict
-from typing import Optional
 from collections import defaultdict
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from pathlib import Path
 
 
 @dataclass
@@ -440,7 +439,6 @@ class UXFlowAnalyzer:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-                lines = content.split('\n')
         except Exception as e:
             self.issues.append(Issue(
                 severity='error',
@@ -1510,7 +1508,7 @@ class UXFlowAnalyzer:
         try:
             with open(route.file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
-        except:
+        except Exception:
             content = ""
 
         # 1. Infer purpose
@@ -1627,7 +1625,7 @@ class UXFlowAnalyzer:
             
             found, suggestion = self._check_route_exists(dest, known_routes)
             
-            if not found and not '${' in edge['to'] and not '[param]' in edge['to']:
+            if not found and '${' not in edge['to'] and '[param]' not in edge['to']:
                 issue = Issue(
                     severity='warning',
                     type='broken-link',
@@ -2067,8 +2065,8 @@ class TodoGenerator:
         stats = data['stats']
         lines.append('## 📊 Summary')
         lines.append('')
-        lines.append(f'| Metric | Count |')
-        lines.append(f'|--------|-------|')
+        lines.append('| Metric | Count |')
+        lines.append('|--------|-------|')
         lines.append(f'| Total Tasks | **{stats["total"]}** |')
         lines.append(f'| Critical/High Priority | **{stats["critical"]}** |')
         lines.append(f'| Findings | {stats["findings_count"]} |')

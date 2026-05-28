@@ -9,12 +9,10 @@ No SDK. No JSON parsing. Just:
 4. Mark as verified or not
 """
 
-import json
-from pathlib import Path
-from typing import List, Dict
-import re
-from datetime import datetime
 import asyncio
+import json
+import re
+from pathlib import Path
 
 from enhanced_cycle_agent import HelmContext, Issue
 
@@ -34,8 +32,8 @@ class DeadSimpleAgent:
         self.helm_context = HelmContext(self.project_path)
         self.current_cycle = self._get_next_cycle_number()
         
-        self.all_issues: List[Issue] = []
-        self.current_issues: List[Issue] = []
+        self.all_issues: list[Issue] = []
+        self.current_issues: list[Issue] = []
         
     def _get_next_cycle_number(self) -> int:
         """Find the next cycle number"""
@@ -65,7 +63,7 @@ class DeadSimpleAgent:
         with open(prev_file) as f:
             return json.load(f)
     
-    def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict:
+    def _parse_md_file_for_fixes(self, cycle_number: int) -> dict:
         """
         Parse MD file and extract:
         1. Issue IDs that are marked fixed
@@ -163,12 +161,12 @@ class DeadSimpleAgent:
 ║                                                                              ║
 ║   ✅ CYCLE {self.current_cycle:03d} COMPLETE                                            ║
 ║                                                                              ║
-║   📁 Issues: {str(self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'):<66}║
+║   📁 Issues: {self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'!s:<66}║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    def verify_by_reading_files(self, prev_cycle: Dict):
+    def verify_by_reading_files(self, prev_cycle: dict):
         """
         SIMPLE VERIFICATION:
         1. Read what Claude Code documented
@@ -176,7 +174,7 @@ class DeadSimpleAgent:
         3. Check if changes are present
         """
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: READING FILES TO VERIFY FIXES
   Reading source files and checking for documented changes
@@ -285,7 +283,7 @@ Total Checked: {len(md_fixes)}
   ⚠️  Uncertain (no files documented): {uncertain}
         """)
     
-    def _extract_keywords(self, change_description: str) -> List[str]:
+    def _extract_keywords(self, change_description: str) -> list[str]:
         """Extract meaningful keywords from change description"""
         # Remove common words
         stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
@@ -304,9 +302,9 @@ Total Checked: {len(md_fixes)}
     
     async def find_new_issues(self):
         """Find new issues - simplified"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

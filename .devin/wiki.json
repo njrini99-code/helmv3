@@ -1,0 +1,90 @@
+{
+  "repo_notes": [
+    {
+      "author": "Helmv3",
+      "content": "Helmv3 is a Next.js 16 App Router TypeScript app for Helm Sports Labs. It contains BaseballHelm and GolfHelm, but wiki generation should prioritize GolfHelm and CoachHelm unless explicitly asked otherwise. The product truth layer lives in memory/registry.yml and memory/features/*.md. Treat those files as the human-verified feature map and use source code to validate implementation details."
+    },
+    {
+      "author": "Helmv3",
+      "content": "The highest-priority feature areas are CoachHelm AI, Coach Intelligence Triage, Player CoachHelm and Development, Qualifiers, Shot Tracking, Golf Round Lifecycle, Stats and Analytics, Calendar and Events, Team Communications, Team Operations, Player Hub, Roster and Team, Auth Onboarding and Join, Settings and Preferences, Admin Platform, and Team Access Control/RLS."
+    },
+    {
+      "author": "Helmv3",
+      "content": "Important code roots: src/app/golf/** for routes and server actions, src/components/golf/** for UI, src/lib/coachhelm/** for AI engines, src/lib/supabase/** for Supabase clients, supabase/migrations/** and supabase/tests/rls/** for schema/RLS, e2e/** and src/test/** for validation, scripts/knowledge/** for the feature-awareness workflow."
+    },
+    {
+      "author": "Helmv3",
+      "content": "Important docs: AGENTS.md, CLAUDE.md, docs/v3-master-plan.md, docs/v3-decisions.md, docs/v3-design-language.md, docs/v3-testing-standards.md, docs/v3-rls-template.md, docs/v3-research-golf-domain.md, docs/OBSERVABILITY.md, docs/SECURITY_AUDIT.md, memory/context/*.md, memory/projects/golfhelm.md, memory/glossary.md, and docs/ai-system/helmv3-ai-codebase-intelligence.md."
+    },
+    {
+      "author": "Helmv3",
+      "content": "Known product risks to preserve in wiki output: no DELETE-then-INSERT in save/submit/sync paths; server actions must auth before DB calls; CoachHelm claims require evidence/citations; Shot Tracking feeds stats, CoachHelm, qualifiers, and round reviews; Player Hub currently has a task completion source-of-truth mismatch; Stats has unpopulated strokes-gained and putting tendency gaps; Team access is through golf_team_coach_staff and RLS."
+    }
+  ],
+  "pages": [
+    {
+      "title": "Helmv3 Architecture Overview",
+      "purpose": "Document the repo architecture, Next.js app structure, Supabase data layer, feature-awareness memory layer, CI/review stack, and how GolfHelm and CoachHelm fit together."
+    },
+    {
+      "title": "Feature Awareness System",
+      "purpose": "Document memory/registry.yml, memory/features/*.md, scripts/knowledge/**, and .github/workflows/feature-awareness.yml as the AI routing and context-pack system.",
+      "parent": "Helmv3 Architecture Overview"
+    },
+    {
+      "title": "GolfHelm Dashboard Routes",
+      "purpose": "Document src/app/golf/(dashboard)/** routes, role-specific pages, shared app shell assumptions, and how routes map to feature docs.",
+      "parent": "Helmv3 Architecture Overview"
+    },
+    {
+      "title": "CoachHelm AI Engine",
+      "purpose": "Document src/lib/coachhelm/**, CoachHelm V2 and V3 generation, evidence/citation contracts, LLM budget/citation rules, and the coach/player surfaces consuming AI output."
+    },
+    {
+      "title": "Coach Intelligence Triage",
+      "purpose": "Document alerts, patterns, insights, intelligence dashboard, CoachHelm analytics, and coaching intelligence settings.",
+      "parent": "CoachHelm AI Engine"
+    },
+    {
+      "title": "Player CoachHelm and Development",
+      "purpose": "Document player CoachHelm, My Development, round review, V3 standing/goal/intent/genome/chat/narrative surfaces, and feedback/revalidation behavior.",
+      "parent": "CoachHelm AI Engine"
+    },
+    {
+      "title": "Shot Tracking and Round Lifecycle",
+      "purpose": "Document round creation, draft/continue/recover, ShotTrackingComprehensive, submitGolfRoundComprehensive, golf_rounds/golf_holes/golf_shots, and downstream stats/CoachHelm/qualifier triggers."
+    },
+    {
+      "title": "Stats and Analytics",
+      "purpose": "Document player/team stats pages, stats actions, cache refresh behavior, golf_player_stats_cache, strokes-gained gaps, putting tendency gaps, and CoachHelm stat dependencies."
+    },
+    {
+      "title": "Qualifiers",
+      "purpose": "Document qualifier creation, entries, linked round submission, leaderboard aggregation, My Qualifiers, and CoachHelm V3 qualifying board surfaces."
+    },
+    {
+      "title": "Calendar and Events",
+      "purpose": "Document calendar routes/components/actions, RSVP, attendance, recurring events, availability polling, iCal feeds, conflict detection, and event dependencies."
+    },
+    {
+      "title": "Team Communications and Operations",
+      "purpose": "Document messaging, announcements, tasks, documents, travel, player hub aggregation, attachments/storage, acknowledgement tracking, and known operational gaps."
+    },
+    {
+      "title": "Roster Team Auth and Access Control",
+      "purpose": "Document roster/team views, auth/onboarding/join flows, team membership, golf_team_coach_staff, Supabase clients, RLS tests, and permission invariants."
+    },
+    {
+      "title": "Settings and Admin Platform",
+      "purpose": "Document role-aware settings/preferences, notification settings, CoachHelm settings, admin dashboard, CRM/admin operations, observability, and service-role boundaries."
+    },
+    {
+      "title": "Supabase Schema RLS and Migrations",
+      "purpose": "Document supabase/migrations/**, supabase/tests/rls/**, migration safety rules, RLS policy patterns, table naming, generated database types, and schema replay risks."
+    },
+    {
+      "title": "Testing CI and Review Gates",
+      "purpose": "Document GitHub Actions, CircleCI, Playwright, Vitest, Supabase tests, CodeRabbit, Greptile, feature-awareness reports, and suggested checks by feature."
+    }
+  ]
+}

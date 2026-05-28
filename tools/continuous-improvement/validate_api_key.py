@@ -2,9 +2,9 @@
 """
 Validate API key by making a simple API call
 """
+import asyncio
 import os
 import sys
-import asyncio
 
 # API key should be set as environment variable
 API_KEY = os.environ.get('ANTHROPIC_API_KEY')
@@ -32,7 +32,7 @@ try:
         messages=[{"role": "user", "content": "Hi"}]
     )
     
-    print(f"✅ API key is VALID!")
+    print("✅ API key is VALID!")
     print(f"✅ Response: {response.content[0].text}")
     print()
     
@@ -48,7 +48,7 @@ except Exception as e:
 # Test with SDK
 print("Testing with claude-agent-sdk...")
 try:
-    from claude_agent_sdk import query, ClaudeAgentOptions
+    from claude_agent_sdk import ClaudeAgentOptions, query
     
     async def test_sdk():
         options = ClaudeAgentOptions(

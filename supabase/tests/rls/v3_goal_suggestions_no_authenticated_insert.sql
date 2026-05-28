@@ -10,7 +10,7 @@
 -- a FOR SELECT and a FOR UPDATE policy only.
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(5);
 

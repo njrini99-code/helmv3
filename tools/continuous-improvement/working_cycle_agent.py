@@ -8,11 +8,8 @@ This prevents context overflow and actually produces results.
 
 import asyncio
 import json
-import sys
-from datetime import datetime
-from pathlib import Path
-from typing import Optional, List, Dict
 import re
+from pathlib import Path
 
 # Import base classes
 from enhanced_cycle_agent import HelmContext, Issue
@@ -33,8 +30,8 @@ class WorkingCycleAgent:
         self.helm_context = HelmContext(self.project_path)
         self.current_cycle = self._get_next_cycle_number()
         
-        self.all_issues: List[Issue] = []
-        self.current_issues: List[Issue] = []
+        self.all_issues: list[Issue] = []
+        self.current_issues: list[Issue] = []
         
     def _get_next_cycle_number(self) -> int:
         """Find the next cycle number"""
@@ -50,7 +47,7 @@ class WorkingCycleAgent:
         
         return max(numbers) + 1 if numbers else 1
     
-    def _load_previous_cycle(self) -> Optional[Dict]:
+    def _load_previous_cycle(self) -> dict | None:
         """Load the previous cycle's issues"""
         if self.current_cycle == 1:
             return None
@@ -64,7 +61,7 @@ class WorkingCycleAgent:
         with open(prev_file) as f:
             return json.load(f)
     
-    def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict[str, str]:
+    def _parse_md_file_for_fixes(self, cycle_number: int) -> dict[str, str]:
         """Parse MD file to see what Claude Code fixed"""
         md_file = self.cycle_dir / f"issues-cycle-{cycle_number:03d}.md"
         
@@ -131,18 +128,17 @@ class WorkingCycleAgent:
 ║                                                                              ║
 ║   ✅ CYCLE {self.current_cycle:03d} COMPLETE                                            ║
 ║                                                                              ║
-║   📁 Issues: {str(self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'):<66}║
+║   📁 Issues: {self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'!s:<66}║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    async def verify_previous_fixes_batched(self, prev_cycle: Dict):
+    async def verify_previous_fixes_batched(self, prev_cycle: dict):
         """
         🔧 WORKING VERSION: Verify fixes in small batches
         
         This is the KEY fix - we verify 5 issues at a time instead of 85 at once.
         """
-        from claude_agent_sdk import query, ClaudeAgentOptions
         
         print(f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -176,7 +172,7 @@ class WorkingCycleAgent:
             print("⚠️  No matching issues found")
             return
         
-        print(f"Now verifying in batches of 5...\n")
+        print("Now verifying in batches of 5...\n")
         
         # Verify in batches
         BATCH_SIZE = 5
@@ -209,12 +205,12 @@ Total Verified: {verified_count}/{len(fixed_issues)}
   ⚠️  Regressions found: {regression_count}
         """)
     
-    async def _verify_batch(self, batch: List[Issue]) -> tuple:
+    async def _verify_batch(self, batch: list[Issue]) -> tuple:
         """
         Verify a small batch of issues (5 at a time)
         Returns: (verified_count, not_fixed_count, regression_count)
         """
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         options = ClaudeAgentOptions(
             cwd=str(self.project_path),
@@ -266,7 +262,7 @@ Be concise. Just verify if the code change exists.
         # Process results
         return self._process_batch_results(full_output, batch)
     
-    def _process_batch_results(self, output: str, batch: List[Issue]) -> tuple:
+    def _process_batch_results(self, output: str, batch: list[Issue]) -> tuple:
         """Process verification results from one batch"""
         json_pattern = r'```json\s*(.*?)\s*```'
         matches = re.findall(json_pattern, output, re.DOTALL)
@@ -306,9 +302,9 @@ Be concise. Just verify if the code change exists.
     
     async def find_new_issues(self):
         """Find new issues - simplified"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
   Using context-aware analysis...

@@ -32,12 +32,12 @@ rules:
         - src/
         - app/
       exclude:
-        - "src/lib/supabase/admin*"
-        - "src/lib/supabase/service*"
-        - "src/app/api/**/admin/**"
-        - "src/app/api/admin/**"
-        - "scripts/**"
-        - "supabase/functions/**"
+        - "/src/lib/supabase/admin*"
+        - "/src/lib/supabase/service*"
+        - "/src/app/api/**/admin/**"
+        - "/src/app/api/admin/**"
+        - "/scripts/**"
+        - "/supabase/functions/**"
 
   # ---------------------------------------------------------------------------
   # SECURITY — never log Supabase JWTs or session tokens
@@ -70,19 +70,25 @@ rules:
       before any .from()/rpc() call.
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
+        - "/src/app/**/actions/**/*.ts"
     patterns:
       - pattern-either:
           - pattern: |
               export async function $F(...) {
                 ...
-                $X.from($T)...
+                $X.from($T)
                 ...
               }
           - pattern: |
               export async function $F(...) {
                 ...
-                $X.rpc($N, ...)
+                $X.rpc($N)
+                ...
+              }
+          - pattern: |
+              export async function $F(...) {
+                ...
+                $X.rpc($N, $ARGS)
                 ...
               }
       - pattern-not: |
@@ -111,15 +117,15 @@ rules:
       See memory note "GolfHelm — no destructive writes".
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
-        - "src/lib/**/*.ts"
+        - "/src/app/**/actions/**/*.ts"
+        - "/src/lib/**/*.ts"
     pattern-either:
       - pattern: |
-          $X.from($T).delete()...
+          $X.from($T).delete()
           ...
           $X.from($T).insert($D)
       - pattern: |
-          await $X.from($T).delete()...
+          await $X.from($T).delete()
           ...
           await $X.from($T).insert($D)
 
@@ -153,8 +159,8 @@ rules:
       Use `@/lib/supabase/client` in client components.
     paths:
       include:
-        - "src/components/**/*.tsx"
-        - "src/app/**/*.tsx"
+        - "/src/components/**/*.tsx"
+        - "/src/app/**/*.tsx"
     pattern-either:
       - pattern: |
           'use client'
@@ -177,7 +183,7 @@ rules:
       stale data until the next full reload.
     paths:
       include:
-        - "src/app/**/actions/**/*.ts"
+        - "/src/app/**/actions/**/*.ts"
     patterns:
       - pattern-either:
           - pattern: |
@@ -224,8 +230,8 @@ rules:
     languages: [generic]
     paths:
       include:
-        - "supabase/migrations/**/*.sql"
-        - "supabase/functions/**/*.sql"
+        - "/supabase/migrations/**/*.sql"
+        - "/supabase/functions/**/*.sql"
     severity: ERROR
     message: >
       SECURITY DEFINER functions must pin `SET search_path = ''` (or
@@ -243,7 +249,7 @@ rules:
     languages: [generic]
     paths:
       include:
-        - "supabase/migrations/**/*.sql"
+        - "/supabase/migrations/**/*.sql"
     severity: ERROR
     message: >
       New table created without `ENABLE ROW LEVEL SECURITY` in the same
@@ -284,5 +290,5 @@ rules:
       - pattern-regex: "eyJ[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}\\.[A-Za-z0-9_-]{20,}"
     paths:
       include:
-        - "tools/**/*.py"
-        - "scripts/**/*.py"
+        - "/tools/**/*.py"
+        - "/scripts/**/*.py"
