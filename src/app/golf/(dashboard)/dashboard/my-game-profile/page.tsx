@@ -73,7 +73,6 @@ export default async function MyGameProfilePage() {
             <Reveal staggerIndex={1}>
               <section className="surface-stone rounded-3xl p-5 md:p-7 mb-6 flex items-center justify-center">
                 <GenomeRadar
-                  size={320}
                   series={
                     [
                       {
