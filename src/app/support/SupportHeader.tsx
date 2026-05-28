@@ -1,43 +1,20 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { isNativeApp } from '@/lib/utils/capacitor';
-import { Card } from '@/components/ui/card';
+/**
+ * SupportHeader — thin shim over the canonical `<PageHeader>` primitive.
+ *
+ * Wave W2E consolidated six hand-rolled sibling headers into PageHeader. The
+ * marketing/support top-bar implementation (brand link + native-aware Home
+ * link on an overlay card) now lives in
+ * `src/components/ui/page-header.tsx` as `variant="support"`; this module
+ * re-exports a wrapper so the existing `<SupportHeader />` call site keeps
+ * working byte-for-byte (same behaviour, same look).
+ *
+ * Audit reference: ultra-audit master synthesis A4 (header sprawl).
+ */
+
+import { PageHeader } from '@/components/ui/page-header';
 
 export function SupportHeader() {
-  const [isNative, setIsNative] = useState(false);
-
-  useEffect(() => {
-    setIsNative(isNativeApp());
-  }, []);
-
-  const homeHref = isNative ? '/golf/login' : '/';
-
-  return (
-    <header>
-      <Card variant="overlay"
-        hover={false}
-        padding="none"
-        className="rounded-none border-x-0 border-t-0 border-b border-warm-200/60 shadow-none"
-      >
-        <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-between">
-          <Link
-            href={homeHref}
-            className="flex items-center gap-2 text-warm-900 font-semibold hover:opacity-80 transition-opacity"
-          >
-            <span className="text-xl">Helm Sports Labs</span>
-          </Link>
-          {!isNative && (
-            <Link
-              href="/"
-              className="text-sm text-warm-600 hover:text-warm-900 transition-colors"
-            >
-              Home
-            </Link>
-          )}
-        </div>
-      </Card>
-    </header>
-  );
+  return <PageHeader variant="support" />;
 }

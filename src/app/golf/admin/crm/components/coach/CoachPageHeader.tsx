@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import {
   IconArrowLeft,
   IconMail,
@@ -12,11 +10,13 @@ import {
   IconExternalLink,
   IconClock,
 } from '@/components/icons';
+import { cn } from '@/lib/utils';
 import type { Coach } from '../../crm-config';
 import { STATUS_CONFIG, STATUS_COLORS } from '../../crm-config';
 import type { CoachEngagement } from '../../types/foundations';
 import { EngagementBadge } from '../badges/EngagementBadge';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 
 // ============================================================================
 // CoachPageHeader — top section of the per-coach detail page.
@@ -24,6 +24,12 @@ import { Button } from '@/components/ui/button';
 // expanded for a full-page layout with action buttons (email / call / schedule
 // / log contact). Read-only here; mutations are handled inline within the
 // info / attachments blocks.
+//
+// Wave W2E: the visual chrome (glass plinth surface, back link, status row,
+// identity block, action rail) is now the canonical `<PageHeader variant="plinth">`
+// primitive. This component remains the domain-aware wrapper that maps a
+// `Coach` record onto that primitive — every prop, action, branch, and visual
+// is preserved.
 // ============================================================================
 
 interface CoachPageHeaderProps {
@@ -60,18 +66,13 @@ export function CoachPageHeader({
     coach.next_follow_up_at && new Date(coach.next_follow_up_at) < new Date();
 
   return (
-    <header className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass px-6 py-5">
-      <div className="flex items-center justify-between mb-4">
-        <Link
-          href={backHref}
-          className="inline-flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-800 font-medium transition-colors"
-        >
-          <IconArrowLeft size={14} />
-          Back to CRM
-        </Link>
-
-        {/* Quick status snapshot */}
-        <div className="flex items-center gap-2">
+    <PageHeader
+      variant="plinth"
+      backHref={backHref}
+      backLabel="Back to CRM"
+      backIcon={<IconArrowLeft size={14} />}
+      status={
+        <>
           {engagement && (
             <EngagementBadge coachId={coach.id} engagement={engagement} size="md" />
           )}
@@ -86,74 +87,68 @@ export function CoachPageHeader({
             {statusCfg?.iconLabel}
             {statusCfg?.label ?? coach.status}
           </span>
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {coach.is_starred && (
-              <IconStar
-                size={18}
-                className="fill-amber-400 text-amber-400 flex-shrink-0"
-              />
-            )}
-            <h1 className="text-2xl font-bold text-warm-900 tracking-tight truncate">
-              {coach.name}
-            </h1>
-            {coach.title && (
-              <span className="text-sm text-warm-500 truncate">· {coach.title}</span>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-warm-600">
-            <span className="font-medium">{coach.school}</span>
-            {coach.conference && (
-              <>
-                <span className="text-warm-300">·</span>
-                <span>{coach.conference}</span>
-              </>
-            )}
-            {coach.division && (
-              <>
-                <span className="text-warm-300">·</span>
-                <span
-                  className={cn(
-                    'px-1.5 py-0.5 rounded text-eyebrow font-bold',
-                    coach.division === 'D2'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-primary-100 text-primary-700',
-                  )}
-                >
-                  {coach.division}
-                </span>
-              </>
-            )}
-            {coach.program && (
-              <>
-                <span className="text-warm-300">·</span>
-                <span className="capitalize">
-                  {coach.program === 'mens'
-                    ? "Men's"
-                    : coach.program === 'womens'
-                      ? "Women's"
-                      : 'Both programs'}
-                </span>
-              </>
-            )}
-          </div>
-
-          {isOverdue && coach.next_follow_up_at && (
-            <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50/80 border border-red-200/40">
-              <IconClock size={12} className="text-red-500" />
-              <span className="text-eyebrow font-medium text-red-600">
-                Overdue follow-up · {formatShort(coach.next_follow_up_at)}
-              </span>
-            </div>
+        </>
+      }
+      titleIcon={
+        coach.is_starred ? (
+          <IconStar
+            size={18}
+            className="fill-amber-400 text-amber-400 flex-shrink-0"
+          />
+        ) : undefined
+      }
+      title={coach.name}
+      titleMeta={coach.title ? <>· {coach.title}</> : undefined}
+      meta={
+        <>
+          <span className="font-medium">{coach.school}</span>
+          {coach.conference && (
+            <>
+              <span className="text-warm-300">·</span>
+              <span>{coach.conference}</span>
+            </>
           )}
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+          {coach.division && (
+            <>
+              <span className="text-warm-300">·</span>
+              <span
+                className={cn(
+                  'px-1.5 py-0.5 rounded text-eyebrow font-bold',
+                  coach.division === 'D2'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-primary-100 text-primary-700',
+                )}
+              >
+                {coach.division}
+              </span>
+            </>
+          )}
+          {coach.program && (
+            <>
+              <span className="text-warm-300">·</span>
+              <span className="capitalize">
+                {coach.program === 'mens'
+                  ? "Men's"
+                  : coach.program === 'womens'
+                    ? "Women's"
+                    : 'Both programs'}
+              </span>
+            </>
+          )}
+        </>
+      }
+      callout={
+        isOverdue && coach.next_follow_up_at ? (
+          <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50/80 border border-red-200/40">
+            <IconClock size={12} className="text-red-500" />
+            <span className="text-eyebrow font-medium text-red-600">
+              Overdue follow-up · {formatShort(coach.next_follow_up_at)}
+            </span>
+          </div>
+        ) : undefined
+      }
+      actions={
+        <>
           {coach.email ? (
             <a
               href={`mailto:${coach.email}`}
@@ -216,8 +211,8 @@ export function CoachPageHeader({
               <IconExternalLink size={14} /> Staff Page
             </a>
           )}
-        </div>
-      </div>
-    </header>
+        </>
+      }
+    />
   );
 }
