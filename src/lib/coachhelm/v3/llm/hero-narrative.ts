@@ -41,6 +41,8 @@ export interface HeroNarrativeInput {
 
   /** Template fallback the surface shows verbatim when LLM is gated. */
   fallback_text: string;
+  /** Coach's narrative goal for this player (W27 intent). */
+  narrative_goal?: string;
 }
 
 function buildPrompt(input: HeroNarrativeInput): string {
@@ -49,6 +51,10 @@ function buildPrompt(input: HeroNarrativeInput): string {
     pct === null ? '' : `Team percentile: ${pct} (lower = below team avg).`;
 
   const goalClause = input.goal ? `Active goal: ${input.goal.target_display}.` : '';
+
+  const intentClause = input.narrative_goal
+    ? `Coach narrative intent: ${input.narrative_goal}.`
+    : '';
 
   const cfClause =
     input.counterfactual_strokes_per_round && input.counterfactual_strokes_per_round >= 0.3
@@ -62,12 +68,16 @@ function buildPrompt(input: HeroNarrativeInput): string {
     `- ${input.top_insight.metric_label}: ${input.top_insight.your_value_display}`,
     standingClause,
     goalClause,
+    intentClause,
     cfClause,
     ``,
     `Write 2-3 sentences, second person ("you"). Lead with the headline ` +
       `(${input.top_insight.metric_label} at ${input.top_insight.your_value_display}). ` +
       `Mention exactly one of: the team percentile (if given), the goal target (if given), or the stroke savings (if given).`,
     `Be specific and grounded — do NOT invent any number or label not in the facts above.`,
+    input.narrative_goal
+      ? `Adjust your tone to reflect the coach's narrative intent ("${input.narrative_goal}"). For example: "breakout" = ambitious, "rehabilitate" = patient, "bubble" = urgent, "maintain" = steady, "develop" = growth-oriented.`
+      : '',
     `Tone: direct, encouraging, no clichés, no exclamation marks.`,
     ``,
     `Return only the paragraph.`,
