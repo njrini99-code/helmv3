@@ -137,7 +137,7 @@ export default function GolfCoachOnboarding() {
       });
 
       if (!result.success) {
-        setError(result.error || 'Failed to complete setup. Please try again.');
+        setError(result.error || "Couldn't finish setting up your program. Give it another go.");
         setLoading(false);
         return;
       }
@@ -146,7 +146,7 @@ export default function GolfCoachOnboarding() {
       setLoading(false);
       goForward('complete');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred.');
+      setError(err instanceof Error ? err.message : 'Something threw us off. Give it another go.');
       setLoading(false);
     }
   }
@@ -235,7 +235,7 @@ export default function GolfCoachOnboarding() {
                       Set up your program
                     </h1>
                     <p className="text-warm-500 mt-2 text-sm sm:text-base">
-                      Tell us about your school and team
+                      A few details about your school and squad
                     </p>
                   </m.div>
 

@@ -8,7 +8,7 @@
  *   - Framer-motion fade-in entrance with editorial easing curve
  *   - Soft shimmer overlay during the LLM round-trip
  *   - Crossfade when the LLM prose swaps in
- *   - ✨ glyph + "AI summary" badge when used_llm=true
+ *   - ✨ glyph + "CoachHelm" badge when used_llm=true
  */
 
 import { useEffect, useState } from 'react';
@@ -109,7 +109,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
         <div className="relative">
           <div className="flex items-baseline justify-between gap-4 mb-3">
             <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500">
-              Today
+              Today&apos;s read
             </p>
             <AnimatePresence>
               {usedLlm && (
@@ -123,7 +123,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
                   className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
                 >
                   <span aria-hidden className="text-caption leading-none">✦</span>
-                  AI summary
+                  CoachHelm
                 </m.span>
               )}
             </AnimatePresence>
