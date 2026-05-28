@@ -787,7 +787,7 @@ export default function CRMPage() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-6 bg-[#FFFEFA]">
+        <div className="flex-1 overflow-auto p-6 bg-cream-100">
           {/* ── Dashboard Tab ── */}
           {activeTab === 'dashboard' && (
             <CRMDashboard

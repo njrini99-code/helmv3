@@ -1,7 +1,7 @@
 export default function CalendarLoading() {
   return (
     <div className="h-[calc(100dvh-64px)] p-6" style={{
-      background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
+      background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
     }}>
       <div className="glass-standard rounded-2xl overflow-clip h-full animate-pulse">
         {/* Calendar header skeleton */}

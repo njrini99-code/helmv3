@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-dvh bg-[#FFFEFA] flex items-center justify-center p-4">
+    <div className="min-h-dvh bg-cream-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-6">
         {/* Team logo placeholder */}
         <div className="flex justify-center">

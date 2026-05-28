@@ -76,7 +76,7 @@ export default function AboutPage() {
         style={{
           background: `
             radial-gradient(ellipse 80% 60% at 50% 40%, rgba(21, 128, 61, 0.12), transparent),
-            linear-gradient(180deg, #FFFEFA 0%, #EDE8DD 100%)
+            linear-gradient(180deg, #F7F5F2 0%, #EDE8DD 100%)
           `
         }}
       >
@@ -116,7 +116,7 @@ export default function AboutPage() {
         style={{
           background: `
             radial-gradient(ellipse 60% 50% at 20% 50%, rgba(21, 128, 61, 0.06), transparent),
-            linear-gradient(180deg, #EDE8DD 0%, #FFFEFA 100%)
+            linear-gradient(180deg, #EDE8DD 0%, #F7F5F2 100%)
           `
         }}
       >
@@ -184,7 +184,7 @@ export default function AboutPage() {
         style={{
           background: `
             radial-gradient(ellipse 70% 50% at 80% 40%, rgba(21, 128, 61, 0.08), transparent),
-            linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 100%)
+            linear-gradient(180deg, #F7F5F2 0%, #ECE5D6 100%)
           `
         }}
       >
@@ -243,7 +243,7 @@ export default function AboutPage() {
         style={{
           background: `
             radial-gradient(ellipse 60% 50% at 50% 60%, rgba(21, 128, 61, 0.1), transparent),
-            linear-gradient(180deg, #F5F0E6 0%, #EDE8DD 100%)
+            linear-gradient(180deg, #ECE5D6 0%, #EDE8DD 100%)
           `
         }}
       >
@@ -299,7 +299,7 @@ export default function AboutPage() {
         style={{
           background: `
             radial-gradient(ellipse 80% 60% at 50% 50%, rgba(21, 128, 61, 0.08), transparent),
-            linear-gradient(180deg, #EDE8DD 0%, #FFFEFA 100%)
+            linear-gradient(180deg, #EDE8DD 0%, #F7F5F2 100%)
           `
         }}
       >
