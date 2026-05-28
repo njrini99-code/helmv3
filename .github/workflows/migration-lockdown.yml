@@ -21,7 +21,12 @@ jobs:
           BASELINE="20260527120000"
 
           # Files in supabase/migrations/ touched by this PR.
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' || true)
+          # --diff-filter=AM restricts to Added/Modified entries — pure renames
+          # OUT of supabase/migrations/ (e.g., archive sweeps to
+          # supabase/migrations_archive/) and deletions don't count as edits.
+          # Renames INTO supabase/migrations/ still show up as A on the target
+          # side and are caught.
+          CHANGED=$(git diff --name-only --diff-filter=AM "$BASE_SHA" "$HEAD_SHA" -- 'supabase/migrations/*.sql' || true)
 
           if [ -z "$CHANGED" ]; then
             echo "No migration files changed."
