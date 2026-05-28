@@ -52,6 +52,9 @@ jobs:
             echo "Warning: database.ts file not found"
           fi
 
+      - name: Schema invariants (catch golf_team_coach_staff.user_id etc.)
+        run: ./scripts/check-schema-invariants.sh
+
       - name: Typecheck
         run: npm run typecheck
 

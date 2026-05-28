@@ -19,6 +19,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import { buildCoachChatAgent } from '@/lib/coachhelm/v3/chat/agent';
 import {
@@ -30,7 +31,18 @@ import {
 } from '@/lib/coachhelm/v3/chat/persistence';
 import type { ToolCallRecord, ToolResultRecord } from '@/lib/coachhelm/v3/chat/types';
 import { estimateCostUsd, MODEL_FOR_TASK } from '@/lib/coachhelm/v3/llm/types';
+import { checkBudget, recordSpend } from '@/lib/coachhelm/v3/llm/budget';
 import type { ModelMessage } from 'ai';
+
+// Conservative upper bound for one chat turn (agent may loop through
+// several tool calls before the final assistant text). Used only for the
+// pre-flight budget gate; actual spend is recorded from the gateway's
+// reported token counts.
+const CHAT_TURN_COST_ESTIMATE_USD = estimateCostUsd(
+  MODEL_FOR_TASK.coach_chat,
+  8000, // worst-case prompt incl. tool-call ledger
+  1500, // worst-case completion incl. final summary
+);
 
 const SendBody = z.object({
   conversation_id: z.string().uuid().optional(),
@@ -77,6 +89,28 @@ export async function POST(req: NextRequest) {
       role: 'user',
       content: parsed.data.user_message,
     });
+
+    // --- Budget gate (W30 governance for the chat surface) ---
+    // Uses an admin client so the per-day spend table can be read/upserted
+    // outside player/coach RLS. Same gate the round-review + hero-narrative
+    // surfaces go through via compose() — chat is structurally different
+    // (tool loop, not single-shot) so we gate here instead.
+    const admin = createAdminClient();
+    const gate = await checkBudget(admin, coach.id, CHAT_TURN_COST_ESTIMATE_USD);
+    if (!gate.allowed) {
+      await logServerError(
+        `chat/send: budget exhausted for coach_id=${coach.id} (${gate.fallback_reason})`,
+        { action: 'v3.chat.send.budget' },
+      );
+      return NextResponse.json(
+        {
+          error: 'LLM budget exhausted for today',
+          reason: gate.fallback_reason ?? 'budget_gated',
+          remaining_usd: gate.remaining_usd,
+        },
+        { status: 429 },
+      );
+    }
 
     // --- Build prior history as ModelMessages (skip 'tool' rows from our
     //     synthetic ledger — the agent recomputes its own tool loop).
@@ -137,8 +171,9 @@ export async function POST(req: NextRequest) {
 
     // Mirror W30: log this call into golf_coachhelm_llm_calls so the
     // admin spend view + budget enforcement see chat costs alongside
-    // round-review and hero-narrative.
-    await supabase.from('golf_coachhelm_llm_calls').insert({
+    // round-review and hero-narrative. Use the admin client so the row
+    // lands even under RLS contexts that would otherwise block.
+    await admin.from('golf_coachhelm_llm_calls').insert({
       task: 'coach_chat',
       coach_id: coach.id,
       player_id: null,
@@ -150,6 +185,14 @@ export async function POST(req: NextRequest) {
       citations: null,
       verified: false,
       fallback_to_template: false,
+    });
+
+    // Record actual spend so the next request's gate sees today's running
+    // total. Without this, chat spend accumulated invisibly to checkBudget.
+    await recordSpend(admin, {
+      coach_id: coach.id,
+      task: 'coach_chat',
+      cost_usd: cost,
     });
 
     await touchConversation(supabase, conversationId);

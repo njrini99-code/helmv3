@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyTeamAccess } from '@/lib/auth/verify-player-access';
 import { computeGenomeForPlayer } from '@/lib/coachhelm/v3/genome/orchestrator';
 
 const Body = z.object({
@@ -48,13 +49,8 @@ export async function POST(req: NextRequest) {
         .limit(1)
         .maybeSingle();
       if (membership?.team_id) {
-        const { data: staff } = await supabase
-          .from('golf_team_coach_staff')
-          .select('id')
-          .eq('team_id', membership.team_id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-        authorized = !!staff;
+        const team = await verifyTeamAccess(membership.team_id, user.id, supabase);
+        authorized = team.allowed;
       }
     }
     if (!authorized) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

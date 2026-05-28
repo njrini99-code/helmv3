@@ -330,23 +330,41 @@ export async function create_goal_for_player(
   authedUserId: string,
   coachId: string,
 ) {
+  // Resolve the player's active team so RLS (`is_team_coach(team_id)` on
+  // goals_coach_create) can authorise the insert. Without team_id the
+  // policy denies and the tool silently fails.
+  const { data: membership, error: membershipError } = await sb
+    .from('golf_team_members')
+    .select('team_id')
+    .eq('player_id', input.player_id)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  if (membershipError) {
+    return { error: `team lookup failed: ${membershipError.message}` } as const;
+  }
+  if (!membership?.team_id) {
+    return { error: 'Player is not on an active team' } as const;
+  }
+
   const now = new Date();
   const endsAt = new Date(now.getTime() + input.window_days * 86400_000);
 
-  // Use fromUntyped because the goals table has many columns and an
-  // explicit cast is cleaner than typing every default here.
+  // window_days is a GENERATED ALWAYS column (ends_at - started_at) — never insert it.
+  // origin must satisfy golf_goals_origin_check: manual | engine_suggested | from_insight.
+  // Coach-via-chat is closest to 'manual' (not engine-driven, no source insight).
   const { data, error } = await fromUntyped(sb, 'golf_goals')
     .insert({
       player_id: input.player_id,
+      team_id: membership.team_id,
       metric_id: input.metric_id,
       title: input.title,
       target_value: input.target_value,
-      window_days: input.window_days,
       coach_assignment_mode: input.coach_assignment_mode,
       coach_id_if_assigned: coachId,
       creator_role: 'coach',
       created_by_user_id: authedUserId,
-      origin: 'chat',
+      origin: 'manual',
       state: 'active',
       started_at: now.toISOString(),
       ends_at: endsAt.toISOString(),
