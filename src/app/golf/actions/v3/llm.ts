@@ -13,9 +13,15 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
-import { composeRoundReview } from '@/lib/coachhelm/v3/llm/round-review';
+import {
+  composeRoundReview,
+  type RoundReviewActiveGoal,
+  type RoundReviewSG,
+} from '@/lib/coachhelm/v3/llm/round-review';
 import { composeHeroNarrative } from '@/lib/coachhelm/v3/llm/hero-narrative';
 import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
+import { loadGenome } from '@/lib/coachhelm/v3/genome/loader';
+import { derivePersona } from '@/lib/coachhelm/v3/genome/persona';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -85,6 +91,17 @@ export async function generateLlmRoundReview(
     // W27 — load narrative_goal so the LLM can adjust tone.
     const intentResult = await loadAlertPostureForPlayer(round.player_id);
 
+    // ------------------------------------------------------------------
+    // Optional enrichment (v3 audit Tier-2 #5) — failures are non-fatal.
+    // Each loader is wrapped so a single missing/erroring source can't
+    // block the LLM call. The composer accepts every field as optional
+    // and gracefully omits the corresponding prompt section.
+    // ------------------------------------------------------------------
+    const enrichment = await loadRoundReviewEnrichment(supabase, {
+      round_id: roundId,
+      player_id: round.player_id,
+    });
+
     const result = await composeRoundReview({
       player_id: round.player_id,
       coach_id: billing_coach_id,
@@ -99,6 +116,10 @@ export async function generateLlmRoundReview(
       gir_total: round.total_gir_possible,
       fallback_summary,
       narrative_goal: intentResult?.narrative_goal,
+      strokes_gained: enrichment.strokes_gained,
+      composite_insight_titles: enrichment.composite_insight_titles,
+      persona_label: enrichment.persona_label,
+      active_goal: enrichment.active_goal,
     });
 
     return {
@@ -212,4 +233,131 @@ export async function generateHeroNarrative(
     );
     return { ok: false, error: 'Internal error' };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Internal: round-review prompt enrichment loader (v3 audit Tier-2 #5).
+//
+// Pulls SG breakdown + composite-insight titles + genome persona +
+// single active goal for the round. Every source is independently
+// try/catch'd so a single failure (RLS edge, race with the
+// post-round trigger that writes the cache, missing genome) just
+// drops one optional section from the prompt rather than failing
+// the whole LLM call.
+// ---------------------------------------------------------------------------
+
+interface RoundReviewEnrichment {
+  strokes_gained?: RoundReviewSG;
+  composite_insight_titles?: string[];
+  persona_label?: string | null;
+  active_goal?: RoundReviewActiveGoal | null;
+}
+
+// Use ReturnType to inherit Database<T> from the project's server helper
+// without re-importing the @supabase/supabase-js generic; this keeps the
+// type imports identical to the rest of the file.
+type ServerSupabase = Awaited<ReturnType<typeof createClient>>;
+
+async function loadRoundReviewEnrichment(
+  supabase: ServerSupabase,
+  args: { round_id: string; player_id: string },
+): Promise<RoundReviewEnrichment> {
+  const [sg, composites, persona, goal] = await Promise.all([
+    loadStrokesGained(supabase, args.round_id).catch(() => undefined),
+    loadCompositeInsightTitles(supabase, args).catch(() => undefined),
+    loadPersonaLabel(supabase, args.player_id).catch(() => null),
+    loadActiveGoal(supabase, args.player_id).catch(() => null),
+  ]);
+  return {
+    strokes_gained: sg,
+    composite_insight_titles: composites,
+    persona_label: persona,
+    active_goal: goal,
+  };
+}
+
+async function loadStrokesGained(
+  supabase: ServerSupabase,
+  roundId: string,
+): Promise<RoundReviewSG | undefined> {
+  const { data } = await supabase
+    .from('golf_round_stats_cache')
+    .select(
+      'strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting',
+    )
+    .eq('round_id', roundId)
+    .maybeSingle();
+  if (!data) return undefined;
+  return {
+    total: data.strokes_gained_total,
+    tee: data.strokes_gained_tee,
+    approach: data.strokes_gained_approach,
+    around_green: data.strokes_gained_around_green,
+    putting: data.strokes_gained_putting,
+  };
+}
+
+async function loadCompositeInsightTitles(
+  supabase: ServerSupabase,
+  args: { round_id: string; player_id: string },
+): Promise<string[]> {
+  // golf_coach_insights.source_id stores the round_id for round-triggered
+  // composite rows (W28 synthesis pass). Cap at 3 to keep prompt budget
+  // bounded — the composer also defends with .slice(0, 3) but
+  // pre-trimming saves a few tokens.
+  const { data } = await supabase
+    .from('golf_coach_insights')
+    .select('title, signature, created_at')
+    .eq('player_id', args.player_id)
+    .eq('source_id', args.round_id)
+    .like('signature', 'v3:composite:%')
+    .order('created_at', { ascending: false })
+    .limit(3);
+  return (data ?? []).map((row) => row.title).filter(Boolean);
+}
+
+async function loadPersonaLabel(
+  supabase: ServerSupabase,
+  playerId: string,
+): Promise<string | null> {
+  const genome = await loadGenome(supabase, playerId);
+  if (!genome) return null;
+  const persona = derivePersona(genome.vector);
+  // Build a short slash-delimited label from up to 2 strengths so the
+  // prompt stays tight. Falls back to course_profile when no confident
+  // strengths exist yet.
+  if (persona.strengths.length === 0) {
+    return persona.course_profile === 'Not enough rounds yet for a course profile.'
+      ? null
+      : persona.course_profile;
+  }
+  const parts = persona.strengths
+    .slice(0, 2)
+    .map((s) => s.qualitative ?? s.label);
+  return parts.join(' / ');
+}
+
+async function loadActiveGoal(
+  supabase: ServerSupabase,
+  playerId: string,
+): Promise<RoundReviewActiveGoal | null> {
+  // Pick the soonest-ending active goal. RLS gates which goals the
+  // calling user can see (the round's player or a coach on their team).
+  const { data } = await supabase
+    .from('golf_goals')
+    .select('title, target_value, ends_at, metric_id')
+    .eq('player_id', playerId)
+    .eq('state', 'active')
+    .order('ends_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  const target =
+    data.target_value !== null && data.target_value !== undefined
+      ? `${data.target_value} by ${data.ends_at.slice(0, 10)}`
+      : `by ${data.ends_at.slice(0, 10)}`;
+  return {
+    metric_label: data.title,
+    target_display: target,
+  };
 }
