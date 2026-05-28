@@ -1,5 +1,5 @@
 -- Shared helpers for RLS pgTAP suites.
--- Loaded by every test via `\i supabase/tests/rls/_helpers.sql`.
+-- Loaded by every test via `\ir _helpers.sql`.
 --
 -- NOTE (2026-05-17): full integration helpers (make_coach/make_player/make_team)
 -- are deferred until the missing `golf_team_coach_staff` CREATE TABLE statement

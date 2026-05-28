@@ -7,7 +7,7 @@
 -- "Live CoachHelm v3 Schema Mostly Exists" section.
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(30);
 

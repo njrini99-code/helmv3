@@ -10,9 +10,8 @@ Usage:
 
 import json
 import sys
-from pathlib import Path
 from datetime import datetime
-from typing import List, Dict
+from pathlib import Path
 
 
 class CycleDashboard:
@@ -26,7 +25,7 @@ class CycleDashboard:
             print(f"❌ No cycles found at {self.cycle_dir}")
             sys.exit(1)
     
-    def load_cycles(self) -> List[Dict]:
+    def load_cycles(self) -> list[dict]:
         """Load all cycle summaries"""
         cycles = []
         
@@ -165,7 +164,7 @@ class CycleDashboard:
         
         if cycles[-1]["total_issues"] > 0:
             print(f"1. Open {issues_file}")
-            print(f"2. Let Claude Code fix the issues")
+            print("2. Let Claude Code fix the issues")
             print(f"3. Run cycle {latest_cycle + 1} to verify fixes")
         else:
             print("🎉 All issues resolved! Consider running a new analysis to find more improvements.")
@@ -203,7 +202,7 @@ class CycleDashboard:
             state = issue.get("state", "unknown")
             by_state[state] = by_state.get(state, 0) + 1
         
-        print(f"\nIssues by State:")
+        print("\nIssues by State:")
         for state, count in sorted(by_state.items()):
             print(f"  {state}: {count}")
         

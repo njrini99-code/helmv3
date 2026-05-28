@@ -8,7 +8,7 @@
 -- attack surface that Codex Security Finding 2/3 closed. Treat as P1.
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(12);
 

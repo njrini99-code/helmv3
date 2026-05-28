@@ -34,6 +34,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install ast-grep
         run: |
@@ -42,13 +44,28 @@ jobs:
           sudo mv ast-grep /usr/local/bin/sg
           sg --version
 
-      - name: Scan repo with project rules
+      - name: Scan changed TypeScript with blocking project rules
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          set -e
+          set -euo pipefail
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx)$' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed TypeScript files for ast-grep."
+            exit 0
+          fi
+
           fail=0
-          for rule in .coderabbit/ast-grep/*.yml; do
+          rules=(
+            .coderabbit/ast-grep/no-bare-table-names.yml
+            .coderabbit/ast-grep/no-deep-types-import.yml
+            .coderabbit/ast-grep/no-process-env-in-edge.yml
+            .coderabbit/ast-grep/no-service-role-in-client.yml
+          )
+          for rule in "${rules[@]}"; do
             echo "::group::$rule"
-            sg scan --rule "$rule" --error || fail=1
+            sg scan --rule "$rule" --error "${files[@]}" || fail=1
             echo "::endgroup::"
           done
           exit $fail
@@ -59,10 +76,32 @@ jobs:
     container: returntocorp/semgrep
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Scan with helmv3 custom rules
-        run: semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions .
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          files="$(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx|js|jsx|sql|py)$' || true)"
+          if [ -z "$files" ]; then
+            echo "No changed files for semgrep."
+            exit 0
+          fi
+          semgrep --error --config .coderabbit/semgrep/helmv3.yml --skip-unknown-extensions $files
       - name: Scan with default p/ci ruleset
-        run: semgrep --error --config p/ci --skip-unknown-extensions .
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          files="$(bash .github/scripts/changed-files.sh | grep -E '\.(ts|tsx|js|jsx|sql|py|sh|bash|ya?ml)$' || true)"
+          if [ -z "$files" ]; then
+            echo "No changed files for semgrep p/ci."
+            exit 0
+          fi
+          semgrep --error --config p/ci --skip-unknown-extensions $files
 
   gitleaks:
     name: gitleaks
@@ -81,73 +120,122 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Run actionlint
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
-          ./actionlint -color
+          mapfile -t workflows < <(bash .github/scripts/changed-files.sh '.github/workflows/*.yml' '.github/workflows/*.yaml')
+          if [ "${#workflows[@]}" -eq 0 ]; then
+            echo "No changed GitHub workflow files for actionlint."
+            exit 0
+          fi
+          ./actionlint -color "${workflows[@]}"
 
   yamllint:
     name: yamllint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install yamllint
       - name: Run yamllint
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' .
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '\.ya?ml$' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed YAML files for yamllint."
+            exit 0
+          fi
+          yamllint -s -d '{extends: default, rules: {line-length: {max: 200}, document-start: disable, truthy: {check-keys: false}}}' "${files[@]}"
 
   shellcheck:
     name: shellcheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Run shellcheck
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          find scripts supabase/scripts -type f \( -name "*.sh" -o -name "*.bash" \) -print0 \
-            | xargs -0 -r shellcheck --severity=warning --color=always
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'scripts/*.sh' 'scripts/*.bash' 'supabase/scripts/*.sh' 'supabase/scripts/*.bash')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed shell scripts for shellcheck."
+            exit 0
+          fi
+          shellcheck --severity=warning --color=always "${files[@]}"
 
   markdownlint:
     name: markdownlint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm install -g markdownlint-cli2
       - name: Run markdownlint
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          markdownlint-cli2 \
-            "docs/**/*.md" "CLAUDE.md" "AGENTS.md" "CLAUDE_CODE_GUIDE.md" \
-            "!**/node_modules/**" "!**/archive/**" "!**/.full-review*/**" || true
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^docs/.*\.md$|^(CLAUDE|AGENTS|CLAUDE_CODE_GUIDE)\.md$)' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed Markdown files for markdownlint."
+            exit 0
+          fi
+          markdownlint-cli2 "${files[@]}" "!**/node_modules/**" "!**/archive/**" "!**/.full-review*/**" || true
 
   python:
     name: ruff + pylint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install ruff pylint
       - name: ruff check
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          if [ -d tools ] && find tools -name "*.py" -print -quit | grep -q .; then
-            ruff check tools/
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
+          if [ "${#files[@]}" -gt 0 ]; then
+            ruff check "${files[@]}"
           else
-            echo "No Python files to lint."
+            echo "No changed Python files for ruff."
           fi
       - name: pylint
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          if [ -d tools ] && find tools -name "*.py" -print -quit | grep -q .; then
-            pylint --disable=C,R --exit-zero tools/ | tee pylint.log
-            ! grep -E "^[EF][0-9]+" pylint.log
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'tools/*.py' 'tools/**/*.py')
+          if [ "${#files[@]}" -gt 0 ]; then
+            pylint --disable=C,R --exit-zero "${files[@]}" | tee pylint.log
+            if grep -E "^[EF][0-9]+" pylint.log; then
+              exit 1
+            fi
           else
-            echo "No Python files to lint."
+            echo "No changed Python files for pylint."
           fi
 
   sqlfluff:
@@ -155,29 +243,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install sqlfluff
       - name: Lint Postgres SQL
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          sqlfluff lint --dialect postgres --rules core \
-            supabase/migrations supabase/seed || true
+          mapfile -t files < <(bash .github/scripts/changed-files.sh 'supabase/migrations/*.sql' 'supabase/seed/*.sql')
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No changed SQL files for sqlfluff."
+            exit 0
+          fi
+          sqlfluff lint --dialect postgres --rules core "${files[@]}" || true
 
   hadolint:
     name: hadolint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Run hadolint
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         run: |
-          if find . -name "Dockerfile*" -not -path "./node_modules/*" -not -path "./ios/App/Pods/*" -print -quit | grep -q .; then
+          mapfile -t files < <(bash .github/scripts/changed-files.sh | grep -E '(^|/)Dockerfile[^/]*$' || true)
+          if [ "${#files[@]}" -gt 0 ]; then
             curl -fsSL https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64 -o hadolint
             chmod +x hadolint
-            find . -name "Dockerfile*" -not -path "./node_modules/*" -not -path "./ios/App/Pods/*" \
-              -exec ./hadolint --no-fail {} +
+            ./hadolint --no-fail "${files[@]}"
           else
-            echo "No Dockerfiles found."
+            echo "No changed Dockerfiles for hadolint."
           fi
 
   all:

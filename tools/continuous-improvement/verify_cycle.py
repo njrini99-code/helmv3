@@ -5,10 +5,9 @@ VERIFY SPECIFIC CYCLE - Check if fixes in cycle-001 are actually done
 Usage: python3 verify_cycle.py --project PATH --platform NAME --verify-cycle 1
 """
 
-import json
-from pathlib import Path
-from typing import List, Dict
 import re
+from pathlib import Path
+
 
 class CycleVerifier:
     """
@@ -21,7 +20,7 @@ class CycleVerifier:
         self.helm_dir = self.project_path / ".helm"
         self.cycle_dir = self.helm_dir / "cycles"
         
-    def parse_md_file(self) -> Dict:
+    def parse_md_file(self) -> dict:
         """Parse the MD file for the cycle we're verifying"""
         md_file = self.cycle_dir / f"issues-cycle-{self.verify_cycle:03d}.md"
         
@@ -113,7 +112,7 @@ class CycleVerifier:
             print(f"   Documented changes: {len(changes)}")
             
             if not files:
-                print(f"   ⚠️  NO FILES DOCUMENTED")
+                print("   ⚠️  NO FILES DOCUMENTED")
                 uncertain.append(issue_id)
                 print()
                 continue
@@ -141,7 +140,7 @@ class CycleVerifier:
                                 if keyword in file_content:
                                     changes_found.append(f"{keyword} in {file_path}")
                                     break
-                    except:
+                    except Exception:
                         pass
                 else:
                     files_missing.append(file_path)
@@ -156,16 +155,16 @@ class CycleVerifier:
             
             # Determine status
             if files_missing:
-                print(f"   ❌ VERDICT: NOT FIXED (files missing)")
+                print("   ❌ VERDICT: NOT FIXED (files missing)")
                 not_fixed.append(issue_id)
             elif files_exist and changes_found:
-                print(f"   ✅ VERDICT: VERIFIED (files + changes found)")
+                print("   ✅ VERDICT: VERIFIED (files + changes found)")
                 verified.append(issue_id)
             elif files_exist:
-                print(f"   ✅ VERDICT: LIKELY FIXED (files modified)")
+                print("   ✅ VERDICT: LIKELY FIXED (files modified)")
                 verified.append(issue_id)
             else:
-                print(f"   ⚠️  VERDICT: UNCERTAIN")
+                print("   ⚠️  VERDICT: UNCERTAIN")
                 uncertain.append(issue_id)
             
             print()
@@ -191,7 +190,7 @@ Total Issues Checked: {len(fixes)}
 {self._format_list(uncertain)}
         """)
     
-    def _extract_keywords(self, text: str) -> List[str]:
+    def _extract_keywords(self, text: str) -> list[str]:
         """Extract meaningful keywords"""
         stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
                      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were'}
@@ -201,7 +200,7 @@ Total Issues Checked: {len(fixes)}
         
         return keywords[:5]
     
-    def _format_list(self, items: List[str]) -> str:
+    def _format_list(self, items: list[str]) -> str:
         """Format list for display"""
         if not items:
             return "   (none)"

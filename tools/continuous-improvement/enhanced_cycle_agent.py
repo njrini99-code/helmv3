@@ -13,11 +13,9 @@ This creates the proper closed-loop: MD file → verification → next cycle.
 
 import asyncio
 import json
-import sys
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict
-import re
 
 
 class HelmContext:
@@ -36,7 +34,7 @@ class HelmContext:
         self.issues = self._load_text("ISSUES.md")
         self.rls_audit = self._load_text("security/RLS_AUDIT.md")
         
-    def _load_json(self, filename: str) -> Dict:
+    def _load_json(self, filename: str) -> dict:
         """Load JSON file if it exists"""
         filepath = self.helm_dir / filename
         if filepath.exists():
@@ -77,7 +75,7 @@ class HelmContext:
             summary.append(f"✅ ISSUES.md - {issue_count} detailed issues")
         
         if self.rls_audit:
-            summary.append(f"✅ security/RLS_AUDIT.md - Security audit available")
+            summary.append("✅ security/RLS_AUDIT.md - Security audit available")
         
         if not summary:
             summary.append("⚠️  No overnight analysis context found")
@@ -121,7 +119,7 @@ class HelmContext:
         
         return "\n".join(context_parts)
     
-    def get_known_issue_ids(self) -> List[str]:
+    def get_known_issue_ids(self) -> list[str]:
         """Extract issue IDs from ISSUES.md to avoid duplicates"""
         if not self.issues:
             return []
@@ -141,10 +139,10 @@ class Issue:
                  description: str,
                  severity: str,
                  category: str,
-                 location: Dict,
+                 location: dict,
                  found_in_cycle: int,
                  source: str = "cycle_analysis",
-                 context: Dict = None):
+                 context: dict = None):
         self.id = id
         self.title = title
         self.description = description
@@ -181,7 +179,7 @@ class Issue:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict):
+    def from_dict(cls, data: dict):
         issue = cls(
             id=data["id"],
             title=data["title"],
@@ -220,8 +218,8 @@ class EnhancedCycleAgent:
         self.current_cycle = self._get_next_cycle_number()
         
         # Issue tracking
-        self.all_issues: List[Issue] = []
-        self.current_issues: List[Issue] = []
+        self.all_issues: list[Issue] = []
+        self.current_issues: list[Issue] = []
         
     def _get_next_cycle_number(self) -> int:
         """Find the next cycle number"""
@@ -237,7 +235,7 @@ class EnhancedCycleAgent:
         
         return max(numbers) + 1 if numbers else 1
     
-    def _load_previous_cycle(self) -> Optional[Dict]:
+    def _load_previous_cycle(self) -> dict | None:
         """Load the previous cycle's issues"""
         if self.current_cycle == 1:
             return None
@@ -251,7 +249,7 @@ class EnhancedCycleAgent:
         with open(prev_file) as f:
             return json.load(f)
     
-    def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict[str, str]:
+    def _parse_md_file_for_fixes(self, cycle_number: int) -> dict[str, str]:
         """
         🔧 NEW: Parse the MD file to see which issues Claude Code claimed to fix.
         
@@ -346,7 +344,7 @@ class EnhancedCycleAgent:
 ║   ✅ CYCLE {self.current_cycle:03d} COMPLETE                                            ║
 ║                                                                              ║
 ║   📁 Issues exported to:                                                     ║
-║   {str(self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'):<75}║
+║   {self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'!s:<75}║
 ║                                                                              ║
 ║   📋 Next Steps:                                                             ║
 ║   1. Open the MD file in Cursor                                              ║
@@ -362,14 +360,14 @@ class EnhancedCycleAgent:
         Import issues from overnight analysis (ACTIONS.md, ISSUES.md, RLS_AUDIT.md)
         Only on cycle 1 - these become the initial issues to fix
         """
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 IMPORTING ISSUES FROM OVERNIGHT ANALYSIS
   These will become your initial issues to fix...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         """)
         
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         options = ClaudeAgentOptions(
             cwd=str(self.project_path),
@@ -378,7 +376,7 @@ class EnhancedCycleAgent:
             max_turns=20,
         )
         
-        prompt = f"""
+        prompt = """
 You are importing issues from overnight analysis into the continuous improvement system.
 
 Read these files:
@@ -389,23 +387,23 @@ Read these files:
 Extract ALL issues and convert them to this standardized format:
 
 ```json
-{{
+{
   "id": "ISSUE-XXX" or original ID,
   "title": "Short title",
   "description": "Detailed description",
   "severity": "critical|high|medium|low",
   "category": "security|ux|performance|accessibility|code_quality",
-  "location": {{
+  "location": {
     "file": "path/to/file",
     "line": 42
-  }},
+  },
   "source": "overnight_actions" or "overnight_issues" or "rls_audit",
-  "context": {{
+  "context": {
     "original_priority": "if from ACTIONS.md",
     "vulnerability_type": "if from RLS_AUDIT.md",
     "suggested_fix": "any fix suggestions"
-  }}
-}}
+  }
+}
 ```
 
 For each issue in the files, create one JSON block.
@@ -459,13 +457,13 @@ These will become the initial issues for the cycle system to track.
         
         print(f"\n✅ Imported {imported_count} issues from overnight analysis")
     
-    async def verify_previous_fixes(self, prev_cycle: Dict):
+    async def verify_previous_fixes(self, prev_cycle: dict):
         """
         🔧 FIXED: Verify that previous fixes actually worked
         
         Now reads the MD file FIRST to see what Claude Code documented!
         """
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         print(f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -570,7 +568,7 @@ Use the application context to understand if fixes are complete.
         full_output = "\n".join(verification_results)
         self._process_verification_results(full_output, fixed_issues)
     
-    def _process_verification_results(self, output: str, fixed_issues: List[Issue]):
+    def _process_verification_results(self, output: str, fixed_issues: list[Issue]):
         """Process verification results from Claude"""
         json_pattern = r'```json\s*(.*?)\s*```'
         matches = re.findall(json_pattern, output, re.DOTALL)
@@ -636,9 +634,9 @@ Verification Summary:
     
     async def find_new_issues(self):
         """Find new issues using FULL context from overnight analysis"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: CONTEXT-AWARE ISSUE DETECTION
   Using deep understanding + overnight analysis to find issues...
@@ -802,7 +800,7 @@ Start your investigation now. Be thorough. Find 5-15 real, actionable issues.
         print(f"   MD: {md_file}")
         print(f"   JSON: {json_file}")
     
-    def _generate_issues_md(self, issues: List[Issue]) -> str:
+    def _generate_issues_md(self, issues: list[Issue]) -> str:
         """Generate the MD file that Claude Code will update"""
         
         critical = len([i for i in issues if i.severity == "critical"])
@@ -1003,7 +1001,7 @@ cat .helm/security/RLS_AUDIT.md
             print(f"   Regressions Found: {stats['regressions_found']}")
         
         if stats['by_source']:
-            print(f"\n   Issues by Source:")
+            print("\n   Issues by Source:")
             for src, count in stats['by_source'].items():
                 print(f"     {src}: {count}")
 

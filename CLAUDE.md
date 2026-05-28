@@ -19,6 +19,17 @@
 
 > **Before starting any GolfHelm task, read the file(s) that match your task type.**
 
+### Feature-Aware Routing
+
+For feature work, use `memory/registry.yml` first. It maps code paths to the current-state feature docs, business rules, UI contracts, tests, and suggested checks.
+
+```bash
+npm run knowledge:map -- --files <paths...>
+npm run knowledge:context -- --files <paths...> --task "<task>"
+```
+
+For large changes or PR reviews, read `/tmp/helmv3-context-pack.md` after generating it. If a changed file does not map to a feature, either add the registry entry or call out the missing feature-awareness coverage.
+
 ### By Task Type
 
 | If you're working on... | Read this file FIRST |

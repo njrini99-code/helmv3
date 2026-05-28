@@ -20,7 +20,7 @@ else:
 
 print("\n=== Testing SDK Import ===")
 try:
-    from claude_agent_sdk import query, ClaudeAgentOptions
+    from claude_agent_sdk import ClaudeAgentOptions, query
     print("✅ SDK imported successfully")
     
     print("\n=== Testing Simple Query ===")

@@ -5,7 +5,7 @@ Quick fix script to add MD parsing method
 This adds the ability to read what Claude Code documented in the MD file
 """
 
-MD_PARSER_CODE = '''
+MD_PARSER_CODE = r'''
 def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict[str, str]:
     """
     Parse the MD file to see which issues Claude Code claimed to fix.

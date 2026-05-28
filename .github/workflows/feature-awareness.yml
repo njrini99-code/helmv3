@@ -1,0 +1,61 @@
+name: Feature Awareness
+
+# Advisory PR workflow for the repo-native AI feature-awareness layer.
+# It maps changed files through memory/registry.yml and uploads a context
+# pack that Codex/Claude/Greptile reviewers can use. Keep this non-blocking
+# until registry coverage is stable across normal PR traffic.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
+
+concurrency:
+  group: feature-awareness-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Build context pack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collect changed files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "${BASE_SHA:-}" ] && [ -n "${HEAD_SHA:-}" ]; then
+            git diff --name-only "$BASE_SHA" "$HEAD_SHA" > changed-files.txt
+          else
+            git diff --name-only HEAD~1 HEAD > changed-files.txt
+          fi
+          cat changed-files.txt
+
+      - name: Build feature-awareness report
+        run: |
+          node scripts/knowledge/workflow-report.mjs \
+            --changed-files changed-files.txt \
+            --output-dir feature-awareness-report
+
+      - name: Show summary
+        run: cat feature-awareness-report/summary.md
+
+      - name: Upload feature-awareness artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-awareness-report
+          path: feature-awareness-report/
+          retention-days: 14

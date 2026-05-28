@@ -8,7 +8,7 @@
 -- subquery over golf_team_members.
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(4);
 

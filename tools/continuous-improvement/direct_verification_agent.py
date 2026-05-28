@@ -11,10 +11,8 @@ Instead of asking an SDK agent to verify, we just:
 
 import asyncio
 import json
-from pathlib import Path
-from typing import List, Dict
 import re
-from datetime import datetime
+from pathlib import Path
 
 from enhanced_cycle_agent import HelmContext, Issue
 
@@ -34,8 +32,8 @@ class DirectVerificationAgent:
         self.helm_context = HelmContext(self.project_path)
         self.current_cycle = self._get_next_cycle_number()
         
-        self.all_issues: List[Issue] = []
-        self.current_issues: List[Issue] = []
+        self.all_issues: list[Issue] = []
+        self.current_issues: list[Issue] = []
         
     def _get_next_cycle_number(self) -> int:
         """Find the next cycle number"""
@@ -65,7 +63,7 @@ class DirectVerificationAgent:
         with open(prev_file) as f:
             return json.load(f)
     
-    def _parse_md_file_for_fixes(self, cycle_number: int) -> Dict:
+    def _parse_md_file_for_fixes(self, cycle_number: int) -> dict:
         """Parse MD file to see what was fixed"""
         md_file = self.cycle_dir / f"issues-cycle-{cycle_number:03d}.md"
         
@@ -142,17 +140,17 @@ class DirectVerificationAgent:
 ║                                                                              ║
 ║   ✅ CYCLE {self.current_cycle:03d} COMPLETE                                            ║
 ║                                                                              ║
-║   📁 Issues: {str(self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'):<66}║
+║   📁 Issues: {self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'!s:<66}║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    def verify_by_checking_files(self, prev_cycle: Dict):
+    def verify_by_checking_files(self, prev_cycle: dict):
         """
         SIMPLE: Just check if the files mentioned actually exist and were modified
         """
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   📋 PHASE 1: DIRECT FILE VERIFICATION
   Checking if documented files actually exist and were modified
@@ -225,9 +223,9 @@ Note: This is a simple file existence check. Files exist = assumed fixed.
     
     async def find_new_issues(self):
         """Find new issues - use SDK"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: FINDING NEW ISSUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
