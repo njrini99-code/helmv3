@@ -10,7 +10,7 @@
 import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { Shimmer } from '@/components/ui/shimmer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconSparkles, IconRefresh, IconTarget, IconChartRadar, IconChart, IconTrendingUp } from '@/components/icons';
@@ -165,7 +165,7 @@ export function ShotAnalyticsPanel({
       </TabsList>
 
       {/* Content */}
-      <GlassCard className="p-0" padding="none">
+      <Card variant="overlay" className="p-0" padding="none">
         <AnimatePresence mode="wait">
           {/* Overview Tab */}
           {activeTab === 'overview' && data && (
@@ -401,7 +401,7 @@ export function ShotAnalyticsPanel({
             </motion.div>
           )}
         </AnimatePresence>
-      </GlassCard>
+      </Card>
     </Tabs>
   );
 }

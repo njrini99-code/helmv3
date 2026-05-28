@@ -14,7 +14,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   IconSparkles,
@@ -211,7 +211,7 @@ export function RoundReviewDisplay({
   return (
     <div className={cn('space-y-4', className)}>
       {/* Header with Summary */}
-      <GlassCard className="overflow-hidden" glow="subtle">
+      <Card variant="overlay" padding="md" className="overflow-hidden" glow="subtle">
         {/* Top bar with grade and sentiment */}
         <div className="flex items-center justify-between mb-4">
           {/* Grade Badge */}
@@ -318,7 +318,7 @@ export function RoundReviewDisplay({
             )}
           </div>
         </div>
-      </GlassCard>
+      </Card>
 
       {/* Highlights Section — defensively filters out items that look like
           weaknesses smuggled in by older stored reviews. The action-layer

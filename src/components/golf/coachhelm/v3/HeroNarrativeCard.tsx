@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
+import { Card } from '@/components/ui/card';
 import { generateHeroNarrative } from '@/app/golf/actions/v3/llm';
 import {
   heroVariants,
@@ -74,6 +75,10 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
   ]);
 
   return (
+    // The matte surface, 24px corners, and generous padding now come from the
+    // canonical <Card variant="raised"> rather than a bespoke surface-stone
+    // primitive (Wave W2B). The motion + semantics (entrance animation,
+    // data-testid, data-used-llm) stay on the m.section wrapper.
     <m.section
       data-testid="hero-narrative-card"
       data-used-llm={usedLlm ? 'true' : 'false'}
@@ -81,61 +86,63 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
       initial="hidden"
       animate="visible"
       transition={heroTransition}
-      className="surface-stone rounded-3xl p-6 md:p-7 mb-5 md:mb-6 relative overflow-hidden"
+      className="mb-5 md:mb-6"
     >
-      {loading && (
-        <m.div
-          aria-hidden
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="pointer-events-none absolute inset-0"
-        >
+      <Card variant="raised" hover={false} className="overflow-hidden">
+        {loading && (
           <m.div
-            className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-            animate={{ x: ['0%', '400%'] }}
-            transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        </m.div>
-      )}
+            aria-hidden
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none absolute inset-0"
+          >
+            <m.div
+              className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+              animate={{ x: ['0%', '400%'] }}
+              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </m.div>
+        )}
 
-      <div className="relative">
-        <div className="flex items-baseline justify-between gap-4 mb-3">
-          <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500">
-            Today
-          </p>
-          <AnimatePresence>
-            {usedLlm && (
-              <m.span
-                key="ai-badge"
-                variants={badgeVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                transition={badgeTransition}
-                className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
-              >
-                <span aria-hidden className="text-caption leading-none">✦</span>
-                AI summary
-              </m.span>
-            )}
+        <div className="relative">
+          <div className="flex items-baseline justify-between gap-4 mb-3">
+            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500">
+              Today
+            </p>
+            <AnimatePresence>
+              {usedLlm && (
+                <m.span
+                  key="ai-badge"
+                  variants={badgeVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={badgeTransition}
+                  className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
+                >
+                  <span aria-hidden className="text-caption leading-none">✦</span>
+                  AI summary
+                </m.span>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <m.p
+              key={text}
+              variants={crossfadeVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={crossfadeTransition}
+              className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
+            >
+              {text}
+            </m.p>
           </AnimatePresence>
         </div>
-
-        <AnimatePresence mode="wait">
-          <m.p
-            key={text}
-            variants={crossfadeVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={crossfadeTransition}
-            className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
-          >
-            {text}
-          </m.p>
-        </AnimatePresence>
-      </div>
+      </Card>
     </m.section>
   );
 }

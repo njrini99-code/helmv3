@@ -11,7 +11,7 @@
  */
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Shimmer } from '@/components/ui/shimmer';
 import {
@@ -274,7 +274,7 @@ export function InsightListView({
   // Loading skeleton
   if (isLoading) {
     return (
-      <GlassCard padding="none" hover={false}>
+      <Card variant="overlay" padding="none" hover={false}>
         <div className="p-6 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-4">
@@ -287,25 +287,25 @@ export function InsightListView({
             </div>
           ))}
         </div>
-      </GlassCard>
+      </Card>
     );
   }
 
   if (insights.length === 0) {
     return (
-      <GlassCard hover={false}>
+      <Card variant="overlay" padding="md" hover={false}>
         <EmptyState
           variant="compact"
           icon={<IconSparkles size={32} />}
           title="No insights found"
           description="Try adjusting your search or filters to find what you're looking for."
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
-    <GlassCard padding="none" hover={false}>
+    <Card variant="overlay" padding="none" hover={false}>
       {/* Header with Sort Options */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-warm-200">
         <div className="text-sm text-warm-500">
@@ -360,6 +360,6 @@ export function InsightListView({
         pageSize={pageSize}
         onPageChange={onPageChange}
       />
-    </GlassCard>
+    </Card>
   );
 }

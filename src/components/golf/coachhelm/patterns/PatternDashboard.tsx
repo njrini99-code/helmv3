@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard, GlassStatCard } from '@/components/ui/glass-card';
+import { Card, StatCard } from '@/components/ui/card';
 import {
   IconFilter,
   IconLayoutGrid,
@@ -170,12 +170,12 @@ export function PatternDashboard({
     <div className="space-y-6">
       {/* Stats row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <GlassStatCard
+        <StatCard
           label="Total Patterns"
           value={stats?.total || patterns.length}
           icon={<IconSparkles size={20} />}
         />
-        <GlassStatCard
+        <StatCard
           label="Active"
           value={activeCounts.detected + activeCounts.confirmed + activeCounts.addressed}
           icon={<IconActivity size={20} />}
@@ -184,12 +184,12 @@ export function PatternDashboard({
             direction: 'up',
           } : undefined}
         />
-        <GlassStatCard
+        <StatCard
           label="Needs Review"
           value={activeCounts.detected}
           icon={<IconTarget size={20} />}
         />
-        <GlassStatCard
+        <StatCard
           label="Resolved"
           value={activeCounts.resolved}
           icon={<IconCheck size={20} />}
@@ -278,7 +278,7 @@ export function PatternDashboard({
             transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
             style={{ overflow: 'hidden' }}
           >
-            <GlassCard padding="md" hover={false}>
+            <Card variant="overlay" padding="md" hover={false}>
               <div className="flex flex-wrap gap-6">
                 {/* Lifecycle filter */}
                 <div>
@@ -344,7 +344,7 @@ export function PatternDashboard({
                   </button>
                 )}
               </div>
-            </GlassCard>
+            </Card>
           </motion.div>
         )}
       </AnimatePresence>
@@ -360,7 +360,7 @@ export function PatternDashboard({
             className="space-y-4"
           >
             {filteredPatterns.length === 0 ? (
-              <GlassCard padding="lg" hover={false}>
+              <Card variant="overlay" padding="lg" hover={false}>
                 <div className="text-center py-8">
                   <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
                     <IconSparkles size={24} className="text-warm-400" />
@@ -374,7 +374,7 @@ export function PatternDashboard({
                       : 'No patterns match your current filters.'}
                   </p>
                 </div>
-              </GlassCard>
+              </Card>
             ) : (
               filteredPatterns.map(pattern => (
                 <PatternCard

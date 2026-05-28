@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconBell, IconChevronRight, IconSparkles, IconRefresh } from '@/components/icons';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   InsightCard,
   type InsightAction,
@@ -244,7 +244,7 @@ export function CoachAlertCenter({
       )}
 
       {/* Alerts Stack */}
-      <GlassCard className="p-3" glow={criticalCount > 0 ? 'green' : 'subtle'}>
+      <Card variant="overlay" padding="md" className="p-3" glow={criticalCount > 0 ? 'green' : 'subtle'}>
         <AnimatePresence>
           {heroInsight ? (
             <div className="space-y-3" data-testid="coach-alert-stack">
@@ -288,7 +288,7 @@ export function CoachAlertCenter({
             <EmptyAlertState />
           )}
         </AnimatePresence>
-      </GlassCard>
+      </Card>
     </div>
   );
 }

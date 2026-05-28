@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconGolf,
@@ -122,7 +122,7 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
   // Empty state
   if (rounds.length === 0) {
     return (
-      <GlassCard>
+      <Card variant="overlay" padding="md">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
             <IconGolf size={20} className="text-primary-600" />
@@ -139,12 +139,12 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
           description="No rounds to review yet. Complete a round to get AI-powered insights."
           action={{ label: 'Log Your First Round', href: '/golf/dashboard/rounds/new' }}
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
-    <GlassCard>
+    <Card variant="overlay" padding="md">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -198,6 +198,6 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
           </Link>
         </motion.div>
       )}
-    </GlassCard>
+    </Card>
   );
 }

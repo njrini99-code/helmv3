@@ -2,7 +2,7 @@
 
 import { m } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTrendingUp,
@@ -105,21 +105,21 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
 
   if (!resolvedTrends.windows.length) {
     return (
-      <GlassCard className="relative overflow-hidden" glow="subtle">
+      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <EmptyState
           variant="minimal"
           icon={<IconActivity size={20} />}
           description="Not enough data for trend analysis yet. Play more rounds to unlock trend insights."
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   const ongoingStreaks = resolvedStreaks.filter((s) => s.isOngoing);
 
   return (
-    <GlassCard className="relative overflow-hidden" glow="subtle">
+    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
 
       <div className="space-y-5">
@@ -238,6 +238,6 @@ export function TrendDashboard({ trends, streaks, volatility, trendData, playerS
           </m.div>
         )}
       </div>
-    </GlassCard>
+    </Card>
   );
 }

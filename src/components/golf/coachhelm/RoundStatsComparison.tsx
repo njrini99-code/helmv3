@@ -12,7 +12,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTrendingUp,
@@ -314,7 +314,7 @@ export function RoundStatsComparison({
 
   if (stats.length === 0) {
     return (
-      <GlassCard className={className}>
+      <Card variant="overlay" padding="md" className={className}>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
             <IconChart size={20} className="text-primary-600" />
@@ -329,12 +329,12 @@ export function RoundStatsComparison({
           type="stats"
           description="No stats available for comparison yet."
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
-    <GlassCard className={className}>
+    <Card variant="overlay" padding="md" className={className}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -382,7 +382,7 @@ export function RoundStatsComparison({
           </span>
         </div>
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 

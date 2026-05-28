@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import {
   IconChevronDown,
@@ -180,7 +180,7 @@ export function PatternCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
     >
-      <GlassCard
+      <Card variant="overlay"
         className={cn(
           'overflow-hidden transition-all',
           pattern.lifecycleState === 'dismissed' && 'opacity-60'
@@ -497,7 +497,7 @@ export function PatternCard({
             )}
           </AnimatePresence>
         </div>
-      </GlassCard>
+      </Card>
     </motion.div>
   );
 }

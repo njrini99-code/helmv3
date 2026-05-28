@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { isNativeApp } from '@/lib/utils/capacitor';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 
 export function SupportHeader() {
   const [isNative, setIsNative] = useState(false);
@@ -16,7 +16,7 @@ export function SupportHeader() {
 
   return (
     <header>
-      <GlassCard
+      <Card variant="overlay"
         hover={false}
         padding="none"
         className="rounded-none border-x-0 border-t-0 border-b border-warm-200/60 shadow-none"
@@ -37,7 +37,7 @@ export function SupportHeader() {
             </Link>
           )}
         </div>
-      </GlassCard>
+      </Card>
     </header>
   );
 }

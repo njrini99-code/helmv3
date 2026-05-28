@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { IconInfo } from '@/components/icons';
 import { getTeamPatterns, getPatternStats } from '@/app/golf/actions/pattern-management';
 import { PatternsDashboardClient } from './PatternsDashboardClient';
@@ -13,7 +13,7 @@ import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable'
 function ErrorState({ error }: { error: string }) {
   return (
     <div className="min-h-full flex items-center justify-center p-4 md:p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
-      <GlassCard className="max-w-md w-full text-center">
+      <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconInfo size={32} className="text-red-500" />
         </div>
@@ -27,7 +27,7 @@ function ErrorState({ error }: { error: string }) {
         >
           Try Again
         </a>
-      </GlassCard>
+      </Card>
     </div>
   );
 }

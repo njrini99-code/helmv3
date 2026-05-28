@@ -11,7 +11,7 @@ import {
   DrawerDescription,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconDownload,
   IconFile,
@@ -191,7 +191,7 @@ export function InsightExportModal({
         </div>
 
         {/* Preview Info */}
-        <GlassCard variant="secondary" padding="sm">
+        <Card variant="overlay" padding="sm" className="rounded-lg shadow-glass-sm">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-warm-100">
               <IconFile size={20} className="text-warm-500" />
@@ -205,7 +205,7 @@ export function InsightExportModal({
               </p>
             </div>
           </div>
-        </GlassCard>
+        </Card>
 
         {/* Result Message */}
         {exportResult && (
