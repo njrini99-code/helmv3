@@ -56,9 +56,13 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
             <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               CoachHelm
             </p>
-            <h1 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
+            {/* a11y W3D: page h1 comes from the consolidated PageHeader
+                (MobileNavHeader) above; this in-content title is demoted to
+                <h2> so the page has exactly one semantic <h1>. Visual look is
+                unchanged — sizing comes from the className, not the tag. */}
+            <h2 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
               Chat history
-            </h1>
+            </h2>
             <p className="mt-2 text-sm text-warm-500">
               {conversations.length === 0
                 ? 'No conversations yet — start one from any dashboard page.'
