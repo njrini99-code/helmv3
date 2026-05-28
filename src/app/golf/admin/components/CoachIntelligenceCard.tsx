@@ -146,7 +146,9 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
           <p className="text-warm-500 text-sm">No coach data available</p>
         </div>
       ) : (
-        <div className="overflow-x-auto -mx-6 px-6">
+        <>
+        {/* Desktop table — hidden on <md, horizontally scrollable from md up */}
+        <div className="hidden md:block overflow-x-auto -mx-6 px-6">
           <table className="w-full min-w-[800px]">
             <thead>
               <tr className="border-b border-warm-200/60">
@@ -363,6 +365,196 @@ export default function CoachIntelligenceCard({ coaches }: CoachIntelligenceCard
             </tbody>
           </table>
         </div>
+
+        {/* Mobile card list — shown only on <md. One Card per row with the
+            SAME columns / values / data as the desktop table (nothing dropped):
+            the Averages summary row, then each coach with Players, Review Rate,
+            Avg Response, Insights, Philosophy, Last Active. */}
+        <div className="md:hidden space-y-3">
+          {/* Summary card (mirrors the Averages summary row) */}
+          <div className="rounded-xl border border-warm-200/60 bg-warm-50/50 p-4">
+            <p className="text-xs font-semibold text-warm-500 uppercase tracking-wide mb-3">
+              Averages
+            </p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Players</span>
+                <span className="text-sm font-medium text-warm-700">{avgPlayers}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Review Rate</span>
+                <span
+                  className={cn(
+                    'inline-block text-sm font-medium rounded-full px-2.5 py-0.5',
+                    avgReviewRate >= 70
+                      ? 'bg-primary-100 text-primary-700'
+                      : avgReviewRate >= 30
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-red-100 text-red-700'
+                  )}
+                >
+                  {avgReviewRate.toFixed(1)}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Avg Response</span>
+                {avgResponseTime !== null ? (
+                  <span
+                    className={cn(
+                      'text-sm font-medium',
+                      avgResponseTime < 24
+                        ? 'text-primary-600'
+                        : avgResponseTime < 72
+                          ? 'text-amber-600'
+                          : 'text-red-600'
+                    )}
+                  >
+                    {avgResponseTime.toFixed(1)}h
+                  </span>
+                ) : (
+                  <span className="text-sm text-warm-400">&mdash;</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Insights</span>
+                <span className="text-sm font-medium text-warm-700">{avgInsightsViewed}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Philosophy</span>
+                <span className="text-sm text-warm-500">
+                  {philosophyCount}/{totalCoaches}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-warm-400">Last Active</span>
+                <span className="text-sm text-warm-400">&mdash;</span>
+              </div>
+            </div>
+          </div>
+
+          {/* One card per coach */}
+          {sorted.map((coach) => {
+            const inactive = isInactiveOver7Days(coach.lastActiveAt);
+
+            return (
+              <div
+                key={coach.id}
+                className={cn(
+                  'rounded-xl border p-4 transition-colors',
+                  inactive
+                    ? 'border-red-200/60 bg-red-50/40'
+                    : 'border-warm-100/60 bg-warm-50/40'
+                )}
+              >
+                {/* Coach name + team + last active */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-warm-900 truncate">
+                      {coach.name}
+                    </div>
+                    {coach.teamName && (
+                      <div className="text-xs text-warm-400 mt-0.5 truncate">
+                        {coach.teamName}
+                      </div>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      'text-xs flex-shrink-0',
+                      inactive ? 'text-red-500 font-medium' : 'text-warm-500'
+                    )}
+                  >
+                    {timeAgo(coach.lastActiveAt)}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-warm-400">Players</span>
+                    <span className="text-sm text-warm-700">{coach.totalPlayers}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-warm-400">Review Rate</span>
+                    <span
+                      className={cn(
+                        'inline-block text-sm font-medium rounded-full px-2.5 py-0.5',
+                        coach.reviewRate >= 70
+                          ? 'bg-primary-100 text-primary-700'
+                          : coach.reviewRate >= 30
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-red-100 text-red-700'
+                      )}
+                    >
+                      {coach.reviewRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-warm-400">Avg Response</span>
+                    {coach.avgResponseTimeHours !== null ? (
+                      <span
+                        className={cn(
+                          'text-sm font-medium',
+                          coach.avgResponseTimeHours < 24
+                            ? 'text-primary-600'
+                            : coach.avgResponseTimeHours < 72
+                              ? 'text-amber-600'
+                              : 'text-red-600'
+                        )}
+                      >
+                        {coach.avgResponseTimeHours < 1
+                          ? `${Math.round(coach.avgResponseTimeHours * 60)}m`
+                          : `${coach.avgResponseTimeHours.toFixed(1)}h`}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-warm-400">&mdash;</span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-warm-400">Insights</span>
+                    <span className="text-sm text-warm-700">{coach.insightsViewed}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-warm-400">Philosophy</span>
+                    {coach.philosophyConfigured ? (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-600">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M4.5 12.75l6 6 9-13.5"
+                          />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-500">
+                        <svg
+                          className="w-3.5 h-3.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2.5}
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        </>
       )}
     </div>
   );

@@ -390,6 +390,282 @@ const CoachTableRow = React.memo(
 );
 
 // ============================================================================
+// MEMOIZED MOBILE CARD COMPONENT
+// ============================================================================
+// The <md companion to CoachTableRow. Carries EVERY column, value and action
+// the desktop row exposes (checkbox, star, name + title, school, division,
+// conference, engagement, status dropdown, email status, priority, last
+// contact, segments, three-dot action menu) — laid out vertically as a card so
+// nothing is hidden behind a horizontal scroll on phones. Shares the exact same
+// props / handlers / memo contract as CoachTableRow.
+// ============================================================================
+const CoachTableCard = React.memo(
+  function CoachTableCard({
+    coach,
+    isSelected,
+    isFocused,
+    isStatusOpen,
+    isActionOpen,
+    isPriorityOpen,
+    onClick,
+    onToggleSelect,
+    onToggleStar,
+    onStatusChange,
+    onPriorityChange,
+    onLogContact,
+    onOpenStatus,
+    onOpenAction,
+    onOpenPriority,
+    statusConfig,
+    priorityConfig,
+    engagement,
+    segments,
+  }: CoachTableRowProps) {
+    const handleCardClick = () => onClick(coach);
+    const handleCheckbox = () => onToggleSelect(coach.id);
+    const handleStar = () => onToggleStar(coach.id, coach.is_starred);
+
+    return (
+      <div
+        className={cn(
+          'cursor-pointer group transition-colors duration-150 px-4 py-3.5',
+          isSelected && 'bg-primary-50/50 border-l-2 border-l-primary-500',
+          !isSelected && isFocused && 'bg-white/60',
+          !isSelected && !isFocused && 'hover:bg-white/60',
+        )}
+        onClick={handleCardClick}
+      >
+        {/* Top row: checkbox + name/title + star + action menu */}
+        <div className="flex items-start gap-3">
+          <div className="pt-0.5" onClick={e => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={handleCheckbox}
+              className="w-4 h-4 rounded-md border-warm-300 text-primary-600 focus:ring-primary-500/20 cursor-pointer"
+            />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-warm-900 leading-tight truncate">{coach.name}</p>
+            {coach.title && <p className="text-label text-warm-400 truncate">{coach.title}</p>}
+            <p className="text-sm text-warm-800 truncate mt-0.5">{coach.school}</p>
+          </div>
+
+          <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            {/* Star */}
+            <IconButton variant="default" aria-label="Favorite"
+              onClick={handleStar}
+              className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-40')}
+            >
+              <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-amber-300')} />
+            </IconButton>
+
+            {/* Three-dot action menu */}
+            <div className="relative">
+              <IconButton variant="default" aria-label="More options"
+                onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
+                className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-all duration-200"
+              >
+                <IconMoreHorizontal size={16} />
+              </IconButton>
+              {isActionOpen && (
+                <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                  <Button variant="ghost"
+                    onClick={() => { onLogContact(coach); onOpenAction(null); }}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
+                  >
+                    <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
+                  </Button>
+                  {coach.email && (
+                    <a
+                      href={`mailto:${coach.email}`}
+                      onClick={() => onOpenAction(null)}
+                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                    >
+                      <IconMail size={16} className="text-warm-400" /> Send Email
+                    </a>
+                  )}
+                  <Button variant="ghost"
+                    onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); onOpenAction(null); }}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  >
+                    <IconArrowRight size={16} className="text-warm-400" /> Move to Contacted
+                  </Button>
+                  <Button variant="ghost"
+                    onClick={() => { onToggleStar(coach.id, coach.is_starred); onOpenAction(null); }}
+                    className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
+                  >
+                    <IconStar size={16} className="text-warm-400" /> {coach.is_starred ? 'Unstar' : 'Star'}
+                  </Button>
+
+                  {/* Set Priority submenu */}
+                  <div className="relative">
+                    <Button variant="ghost"
+                      onClick={e => { e.stopPropagation(); onOpenPriority(isPriorityOpen ? null : coach.id); }}
+                      className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-2">
+                        <IconFlame size={16} className="text-warm-400" /> Set Priority
+                      </span>
+                      <IconChevronRight size={12} className="text-warm-400" />
+                    </Button>
+                    {isPriorityOpen && (
+                      <div className="absolute right-full top-0 mr-1 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl">
+                        <Button variant="ghost"
+                          onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
+                          className={cn(
+                            'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                            coach.priority === 0 ? 'bg-warm-50 font-semibold text-warm-900' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          )}
+                        >
+                          Normal
+                        </Button>
+                        <Button variant="ghost"
+                          onClick={() => { onPriorityChange?.(coach.id, 1); onOpenAction(null); onOpenPriority(null); }}
+                          className={cn(
+                            'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                            coach.priority === 1 ? 'bg-amber-50 font-semibold text-amber-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          )}
+                        >
+                          <IconZap size={16} className="text-amber-500" /> High
+                        </Button>
+                        <Button variant="ghost"
+                          onClick={() => { onPriorityChange?.(coach.id, 2); onOpenAction(null); onOpenPriority(null); }}
+                          className={cn(
+                            'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
+                            coach.priority >= 2 ? 'bg-orange-50 font-semibold text-orange-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                          )}
+                        >
+                          <IconFlame size={16} className="text-orange-500" /> Hot
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Meta chips: division + conference + engagement + status dropdown + email + priority */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 pl-7" onClick={e => e.stopPropagation()}>
+          {/* Division */}
+          <span className={cn(
+            'text-micro font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
+            coach.division === 'D2' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700',
+          )}>
+            {coach.division}
+          </span>
+
+          {/* Conference */}
+          {coach.conference && (
+            <span className="text-xs text-warm-500 truncate max-w-[140px]">{coach.conference}</span>
+          )}
+
+          {/* Engagement */}
+          <EngagementBadge coachId={coach.id} engagement={engagement} size="sm" />
+
+          {/* Status dropdown */}
+          <div className="relative">
+            <Button variant="ghost"
+              onClick={e => { e.stopPropagation(); onOpenStatus(isStatusOpen ? null : coach.id); }}
+              className={cn(
+                'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
+                STATUS_COLORS[coach.status]?.bg, STATUS_COLORS[coach.status]?.text, STATUS_COLORS[coach.status]?.border,
+                'hover:ring-1 hover:ring-warm-200',
+              )}
+            >
+              <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
+              <span>{statusConfig[coach.status]?.label}</span>
+              <IconChevronDown size={12} className="opacity-50" />
+            </Button>
+            {isStatusOpen && (
+              <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
+                {ALL_STATUSES.map(status => (
+                  <Button variant="primary"
+                    key={status}
+                    onClick={() => { onStatusChange(coach.id, status); onOpenStatus(null); }}
+                    className={cn(
+                      'w-full text-left px-3 py-1.5 text-sm flex items-center gap-2 transition-colors',
+                      coach.status === status ? 'bg-primary-50 font-semibold text-primary-700' : 'text-warm-700 hover:bg-warm-50 active:bg-warm-100',
+                    )}
+                  >
+                    <span className="flex items-center">{statusConfig[status]?.icon}</span>
+                    <span>{statusConfig[status]?.label}</span>
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Email status */}
+          <EmailStatusBadge
+            email_status={(coach as CoachRow).email_status}
+            last_email_event_type={(coach as CoachRow).last_email_event_type}
+            last_email_event_at={(coach as CoachRow).last_email_event_at}
+            compact
+          />
+
+          {/* Priority */}
+          {coach.priority > 0 ? (
+            <span className={cn('inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full', priorityConfig[coach.priority]?.bgColor, priorityConfig[coach.priority]?.color)}>
+              <span className={cn('w-1.5 h-1.5 rounded-full', coach.priority >= 2 ? 'bg-orange-500' : 'bg-amber-500')} />
+              <span className="flex items-center">{priorityConfig[coach.priority]?.iconLabel}</span>
+              {priorityConfig[coach.priority]?.label}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Footer: last contact + segments */}
+        <div className="mt-2 flex items-center justify-between gap-2 pl-7">
+          <span className={cn(
+            'text-xs tabular-nums',
+            !coach.last_contacted_at ? 'text-red-500 font-medium' : 'text-warm-500',
+          )}>
+            {formatRelativeDate(coach.last_contacted_at)}
+          </span>
+          {segments && segments.length > 0 && (
+            <div className="flex flex-wrap gap-1 justify-end max-w-[180px]">
+              {segments.slice(0, 3).map((seg) => (
+                <SegmentBadge key={seg.id} segment={seg} variant="chip" />
+              ))}
+              {segments.length > 3 && (
+                <span className="text-eyebrow text-warm-400 self-center">+{segments.length - 3}</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+  (prev, next) => {
+    // Identical memo contract to CoachTableRow.
+    return (
+      prev.coach === next.coach &&
+      prev.isSelected === next.isSelected &&
+      prev.isFocused === next.isFocused &&
+      prev.isStatusOpen === next.isStatusOpen &&
+      prev.isActionOpen === next.isActionOpen &&
+      prev.isPriorityOpen === next.isPriorityOpen &&
+      prev.statusConfig === next.statusConfig &&
+      prev.priorityConfig === next.priorityConfig &&
+      prev.engagement === next.engagement &&
+      prev.segments === next.segments &&
+      prev.onClick === next.onClick &&
+      prev.onToggleSelect === next.onToggleSelect &&
+      prev.onToggleStar === next.onToggleStar &&
+      prev.onStatusChange === next.onStatusChange &&
+      prev.onPriorityChange === next.onPriorityChange &&
+      prev.onLogContact === next.onLogContact &&
+      prev.onOpenStatus === next.onOpenStatus &&
+      prev.onOpenAction === next.onOpenAction &&
+      prev.onOpenPriority === next.onOpenPriority
+    );
+  },
+);
+
+// ============================================================================
 // MAIN TABLE COMPONENT
 // ============================================================================
 export function CoachTable({
@@ -589,7 +865,8 @@ export function CoachTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full table-fixed min-w-[600px]">
+      {/* Desktop table — hidden on <md, horizontally scrollable from md up */}
+      <table className="hidden md:table w-full table-fixed min-w-[600px]">
         <thead>
           <tr className="border-b border-warm-100 bg-warm-50/50">
             <th className="w-10 px-4 py-3">
@@ -640,6 +917,38 @@ export function CoachTable({
           ))}
         </tbody>
       </table>
+
+      {/* Mobile card list — shown only on <md. One card per coach carrying the
+          SAME columns / values / actions as a desktop row (nothing dropped):
+          selection checkbox, star toggle, name + title, school, division,
+          conference, engagement, status dropdown, email status, priority,
+          last contact, segments, and the three-dot action menu. */}
+      <div className="md:hidden divide-y divide-warm-50">
+        {paginatedCoaches.map((coach, index) => (
+          <CoachTableCard
+            key={coach.id}
+            coach={coach}
+            isSelected={selectedIds.has(coach.id)}
+            isFocused={focusedIndex === index}
+            isStatusOpen={openStatusDropdown === coach.id}
+            isActionOpen={openActionMenu === coach.id}
+            isPriorityOpen={openPrioritySubmenu === coach.id}
+            onClick={onCoachClick}
+            onToggleSelect={toggleSelection}
+            onToggleStar={onToggleStar}
+            onStatusChange={onStatusChange}
+            onPriorityChange={onPriorityChange}
+            onLogContact={onLogContact}
+            onOpenStatus={handleOpenStatus}
+            onOpenAction={handleOpenAction}
+            onOpenPriority={handleOpenPriority}
+            statusConfig={statusConfig}
+            priorityConfig={priorityConfig}
+            engagement={coachEngagement?.[coach.id]}
+            segments={coachSegments?.[coach.id]}
+          />
+        ))}
+      </div>
 
       {/* Pagination */}
       <div className="bg-warm-50/20 border-t border-warm-100/30 px-4 py-3">

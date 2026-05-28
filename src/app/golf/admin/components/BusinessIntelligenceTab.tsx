@@ -1158,7 +1158,9 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Team Health Scores" subtitle="Click column headers to sort" />
         <GlassCard className="overflow-x-auto">
           {sortedTeams.length > 0 ? (
-            <table className="w-full text-sm min-w-[500px]">
+            <>
+            {/* Desktop table — hidden on <md */}
+            <table className="hidden md:table w-full text-sm min-w-[500px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-3 px-3">Team</th>
@@ -1229,6 +1231,70 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile card list — shown only on <md. One card per team with the
+                SAME columns / values as the desktop table (nothing dropped):
+                Team, Org, Score, Grade, Players, Active, Rounds/Mo, Risk. */}
+            <div className="md:hidden space-y-2.5">
+              {sortedTeams.map((team) => (
+                <div
+                  key={team.teamId}
+                  className="rounded-xl border border-white/30 bg-warm-50/40 p-3.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-warm-800 truncate">{team.teamName}</p>
+                      {team.orgName && (
+                        <p className="text-warm-500 text-xs truncate mt-0.5">{team.orgName}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className={cn(
+                          'inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold',
+                          team.grade === 'A' && 'bg-primary-100 text-primary-800',
+                          team.grade === 'B' && 'bg-blue-100 text-blue-800',
+                          team.grade === 'C' && 'bg-amber-100 text-amber-800',
+                          team.grade === 'D' && 'bg-orange-100 text-orange-800',
+                          team.grade === 'F' && 'bg-red-100 text-red-800'
+                        )}
+                      >
+                        {team.grade}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                          team.riskLevel === 'healthy' && 'bg-primary-50 text-primary-700',
+                          team.riskLevel === 'at_risk' && 'bg-amber-50 text-amber-700',
+                          team.riskLevel === 'critical' && 'bg-red-50 text-red-700'
+                        )}
+                      >
+                        {team.riskLevel === 'healthy' ? 'Healthy' : team.riskLevel === 'at_risk' ? 'At Risk' : 'Critical'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Score</span>
+                      <span className="text-sm tabular-nums font-semibold text-warm-900">{team.score}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Players</span>
+                      <span className="text-sm tabular-nums text-warm-700">{team.playerCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Active</span>
+                      <span className="text-sm tabular-nums text-warm-700">{team.activePlayerCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Rounds/Mo</span>
+                      <span className="text-sm tabular-nums text-warm-700">{team.roundsThisMonth}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
           ) : (
             <div className="text-center py-8 text-warm-400 text-sm">No team health data available</div>
           )}
@@ -1240,7 +1306,8 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <div>
           <BISectionHeader title="At-Risk Accounts" subtitle="Users and teams showing churn signals" />
           <GlassCard className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[400px]">
+            {/* Desktop table — hidden on <md */}
+            <table className="hidden md:table w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="text-left text-warm-500 font-medium py-3 px-3">Name</th>
@@ -1303,6 +1370,70 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile card list — shown only on <md. One card per account with
+                the SAME columns / values as the desktop table (nothing dropped):
+                Name, Type, Team, Risk Score, Days Inactive, Signals. */}
+            <div className="md:hidden space-y-2.5">
+              {h.atRiskAccounts.map((acct) => (
+                <div
+                  key={`m-${acct.type}-${acct.id}`}
+                  className="rounded-xl border border-white/30 bg-warm-50/40 p-3.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="font-medium text-warm-800 truncate min-w-0">{acct.name}</p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                          acct.type === 'coach' && 'bg-blue-50 text-blue-700',
+                          acct.type === 'player' && 'bg-primary-50 text-primary-700',
+                          acct.type === 'team' && 'bg-violet-50 text-violet-700'
+                        )}
+                      >
+                        {acct.type}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold',
+                          acct.riskScore >= 70 ? 'bg-red-100 text-red-800' : acct.riskScore >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-warm-100 text-warm-700'
+                        )}
+                      >
+                        {acct.riskScore}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Team</span>
+                      <span className="text-xs text-warm-600 truncate">{acct.teamName || '--'}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-warm-500">Days Inactive</span>
+                      <span className="text-sm tabular-nums text-warm-600">{acct.daysSinceLastActive}d</span>
+                    </div>
+                  </div>
+                  {acct.riskSignals.length > 0 && (
+                    <div className="mt-2.5">
+                      <span className="text-xs text-warm-500">Signals</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {acct.riskSignals.slice(0, 3).map((signal, i) => (
+                          <span
+                            key={i}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-eyebrow font-medium bg-warm-100 text-warm-600"
+                          >
+                            {signal}
+                          </span>
+                        ))}
+                        {acct.riskSignals.length > 3 && (
+                          <span className="text-eyebrow text-warm-400 self-center">+{acct.riskSignals.length - 3} more</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </GlassCard>
         </div>
       )}
@@ -1312,7 +1443,9 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <BISectionHeader title="Conversion Proxy Leaderboard" subtitle="Teams ranked by conversion readiness score" />
         <GlassCard className="overflow-x-auto">
           {h.conversionProxies.length > 0 ? (
-            <table className="w-full text-sm min-w-[400px]">
+            <>
+            {/* Desktop table — hidden on <md */}
+            <table className="hidden md:table w-full text-sm min-w-[400px]">
               <thead>
                 <tr className="border-b border-white/20">
                   <th className="hidden md:table-cell text-left text-warm-500 font-medium py-2 px-3">#</th>
@@ -1361,6 +1494,67 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                   ))}
               </tbody>
             </table>
+
+            {/* Mobile card list — shown only on <md. One card per team with the
+                SAME columns / values as the desktop table (nothing dropped):
+                #, Team, Score, Tier, Players, Active %, Rnds/Wk, AI, Tenure. */}
+            <div className="md:hidden space-y-2.5">
+              {[...h.conversionProxies]
+                .sort((a, b) => b.score - a.score)
+                .map((proxy, i) => (
+                  <div
+                    key={`m-${proxy.teamId}`}
+                    className="rounded-xl border border-white/30 bg-warm-50/40 p-3.5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-warm-400 tabular-nums text-xs flex-shrink-0">{i + 1}</span>
+                        <p className="font-medium text-warm-800 truncate">{proxy.teamName}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="tabular-nums font-semibold text-warm-900 text-sm">{proxy.score}</span>
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                            proxy.tier === 'high' && 'bg-primary-50 text-primary-700',
+                            proxy.tier === 'medium' && 'bg-amber-50 text-amber-700',
+                            proxy.tier === 'low' && 'bg-warm-100 text-warm-600'
+                          )}
+                        >
+                          {proxy.tier}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-warm-500">Players</span>
+                        <span className="text-sm tabular-nums text-warm-700">{proxy.signals.playerCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-warm-500">Active %</span>
+                        <span className="text-sm tabular-nums text-warm-700">{proxy.signals.activePlayerPct}%</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-warm-500">Rnds/Wk</span>
+                        <span className="text-sm tabular-nums text-warm-700">{safeFixed(proxy.signals.roundsPerWeek, 1)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-warm-500">Tenure</span>
+                        <span className="text-sm tabular-nums text-warm-600">{proxy.signals.tenureDays}d</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-warm-500">AI</span>
+                        {proxy.signals.aiAdoption ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-xs font-bold">Y</span>
+                        ) : (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-warm-100 text-warm-400 text-xs">N</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+            </>
           ) : (
             <div className="text-center py-8 text-warm-400 text-sm">No conversion data available</div>
           )}

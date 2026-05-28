@@ -334,7 +334,10 @@ export function WeekView({
       className="flex-1 overflow-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
       data-scroll-container
     >
-      <div className="min-w-[800px] px-3 md:px-5 pt-2">
+      {/* Desktop time-grid — hidden on <md (it requires an 800px min-width that
+          forces an awkward horizontal scroll on phones). The <md companion is a
+          vertical day-list rendered below. */}
+      <div className="hidden md:block min-w-[800px] px-3 md:px-5 pt-2">
         {/* Header row - Day names and dates */}
         <div
           className={cn(
@@ -630,6 +633,151 @@ export function WeekView({
             <p className="text-sm text-warm-500 max-w-xs mx-auto">
               Click &ldquo;Add Event&rdquo; to schedule something for this week
             </p>
+          </div>
+        )}
+      </div>
+
+      {/* Mobile vertical day-list companion — shown only on <md. One section per
+          day (Sun–Sat) listing that day's all-day AND timed events plus any
+          player busy periods, in start-time order, using the same
+          PremiumEventBlock + onEventClick handler as the desktop grid. Avoids
+          the 800px horizontal scroll the time-grid requires. Nothing dropped. */}
+      <div className="md:hidden px-3 pt-2 pb-4">
+        {/* Selected player indicator (mirrors the desktop overlay badge) */}
+        {selectedPlayerName && (
+          <div className="mb-3 inline-flex px-3 py-1.5 rounded-full bg-cream-100/82 backdrop-blur-md border border-primary-600/20 shadow-sm">
+            <p className="text-xs font-medium text-primary-700">
+              Viewing {selectedPlayerName}&apos;s schedule
+            </p>
+          </div>
+        )}
+
+        {timedEventsByDay.every(d => d.length === 0) && allDayEventsByDay.every(d => d.length === 0) ? (
+          <div className="mt-16 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
+              <Calendar className="w-7 h-7 text-warm-400" />
+            </div>
+            <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
+              No events this week
+            </h3>
+            <p className="text-sm text-warm-500 max-w-xs mx-auto">
+              Click &ldquo;Add Event&rdquo; to schedule something for this week
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {weekDates.map((date, dayIndex) => {
+              const isCurrentDay = dayIndex === todayIndex;
+              const dayName = DAYS[date.getDay()];
+              const dayNum = date.getDate();
+              const allDay = allDayEventsByDay[dayIndex] ?? [];
+              // Timed events sorted by start, matching the grid's layout order.
+              const timed = [...(timedEventsByDay[dayIndex] ?? [])].sort(
+                (a, b) => getMinutesFromMidnight(a.start_date) - getMinutesFromMidnight(b.start_date)
+              );
+              const busy = busyPeriodsByDay[dayIndex] ?? [];
+
+              // Skip days with no content to keep the list compact.
+              if (allDay.length === 0 && timed.length === 0 && busy.length === 0) return null;
+
+              return (
+                <div key={dayIndex}>
+                  {/* Day heading */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={cn(
+                      'inline-flex items-center justify-center w-7 h-7 rounded-full text-body-sm font-medium',
+                      isCurrentDay
+                        ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
+                        : 'text-warm-800'
+                    )}>
+                      {dayNum}
+                    </span>
+                    <span className={cn(
+                      'text-eyebrow font-medium uppercase tracking-[0.12em]',
+                      isCurrentDay ? 'text-primary-600' : 'text-warm-400'
+                    )}>
+                      {dayName}
+                    </span>
+                    {isCurrentDay && (
+                      <span className="text-eyebrow font-medium uppercase tracking-[0.1em] text-primary-600">
+                        Today
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {/* All-day events */}
+                    {allDay.map((event) => (
+                      <div key={event.id} className="pointer-events-auto">
+                        <PremiumEventBlock
+                          event={{
+                            id: event.id,
+                            title: event.title,
+                            event_type: event.event_type,
+                            status: event.status || 'scheduled',
+                            start_time: event.start_time,
+                            end_time: event.end_time,
+                            location: event.location,
+                            all_day: event.all_day,
+                            recurring: event.recurring,
+                          }}
+                          onClick={() => onEventClick?.(event)}
+                          compact={true}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Timed events */}
+                    {timed.map((event) => (
+                      <div key={event.id} className="pointer-events-auto">
+                        <PremiumEventBlock
+                          event={{
+                            id: event.id,
+                            title: event.title,
+                            event_type: event.event_type,
+                            status: event.status || 'scheduled',
+                            start_time: event.start_time,
+                            end_time: event.end_time,
+                            location: event.location,
+                            all_day: event.all_day,
+                            recurring: event.recurring,
+                          }}
+                          onClick={() => onEventClick?.(event)}
+                        />
+                      </div>
+                    ))}
+
+                    {/* Player busy periods (classes / blocked time) */}
+                    {busy.map((period, periodIndex) => {
+                      const isClass = period.type === 'class';
+                      const hasColor = !!period.color;
+                      const bgColor = hasColor
+                        ? period.color!.light
+                        : isClass
+                          ? 'rgba(244, 63, 94, 0.08)'
+                          : 'rgba(251, 146, 60, 0.12)';
+                      const borderColor = hasColor
+                        ? period.color!.bg
+                        : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
+                      const textColor = hasColor
+                        ? period.color!.bg
+                        : isClass ? 'rgb(244, 63, 94)' : 'rgb(251, 146, 60)';
+                      return (
+                        <div
+                          key={`busy-${periodIndex}`}
+                          className="rounded-lg border-l-2 px-2.5 py-1.5"
+                          style={{ background: bgColor, borderColor }}
+                        >
+                          <p className="text-xs font-medium truncate" style={{ color: textColor }}>
+                            {period.title || (isClass ? 'Class' : 'Busy')}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
