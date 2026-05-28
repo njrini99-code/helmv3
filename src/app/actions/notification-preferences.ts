@@ -16,9 +16,11 @@ const notificationPreferencesSchema = z.object({
   email_profile_views: z.boolean().optional(),
   email_announcements: z.boolean().optional(),
   email_task_reminders: z.boolean().optional(),
+  email_coachhelm: z.boolean().optional(),
   push_messages: z.boolean().optional(),
   push_events: z.boolean().optional(),
   push_task_reminders: z.boolean().optional(),
+  push_coachhelm: z.boolean().optional(),
 });
 
 type NotificationPreferencesInput = z.infer<typeof notificationPreferencesSchema>;
@@ -100,9 +102,11 @@ export async function getNotificationPreferences(): Promise<{
       email_profile_views: false,
       email_announcements: true,
       email_task_reminders: true,
+      email_coachhelm: true,
       push_messages: false,
       push_events: false,
       push_task_reminders: true,
+      push_coachhelm: true,
     };
 
     const prefs = (data?.notification_preferences as NotificationPreferencesInput) || {};

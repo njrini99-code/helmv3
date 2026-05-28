@@ -6,13 +6,14 @@
  * drawer launcher elsewhere on the dashboard.
  */
 
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persistence';
 import { ChatHistoryClient } from './ChatHistoryClient';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { Reveal } from '@/components/ui/reveal';
 
 interface PageProps {
@@ -22,7 +23,16 @@ interface PageProps {
 export default async function ChatHistoryPage({ searchParams }: PageProps) {
   const session = await getGolfSessionProfile();
   if (!session) redirect('/golf/login');
-  if (!session.coach) notFound();
+  if (!session.coach) {
+    return (
+      <FeatureUnavailable
+        title="Chat History"
+        message="Coach chat history is part of the coach toolkit. Players can chat directly with their coach from the Messages tab."
+        actionHref="/golf/dashboard/messages"
+        actionLabel="Open Messages"
+      />
+    );
+  }
 
   const sb = await createClient();
   const conversations = await listConversations(sb);

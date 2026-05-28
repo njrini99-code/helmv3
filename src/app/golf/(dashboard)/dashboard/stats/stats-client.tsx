@@ -1142,6 +1142,7 @@ export default function StatsClient({
         <GolfStatsDisplay
           stats={detailedStats}
           playerName={playerName}
+          playerId={resolvedPlayerId}
           playerProfile={userRole === 'coach' && selectedPlayer ? {
             avatarUrl: selectedPlayer.avatar_url,
             gradYear: selectedPlayer.graduation_year,

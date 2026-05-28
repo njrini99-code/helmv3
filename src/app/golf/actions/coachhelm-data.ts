@@ -14,6 +14,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
 import {
   verifyPlayerAccess as canonicalVerifyPlayerAccess,
@@ -315,7 +316,15 @@ export async function getPlayerProfile(
 
     let teamStats: StatsCacheRow[] = [];
     if (teamPlayerIds.length > 0) {
-      const { data: statsData } = await supabase
+      // RLS on golf_player_stats_cache only lets a player read their own
+      // row. For z-score normalization we need the full team population —
+      // otherwise variance collapses and categories fall back to a
+      // benchmark calculation that diverges from /stats. Use the admin
+      // client here (mirrors getPlayerStatsIntelligence); we only return
+      // the requesting player's normalized scores, never per-teammate
+      // values.
+      const admin = createAdminClient();
+      const { data: statsData } = await admin
         .from('golf_player_stats_cache')
         .select('player_id, scoring_average, gir_percentage, driving_accuracy_percentage, putts_per_round, scrambling_percentage, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting')
         .in('player_id', teamPlayerIds);
@@ -382,6 +391,36 @@ export async function getPlayerProfile(
       categories = computeCategoryRatings(benchZScores);
       composite = computeCompositeRating(benchZScores);
     }
+    // Override categories + composite with the canonical stats-intelligence
+    // calculation so /coachhelm and /stats never disagree. The local z-score
+    // path above uses a slightly different metric set (sgTotal/sgOffTee vs
+    // drivingDistance/proximityToHole/threePuttAvoidance), which is exactly
+    // the drift the comment in stats-intelligence.ts warns against. Defer
+    // to that function as the single source of truth — it already handles
+    // RLS via the admin client and gracefully returns null when there's
+    // not enough team data.
+    try {
+      const { getPlayerStatsIntelligence } = await import('@/app/golf/actions/stats-intelligence');
+      const canonical = await getPlayerStatsIntelligence(playerId);
+      if (canonical.success && canonical.data) {
+        if (canonical.data.categories) {
+          categories = {
+            teeGame: canonical.data.categories.teeGame,
+            approach: canonical.data.categories.approach,
+            shortGame: canonical.data.categories.shortGame,
+            putting: canonical.data.categories.putting,
+            scoring: canonical.data.categories.scoring,
+            overall: canonical.data.categories.overall,
+          };
+        }
+        if (canonical.data.composite != null) {
+          composite = canonical.data.composite;
+        }
+      }
+    } catch {
+      // Keep the local fallback values if the canonical action throws.
+    }
+
     const playerMetricsForPercentile = playerStatsRow
       ? mapStatsCacheToMetrics(playerStatsRow)
       : {};

@@ -4,6 +4,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { InsightsPageContent } from './InsightsPageContent';
 import { PageLoading } from '@/components/ui/loading';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { getInsightFilterOptions } from '@/app/golf/actions/insight-management';
 
 // ============================================================================
@@ -45,7 +46,16 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   if (!session) redirect('/golf/login');
 
   const { coach } = session;
-  if (!coach) redirect('/golf/dashboard?message=Insights+is+a+coach-only+feature');
+  if (!coach) {
+    return (
+      <FeatureUnavailable
+        title="AI Insights"
+        message="The Insights workspace is designed for coaches managing the team's AI-generated insights. Players can view their own insights from the CoachHelm dashboard."
+        actionHref="/golf/dashboard/coachhelm"
+        actionLabel="Open CoachHelm"
+      />
+    );
+  }
 
   // Get filter options (players, etc.)
   const filterOptionsResult = await getInsightFilterOptions(coach.id);

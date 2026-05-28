@@ -875,9 +875,11 @@ function NotificationsPanel() {
     email_announcements: true,
     email_event_reminders: true,
     email_task_reminders: true,
+    email_coachhelm: true,
     push_messages: false,
     push_events: false,
     push_task_reminders: true,
+    push_coachhelm: true,
   });
 
   useEffect(() => {
@@ -890,9 +892,11 @@ function NotificationsPanel() {
             email_announcements: result.data.email_announcements ?? true,
             email_event_reminders: result.data.email_event_reminders ?? true,
             email_task_reminders: result.data.email_task_reminders ?? true,
+            email_coachhelm: result.data.email_coachhelm ?? true,
             push_messages: result.data.push_messages ?? false,
             push_events: result.data.push_events ?? false,
             push_task_reminders: result.data.push_task_reminders ?? true,
+            push_coachhelm: result.data.push_coachhelm ?? true,
           });
         }
       } catch { /* use defaults */ }
@@ -931,6 +935,7 @@ function NotificationsPanel() {
         <div className="space-y-1">
           <ToggleSwitch label="Messages" description="Email for new messages" checked={prefs.email_messages} onChange={() => toggle('email_messages')} />
           <ToggleSwitch label="Announcements" description="Team announcements" checked={prefs.email_announcements} onChange={() => toggle('email_announcements')} />
+          <ToggleSwitch label="CoachHelm Insights" description="AI-generated coaching insights and weekly digests" checked={prefs.email_coachhelm} onChange={() => toggle('email_coachhelm')} />
           <ToggleSwitch label="Event Reminders" description="Upcoming events and schedule" checked={prefs.email_event_reminders} onChange={() => toggle('email_event_reminders')} />
           <ToggleSwitch label="Task Reminders" description="Practice tasks and assignments" checked={prefs.email_task_reminders} onChange={() => toggle('email_task_reminders')} />
         </div>
@@ -942,6 +947,7 @@ function NotificationsPanel() {
           <ToggleSwitch label="Messages" description="Instant push notifications" checked={prefs.push_messages} onChange={() => toggle('push_messages')} />
           <ToggleSwitch label="Events" description="Event and schedule updates" checked={prefs.push_events} onChange={() => toggle('push_events')} />
           <ToggleSwitch label="Task Reminders" description="Push for tasks and reminders" checked={prefs.push_task_reminders} onChange={() => toggle('push_task_reminders')} />
+          <ToggleSwitch label="CoachHelm Insights" description="Push when new insights or weekly digests land" checked={prefs.push_coachhelm} onChange={() => toggle('push_coachhelm')} />
         </div>
       </div>
 

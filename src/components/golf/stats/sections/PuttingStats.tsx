@@ -1,13 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
+import { PuttHeatmap } from '@/components/golf/coachhelm/v3/PuttHeatmap';
+import type { PuttRecord } from '@/components/golf/coachhelm/v3/PuttHeatmap/types';
+import { createClient } from '@/lib/supabase/client';
 
-export function PuttingStats({ stats }: { stats: GolfStats }) {
+interface PuttingStatsProps {
+  stats: GolfStats;
+  /** When provided, the heatmap section fetches raw putts for this
+   *  player and renders above the stat grid. */
+  playerId?: string | null;
+  /** When set to a specific round, the heatmap scopes to that round
+   *  only (matches the round-filter dropdown above the tabs). */
+  selectedRoundId?: string | 'overall';
+}
+
+export function PuttingStats({ stats, playerId, selectedRoundId = 'overall' }: PuttingStatsProps) {
   const [selectedBreak, setSelectedBreak] = useState<'left_to_right' | 'right_to_left' | 'straight' | 'multiple' | null>(null);
+  const supabase = useMemo(() => (playerId ? createClient() : null), [playerId]);
+  const [putts, setPutts] = useState<PuttRecord[] | null>(null);
+
+  useEffect(() => {
+    if (!playerId || !supabase) {
+      setPutts(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      // golf_shots is joined to golf_rounds via round_id (no player_id
+      // column on the shot row), so we resolve round IDs first.
+      let roundIds: string[] = [];
+      if (selectedRoundId && selectedRoundId !== 'overall') {
+        roundIds = [selectedRoundId];
+      } else {
+        const { data: rounds } = await supabase
+          .from('golf_rounds')
+          .select('id')
+          .eq('player_id', playerId)
+          .eq('status', 'completed')
+          .order('round_date', { ascending: false })
+          .limit(200);
+        roundIds = (rounds ?? []).map((r) => r.id as string);
+      }
+      if (cancelled) return;
+      if (roundIds.length === 0) {
+        setPutts([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('golf_shots')
+        .select('round_id, hole_number, putt_distance_feet, putt_made, miss_direction')
+        .in('round_id', roundIds)
+        .not('putt_distance_feet', 'is', null)
+        .limit(5000);
+      if (cancelled) return;
+      if (error || !data) {
+        setPutts([]);
+        return;
+      }
+      const records: PuttRecord[] = data
+        .filter((r) => typeof r.putt_distance_feet === 'number' && r.putt_made !== null)
+        .map((r) => ({
+          distance_feet: r.putt_distance_feet as number,
+          made: !!r.putt_made,
+          miss_direction: r.miss_direction,
+          hole_number: r.hole_number ?? null,
+          round_id: r.round_id ?? null,
+        }));
+      setPutts(records);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [playerId, selectedRoundId, supabase]);
 
   return (
     <motion.div
@@ -16,6 +85,17 @@ export function PuttingStats({ stats }: { stats: GolfStats }) {
       initial="hidden"
       animate="visible"
     >
+      {/* Premium heatmap — only when we have a playerId AND some putts. */}
+      {playerId && putts !== null && putts.length > 0 && (
+        <PuttHeatmap
+          putts={putts}
+          title={
+            selectedRoundId !== 'overall'
+              ? 'Putting heatmap · this round'
+              : 'Putting heatmap'
+          }
+        />
+      )}
       {/* Key Metrics */}
       <motion.div className="grid grid-cols-2 md:grid-cols-4 gap-3" variants={containerVariants}>
         <StatCard

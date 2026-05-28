@@ -45,6 +45,7 @@ import {
 import { IconSparkles, IconRefresh } from '@/components/icons';
 import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToFocusAreaButton';
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
+import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 
 // ============================================================================
 // TYPES
@@ -66,6 +67,7 @@ interface RoundData {
     hole_number: number;
     score: number | null;
     par: number | null;
+    yardage: number | null;
   }>;
 }
 
@@ -658,6 +660,12 @@ export default function RoundReviewPage() {
             roundScore={roundScoreToPar}
             roundId={roundId}
           />
+        )}
+
+        {/* Hole-by-hole shot path grid — data-driven (golf_shots), shown
+            for every review regardless of V1/V2 path. */}
+        {round.holes && round.holes.length > 0 && (
+          <HoleByHoleShotPaths roundId={roundId} holes={round.holes} />
         )}
 
         {/* Legacy V1 Review Components (fallback — shown when there is no

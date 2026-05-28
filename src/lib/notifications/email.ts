@@ -105,9 +105,13 @@ function shouldSendEmail(
 
     // Announcements
     case 'team_announcement':
-    case 'coachhelm_insight':
     case 'round_submitted':
       return prefs.email_announcements;
+
+    // CoachHelm insights — separate so muting AI insights doesn't also
+    // mute team announcements.
+    case 'coachhelm_insight':
+      return prefs.email_coachhelm;
 
     // Tasks
     case 'task_reminder':

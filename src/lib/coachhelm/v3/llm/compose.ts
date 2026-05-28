@@ -23,7 +23,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateText } from 'ai';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { checkBudget, recordSpend } from './budget';
 import { verifyCitations } from './citations';
 import type { Json } from '@/lib/types/database';
@@ -112,9 +112,14 @@ export async function compose(
     prompt_tokens = usage?.inputTokens ?? promptTokensEstimate;
     completion_tokens = usage?.outputTokens ?? Math.ceil(text.length / 4);
   } catch (err) {
-    await logServerError(
+    // LLM call failed but we have a deterministic fallback ready below —
+    // user-facing UX is unaffected. Log as warning (not error) so this
+    // shows up in dashboards as observability data rather than as a
+    // page-failing exception. Covers rate-limit/budget cases too.
+    await logServerEvent(
       `compose() LLM call failed for task=${req.task}: ${err instanceof Error ? err.message : String(err)}`,
       { action: 'v3.llm.compose' },
+      'warning',
     );
     const fallbackId = await logCall(supabase, {
       task: req.task,
