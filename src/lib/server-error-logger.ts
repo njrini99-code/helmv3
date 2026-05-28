@@ -149,7 +149,8 @@ function captureSentryTrace(
   message: string,
   error: Error | null,
   context: RoundErrorContext,
-  severity: ServerTraceSeverity
+  severity: ServerTraceSeverity,
+  forceException: boolean,
 ) {
   Sentry.withScope((scope) => {
     scope.setLevel(SENTRY_SEVERITY_MAP[severity] ?? 'error');
@@ -179,7 +180,19 @@ function captureSentryTrace(
     scope.setContext('server_trace', normalizeContext(context));
     scope.setFingerprint(buildFingerprint(context, severity));
 
-    Sentry.captureException(error ?? new Error(message));
+    // Route by severity: info/warning are messages (control-flow signals,
+    // skipped-record counters, threshold starvation), error/critical are
+    // exceptions. Without this split every logServerEvent(..., 'warning')
+    // surfaced in Sentry as an Error issue, drowning out real bugs.
+    // forceException=true preserves the original exception path for
+    // logServerException callers who explicitly handed us an Error.
+    const isMessage =
+      !forceException && (severity === 'info' || severity === 'warning');
+    if (isMessage) {
+      Sentry.captureMessage(message, SENTRY_SEVERITY_MAP[severity] ?? 'warning');
+    } else {
+      Sentry.captureException(error ?? new Error(message));
+    }
   });
 }
 
@@ -188,11 +201,12 @@ async function captureServerTrace(
   context: RoundErrorContext,
   severity: ServerTraceSeverity,
   error?: Error | null,
+  forceException = false,
 ): Promise<void> {
   const normalizedError = error ?? new Error(message);
 
   try {
-    captureSentryTrace(message, normalizedError, context, severity);
+    captureSentryTrace(message, normalizedError, context, severity, forceException);
   } catch {
     // Sentry should never block request handling.
   }
@@ -226,7 +240,9 @@ export async function logServerException(
   severity: Exclude<ServerTraceSeverity, 'info'> = 'error'
 ): Promise<void> {
   const normalizedError = error instanceof Error ? error : new Error(String(error));
-  await captureServerTrace(normalizedError.message, context, severity, normalizedError);
+  // Caller explicitly handed us an Error — preserve the exception path so
+  // the stack trace is captured even at warning severity.
+  await captureServerTrace(normalizedError.message, context, severity, normalizedError, true);
 }
 
 /**
