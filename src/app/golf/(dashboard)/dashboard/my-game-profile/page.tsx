@@ -53,9 +53,13 @@ export default async function MyGameProfilePage() {
             <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               Your game profile
             </p>
-            <h1 className="text-3xl font-medium text-warm-900 tracking-tight">
+            {/* a11y W3D: page h1 is supplied by the consolidated PageHeader
+                (MobileNavHeader) above; demote this in-content title to <h2>
+                so the page exposes exactly one semantic <h1>. The className
+                drives the look, so the visual treatment is unchanged. */}
+            <h2 className="text-3xl font-medium text-warm-900 tracking-tight">
               {firstName}&apos;s genome
-            </h1>
+            </h2>
             {genome && (
               <p className="mt-2 text-sm text-warm-600">
                 {genome.rounds_basis} rounds in your window.

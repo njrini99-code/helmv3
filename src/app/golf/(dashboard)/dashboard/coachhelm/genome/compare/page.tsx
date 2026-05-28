@@ -80,13 +80,17 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
             <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               Compare
             </p>
-            <h1 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
+            {/* a11y W3D: page h1 is supplied by the consolidated PageHeader
+                (MobileNavHeader) above; demote this in-content title to <h2>
+                so the page exposes exactly one semantic <h1>. The className
+                drives the look, so the visual treatment is unchanged. */}
+            <h2 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
               {playerA && playerB
                 ? `${playerA.name} vs ${playerB.name}`
                 : playerA
                   ? `Add a second player to compare ${playerA.name}`
                   : 'Pick two players to compare'}
-            </h1>
+            </h2>
           </header>
         </Reveal>
 

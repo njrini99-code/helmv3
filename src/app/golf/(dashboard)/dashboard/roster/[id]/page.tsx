@@ -209,9 +209,14 @@ export default async function PlayerProfilePage({ params }: PageProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div className="min-w-0">
-                    <h1 className="text-2xl font-medium text-warm-900 break-words">
+                    {/* a11y W3D: page h1 is supplied by the consolidated
+                        PageHeader (MobileNavHeader) above; demote this in-card
+                        title to <h2> so the page exposes exactly one semantic
+                        <h1>. Visual look is unchanged — the className controls
+                        sizing, not the tag. */}
+                    <h2 className="text-2xl font-medium text-warm-900 break-words">
                       {player.first_name} {player.last_name}
-                    </h1>
+                    </h2>
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       <YearBadge year={player.graduation_year} />
                       <PlayerStatusBadge playerId={player.id} currentStatus={membership.status} />

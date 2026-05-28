@@ -159,7 +159,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     };
 
     const sizes = {
-      sm: 'w-9 h-9',
+      // a11y W3D: tap target must be >= 44px. Keep the visual icon size (the
+      // children glyph is unchanged) and enlarge the hit area via min-size +
+      // padding instead of the old fixed 36px (w-9 h-9) box.
+      sm: 'min-h-[44px] min-w-[44px] p-2.5',
       md: 'w-11 h-11',
       lg: 'w-12 h-12',
     };
