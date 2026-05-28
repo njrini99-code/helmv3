@@ -12,6 +12,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
 import { ChartShell } from '@/components/ui';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import {
   IconChartRadar,
   IconCheck,
@@ -217,7 +218,22 @@ export function PatternImpactPanel({
                     tickLine={false}
                     width={72}
                   />
-                  <Tooltip content={<LifecycleTooltip />} cursor={{ fill: 'rgba(120,113,108,0.08)' }} />
+                  <Tooltip
+                    cursor={{ fill: 'rgba(120,113,108,0.08)' }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length || !payload[0]) return null;
+                      const d = payload[0].payload as { name: string; value: number };
+                      // Counts are integers; " patterns" suffix preserves the
+                      // original "5 patterns" reading exactly.
+                      return (
+                        <ChartTooltip
+                          label={d.name}
+                          rows={[{ name: '', value: d.value, suffix: ' patterns' }]}
+                          formatter={(v) => Math.round(v).toLocaleString()}
+                        />
+                      );
+                    }}
+                  />
                   <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                     {lifecycleChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -494,25 +510,6 @@ function PatternRow({
       </div>
     </motion.div>
   );
-}
-
-function LifecycleTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: { name: string; value: number } }>;
-}) {
-  if (active && payload && payload.length && payload[0]) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
-        <p className="text-sm font-medium text-warm-900">{data.name}</p>
-        <p className="text-xs text-warm-600">{data.value} patterns</p>
-      </div>
-    );
-  }
-  return null;
 }
 
 function EmptyState({ compact = false }: { compact?: boolean }) {
