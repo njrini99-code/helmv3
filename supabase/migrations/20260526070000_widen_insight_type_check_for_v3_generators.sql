@@ -19,25 +19,28 @@
 -- check list. Backwards compatible: every previously allowed value is
 -- preserved.
 
-ALTER TABLE public.golf_coach_insights
-  DROP CONSTRAINT IF EXISTS golf_coach_insights_insight_type_check;
+-- Replay note 2026-05-28:
+-- This migration originally patched production BEFORE the stripped production
+-- baseline was committed as 20260527000000_prod_public_baseline.sql. It runs an
+-- unguarded `ALTER TABLE public.golf_coach_insights`, but in a fresh local replay
+-- that table does not exist until the baseline runs (20260527000000), which sorts
+-- AFTER this file — so a clean replay (CI's local Supabase stack) failed here with
+-- "relation public.golf_coach_insights does not exist" before the baseline could
+-- run. (Sibling 20260526180000 had the same problem and was already neutralized.)
+--
+-- The widening is now fully owned by later, replay-safe migrations:
+--   * 20260527000000_prod_public_baseline.sql creates golf_coach_insights WITH the
+--     insight_type check through 'composite'.
+--   * 20260528041553_fix_coachhelm_settings_preferences_and_insight_types.sql
+--     extends it to the current production set ('tee_strategy',
+--     'performance_alert', 'positive_highlight').
+--
+-- This file is therefore superseded and neutralized to a no-op so the migration
+-- history replays cleanly. Production already has this migration applied (tracked
+-- by version 20260526070000); changing its body does not re-run it there.
 
-ALTER TABLE public.golf_coach_insights
-  ADD CONSTRAINT golf_coach_insights_insight_type_check
-  CHECK (insight_type = ANY (ARRAY[
-    -- Legacy values (preserved for historical rows + any callers not yet migrated)
-    'performance_decline','performance_improvement','pattern_detected',
-    'practice_recommendation','roster_alert','qualifying_watch',
-    'attendance_concern','milestone_reached','comparison_insight',
-    'scoring_decline','stat_regression','tournament_pressure',
-    'plateau','bubble_player','surge_player','streak',
-    'recurring_weakness','closing_holes','par_3_issues',
-    'team_trend','roster_recommendation',
-    -- Category-level values from the 2026-04-22 widening
-    'putting','tee','approach','short_game','scoring','pressure','course_management',
-    -- V3 generator-specific values (W19+ evidence-backed engine)
-    'approach_miss','par_scoring','pressure_gap','putt_bias',
-    'putt_distance','scrambling','warmup_hole',
-    -- W28 composite synthesis runner
-    'composite'
-  ]));
+DO $$
+BEGIN
+  RAISE NOTICE
+    'Skipping superseded pre-baseline insight_type widening; the baseline (20260527000000) and 20260528041553 establish the current constraint.';
+END $$;
