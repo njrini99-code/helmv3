@@ -12,8 +12,12 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
-import type { CoachPlayerIntent } from './types';
-import { DEFAULT_NARRATIVE_GOAL, DEFAULT_ALERT_POSTURE } from './types';
+import type { CoachPlayerIntent, AlertPosture, NarrativeGoal } from './types';
+import {
+  DEFAULT_NARRATIVE_GOAL,
+  DEFAULT_ALERT_POSTURE,
+  ALERT_POSTURE_MULTIPLIER,
+} from './types';
 
 /**
  * Load all intent rows for one coach (their entire roster).
@@ -62,5 +66,61 @@ export async function loadIntent(coachId: string, playerId: string): Promise<Coa
     highlight_categories: [],
     notes: null,
     updated_at: new Date().toISOString(),
+  };
+}
+
+export interface AlertPostureResult {
+  multiplier: number;
+  narrative_goal: NarrativeGoal;
+}
+
+/**
+ * Player-centric intent lookup for the orchestrator / gate setup.
+ *
+ * Joins golf_team_members → golf_team_coach_staff (is_primary=true) to
+ * find the primary coach, then reads golf_coach_player_intent for that
+ * (coach, player) pair. Uses the admin client (bypasses RLS) because
+ * the caller is the engine, not a coach session.
+ *
+ * Returns null when no intent row exists — caller defaults to balanced
+ * (multiplier 1.0).
+ */
+export async function loadAlertPostureForPlayer(
+  playerId: string,
+): Promise<AlertPostureResult | null> {
+  const supabase = createAdminClient();
+
+  const { data: membership } = await fromUntyped(supabase, 'golf_team_members')
+    .select('team_id')
+    .eq('player_id', playerId)
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle() as { data: { team_id: string } | null; error: unknown };
+
+  if (!membership?.team_id) return null;
+
+  const { data: staff } = await fromUntyped(supabase, 'golf_team_coach_staff')
+    .select('coach_id')
+    .eq('team_id', membership.team_id)
+    .eq('is_primary', true)
+    .limit(1)
+    .maybeSingle() as { data: { coach_id: string } | null; error: unknown };
+
+  if (!staff?.coach_id) return null;
+
+  const { data: intent } = await fromUntyped(supabase, 'golf_coach_player_intent')
+    .select('narrative_goal, alert_posture')
+    .eq('coach_id', staff.coach_id)
+    .eq('player_id', playerId)
+    .maybeSingle() as {
+      data: { narrative_goal: NarrativeGoal; alert_posture: AlertPosture } | null;
+      error: unknown;
+    };
+
+  if (!intent) return null;
+
+  return {
+    multiplier: ALERT_POSTURE_MULTIPLIER[intent.alert_posture],
+    narrative_goal: intent.narrative_goal,
   };
 }

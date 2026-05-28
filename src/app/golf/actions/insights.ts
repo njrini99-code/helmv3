@@ -43,6 +43,7 @@ import { generateTeamPatterns } from '@/lib/coachhelm/v2/mining/team-pattern-gen
 import { generateTeamForecasts } from '@/lib/coachhelm/v2/prediction/team-forecaster';
 import type { PhilosophyGate } from '@/lib/coachhelm/v2/insights/gate-context';
 import { upsertInsight } from '@/lib/coachhelm/v2/insights/upsert';
+import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
@@ -3213,7 +3214,13 @@ export async function triggerPlayerInsightsAfterRound(
 
     // Get coach philosophy
     const philosophy = await getCoachPhilosophy(coach.id, admin);
-    const confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+    let confidenceThreshold = getConfidenceThreshold(philosophy.alertSensitivity);
+
+    // W27 — alert_posture multiplier. The coach's per-player intent row
+    // modulates the philosophy-level threshold so aggressive players get
+    // more insights and silent players get none.
+    const alertPosture = await loadAlertPostureForPlayer(playerId);
+    confidenceThreshold *= alertPosture?.multiplier ?? 1.0;
 
     // 2026-05-24 Wave 7B — philosophy gate (replaces the post-filter sweep
     // that used to live below this block). Built once here so every Tier-1

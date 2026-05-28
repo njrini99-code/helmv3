@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 import { composeRoundReview } from '@/lib/coachhelm/v3/llm/round-review';
 import { composeHeroNarrative } from '@/lib/coachhelm/v3/llm/hero-narrative';
+import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 
 export interface LlmRoundReviewActionResult {
   ok: boolean;
@@ -81,6 +82,9 @@ export async function generateLlmRoundReview(
       billing_coach_id = staff?.coach_id ?? null;
     }
 
+    // W27 — load narrative_goal so the LLM can adjust tone.
+    const intentResult = await loadAlertPostureForPlayer(round.player_id);
+
     const result = await composeRoundReview({
       player_id: round.player_id,
       coach_id: billing_coach_id,
@@ -94,6 +98,7 @@ export async function generateLlmRoundReview(
       gir: round.total_gir,
       gir_total: round.total_gir_possible,
       fallback_summary,
+      narrative_goal: intentResult?.narrative_goal,
     });
 
     return {
@@ -173,6 +178,9 @@ export async function generateHeroNarrative(
       billing_coach_id = staff?.coach_id ?? null;
     }
 
+    // W27 — load narrative_goal so the LLM can adjust tone.
+    const intentResult = await loadAlertPostureForPlayer(input.player_id);
+
     const result = await composeHeroNarrative({
       player_id: input.player_id,
       coach_id: billing_coach_id,
@@ -187,6 +195,7 @@ export async function generateHeroNarrative(
         : undefined,
       counterfactual_strokes_per_round: input.counterfactual_strokes_per_round,
       fallback_text: input.fallback_text,
+      narrative_goal: intentResult?.narrative_goal,
     });
 
     return {

@@ -37,6 +37,9 @@ export interface RoundReviewInput {
    *  is budget-gated or errors. Required — the prose surface always
    *  shows something. */
   fallback_summary: string;
+  /** Coach's narrative goal for this player (W27 intent). When
+   *  provided, the prompt nudges tone toward the goal framing. */
+  narrative_goal?: string;
 }
 
 function buildPrompt(input: RoundReviewInput): string {
@@ -59,15 +62,23 @@ function buildPrompt(input: RoundReviewInput): string {
   }
   const statsClause = stats.length > 0 ? stats.join(', ') : '';
 
+  const goalClause = input.narrative_goal
+    ? `- Coach intent for this player: ${input.narrative_goal}`
+    : '';
+
   return [
     `You are a college golf coach writing a one-paragraph round summary to ${input.player_first_name}.`,
     ``,
     `Round facts:`,
     `- Score: ${input.total_score} (${toParStr}) ${courseClause}`.trim(),
     statsClause ? `- Stats: ${statsClause}` : '',
+    goalClause,
     ``,
     `Write 80-150 words in second person ("you"). Mention the score and at least one of the stats from the facts above.`,
     `Be specific and grounded — do NOT invent numbers or details not in the facts.`,
+    input.narrative_goal
+      ? `Adjust your tone to reflect the coach's intent ("${input.narrative_goal}"). For example: "breakout" = ambitious push, "rehabilitate" = patient rebuild, "bubble" = urgent improvement needed, "maintain" = steady reinforcement, "develop" = growth-oriented encouragement.`
+      : '',
     `Tone: direct, encouraging, no clichés. End on a single concrete focus for the next round.`,
     ``,
     `Return only the paragraph, no headers, no quotes.`,
