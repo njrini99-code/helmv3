@@ -57,38 +57,19 @@
     17px 33.9px 42.7px -2.1px hsl(var(--shadow-color) / 0.34),
     25px 50px 62.9px -2.5px hsl(var(--shadow-color) / 0.34);
 
-  /* Cinematic Hero Design Tokens */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-12: 48px;
-  --space-16: 64px;
+  /* ===========================================================
+   * Cinematic Hero Design Tokens — DELETED in W0 (2026-05-28).
+   * The previously-duplicated `--space-*`, `--radius-*`, `--shadow-sm/md/lg/xl`,
+   * `--duration-*`, and `--ease-out`/`--ease-in-out` blocks all live in
+   * src/styles/tokens.css now. globals.css used to override them with
+   * different values (radius-md was 12 here vs 10 there; radius-2xl was
+   * 32 here vs 20 there) and load order silently won, breaking the
+   * "canonical" tokens for every consumer. See docs/operations/
+   * 2026-05-28-ultra-audit-MASTER-synthesis.md §5 for the spec.
+   * ----------------------------------------------------------
+   * Surface-specific hero glow only — not part of the canonical tier. */
   --space-24: 96px;
-
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
-
-  /* LEGACY: --shadow-sm/md/lg/xl duplicated in tokens.css — tokens.css is canonical.
-     These override with slightly different values for the cinematic hero section.
-     TODO: Consolidate with tokens.css definitions in a future cleanup pass. */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.15), 0 10px 10px rgba(0, 0, 0, 0.04);
   --shadow-glow: 0 0 60px rgba(22, 163, 74, 0.15);
-
-  --duration-fast: 150ms;
-  --duration-base: 220ms;
-  --duration-slow: 320ms;
-  --duration-slower: 500ms;
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   --glass-bg-nav: rgba(255, 255, 255, 0.03);
   --glass-bg-panel: rgba(255, 255, 255, 0.02);
@@ -97,42 +78,13 @@
   --glass-border-medium: rgba(255, 255, 255, 0.1);
   --glass-border-strong: rgba(255, 255, 255, 0.15);
 
-  /* Premium Glass Material System - Dashboard Glassmorphism */
-  /* Glass Level 1: Subtle — for large surfaces, filter panels */
-  /* California-modern matte surfaces — Apr 2026 brief pivot. Less blur,
-     no saturation bump (was 180-190%), softer borders. The look is
-     "linen and stone, not glass" — backdrop-filter is dialed back so
-     surfaces read as soft matte material rather than aggressive
-     glassmorphism. Tints derived from cream-100 (#F7F5F2 → 247, 245, 242)
-     so every surface picks up the new linen base. */
-  --glass-subtle-bg: rgba(247, 245, 242, 0.62);
-  --glass-subtle-border: rgba(207, 200, 184, 0.40);
-  --glass-subtle-blur: 12px;
-
-  /* Glass Level 2: Standard — for cards, panels, metrics */
-  --glass-standard-bg: rgba(247, 245, 242, 0.78);
-  --glass-standard-border: rgba(207, 200, 184, 0.45);
-  --glass-standard-blur: 14px;
-
-  /* Glass Level 3: Prominent — for navigation, overlays, modals */
-  --glass-prominent-bg: rgba(251, 250, 247, 0.92);
-  --glass-prominent-border: rgba(207, 200, 184, 0.55);
-  --glass-prominent-blur: 18px;
-
-  /* Premium shadows for glass surfaces */
-  /* Diffused natural-light shadows — California-modern brief: shadows
-     should feel "like sunlight, not drop shadow presets." Tightened
-     ambient blur, lower opacity, slightly cooler tint to mimic
-     architectural daylight rather than the iOS-style elevation recipe
-     that was here before. */
-  /* Warm-shifted natural-light shadows.
-     Light source: 11am sun through linen, hue ≈ 42°. Two layers
-     (tight umbra + diffused penumbra) so surfaces never look
-     stamped. Used by surface-matte / surface-stone / surface-linen
-     and by the .room utility. */
-  --glass-shadow-sm: 0 1px 2px hsl(42 14% 22% / 0.04), 0 6px 18px hsl(42 16% 22% / 0.05);
-  --glass-shadow-md: 0 1px 3px hsl(42 14% 22% / 0.05), 0 12px 28px hsl(42 16% 22% / 0.06), 0 24px 48px hsl(42 16% 22% / 0.03);
-  --glass-shadow-lg: 0 2px 4px hsl(42 14% 22% / 0.06), 0 16px 36px hsl(42 16% 22% / 0.08), 0 32px 64px hsl(42 16% 22% / 0.04);
+  /* ===========================================================
+   * Glass / surface tokens — DELETED in W0. Canonical declarations
+   * live in src/styles/tokens.css (--glass-*-bg/border/blur for
+   * subtle/standard/prominent and --shadow-{sm,md,lg} which back the
+   * --glass-shadow-* aliases). Removed from this file so consumers
+   * can never silently override the spec by load order.
+   * ----------------------------------------------------------- */
 
   /* Shared Golf mobile shell sizing */
   --golf-mobile-header-offset: calc(4.5rem + env(safe-area-inset-top, 0px));
@@ -2507,22 +2459,13 @@ body {
 }
 
 /* ========================================
-   MOTION DESIGN TOKENS
+   MOTION DESIGN TOKENS — DELETED in W0 (2026-05-28).
+   The canonical motion scale (--duration-{instant,short,medium,long,hero}
+   + --ease-tap / --ease-cinematic, plus legacy aliases for
+   --duration-{fast,normal,slow,slower} and --ease-{out,in-out,spring})
+   now lives in src/styles/tokens.css. Removed here so load order can't
+   override the canonical values.
    ======================================== */
-
-:root {
-  /* Duration */
-  --duration-instant: 100ms;
-  --duration-fast: 150ms;
-  --duration-normal: 220ms;
-  --duration-slow: 320ms;
-  --duration-slower: 500ms;
-
-  /* Easing */
-  --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
 
 /* ========================================
    PRINT STYLES
