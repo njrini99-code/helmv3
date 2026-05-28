@@ -47,6 +47,7 @@ import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
 import type { HoleConfig } from '@/lib/types/golf-course';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
+import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import {
   emergencySave,
   loadEmergencySave,
@@ -1494,8 +1495,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // ============================================================================
   if (showResumePrompt && existingInProgressRound) {
     return (
-      <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
+      <>
+        <MobileNavHeader title="New Round" backHref="/golf/dashboard" backLabel="Dashboard" />
+        <div className="min-h-dvh bg-transparent flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
           <div className="relative surface-matte rounded-3xl overflow-clip p-6 sm:p-8 text-center">
             <div className="w-14 h-14 rounded-2xl bg-primary-50 flex items-center justify-center mx-auto mb-5">
               <IconFlag size={24} className="text-primary-500" />
@@ -1527,8 +1530,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               </button>
             </div>
           </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -1537,8 +1541,10 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // ============================================================================
   if (step === 'setup') {
     return (
-      <div className="min-h-dvh bg-transparent flex items-start justify-center p-4 py-8">
-        <div className="w-full max-w-2xl space-y-5">
+      <>
+        <MobileNavHeader title="New Round" backHref="/golf/dashboard" backLabel="Dashboard" />
+        <div className="min-h-dvh bg-transparent flex items-start justify-center p-4 py-8">
+          <div className="w-full max-w-2xl space-y-5">
           {/* Quick-pick recent courses — sits above the manual setup form
               and is hidden entirely when the player has no recent courses. */}
           {recentCourses.length > 0 && !showResumePrompt && (
@@ -2191,8 +2197,9 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
               </div>
             </form>
           </div>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -2201,19 +2208,22 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   // ============================================================================
   if (step === 'holes') {
     return (
-      <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
-        <div className="w-full max-w-2xl">
-          <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
-            <StepProgressBar />
-            <HoleConfigurationForm
-              courseName={setupData.courseName}
-              onSave={handleHolesSave}
-              onBack={() => setStep('setup')}
-              holesPerRound={holesPerRound}
-            />
+      <>
+        <MobileNavHeader title="Configure Holes" backHref="/golf/dashboard" backLabel="Dashboard" />
+        <div className="min-h-full bg-transparent flex items-start justify-center p-4 pt-6">
+          <div className="w-full max-w-2xl">
+            <div className="relative surface-matte rounded-3xl overflow-clip p-5 sm:p-8">
+              <StepProgressBar />
+              <HoleConfigurationForm
+                courseName={setupData.courseName}
+                onSave={handleHolesSave}
+                onBack={() => setStep('setup')}
+                holesPerRound={holesPerRound}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 

@@ -425,7 +425,7 @@ function AdminDashboardContent() {
       : 'healthy';
 
   return (
-    <div className="min-h-screen bg-[#FFFEF8] flex overflow-x-hidden">
+    <div className="min-h-dvh bg-[#FFFEF8] flex overflow-x-hidden">
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
@@ -802,7 +802,7 @@ function AdminDashboardContent() {
       {/* Main Content - with margin for fixed sidebar */}
       <main
         className={cn(
-          'flex-1 flex flex-col min-h-screen transition-all duration-300',
+          'flex-1 flex flex-col min-h-dvh transition-all duration-300',
           sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
         )}
       >

@@ -3,6 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
 import { CoachHelmAnalyticsDashboard } from '@/components/golf/coachhelm/analytics/CoachHelmAnalyticsDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import {
   getCoachHelmOverview,
   getInsightEffectiveness,
@@ -37,12 +38,18 @@ export default async function CoachHelmAnalyticsPage() {
 
   if (!teamId) {
     return (
-      <div className="min-h-full flex items-center justify-center p-6">
-        <div className="text-center">
-          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
-          <p className="text-warm-600">
-            You need to be associated with a team to view analytics.
-          </p>
+      <div className="min-h-full">
+        <LargeTitleHeader
+          title="CoachHelm Analytics"
+          subtitle="Track insight effectiveness and prediction accuracy"
+        />
+        <div className="flex items-center justify-center p-6">
+          <div className="text-center">
+            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
+            <p className="text-warm-600">
+              You need to be associated with a team to view analytics.
+            </p>
+          </div>
         </div>
       </div>
     );

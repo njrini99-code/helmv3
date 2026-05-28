@@ -579,7 +579,7 @@ export default function CRMPage() {
   // ============================================================================
   if (error) {
     return (
-      <div className="min-h-screen bg-[#FFFEF8] flex items-center justify-center p-8">
+      <div className="min-h-dvh bg-[#FFFEF8] flex items-center justify-center p-8">
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl border border-white/20 shadow-glass p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <IconWarning size={28} className="text-red-500" />
@@ -601,7 +601,7 @@ export default function CRMPage() {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen bg-[#FFFEF8] flex">
+    <div className="min-h-dvh bg-[#FFFEF8] flex">
       {/* ═══════════════════ Mobile Header ═══════════════════ */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-[#1C1917]/95 backdrop-blur-xl border-b border-white/10">
         <div className="flex items-center gap-2 px-3 h-12">
@@ -746,7 +746,7 @@ export default function CRMPage() {
 
       {/* ═══════════════════ Main Content ═══════════════════ */}
       <main className={cn(
-        'flex-1 flex flex-col min-h-screen transition-all duration-300',
+        'flex-1 flex flex-col min-h-dvh transition-all duration-300',
         'pt-12 lg:pt-0',
         sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]'
       )}>
