@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -158,7 +159,7 @@ export default function GolfStatsDisplay({
     <div className="min-h-full bg-transparent print:bg-white">
       <div ref={contentRef} className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
         {/* Header */}
-        <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 25 })}>
+        <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
             <div className="flex-1 min-w-0">
               <motion.h1 className="text-xl sm:text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>
@@ -196,7 +197,7 @@ export default function GolfStatsDisplay({
           )}
           <AnimatePresence>
             {showFilters && (
-              <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 25 })}>
+              <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-warm-700">Quick Filters</h3>
                   <Button variant="ghost" onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</Button>
@@ -264,7 +265,7 @@ export default function GolfStatsDisplay({
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 30 })}>
+          <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}>
             {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} holeFormat={holeFormat} />}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
             {activeCategory === 'dispersion' && <DispersionStats data={sprayChartData} loading={sprayChartLoading} />}
@@ -279,7 +280,7 @@ export default function GolfStatsDisplay({
         </AnimatePresence>
 
         {stats.roundsPlayed === 0 && (
-          <motion.div className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200 })}>
+          <motion.div className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.medium, ease: EASE_CINEMATIC })}>
             <motion.div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4" animate={{ boxShadow: ['0 0 0 0 rgba(22, 163, 74, 0)', '0 0 0 20px rgba(22, 163, 74, 0.1)', '0 0 0 0 rgba(22, 163, 74, 0)'] }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2, repeat: Infinity })}>
               <IconGolf size={40} className="text-warm-300" />
             </motion.div>

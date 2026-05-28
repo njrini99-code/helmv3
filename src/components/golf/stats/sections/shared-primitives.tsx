@@ -4,7 +4,7 @@ import { useState, useId } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconChevronDown } from '@/components/icons';
 import { useAnimatedNumber } from '@/hooks/useAnimatedNumber';
-import { IOS_EASE, IOS_DURATION_NORMAL, IOS_DURATION_FAST } from '@/lib/ios-animations';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // ANIMATION VARIANTS
@@ -28,8 +28,8 @@ const itemVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: IOS_DURATION_NORMAL,
-      ease: IOS_EASE as unknown as [number, number, number, number],
+      duration: DURATION.short,
+      ease: EASE_CINEMATIC,
     },
   },
 };
@@ -42,8 +42,8 @@ export const sectionVariants = {
     opacity: 1,
     y: 0,
     transition: {
-      duration: IOS_DURATION_NORMAL,
-      ease: IOS_EASE as unknown as [number, number, number, number],
+      duration: DURATION.short,
+      ease: EASE_CINEMATIC,
     },
   },
 };
@@ -84,7 +84,7 @@ export function FormatToggle({
       className="inline-flex items-center gap-1 rounded-2xl border border-warm-200/70 bg-warm-100/80 p-1 shadow-sm backdrop-blur-sm"
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, type: 'spring', stiffness: 300, damping: 25 })}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: DURATION.short, ease: EASE_CINEMATIC })}
     >
       {options.map((opt) => {
         const isActive = value === opt.id;
@@ -103,7 +103,7 @@ export function FormatToggle({
               <motion.div
                 className="absolute inset-0 rounded-xl border border-white/80 bg-white shadow-sm"
                 layoutId="format-toggle-bg"
-                transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 28 })}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}
               />
             )}
             <span className="relative z-10">{opt.label}</span>
@@ -303,7 +303,7 @@ export function StatCard({
         scale: 1.02,
         y: -4,
       }}
-      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}
       style={{ willChange: 'transform' }}
     >
       {/* Animated shine effect on hover */}
@@ -335,7 +335,7 @@ export function StatCard({
             className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium ${trendStyles.bg} ${trendStyles.color}`}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] })}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.micro, ease: EASE_CINEMATIC })}
           >
             {trendStyles.icon}
           </motion.span>
@@ -388,7 +388,7 @@ export function StatRow({ label, value, index = 0 }: { label: string; value: str
       className="flex justify-between items-center py-2.5 border-b border-warm-100/80 last:border-0 group hover:bg-warm-50/50 transition-colors rounded px-1 -mx-1"
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: stagger, duration: IOS_DURATION_NORMAL, ease: IOS_EASE as unknown as [number, number, number, number] })}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: stagger, duration: DURATION.short, ease: EASE_CINEMATIC })}
     >
       <span className="text-sm text-warm-600 group-hover:text-warm-800 transition-colors">{label}</span>
       <span className="text-sm font-medium text-warm-900 tabular-nums">{value}</span>
@@ -441,7 +441,7 @@ export function StatSection({
           {collapsible && (
             <motion.div
               animate={{ rotate: isOpen ? 0 : -90 }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] })}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.micro, ease: EASE_CINEMATIC })}
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
@@ -458,8 +458,8 @@ export function StatSection({
               // micro-flicker on iOS because height keeps overshooting past
               // its target on each frame.
               transition={prefersReducedMotion ? { duration: 0 } : ({
-                height: { duration: IOS_DURATION_NORMAL, ease: IOS_EASE as unknown as [number, number, number, number] },
-                opacity: { duration: IOS_DURATION_FAST, ease: IOS_EASE as unknown as [number, number, number, number] },
+                height: { duration: DURATION.short, ease: EASE_CINEMATIC },
+                opacity: { duration: DURATION.micro, ease: EASE_CINEMATIC },
               })}
               className="mt-3 overflow-hidden"
             >

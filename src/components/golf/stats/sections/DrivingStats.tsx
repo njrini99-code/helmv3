@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
@@ -69,7 +70,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             className="text-center"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, type: 'spring' })}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: DURATION.short, ease: EASE_CINEMATIC })}
           >
             <div className="text-[32px] md:text-[36px] font-light text-blue-700 tabular-nums tracking-[-0.025em]">{formatStat(stats.missLeftPct, '%')}</div>
             <div className="text-sm text-warm-500">← Left</div>
@@ -84,7 +85,7 @@ export function DrivingStats({ stats }: { stats: GolfStats }) {
             className="text-center"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, type: 'spring' })}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: DURATION.short, ease: EASE_CINEMATIC })}
           >
             <div className="text-[32px] md:text-[36px] font-light tracking-[-0.025em] text-orange-600 tabular-nums">{formatStat(stats.missRightPct, '%')}</div>
             <div className="text-sm text-warm-500">Right →</div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -33,7 +34,7 @@ export function OverviewSWCard({
       }`}
       initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10 })}
       animate={{ opacity: 1, y: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 24 })}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_CINEMATIC })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
