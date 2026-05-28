@@ -1,4 +1,4 @@
-import { DashboardSkeleton } from '@/components/golf/GolfSkeletons';
+import { DashboardSkeleton } from '@/components/ui/skeleton';
 
 /**
  * Loading UI for the golf dashboard layout.

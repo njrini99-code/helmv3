@@ -1,4 +1,4 @@
-import { GenericPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { GenericPageSkeleton } from '@/components/ui/skeleton';
 
 export function Loading({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   const heights = { sm: 'h-16', md: 'h-32', lg: 'h-48' };

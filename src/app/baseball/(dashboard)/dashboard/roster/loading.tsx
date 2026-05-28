@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonTable } from '@/components/ui/skeleton-loader';
+import { SkeletonTable } from '@/components/ui/skeleton';
 
 export default function RosterLoading() {
   return (

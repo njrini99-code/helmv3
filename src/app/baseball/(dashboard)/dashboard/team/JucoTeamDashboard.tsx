@@ -14,7 +14,7 @@ import {
   UpcomingSection,
 } from '@/components/baseball/dashboard';
 import { StatCard } from '@/components/features/stat-card';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconGraduationCap,
   IconMessage,

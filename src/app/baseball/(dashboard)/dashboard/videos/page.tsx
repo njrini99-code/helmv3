@@ -30,7 +30,7 @@ import { useTeamStore } from '@/stores/team-store';
 import { createClient } from '@/lib/supabase/client';
 import { formatRelativeTime, getFullName } from '@/lib/utils';
 import { PageLoading } from '@/components/ui/loading';
-import { SkeletonVideos } from '@/components/ui/skeleton-loader';
+import { SkeletonVideos } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/sonner';
 

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageLoading } from '@/components/ui/loading';
-import { SkeletonTable } from '@/components/ui/skeleton-loader';
+import { SkeletonTable } from '@/components/ui/skeleton';
 import {
   IconUsers,
   IconSearch,

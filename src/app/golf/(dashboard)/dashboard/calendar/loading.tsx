@@ -1,4 +1,4 @@
-import { CalendarSkeleton } from '@/components/golf/GolfSkeletons';
+import { CalendarSkeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (

@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonCompare } from '@/components/ui/skeleton-loader';
+import { SkeletonCompare } from '@/components/ui/skeleton';
 
 export default function CompareLoading() {
   return (

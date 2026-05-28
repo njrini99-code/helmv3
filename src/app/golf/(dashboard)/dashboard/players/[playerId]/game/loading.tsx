@@ -1,4 +1,4 @@
-import { DetailPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { DetailPageSkeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return <DetailPageSkeleton />;
