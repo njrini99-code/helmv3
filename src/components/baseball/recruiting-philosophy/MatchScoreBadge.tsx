@@ -196,7 +196,7 @@ export function MatchScoreRing({
   const offset = circumference - (score / 100) * circumference;
 
   const strokeColors = {
-    excellent: '#16a34a',
+    excellent: 'var(--color-primary-600)',
     good: '#10b981',
     average: '#f59e0b',
     below_average: '#f97316',

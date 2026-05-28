@@ -739,7 +739,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
       />
 
       {/* Tab navigation */}
-      <div className="sticky top-[var(--golf-mobile-header-offset)] z-[9] border-b border-warm-200/30 bg-cream-50/85 backdrop-blur-xl md:top-[73px]">
+      <div className="sticky top-[var(--golf-mobile-header-offset)] z-base border-b border-warm-200/30 bg-cream-50/85 backdrop-blur-xl md:top-[73px]">
         <div className="max-w-3xl mx-auto px-4 md:px-6">
           <GolfTabBar
             tabs={tabs.map((tab) => ({

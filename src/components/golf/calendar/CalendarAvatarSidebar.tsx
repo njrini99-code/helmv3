@@ -142,7 +142,7 @@ export function CalendarAvatarSidebar({
           onClick={handleAllClick}
           aria-pressed={isAllSelected}
           className={cn(
-            'relative z-10 w-12 h-12 rounded-[14px] flex items-center justify-center font-medium text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
+            'relative z-10 w-12 h-12 rounded-lg flex items-center justify-center font-medium text-label tracking-wide cursor-pointer transition-all duration-200 border-none flex-shrink-0',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
             isAllSelected
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_8px_rgba(22,163,74,0.3)]'
@@ -160,7 +160,7 @@ export function CalendarAvatarSidebar({
       <div className="flex-1 min-h-0 w-full relative overflow-hidden isolate">
         {/* Top scroll fade indicator */}
         {canScrollUp && (
-          <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-[2] pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
+          <div aria-hidden="true" className="absolute top-0 left-0 right-0 h-7 bg-gradient-to-b from-white/95 to-transparent z-base pointer-events-none flex items-start justify-center pt-0.5 rounded-t-lg">
             <ChevronUp className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}
@@ -178,7 +178,7 @@ export function CalendarAvatarSidebar({
         >
           {teamMembers.length === 0 ? (
             <div className="py-6 text-center">
-              <div className="w-12 h-12 rounded-[14px] bg-warm-100/60 flex items-center justify-center mx-auto mb-2">
+              <div className="w-12 h-12 rounded-lg bg-warm-100/60 flex items-center justify-center mx-auto mb-2">
                 <svg className="w-5 h-5 text-warm-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
@@ -205,7 +205,7 @@ export function CalendarAvatarSidebar({
                     onClick={() => handleMemberClick(member.id)}
                     aria-label={getFullName(member)}
                     className={cn(
-                      'w-12 h-12 rounded-[14px] flex items-center justify-center text-sm font-medium cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
+                      'w-12 h-12 rounded-lg flex items-center justify-center text-sm font-medium cursor-pointer transition-all duration-200 border-none flex-shrink-0 relative overflow-visible',
                       !selected && 'bg-warm-100/65 text-warm-600 shadow-sm',
                       selected && 'scale-[1.08]',
                     )}
@@ -223,7 +223,7 @@ export function CalendarAvatarSidebar({
                       <img
                         src={member.avatar_url}
                         alt={getFullName(member)}
-                        className="w-full h-full rounded-[14px] object-cover"
+                        className="w-full h-full rounded-lg object-cover"
                       />
                     ) : (
                       <span>{getInitials(member)}</span>
@@ -248,7 +248,7 @@ export function CalendarAvatarSidebar({
 
         {/* Bottom scroll fade indicator */}
         {canScrollDown && (
-          <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-[2] pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
+          <div aria-hidden="true" className="absolute bottom-0 left-0 right-0 h-7 bg-gradient-to-t from-white/95 to-transparent z-base pointer-events-none flex items-end justify-center pb-0.5 rounded-b-lg">
             <ChevronDown className="w-3 h-3 text-warm-400 pointer-events-none" />
           </div>
         )}
@@ -297,7 +297,7 @@ export function CalendarAvatarSidebar({
         <Tooltip content="Manage feeds" side="right">
           <button
             onClick={() => onSyncSettings?.()}
-            className="w-12 h-12 rounded-[14px] flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
+            className="w-12 h-12 rounded-lg flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
             aria-label="Manage feeds"
           >
             <Settings2 className="w-5 h-5" />

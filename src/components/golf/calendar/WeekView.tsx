@@ -386,7 +386,7 @@ export function WeekView({
         {hasAllDayEvents && (
           <div
             className={cn(
-              'grid sticky top-16 z-[19] bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
+              'grid sticky top-16 z-raised bg-cream/85 backdrop-blur-xl border-b border-warm-200/[0.15] gap-0.5',
               secondaryTimezone ? 'grid-cols-[72px_repeat(7,1fr)]' : 'grid-cols-[56px_repeat(7,1fr)]'
             )}
           >

@@ -54,7 +54,7 @@ export function BaseballDiamond({
           <radialGradient id="outfieldGrass" cx="50%" cy="100%" r="85%" fx="50%" fy="90%">
             <stop offset="0%" stopColor="#34d399" stopOpacity="0.95" />
             <stop offset="35%" stopColor="#22c55e" stopOpacity="0.9" />
-            <stop offset="70%" stopColor="#16a34a" stopOpacity="0.85" />
+            <stop offset="70%" stopColor="var(--color-primary-600)" stopOpacity="0.85" />
             <stop offset="100%" stopColor="#15803d" stopOpacity="0.8" />
           </radialGradient>
 
@@ -62,7 +62,7 @@ export function BaseballDiamond({
           <radialGradient id="infieldGrass" cx="50%" cy="70%" r="45%" fx="50%" fy="65%">
             <stop offset="0%" stopColor="#4ade80" stopOpacity="0.9" />
             <stop offset="50%" stopColor="#22c55e" stopOpacity="0.85" />
-            <stop offset="100%" stopColor="#16a34a" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="var(--color-primary-600)" stopOpacity="0.8" />
           </radialGradient>
 
           {/* Premium dirt gradient with warm earth tones */}
