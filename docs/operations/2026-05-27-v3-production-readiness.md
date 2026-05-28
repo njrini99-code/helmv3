@@ -63,7 +63,7 @@ These were on the Tier-2 punch list as "cold-start blockers" — investigation s
 | Item | Why deferred |
 |---|---|
 | W35 outcome attribution silence | **Benign-by-design.** Cron fires (verified via prod row timestamps), eligibility set is empty: 0 of 129 eligible insights use the only implemented metric (`score_to_par`) — every other metric returns null and is logged as "deferred." The v3 cohort isn't 21d old yet either. **Diagnosis at `docs/operations/2026-05-27-v3-w35-diagnosis.md`.** Coverage expansion = future wave. |
-| `RESEND_API_KEY` in Vercel prod env | **Needs your input.** W37 weekly coach email cron runs Sun 23:00 UTC but currently falls back to `skipped_provider_unset`. Add the key from the Resend dashboard to actually send mail. |
+| ~~`RESEND_API_KEY`~~ | **Not actually missing.** First-pass audit flagged it because `vercel env ls production` for the `helmv3` project doesn't surface it — but prod evidence proves it's reachable: the `public.emails` table shows 40 transactional sends through the CoachHelm path (which reads `process.env.RESEND_API_KEY`), most recent 2026-05-27. Key is set at team scope, not project scope. W37 weekly email will send. |
 | `src/app/baseball/actions/games.ts` upsert | Held back from PR #120 — turned out to be a CLAUDE.md Rule #7 destructive-write fix (DELETE-then-INSERT → upsert + targeted prune for box-score batting/pitching). Deserves a focused review of its own. |
 | T4c polish — Chat + Genome + Hero motion | **3-5 small improvements remain.** Agent terminated empty-handed because all writes were reverted by parallel-agent working-tree contention. Will re-spawn with `isolation: "worktree"`. The agent also confirmed Features #6 (QualifyingBoard) and #7 (HeroNarrativeCard) are already ✅ in the audit — no polish needed for those. |
 | W30 admin cost dashboard | **Explicitly dropped per W30 plan amendment.** Not on the launch path. |
@@ -99,7 +99,7 @@ Vercel env vars (prod, verified):
   ✅ CRON_SECRET, COACHHELM_INTERNAL_SECRET
   ✅ NEXT_PUBLIC_SUPABASE_URL / ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
   ✅ VAPID_SUBJECT / VAPID_PRIVATE_KEY / NEXT_PUBLIC_VAPID_PUBLIC_KEY
-  ❌ RESEND_API_KEY  ← only real gap
+  ✅ RESEND_API_KEY  (set at team scope — invisible to `vercel env ls helmv3` but reachable at runtime; 40 prod transactional sends prove it, most recent 2026-05-27)
 ```
 
 ---
@@ -117,7 +117,7 @@ Vercel env vars (prod, verified):
 |---|---|---|
 | A. Demo-ready | Tier 1 only | ✅ Done. LLM stack live, round-review UI wired (#122), suggestion crons added (#124), composite null-deref fixed (#120). |
 | B. Feels-real | A + Tier 2 | ✅ Done. Tier 2 items were either already done in prod or scoped via PR #124 (suggestion writer). |
-| C. Ops-hardened | B + Tier 3 | ◐ One open: `RESEND_API_KEY`. Everything else verified. |
+| C. Ops-hardened | B + Tier 3 | ✅ Done. All env vars present (RESEND_API_KEY is team-scoped, not missing). All crons firing per prod row timestamps. |
 | D. Polished launch | C + Tier 4 | ◐ T4a + T4b shipped (PRs #121, #123). T4c (Chat + Genome motion polish, ~3-5 tweaks) deferred to re-spawn with worktree isolation. |
 
-After PRs #120-124 merge + RESEND_API_KEY is set + T4c re-runs cleanly, **v3 is launch-ready**.
+After PRs #120-#125 merge + T4c re-runs cleanly, **v3 is launch-ready**.
