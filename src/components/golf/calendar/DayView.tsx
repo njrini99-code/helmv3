@@ -406,7 +406,7 @@ export function DayView({ date, events, onEventClick, isDraggable = false, secon
         {timedEvents.length === 0 && allDayEvents.length === 0 && (
           <div className="mt-16 text-center">
             <div className="
-              w-16 h-16 rounded-[16px]
+              w-16 h-16 rounded-xl
               bg-warm-100/80
               mx-auto
               flex items-center justify-center

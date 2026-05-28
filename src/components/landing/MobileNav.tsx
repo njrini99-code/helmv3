@@ -91,7 +91,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
       {/* Hamburger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`md:hidden relative z-[70] w-10 h-10 flex items-center justify-center
+        className={`md:hidden relative z-toast w-10 h-10 flex items-center justify-center
                    rounded-xl transition-all duration-200 active:scale-90
                    ${isOpen ? 'bg-transparent' : isDarkBg ? 'bg-white/10' : 'bg-warm-900/5'}`}
         aria-label={isOpen ? 'Close menu' : 'Open menu'}
@@ -131,7 +131,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: smooth }}
-              className="fixed inset-0 z-[9999] md:hidden bg-[#ECE5D6]"
+              className="fixed inset-0 z-tooltip md:hidden bg-[#ECE5D6]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {/* Gradient enhancement layer */}

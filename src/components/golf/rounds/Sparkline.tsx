@@ -33,7 +33,7 @@ interface SparklineProps {
 
 export function Sparkline({
   values,
-  stroke = '#16A34A', // primary-600
+  stroke = 'var(--color-primary-600)', // primary-600
   filled = false,
   width = 120,
   height = 24,

@@ -43,7 +43,7 @@ export interface ResolutionCelebrationProps {
 const CONFETTI_COUNT = 32;
 const CONFETTI_DURATION_MS = 1800;
 const CELEBRATION_COLORS = [
-  '#16A34A', // primary kelly green
+  'var(--color-primary-600)', // primary kelly green
   '#8B5CF6', // purple accent (celebratory tone)
   '#F59E0B', // warm amber
   '#EC4899', // playful pink
@@ -167,7 +167,7 @@ export function ResolutionCelebration({
           {particles.map((p) => (
             <span
               key={p.id}
-              className="resolution-confetti-particle absolute top-0 block rounded-[1px]"
+              className="resolution-confetti-particle absolute top-0 block rounded-sm"
               style={{
                 left: `${p.leftPct}%`,
                 width: 6,

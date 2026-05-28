@@ -300,7 +300,7 @@ interface BusyBlockProps {
 function BusyBlock({ period, ownerLabel, ownerColor, ownerInitials }: BusyBlockProps) {
   const isClass = period.type === 'class';
   const isBlocked = period.type === 'blocked';
-  const colorBg = ownerColor?.bg ?? (isClass || isBlocked ? '#f97316' : '#16a34a');
+  const colorBg = ownerColor?.bg ?? (isClass || isBlocked ? '#f97316' : 'var(--color-primary-600)');
   const colorLight = ownerColor?.light ?? (isClass || isBlocked ? 'rgba(249, 115, 22, 0.1)' : 'rgba(22, 163, 74, 0.1)');
   const colorBorder = ownerColor?.border ?? (isClass || isBlocked ? 'rgba(249, 115, 22, 0.4)' : 'rgba(22, 163, 74, 0.4)');
 

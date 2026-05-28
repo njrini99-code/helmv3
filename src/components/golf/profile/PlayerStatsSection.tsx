@@ -168,10 +168,10 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
               <Line
                 type="monotone"
                 dataKey="score"
-                stroke="#16a34a"
+                stroke="var(--color-primary-600)"
                 strokeWidth={2}
-                dot={{ fill: '#16a34a', strokeWidth: 0, r: 3 }}
-                activeDot={{ r: 5, fill: '#16a34a' }}
+                dot={{ fill: 'var(--color-primary-600)', strokeWidth: 0, r: 3 }}
+                activeDot={{ r: 5, fill: 'var(--color-primary-600)' }}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -184,7 +184,7 @@ const ScoringTrendMini = memo(function ScoringTrendMini({ rounds }: { rounds: Ro
 const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: GolfStats }) {
   const distribution = [
     { name: 'Eagles', count: stats.totalEagles, color: '#059669' },
-    { name: 'Birdies', count: stats.totalBirdies, color: '#16a34a' },
+    { name: 'Birdies', count: stats.totalBirdies, color: 'var(--color-primary-600)' },
     { name: 'Pars', count: stats.totalPars, color: '#78716c' },
     { name: 'Bogeys', count: stats.totalBogeys, color: '#f59e0b' },
     { name: 'Doubles+', count: stats.totalDoublePlus, color: '#ef4444' },
@@ -233,7 +233,7 @@ const ScoreDistribution = memo(function ScoreDistribution({ stats }: { stats: Go
               <Bar
                 dataKey="count"
                 radius={[0, 4, 4, 0]}
-                fill="#16a34a"
+                fill="var(--color-primary-600)"
               />
             </BarChart>
           </ResponsiveContainer>

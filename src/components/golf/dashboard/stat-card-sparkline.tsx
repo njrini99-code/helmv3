@@ -1,12 +1,23 @@
 'use client';
 
-import { ReactNode, memo } from 'react';
+import { ReactNode, memo, useMemo } from 'react';
 import Link from 'next/link';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Sparkline } from '@/components/ui/sparkline';
 import { AnimatedNumber } from '@/components/ui/animated-number';
+
+// The <Sparkline> renderer paints to a <canvas>; canvas color APIs
+// (strokeStyle / addColorStop) cannot resolve CSS `var(...)`, so we read
+// the canonical token off :root at runtime and pass the concrete value.
+// SSR / pre-paint falls back to the CSS-var reference (harmless — the
+// canvas only draws client-side after mount).
+function resolveToken(varName: string, fallback: string): string {
+    if (typeof window === 'undefined') return fallback;
+    const v = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    return v || fallback;
+}
 
 // ============================================================================
 // TYPES
@@ -46,7 +57,11 @@ export const StatCardSparkline = memo(function StatCardSparkline({
     const isNumeric = value !== null;
 
     const trendIsPositive = trend === 'improving';
-    const sparkColor = trend === 'improving' ? '#16A34A' : trend === 'declining' ? '#DC2626' : '#94A3B8';
+    const sparkColor = useMemo(() => {
+        if (trend === 'improving') return resolveToken('--color-primary-600', 'var(--color-primary-600)');
+        if (trend === 'declining') return resolveToken('--color-destructive', 'var(--color-destructive)');
+        return '#94A3B8';
+    }, [trend]);
 
     const CardContent = (
         <m.div

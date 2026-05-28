@@ -177,7 +177,7 @@ function PeriodHeader({ label, rounds }: PeriodHeaderProps) {
           values={sparkValues}
           width={120}
           height={24}
-          stroke="#16A34A"
+          stroke="var(--color-primary-600)"
           filled
           label={`${label}: ${sparkValues.length} scores trend`}
           className="flex-shrink-0"

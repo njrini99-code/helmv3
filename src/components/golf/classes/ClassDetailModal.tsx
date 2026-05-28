@@ -75,7 +75,7 @@ export function ClassDetailModal({ isOpen, onClose, onEdit, onDelete, classData 
         {/* Color header */}
         <div
           className="h-3"
-          style={{ backgroundColor: classData.color || '#16A34A' }}
+          style={{ backgroundColor: classData.color || 'var(--color-primary-600)' }}
         />
 
         {/* Header */}

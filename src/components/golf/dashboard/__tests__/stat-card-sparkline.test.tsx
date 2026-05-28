@@ -214,17 +214,19 @@ describe('StatCardSparkline', () => {
     });
 
     // TODO(user-wip): un-skip after design token sweep. See src/test/SKIPPED.md.
-    it.skip('uses green sparkline color for improving trend', () => {
+    // W1: sparkColor now resolves the canonical CSS token at runtime; under
+    // jsdom (no stylesheet) resolveToken falls back to the var() reference.
+    it.skip('uses primary token sparkline color for improving trend', () => {
       render(<StatCardSparkline {...defaultProps} trend="improving" />);
       const sparkline = screen.getByTestId('sparkline');
-      expect(sparkline).toHaveAttribute('data-color', '#16A34A');
+      expect(sparkline).toHaveAttribute('data-color', 'var(--color-primary-600)');
     });
 
     // TODO(user-wip): un-skip after design token sweep. See src/test/SKIPPED.md.
-    it.skip('uses red sparkline color for declining trend', () => {
+    it.skip('uses destructive token sparkline color for declining trend', () => {
       render(<StatCardSparkline {...defaultProps} trend="declining" />);
       const sparkline = screen.getByTestId('sparkline');
-      expect(sparkline).toHaveAttribute('data-color', '#DC2626');
+      expect(sparkline).toHaveAttribute('data-color', 'var(--color-destructive)');
     });
 
     // TODO(user-wip): un-skip after design token sweep. See src/test/SKIPPED.md.

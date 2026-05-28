@@ -1121,7 +1121,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
       role="dialog"
       aria-modal="true"
       aria-labelledby="series-scope-title"
-      className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-modal flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm"
       onClick={onCancel}
     >
       <div

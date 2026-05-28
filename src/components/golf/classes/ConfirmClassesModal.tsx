@@ -28,6 +28,10 @@ const DAYS = [
   { abbrev: 'F', label: 'Fri' },
 ];
 
+// Canonical brand green fallback when a parsed class has no assigned color.
+// Sourced from the design token so it stays in sync with primary-600.
+const DEFAULT_CLASS_COLOR = 'var(--color-primary-600)';
+
 export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses }: ConfirmClassesModalProps) {
   const [classes, setClasses] = useState<ParsedClass[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -232,7 +236,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                                   ? 'text-white shadow-sm'
                                   : 'bg-warm-50 text-warm-400 hover:bg-warm-100 active:bg-warm-200 hover:text-warm-600'
                               )}
-                              style={cls.days.includes(day.abbrev) ? { backgroundColor: cls.color || '#16A34A' } : undefined}
+                              style={cls.days.includes(day.abbrev) ? { backgroundColor: cls.color || DEFAULT_CLASS_COLOR } : undefined}
                             >
                               {day.label}
                             </button>
@@ -294,7 +298,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                       {/* Color accent */}
                       <div
                         className="w-1.5 h-14 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: cls.color || '#16A34A' }}
+                        style={{ backgroundColor: cls.color || DEFAULT_CLASS_COLOR }}
                       />
 
                       {/* Course info */}
@@ -304,8 +308,10 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                             <span
                               className="font-mono text-[11px] font-medium px-1.5 py-0.5 rounded"
                               style={{
-                                backgroundColor: `${cls.color || '#16A34A'}15`,
-                                color: cls.color || '#16A34A',
+                                // ~8% tint of the class color (was a `${color}15` hex-alpha
+                                // hack; color-mix keeps it valid when the color is a token var).
+                                backgroundColor: `color-mix(in srgb, ${cls.color || DEFAULT_CLASS_COLOR} 8%, transparent)`,
+                                color: cls.color || DEFAULT_CLASS_COLOR,
                               }}
                             >
                               {cls.course_code}

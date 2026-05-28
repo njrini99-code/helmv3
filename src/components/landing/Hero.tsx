@@ -141,7 +141,7 @@ export function Hero() {
 
       {/* Overlay — narrow left-side gradient for text readability only */}
       <div
-        className="absolute inset-0 z-[1]"
+        className="absolute inset-0 z-base"
         style={{
           background: `
             linear-gradient(
@@ -155,7 +155,7 @@ export function Hero() {
       />
       {/* Mobile overlay — light, just enough for text readability */}
       <div
-        className="absolute inset-0 z-[1] lg:hidden"
+        className="absolute inset-0 z-base lg:hidden"
         style={{
           background: `
             linear-gradient(

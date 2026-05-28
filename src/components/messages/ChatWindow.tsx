@@ -146,7 +146,7 @@ export function ChatWindow({
                 )}
                 <div
                   className={cn(
-                    'max-w-[75%] rounded-[18px] px-3.5 py-2 shadow-[0_1px_1px_rgba(16,24,40,0.05)]',
+                    'max-w-[75%] rounded-2xl px-3.5 py-2 shadow-[0_1px_1px_rgba(16,24,40,0.05)]',
                     isOwn
                       ? 'bg-primary-600 text-white rounded-br-[6px]'
                       : 'bg-warm-100 text-warm-900 rounded-bl-[6px]'
