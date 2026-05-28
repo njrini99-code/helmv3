@@ -13,7 +13,7 @@ import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
-import { IconUsers, IconChartBar, IconMessage, IconAlertCircle } from '@/components/icons';
+import { IconUsers, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -52,12 +52,9 @@ function isUserOnline(lastSeen: string | null | undefined): boolean {
   return diffMinutes < 5;
 }
 
-// Helper function to format handicap display
-function formatHandicap(handicap: number | null): string {
-  if (handicap === null) return '—';
-  if (handicap > 0) return `+${handicap.toFixed(1)}`;
-  return handicap.toFixed(1);
-}
+// `formatHandicap` was removed in the 2026-05-28 IA trim — the roster card
+// now exposes only Avg Score inline; handicap surfaces on the player detail
+// page. Re-add here if a future card revision restores the metric.
 
 export default async function GolfRosterPage() {
   const session = await getGolfSessionProfile();
@@ -453,48 +450,40 @@ export default async function GolfRosterPage() {
                   </div>
                 </div>
 
-                {/* Stats Row */}
+                {/* Anchor stat — Avg Score is the single number a coach scans
+                    when planning today's lineup. Rounds count + handicap moved
+                    to the player detail page (one click away). IA audit
+                    2026-05-28 collapsed the 3-stat row to reduce per-card
+                    visual weight from 6 numbers + 3 buttons to 1 + 1 + menu. */}
                 <div className="px-5 md:px-6 pb-4 md:pb-5">
-                  <div className="flex items-center justify-between bg-warm-50/80 rounded-xl p-4 md:p-5">
-                    <div className="text-center flex-1">
-                      <p className="text-2xl md:text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em] tabular-nums leading-none">
-                        {player.rounds_count || 0}
-                      </p>
-                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Rounds</p>
-                    </div>
-                    <div className="w-px h-12 bg-warm-200/80" />
-                    <div className="text-center flex-1">
-                      <p className="text-2xl md:text-[32px] md:text-[36px] font-light text-warm-900 tracking-[-0.025em] tabular-nums leading-none">
-                        {player.avg_score && player.avg_score > 0 ? player.avg_score.toFixed(1) : '—'}
-                      </p>
-                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Avg Score</p>
-                    </div>
-                    <div className="w-px h-12 bg-warm-200/80" />
-                    <div className="text-center flex-1">
-                      <p className={cn(
-                        'text-2xl md:text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em] leading-none',
-                        player.handicap !== null && player.handicap <= 0 ? 'text-primary-600' : 'text-warm-900'
-                      )}>
-                        {formatHandicap(player.handicap)}
-                      </p>
-                      <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mt-1.5">Handicap</p>
-                    </div>
+                  <div className="flex items-baseline justify-between gap-3 bg-warm-50/80 rounded-xl px-5 py-4">
+                    <p className="text-xs text-warm-500 font-medium uppercase tracking-wide">
+                      Avg Score
+                    </p>
+                    <p className={cn(
+                      'text-[28px] md:text-[32px] font-light tracking-[-0.025em] tabular-nums leading-none',
+                      player.avg_score && player.avg_score > 0
+                        ? 'text-warm-900'
+                        : 'text-warm-400'
+                    )}>
+                      {player.avg_score && player.avg_score > 0
+                        ? player.avg_score.toFixed(1)
+                        : '—'}
+                    </p>
                   </div>
                 </div>
 
-                {/* Action Buttons - min 44px touch targets */}
-                <div className="px-5 md:px-6 pb-5 md:pb-6 flex items-center gap-3">
-                  <Link href={`/golf/dashboard/players/${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                {/* Primary CTA — single action; secondary actions (Stats,
+                    Message) live inside the PlayerActionsMenu kebab in the
+                    card header. IA audit 2026-05-28: a 20-player roster
+                    previously rendered 60 buttons. */}
+                <div className="px-5 md:px-6 pb-5 md:pb-6">
+                  <Link
+                    href={`/golf/dashboard/players/${player.id}`}
+                    className="flex w-full items-center justify-center gap-2 px-4 py-3 min-h-[48px] bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 active:scale-[0.98] transition-all"
+                  >
                     <IconUsers size={16} />
                     View Player
-                  </Link>
-                  <Link href={`/golf/dashboard/stats?player=${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    <IconChartBar size={16} />
-                    View Stats
-                  </Link>
-                  <Link href={`/golf/dashboard/messages?player=${player.id}`} className="flex-1 w-full px-4 py-3 min-h-[48px] bg-white border border-warm-200 text-warm-700 text-sm font-medium rounded-xl hover:bg-warm-50 hover:border-warm-300 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                    <IconMessage size={16} />
-                    Message
                   </Link>
                 </div>
               </div>
