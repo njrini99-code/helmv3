@@ -20,7 +20,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { upsertInsight, attachDrills } from '../insights/upsert';
+import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import { calcConfidence } from '../insights/types';
 // W14: ready to inject evidence.standing once a clean v3 metric mapping
@@ -489,6 +489,7 @@ async function emitDominantLieInsight(
     evidence,
     drill_tags: drillTags,
   });
+  if (insightId === GATED_OUT) return;
   await attachDrills(supabase, insightId, 'approach', drillTags);
 }
 
@@ -567,6 +568,7 @@ async function emitSeverityInsight(
     evidence,
     drill_tags: drillTags,
   });
+  if (insightId === GATED_OUT) return;
   await attachDrills(supabase, insightId, 'approach', drillTags);
 }
 
@@ -655,6 +657,7 @@ async function emitDirectionBiasInsight(
     evidence,
     drill_tags: drillTags,
   });
+  if (insightId === GATED_OUT) return;
   await attachDrills(supabase, insightId, 'approach', drillTags);
 }
 

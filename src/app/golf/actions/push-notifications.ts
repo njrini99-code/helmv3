@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 
+// SEMGREP-ALLOW: device-token registry is read directly by the push worker, not cached pages
 export async function registerDeviceToken(
   token: string,
   platform: 'ios' | 'android' | 'web',

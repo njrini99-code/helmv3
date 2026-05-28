@@ -20,7 +20,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { upsertInsight, attachDrills } from '../insights/upsert';
+import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import { calcConfidence } from '../insights/types';
 // W14: hook for future standing injection. No clean v3 metric_id maps
@@ -347,6 +347,10 @@ async function emitComparison(
     evidence,
     drill_tags: drillTags,
   });
+  // Skip drill attach when the philosophy gate suppressed the write —
+  // passing GATED_OUT to attachDrills sends '__gated_out__' to a uuid
+  // column and the insert blows up.
+  if (insightId === GATED_OUT) return;
   await attachDrills(supabase, insightId, 'course_management', drillTags);
 }
 

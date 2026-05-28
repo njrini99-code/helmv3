@@ -15,6 +15,7 @@ const { upsertInsightMock, attachDrillsMock, logServerErrorMock, createAdminClie
 vi.mock('@/lib/coachhelm/v2/insights/upsert', () => ({
   upsertInsight: upsertInsightMock,
   attachDrills: attachDrillsMock,
+  GATED_OUT: '__gated_out__',
 }));
 vi.mock('@/lib/server-error-logger', () => ({
   logServerError: logServerErrorMock,

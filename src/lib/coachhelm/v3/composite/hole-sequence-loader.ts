@@ -84,7 +84,12 @@ export async function loadShortGameShots(
       'round_id, hole_number, lie_before, distance_to_hole_before, distance_to_hole_after',
     )
     .in('round_id', roundIds)
-    .in('shot_type', ['chip', 'pitch'])
+    // Migration 040's CHECK constraint allows only the 5 canonical values
+    // (tee | approach | around_green | putting | penalty), so post-040
+    // short-game shots are stored as 'around_green'. Pre-040 prod data may
+    // still carry legacy 'chip'/'pitch' values — accept all three for the
+    // window to keep historical reads aligned with shot-analytics.ts:410.
+    .in('shot_type', ['around_green', 'chip', 'pitch'])
     .in('lie_before', ['rough', 'heavy_rough', 'light_rough', 'bunker']) as {
       data: ShortGameShot[] | null;
       error: { message: string } | null;

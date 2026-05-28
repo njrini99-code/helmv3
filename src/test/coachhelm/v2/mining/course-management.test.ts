@@ -74,6 +74,7 @@ vi.mock('@/lib/server-error-logger', () => ({
 vi.mock('@/lib/coachhelm/v2/insights/upsert', () => ({
   upsertInsight: upsertInsightMock,
   attachDrills: attachDrillsMock,
+  GATED_OUT: '__gated_out__',
 }));
 
 import {

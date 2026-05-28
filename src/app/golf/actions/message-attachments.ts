@@ -21,6 +21,7 @@ export interface AttachmentUploadData {
  * Send a message with attachments
  * Note: Actual file upload happens client-side to Supabase Storage.
  * This action saves the message and attachment metadata to the database.
+ * SEMGREP-ALLOW: realtime-subscribed messages UI; revalidate would cause reload loop
  */
 export async function sendGolfMessageWithAttachments(
   conversationId: string,
