@@ -129,8 +129,8 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Command Palette (Cmd+K) */}
       <CommandPalette isCoach={isCoach} />
 
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:block" role="navigation" aria-label="Main navigation">
+      {/* Persistent Sidebar — shows from md+ (iPad portrait and up) */}
+      <div className="hidden md:block" role="navigation" aria-label="Main navigation">
         <GolfSidebar
           userRole={userData.role}
           userName={userData.name}
@@ -142,7 +142,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Mobile Sidebar Overlay — z-overlay sits below the sidebar panel (z-50) */}
       <div
         className={cn(
-          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-overlay lg:hidden',
+          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-overlay md:hidden',
           'transition-opacity duration-300 ease-out',
           mobileOpen
             ? 'opacity-100 pointer-events-auto'
@@ -164,7 +164,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         aria-label="Navigation menu"
         aria-modal="true"
         className={cn(
-          'fixed top-0 bottom-0 left-0 z-50 lg:hidden',
+          'fixed top-0 bottom-0 left-0 z-50 md:hidden',
           'h-dvh w-72 max-w-[85vw]',
           'pl-[env(safe-area-inset-left)]',
           'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
@@ -188,9 +188,9 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         id="main-content"
         className={cn(
           'flex-1 overflow-y-auto isolate',
-          'pb-[var(--golf-mobile-bottom-nav-offset)] lg:pb-0',
+          'pb-[var(--golf-mobile-bottom-nav-offset)] md:pb-0',
           'transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
-          collapsed ? 'lg:pl-[72px]' : 'lg:pl-64',
+          collapsed ? 'md:pl-[72px]' : 'md:pl-64',
         )}
         style={{
           background: 'transparent',
@@ -203,7 +203,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       </main>
 
       {/* Global Notification Bell — top-right of viewport */}
-      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-overlay hidden lg:block">
+      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-overlay hidden md:block">
         <NotificationCenter />
       </div>
 
