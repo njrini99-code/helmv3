@@ -57,7 +57,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKey}
         rows={2}
-        placeholder={placeholder ?? 'Ask anything about your team…'}
+        placeholder={placeholder ?? 'Ask about your players, rounds, or qualifying…'}
         disabled={disabled}
         aria-label="Chat message"
         className="flex-1 resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 disabled:bg-warm-100 disabled:text-warm-500 transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] placeholder:text-warm-400"

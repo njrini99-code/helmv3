@@ -131,7 +131,7 @@ export default function GolfPlayerOnboarding() {
 
   async function handleSubmitOnboarding() {
     if (!userId) {
-      setError('No user session found. Please log in again.');
+      setError('Your session timed out. Log back in to pick up where you left off.');
       return;
     }
 
@@ -153,7 +153,7 @@ export default function GolfPlayerOnboarding() {
       }, joinCode);
 
       if (!result.success) {
-        setError(result.error || 'Failed to complete setup. Please try again.');
+        setError(result.error || "Couldn't finish setting up your profile. Give it another go.");
         setLoading(false);
         return;
       }
@@ -161,7 +161,7 @@ export default function GolfPlayerOnboarding() {
       setLoading(false);
       goForward('complete');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred. Please try again.');
+      setError(err instanceof Error ? err.message : 'Something threw us off. Give it another go.');
       setLoading(false);
     }
   }

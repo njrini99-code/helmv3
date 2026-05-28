@@ -68,7 +68,7 @@ export function ChatMessageList({ messages, pending }: Props) {
             <ThinkingDot delay={0.18} prefersReducedMotion={prefersReducedMotion} />
             <ThinkingDot delay={0.36} prefersReducedMotion={prefersReducedMotion} />
           </span>
-          <span>Thinking…</span>
+          <span>Reading the numbers…</span>
         </m.li>
       )}
     </ul>

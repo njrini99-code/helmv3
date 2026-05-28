@@ -70,7 +70,7 @@ export function SaveRoundModal({
         ? err.message
         : typeof err === 'string'
         ? err
-        : 'Failed to save round. Please check your connection and try again.';
+        : "Couldn't save your round — check your connection and try again.";
       setError(errorMessage);
       setSaving(false);
     }
