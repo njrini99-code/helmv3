@@ -118,24 +118,36 @@ const config: Config = {
         'sf-pink': '#FF2D55',
 
         // GLASS EFFECTS - Standardized System
+        // California-modern matte surfaces (Apr 2026 brief pivot): tints
+        // derive from cream-100 (#F7F5F2 → 247, 245, 242) so every glass
+        // surface picks up the linen base instead of pure white. These
+        // values mirror --glass-*-bg / --glass-*-border in globals.css
+        // so `bg-glass` (Tailwind utility) and `.glass-standard` (CSS
+        // utility) render the same warm cream surface — fixing the
+        // gray-card disconnect where the Tailwind utility was emitting
+        // pure-white-over-cream and reading as a washed-out gray.
+        // Borders use cream-400 (#CFC8B8) so the edge feels like sand
+        // inset rather than a white hairline.
         // Use with backdrop-blur-glass, backdrop-blur-glass-subtle, or backdrop-blur-glass-prominent
         glass: {
-          // Background opacities
-          subtle: 'rgba(255, 255, 255, 0.55)',      // Large surfaces, filters
-          DEFAULT: 'rgba(255, 255, 255, 0.7)',      // Standard cards, panels
-          prominent: 'rgba(255, 255, 255, 0.8)',    // Nav, modals
-          // Legacy aliases (backward compat)
-          white: 'rgba(255, 255, 255, 0.7)',
-          'white-strong': 'rgba(255, 255, 255, 0.85)',
-          medium: 'rgba(255, 255, 255, 0.5)',
-          // Borders
-          border: 'rgba(255, 255, 255, 0.4)',       // Subtle border
-          'border-strong': 'rgba(255, 255, 255, 0.5)', // Standard border
-          'border-prominent': 'rgba(255, 255, 255, 0.6)', // Prominent border
-          // Dark glass
+          // Background opacities (cream-100 derived)
+          subtle: 'rgba(247, 245, 242, 0.62)',      // Large surfaces, filters
+          DEFAULT: 'rgba(247, 245, 242, 0.78)',     // Standard cards, panels
+          prominent: 'rgba(251, 250, 247, 0.92)',   // Nav, modals (cream-50 derived)
+          // Legacy aliases (backward compat) — point at the warm cream
+          // surfaces so older callers also pick up the pivot.
+          white: 'rgba(247, 245, 242, 0.78)',
+          'white-strong': 'rgba(251, 250, 247, 0.92)',
+          medium: 'rgba(247, 245, 242, 0.55)',
+          // Borders (cream-400 derived — sand inset, not white hairline)
+          border: 'rgba(207, 200, 184, 0.40)',         // Subtle border
+          'border-strong': 'rgba(207, 200, 184, 0.45)', // Standard border
+          'border-prominent': 'rgba(207, 200, 184, 0.55)', // Prominent border
+          // Dark glass (unchanged — used for dark surfaces only)
           dark: 'rgba(28, 25, 23, 0.97)',
-          // Input fields
-          input: 'rgba(255, 255, 255, 0.6)',
+          // Input fields — kept slightly whiter so form chrome reads
+          // distinct from card surfaces, but still warm-tinted.
+          input: 'rgba(251, 250, 247, 0.85)',
         },
 
         // ═══════════════════════════════════════════════════════════════
