@@ -156,10 +156,10 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                         <IconUsers size={15} className="text-primary-700" />
                     </div>
                     <div className="min-w-0">
-                        <p className="text-[13px] md:text-[14px] font-medium text-warm-700 tracking-[-0.005em] truncate">
+                        <p className="text-body-sm md:text-body-sm font-medium text-warm-700 tracking-[-0.005em] truncate">
                             Share invite code with players
                         </p>
-                        <p className="hidden sm:block text-[12px] text-warm-500 mt-0.5">
+                        <p className="hidden sm:block text-caption text-warm-500 mt-0.5">
                             Tap to copy. They join from the welcome screen.
                         </p>
                     </div>
@@ -169,7 +169,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                     className={cn(
                         'inline-flex items-center gap-2 px-4 py-2 rounded-full',
                         'bg-cream-50/85 ring-1 ring-warm-200/60 hover:ring-primary-200/80 hover:bg-cream-50',
-                        'text-[13px] font-mono tracking-[0.18em] text-primary-700',
+                        'text-body-sm font-mono tracking-[0.18em] text-primary-700',
                         'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]'
                     )}
                     whileTap={{ scale: 0.97 }}
@@ -304,9 +304,9 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                 }
             >
                 <DateRangeSelector value={dateRange} onChange={handleDateRangeChange} />
-                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100/70 ring-1 ring-warm-200/45 text-[11px] text-warm-400">
-                    <kbd className="px-1 py-0.5 rounded text-[10px] font-medium text-warm-500 tabular-nums">&#8984;</kbd>
-                    <kbd className="px-1 py-0.5 rounded text-[10px] font-medium text-warm-500">K</kbd>
+                <div className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cream-100/70 ring-1 ring-warm-200/45 text-eyebrow text-warm-400">
+                    <kbd className="px-1 py-0.5 rounded text-eyebrow font-medium text-warm-500 tabular-nums">&#8984;</kbd>
+                    <kbd className="px-1 py-0.5 rounded text-eyebrow font-medium text-warm-500">K</kbd>
                 </div>
             </LargeTitleHeader>
 
@@ -325,7 +325,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                     </m.div>
                 )}
                 {team?.join_code && stats.rosterSize >= 20 && (
-                    <div className="mb-6 px-5 py-3.5 rounded-2xl bg-amber-50/70 ring-1 ring-amber-200/55 text-[13px] text-amber-700">
+                    <div className="mb-6 px-5 py-3.5 rounded-2xl bg-amber-50/70 ring-1 ring-amber-200/55 text-body-sm text-amber-700">
                         Invite code is hidden because your roster has reached the 20-player limit.
                     </div>
                 )}
@@ -472,14 +472,14 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                     <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-5">
                                         <IconChartBar size={22} className="text-warm-400" />
                                     </div>
-                                    <h3 className="text-[17px] font-medium tracking-[-0.012em] text-warm-900 mb-2">No trend data yet</h3>
-                                    <p className="text-[13px] text-warm-500 max-w-sm mb-7 leading-relaxed">
+                                    <h3 className="text-body-lg font-medium tracking-[-0.012em] text-warm-900 mb-2">No trend data yet</h3>
+                                    <p className="text-body-sm text-warm-500 max-w-sm mb-7 leading-relaxed">
                                         Trends appear once your players submit rounds across multiple months.
                                     </p>
                                     <Link
                                         href="/golf/dashboard/roster"
                                         className={cn(
-                                            'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[14px] font-medium',
+                                            'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-body-sm font-medium',
                                             'bg-primary-600/95 text-white',
                                             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
                                             'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
@@ -521,7 +521,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                         <Link
                             href="/golf/dashboard/roster"
                             className={cn(
-                                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[14px] font-medium tracking-[-0.005em]',
+                                'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                                 'bg-primary-600/95 text-white',
                                 'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
                                 'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'

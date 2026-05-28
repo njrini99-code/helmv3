@@ -259,7 +259,7 @@ const CoachTableRow = React.memo(
                 <SegmentBadge key={seg.id} segment={seg} variant="chip" />
               ))}
               {segments.length > 3 && (
-                <span className="text-[10px] text-warm-400 self-center">+{segments.length - 3}</span>
+                <span className="text-eyebrow text-warm-400 self-center">+{segments.length - 3}</span>
               )}
             </div>
           ) : (

@@ -45,7 +45,7 @@ function MakePercentBars({ bars }: { bars: Bar[] }) {
       className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="putting-make-chart"
     >
-      <p className="text-[11px] uppercase tracking-wide text-warm-500 font-medium mb-3">
+      <p className="text-eyebrow uppercase tracking-wide text-warm-500 font-medium mb-3">
         Make % by distance
       </p>
       <div className="space-y-1.5">
@@ -60,7 +60,7 @@ function MakePercentBars({ bars }: { bars: Bar[] }) {
                 : 'bg-red-400';
           return (
             <div key={bar.label} className="flex items-center gap-2">
-              <span className="text-[11px] text-warm-600 w-16 flex-shrink-0">
+              <span className="text-eyebrow text-warm-600 w-16 flex-shrink-0">
                 {bar.label}
               </span>
               <div className="flex-1 h-2 bg-warm-100 rounded-full overflow-hidden">
@@ -72,7 +72,7 @@ function MakePercentBars({ bars }: { bars: Bar[] }) {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <span className="text-[11px] font-medium text-warm-800 tabular-nums w-8 text-right">
+              <span className="text-eyebrow font-medium text-warm-800 tabular-nums w-8 text-right">
                 {Math.round(bar.value)}%
               </span>
             </div>

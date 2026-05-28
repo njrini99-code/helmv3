@@ -98,7 +98,7 @@ export function HealthScoreBreakdownModal({ score, breakdown, onClose }: Props) 
 
             {/* Breakdown table */}
             <div className="rounded-xl border border-warm-100/60 overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-warm-50/60 text-[11px] font-semibold uppercase tracking-wider text-warm-500">
+              <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-warm-50/60 text-eyebrow font-semibold uppercase tracking-wider text-warm-500">
                 <span className="col-span-5">Metric</span>
                 <span className="col-span-2 text-right">Weight</span>
                 <span className="col-span-2 text-right">Value</span>

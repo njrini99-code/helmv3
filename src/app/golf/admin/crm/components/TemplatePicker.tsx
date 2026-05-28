@@ -348,11 +348,11 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                     <span className="font-semibold text-sm text-warm-800 truncate">
                       {template.name}
                     </span>
-                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
+                    <span className={cn('shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider', colors?.bg, colors?.text)}>
                       {CATEGORY_LABELS[template.category] ?? template.category}
                     </span>
                     {template.format === 'html' && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-warm-900 text-white">
+                      <span className="shrink-0 px-2 py-0.5 rounded-full text-eyebrow font-bold uppercase tracking-wider bg-warm-900 text-white">
                         HTML
                       </span>
                     )}
@@ -363,7 +363,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
                   <p className="text-xs text-warm-400 line-clamp-2 mt-1 leading-relaxed">
                     {template.format === 'html' ? 'Full HTML email — replaces the standard greeting + signature shell.' : template.body}
                   </p>
-                  <p className="text-[10px] text-warm-400 mt-2">
+                  <p className="text-eyebrow text-warm-400 mt-2">
                     Used {template.usage_count ?? 0} times
                   </p>
                 </button>
@@ -393,7 +393,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
 
       {/* Footer */}
       {!loading && filtered.length > 0 && (
-        <p className="text-[10px] text-warm-400 text-center">
+        <p className="text-eyebrow text-warm-400 text-center">
           {filtered.length} template{filtered.length !== 1 ? 's' : ''} &middot; Merge tags auto-filled on select
         </p>
       )}

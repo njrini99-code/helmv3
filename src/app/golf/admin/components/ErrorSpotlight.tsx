@@ -65,7 +65,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
         </div>
 
         <span className={cn(
-          'inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] flex-shrink-0',
+          'inline-flex items-center rounded-full border px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-[0.14em] flex-shrink-0',
           allClear
             ? 'border-primary-200 bg-primary-50 text-primary-700'
             : incidentCounts.open > 0
@@ -79,7 +79,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
       {/* Stats grid — 2-col on mobile, 4-col on xl */}
       <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Open
           </p>
           <p className={cn(
@@ -88,12 +88,12 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           )}>
             {incidentCounts.open}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
+          <p className="mt-0.5 text-eyebrow sm:text-micro uppercase tracking-wider text-warm-400">
             unresolved
           </p>
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Active
           </p>
           <p className={cn(
@@ -102,12 +102,12 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           )}>
             {incidentCounts.active}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
+          <p className="mt-0.5 text-eyebrow sm:text-micro uppercase tracking-wider text-warm-400">
             recurring
           </p>
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             Resolved
           </p>
           <p className={cn(
@@ -116,12 +116,12 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           )}>
             {incidentCounts.resolvedRecently}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
+          <p className="mt-0.5 text-eyebrow sm:text-micro uppercase tracking-wider text-warm-400">
             in 24h
           </p>
         </div>
         <div className="rounded-xl border border-white/30 bg-white/55 p-3">
-          <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
             24h Volume
           </p>
           <p className={cn(
@@ -130,7 +130,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           )}>
             {errors24h.toLocaleString()}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-micro uppercase tracking-wider text-warm-400">
+          <p className="mt-0.5 text-eyebrow sm:text-micro uppercase tracking-wider text-warm-400">
             {totalErrors7d.toLocaleString()} in 7 days
           </p>
         </div>
@@ -148,7 +148,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
         )}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-500">
+              <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-500">
                 {leadIncident.status === 'open'
                   ? 'Top Priority Incident'
                   : leadIncident.status === 'active'
@@ -159,7 +159,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
               <p className="mt-1 text-xs sm:text-sm leading-5 sm:leading-6 text-warm-700 line-clamp-3">{leadIncident.summary}</p>
             </div>
             <span className={cn(
-              'rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] flex-shrink-0',
+              'rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] flex-shrink-0',
               leadIncident.status === 'open'
                 ? 'border-red-200 bg-red-100 text-red-700'
                 : leadIncident.status === 'active'
@@ -172,13 +172,13 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
 
           <div className="mt-3 grid gap-2 grid-cols-1 sm:grid-cols-2">
             <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
-              <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+              <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                 Root Cause
               </p>
               <p className="mt-1 text-xs leading-5 text-warm-700 break-words line-clamp-3">{leadIncident.diagnosisBasis}</p>
             </div>
             <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2">
-              <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+              <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                 Last seen
               </p>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-warm-700">
@@ -202,7 +202,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
             Zero unresolved incidents. Platform is healthy and running smoothly.
           </p>
           {totalErrors7d > 0 && (
-            <p className="mt-2 text-[10px] font-medium text-warm-400 tabular-nums">
+            <p className="mt-2 text-eyebrow font-medium text-warm-400 tabular-nums">
               {totalErrors7d.toLocaleString()} error{totalErrors7d !== 1 ? 's' : ''} this week — all resolved
             </p>
           )}
@@ -213,7 +213,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
       {(uxSignals.length > 0 || routeHotspots.length > 0) && (
         <div className="mt-4 grid gap-3 sm:gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-[11px] sm:text-micro font-medium uppercase tracking-wider text-warm-400">
+            <p className="text-eyebrow sm:text-micro font-medium uppercase tracking-wider text-warm-400">
               User Impact
             </p>
             <div className="mt-2 space-y-1.5">
@@ -242,7 +242,7 @@ export function ErrorSpotlight({ errorDetection, errorLogs }: Props) {
           </div>
 
           <div>
-            <p className="text-[11px] sm:text-micro font-medium uppercase tracking-wider text-warm-400">
+            <p className="text-eyebrow sm:text-micro font-medium uppercase tracking-wider text-warm-400">
               Route Hotspots
             </p>
             <div className="mt-2 space-y-1.5">

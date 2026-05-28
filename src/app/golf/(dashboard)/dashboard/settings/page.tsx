@@ -263,7 +263,7 @@ export default function GolfSettingsPage() {
             <div className="flex items-center gap-4">
               <Avatar src={profile.avatarUrl} name={profile.name} size="lg" />
               <div className="flex-1 min-w-0">
-                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{profile.name}</h2>
+                <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{profile.name}</h2>
                 <p className="text-sm text-warm-500 flex items-center gap-2">
                   <span className="capitalize">{profile.role}</span>
                   {profile.teamName && (
@@ -516,7 +516,7 @@ export default function GolfSettingsPage() {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3 px-1">
+    <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3 px-1">
       {children}
     </h3>
   );
@@ -931,7 +931,7 @@ function NotificationsPanel() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Email</p>
+        <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Email</p>
         <div className="space-y-1">
           <ToggleSwitch label="Messages" description="Email for new messages" checked={prefs.email_messages} onChange={() => toggle('email_messages')} />
           <ToggleSwitch label="Announcements" description="Team announcements" checked={prefs.email_announcements} onChange={() => toggle('email_announcements')} />
@@ -942,7 +942,7 @@ function NotificationsPanel() {
       </div>
 
       <div className="border-t border-warm-100 pt-4">
-        <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Push</p>
+        <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Push</p>
         <div className="space-y-1">
           <ToggleSwitch label="Messages" description="Instant push notifications" checked={prefs.push_messages} onChange={() => toggle('push_messages')} />
           <ToggleSwitch label="Events" description="Event and schedule updates" checked={prefs.push_events} onChange={() => toggle('push_events')} />
@@ -1406,7 +1406,7 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
       {organizationId && (
         <>
           <div className="border-t border-warm-100 pt-4">
-            <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">Organization</p>
+            <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-3">Organization</p>
           </div>
           <Input label="School Name" value={orgName} onChange={(e) => setOrgName(e.target.value)} placeholder="University" />
           <div className="grid grid-cols-2 gap-3">
@@ -1507,7 +1507,7 @@ function InviteSettingsPanel() {
       <div>
         <label className="text-sm font-medium text-warm-700 block mb-2">Invite Code</label>
         <div className="flex gap-2">
-          <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg font-mono text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+          <div className="flex-1 px-3 py-2.5 bg-warm-50 border border-warm-200 rounded-lg font-mono text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {inviteCode || '—'}
           </div>
           <Button variant="secondary" onClick={generateNewCode} isLoading={loading} className="px-3" aria-label="Regenerate invite code">

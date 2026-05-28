@@ -46,13 +46,13 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
         </button>
 
         {/* Severity badge */}
-        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0', style.bg, style.text)}>
+        <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold flex-shrink-0', style.bg, style.text)}>
           <Icon size={10} />
           {issue.severity}
         </span>
 
         {/* Category */}
-        <span className="text-[10px] font-medium text-warm-400 uppercase tracking-wider flex-shrink-0 w-20">
+        <span className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider flex-shrink-0 w-20">
           {CATEGORY_LABELS[issue.category] || issue.category}
         </span>
 
@@ -80,7 +80,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
             onClick={(e) => { e.stopPropagation(); onFix(issue); }}
             disabled={fixing}
             className={cn(
-              'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0',
+              'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-eyebrow font-semibold transition-all flex-shrink-0',
               fixing
                 ? 'bg-warm-100 text-warm-400 cursor-not-allowed'
                 : 'bg-green-50 text-green-700 hover:bg-green-100'
@@ -97,7 +97,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
         <div className="px-4 pb-3 pl-12">
           <p className="text-xs text-warm-500 leading-relaxed">{issue.description}</p>
           {issue.actual_value != null && (
-            <div className="mt-1.5 flex items-center gap-3 text-[11px]">
+            <div className="mt-1.5 flex items-center gap-3 text-eyebrow">
               <span className="text-warm-400">Actual:</span>
               <span className="font-mono text-red-600 font-medium">{String(issue.actual_value)}</span>
               {issue.expected_value != null && (
@@ -110,7 +110,7 @@ export function DataQualityIssueRow({ issue, onFix, fixing }: DataQualityIssueRo
             </div>
           )}
           {issue.round_id && (
-            <div className="mt-1 text-[11px] text-warm-400">
+            <div className="mt-1 text-eyebrow text-warm-400">
               Round: <span className="font-mono">{issue.round_id.slice(0, 8)}...</span>
               {issue.round_date && <span className="ml-2">{new Date(issue.round_date).toLocaleDateString()}</span>}
             </div>

@@ -128,7 +128,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
           : 'border-white/35 bg-white/60'
     )}>
       <p className={cn(
-        'text-[10px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] truncate',
+        'text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] truncate',
         tone === 'danger'
           ? 'text-red-500'
           : tone === 'success'
@@ -149,7 +149,7 @@ function CompactStat({ label, value, detail, tone = 'default' }: {
           {value}
         </p>
         <p className={cn(
-          'pb-0.5 text-[10px] sm:text-[11px] truncate min-w-0',
+          'pb-0.5 text-eyebrow sm:text-eyebrow truncate min-w-0',
           tone === 'danger'
             ? 'text-red-600'
             : tone === 'success'
@@ -168,7 +168,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
   return (
     <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2 min-w-0 overflow-hidden">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className={cn(
         'mt-1 break-all text-xs leading-5 text-warm-800',
         mono && 'font-mono'
@@ -182,7 +182,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
     <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className="mt-1.5 text-sm leading-6 text-warm-700 break-words">{body}</p>
     </div>
   );
@@ -523,7 +523,7 @@ export function ErrorFeed({ errorLogs }: Props) {
               )}
             >
               <span>{option.label}</span>
-              <span className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] font-semibold text-warm-600 tabular-nums">
+              <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold text-warm-600 tabular-nums">
                 {option.count}
               </span>
             </button>
@@ -563,21 +563,21 @@ export function ErrorFeed({ errorLogs }: Props) {
                 <div className="flex flex-col gap-3 sm:gap-3 xl:flex-row xl:items-start xl:justify-between">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
-                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', severityStyle.badge)}>
+                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', severityStyle.badge)}>
                         {incident.severity}
                       </span>
-                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', statusStyle.badge)}>
+                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', statusStyle.badge)}>
                         {statusStyle.label}
                       </span>
-                      <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600">
+                      <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                         {incident.featureArea}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                         <IconLayers3 size={11} />
                         {incident.occurrences}
                       </span>
                       {incident.affectedUsers > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                           <IconUser size={11} />
                           {incident.affectedUsers}
                         </span>
@@ -681,7 +681,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                   <div className="mt-3 space-y-3">
                     {incident.underlyingIncidents.length > 1 && (
                       <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+                        <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
                           Group occurrences ({incident.underlyingIncidents.length} variants · signature {incident.signature})
                         </p>
                         <ul className="mt-2 space-y-1.5">
@@ -691,7 +691,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                               className="flex items-start justify-between gap-2 rounded-lg border border-white/40 bg-white/55 px-2.5 py-1.5 text-xs"
                             >
                               <div className="min-w-0">
-                                <p className="font-mono text-[11px] text-warm-700 truncate">
+                                <p className="font-mono text-eyebrow text-warm-700 truncate">
                                   {formatTimestamp(underlying.lastSeen)} · {timeAgo(underlying.lastSeen)}
                                   {' '}<span className="text-warm-500">({underlying.occurrences} hit{underlying.occurrences === 1 ? '' : 's'})</span>
                                 </p>
@@ -710,7 +710,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                                     signature: incident.signature,
                                   } as MergedIncident)}
                                   disabled={isPending}
-                                  className="shrink-0 rounded-md border border-primary-200 bg-primary-50/70 px-2 py-1 text-[10px] font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50"
+                                  className="shrink-0 rounded-md border border-primary-200 bg-primary-50/70 px-2 py-1 text-eyebrow font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50"
                                 >
                                   Resolve
                                 </button>
@@ -718,7 +718,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                             </li>
                           ))}
                           {incident.underlyingIncidents.length > 5 && (
-                            <li className="text-[11px] text-warm-500">
+                            <li className="text-eyebrow text-warm-500">
                               And {incident.underlyingIncidents.length - 5} more occurrences in this signature group.
                             </li>
                           )}
@@ -748,13 +748,13 @@ export function ErrorFeed({ errorLogs }: Props) {
                     </div>
 
                     <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
+                      <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
                       <p className="mt-1.5 break-all text-sm leading-6 text-warm-800">{incident.message}</p>
                     </div>
 
                     {(incident.errorHint || incident.errorDetails) && (
                       <div className="rounded-xl border border-amber-100 bg-amber-50/65 p-3 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Database guidance</p>
+                        <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-amber-600">Database guidance</p>
                         {incident.errorHint && (
                           <p className="mt-1.5 text-sm leading-6 text-amber-800 break-words">
                             <span className="font-medium">Hint:</span> {incident.errorHint}
@@ -770,16 +770,16 @@ export function ErrorFeed({ errorLogs }: Props) {
 
                     <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                       <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
-                        <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-[11px] sm:text-xs leading-6 text-warm-700">
+                        <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
+                        <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-eyebrow sm:text-xs leading-6 text-warm-700">
                           {incident.copySummary}
                         </pre>
                       </div>
 
                       <div className="rounded-xl border border-white/40 bg-white/65 p-3 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Stack trace</p>
+                        <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Stack trace</p>
                         {incident.stack ? (
-                          <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-[11px] sm:text-xs leading-6 text-warm-700">
+                          <pre className="mt-2 max-h-[240px] overflow-x-auto overflow-y-auto whitespace-pre-wrap break-all text-eyebrow sm:text-xs leading-6 text-warm-700">
                             {incident.stack}
                           </pre>
                         ) : (

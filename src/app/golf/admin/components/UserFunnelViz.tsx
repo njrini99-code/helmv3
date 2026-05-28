@@ -49,7 +49,7 @@ export function UserFunnelViz({ funnel }: Props) {
             <div key={step.stage} className="flex items-center gap-2 sm:gap-3">
               {/* Label — narrower on mobile, fixed on sm+ */}
               <div className="w-[90px] sm:w-[130px] text-right flex-shrink-0">
-                <p className="text-[11px] sm:text-xs font-medium text-warm-700 leading-tight">
+                <p className="text-eyebrow sm:text-xs font-medium text-warm-700 leading-tight">
                   {formatStageLabel(step.stage)}
                 </p>
               </div>
@@ -71,7 +71,7 @@ export function UserFunnelViz({ funnel }: Props) {
                     style={{ width: `${Math.max(widthPercent, 8)}%` }}
                   >
                     {widthPercent > 20 && (
-                      <span className="text-[10px] sm:text-micro font-bold text-white tabular-nums">
+                      <span className="text-eyebrow sm:text-micro font-bold text-white tabular-nums">
                         {step.count.toLocaleString()}
                       </span>
                     )}
@@ -80,7 +80,7 @@ export function UserFunnelViz({ funnel }: Props) {
                 {/* Dropoff indicator */}
                 {i > 0 && step.dropoffPct > 0 && (
                   <div className={cn(
-                    'absolute -top-1 right-0 text-[9px] font-semibold tabular-nums px-1 py-0.5 rounded',
+                    'absolute -top-1 right-0 text-eyebrow font-semibold tabular-nums px-1 py-0.5 rounded',
                     isDropoff ? 'text-red-600 bg-red-50' : 'text-warm-400'
                   )}>
                     −{step.dropoffPct}%
@@ -95,7 +95,7 @@ export function UserFunnelViz({ funnel }: Props) {
                   ({step.percentage}%)
                 </span>
                 {/* Percentage on its own line on mobile */}
-                <span className="block sm:hidden text-[10px] text-warm-400 tabular-nums">
+                <span className="block sm:hidden text-eyebrow text-warm-400 tabular-nums">
                   {step.percentage}%
                 </span>
               </div>

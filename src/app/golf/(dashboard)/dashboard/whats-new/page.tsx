@@ -120,7 +120,7 @@ function EmptyState() {
       <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
         <Sparkles size={28} className="text-warm-400" aria-hidden />
       </div>
-      <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No activity yet</h2>
+      <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No activity yet</h2>
       <p className="text-warm-600 text-sm max-w-md mx-auto">
         No CoachHelm activity in the past 7 days. New insights and lifecycle changes
         will appear here as your team plays more rounds.
@@ -132,7 +132,7 @@ function EmptyState() {
 function ErrorState({ error }: { error: string }) {
   return (
     <GlassCard className="text-center py-12 px-6">
-      <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
+      <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
         Unable to load activity
       </h2>
       <p className="text-warm-600 text-sm">{error}</p>

@@ -88,8 +88,8 @@ export function EngagementBadge({
       className={cn(
         'inline-flex items-center gap-1 rounded-full border font-medium',
         size === 'md'
-          ? 'text-[11px] px-2 py-0.5'
-          : 'text-[10px] px-1.5 py-0.5',
+          ? 'text-eyebrow px-2 py-0.5'
+          : 'text-eyebrow px-1.5 py-0.5',
         tone.bg,
         tone.text,
         tone.border,

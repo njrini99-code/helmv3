@@ -517,7 +517,7 @@ function SummaryCard({
           type="button"
           onClick={action.onClick}
           className={cn(
-            'mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors',
+            'mt-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-eyebrow font-semibold transition-colors',
             color === 'red'
               ? 'bg-red-600 text-white hover:bg-red-700'
               : 'bg-primary-600 text-white hover:bg-primary-700',
@@ -575,7 +575,7 @@ function OnboardingStuckList({ teams, unassigned }: {
       {stuckUsers.slice(0, 5).map((user) => (
         <div key={user.email} className="flex items-center gap-2 text-xs flex-wrap">
           <span className={cn(
-            'px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase flex-shrink-0',
+            'px-1.5 py-0.5 rounded text-eyebrow font-semibold uppercase flex-shrink-0',
             user.role === 'coach' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'
           )}>
             {user.role}
@@ -585,7 +585,7 @@ function OnboardingStuckList({ teams, unassigned }: {
         </div>
       ))}
       {stuckUsers.length > 5 && (
-        <p className="text-[10px] text-orange-500">and {stuckUsers.length - 5} more...</p>
+        <p className="text-eyebrow text-orange-500">and {stuckUsers.length - 5} more...</p>
       )}
     </div>
   );

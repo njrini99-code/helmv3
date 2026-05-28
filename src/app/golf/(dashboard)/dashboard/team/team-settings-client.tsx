@@ -192,7 +192,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
       {/* Team Info */}
       <div className="surface-matte rounded-2xl p-6 space-y-6 mb-6">
-        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Team Information</h2>
+        <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Team Information</h2>
 
         <div>
           <label className="block text-sm font-medium text-warm-700 mb-2">
@@ -231,7 +231,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
       {/* Invite Code */}
       <div className="surface-matte rounded-2xl p-6 space-y-4">
-        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Player Invitations</h2>
+        <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Player Invitations</h2>
         <p className="text-sm text-warm-500">
           Share this link with players to invite them to join your team.
         </p>

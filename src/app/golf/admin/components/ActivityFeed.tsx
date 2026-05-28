@@ -302,49 +302,49 @@ export function ActivityFeed({ activity }: Props) {
       {/* Stats mini-grid — 2-col on mobile, 3-col on sm, 5-col on xl */}
       <div className="mt-4 grid grid-cols-2 gap-1.5 sm:gap-2 sm:grid-cols-3 xl:grid-cols-5">
         <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Stream
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {timelineItems.length}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">last 20/source</p>
+          <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">last 20/source</p>
         </div>
         <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Live now
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.live}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">realtime</p>
+          <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">realtime</p>
         </div>
         <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Users
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.users}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">signups &amp; logins</p>
+          <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">signups &amp; logins</p>
         </div>
         <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Golf
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.golf}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">rounds &amp; AI</p>
+          <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">rounds &amp; AI</p>
         </div>
         <div className="rounded-2xl border border-white/35 bg-white/60 px-3 py-2.5 sm:py-3 sm:px-4 col-span-2 sm:col-span-1">
-          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
+          <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.14em] sm:tracking-[0.16em] text-warm-400">
             Ops / issues
           </p>
           <p className="mt-1 text-lg sm:text-xl font-semibold tabular-nums text-warm-900">
             {counts.ops + counts.issues}
           </p>
-          <p className="mt-0.5 text-[10px] sm:text-xs text-warm-500">{counts.issues} issue signals</p>
+          <p className="mt-0.5 text-eyebrow sm:text-xs text-warm-500">{counts.issues} issue signals</p>
         </div>
       </div>
 
@@ -352,7 +352,7 @@ export function ActivityFeed({ activity }: Props) {
       <div className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
         {/* Focus / filter panel */}
         <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+          <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
             Focus
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
@@ -375,7 +375,7 @@ export function ActivityFeed({ activity }: Props) {
                 )}
               >
                 <span>{option.label}</span>
-                <span className="rounded-full bg-warm-100 px-2 py-0.5 text-[11px] font-semibold text-warm-600 tabular-nums">
+                <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold text-warm-600 tabular-nums">
                   {option.count}
                 </span>
               </button>
@@ -384,7 +384,7 @@ export function ActivityFeed({ activity }: Props) {
 
           {leadItem ? (
             <div className="mt-4 rounded-2xl border border-white/35 bg-white/70 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+              <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
                 Lead item
               </p>
               <p className="mt-2 text-sm sm:text-base font-semibold text-warm-900 break-words line-clamp-2">
@@ -429,7 +429,7 @@ export function ActivityFeed({ activity }: Props) {
         {/* Timeline panel */}
         <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+            <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
               Timeline
             </p>
             <p className="text-xs text-warm-400">{visibleItems.length} visible items</p>
@@ -455,7 +455,7 @@ export function ActivityFeed({ activity }: Props) {
                     {showDateHeader && (
                       <div className={cn('flex items-center gap-3 pb-2', index === 0 ? 'pt-0' : 'pt-4')}>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-warm-500 bg-white/80 px-2.5 py-1 rounded-full border border-warm-100 shrink-0">
+                        <span className="text-eyebrow font-bold uppercase tracking-[0.2em] text-warm-500 bg-white/80 px-2.5 py-1 rounded-full border border-warm-100 shrink-0">
                           {currentGroup}
                         </span>
                         <div className="h-px flex-1 bg-gradient-to-r from-transparent via-warm-200 to-transparent" />
@@ -496,21 +496,21 @@ export function ActivityFeed({ activity }: Props) {
                                 {item.title}
                               </p>
                               <span className={cn(
-                                'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                                'inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]',
                                 itemStyle.chip
                               )}>
                                 {item.badge}
                               </span>
                               {item.severity && (
                                 <span className={cn(
-                                  'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]',
                                   severityPills[item.severity]
                                 )}>
                                   {item.severity}
                                 </span>
                               )}
                               {item.live && (
-                                <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700">
+                                <span className="inline-flex items-center rounded-full bg-primary-50 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-primary-700">
                                   live
                                 </span>
                               )}

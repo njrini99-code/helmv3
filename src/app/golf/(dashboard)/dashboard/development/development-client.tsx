@@ -896,17 +896,17 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconActivity size={14} className="text-primary-600" />
-                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Active</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Active</p>
               </div>
-              <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.activeCount}</p>
+              <p className="text-h2 md:text-h1 font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.activeCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">{summaryStats.playersWithAreas} player{summaryStats.playersWithAreas !== 1 ? 's' : ''}</p>
             </div>
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconCheck size={14} className="text-primary-600" />
-                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Completed</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Completed</p>
               </div>
-              <p className="text-[28px] md:text-[32px] font-light text-primary-700 tracking-[-0.025em]">{summaryStats.completedCount}</p>
+              <p className="text-h1 md:text-h1 font-light text-primary-700 tracking-[-0.025em]">{summaryStats.completedCount}</p>
               <p className="text-xs text-warm-500 mt-0.5">
                 {summaryStats.total > 0 ? `${Math.round((summaryStats.completedCount / summaryStats.total) * 100)}% completion` : 'none yet'}
               </p>
@@ -914,9 +914,9 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTrendingUp size={14} className="text-blue-600" />
-                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Avg Progress</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Avg Progress</p>
               </div>
-              <p className="text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.avgProgress}%</p>
+              <p className="text-h2 md:text-h1 font-medium text-warm-900 tracking-[-0.022em]">{summaryStats.avgProgress}%</p>
               <div className="mt-1 h-1.5 bg-warm-100 rounded-full overflow-hidden">
                 <div className="h-full bg-primary-500 rounded-full transition-[width] duration-500" style={{ width: `${summaryStats.avgProgress}%` }} />
               </div>
@@ -924,9 +924,9 @@ export function DevelopmentPlansClient({
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
                 <IconTarget size={14} className="text-violet-600" />
-                <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Total</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Total</p>
               </div>
-              <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{summaryStats.total}</p>
+              <p className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{summaryStats.total}</p>
               <p className="text-xs text-warm-500 mt-0.5">focus areas assigned</p>
             </div>
           </Reveal>
@@ -984,7 +984,7 @@ export function DevelopmentPlansClient({
                       </div>
                     )}
                     <div className="flex-1">
-                      <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{p.first_name} {p.last_name}</h2>
+                      <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">{p.first_name} {p.last_name}</h2>
                       <div className="flex items-center gap-3 text-sm text-warm-500">
                         {p.handicap != null && <span>{p.handicap > 0 ? '+' : ''}{p.handicap} HCP</span>}
                         {stats?.avg_score != null && <span>Avg: {stats.avg_score}</span>}

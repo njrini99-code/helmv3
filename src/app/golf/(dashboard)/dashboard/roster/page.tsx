@@ -74,7 +74,7 @@ export default async function GolfRosterPage() {
             <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <IconAlertCircle size={32} className="text-amber-500" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Profile Not Found</h2>
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Profile Not Found</h2>
             <p className="text-warm-500 mb-6">
               Unable to find your profile. Please complete onboarding or contact support.
             </p>
@@ -184,7 +184,7 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Team Not Found</h2>
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">Team Not Found</h2>
           <p className="text-warm-500 mb-4">
             Unable to load team information. The team may have been deleted.
           </p>
@@ -251,7 +251,7 @@ export default async function GolfRosterPage() {
     return (
       <div className="p-6">
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">Error Loading Roster</h2>
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">Error Loading Roster</h2>
           <p className="text-warm-500 mb-4">
             Unable to load team roster. Please try refreshing the page.
           </p>
@@ -423,7 +423,7 @@ export default async function GolfRosterPage() {
                     {/* Player Info */}
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="text-lg md:text-[20px] font-medium text-warm-900 tracking-[-0.015em] truncate">
+                        <h3 className="text-lg md:text-h3 font-medium text-warm-900 tracking-[-0.015em] truncate">
                           {player.first_name} {player.last_name}
                         </h3>
                         <YearBadge year={player.graduation_year} />
@@ -462,7 +462,7 @@ export default async function GolfRosterPage() {
                       Avg Score
                     </p>
                     <p className={cn(
-                      'text-[28px] md:text-[32px] font-light tracking-[-0.025em] tabular-nums leading-none',
+                      'text-h1 md:text-h1 font-light tracking-[-0.025em] tabular-nums leading-none',
                       player.avg_score && player.avg_score > 0
                         ? 'text-warm-900'
                         : 'text-warm-400'

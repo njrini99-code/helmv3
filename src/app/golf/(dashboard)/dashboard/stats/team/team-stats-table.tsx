@@ -229,7 +229,7 @@ export function TeamStatsTable({
               <th className="text-left px-4 py-3">
                 <button
                   onClick={() => handleSort('name')}
-                  className="flex items-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors"
+                  className="flex items-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors"
                 >
                   Player
                   <SortIcon columnKey="name" />
@@ -238,7 +238,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('rounds_played')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Rnds
                   <SortIcon columnKey="rounds_played" />
@@ -247,7 +247,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('scoring_average')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Avg
                   <SortIcon columnKey="scoring_average" />
@@ -256,7 +256,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('ai_rating')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                   title="CoachHelm composite rating (engine-derived)"
                 >
                   AI
@@ -266,7 +266,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3">
                 <button
                   onClick={() => handleSort('best_round')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Best
                   <SortIcon columnKey="best_round" />
@@ -275,7 +275,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3 hidden md:table-cell">
                 <button
                   onClick={() => handleSort('handicap')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   HCP
                   <SortIcon columnKey="handicap" />
@@ -284,7 +284,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3 hidden lg:table-cell">
                 <button
                   onClick={() => handleSort('fairway_pct')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   FW%
                   <SortIcon columnKey="fairway_pct" />
@@ -293,7 +293,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3 hidden lg:table-cell">
                 <button
                   onClick={() => handleSort('gir_pct')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   GIR%
                   <SortIcon columnKey="gir_pct" />
@@ -302,7 +302,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3 hidden xl:table-cell">
                 <button
                   onClick={() => handleSort('putts_per_round')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Putts
                   <SortIcon columnKey="putts_per_round" />
@@ -311,7 +311,7 @@ export function TeamStatsTable({
               <th className="text-center px-3 py-3 hidden sm:table-cell">
                 <button
                   onClick={() => handleSort('scoring_trend')}
-                  className="flex items-center justify-center gap-1 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
+                  className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Trend
                   <SortIcon columnKey="scoring_trend" />
@@ -538,7 +538,7 @@ function AiRatingCell({
       title={summary?.topInsightTitle ?? 'Open player CoachHelm detail'}
     >
       <span className={cn('text-sm font-medium tabular-nums', color)}>{rating}</span>
-      <span className="text-[10px] font-medium text-warm-400">/100</span>
+      <span className="text-eyebrow font-medium text-warm-400">/100</span>
       {priorityDot && (
         <span
           className={cn('w-1.5 h-1.5 rounded-full', priorityDot)}

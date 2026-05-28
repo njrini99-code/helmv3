@@ -141,7 +141,7 @@ export const AdminStatCard = memo(function AdminStatCard({
               </span>
             )}
             {detail && (
-              <p className="text-[11px] sm:text-xs text-warm-400 leading-snug break-words">{detail}</p>
+              <p className="text-eyebrow sm:text-xs text-warm-400 leading-snug break-words">{detail}</p>
             )}
           </div>
         </div>

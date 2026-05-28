@@ -299,7 +299,7 @@ export default function GolfMessagesPage() {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <IconAlertCircle size={32} className="text-amber-500" />
           </div>
-          <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
+          <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
           <p className="text-warm-500 mb-6">
             You need to be assigned to a team before you can send messages.
             {userRole === 'coach'
@@ -549,7 +549,7 @@ export default function GolfMessagesPage() {
                         <div className={cn('group relative flex flex-col gap-1 max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
                           {/* Sender name above first incoming message in group */}
                           {!isOwn && isFirstInGroup && (
-                            <span className="text-[11px] font-medium text-warm-500 ml-1 mb-0.5">
+                            <span className="text-eyebrow font-medium text-warm-500 ml-1 mb-0.5">
                               {selectedConversation?.other_participant?.name || 'User'}
                             </span>
                           )}
@@ -1099,7 +1099,7 @@ function ConversationGroup({
 }) {
   return (
     <div className="mb-2">
-      <h3 className="px-4 py-1.5 text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">
+      <h3 className="px-4 py-1.5 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">
         {label}
       </h3>
       <div className="space-y-0.5 px-2">
@@ -1162,7 +1162,7 @@ function ConversationRow({
           <span className="absolute -top-1 -right-1 w-5 h-5
                           bg-primary-500 rounded-full
                           flex items-center justify-center
-                          text-[11px] font-medium text-white
+                          text-eyebrow font-medium text-white
                           ring-2 ring-cream-50">
             {conv.unread_count > 9 ? '9+' : conv.unread_count}
           </span>
@@ -1180,7 +1180,7 @@ function ConversationRow({
               {displayName}
             </span>
             {isGroup && (
-              <span className="px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide bg-primary-100 text-primary-700 rounded flex-shrink-0">
+              <span className="px-1.5 py-0.5 text-eyebrow font-medium uppercase tracking-wide bg-primary-100 text-primary-700 rounded flex-shrink-0">
                 Group
               </span>
             )}

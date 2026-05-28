@@ -168,7 +168,7 @@ export function NoteCard({
             <select
               value={draftKind}
               onChange={(e) => setDraftKind(e.target.value as NoteKind)}
-              className="text-[11px] font-medium px-2 py-0.5 rounded-md border border-warm-200 bg-white text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+              className="text-eyebrow font-medium px-2 py-0.5 rounded-md border border-warm-200 bg-white text-warm-800 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
             >
               {(Object.keys(KIND_LABEL) as NoteKind[]).map((k) => (
                 <option key={k} value={k}>{KIND_LABEL[k]}</option>
@@ -177,14 +177,14 @@ export function NoteCard({
           ) : (
             <span
               className={cn(
-                'inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full border',
+                'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
                 KIND_TONE[note.kind],
               )}
             >
               {KIND_LABEL[note.kind]}
             </span>
           )}
-          <span className="text-[11px] text-warm-400 tabular-nums truncate">
+          <span className="text-eyebrow text-warm-400 tabular-nums truncate">
             {relTime}
           </span>
         </div>
@@ -281,13 +281,13 @@ export function NoteCard({
 
       {/* Footer */}
       {!editing && (
-        <div className="mt-2 text-[11px] text-warm-400 truncate">
+        <div className="mt-2 text-eyebrow text-warm-400 truncate">
           {authorLabel ?? 'Unknown author'}
         </div>
       )}
 
       {error && (
-        <p className="mt-2 text-[11px] text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+        <p className="mt-2 text-eyebrow text-red-600 bg-red-50 border border-red-200 rounded-md px-2 py-1">
           {error}
         </p>
       )}

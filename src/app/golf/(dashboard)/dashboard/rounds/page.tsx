@@ -233,7 +233,7 @@ export default async function RoundsPage() {
               <div className="w-16 h-16 rounded-2xl bg-primary-50/65 flex items-center justify-center mx-auto mb-6">
                 <IconGolf size={26} className="text-primary-700" />
               </div>
-              <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-2.5">
+              <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-2.5">
                 No rounds yet
               </h3>
               <p className="text-warm-500 mb-8 max-w-sm mx-auto leading-relaxed">

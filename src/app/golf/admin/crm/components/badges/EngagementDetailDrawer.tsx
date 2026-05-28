@@ -245,7 +245,7 @@ export function EngagementDetailDrawer({
                   <div>
                     <span
                       className={cn(
-                        'inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border',
+                        'inline-flex items-center gap-1 text-eyebrow font-medium px-2 py-0.5 rounded-full border',
                         tone.pillClass,
                       )}
                     >
@@ -263,25 +263,25 @@ export function EngagementDetailDrawer({
 
                 <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                   <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-[10px] uppercase tracking-wider text-warm-500">
+                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
                       Opens
                     </dt>
                     <dd className="text-lg font-semibold text-warm-900 tabular-nums">
                       {engagement.opens_90d}
                     </dd>
-                    <dd className="text-[10px] text-warm-400">last 90d</dd>
+                    <dd className="text-eyebrow text-warm-400">last 90d</dd>
                   </div>
                   <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-[10px] uppercase tracking-wider text-warm-500">
+                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
                       Clicks
                     </dt>
                     <dd className="text-lg font-semibold text-warm-900 tabular-nums">
                       {engagement.clicks_90d}
                     </dd>
-                    <dd className="text-[10px] text-warm-400">last 90d</dd>
+                    <dd className="text-eyebrow text-warm-400">last 90d</dd>
                   </div>
                   <div className="rounded-lg bg-warm-50/60 px-2 py-2">
-                    <dt className="text-[10px] uppercase tracking-wider text-warm-500">
+                    <dt className="text-eyebrow uppercase tracking-wider text-warm-500">
                       Last event
                     </dt>
                     <dd className="text-sm font-semibold text-warm-900">
@@ -300,7 +300,7 @@ export function EngagementDetailDrawer({
                   <p className="text-sm text-warm-800 leading-relaxed">
                     {explainer}
                   </p>
-                  <p className="mt-2 text-[11px] text-warm-500">
+                  <p className="mt-2 text-eyebrow text-warm-500">
                     Score uses a 14-day half-life decay over the last 90 days
                     of email events. Hot ≥ 60, Warm ≥ 25, Cold &lt; 25.
                   </p>
@@ -375,21 +375,21 @@ function EventRow({ event }: EventRowProps) {
         <div className="flex items-center gap-2 flex-wrap">
           <span
             className={cn(
-              'inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full border',
+              'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
               tone,
             )}
           >
             {label}
           </span>
           {recipient && (
-            <span className="text-[11px] text-warm-500 truncate">
+            <span className="text-eyebrow text-warm-500 truncate">
               {recipient}
             </span>
           )}
         </div>
       </div>
       <span
-        className="text-[11px] text-warm-400 tabular-nums flex-shrink-0"
+        className="text-eyebrow text-warm-400 tabular-nums flex-shrink-0"
         title={absolute}
       >
         {rel}

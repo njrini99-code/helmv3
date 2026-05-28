@@ -253,7 +253,7 @@ export function InboundLeadsView() {
               {FILTER_LABELS[f]}
               <span
                 className={cn(
-                  'px-1.5 py-0.5 rounded-full text-[10px] font-semibold tabular-nums',
+                  'px-1.5 py-0.5 rounded-full text-eyebrow font-semibold tabular-nums',
                   f === 'new' && count > 0
                     ? 'bg-amber-100 text-amber-700'
                     : 'bg-warm-100 text-warm-600',
@@ -343,7 +343,7 @@ export function InboundLeadsView() {
                         {request.email}
                       </p>
                       {isNew && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-amber-200 bg-amber-50 text-amber-700 text-eyebrow font-semibold uppercase tracking-wide">
                           New
                         </span>
                       )}
@@ -356,7 +356,7 @@ export function InboundLeadsView() {
                         />
                       ) : (
                         <span
-                          className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-warm-200/80 bg-warm-50 text-warm-500 text-[10px] font-medium"
+                          className="inline-flex items-center px-1.5 py-0.5 rounded-full border border-warm-200/80 bg-warm-50 text-warm-500 text-eyebrow font-medium"
                           title="This lead is not yet in the CRM"
                         >
                           Not in CRM

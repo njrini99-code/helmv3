@@ -46,13 +46,13 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-warm-100/80">
-              <th className="px-4 py-3 text-left text-[11px] font-medium text-warm-400 uppercase tracking-wider w-40">
+              <th className="px-4 py-3 text-left text-eyebrow font-medium text-warm-400 uppercase tracking-wider w-40">
                 Player
               </th>
               {CATEGORIES.map((cat) => (
                 <th
                   key={cat}
-                  className="px-3 py-3 text-center text-[11px] font-medium text-warm-400 uppercase tracking-wider"
+                  className="px-3 py-3 text-center text-eyebrow font-medium text-warm-400 uppercase tracking-wider"
                 >
                   {cat}
                 </th>
@@ -76,7 +76,7 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
                     <td key={cat} className="px-3 py-2.5 text-center">
                       <span
                         className={cn(
-                          'inline-flex items-center justify-center min-w-[42px] px-2 py-1 rounded-md text-[11px] font-semibold tabular-nums',
+                          'inline-flex items-center justify-center min-w-[42px] px-2 py-1 rounded-md text-eyebrow font-semibold tabular-nums',
                           getCellColors(pct)
                         )}
                       >
@@ -92,7 +92,7 @@ export function DataCompletenessGrid({ data }: DataCompletenessGridProps) {
       </div>
 
       {/* Legend */}
-      <div className="px-5 py-3 border-t border-warm-100/50 flex items-center gap-3 text-[11px] text-warm-400 flex-wrap">
+      <div className="px-5 py-3 border-t border-warm-100/50 flex items-center gap-3 text-eyebrow text-warm-400 flex-wrap">
         <span className="font-medium text-warm-500">Legend:</span>
         <span className="flex items-center gap-1">
           <span className="w-3 h-3 rounded bg-green-100" />

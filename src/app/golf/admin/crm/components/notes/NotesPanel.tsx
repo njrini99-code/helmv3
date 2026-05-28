@@ -70,7 +70,7 @@ export function NotesPanel({ coachId }: NotesPanelProps) {
           </span>
           <h3 className="text-sm font-semibold text-warm-900">Notes</h3>
           {!loading && notes.length > 0 && (
-            <span className="text-[11px] text-warm-400 tabular-nums">
+            <span className="text-eyebrow text-warm-400 tabular-nums">
               {notes.length}
             </span>
           )}

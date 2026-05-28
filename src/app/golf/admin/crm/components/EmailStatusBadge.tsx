@@ -163,7 +163,7 @@ export function EmailStatusBadge({
       title={title}
       className={cn(
         'inline-flex items-center gap-1 rounded-full border font-medium',
-        compact ? 'text-[10px] px-1.5 py-0.5' : 'text-[11px] px-1.5 py-0.5',
+        compact ? 'text-eyebrow px-1.5 py-0.5' : 'text-eyebrow px-1.5 py-0.5',
         tone.bg,
         tone.text,
         tone.border,

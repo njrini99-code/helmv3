@@ -288,7 +288,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         <div className="relative surface-matte rounded-3xl overflow-clip p-6 mb-6">
           <div className="flex items-center gap-2 mb-4">
             <IconTrophy size={20} className="text-amber-500" />
-            <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Leaderboard</h2>
+            <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Leaderboard</h2>
           </div>
           <QualifierLeaderboardRealtime
             qualifierId={id}

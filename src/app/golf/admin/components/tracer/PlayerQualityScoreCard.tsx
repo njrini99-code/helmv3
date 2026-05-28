@@ -43,7 +43,7 @@ export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityS
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-warm-900 truncate">{score.player_name}</span>
           {score.total_issues === 0 && (
-            <span className="text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Clean</span>
+            <span className="text-eyebrow font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">Clean</span>
           )}
         </div>
 
@@ -57,7 +57,7 @@ export function PlayerQualityScoreCard({ score, onFilterPlayer }: PlayerQualityS
 
         {/* Issue counts */}
         {score.total_issues > 0 && (
-          <div className="mt-1 flex items-center gap-2 text-[10px]">
+          <div className="mt-1 flex items-center gap-2 text-eyebrow">
             {score.critical_count > 0 && (
               <span className="text-red-600 font-semibold">{score.critical_count} critical</span>
             )}

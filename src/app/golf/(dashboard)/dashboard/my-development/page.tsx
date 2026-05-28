@@ -175,7 +175,7 @@ export default async function MyDevelopmentPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconTarget size={28} className="text-warm-400" />
             </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Development Plans Yet</h3>
+            <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No Development Plans Yet</h3>
             <p className="text-warm-500 max-w-sm mx-auto mb-4">
               Your coach hasn&apos;t assigned any focus areas yet. Check back later or talk to your coach about your development goals.
             </p>
@@ -191,7 +191,7 @@ export default async function MyDevelopmentPage() {
             {/* Active Focus Areas */}
             {activeAreas.length > 0 && (
               <div>
-                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
+                <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
                   <IconClock size={20} className="text-primary-600" />
                   Active Focus Areas
                   <span className="ml-auto text-sm font-normal text-warm-400">
@@ -249,11 +249,11 @@ export default async function MyDevelopmentPage() {
                                   a coach-imposed task with no context. */}
                               {(fa.from_review_id || fa.from_insight_id) && (
                                 <div className="mt-3 flex items-center gap-2">
-                                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
+                                  <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-200">
                                     {fa.from_review_id ? 'From a round review' : 'From a CoachHelm insight'}
                                   </span>
                                   {fa.review_context && (
-                                    <span className="text-[11px] text-warm-500 truncate">
+                                    <span className="text-eyebrow text-warm-500 truncate">
                                       {fa.review_context}
                                     </span>
                                   )}
@@ -337,7 +337,7 @@ export default async function MyDevelopmentPage() {
             {/* Completed Focus Areas */}
             {completedAreas.length > 0 && (
               <div>
-                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
+                <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4 flex items-center gap-2">
                   <IconCheck size={20} className="text-warm-500" />
                   Completed
                   <span className="ml-auto text-sm font-normal text-warm-400">

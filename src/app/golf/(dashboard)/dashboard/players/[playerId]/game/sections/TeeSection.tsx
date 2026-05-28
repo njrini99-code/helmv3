@@ -52,7 +52,7 @@ function DistanceMeter({ distance }: { distance: number }) {
       data-testid="tee-distance-meter"
     >
       <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[11px] uppercase tracking-wide text-warm-500 font-medium">
+        <span className="text-eyebrow uppercase tracking-wide text-warm-500 font-medium">
           Distance spectrum
         </span>
         <span className="text-sm font-medium text-warm-900 tabular-nums">
@@ -65,7 +65,7 @@ function DistanceMeter({ distance }: { distance: number }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <div className="flex items-center justify-between text-[10px] text-warm-400 tabular-nums mt-1.5">
+      <div className="flex items-center justify-between text-eyebrow text-warm-400 tabular-nums mt-1.5">
         <span>{min}</span>
         <span>{max}+</span>
       </div>
