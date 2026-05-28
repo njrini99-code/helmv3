@@ -22,7 +22,7 @@ export default function PlayerStatsError({ error, reset }: ErrorProps) {
 
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
           <div
             className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mb-4"

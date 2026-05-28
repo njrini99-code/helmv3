@@ -88,7 +88,7 @@ export default function ActivateRecruitingPage() {
         title="Activate Recruiting"
         subtitle="Get discovered by college coaches"
       />
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-[720px] mx-auto">
         {/* Hero Section */}
         <Card variant="glass" className="mb-6 bg-gradient-to-br from-primary-50 to-white border-primary-200">
           <CardContent className="p-8 text-center">

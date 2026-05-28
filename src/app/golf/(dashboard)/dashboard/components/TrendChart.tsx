@@ -32,7 +32,7 @@ interface TrendChartProps {
 }
 
 const COLORS = {
-    green: { stroke: '#16A34A', fill: '#16A34A' },
+    green: { stroke: 'var(--color-primary-600)', fill: 'var(--color-primary-600)' },
     blue: { stroke: '#2563EB', fill: '#2563EB' },
     amber: { stroke: '#D97706', fill: '#D97706' },
 } as const;

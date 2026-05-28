@@ -86,7 +86,7 @@ export function DailyCharts({ signupsByDay, visitsByDay }: Props) {
         data={signupsByDay}
         title="User Signups by Day"
         subtitle="New account registrations"
-        color="#16A34A"
+        color="var(--color-primary-600)"
         icon={<IconUsers size={20} />}
       />
       <DailyAreaChartCard

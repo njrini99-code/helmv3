@@ -52,7 +52,7 @@ export function SegmentBadge({
       onContextMenu={onContextMenu}
       title={segment.description ?? segment.name}
       className={cn(
-        'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-[10px]',
+        'group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-md',
         'text-sm font-medium transition-all duration-200',
         isActive
           ? 'bg-white/15 text-white'

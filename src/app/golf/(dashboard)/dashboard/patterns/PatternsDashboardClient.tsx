@@ -88,7 +88,7 @@ export function PatternsDashboardClient({
       </LargeTitleHeader>
 
       {/* Main content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-8">
         {/* Editorial hero plinth — magazine-cover framing for the
             pattern-mining surface, sculpted-matte foundation under
             the sticky LargeTitleHeader. */}

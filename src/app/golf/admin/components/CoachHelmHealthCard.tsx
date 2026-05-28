@@ -99,7 +99,7 @@ export function CoachHelmHealthCard({ coachhelm, coachhelmRoi }: Props) {
       {/* Insights over time - area chart */}
       {insightChartData.length > 0 && (
         <div className="mb-5">
-          <AdminAreaChart data={insightChartData} title="Insights Generated per Week" color="#16A34A" height={140} />
+          <AdminAreaChart data={insightChartData} title="Insights Generated per Week" color="var(--color-primary-600)" height={140} />
         </div>
       )}
 

@@ -73,7 +73,7 @@ export default async function GameDetailPage({ params }: PageProps) {
   const hasStats = batting.length > 0 || pitching.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+    <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-warm-400">
         <Link href="/baseball/dashboard/stats/games" className="hover:text-warm-600 transition-colors">

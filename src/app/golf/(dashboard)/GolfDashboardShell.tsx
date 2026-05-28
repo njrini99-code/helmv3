@@ -121,7 +121,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-[60] focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
       >
         Skip to main content
       </a>
@@ -139,10 +139,10 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         />
       </div>
 
-      {/* Mobile Sidebar Overlay — z-[45] sits between bottom nav (z-40) and sidebar panel (z-50) */}
+      {/* Mobile Sidebar Overlay — z-overlay sits below the sidebar panel (z-50) */}
       <div
         className={cn(
-          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-[45] lg:hidden',
+          'fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-overlay lg:hidden',
           'transition-opacity duration-300 ease-out',
           mobileOpen
             ? 'opacity-100 pointer-events-auto'
@@ -203,7 +203,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
       </main>
 
       {/* Global Notification Bell — top-right of viewport */}
-      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-[35] hidden lg:block">
+      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] right-4 z-overlay hidden lg:block">
         <NotificationCenter />
       </div>
 

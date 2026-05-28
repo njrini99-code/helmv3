@@ -54,7 +54,7 @@ export default async function CommandCenterPage() {
     // No organization - show setup prompt
     return (
       <div className="min-h-dvh bg-cream-100">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-12">
           <div className="glass-standard rounded-2xl p-8 text-center">
             <h1 className="text-2xl font-semibold text-warm-900 mb-4">
               Set Up Your Program
@@ -88,7 +88,7 @@ export default async function CommandCenterPage() {
     if (coach.coach_type !== 'college') {
       return (
         <div className="min-h-dvh bg-cream-100">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
+          <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-12">
             <div className="glass-standard rounded-2xl p-8 text-center">
               <h1 className="text-2xl font-semibold text-warm-900 mb-4">Create Your Team</h1>
               <p className="text-warm-600 mb-6">

@@ -295,7 +295,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search users..."
             className={cn(
-              'w-full pl-9 pr-3 py-2 rounded-[10px] text-sm',
+              'w-full pl-9 pr-3 py-2 rounded-md text-sm',
               'bg-white/80 border border-warm-200/50',
               'text-warm-900 placeholder:text-warm-400',
               'focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-300',
@@ -327,7 +327,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
           value={activityFilter}
           onChange={(e) => setActivityFilter(e.target.value as ActivityFilter)}
           className={cn(
-            'px-3 py-2 rounded-[10px] text-xs font-medium',
+            'px-3 py-2 rounded-md text-xs font-medium',
             'bg-white/80 border border-warm-200/50 text-warm-600',
             'focus:outline-none focus:ring-2 focus:ring-primary-500/20'
           )}

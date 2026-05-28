@@ -4,7 +4,7 @@ export default function Loading() {
   return (
     <div className="min-h-full">
       <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-white/70 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Shimmer className="w-12 h-12 rounded-xl" />
@@ -21,7 +21,7 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 space-y-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-8 space-y-8">
         <div className="flex gap-2 p-1 bg-warm-100/50 rounded-xl w-fit">
           {[1, 2, 3].map((i) => (
             <Shimmer key={i} staggerIndex={i} className="h-9 w-28 rounded-lg" />

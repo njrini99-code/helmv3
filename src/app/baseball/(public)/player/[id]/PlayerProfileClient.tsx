@@ -299,7 +299,7 @@ export function PlayerProfileClient({
         </div>
 
         {/* Profile card overlapping banner */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-28 md:-mt-32 relative z-10">
+        <div className="max-w-[1536px] mx-auto px-4 sm:px-6 -mt-28 md:-mt-32 relative z-10">
           <div className="bg-white rounded-2xl shadow-xl border border-warm-200/50 overflow-hidden">
             <div className="p-6 md:p-8">
               <div className="flex flex-col md:flex-row gap-6">
@@ -458,7 +458,7 @@ export function PlayerProfileClient({
       </div>
 
       {/* Tab Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
         {activeTab === 'overview' && (
           <OverviewTab
             player={player}

@@ -599,7 +599,7 @@ export function InsightsPageContent({
       </LargeTitleHeader>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-8">
         {/* Editorial hero plinth — magazine-cover framing for the
             coach insights feed beneath the sticky LargeTitleHeader. */}
         <Reveal>

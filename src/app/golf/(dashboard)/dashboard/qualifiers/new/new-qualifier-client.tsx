@@ -84,7 +84,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
         backLabel="Qualifiers"
       />
 
-      <div className="max-w-3xl mx-auto px-4 md:px-6 pt-6 md:pt-8">
+      <div className="max-w-[720px] mx-auto px-4 md:px-6 pt-6 md:pt-8">
         <Reveal>
           <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
             <PageHeader
@@ -98,7 +98,7 @@ export default function NewQualifierClient({ players }: NewQualifierClientProps)
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 md:px-6 pb-6 md:pb-8">
+      <form onSubmit={handleSubmit} className="max-w-[720px] mx-auto px-4 md:px-6 pb-6 md:pb-8">
         <div className="space-y-8">
           {/* Error Message */}
           {error && (

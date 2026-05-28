@@ -184,7 +184,7 @@ export default async function RoundDetailPage({
   }
 
   return (
-    <AnimatedPage className="max-w-5xl mx-auto">
+    <AnimatedPage className="max-w-[1280px] mx-auto">
       {/* Navigation */}
       <AnimatedItem>
         <MobileNavHeader

@@ -179,7 +179,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
         />
       </AnimatedItem>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Qualifier Header — editorial plinth */}
         <Reveal>
           <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">

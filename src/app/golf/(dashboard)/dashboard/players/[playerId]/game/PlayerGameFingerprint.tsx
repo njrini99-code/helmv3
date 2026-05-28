@@ -121,7 +121,7 @@ export function PlayerGameFingerprint({ fingerprint }: PlayerGameFingerprintProp
       className="min-h-full bg-transparent"
       data-testid="player-game-fingerprint"
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
         <FingerprintHero
           player={fingerprint.player}
           composite={fingerprint.composite}

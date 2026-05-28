@@ -300,7 +300,7 @@ export default function EventsPage() {
                         <div className="flex items-start gap-4">
                           <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-lg font-medium flex-shrink-0"
-                            style={{ backgroundColor: event.team?.primary_color || '#16A34A' }}
+                            style={{ backgroundColor: event.team?.primary_color || 'var(--color-primary-600)' }}
                           >
                             {event.team?.name?.charAt(0) || 'E'}
                           </div>

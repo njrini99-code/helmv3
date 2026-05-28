@@ -902,7 +902,7 @@ export async function fetchAdminRollupC(
     lowEngagement,
     dormant,
     segments: [
-      { label: 'High (3+/wk)', count: highEngagement, color: '#16A34A' },
+      { label: 'High (3+/wk)', count: highEngagement, color: 'var(--color-primary-600)' },
       { label: 'Medium (1-2/wk)', count: mediumEngagement, color: '#2563EB' },
       { label: 'Low (monthly)', count: lowEngagement, color: '#F59E0B' },
       { label: 'Dormant', count: dormant, color: '#9CA3AF' },

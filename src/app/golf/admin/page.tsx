@@ -496,7 +496,7 @@ function AdminDashboardContent() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'group relative flex items-center gap-3 w-full rounded-[10px] transition-colors duration-200',
+                    'group relative flex items-center gap-3 w-full rounded-md transition-colors duration-200',
                     sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                     isActive
                       ? 'bg-white/10 text-white'
@@ -564,7 +564,7 @@ function AdminDashboardContent() {
             <Link
               href="/golf/admin/crm"
               className={cn(
-                'group relative flex items-center gap-3 w-full rounded-[10px] transition-colors duration-200',
+                'group relative flex items-center gap-3 w-full rounded-md transition-colors duration-200',
                 sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                 'text-primary-400 hover:bg-white/5 hover:text-primary-300'
               )}
@@ -631,7 +631,7 @@ function AdminDashboardContent() {
                 <div
                   key={stat.key}
                   className={cn(
-                    'rounded-[10px] border px-3 py-2.5 bg-white/5',
+                    'rounded-md border px-3 py-2.5 bg-white/5',
                     stat.tone === 'critical'
                       ? 'border-red-500/20 bg-red-500/5'
                       : stat.tone === 'warning'
@@ -670,7 +670,7 @@ function AdminDashboardContent() {
             </div>
 
             {/* Connection Status */}
-            <div className="rounded-[10px] p-2.5 bg-white/5 border border-white/5">
+            <div className="rounded-md p-2.5 bg-white/5 border border-white/5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div
@@ -734,7 +734,7 @@ function AdminDashboardContent() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-3 rounded-[10px] transition-colors',
+                  'w-full flex items-center gap-3 px-3 py-3 rounded-md transition-colors',
                   isActive
                     ? 'bg-white/10 text-white'
                     : 'text-warm-400 hover:bg-white/5 hover:text-white'
@@ -747,7 +747,7 @@ function AdminDashboardContent() {
           })}
           <Link
             href="/golf/admin/crm"
-            className="flex items-center gap-3 px-3 py-3 rounded-[10px] text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
+            className="flex items-center gap-3 px-3 py-3 rounded-md text-primary-400 hover:bg-white/5 transition-colors mt-4 pt-4 border-t border-white/10"
           >
             <IconTarget size={20} />
             <span className="text-sm font-medium">Coach CRM</span>
@@ -765,7 +765,7 @@ function AdminDashboardContent() {
                 <div
                   key={stat.key}
                   className={cn(
-                    'rounded-[10px] border px-2.5 py-2 bg-white/5',
+                    'rounded-md border px-2.5 py-2 bg-white/5',
                     stat.tone === 'critical'
                       ? 'border-red-500/20 bg-red-500/5'
                       : stat.tone === 'warning'

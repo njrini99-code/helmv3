@@ -32,7 +32,7 @@ export default async function RecruitingPage() {
         subtitle="Track prospects from first look to letter of intent."
       />
       <AnimatedItem>
-        <div className="px-4 md:px-6 pb-10 max-w-6xl mx-auto">
+        <div className="px-4 md:px-6 pb-10 max-w-[1280px] mx-auto">
           <RecruitingPageClient
             initialRecruits={initialRecruits}
             loadError={loadError}

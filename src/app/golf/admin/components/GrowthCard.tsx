@@ -35,7 +35,7 @@ function HealthScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 40;
   const offset = circumference - (score / 100) * circumference;
   const strokeColor =
-    level === 'excellent' ? '#16A34A' : level === 'good' ? '#22C55E' : level === 'fair' ? '#F59E0B' : '#EF4444';
+    level === 'excellent' ? 'var(--color-primary-600)' : level === 'good' ? '#22C55E' : level === 'fair' ? '#F59E0B' : '#EF4444';
 
   return (
     <div className="flex flex-col items-center">
@@ -77,7 +77,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
   const journeyStages = userJourney ? [
     { label: 'Signups', value: userJourney.totalSignups, color: '#3B82F6' },
     { label: 'Onboarded', value: userJourney.completedOnboarding, color: '#2563EB' },
-    { label: '1st Round', value: userJourney.submittedFirstRound, color: '#16A34A' },
+    { label: '1st Round', value: userJourney.submittedFirstRound, color: 'var(--color-primary-600)' },
     { label: 'Active (7d)', value: userJourney.activeThisWeek, color: '#8B5CF6' },
   ] : [];
 
@@ -205,7 +205,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
       {/* Signup Trend - area chart */}
       {signupChartData.length > 0 && (
         <div className="mb-5">
-          <AdminAreaChart data={signupChartData} title="Signups (12 Weeks)" color="#16A34A" height={100} />
+          <AdminAreaChart data={signupChartData} title="Signups (12 Weeks)" color="var(--color-primary-600)" height={100} />
         </div>
       )}
 
@@ -219,7 +219,7 @@ export function GrowthCard({ growth, users, usage, coachhelm, userJourney, stick
               label={f.feature}
               value={f.count}
               max={maxFeatureCount}
-              color={f.feature === growth.topFeatureByAdoption ? '#16A34A' : undefined}
+              color={f.feature === growth.topFeatureByAdoption ? 'var(--color-primary-600)' : undefined}
             />
           ))}
         </div>

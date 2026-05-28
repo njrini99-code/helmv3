@@ -227,7 +227,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
   );
 
   const metrics = [
-    { label: 'Club Data', pct: quality.clubPercentage, count: quality.shotsWithClub, color: '#16A34A' },
+    { label: 'Club Data', pct: quality.clubPercentage, count: quality.shotsWithClub, color: 'var(--color-primary-600)' },
     { label: 'Lie Type', pct: quality.liePercentage, count: quality.shotsWithLie, color: '#2563EB' },
     { label: 'Distance', pct: quality.distancePercentage, count: quality.shotsWithDistance, color: '#F59E0B' },
   ];

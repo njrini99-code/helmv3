@@ -66,7 +66,7 @@ export function EngagementCard({ engagement, totalPlayers, totalCoaches, playerE
           <AdminAreaChart
             data={dailyChartData}
             title="Daily Activity (30d)"
-            color="#16A34A"
+            color="var(--color-primary-600)"
             height={120}
           />
         </div>

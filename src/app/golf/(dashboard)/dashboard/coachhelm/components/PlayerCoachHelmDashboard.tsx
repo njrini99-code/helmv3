@@ -321,7 +321,7 @@ export function PlayerCoachHelmDashboard({
       </LargeTitleHeader>
 
       {/* Main Content */}
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="relative max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Editorial hero band — magazine-cover framing for the player's
             CoachHelm surface beneath the sticky LargeTitleHeader. The
             stone plinth roots the editorial copy on a sculpted-matte

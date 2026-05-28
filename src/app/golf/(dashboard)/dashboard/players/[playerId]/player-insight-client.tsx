@@ -432,7 +432,7 @@ export function PlayerInsightClient({
       </AnimatedItem>
 
       <AnimatedItem>
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
           <Reveal>
             <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
               <PageHeader
@@ -920,7 +920,7 @@ export function PlayerInsightClient({
           {/* Quick Actions Bar */}
           <div className="fixed bottom-0 left-0 right-0 lg:static lg:mt-6 z-20">
             <div className="bg-cream-50/92 backdrop-blur-xl border-t border-warm-200/60 lg:border lg:rounded-2xl lg:border-white/20 lg:bg-cream-100/75 p-4 lg:p-5">
-              <div className="max-w-7xl mx-auto flex items-center gap-3 overflow-x-auto">
+              <div className="max-w-[1536px] mx-auto flex items-center gap-3 overflow-x-auto">
                 <Link
                   href={`/golf/dashboard/messages?player=${player.id}`}
                   className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] bg-warm-900 text-white text-sm font-medium rounded-xl hover:bg-warm-800 active:scale-[0.98] transition-all flex-shrink-0"

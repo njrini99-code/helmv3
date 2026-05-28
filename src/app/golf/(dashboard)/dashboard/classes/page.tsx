@@ -306,7 +306,7 @@ export default function GolfClassesPage() {
       room: selectedClass.room || '',
       credits: selectedClass.credits,
       semester: '', // Not stored in DB
-      color: selectedClass.color || '#16A34A',
+      color: selectedClass.color || 'var(--color-primary-600)',
       notes: selectedClass.notes || '',
     });
     setShowDetailModal(false);
@@ -398,7 +398,7 @@ export default function GolfClassesPage() {
   // No team — show helpful empty state instead of silently failing on add/edit
   if (!teamId) {
     return (
-      <AnimatedPage className="p-4 md:p-6 max-w-7xl mx-auto">
+      <AnimatedPage className="p-4 md:p-6 max-w-[1536px] mx-auto">
         <AnimatedItem className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center max-w-md">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
@@ -456,7 +456,7 @@ export default function GolfClassesPage() {
         </LargeTitleHeader>
       </AnimatedItem>
 
-      <div className="p-4 md:p-6 max-w-7xl mx-auto">
+      <div className="p-4 md:p-6 max-w-[1536px] mx-auto">
 
       <Reveal>
         <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
@@ -607,7 +607,7 @@ export default function GolfClassesPage() {
                                 key={`${cls.id}-${day}`}
                                 onClick={() => handleClassClick(cls)}
                                 className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
-                                style={{ borderLeftColor: cls.color || '#16A34A', borderLeftWidth: '3px' }}
+                                style={{ borderLeftColor: cls.color || 'var(--color-primary-600)', borderLeftWidth: '3px' }}
                               >
                                 {code && (
                                   <p className="font-mono text-xs font-medium text-primary-600 mb-0.5">
@@ -666,7 +666,7 @@ export default function GolfClassesPage() {
                     >
                       <div
                         className="w-2 h-12 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: cls.color || '#16A34A' }}
+                        style={{ backgroundColor: cls.color || 'var(--color-primary-600)' }}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -785,7 +785,7 @@ export default function GolfClassesPage() {
             room: selectedClass.room || '',
             credits: selectedClass.credits,
             semester: '', // Not stored in DB
-            color: selectedClass.color || '#16A34A',
+            color: selectedClass.color || 'var(--color-primary-600)',
             notes: selectedClass.notes || '',
           };
         })() : null}

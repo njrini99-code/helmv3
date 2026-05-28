@@ -310,7 +310,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
       <div className="bg-white border-b border-warm-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-[1536px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2 group">
               <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
@@ -323,7 +323,7 @@ export default async function TeamProfilePage({ params }: PageProps) {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1536px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Main Info */}
           <div className="lg:col-span-2 space-y-6">

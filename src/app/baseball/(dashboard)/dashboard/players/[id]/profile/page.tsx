@@ -69,7 +69,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-dvh bg-[#FAF6F1]">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-6 py-8">
         {/* Back Button */}
         <Link href="/baseball/dashboard/discover">
           <Button variant="ghost" size="sm" className="mb-6">

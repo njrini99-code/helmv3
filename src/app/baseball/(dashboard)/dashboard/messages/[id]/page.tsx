@@ -67,7 +67,7 @@ export default function ConversationPage() {
         </div>
 
         <form onSubmit={handleSend} className="p-4 border-t border-border-light bg-white">
-          <div className="flex items-center gap-3 max-w-3xl mx-auto">
+          <div className="flex items-center gap-3 max-w-[720px] mx-auto">
             <input
               type="text"
               value={input}

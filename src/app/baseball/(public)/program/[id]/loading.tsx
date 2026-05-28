@@ -6,7 +6,7 @@ export default function Loading() {
     <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
       <div className="bg-white border-b border-warm-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-[720px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <Skeleton className="w-8 h-8 rounded-lg" />
             <Skeleton className="h-6 w-16" />
@@ -15,7 +15,7 @@ export default function Loading() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-2 space-y-6">

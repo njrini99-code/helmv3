@@ -190,7 +190,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
 
             {/* MAIN CONTENT */}
             <m.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
+                className="max-w-[1280px] mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -227,9 +227,9 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         for hero illustrations — gradient body +
                                         inset highlight + soft drop shadow. */}
                                     <div
-                                        className="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-[22px]"
+                                        className="relative w-20 h-20 md:w-24 md:h-24 mx-auto mb-6 rounded-3xl"
                                         style={{
-                                            background: 'linear-gradient(165deg, #22c55e 0%, #16a34a 50%, #15803d 100%)',
+                                            background: 'linear-gradient(165deg, #22c55e 0%, var(--color-primary-600) 50%, #15803d 100%)',
                                             boxShadow:
                                                 '0 12px 32px rgba(22,163,74,0.32), inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.12)',
                                         }}

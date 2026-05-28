@@ -188,7 +188,7 @@ function PlanComparisonModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="auth-glass-card rounded-2xl shadow-2xl max-w-3xl w-full max-h-[85vh] overflow-clip"
+              className="auth-glass-card rounded-2xl shadow-2xl max-w-[768px] w-full max-h-[85vh] overflow-clip"
             >
               <div className="flex items-center justify-between p-6 border-b border-warm-200">
                 <h2 className="text-xl font-bold text-warm-900">Compare Plans</h2>

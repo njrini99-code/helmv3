@@ -152,7 +152,7 @@ export default async function MyDevelopmentPage() {
       </AnimatedItem>
 
       <AnimatedItem>
-        <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Editorial hero band — frames the focus area list beneath the
             sticky title header in the magazine-cover rhythm. */}
         <Reveal>

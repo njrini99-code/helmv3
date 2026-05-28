@@ -218,12 +218,12 @@ export default function CoachingIntelligenceSettingsPage() {
         return (
             <div className="min-h-full pb-20">
                 <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-cream-100/75 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-                    <div className="max-w-3xl mx-auto px-4 md:px-6 h-16 flex items-center gap-4">
+                    <div className="max-w-[720px] mx-auto px-4 md:px-6 h-16 flex items-center gap-4">
                         <div className="h-5 w-5 skeleton-shimmer rounded-lg lg:hidden" />
                         <div className="h-5 w-40 skeleton-shimmer rounded-lg" />
                     </div>
                 </div>
-                <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
+                <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
                     <div className="h-4 w-3/4 skeleton-shimmer rounded" />
                     {[1, 2, 3, 4].map((i) => (
                         <div key={i} className="surface-matte rounded-3xl p-6 space-y-4">
@@ -263,7 +263,7 @@ export default function CoachingIntelligenceSettingsPage() {
                 </MobileNavHeader>
             </AnimatedItem>
 
-            <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
+            <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-8">
 
                 {/* Intro */}
                 <AnimatedItem className="prose prose-sm prose-slate max-w-none">

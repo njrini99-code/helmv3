@@ -76,7 +76,7 @@ export default async function IntelligenceDashboardPage() {
       />
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 w-full">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8 w-full">
         {/* Editorial hero band — magazine-cover framing for the team
             intelligence layer beneath the sticky LargeTitleHeader. The
             surface-stone plinth gives the editorial copy a sculpted-

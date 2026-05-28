@@ -243,7 +243,7 @@ export default function ProgramPage() {
         </Link>
       </Header>
 
-      <div className="p-6 lg:p-8 max-w-3xl mx-auto">
+      <div className="p-6 lg:p-8 max-w-[720px] mx-auto">
         <Card variant="glass">
           <CardContent className="p-6">
             <div className="space-y-6">

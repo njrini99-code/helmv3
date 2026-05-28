@@ -52,7 +52,7 @@ export default async function QualifyingWorkspacePage({ params }: PageProps) {
           backLabel="Back to qualifier"
         />
       </AnimatedItem>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
         <QualifyingBoard workspace={workspace} />
       </div>
     </AnimatedPage>

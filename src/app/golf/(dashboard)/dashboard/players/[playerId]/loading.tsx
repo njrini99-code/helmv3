@@ -5,7 +5,7 @@ export default function Loading() {
     <div className="min-h-full bg-transparent">
       {/* Header skeleton */}
       <div className="sticky top-0 z-20 border-b border-warm-200/30 bg-white/70 backdrop-blur-xl pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-3 md:py-5">
           <div className="flex items-center gap-3">
             <Shimmer className="h-5 w-16" />
             <div className="space-y-1.5">
@@ -16,7 +16,7 @@ export default function Loading() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left column skeleton */}
           <div className="lg:col-span-5 space-y-6">
