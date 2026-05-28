@@ -200,8 +200,32 @@ export async function POST(req: NextRequest) {
     const messages = await listMessages(supabase, conversationId);
     return NextResponse.json({ conversation_id: conversationId, messages });
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+
+    // Vercel AI Gateway upstream-quota errors are operational (the team's
+    // gateway tier or credit balance is too low for the chosen model), not
+    // code bugs. Surface a 503 with a structured reason and downgrade the
+    // log severity so Sentry doesn't page on what the user can't fix.
+    const isUpstreamQuota =
+      message.includes('Free tier users do not have access to this model') ||
+      message.includes('AI Gateway') && /quota|credit|tier/i.test(message);
+    if (isUpstreamQuota) {
+      await logServerError(
+        `chat/send: AI Gateway upstream quota — ${message}`,
+        { action: 'v3.chat.send.upstream_quota' },
+        'warning',
+      );
+      return NextResponse.json(
+        {
+          error: 'Chat is temporarily unavailable',
+          reason: 'upstream_quota',
+        },
+        { status: 503 },
+      );
+    }
+
     await logServerError(
-      `chat/send failed: ${err instanceof Error ? err.message : String(err)}`,
+      `chat/send failed: ${message}`,
       { action: 'v3.chat.send' },
     );
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
