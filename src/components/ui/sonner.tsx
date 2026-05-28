@@ -14,7 +14,7 @@
  * Capacitor haptics fire on success / error / warning before delegating to sonner.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Toaster as SonnerToaster, toast as sonnerToast, type ToasterProps } from 'sonner';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 
@@ -43,9 +43,20 @@ function useIsMobile(breakpointPx = 768) {
 
 export function Toaster(props: ToasterProps) {
   const isMobile = useIsMobile();
+  // Sonner renders its toast list inside a <section> live region. We hold a ref
+  // to that node and pin `aria-live="polite"` on it so screen readers announce
+  // new toasts without interrupting (and so the contract is explicit + robust
+  // against any sonner version that might drop the default).
+  const regionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const region = regionRef.current;
+    if (region) region.setAttribute('aria-live', 'polite');
+  }, []);
 
   return (
     <SonnerToaster
+      ref={regionRef}
       position={isMobile ? 'bottom-center' : 'bottom-right'}
       duration={5000}
       gap={12}
