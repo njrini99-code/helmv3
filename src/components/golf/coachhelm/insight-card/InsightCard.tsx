@@ -21,7 +21,7 @@
 import { forwardRef, useState, useTransition } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconSparkles,
   IconChevronDown,
@@ -368,9 +368,8 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
     const hasDrills = Boolean(showDrills && insight.drills && insight.drills.length > 0);
 
     return (
-      <GlassCard
+      <Card variant="overlay"
         ref={ref}
-        variant="primary"
         padding="none"
         hover={false}
         className={cn(
@@ -482,7 +481,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
             </m.div>
           )}
         </AnimatePresence>
-      </GlassCard>
+      </Card>
     );
   },
 );
@@ -503,9 +502,8 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
     const hasDrills = Boolean(showDrills && insight.drills && insight.drills.length > 0);
 
     return (
-      <GlassCard
+      <Card variant="overlay"
         ref={ref}
-        variant="primary"
         padding="none"
         hover={false}
         className={cn(
@@ -591,7 +589,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             </div>
           )}
         </div>
-      </GlassCard>
+      </Card>
     );
   },
 );

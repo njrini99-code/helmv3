@@ -2,7 +2,8 @@
 
 import { m } from 'framer-motion';
 import { IconUsers, IconMail, IconCalendar, IconUser, IconClipboardList } from '@/components/icons';
-import { PremiumGlassCard, SectionHeader } from '@/components/golf/dashboard';
+import { SectionHeader } from '@/components/golf/dashboard';
+import { Card } from '@/components/ui/card';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
@@ -96,7 +97,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
         {coach && (
           <m.div variants={itemVariants}>
             <SectionHeader title="Head Coach" icon={<IconUser size={18} />} />
-            <PremiumGlassCard className="mt-3">
+            <Card variant="raised" className="mt-3">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-medium text-lg flex-shrink-0">
                   {coach.full_name?.charAt(0) || 'C'}
@@ -106,7 +107,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                   <p className="text-sm text-warm-500">Head Coach</p>
                 </div>
               </div>
-            </PremiumGlassCard>
+            </Card>
           </m.div>
         )}
 
@@ -119,22 +120,22 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           />
           <div className="mt-3 space-y-3">
             {announcements.length === 0 ? (
-              <PremiumGlassCard>
+              <Card variant="raised">
                 <EmptyState
                   variant="minimal"
                   icon={<IconMail size={20} />}
                   description="No announcements yet"
                 />
-              </PremiumGlassCard>
+              </Card>
             ) : (
               announcements.slice(0, 3).map((announcement) => (
-                <PremiumGlassCard key={announcement.id}>
+                <Card variant="raised" key={announcement.id}>
                   <h3 className="font-medium text-warm-900">{announcement.title}</h3>
                   <p className="text-sm text-warm-500 mt-1 line-clamp-2">{announcement.content || ''}</p>
                   <p className="text-xs text-warm-400 mt-2">
                     {announcement.created_at ? new Date(announcement.created_at).toLocaleDateString() : ''}
                   </p>
-                </PremiumGlassCard>
+                </Card>
               ))
             )}
           </div>
@@ -149,25 +150,25 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
           />
           <div className="mt-3 space-y-2">
             {pendingTasks.length === 0 && completedTasks.length === 0 ? (
-              <PremiumGlassCard>
+              <Card variant="raised">
                 <EmptyState
                   variant="minimal"
                   icon={<IconClipboardList size={20} />}
                   description="No tasks assigned yet"
                 />
-              </PremiumGlassCard>
+              </Card>
             ) : pendingTasks.length === 0 ? (
-              <PremiumGlassCard>
+              <Card variant="raised">
                 <div className="flex items-center gap-3 py-2">
                   <div className="w-8 h-8 rounded-full bg-primary-50 flex items-center justify-center flex-shrink-0">
                     <IconClipboardList size={16} className="text-primary-600" />
                   </div>
                   <p className="text-sm font-medium text-primary-700">All tasks completed!</p>
                 </div>
-              </PremiumGlassCard>
+              </Card>
             ) : (
               pendingTasks.slice(0, 3).map((task) => (
-                <PremiumGlassCard key={task.id}>
+                <Card variant="raised" key={task.id}>
                   <div className="flex items-start gap-3">
                     <div className="w-2 h-2 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -191,7 +192,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                       </span>
                     )}
                   </div>
-                </PremiumGlassCard>
+                </Card>
               ))
             )}
             {pendingTasks.length > 3 && (
@@ -209,7 +210,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
             icon={<IconUsers size={18} />}
             action={{ label: "View full roster", href: "/golf/dashboard/roster" }}
           />
-          <PremiumGlassCard className="mt-3" noPadding>
+          <Card variant="raised" className="mt-3" noPadding>
             <div className="divide-y divide-white/20">
               {roster.length === 0 ? (
                 <EmptyState
@@ -240,13 +241,13 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                 </div>
               )}
             </div>
-          </PremiumGlassCard>
+          </Card>
         </m.div>
 
         {/* Team Stats */}
         <m.div variants={itemVariants}>
           <SectionHeader title="Team Info" icon={<IconCalendar size={18} />} />
-          <PremiumGlassCard className="mt-3">
+          <Card variant="raised" className="mt-3">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-warm-500">Season</p>
@@ -263,7 +264,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
                 </p>
               </div>
             </div>
-          </PremiumGlassCard>
+          </Card>
         </m.div>
       </m.div>
       </div>

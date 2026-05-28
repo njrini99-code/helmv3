@@ -12,7 +12,7 @@ import {
 } from '@/lib/offline/indexed-db';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 
 // Legacy IndexedDB access kept for older locally saved drafts
 const LEGACY_DB_NAME = 'golf_offline_db';
@@ -400,7 +400,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
       />
       <div className="flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
-        <GlassCard hover={false} padding="md" className="sm:p-8">
+        <Card variant="overlay" hover={false} padding="md" className="sm:p-8">
           <p className="text-warm-500 text-sm mb-6">
             Found {rounds.length} recoverable round{rounds.length !== 1 ? 's' : ''} in your browser&apos;s offline storage.
           </p>
@@ -481,7 +481,7 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
               })}
             </div>
           )}
-        </GlassCard>
+        </Card>
       </div>
       </div>
     </div>

@@ -7,18 +7,18 @@
  * Usage:
  * ```tsx
  * import {
- *   PremiumGlassCard,
  *   SectionHeader,
  *   RoundRow,
  *   TopPerformerRow,
  *   containerVariants,
  *   itemVariants
  * } from '@/components/golf/dashboard';
+ * // The former PremiumGlassCard is now <Card variant="raised">
+ * // from '@/components/ui/card'.
  * ```
  */
 
 export {
-    PremiumGlassCard,
     SectionHeader,
     RoundRow,
     RecentRoundCard,

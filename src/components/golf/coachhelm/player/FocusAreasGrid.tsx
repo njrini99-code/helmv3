@@ -3,7 +3,7 @@
 import { m } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTarget,
@@ -217,7 +217,7 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
   // Empty state
   if (focusAreas.length === 0) {
     return (
-      <GlassCard>
+      <Card variant="overlay" padding="md">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
             <IconTarget size={20} className="text-primary-600" />
@@ -233,12 +233,12 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           icon={<IconTarget size={20} />}
           description="No focus areas identified yet — complete more rounds to unlock personalized focus areas."
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
-    <GlassCard>
+    <Card variant="overlay" padding="md">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
@@ -280,6 +280,6 @@ export function FocusAreasGrid({ focusAreas, onAreaClick }: FocusAreasGridProps)
           <span className="text-xs text-warm-500">Losing strokes</span>
         </div>
       </m.div>
-    </GlassCard>
+    </Card>
   );
 }

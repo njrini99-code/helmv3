@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/select';
 import { AvatarUpload } from '@/components/ui/avatar-upload';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { PageLoading } from '@/components/ui/loading';
 import {
   IconArrowRight,
@@ -493,7 +493,7 @@ export default function GolfCoachOnboarding() {
                   {/* Join Code Card */}
                   {joinCode && (
                     <m.div variants={staggerItem}>
-                      <GlassCard glow="green" hover={false} padding="lg" className="rounded-2xl">
+                      <Card variant="overlay" glow="green" hover={false} padding="lg" className="rounded-2xl">
                         <div className="text-center">
                           <p className="text-label font-semibold text-warm-400 uppercase tracking-wider mb-3">
                             Team Join Code
@@ -520,7 +520,7 @@ export default function GolfCoachOnboarding() {
                             )}
                           </Button>
                         </div>
-                      </GlassCard>
+                      </Card>
                     </m.div>
                   )}
 

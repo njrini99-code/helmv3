@@ -8,13 +8,15 @@
  * 
  * Usage:
  * ```tsx
- * import { 
- *   PremiumGlassCard, 
- *   PremiumStatCard, 
- *   QuickActionCard, 
- *   SectionHeader 
+ * import {
+ *   PremiumStatCard,
+ *   QuickActionCard,
+ *   SectionHeader
  * } from '@/components/golf/dashboard/premium-components';
  * ```
+ *
+ * Note: the former PremiumGlassCard surface is now the canonical
+ * `<Card variant="raised">` from '@/components/ui/card' (Wave W2B).
  */
 
 import { ReactNode, memo, useState, useEffect } from 'react';
@@ -70,67 +72,13 @@ void IOS_DURATION_NORMAL;
 void IOS_EASE;
 
 // ============================================================================
-// PREMIUM GLASS CARD
+// PREMIUM GLASS CARD — removed in Wave W2B.
+//
+// The sculpted matte panel that PremiumGlassCard rendered is now the canonical
+// `<Card variant="raised">` (with `glow` / `noPadding` carried over). Consumers
+// were migrated; import { Card } from '@/components/ui/card' and use
+// `<Card variant="raised">` instead.
 // ============================================================================
-
-interface PremiumGlassCardProps {
-    children: ReactNode;
-    className?: string;
-    glow?: boolean;
-    noPadding?: boolean;
-    hover?: boolean;
-}
-
-// PremiumGlassCard now reads as a sculpted matte panel rather than a
-// glassy tile. Generous default padding (p-6 md:p-7), 24px corners,
-// diffused natural-light shadow, slow cinematic hover lift. The
-// "glow" prop fades a soft sage glow rather than the older saturated
-// blue/green stack — keeps the eye on the content.
-export const PremiumGlassCard = memo(function PremiumGlassCard({
-    children,
-    className,
-    glow = false,
-    noPadding = false,
-    hover = true
-}: PremiumGlassCardProps) {
-    const Component = hover ? m.div : 'div';
-    const hoverProps = hover ? {
-        whileHover: { y: -2 },
-        transition: { duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }
-    } : {};
-
-    return (
-        <Component
-            className={cn(
-                'relative overflow-clip',
-                'surface-matte',
-                'rounded-3xl',
-                'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                !noPadding && 'p-6 md:p-7',
-                className
-            )}
-            {...hoverProps}
-        >
-            {/* Soft natural-light glow — diffused, never flashy */}
-            {glow && (
-                <>
-                    <div
-                        aria-hidden
-                        className="pointer-events-none absolute -top-20 -right-16 w-56 h-56 rounded-full opacity-70"
-                        style={{ background: 'radial-gradient(closest-side, rgba(22,163,74,0.10), transparent 70%)' }}
-                    />
-                    <div
-                        aria-hidden
-                        className="pointer-events-none absolute -bottom-16 -left-16 w-48 h-48 rounded-full opacity-60"
-                        style={{ background: 'radial-gradient(closest-side, rgba(180,83,9,0.06), transparent 70%)' }}
-                    />
-                </>
-            )}
-            {/* Content */}
-            <div className="relative z-10">{children}</div>
-        </Component>
-    );
-});
 
 // ============================================================================
 // PREMIUM STAT CARD

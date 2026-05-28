@@ -2,7 +2,7 @@
 
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { IconUsers } from '@/components/icons';
 
@@ -72,7 +72,7 @@ export function TeamCompositeCard({
 
   if (playerCount === 0) {
     return (
-      <GlassCard className="relative overflow-hidden" glow="subtle">
+      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
@@ -84,13 +84,13 @@ export function TeamCompositeCard({
             description="No active players on the team yet. Add players to see team game strength."
           />
         </div>
-      </GlassCard>
+      </Card>
     );
   }
 
   if (noStatsAvailable) {
     return (
-      <GlassCard className="relative overflow-hidden" glow="subtle">
+      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
@@ -102,7 +102,7 @@ export function TeamCompositeCard({
             description="Not enough round data to calculate team strengths. As players submit more rounds, detailed category ratings will appear here."
           />
         </div>
-      </GlassCard>
+      </Card>
     );
   }
 
@@ -110,7 +110,7 @@ export function TeamCompositeCard({
   const strokeDashoffset = circumference - (displayComposite / 100) * circumference;
 
   return (
-    <GlassCard className="relative overflow-hidden" glow="subtle">
+    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
 
       <div className="flex flex-col items-center gap-6">
@@ -197,6 +197,6 @@ export function TeamCompositeCard({
           )}
         </div>
       </div>
-    </GlassCard>
+    </Card>
   );
 }

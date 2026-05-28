@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -247,7 +247,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
 
   if (patterns.length === 0) {
     return (
-      <GlassCard padding="lg" hover={false}>
+      <Card variant="overlay" padding="lg" hover={false}>
         <div className="text-center py-8">
           <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
             <IconActivity size={24} className="text-warm-400" />
@@ -259,14 +259,14 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             Pattern timeline will appear as patterns are detected and managed.
           </p>
         </div>
-      </GlassCard>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-6">
       {/* Trend summary card */}
-      <GlassCard padding="md" hover={false}>
+      <Card variant="overlay" padding="md" hover={false}>
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-sm font-medium text-warm-500 mb-1">Last 7 Days</h3>
@@ -303,10 +303,10 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             </span>
           </div>
         </div>
-      </GlassCard>
+      </Card>
 
       {/* Chart */}
-      <GlassCard padding="md" hover={false}>
+      <Card variant="overlay" padding="md" hover={false}>
         <h3 className="text-sm font-medium text-warm-700 mb-4">Pattern Activity (Last 30 Days)</h3>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
@@ -354,10 +354,10 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </GlassCard>
+      </Card>
 
       {/* Timeline events */}
-      <GlassCard padding="md" hover={false}>
+      <Card variant="overlay" padding="md" hover={false}>
         <h3 className="text-sm font-medium text-warm-700 mb-4">Recent Activity</h3>
         <div className="relative">
           {/* Timeline line */}
@@ -431,7 +431,7 @@ export function PatternTimeline({ patterns }: PatternTimelineProps) {
             </div>
           )}
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 }

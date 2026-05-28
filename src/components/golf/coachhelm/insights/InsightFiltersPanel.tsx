@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconFilter,
   IconX,
@@ -413,7 +413,7 @@ export function InsightFiltersPanel({
     <div className={className}>
       {/* Desktop View */}
       <div className="hidden md:block">
-        <GlassCard padding="none" hover={false}>
+        <Card variant="overlay" padding="none" hover={false}>
           {/* Header */}
           <button
             type="button"
@@ -479,7 +479,7 @@ export function InsightFiltersPanel({
               </motion.div>
             )}
           </AnimatePresence>
-        </GlassCard>
+        </Card>
       </div>
 
       {/* Mobile View - Collapsible Drawer */}

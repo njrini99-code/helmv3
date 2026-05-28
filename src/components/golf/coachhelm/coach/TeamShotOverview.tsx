@@ -2,7 +2,7 @@
 
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTarget,
@@ -62,21 +62,21 @@ export function TeamShotOverview({
 
   if (!hasSomething) {
     return (
-      <GlassCard className="relative overflow-hidden" glow="subtle">
+      <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
         <EmptyState
           variant="minimal"
           icon={<IconTarget size={20} />}
           description="No team shot analysis yet — players need to log rounds with shot data to unlock this view."
         />
-      </GlassCard>
+      </Card>
     );
   }
 
   const maxAbsSG = getMaxAbsSG(yardageCurve);
 
   return (
-    <GlassCard className="relative overflow-hidden" glow="subtle">
+    <Card variant="overlay" padding="md" className="relative overflow-hidden" glow="subtle">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
 
       <div className="space-y-6">
@@ -227,6 +227,6 @@ export function TeamShotOverview({
           </div>
         )}
       </div>
-    </GlassCard>
+    </Card>
   );
 }

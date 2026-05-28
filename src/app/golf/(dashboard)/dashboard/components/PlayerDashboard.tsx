@@ -23,7 +23,6 @@ const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: 
     ssr: false
 });
 import {
-    PremiumGlassCard,
     SectionHeader,
     RoundRow,
     TodayTimeline,
@@ -36,6 +35,7 @@ import {
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
+import { Card } from '@/components/ui/card';
 import type { GolfPlayer, GolfTeam } from '@/lib/types/golf';
 import type { PlayerDashboardPayload, TodayEvent, ActionItem, StrokesGainedSnapshot } from '@/app/golf/actions/dashboard-data';
 
@@ -308,9 +308,9 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                         <m.div variants={itemVariants}>
                             <DashboardErrorBoundary name="Focus Areas">
                                 <SectionHeader title="My Focus Areas" icon={<IconTarget size={14} />} />
-                                <PremiumGlassCard glow>
+                                <Card variant="raised" glow>
                                     <PlayerFocusAreas playerId={player.id} />
-                                </PremiumGlassCard>
+                                </Card>
                             </DashboardErrorBoundary>
                         </m.div>
                     </>
@@ -385,16 +385,16 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 {chartData.length >= 2 ? (
                                     <>
                                         <SectionHeader title="Scoring Trend" />
-                                        <PremiumGlassCard glow>
+                                        <Card variant="raised" glow>
                                             <div className="w-full min-h-[200px]">
                                                 <TrendChart data={chartData} reverse={true} />
                                             </div>
-                                        </PremiumGlassCard>
+                                        </Card>
                                     </>
                                 ) : (
                                     <>
                                         <SectionHeader title="Scoring Trend" />
-                                        <PremiumGlassCard>
+                                        <Card variant="raised">
                                             <div className="flex flex-col items-center justify-center py-10 text-center">
                                                 <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-4">
                                                     <IconChartBar size={22} className="text-warm-400" />
@@ -402,7 +402,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                 <p className="text-body-lg font-medium tracking-[-0.012em] text-warm-900 mb-1.5">Not enough data yet</p>
                                                 <p className="text-body-sm text-warm-500">Submit 2+ rounds to see your scoring trend</p>
                                             </div>
-                                        </PremiumGlassCard>
+                                        </Card>
                                     </>
                                 )}
                                 </div>
@@ -425,9 +425,9 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 </DashboardErrorBoundary>
                                 <DashboardErrorBoundary name="Focus Areas">
                                     <SectionHeader title="Focus Areas" icon={<IconTarget size={14} />} />
-                                    <PremiumGlassCard glow>
+                                    <Card variant="raised" glow>
                                         <PlayerFocusAreas playerId={player.id} />
-                                    </PremiumGlassCard>
+                                    </Card>
                                 </DashboardErrorBoundary>
                             </div>
                         </m.div>
@@ -439,7 +439,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                 title="Recent Rounds"
                                 action={{ label: 'View All', href: '/golf/dashboard/rounds' }}
                             />
-                            <PremiumGlassCard noPadding>
+                            <Card variant="raised" noPadding>
                                 <div className="divide-y divide-warm-200/30">
                                     {recentRounds.map((round) => (
                                         <RoundRow
@@ -452,7 +452,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         />
                                     ))}
                                 </div>
-                            </PremiumGlassCard>
+                            </Card>
                         </m.div>
                         </DashboardErrorBoundary>
 

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { EmptyState as EmptyStatePrimitive } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
@@ -116,7 +116,7 @@ function EmptyState() {
  */
 function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
   return (
-    <GlassCard variant="secondary" padding="sm" hover={false}>
+    <Card variant="overlay" padding="sm" hover={false} className="rounded-lg shadow-glass-sm">
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-warm-100 flex items-center justify-center flex-shrink-0">
           <IconSparkles size={16} className="text-warm-400" />
@@ -132,7 +132,7 @@ function EmptyInsightsState({ hasRounds }: { hasRounds: boolean }) {
           </p>
         </div>
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 

@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { SupportHeader } from './SupportHeader';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 
 export const metadata: Metadata = {
   title: 'Support | Helm Sports Labs',
@@ -70,7 +70,7 @@ export default function SupportPage() {
         {/* Contact Cards */}
         <div className="grid md:grid-cols-2 gap-4 mb-12">
           <a href="mailto:admin@helmsportslabs.com" className="group block">
-            <GlassCard padding="md">
+            <Card variant="overlay" padding="md">
               <div className="flex items-start gap-4">
                 <div className="w-11 h-11 rounded-xl bg-primary-600/10 text-primary-600 flex items-center justify-center flex-shrink-0">
                   <Mail size={20} />
@@ -88,10 +88,10 @@ export default function SupportPage() {
                   </span>
                 </div>
               </div>
-            </GlassCard>
+            </Card>
           </a>
 
-          <GlassCard hover={false} padding="md">
+          <Card variant="overlay" hover={false} padding="md">
             <div className="flex items-start gap-4">
               <div className="w-11 h-11 rounded-xl bg-primary-600/10 text-primary-600 flex items-center justify-center flex-shrink-0">
                 <Clock size={20} />
@@ -109,7 +109,7 @@ export default function SupportPage() {
                 </p>
               </div>
             </div>
-          </GlassCard>
+          </Card>
         </div>
 
         {/* FAQ */}
@@ -121,7 +121,7 @@ export default function SupportPage() {
             </h2>
           </div>
 
-          <GlassCard hover={false} padding="none" className="divide-y divide-warm-200/60">
+          <Card variant="overlay" hover={false} padding="none" className="divide-y divide-warm-200/60">
             {faqs.map((item, i) => (
               <details key={i} className="group">
                 <summary className="flex items-center justify-between cursor-pointer p-6 list-none">
@@ -137,7 +137,7 @@ export default function SupportPage() {
                 </div>
               </details>
             ))}
-          </GlassCard>
+          </Card>
         </section>
 
         {/* Resources */}
@@ -147,16 +147,16 @@ export default function SupportPage() {
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
             <Link href="/privacy" className="block">
-              <GlassCard padding="sm" className="flex items-center gap-3 p-5">
+              <Card variant="overlay" padding="sm" className="flex items-center gap-3 p-5">
                 <Shield size={18} className="text-primary-600 flex-shrink-0" />
                 <span className="font-medium text-warm-900">Privacy Policy</span>
-              </GlassCard>
+              </Card>
             </Link>
             <Link href="/terms" className="block">
-              <GlassCard padding="sm" className="flex items-center gap-3 p-5">
+              <Card variant="overlay" padding="sm" className="flex items-center gap-3 p-5">
                 <FileText size={18} className="text-primary-600 flex-shrink-0" />
                 <span className="font-medium text-warm-900">Terms of Service</span>
-              </GlassCard>
+              </Card>
             </Link>
           </div>
         </section>

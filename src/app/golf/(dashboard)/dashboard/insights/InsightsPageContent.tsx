@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback, useMemo, useTransition } from 'react'
 import { useRouter } from 'next/navigation';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassStatCard } from '@/components/ui/glass-card';
+import { StatCard } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   IconSparkles,
@@ -630,12 +630,12 @@ export function InsightsPageContent({
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
           >
-            <GlassStatCard
+            <StatCard
               label="Total Insights"
               value={stats.total}
               icon={<IconSparkles size={20} />}
             />
-            <GlassStatCard
+            <StatCard
               label="Active"
               value={stats.active}
               icon={<IconTrendingUp size={20} />}
@@ -645,12 +645,12 @@ export function InsightsPageContent({
                   : undefined
               }
             />
-            <GlassStatCard
+            <StatCard
               label="Acknowledged"
               value={stats.acknowledged}
               icon={<IconCheck size={20} />}
             />
-            <GlassStatCard
+            <StatCard
               label="Resolved"
               value={stats.resolved}
               icon={<IconCheck size={20} />}

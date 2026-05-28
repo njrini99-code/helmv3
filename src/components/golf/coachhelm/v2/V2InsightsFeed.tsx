@@ -13,7 +13,7 @@ import { useState, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconSparkles, IconRefresh } from '@/components/icons';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InsightCard } from './V2InsightCard';
 import { PatternCard } from './PatternCard';
@@ -194,7 +194,7 @@ export function InsightsFeed({
       </TabsList>
 
       {/* Content */}
-      <GlassCard className="p-3" glow="subtle" variant="secondary">
+      <Card variant="overlay" padding="md" className="p-3 rounded-lg shadow-glass-sm" glow="subtle">
         <AnimatePresence mode="wait">
           {activeTab === 'insights' && (
             <motion.div
@@ -270,7 +270,7 @@ export function InsightsFeed({
             </motion.div>
           )}
         </AnimatePresence>
-      </GlassCard>
+      </Card>
 
       {/* Last Generated */}
       {lastGenerated && (

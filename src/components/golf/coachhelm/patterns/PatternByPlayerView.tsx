@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import {
   IconChevronDown,
@@ -66,7 +66,7 @@ function PlayerPatternCard({
 
   return (
     <motion.div layout>
-      <GlassCard padding="none" hover={false}>
+      <Card variant="overlay" padding="none" hover={false}>
         {/* Player header - clickable to expand */}
         <button
           onClick={() => setExpanded(!expanded)}
@@ -165,7 +165,7 @@ function PlayerPatternCard({
             </motion.div>
           )}
         </AnimatePresence>
-      </GlassCard>
+      </Card>
     </motion.div>
   );
 }
@@ -195,7 +195,7 @@ export function PatternByPlayerView({
 
   if (playerGroups.length === 0) {
     return (
-      <GlassCard padding="lg" hover={false}>
+      <Card variant="overlay" padding="lg" hover={false}>
         <div className="text-center py-8">
           <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4">
             <IconSparkles size={24} className="text-warm-400" />
@@ -207,7 +207,7 @@ export function PatternByPlayerView({
             Patterns will appear here once detected by the AI engine.
           </p>
         </div>
-      </GlassCard>
+      </Card>
     );
   }
 

@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -116,7 +116,7 @@ function timeOfDay(iso: string): string {
 
 function EmptyState() {
   return (
-    <GlassCard className="text-center py-12 px-6">
+    <Card variant="overlay" padding="md" className="text-center py-12 px-6">
       <div className="w-14 h-14 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
         <Sparkles size={28} className="text-warm-400" aria-hidden />
       </div>
@@ -125,18 +125,18 @@ function EmptyState() {
         No CoachHelm activity in the past 7 days. New insights and lifecycle changes
         will appear here as your team plays more rounds.
       </p>
-    </GlassCard>
+    </Card>
   );
 }
 
 function ErrorState({ error }: { error: string }) {
   return (
-    <GlassCard className="text-center py-12 px-6">
+    <Card variant="overlay" padding="md" className="text-center py-12 px-6">
       <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
         Unable to load activity
       </h2>
       <p className="text-warm-600 text-sm">{error}</p>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -260,14 +260,14 @@ export default async function WhatsNewPage() {
                       className="text-xs text-warm-500 tabular-nums"
                     />
                   </div>
-                  <GlassCard className="px-5 py-1 divide-y divide-warm-100">
+                  <Card variant="overlay" padding="md" className="px-5 py-1 divide-y divide-warm-100">
                     {items.map((item, idx) => (
                       <FeedRow
                         key={`${item.type}-${item.insightId ?? item.patternId ?? item.focusAreaId ?? idx}-${item.occurredAt}`}
                         item={item}
                       />
                     ))}
-                  </GlassCard>
+                  </Card>
                 </section>
               );
             })}

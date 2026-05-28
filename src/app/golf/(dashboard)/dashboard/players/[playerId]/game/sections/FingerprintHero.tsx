@@ -22,7 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconMessage,
   IconTarget,
@@ -69,8 +69,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
         : 'text-warm-500';
 
   return (
-    <GlassCard
-      variant="primary"
+    <Card variant="overlay"
       padding="none"
       hover={false}
       className="relative overflow-hidden"
@@ -178,7 +177,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
           </Link>
         </div>
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 
@@ -220,8 +219,7 @@ export function SectionBand({
   const [topInsight, ...restInsights] = section.insights;
 
   return (
-    <GlassCard
-      variant="primary"
+    <Card variant="overlay"
       padding="none"
       hover={false}
       className="relative overflow-hidden"
@@ -300,7 +298,7 @@ export function SectionBand({
           </div>
         )}
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 

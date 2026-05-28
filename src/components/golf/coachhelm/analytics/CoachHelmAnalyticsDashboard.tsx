@@ -10,7 +10,7 @@
 import { useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import {
   IconSparkles,
   IconRefresh,
@@ -244,7 +244,7 @@ export function CoachHelmAnalyticsDashboard({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Insight Effectiveness Summary */}
               {effectiveness && (
-                <GlassCard className="p-0" padding="none">
+                <Card variant="overlay" className="p-0" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
                     <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
                     <p className="text-sm text-warm-500">How well insights translate to action</p>
@@ -252,12 +252,12 @@ export function CoachHelmAnalyticsDashboard({
                   <div className="p-6">
                     <InsightEffectivenessPanel data={effectiveness} compact />
                   </div>
-                </GlassCard>
+                </Card>
               )}
 
               {/* Prediction Accuracy Summary */}
               {performance && (
-                <GlassCard className="p-0" padding="none">
+                <Card variant="overlay" className="p-0" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
                     <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Prediction Accuracy</h3>
                     <p className="text-sm text-warm-500">Model performance over time</p>
@@ -265,12 +265,12 @@ export function CoachHelmAnalyticsDashboard({
                   <div className="p-6">
                     <PredictionAccuracyPanel data={performance} compact />
                   </div>
-                </GlassCard>
+                </Card>
               )}
 
               {/* Pattern Impact Summary */}
               {patternImpact && (
-                <GlassCard className="p-0 lg:col-span-2" padding="none">
+                <Card variant="overlay" className="p-0 lg:col-span-2" padding="none">
                   <div className="px-6 py-4 border-b border-warm-100">
                     <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact</h3>
                     <p className="text-sm text-warm-500">Detected patterns and their resolution</p>
@@ -278,14 +278,14 @@ export function CoachHelmAnalyticsDashboard({
                   <div className="p-6">
                     <PatternImpactPanel data={patternImpact} compact />
                   </div>
-                </GlassCard>
+                </Card>
               )}
             </div>
           </TabsContent>
 
           <TabsContent value="insights" className="mt-0">
             {effectiveness && (
-              <GlassCard className="p-0" padding="none">
+              <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Insight Effectiveness</h3>
                   <p className="text-sm text-warm-500">
@@ -295,13 +295,13 @@ export function CoachHelmAnalyticsDashboard({
                 <div className="p-6">
                   <InsightEffectivenessPanel data={effectiveness} />
                 </div>
-              </GlassCard>
+              </Card>
             )}
           </TabsContent>
 
           <TabsContent value="predictions" className="mt-0">
             {performance && (
-              <GlassCard className="p-0" padding="none">
+              <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Prediction Performance</h3>
                   <p className="text-sm text-warm-500">
@@ -311,13 +311,13 @@ export function CoachHelmAnalyticsDashboard({
                 <div className="p-6">
                   <PredictionAccuracyPanel data={performance} />
                 </div>
-              </GlassCard>
+              </Card>
             )}
           </TabsContent>
 
           <TabsContent value="patterns" className="mt-0">
             {patternImpact && (
-              <GlassCard className="p-0" padding="none">
+              <Card variant="overlay" className="p-0" padding="none">
                 <div className="px-6 py-4 border-b border-warm-100">
                   <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Pattern Impact Analysis</h3>
                   <p className="text-sm text-warm-500">
@@ -327,14 +327,14 @@ export function CoachHelmAnalyticsDashboard({
                 <div className="p-6">
                   <PatternImpactPanel data={patternImpact} />
                 </div>
-              </GlassCard>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
 
         {/* Empty State */}
         {!overview && !effectiveness && !performance && !patternImpact && (
-          <GlassCard className="text-center py-12">
+          <Card variant="overlay" padding="md" className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-warm-100 flex items-center justify-center">
               <IconChartBar size={32} className="text-warm-400" />
             </div>
@@ -349,7 +349,7 @@ export function CoachHelmAnalyticsDashboard({
               <IconRefresh size={16} />
               Load Data
             </button>
-          </GlassCard>
+          </Card>
         )}
       </div>
     </div>

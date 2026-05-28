@@ -30,7 +30,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import {
-    PremiumGlassCard,
     SectionHeader,
     RecentRoundCard,
     TopPerformerRow,
@@ -42,6 +41,7 @@ import {
     containerVariants,
     itemVariants
 } from '@/components/golf/dashboard';
+import { Card } from '@/components/ui/card';
 import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
 import { ShimmerCard } from '@/components/ui/shimmer';
 import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData, DashboardDateRange } from '@/app/golf/actions/dashboard-data';
@@ -418,7 +418,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                 <m.div className="grid grid-cols-1 lg:grid-cols-3 gap-5 md:gap-6 mb-7 md:mb-10" variants={itemVariants}>
                     <div className="lg:col-span-2 min-w-0">
                         <SectionHeader title="Recent Rounds" action={{ label: 'View All', href: '/golf/dashboard/rounds' }} />
-                        <PremiumGlassCard noPadding>
+                        <Card variant="raised" noPadding>
                             {filteredRounds.length === 0 ? (
                                 <EmptyState
                                     type="rounds"
@@ -449,7 +449,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                     ))}
                                 </div>
                             )}
-                        </PremiumGlassCard>
+                        </Card>
                     </div>
                     <div className="flex flex-col gap-5 md:gap-6 min-w-0">
                         <ActionItemsCard items={enhancedData?.actionItems ?? EMPTY_ACTION_ITEMS} role="coach" />
@@ -463,11 +463,11 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                     <div className="lg:col-span-3 min-w-0">
                         <SectionHeader title="Performance Trend" />
                         {hasTrendData ? (
-                            <PremiumGlassCard glow>
+                            <Card variant="raised" glow>
                                 <TrendChart data={teamScoringTrend} valueLabel="Team Avg" reverse={true} />
-                            </PremiumGlassCard>
+                            </Card>
                         ) : (
-                            <PremiumGlassCard>
+                            <Card variant="raised">
                                 <div className="flex flex-col items-center justify-center py-10 md:py-12 text-center">
                                     <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-5">
                                         <IconChartBar size={22} className="text-warm-400" />
@@ -489,7 +489,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                         Invite Players
                                     </Link>
                                 </div>
-                            </PremiumGlassCard>
+                            </Card>
                         )}
                     </div>
                     <div className="lg:col-span-2 flex flex-col gap-5 md:gap-6 min-w-0">
@@ -499,7 +499,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                 title="Top Performers"
                                 action={{ label: 'Full Rankings', href: '/golf/dashboard/stats/team' }}
                             />
-                            <PremiumGlassCard noPadding>
+                            <Card variant="raised" noPadding>
                                 {topPlayers.length > 0 ? (
                                     <div className="divide-y divide-warm-200/30">
                                         {topPlayers.slice(0, 5).map((player, i) => (
@@ -509,7 +509,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                 ) : (
                                     <EmptyState type="stats" variant="compact" />
                                 )}
-                            </PremiumGlassCard>
+                            </Card>
                         </div>
                     </div>
                 </m.div>

@@ -22,7 +22,7 @@ import {
   Dot,
 } from 'recharts';
 import type { TooltipContentProps } from 'recharts/types/component/Tooltip';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import type { PlayerFingerprint } from '@/app/golf/actions/player-fingerprint';
 
 export interface TrendSectionProps {
@@ -50,8 +50,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
   const empty = withData.length < 2;
 
   return (
-    <GlassCard
-      variant="primary"
+    <Card variant="overlay"
       padding="none"
       hover={false}
       className="relative overflow-hidden"
@@ -114,7 +113,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
           </div>
         )}
       </div>
-    </GlassCard>
+    </Card>
   );
 }
 

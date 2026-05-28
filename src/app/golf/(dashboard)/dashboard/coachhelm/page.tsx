@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card } from '@/components/ui/card';
 import { IconInfo, IconSparkles } from '@/components/icons';
 import { getPlayerCoachHelmDashboard } from '@/app/golf/actions/insights';
 import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
@@ -25,7 +25,7 @@ function ErrorState({ error }: { error: string }) {
     <AnimatedPage>
       <AnimatedItem>
         <div className="min-h-full flex items-center justify-center p-4 md:p-6 bg-gradient-to-br from-red-500/5 via-transparent to-transparent">
-          <GlassCard className="max-w-md w-full text-center">
+          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
             <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
               <IconInfo size={32} className="text-red-500" />
             </div>
@@ -39,7 +39,7 @@ function ErrorState({ error }: { error: string }) {
             >
               Try Again
             </a>
-          </GlassCard>
+          </Card>
         </div>
       </AnimatedItem>
     </AnimatedPage>
@@ -54,7 +54,7 @@ function NotPlayerState() {
     <AnimatedPage>
       <AnimatedItem>
         <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-          <GlassCard className="max-w-md w-full text-center">
+          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
             <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <IconSparkles size={32} className="text-amber-500" />
             </div>
@@ -71,7 +71,7 @@ function NotPlayerState() {
             >
               Go to Dashboard
             </a>
-          </GlassCard>
+          </Card>
         </div>
       </AnimatedItem>
     </AnimatedPage>
@@ -86,7 +86,7 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
     <AnimatedPage>
       <AnimatedItem>
         <div className="min-h-full flex items-center justify-center p-4 md:p-6">
-          <GlassCard className="max-w-md w-full text-center">
+          <Card variant="overlay" padding="md" className="max-w-md w-full text-center">
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconSparkles size={32} className="text-warm-400" />
             </div>
@@ -102,7 +102,7 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
             >
               Return to Dashboard
             </a>
-          </GlassCard>
+          </Card>
         </div>
       </AnimatedItem>
     </AnimatedPage>
