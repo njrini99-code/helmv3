@@ -14,7 +14,7 @@
  *   └────────────────────────────────────────────────────────┘
  */
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import type { StandingBarProps } from './types';
 import {
   deltaVsTeam,
@@ -25,7 +25,7 @@ import {
   teamCohortText,
   toScalePct,
 } from './utils';
-import { EASE_CINEMATIC, EASE_TAP, DURATION } from '@/lib/coachhelm/v3/motion';
+import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
 
 type CardProps = StandingBarProps;
 
@@ -179,7 +179,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
     <m.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: DURATION.medium, ease: EASE_CINEMATIC }}
+      transition={{ duration: DURATION.short, ease: EASE_CINEMATIC }}
       className={`relative ${height} w-full bg-warm-100 rounded-full overflow-visible`}
     >
       {/* PGA marker (background, light) */}
@@ -189,7 +189,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
         markerSize={markerSize}
         label="P"
         toneClass="bg-warm-400 text-white"
-        delay={0.18}
+        delay={0.08}
       />
       {/* Team marker — omitted in cold-start */}
       {teamPct !== null && (
@@ -199,7 +199,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
           markerSize={markerSize}
           label="T"
           toneClass="bg-warm-600 text-white"
-          delay={0.26}
+          delay={0.14}
         />
       )}
       {/* You marker — the hero, drawn last so it sits on top */}
@@ -209,7 +209,7 @@ export function Bar({ youPct, teamPct, pgaPct, size }: BarProps) {
         markerSize={markerSize}
         label="●"
         toneClass="bg-primary-600 text-white ring-2 ring-primary-200 shadow-[0_0_0_4px_rgba(22,163,74,0.16)]"
-        delay={0.42}
+        delay={0.22}
       />
     </m.div>
   );
@@ -225,21 +225,24 @@ interface MarkerProps {
 }
 
 function Marker({ kind, leftPct, markerSize, label, toneClass, delay }: MarkerProps) {
-  // The "You" marker scales in from origin — the player's eye gets
-  // pulled to it. Reference markers (Team / PGA) just fade in.
-  const initial =
-    kind === 'hero' ? { opacity: 0, scale: 0.4 } : { opacity: 0, scale: 1 };
-  const animate = { opacity: 1, scale: 1 };
+  // Per master plan W13 + v3 feature audit: every marker scales in from
+  // origin AND slides from leftPct=0 to its true position on mount. The
+  // player's eye gets pulled to the "You" marker via a more dramatic
+  // scale (0.4 → 1) vs the reference markers' subtler 0.7 → 1. Both
+  // share canonical EASE_CINEMATIC at DURATION.short. Reduced-motion
+  // users see the marker at its final position immediately, no animation.
+  const reduce = useReducedMotion();
+  const initialScale = kind === 'hero' ? 0.4 : 0.7;
   const transition = {
-    duration: DURATION.medium,
+    duration: DURATION.short,
     delay,
-    ease: kind === 'hero' ? EASE_CINEMATIC : EASE_TAP,
+    ease: EASE_CINEMATIC,
   };
   return (
     <m.div
-      initial={initial}
-      animate={animate}
-      transition={transition}
+      initial={reduce ? false : { opacity: 0, scale: initialScale, left: '0%' }}
+      animate={reduce ? false : { opacity: 1, scale: 1, left: `${leftPct}%` }}
+      transition={reduce ? undefined : transition}
       className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 ${markerSize} rounded-full flex items-center justify-center text-[8px] font-semibold ${toneClass}`}
       style={{ left: `${leftPct}%`, transformOrigin: 'center' }}
       aria-hidden="true"
