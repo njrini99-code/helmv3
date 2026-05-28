@@ -37,6 +37,12 @@ import {
 import { HeroNarrativeCard } from '@/components/golf/coachhelm/v3/HeroNarrativeCard';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import {
+  crossfadeVariants,
+  crossfadeTransition,
+  DURATION,
+  EASE_TAP,
+} from '@/lib/coachhelm/v3/motion';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
@@ -358,10 +364,11 @@ export function PlayerCoachHelmDashboard({
               {activeSection === 'insights' && (
                 <m.div
                   key="insights"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
+                  variants={crossfadeVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={crossfadeTransition}
                   className="space-y-6 md:space-y-8"
                 >
                   {/* ───── W31: LLM hero narrative (Haiku) ─────
@@ -516,7 +523,7 @@ export function PlayerCoachHelmDashboard({
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
+                          transition={{ duration: DURATION.short, ease: EASE_TAP }}
                           className="overflow-hidden"
                         >
                           <div className="pt-4 space-y-3">
@@ -533,10 +540,11 @@ export function PlayerCoachHelmDashboard({
                               {activeBottomTab === 'shot-analysis' && (
                                 <m.div
                                   key="shot-analysis"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={{ duration: 0.15 }}
+                                  variants={crossfadeVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                  transition={crossfadeTransition}
                                 >
                                   <ShotAnalysisCard
                                     shotData={shotData ?? undefined}
@@ -547,10 +555,11 @@ export function PlayerCoachHelmDashboard({
                               {activeBottomTab === 'what-if' && (
                                 <m.div
                                   key="what-if"
-                                  initial={{ opacity: 0 }}
-                                  animate={{ opacity: 1 }}
-                                  exit={{ opacity: 0 }}
-                                  transition={{ duration: 0.15 }}
+                                  variants={crossfadeVariants}
+                                  initial="hidden"
+                                  animate="visible"
+                                  exit="exit"
+                                  transition={crossfadeTransition}
                                 >
                                   <WhatIfPanel
                                     playerId={playerId}
@@ -571,10 +580,11 @@ export function PlayerCoachHelmDashboard({
               {activeSection === 'analytics' && (
                 <m.div
                   key="analytics"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
+                  variants={crossfadeVariants}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  transition={crossfadeTransition}
                 >
                   <ShotAnalyticsPanel
                     playerId={playerId}
