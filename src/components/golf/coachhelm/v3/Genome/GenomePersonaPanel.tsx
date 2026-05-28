@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import type { Persona } from '@/lib/coachhelm/v3/genome/persona';
 import { enterVariants, enterTransition, stagger } from '@/lib/coachhelm/v3/motion';
 
@@ -63,12 +63,13 @@ function Section({
   emptyHint?: string;
   children?: React.ReactNode;
 }) {
+  const prefersReducedMotion = useReducedMotion() ?? false;
   return (
     <m.section
       variants={enterVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : 'hidden'}
       animate="visible"
-      transition={{ ...enterTransition, delay: stagger(index) }}
+      transition={{ ...enterTransition, delay: prefersReducedMotion ? 0 : stagger(index) }}
     >
       <h3 className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500 mb-2.5">
         {title}
@@ -105,12 +106,16 @@ function Bullet({
   qualitative: string | null;
 }) {
   const styles = ACCENT_STYLES[accent];
+  const prefersReducedMotion = useReducedMotion() ?? false;
   return (
     <m.li
       variants={enterVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : 'hidden'}
       animate="visible"
-      transition={{ ...enterTransition, delay: 0.1 + stagger(index) }}
+      transition={{
+        ...enterTransition,
+        delay: prefersReducedMotion ? 0 : 0.1 + stagger(index),
+      }}
       className="flex items-baseline gap-3"
     >
       <span

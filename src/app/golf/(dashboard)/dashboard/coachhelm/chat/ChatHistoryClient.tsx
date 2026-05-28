@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { ChatMessageList } from '@/components/golf/coachhelm/v3/Chat/ChatMessageList';
 import { ChatComposer } from '@/components/golf/coachhelm/v3/Chat/ChatComposer';
 import type { ChatConversation, ChatMessage } from '@/lib/coachhelm/v3/chat/types';
@@ -33,6 +33,7 @@ export function ChatHistoryClient({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   async function loadConversation(id: string) {
     setActiveId(id);
@@ -86,33 +87,43 @@ export function ChatHistoryClient({
 
   return (
     <div className="grid grid-cols-12 gap-4 md:gap-6">
-      {/* Left rail — conversation list */}
+      {/* Left rail — conversation list. Reveal entrance + per-row
+          stagger per audit feature #8 (ChatHistoryClient left-rail). */}
       <m.aside
         variants={enterVariants}
-        initial="hidden"
+        initial={prefersReducedMotion ? false : 'hidden'}
         animate="visible"
         transition={enterTransition}
         className="col-span-12 md:col-span-4 lg:col-span-3"
       >
         <ul className="space-y-1">
           {conversations.length === 0 && (
-            <li className="text-sm text-warm-400 italic px-3 py-8 text-center">
-              No conversations yet. Use the chat button on any dashboard page.
+            <li className="text-sm text-warm-400 italic px-3 py-8 text-center flex flex-col items-center gap-3">
+              <span aria-hidden className="inline-flex h-9 w-9 rounded-full bg-warm-100 text-warm-500 items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M4 5.5C4 4.67 4.67 4 5.5 4h13c.83 0 1.5.67 1.5 1.5v9c0 .83-.67 1.5-1.5 1.5H11l-4 4v-4H5.5C4.67 16 4 15.33 4 14.5v-9Z"
+                    fill="currentColor"
+                  />
+                </svg>
+              </span>
+              <span className="not-italic">No conversations yet.</span>
+              <span className="text-[11px] tracking-[0.04em]">Use the chat button on any dashboard page.</span>
             </li>
           )}
           {conversations.map((c, i) => (
             <m.li
               key={c.id}
               variants={enterVariants}
-              initial="hidden"
+              initial={prefersReducedMotion ? false : 'hidden'}
               animate="visible"
-              transition={{ ...enterTransition, delay: stagger(i) }}
+              transition={{ ...enterTransition, delay: prefersReducedMotion ? 0 : stagger(i) }}
             >
               <m.button
                 type="button"
                 onClick={() => loadConversation(c.id)}
-                whileHover={c.id === activeId ? undefined : liftHover}
-                whileTap={tapPress}
+                whileHover={prefersReducedMotion || c.id === activeId ? undefined : liftHover}
+                whileTap={prefersReducedMotion ? undefined : tapPress}
                 className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                   c.id === activeId
                     ? 'bg-warm-900 text-white shadow-[0_8px_18px_-12px_rgba(28,25,23,0.45)]'
@@ -146,9 +157,9 @@ export function ChatHistoryClient({
       {/* Main pane — messages */}
       <m.section
         variants={enterVariants}
-        initial="hidden"
+        initial={prefersReducedMotion ? false : 'hidden'}
         animate="visible"
-        transition={{ ...enterTransition, delay: 0.1 }}
+        transition={{ ...enterTransition, delay: prefersReducedMotion ? 0 : 0.1 }}
         className="col-span-12 md:col-span-8 lg:col-span-9 flex flex-col min-h-[60vh] surface-matte rounded-2xl overflow-hidden"
       >
         <div className="flex-1 overflow-y-auto p-4 bg-warm-50/40">

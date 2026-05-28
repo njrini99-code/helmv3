@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
@@ -18,6 +18,7 @@ interface Props {
 }
 
 export function GenomeDimensionGrid({ vector }: Props) {
+  const prefersReducedMotion = useReducedMotion() ?? false;
   return (
     <ul className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
       {GENOME_DIMENSIONS.map((dim, i) => {
@@ -31,10 +32,10 @@ export function GenomeDimensionGrid({ vector }: Props) {
           <m.li
             key={dim.id}
             variants={enterVariants}
-            initial="hidden"
+            initial={prefersReducedMotion ? false : 'hidden'}
             animate="visible"
-            transition={{ ...enterTransition, delay: stagger(i) }}
-            whileHover={isLocked ? undefined : liftHover}
+            transition={{ ...enterTransition, delay: prefersReducedMotion ? 0 : stagger(i) }}
+            whileHover={prefersReducedMotion || isLocked ? undefined : liftHover}
             className={`surface-matte rounded-2xl p-4 ${
               isLocked ? '' : 'cursor-default'
             }`}
@@ -57,11 +58,11 @@ export function GenomeDimensionGrid({ vector }: Props) {
                 return (
                   <m.span
                     key={idx}
-                    initial={{ scaleX: 0 }}
+                    initial={prefersReducedMotion ? false : { scaleX: 0 }}
                     animate={{ scaleX: 1 }}
                     transition={{
                       duration: DURATION.short,
-                      delay: 0.15 + stagger(i) + idx * 0.025,
+                      delay: prefersReducedMotion ? 0 : 0.15 + stagger(i) + idx * 0.025,
                       ease: EASE_CINEMATIC,
                     }}
                     style={{ transformOrigin: 'left' }}

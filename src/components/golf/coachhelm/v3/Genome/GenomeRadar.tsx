@@ -18,7 +18,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { GENOME_DIMENSIONS } from '@/lib/coachhelm/v3/genome/registry';
 import { normalizeForRadar } from '@/lib/coachhelm/v3/genome/normalize';
 import type { GenomeVector } from '@/lib/coachhelm/v3/genome/types';
@@ -53,6 +53,11 @@ interface SpokePoint {
 
 export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
   const [hover, setHover] = useState<{ dim_id: string; series_idx: number } | null>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
+  // Scale all entrance delays to 0 when reduced motion is set. This
+  // collapses the polygon-draw + dot stagger into an instant render —
+  // the radar still arrives, it just doesn't perform.
+  const motionScale = prefersReducedMotion ? 0 : 1;
 
   // --- Geometry: spokes + the unit-vector lookup for each dim ---
   const spokes = useMemo<SpokePoint[]>(() => {
@@ -124,9 +129,13 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
             fill="none"
             stroke="rgba(28,25,23,0.08)"
             strokeWidth={0.005}
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: DURATION.medium, delay: 0.05 * i, ease: EASE_CINEMATIC }}
+            transition={{
+              duration: DURATION.medium,
+              delay: 0.05 * i * motionScale,
+              ease: EASE_CINEMATIC,
+            }}
           />
         ))}
         {/* ----- Spokes (faint, staggered after rings) ----- */}
@@ -139,18 +148,22 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
             y2={sp.uy}
             stroke="rgba(28,25,23,0.08)"
             strokeWidth={0.004}
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: DURATION.medium, delay: 0.25 + 0.02 * i, ease: EASE_CINEMATIC }}
+            transition={{
+              duration: DURATION.medium,
+              delay: (0.25 + 0.02 * i) * motionScale,
+              ease: EASE_CINEMATIC,
+            }}
           />
         ))}
         {/* Center dot — visual anchor */}
         <m.circle
           cx={0} cy={0} r={0.012}
           fill="rgba(28,25,23,0.35)"
-          initial={{ opacity: 0, scale: 0 }}
+          initial={prefersReducedMotion ? false : { opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: DURATION.short, delay: 0.4, ease: EASE_TAP }}
+          transition={{ duration: DURATION.short, delay: 0.4 * motionScale, ease: EASE_TAP }}
         />
         {/* ----- Series polygons (animated entrance + glow) ----- */}
         {series.map((s, idx) => {
@@ -165,9 +178,13 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
                 stroke={s.hex}
                 strokeWidth={0.014}
                 strokeLinejoin="round"
-                initial={{ opacity: 0, scale: 0.6 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.6 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: DURATION.long, ease: EASE_CINEMATIC, delay: 0.5 + idx * 0.15 }}
+                transition={{
+                  duration: DURATION.long,
+                  ease: EASE_CINEMATIC,
+                  delay: (0.5 + idx * 0.15) * motionScale,
+                }}
                 style={{ transformOrigin: '0 0' }}
               />
               {/* Per-dim dots */}
@@ -187,11 +204,11 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
                     fill={fill}
                     stroke="white"
                     strokeWidth={0.008}
-                    initial={{ opacity: 0 }}
+                    initial={prefersReducedMotion ? false : { opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{
                       duration: DURATION.short,
-                      delay: 0.4 + idx * 0.15 + i * 0.03,
+                      delay: (0.4 + idx * 0.15 + i * 0.03) * motionScale,
                       ease: EASE_TAP,
                     }}
                     onMouseEnter={() => setHover({ dim_id: spoke.dim_id, series_idx: idx })}
