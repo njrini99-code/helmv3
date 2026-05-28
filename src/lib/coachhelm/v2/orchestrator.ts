@@ -22,7 +22,8 @@ import { PatternMiner, CausalEngine, ShotPatternMiner, ShotStateIntelligence, St
 // W25 + wave-3bucket-fix: only 2 v2 generators still active. approachMiss
 // has a v3 equivalent as of this wave; teeStrategy + worstHoles remain
 // pending v3 metric registration + worst-holes pattern rework.
-import { generateTeeStrategyInsights } from './mining/tee-strategy';
+// W43: v2 generateTeeStrategyInsights superseded by v3 TeeStrategyGenerator.
+//   import { generateTeeStrategyInsights } from './mining/tee-strategy';
 import { generateWorstHolesInsights } from './mining/course-management';
 
 // v3 BaseGenerator subclasses.
@@ -34,6 +35,7 @@ import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
 import { PressureGapGenerator } from '@/lib/coachhelm/v3/generators/pressure-gap';
 import { WarmupHoleGenerator } from '@/lib/coachhelm/v3/generators/warmup-hole';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
+import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy';
 
 // W28: composite-rule synthesis runs after Tier-1 generators finish so
 // rules can detect cross-insight patterns in this round's freshly-written
@@ -250,8 +252,10 @@ class CoachHelmIntelligence {
       { name: 'v3.approachMiss.50_125',   fn: () => new ApproachMissGenerator(playerId, '50_125ft').run() },
       { name: 'v3.approachMiss.125_175',  fn: () => new ApproachMissGenerator(playerId, '125_175ft').run() },
       { name: 'v3.approachMiss.175_plus', fn: () => new ApproachMissGenerator(playerId, '175_plus_ft').run() },
-      // v2 (deferred — no v3 equivalent yet)
-      { name: 'v2.teeStrategy',  fn: () => generateTeeStrategyInsights(playerId) },
+      // v3 — tee strategy (W43; gated by per-team toggle in
+      // golf_team_coachhelm_settings.preferences.tee_strategy_enabled)
+      { name: 'v3.teeStrategy',  fn: () => new TeeStrategyGenerator(playerId).run() },
+      // v2 (still deferred — worst-holes pattern rework planned post-launch)
       { name: 'v2.worstHoles',   fn: () => generateWorstHolesInsights(playerId) },
     ];
     // 2026-05-24 Wave 7B — when caller supplies a philosophyGate, run the

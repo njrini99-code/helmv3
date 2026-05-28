@@ -65,10 +65,28 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
   abstract composeContent(agg: A): ComposedContent;
 
   /**
+   * Per-team toggle gate. Default returns `true` — subclasses override
+   * to check `golf_team_coachhelm_settings.preferences[someKey]` so
+   * teams can opt out of specific generators (e.g. tee-strategy). When
+   * this returns false, the generator skips work AND skips writing —
+   * but the run is still treated as a success (gated, not failed).
+   */
+  protected async isEnabled(): Promise<boolean> {
+    return true;
+  }
+
+  /**
    * Full lifecycle entry point. Cron / orchestrator code calls this.
    */
   async run(): Promise<RunResult> {
     try {
+      // Per-team toggle gate runs FIRST — saves the aggregate query
+      // when the team has the generator off.
+      const enabled = await this.isEnabled();
+      if (!enabled) {
+        return { id: null, gated: true };
+      }
+
       const agg = await this.aggregate();
       if (!agg) {
         return { id: null, gated: false };
