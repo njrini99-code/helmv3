@@ -55,6 +55,11 @@ ios/App/App.xcworkspace/xcuserdata/
 *.ipa
 *.dmg
 
+# CodeRabbit rule-pack positive-test fixtures (intentionally broken code
+# that exercises ast-grep + semgrep rules; do not review or scan).
+.coderabbit/semgrep/__test__/
+.coderabbit/ast-grep/__test__/
+
 # Editor/system
 .DS_Store
 .vscode/
