@@ -24,21 +24,30 @@ import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
 import { IOS_DURATION_NORMAL, IOS_EASE } from '@/lib/ios-animations';
+import {
+    DURATION,
+    EASE_CINEMATIC,
+    EASE_TAP,
+    STAGGER_STEP,
+} from '@/lib/coachhelm/v3/motion';
 
 // ============================================================================
 // ANIMATION VARIANTS — California-modern cinematic (slow, intentional)
+//
+// Bound to the canonical v3 motion library (`@/lib/coachhelm/v3/motion`)
+// so the premium dashboard shell speaks the same motion vocabulary as
+// every other v3 surface: one easing curve for entrances, one duration
+// tier, one stagger step. No local ease constants, no magic numbers.
 // ============================================================================
-
-const APPLE_EASE = [0.16, 1, 0.3, 1] as const;
 
 export const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
         transition: {
-            // Slow 80ms stagger lets each section land separately —
-            // intentional, never twitchy.
-            staggerChildren: 0.08,
+            // Canonical 70ms stagger — sibling sections land as a wave,
+            // not a stutter.
+            staggerChildren: STAGGER_STEP,
             delayChildren: 0.02,
         },
     },
@@ -50,8 +59,8 @@ export const itemVariants = {
         opacity: 1,
         y: 0,
         transition: {
-            duration: 0.55,
-            ease: APPLE_EASE as unknown as [number, number, number, number],
+            duration: DURATION.medium,
+            ease: EASE_CINEMATIC as unknown as [number, number, number, number],
         },
     },
 };
@@ -86,8 +95,8 @@ export const PremiumGlassCard = memo(function PremiumGlassCard({
 }: PremiumGlassCardProps) {
     const Component = hover ? m.div : 'div';
     const hoverProps = hover ? {
-        whileHover: { y: -3 },
-        transition: { duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }
+        whileHover: { y: -2 },
+        transition: { duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }
     } : {};
 
     return (
@@ -166,8 +175,8 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                 'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                 accent && 'before:absolute before:inset-y-6 before:left-0 before:w-[2px] before:bg-primary-500/70 before:rounded-r-full'
             )}
-            whileHover={{ y: -3 }}
-            transition={{ duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }}
+            whileHover={{ y: -2 }}
+            transition={{ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }}
         >
             <div className="relative flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -501,7 +510,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     'focus-within:ring-1 focus-within:ring-primary-400/30'
                 )}
                 whileHover={{ x: 3 }}
-                transition={{ duration: 0.45, ease: APPLE_EASE as unknown as [number, number, number, number] }}
+                transition={{ duration: DURATION.short, ease: EASE_TAP as unknown as [number, number, number, number] }}
             >
                 <div className="flex items-start gap-4">
                     {/* Player Avatar */}
