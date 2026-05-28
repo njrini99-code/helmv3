@@ -6,6 +6,9 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { GolfSignUpForm } from '@/components/auth/golf-sign-up-form';
+import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
+import { CourseScene } from '@/components/golf/scenes/CourseScene';
+import { useMediaQuery } from '@/hooks/use-media-query';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { validateAccessCode } from '@/app/golf/actions/access-code';
 import { Button } from '@/components/ui/button';
@@ -38,6 +41,10 @@ export default function SignupPage() {
   // /golf/signup?returnTo=...). Prefills the access-code field and is forwarded
   // to onboarding so the player auto-joins the inviting team.
   const [joinCode, setJoinCode] = useState<string | null>(null);
+  // Match the login page: one painterly scene per viewport. SSR renders the
+  // portrait CourseScene (matches our iOS native target) and useMediaQuery
+  // swaps to the landscape CoastalScene after hydration on desktop ≥768px.
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   useEffect(() => {
     if (isNativeApp()) {
@@ -86,20 +93,14 @@ export default function SignupPage() {
   if (!accessGranted) {
     return (
       <LazyMotion features={domAnimation}>
-        <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
-          {/* Animated floating orbs */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <m.div
-              className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
-              animate={{ x: [0, 30, 0], y: [0, -20, 0], scale: [1, 1.05, 1] }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 15, repeat: Infinity, ease: "easeInOut" })}
-            />
-            <m.div
-              className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
-              animate={{ x: [0, -25, 0], y: [0, 25, 0], scale: [1, 0.95, 1] }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 18, repeat: Infinity, ease: "easeInOut", delay: 2 })}
-            />
-          </div>
+        <div className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
+          {/*
+           * Reuse the login page's painterly scene as the gate backdrop instead
+           * of the old floating-orb field. Exactly one scene renders per
+           * viewport: portrait CourseScene on mobile/iOS (the SSR default),
+           * landscape CoastalScene on desktop ≥768px after hydration.
+           */}
+          {isDesktop ? <CoastalScene idSuffix="signup-gate-coastal" /> : <CourseScene idSuffix="signup-gate" />}
 
           <div className="relative z-10 w-full max-w-[420px]">
             <m.div
@@ -196,7 +197,7 @@ export default function SignupPage() {
   }
   return (
     <LazyMotion features={domAnimation}>
-    <div className="min-h-dvh flex items-center justify-center relative p-4 sm:p-6 bg-auth-golf">
+    <div className="min-h-dvh flex items-center justify-center relative overflow-hidden p-4 sm:p-6">
       {/* Skip to main content link for keyboard navigation */}
       <a
         href="#signup-form"
@@ -205,75 +206,12 @@ export default function SignupPage() {
         Skip to signup form
       </a>
 
-      {/* Animated floating orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Large primary orb - top right */}
-        <m.div
-          className="auth-orb auth-orb-1 w-[300px] h-[300px] sm:w-[500px] sm:h-[500px] -top-20 -right-20 sm:-top-32 sm:-right-32 bg-gradient-to-br from-primary-400/40 to-primary-500/30 motion-reduce:animate-none"
-          animate={{
-            x: [0, 30, 0],
-            y: [0, -20, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-        {/* Medium orb - bottom left */}
-        <m.div
-          className="auth-orb auth-orb-2 w-[250px] h-[250px] sm:w-[400px] sm:h-[400px] -bottom-16 -left-16 sm:-bottom-24 sm:-left-24 bg-gradient-to-tr from-primary-400/30 to-primary-400/25 motion-reduce:animate-none"
-          animate={{
-            x: [0, -25, 0],
-            y: [0, 25, 0],
-            scale: [1, 0.95, 1],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          })}
-        />
-        {/* Small accent orb - top left (hidden on very small screens) */}
-        <m.div
-          className="auth-orb auth-orb-3 hidden sm:block w-[200px] h-[200px] top-20 left-[10%] bg-gradient-to-br from-primary-300/25 to-primary-400/20 motion-reduce:animate-none"
-          animate={{
-            x: [0, 20, 0],
-            y: [0, -15, 0],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          })}
-        />
-        {/* Tiny floating dot */}
-        <m.div
-          className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-primary-500/40 top-[30%] right-[15%] sm:right-[20%] motion-reduce:animate-none"
-          animate={{
-            y: [0, -10, 0],
-            opacity: [0.4, 0.8, 0.4],
-          }}
-          transition={prefersReducedMotion ? { duration: 0 } : ({
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          })}
-        />
-      </div>
-
-      {/* Grid pattern overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(16, 185, 129, 0.5) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(16, 185, 129, 0.5) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px'
-        }}
-      />
+      {/*
+       * Painterly login scene as the backdrop — replaces the old orb field +
+       * 60px grid overlay. One scene per viewport: portrait CourseScene on
+       * mobile/iOS (SSR default), landscape CoastalScene on desktop ≥768px.
+       */}
+      {isDesktop ? <CoastalScene idSuffix="signup-coastal" /> : <CourseScene idSuffix="signup" />}
 
       {/* Glass card */}
       <div id="signup-form" className="relative z-10 w-full max-w-[420px]">
@@ -319,7 +257,7 @@ export default function SignupPage() {
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               Create your account
             </h2>
-            <p className="text-warm-500 text-sm sm:text-base">Start tracking your golf journey</p>
+            <p className="text-warm-500 text-sm sm:text-base">You&apos;re in. Let&apos;s set up your team.</p>
           </m.div>
 
           {/* Form */}
