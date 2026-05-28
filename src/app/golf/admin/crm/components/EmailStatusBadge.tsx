@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 // ============================================================================
 // TYPES
@@ -35,32 +35,29 @@ interface EmailStatusBadgeProps extends EmailStatusFields {
 // Tones match the warm-/warm- palette used across the CRM (see STATUS_CONFIG
 // in crm-config.tsx for reference tones: amber, red, emerald/green, blue,
 // warm/neutral).
-interface BadgeTone {
+interface EmailTone {
   label: string;
-  bg: string;
-  text: string;
-  border: string;
+  /** Canonical Badge tone (color-faithful base hue). */
+  tone: BadgeTone;
+  /** Extra classes for tints the tone alone doesn't reproduce. */
+  override?: string;
 }
 
-const TONE_BOUNCED: BadgeTone = {
+const TONE_BOUNCED: EmailTone = {
   label: 'Bounced',
-  bg: 'bg-red-50',
-  text: 'text-red-700',
-  border: 'border-red-200',
+  tone: 'red',
 };
 
-const TONE_COMPLAINED: BadgeTone = {
+const TONE_COMPLAINED: EmailTone = {
   label: 'Complained',
-  bg: 'bg-red-50',
-  text: 'text-red-700',
-  border: 'border-red-200',
+  tone: 'red',
 };
 
-const TONE_UNSUBSCRIBED: BadgeTone = {
+const TONE_UNSUBSCRIBED: EmailTone = {
   label: 'Unsubscribed',
-  bg: 'bg-warm-100',
-  text: 'text-warm-600',
-  border: 'border-warm-200',
+  tone: 'warm',
+  // Stronger warm-100 tint + warm-600 text (Badge warm-soft is warm-50/700).
+  override: 'bg-warm-100 text-warm-600',
 };
 
 // Inline ban / no-symbol glyph — the icon set ships no equivalent, and this
@@ -84,37 +81,12 @@ function IconBan({ size = 11 }: { size?: number }) {
   );
 }
 
-const EVENT_TONES: Record<LastEmailEventType, BadgeTone> = {
-  clicked: {
-    label: 'Clicked',
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-700',
-    border: 'border-emerald-200',
-  },
-  opened: {
-    label: 'Opened',
-    bg: 'bg-blue-50',
-    text: 'text-blue-700',
-    border: 'border-blue-200',
-  },
-  delivered: {
-    label: 'Delivered',
-    bg: 'bg-warm-50',
-    text: 'text-warm-700',
-    border: 'border-warm-200',
-  },
-  delivery_delayed: {
-    label: 'Delayed',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
-  },
-  sent: {
-    label: 'Sent',
-    bg: 'bg-warm-50',
-    text: 'text-warm-600',
-    border: 'border-warm-200',
-  },
+const EVENT_TONES: Record<LastEmailEventType, EmailTone> = {
+  clicked: { label: 'Clicked', tone: 'emerald' },
+  opened: { label: 'Opened', tone: 'blue' },
+  delivered: { label: 'Delivered', tone: 'warm' }, // warm-soft text-700 matches
+  delivery_delayed: { label: 'Delayed', tone: 'amber' },
+  sent: { label: 'Sent', tone: 'warm', override: 'text-warm-600' },
   // Bounced/complained as last event fall back to their dedicated tones via
   // the priority rule below, but include them here for completeness.
   bounced: TONE_BOUNCED,
@@ -159,19 +131,18 @@ export function EmailStatusBadge({
   const isUnsubscribed = email_status === 'unsubscribed';
 
   return (
-    <span
+    <Badge
+      tone={tone.tone}
+      size="none"
       title={title}
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border font-medium',
-        compact ? 'text-eyebrow px-1.5 py-0.5' : 'text-eyebrow px-1.5 py-0.5',
-        tone.bg,
-        tone.text,
-        tone.border,
-      )}
+      icon={isUnsubscribed ? <IconBan size={compact ? 10 : 11} /> : undefined}
+      // Plain string (not the shared cn): Badge's custom-fontSize-aware merge
+      // keeps BOTH `text-eyebrow` and the tone/override text color. Pre-merging
+      // here with the default cn would drop the size.
+      className={`gap-1 text-eyebrow px-1.5 py-0.5 ${tone.override ?? ''}`}
     >
-      {isUnsubscribed && <IconBan size={compact ? 10 : 11} />}
       {tone.label}
-    </span>
+    </Badge>
   );
 }
 
@@ -181,7 +152,7 @@ export function EmailStatusBadge({
 function resolveTone(
   emailStatus: string | null | undefined,
   lastEventType: string | null | undefined,
-): BadgeTone | null {
+): EmailTone | null {
   if (emailStatus === 'bounced') return TONE_BOUNCED;
   if (emailStatus === 'complained') return TONE_COMPLAINED;
   if (emailStatus === 'unsubscribed') return TONE_UNSUBSCRIBED;

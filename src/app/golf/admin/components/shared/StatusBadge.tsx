@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 type StatusType = 'healthy' | 'warning' | 'critical' | 'info' | 'neutral';
 
@@ -11,20 +11,14 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const statusColors: Record<StatusType, string> = {
-  healthy: 'bg-primary-50 text-primary-700 border-primary-200',
-  warning: 'bg-amber-50 text-amber-700 border-amber-200',
-  critical: 'bg-red-50 text-red-700 border-red-200',
-  info: 'bg-blue-50 text-blue-700 border-blue-200',
-  neutral: 'bg-warm-100 text-warm-600 border-warm-200',
-};
-
-const dotColors: Record<StatusType, string> = {
-  healthy: 'bg-primary-500',
-  warning: 'bg-amber-500',
-  critical: 'bg-red-500',
-  info: 'bg-blue-500',
-  neutral: 'bg-warm-400',
+// status → canonical Badge tone (color-faithful). `neutral` kept the slightly
+// stronger warm-100 tint, layered back via className below.
+const STATUS_TONE: Record<StatusType, BadgeTone> = {
+  healthy: 'primary',
+  warning: 'amber',
+  critical: 'red',
+  info: 'blue',
+  neutral: 'warm',
 };
 
 const sizeClasses = {
@@ -39,16 +33,20 @@ export function StatusBadge({
   className,
 }: StatusBadgeProps) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border font-medium whitespace-nowrap',
-        statusColors[status],
-        sizeClasses[size],
-        className
-      )}
+    <Badge
+      tone={STATUS_TONE[status]}
+      size="none"
+      showDot
+      // Plain string (not the shared cn): Badge's custom-fontSize-aware merge
+      // keeps BOTH the `text-eyebrow` size and the tone/neutral text color.
+      // Pre-merging the neutral text-warm-600 with text-eyebrow via the default
+      // cn would drop the size.
+      className={`whitespace-nowrap ${sizeClasses[size]} ${
+        // Preserve the neutral status' warm-100 tint (Badge soft uses warm-50).
+        status === 'neutral' ? 'bg-warm-100 text-warm-600' : ''
+      } ${className ?? ''}`}
     >
-      <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', dotColors[status])} />
       {label}
-    </span>
+    </Badge>
   );
 }

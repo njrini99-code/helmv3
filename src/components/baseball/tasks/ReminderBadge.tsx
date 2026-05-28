@@ -3,12 +3,22 @@
 import { motion } from 'framer-motion';
 import { IconBell } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 interface ReminderBadgeProps {
   reminderAt: string;
   className?: string;
   size?: 'sm' | 'md';
 }
+
+// reminder urgency → color-faithful Badge tone (upcoming=amber, soon=orange,
+// imminent=red, past=warm). `imminent` also pulses.
+const REMINDER_TONE: Record<'upcoming' | 'soon' | 'imminent' | 'past', BadgeTone> = {
+  upcoming: 'amber',
+  soon: 'orange',
+  imminent: 'red',
+  past: 'warm',
+};
 
 export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
   const reminderDate = new Date(reminderAt);
@@ -44,13 +54,6 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
     }
   }
 
-  const variantStyles = {
-    upcoming: 'bg-amber-50 text-amber-700 border-amber-200',
-    soon: 'bg-orange-50 text-orange-700 border-orange-200',
-    imminent: 'bg-red-50 text-red-700 border-red-200 animate-pulse',
-    past: 'bg-warm-50 text-warm-500 border-warm-200',
-  };
-
   const sizeStyles = {
     sm: 'px-1.5 py-0.5 text-xs gap-1',
     md: 'px-2 py-1 text-xs gap-2',
@@ -59,19 +62,23 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
   const iconSize = size === 'sm' ? 10 : 12;
 
   return (
-    <motion.div
+    <Badge
+      as={motion.span}
+      tone={REMINDER_TONE[variant]}
+      size="none"
+      icon={<IconBell size={iconSize} />}
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
-        'inline-flex items-center rounded-full border font-medium',
-        variantStyles[variant],
         sizeStyles[size],
+        // `past` keeps its muted warm-500 text (Badge warm-soft is warm-700).
+        variant === 'past' && 'text-warm-500',
+        variant === 'imminent' && 'animate-pulse',
         className
       )}
       title={`Reminder: ${reminderDate.toLocaleString()}`}
     >
-      <IconBell size={iconSize} />
       <span>{label}</span>
-    </motion.div>
+    </Badge>
   );
 }

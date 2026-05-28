@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { Button } from '@/components/ui/button';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 // Type → accent rail color (token-driven; token classes resolve via tailwind).
 const TYPE_RAIL_CLASS: Record<string, string> = {
@@ -46,22 +47,28 @@ const TYPE_LABEL: Record<string, string> = {
   other: 'Event',
 };
 
-// RSVP → pill copy + classes. Kept here so the chip is self-contained.
-const RSVP_PILL: Record<RSVPStatus, { label: string; className: string }> = {
+// RSVP → pill copy + canonical Badge tone + the exact alpha-tint/ring override
+// that makes the RSVP pill read against the cream event chip. Kept here so the
+// chip is self-contained; the colored shell now delegates to <Badge>.
+const RSVP_PILL: Record<RSVPStatus, { label: string; tone: BadgeTone; className: string }> = {
   accepted: {
     label: 'Going',
+    tone: 'primary',
     className: 'bg-primary-50/80 text-primary-700 ring-1 ring-primary-500/20',
   },
   tentative: {
     label: 'Tentative',
+    tone: 'amber',
     className: 'bg-amber-50/85 text-amber-700 ring-1 ring-amber-500/20',
   },
   declined: {
     label: 'Declined',
+    tone: 'rose',
     className: 'bg-rose-50/80 text-rose-700 ring-1 ring-rose-500/20',
   },
   pending: {
     label: 'Reply',
+    tone: 'warm',
     className: 'bg-cream-100/85 text-warm-700 ring-1 ring-warm-200/65',
   },
 };
@@ -168,15 +175,17 @@ export function EventChip({
       {/* RSVP pill — player view only. */}
       {rsvp && (
         <div className="flex-shrink-0 flex items-center">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 px-2.5 py-1 rounded-full',
-              'text-eyebrow font-medium tracking-[-0.005em]',
-              rsvp.className,
-            )}
+          <Badge
+            tone={rsvp.tone}
+            size="none"
+            // Plain string (not the shared cn): Badge's custom-fontSize-aware
+            // merge keeps BOTH `text-eyebrow` and the RSVP text color. The
+            // original used a ring (not a border) + alpha-tinted bg; preserved
+            // verbatim — `border-transparent` + the ring layer over Badge.
+            className={`gap-1 px-2.5 py-1 text-eyebrow tracking-[-0.005em] border-transparent ${rsvp.className}`}
           >
             {rsvp.label}
-          </span>
+          </Badge>
         </div>
       )}
     </Button>

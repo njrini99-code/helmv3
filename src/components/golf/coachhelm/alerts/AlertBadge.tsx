@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { Badge } from '@/components/ui/badge';
 
 interface AlertBadgeProps {
   coachId: string;
@@ -96,20 +97,20 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
 
   return (
     <AnimatePresence>
-      <motion.span
+      <Badge
+        as={motion.span}
+        tone={hasCritical ? 'red' : counts.warning > 0 ? 'amber' : 'warm'}
+        appearance={counts.total > 0 && !hasCritical && counts.warning === 0 ? 'soft' : 'solid'}
+        size="none"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
-        className={cn(
-          'inline-flex items-center justify-center min-w-[18px] h-[18px] px-1',
-          'text-eyebrow font-medium rounded-full',
-          hasCritical
-            ? 'bg-red-500 text-white'
-            : counts.warning > 0
-              ? 'bg-amber-500 text-white'
-              : 'bg-warm-200 text-warm-700',
-          className
-        )}
+        // Plain string (not the shared cn): Badge's custom-fontSize-aware merge
+        // keeps BOTH the `text-eyebrow` size and the warm-200 fill's text color.
+        className={`justify-center min-w-[18px] h-[18px] px-1 gap-0 border-0 text-eyebrow font-medium ${
+          // The "no critical / no warning" case keeps its warm-200 fill.
+          !hasCritical && counts.warning === 0 ? 'bg-warm-200 text-warm-700' : ''
+        } ${className ?? ''}`}
         role="status"
       >
         {displayCount}
@@ -131,7 +132,7 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
             }}
           />
         )}
-      </motion.span>
+      </Badge>
     </AnimatePresence>
   );
 }
@@ -149,13 +150,14 @@ export function NavAlertBadge({ count, hasCritical = false, className }: NavAler
   const displayCount = count > 99 ? '99+' : count;
 
   return (
-    <span
+    <Badge
+      tone={hasCritical ? 'red' : 'amber'}
+      appearance="solid"
+      size="none"
       className={cn(
-        'relative inline-flex items-center justify-center min-w-[18px] h-[18px] px-1',
-        'text-eyebrow font-medium rounded-full',
-        hasCritical
-          ? 'bg-red-500 text-white'
-          : 'bg-amber-500 text-white',
+        // Count-badge geometry: fixed 18px circle, no border, centered.
+        'relative justify-center min-w-[18px] h-[18px] px-1 gap-0 border-0',
+        'text-eyebrow font-medium',
         className
       )}
       role="status"
@@ -179,7 +181,7 @@ export function NavAlertBadge({ count, hasCritical = false, className }: NavAler
           }}
         />
       )}
-    </span>
+    </Badge>
   );
 }
 

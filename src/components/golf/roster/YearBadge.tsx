@@ -1,3 +1,5 @@
+import { Badge } from '@/components/ui/badge';
+
 const YEAR_LABELS: Record<string, string> = {
   freshman: 'FR',
   sophomore: 'SO',
@@ -24,10 +26,17 @@ export function YearBadge({ year }: { year: string | number | null }) {
     label = YEAR_LABELS[year] || year.slice(0, 2).toUpperCase();
   }
 
+  // Delegate the colored shell to the canonical Badge. YearBadge's exact look
+  // is a square-cornered warm-100 mini-tag (no border, no dot) — reproduced by
+  // overriding the Badge soft defaults via className.
   return (
-    <span className="px-1.5 py-0.5 text-eyebrow font-medium uppercase tracking-wider
-                     bg-warm-100 text-warm-500 rounded">
+    <Badge
+      tone="warm"
+      size="none"
+      className="px-1.5 py-0.5 text-eyebrow font-medium uppercase tracking-wider
+                 gap-0 bg-warm-100 text-warm-500 border-transparent !rounded"
+    >
       {label}
-    </span>
+    </Badge>
   );
 }

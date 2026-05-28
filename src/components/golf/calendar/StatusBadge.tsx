@@ -12,6 +12,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 import {
   CheckCircle,
   XCircle,
@@ -31,47 +32,22 @@ export interface StatusBadgeProps {
 interface StatusConfig {
   icon: LucideIcon;
   label: string;
-  colorClass: string;
-  bgClass: string;
-  borderClass: string;
+  /**
+   * Badge tone reproducing the original 100-tint look. draft/completed →
+   * warm, confirmed → primary, cancelled → rose, pending → amber. The original
+   * used `bg-X-100`; the canonical Badge soft surface uses `bg-X-50` — we
+   * keep the slightly stronger 100 tint via `bgTintClass` below for fidelity.
+   */
+  tone: BadgeTone;
+  bgTintClass: string;
 }
 
 const STATUS_CONFIGS: Record<StatusBadgeProps['status'], StatusConfig> = {
-  draft: {
-    icon: Edit3,
-    label: 'Draft',
-    colorClass: 'text-warm-600',
-    bgClass: 'bg-warm-100',
-    borderClass: 'border-warm-200',
-  },
-  confirmed: {
-    icon: CheckCircle,
-    label: 'Confirmed',
-    colorClass: 'text-primary-700',
-    bgClass: 'bg-primary-100',
-    borderClass: 'border-primary-200',
-  },
-  cancelled: {
-    icon: XCircle,
-    label: 'Cancelled',
-    colorClass: 'text-rose-700',
-    bgClass: 'bg-rose-100',
-    borderClass: 'border-rose-200',
-  },
-  completed: {
-    icon: CheckCircle,
-    label: 'Completed',
-    colorClass: 'text-warm-600',
-    bgClass: 'bg-warm-100',
-    borderClass: 'border-warm-200',
-  },
-  pending: {
-    icon: Clock,
-    label: 'Pending',
-    colorClass: 'text-amber-700',
-    bgClass: 'bg-amber-100',
-    borderClass: 'border-amber-200',
-  },
+  draft: { icon: Edit3, label: 'Draft', tone: 'warm', bgTintClass: 'bg-warm-100 text-warm-600' },
+  confirmed: { icon: CheckCircle, label: 'Confirmed', tone: 'primary', bgTintClass: 'bg-primary-100 text-primary-700' },
+  cancelled: { icon: XCircle, label: 'Cancelled', tone: 'rose', bgTintClass: 'bg-rose-100 text-rose-700' },
+  completed: { icon: CheckCircle, label: 'Completed', tone: 'warm', bgTintClass: 'bg-warm-100 text-warm-600' },
+  pending: { icon: Clock, label: 'Pending', tone: 'amber', bgTintClass: 'bg-amber-100 text-amber-700' },
 };
 
 const SIZE_CONFIGS = {
@@ -100,25 +76,23 @@ export function StatusBadge({
   const sizeConfig = SIZE_CONFIGS[size];
   const Icon = config.icon;
 
+  // Delegate the colored pill shell to the canonical Badge. We keep the
+  // calendar's stronger 100-tint + uppercase/tracking treatment (and the
+  // original size paddings/gaps) by layering them via className.
   return (
-    <span
+    <Badge
+      tone={config.tone}
+      size="none"
+      icon={showIcon ? <Icon className={sizeConfig.icon} /> : undefined}
       className={cn(
-        // Base styles
-        'inline-flex items-center rounded-full border font-medium uppercase tracking-wide',
-        'transition-all duration-200',
-        // Size-specific spacing
+        'uppercase tracking-wide gap-0',
         sizeConfig.container,
-        // Color scheme
-        config.colorClass,
-        config.bgClass,
-        config.borderClass,
-        // Custom className
+        config.bgTintClass,
         className
       )}
     >
-      {showIcon && <Icon className={sizeConfig.icon} />}
       {!compact && <span>{config.label}</span>}
-    </span>
+    </Badge>
   );
 }
 

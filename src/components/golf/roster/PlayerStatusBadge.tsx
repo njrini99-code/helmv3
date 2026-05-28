@@ -7,6 +7,7 @@ import { updatePlayerStatus } from '@/app/golf/actions/golf';
 import { useToast } from '@/components/ui/sonner';
 import { IconChevronDown } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 interface PlayerStatusBadgeProps {
   playerId: string;
@@ -14,29 +15,40 @@ interface PlayerStatusBadgeProps {
   editable?: boolean; // Allow non-editable display mode
 }
 
-const statuses = [
+const statuses: Array<{
+  value: 'active' | 'injured' | 'redshirt' | 'inactive';
+  label: string;
+  dotColor: string;
+  tone: BadgeTone;
+  /** Original alpha tint + ring recipe, layered over the Badge shell. */
+  badgeStyle: string;
+}> = [
   {
     value: 'active',
     label: 'Active',
     dotColor: 'bg-primary-500',
+    tone: 'primary',
     badgeStyle: 'bg-primary-500/10 text-primary-700 ring-primary-500/20',
   },
   {
     value: 'injured',
     label: 'Injured',
     dotColor: 'bg-rose-500',
+    tone: 'rose',
     badgeStyle: 'bg-rose-500/10 text-rose-700 ring-rose-500/20',
   },
   {
     value: 'redshirt',
     label: 'Redshirt',
     dotColor: 'bg-amber-500',
+    tone: 'amber',
     badgeStyle: 'bg-amber-500/10 text-amber-700 ring-amber-500/20',
   },
   {
     value: 'inactive',
     label: 'Inactive',
     dotColor: 'bg-warm-400',
+    tone: 'warm',
     badgeStyle: 'bg-warm-500/10 text-warm-600 ring-warm-500/20',
   },
 ];
@@ -82,15 +94,19 @@ export function PlayerStatusBadge({
   // Non-editable display mode
   if (!editable) {
     return (
-      <span className={cn(
-        'inline-flex items-center gap-2 px-2 py-0.5',
-        'text-xs font-medium rounded-full',
-        'ring-1 ring-inset',
-        currentStatusObj.badgeStyle
-      )}>
+      <Badge
+        tone={currentStatusObj.tone}
+        size="none"
+        className={cn(
+          'gap-2 px-2 py-0.5 text-xs',
+          // Original used an inset ring (not a border) + alpha tint; preserve.
+          'border-transparent ring-1 ring-inset',
+          currentStatusObj.badgeStyle
+        )}
+      >
         <span className={cn('w-1.5 h-1.5 rounded-full', currentStatusObj.dotColor)} />
         {currentStatusObj.label}
-      </span>
+      </Badge>
     );
   }
 

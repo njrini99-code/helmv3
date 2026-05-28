@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@/lib/utils';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { IconFlame, IconSparkles, IconStar } from '@/components/icons';
 import type { CoachEngagement } from '@/app/golf/admin/crm/types/foundations';
 
@@ -19,37 +19,40 @@ interface EngagementBadgeProps {
   size?: 'sm' | 'md';
 }
 
-interface BadgeTone {
+interface EngagementTone {
   label: string;
-  bg: string;
-  text: string;
-  border: string;
+  /** Canonical Badge tone (color-faithful base hue). */
+  tone: BadgeTone;
+  /**
+   * Extra classes layered over the Badge soft surface to reproduce looks the
+   * tone alone can't: the Hot gradient, and the muted text shades.
+   */
+  override: string;
   Icon: typeof IconFlame;
   iconClass: string;
 }
 
-const TONES: Record<'hot' | 'warm' | 'cold', BadgeTone> = {
+const TONES: Record<'hot' | 'warm' | 'cold', EngagementTone> = {
   hot: {
     label: 'Hot',
-    bg: 'bg-gradient-to-r from-orange-50 to-red-50',
-    text: 'text-orange-700',
-    border: 'border-orange-200',
+    // Hot keeps its orange→red gradient surface (no single tone reproduces it).
+    tone: 'orange',
+    override: 'bg-gradient-to-r from-orange-50 to-red-50 text-orange-700 border-orange-200',
     Icon: IconFlame,
     iconClass: 'text-orange-500',
   },
   warm: {
     label: 'Warm',
-    bg: 'bg-amber-50',
-    text: 'text-amber-700',
-    border: 'border-amber-200',
+    tone: 'amber',
+    override: '',
     Icon: IconSparkles,
     iconClass: 'text-amber-500',
   },
   cold: {
     label: 'Cold',
-    bg: 'bg-warm-50',
-    text: 'text-warm-500',
-    border: 'border-warm-200',
+    tone: 'warm',
+    // Cold uses the muted warm-500 text (Badge warm-soft is warm-700).
+    override: 'text-warm-500',
     Icon: IconStar,
     iconClass: 'text-warm-400',
   },
@@ -83,21 +86,20 @@ export function EngagementBadge({
   const iconSize = size === 'md' ? 12 : 10;
 
   return (
-    <span
+    <Badge
+      tone={tone.tone}
+      size="none"
       title={title}
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full border font-medium',
-        size === 'md'
-          ? 'text-eyebrow px-2 py-0.5'
-          : 'text-eyebrow px-1.5 py-0.5',
-        tone.bg,
-        tone.text,
-        tone.border,
-      )}
+      icon={<tone.Icon size={iconSize} className={tone.iconClass} />}
+      // Plain string (not the shared cn): Badge's own custom-fontSize-aware
+      // merge dedups these, keeping BOTH `text-eyebrow` and the tone/override
+      // text color. Pre-merging here with the default cn would drop the size.
+      className={`gap-1 ${
+        size === 'md' ? 'text-eyebrow px-2 py-0.5' : 'text-eyebrow px-1.5 py-0.5'
+      } ${tone.override}`}
     >
-      <tone.Icon size={iconSize} className={tone.iconClass} />
       {tone.label}
-    </span>
+    </Badge>
   );
 }
 
