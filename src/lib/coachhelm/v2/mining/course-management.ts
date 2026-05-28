@@ -19,7 +19,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { logServerError } from '@/lib/server-error-logger';
-import { upsertInsight, attachDrills } from '../insights/upsert';
+import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
 import {
   loadStandingForInsightEvidence,
@@ -394,7 +394,11 @@ export async function generateWorstHolesInsights(playerId: string): Promise<void
         evidence,
         drill_tags: drillTags,
       });
-      await attachDrills(supabase, insightId, 'course_management', drillTags);
+      // Philosophy gate may have suppressed the write — GATED_OUT is not
+      // a real row id, so don't pass it to attachDrills.
+      if (insightId !== GATED_OUT) {
+        await attachDrills(supabase, insightId, 'course_management', drillTags);
+      }
     } catch (err) {
       await logServerError('course-management.worst_holes.upsert_failed', {
         action: 'generateWorstHolesInsights',
@@ -569,7 +573,9 @@ export async function generateWarmupHoleInsight(playerId: string): Promise<void>
       evidence,
       drill_tags: drillTags,
     });
-    await attachDrills(supabase, insightId, 'course_management', drillTags);
+    if (insightId !== GATED_OUT) {
+      await attachDrills(supabase, insightId, 'course_management', drillTags);
+    }
   } catch (err) {
     await logServerError('course-management.warmup.upsert_failed', {
       action: 'generateWarmupHoleInsight',

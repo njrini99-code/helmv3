@@ -1,6 +1,7 @@
 'use server';
 
 import { headers } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -83,6 +84,10 @@ export async function submitDemoRequest(email: string): Promise<DemoRequestResul
         notes: 'Submitted demo request from landing page',
       });
     }
+
+    // Refresh admin CRM lead lists so a new submission appears immediately.
+    revalidatePath('/golf/admin');
+    revalidatePath('/baseball/admin');
 
     return { success: true };
   } catch (error) {

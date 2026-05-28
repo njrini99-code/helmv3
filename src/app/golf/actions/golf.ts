@@ -2794,6 +2794,8 @@ export async function sendEventReminderToPlayers(
       return { success: false, error: 'Failed to send reminders' };
     }
 
+    revalidatePath('/golf/dashboard/calendar');
+    revalidatePath('/golf/dashboard/notifications');
     return { success: true, data: { sent: userIds.length } };
   } catch (err) {
     await logServerError(`sendEventReminderToPlayers error: ${err instanceof Error ? err.message : String(err)}`, {

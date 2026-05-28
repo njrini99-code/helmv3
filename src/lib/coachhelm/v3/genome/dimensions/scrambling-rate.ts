@@ -20,7 +20,14 @@ const dim: GenomeDimension = {
   compute(ctx: GenomeContext): DimensionResult {
     const attempts = ctx.shots.filter(
       (s) =>
-        (s.shot_type === 'chip' || s.shot_type === 'pitch') &&
+        // Post-040 short-game shots are stored as 'around_green' (the
+        // CHECK constraint forbids 'chip'/'pitch'). Pre-040 prod data may
+        // still carry legacy values — accept all three to match
+        // shot-analytics.ts:410 and keep historical scrambling-rate
+        // computation accurate.
+        (s.shot_type === 'around_green' ||
+          s.shot_type === 'chip' ||
+          s.shot_type === 'pitch') &&
         (s.lie_before === 'rough' ||
           s.lie_before === 'heavy_rough' ||
           s.lie_before === 'light_rough' ||
