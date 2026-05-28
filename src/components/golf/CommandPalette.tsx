@@ -27,6 +27,8 @@ import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
+  IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
+  IconRocket,
 } from '@/components/icons';
 import {
   getCommandPaletteData,
@@ -57,9 +59,17 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   // because they're contextless jumps, no DB lookup needed).
   const coachQuickActions: CommandItemSpec[] = [
     { id: 'todays-calls', label: "Today's Calls", description: 'Open the CoachHelm command center', icon: <IconSparkles size={18} />, href: '/golf/dashboard/coachhelm', keywords: ['ai', 'insights', 'today', 'priority', 'commandcenter', 'coachhelm'] },
+    { id: 'intelligence', label: 'CoachHelm AI', description: 'Intelligence hub', icon: <IconBrain size={18} />, href: '/golf/dashboard/intelligence', keywords: ['intelligence', 'ai', 'hub', 'coachhelm', 'overview'] },
+    { id: 'alerts', label: 'Alerts', description: 'Priority coaching alerts', icon: <IconBell size={18} />, href: '/golf/dashboard/alerts', keywords: ['alerts', 'notifications', 'priority', 'attention'] },
+    { id: 'insights', label: 'Insights', description: 'Coach insight feed', icon: <IconSparkles size={18} />, href: '/golf/dashboard/insights', keywords: ['insights', 'feed', 'recommendations', 'coachhelm'] },
     { id: 'patterns', label: 'Open Patterns', description: 'Cross-round shot patterns', icon: <IconAlertCircle size={18} />, href: '/golf/dashboard/patterns', keywords: ['patterns', 'mining', 'evidence'] },
+    { id: 'coachhelm-analytics', label: 'CoachHelm Analytics', description: 'Insight effectiveness', icon: <IconGauge size={18} />, href: '/golf/dashboard/analytics/coachhelm', keywords: ['analytics', 'effectiveness', 'coachhelm', 'metrics'] },
+    { id: 'coachhelm-chat', label: 'CoachHelm Chat', description: 'Chat history', icon: <IconBot size={18} />, href: '/golf/dashboard/coachhelm/chat', keywords: ['chat', 'conversation', 'coachhelm', 'history', 'ask'] },
+    { id: 'genome-compare', label: 'Genome Compare', description: 'Compare player genomes', icon: <IconChartRadar size={18} />, href: '/golf/dashboard/coachhelm/genome/compare', keywords: ['genome', 'compare', 'radar', 'persona', 'profile'] },
+    { id: 'qualifying-selection', label: 'Selection Workspace', description: 'Qualifier selection', icon: <IconCrosshair size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'selection', 'workspace', 'lineup', 'tournament', 'pick'] },
     { id: 'roster', label: 'Go to Roster', description: 'Manage your team players', icon: <IconUsers size={18} />, href: '/golf/dashboard/roster', keywords: ['players', 'team', 'members'] },
     { id: 'stats', label: 'View Team Stats', description: 'Player performance analytics', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats', keywords: ['analytics', 'performance', 'scores'] },
+    { id: 'stats-team', label: 'Team Stats Board', description: 'Roster-wide stat comparison', icon: <IconChartBar size={18} />, href: '/golf/dashboard/stats/team', keywords: ['team', 'stats', 'leaderboard', 'comparison', 'roster'] },
     { id: 'calendar', label: 'Open Calendar', description: 'Events and schedule', icon: <IconCalendar size={18} />, href: '/golf/dashboard/calendar', keywords: ['schedule', 'events', 'dates'] },
     { id: 'qualifiers', label: 'Manage Qualifiers', description: 'Team qualifier rounds', icon: <IconFlag size={18} />, href: '/golf/dashboard/qualifiers', keywords: ['qualifying', 'tryouts'] },
     { id: 'messages', label: 'Messages', description: 'Team communication', icon: <IconMessage size={18} />, href: '/golf/dashboard/messages', keywords: ['chat', 'communication'] },
@@ -71,6 +81,8 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'tasks', label: 'Tasks', description: 'Open and assigned tasks', icon: <IconClipboardList size={18} />, href: '/golf/dashboard/tasks', keywords: ['todo', 'assignments', 'checklist'] },
     { id: 'development', label: 'Development Plans', description: 'Player focus areas', icon: <IconTarget size={18} />, href: '/golf/dashboard/development', keywords: ['focus', 'improvement', 'plan'] },
     { id: 'recruiting', label: 'Recruiting HQ', description: 'Recruiting pipeline', icon: <IconUsers size={18} />, href: '/golf/dashboard/recruiting', keywords: ['recruits', 'pipeline'] },
+    { id: 'whats-new', label: "What's New", description: 'Latest team activity', icon: <IconRocket size={18} />, href: '/golf/dashboard/whats-new', keywords: ['whatsnew', 'updates', 'activity', 'changelog', 'recent'] },
+    { id: 'coaching-intelligence', label: 'Coaching Intelligence', description: 'Tune your coaching philosophy', icon: <IconWrench size={18} />, href: '/golf/dashboard/settings/coaching-intelligence', keywords: ['philosophy', 'intelligence', 'thresholds', 'sensitivity', 'tuning', 'settings'] },
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
@@ -89,6 +101,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'team', label: 'Team Info', description: 'Roster and coach details', icon: <IconUsers size={18} />, href: '/golf/dashboard/team', keywords: ['roster', 'team', 'coach'] },
     // Moved out of the player sidebar in the 2026-05-28 IA trim — palette + URL only.
     { id: 'travel', label: 'Travel', description: 'Team trip itineraries', icon: <IconAirplane size={18} />, href: '/golf/dashboard/travel', keywords: ['trips', 'itinerary'] },
+    { id: 'notifications', label: 'Notification Preferences', description: 'Per-category notification settings', icon: <IconBell size={18} />, href: '/golf/dashboard/settings/notifications', keywords: ['notifications', 'preferences', 'alerts', 'quiet', 'settings'] },
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
