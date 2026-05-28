@@ -1,0 +1,1036 @@
+version: 1
+
+features:
+  feature_awareness_system:
+    name: Feature Awareness System
+    status: active
+    owner: platform
+    criticality: high
+    docs:
+      feature: docs/ai-system/helmv3-ai-codebase-intelligence.md
+      flows:
+        - docs/superpowers/plans/2026-05-28-ai-codebase-intelligence.md
+      ui:
+        - AGENTS.md
+        - CLAUDE.md
+      business_logic:
+        - memory/registry.yml
+      incidents: []
+    code:
+      routes: []
+      components: []
+      api: []
+      actions: []
+      services:
+        - scripts/knowledge/**
+        - .devin/wiki.json
+        - .github/workflows/feature-awareness.yml
+        - package.json
+        - AGENTS.md
+        - CLAUDE.md
+      db: []
+      tests: []
+    integrations:
+      - github_actions
+      - codex
+      - greptile
+      - coderabbit
+    review:
+      required_docs:
+        - docs/ai-system/helmv3-ai-codebase-intelligence.md
+        - memory/registry.yml
+        - AGENTS.md
+        - CLAUDE.md
+      required_checks:
+        - npm run knowledge:check
+        - node --check scripts/knowledge/workflow-report.mjs
+
+  coachhelm_ai:
+    name: CoachHelm AI
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/coachhelm-ai.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/architecture/coachhelm-evidence-contract.md
+        - docs/v3-research-golf-domain.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/coachhelm-ai.md
+        - docs/v3-decisions.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/coachhelm/**
+        - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
+      components:
+        - src/components/golf/coachhelm/**
+      api:
+        - src/app/api/coachhelm/**
+        - src/app/api/cron/coachhelm/**
+        - src/app/api/cron/v3/**
+      actions:
+        - src/app/golf/actions/coachhelm-*.ts
+        - src/app/golf/actions/insight-*.ts
+        - src/app/golf/actions/intelligence-dashboard.ts
+        - src/app/golf/actions/player-feedback.ts
+        - src/app/golf/actions/v3/**
+      services:
+        - src/lib/coachhelm/**
+      db:
+        - supabase/migrations/*coachhelm*.sql
+        - supabase/migrations/*insight*.sql
+        - supabase/migrations/*golf_coachhelm*.sql
+      tests:
+        - src/test/coachhelm/**
+        - src/test/api/cron/coachhelm*.test.ts
+        - src/test/app/golf/dashboard/coachhelm/**
+    integrations:
+      - supabase
+      - sentry
+      - datadog
+      - llm_provider
+    review:
+      required_docs:
+        - memory/features/coachhelm-ai.md
+        - memory/context/coachhelm-ai.md
+        - memory/context/golfhelm-features.md
+        - docs/v3-testing-standards.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/coachhelm
+        - npm run build
+
+  golf_round_lifecycle:
+    name: Golf Round Lifecycle
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/golf-round-lifecycle.md
+      flows:
+        - docs/features/SHOT_TRACKING_DATA_FLOW.md
+        - docs/features/SHOT_TRACKING_VERIFICATION.md
+        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/v3-research-golf-domain.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/rounds/**
+      components:
+        - src/components/golf/rounds/**
+        - src/components/golf/shot-tracking/**
+      api:
+        - src/app/api/rounds/**
+      actions:
+        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/round-*.ts
+        - src/app/golf/actions/shot-analytics.ts
+        - src/app/golf/actions/player-feedback.ts
+      services:
+        - src/lib/golf/**
+        - src/lib/coachhelm/v2/post-round-trigger.ts
+        - src/lib/coachhelm/v3/llm/round-review.ts
+      db:
+        - supabase/migrations/*golf_round*.sql
+        - supabase/migrations/*golf_shot*.sql
+        - supabase/migrations/*round_review*.sql
+      tests:
+        - src/app/golf/actions/__tests__/golf-schemas.test.ts
+        - src/test/coachhelm/v2/post-round-trigger.test.ts
+        - e2e/**/round*.spec.ts
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - vercel
+    review:
+      required_docs:
+        - memory/features/golf-round-lifecycle.md
+        - memory/context/golfhelm-features.md
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts
+        - npm run build
+
+  qualifiers:
+    name: Qualifiers
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/qualifiers.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/v3-feature-audit.md
+        - docs/v3-page-audit.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/qualifiers/**
+        - src/app/golf/(dashboard)/dashboard/my-qualifiers/**
+        - src/app/golf/(dashboard)/dashboard/coachhelm/qualifying/**
+      components:
+        - src/components/golf/qualifiers/**
+        - src/components/golf/coachhelm/v3/QualifyingBoard/**
+      api:
+        - src/app/api/coachhelm/v3/qualifying/**
+      actions:
+        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/v3/qualifying.ts
+      services:
+        - src/lib/coachhelm/v3/qualifying/**
+      db:
+        - supabase/migrations/*qualifier*.sql
+        - supabase/migrations/*qualifying*.sql
+      tests:
+        - e2e/golf-qualifier.spec.ts
+        - src/test/coachhelm/v3/qualifying.test.ts
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - calendar
+    review:
+      required_docs:
+        - memory/features/qualifiers.md
+        - memory/context/golfhelm-features.md
+        - memory/context/golfhelm-database.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/coachhelm/v3/qualifying.test.ts
+        - npm run test:e2e -- e2e/golf-qualifier.spec.ts
+
+  shot_tracking:
+    name: Shot Tracking
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/shot-tracking.md
+      flows:
+        - docs/features/SHOT_TRACKING_DATA_FLOW.md
+        - docs/features/SHOT_TRACKING_VERIFICATION.md
+        - memory/context/golfhelm-features.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/v3-research-golf-domain.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/rounds/new/**
+        - src/app/golf/(dashboard)/dashboard/rounds/continue/**
+        - src/app/golf/(dashboard)/dashboard/rounds/recover/**
+      components:
+        - src/components/golf/ShotTrackingComprehensive.tsx
+        - src/components/golf/rounds/**
+      api:
+        - src/app/api/rounds/**
+      actions:
+        - src/app/golf/actions/golf.ts
+        - src/app/golf/actions/round-drafts.ts
+        - src/app/golf/actions/shot-analytics.ts
+      services:
+        - src/lib/offline/**
+        - src/lib/coachhelm/v2/shot-analysis/**
+      db:
+        - supabase/migrations/*golf_round*.sql
+        - supabase/migrations/*golf_shot*.sql
+      tests:
+        - e2e/golf-round.spec.ts
+        - src/app/golf/actions/__tests__/golf-schemas.test.ts
+        - src/test/coachhelm/v2/shot-analysis/**
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - stats
+      - qualifiers
+    review:
+      required_docs:
+        - memory/features/shot-tracking.md
+        - docs/features/SHOT_TRACKING_DATA_FLOW.md
+        - docs/features/SHOT_TRACKING_VERIFICATION.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/app/golf/actions/__tests__/golf-schemas.test.ts
+        - npm run test:e2e -- e2e/golf-round.spec.ts
+
+  stats_analytics:
+    name: Stats And Analytics
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/stats-analytics.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/features/SHOT_TRACKING_DATA_FLOW.md
+        - docs/features/SHOT_TRACKING_VERIFICATION.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/v3-research-golf-domain.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/ROUND_REVIEW_ACCURACY_REPORT.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/stats/**
+        - src/app/golf/(dashboard)/dashboard/roster/**
+      components:
+        - src/components/golf/stats/**
+      api:
+        - src/app/api/stats/**
+      actions:
+        - src/app/golf/actions/stats.ts
+        - src/app/golf/actions/stats-data.ts
+        - src/app/golf/actions/stats-data-types.ts
+        - src/app/golf/actions/stats-intelligence.ts
+        - src/app/golf/actions/player-profile-stats.ts
+      services:
+        - src/lib/cache/golf-stats-calculator.ts
+        - src/lib/coachhelm/v2/stats/**
+      db:
+        - supabase/migrations/*stats*.sql
+        - supabase/migrations/*strokes_gained*.sql
+        - supabase/migrations/*putting*.sql
+      tests:
+        - src/app/golf/actions/__tests__/stats-data.test.ts
+        - src/test/coachhelm/v2/stats/**
+        - src/test/coachhelm/v2/shot-analysis/**
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - shot_tracking
+    review:
+      required_docs:
+        - memory/features/stats-analytics.md
+        - memory/context/golfhelm-features.md
+        - docs/features/SHOT_TRACKING_DATA_FLOW.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/app/golf/actions/__tests__/stats-data.test.ts
+        - npm run build
+
+  calendar_events:
+    name: Calendar And Events
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/calendar-events.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/features/CALENDAR_COMPREHENSIVE_IMPLEMENTATION_PLAN.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/PUSH_NOTIFICATION_AUDIT.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/calendar/**
+      components:
+        - src/components/golf/calendar/**
+      api:
+        - src/app/api/calendar/**
+      actions:
+        - src/app/golf/actions/attendance.ts
+        - src/app/golf/actions/calendar-feeds.ts
+        - src/app/golf/actions/calendar-sync.ts
+        - src/app/golf/actions/event-documents.ts
+        - src/app/golf/actions/event-lifecycle.ts
+        - src/app/golf/actions/recurring-events.ts
+      services:
+        - src/lib/calendar/**
+      db:
+        - supabase/migrations/*calendar*.sql
+        - supabase/migrations/*event*.sql
+        - supabase/migrations/*attendance*.sql
+      tests:
+        - src/test/lib/calendar/**
+        - src/test/api/calendar/**
+    integrations:
+      - supabase
+      - notifications
+      - travel
+      - qualifiers
+    review:
+      required_docs:
+        - memory/features/calendar-events.md
+        - memory/context/golfhelm-features.md
+        - memory/context/golfhelm-database.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/lib/calendar src/test/api/calendar
+        - npm run build
+
+  coach_intelligence_triage:
+    name: Coach Intelligence Triage
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/coach-intelligence-triage.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - memory/context/coachhelm-ai.md
+        - docs/architecture/coachhelm-evidence-contract.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/v3-testing-standards.md
+        - docs/v3-decisions.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/alerts/**
+        - src/app/golf/(dashboard)/dashboard/patterns/**
+        - src/app/golf/(dashboard)/dashboard/insights/**
+        - src/app/golf/(dashboard)/dashboard/intelligence/**
+        - src/app/golf/(dashboard)/dashboard/analytics/coachhelm/**
+        - src/app/golf/(dashboard)/dashboard/settings/coaching-intelligence/**
+      components:
+        - src/components/golf/coachhelm/alerts/**
+        - src/components/golf/coachhelm/patterns/**
+        - src/components/golf/coachhelm/insights/**
+        - src/components/golf/coachhelm/analytics/**
+        - src/components/golf/coachhelm/settings/**
+        - src/components/golf/coachhelm/v2/**
+      api:
+        - src/app/api/cron/coachhelm/**
+      actions:
+        - src/app/golf/actions/alerts.ts
+        - src/app/golf/actions/pattern-management.ts
+        - src/app/golf/actions/insight-management.ts
+        - src/app/golf/actions/insight-evidence.ts
+        - src/app/golf/actions/intelligence-dashboard.ts
+        - src/app/golf/actions/coachhelm-analytics.ts
+        - src/app/golf/actions/coaching-philosophy.ts
+      services:
+        - src/lib/coachhelm/v2/**
+        - src/lib/coachhelm/v3/foundation/**
+      db:
+        - supabase/migrations/*coach_insight*.sql
+        - supabase/migrations/*pattern*.sql
+        - supabase/migrations/*coach_philosophy*.sql
+        - supabase/migrations/*effectiveness*.sql
+      tests:
+        - src/test/golf/actions/coachhelm-analytics.test.ts
+        - src/test/coachhelm/v2/**
+        - src/test/api/cron/coachhelm*.test.ts
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - datadog
+      - sentry
+    review:
+      required_docs:
+        - memory/features/coach-intelligence-triage.md
+        - memory/context/coachhelm-ai.md
+        - docs/architecture/coachhelm-evidence-contract.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/golf/actions/coachhelm-analytics.test.ts src/test/coachhelm/v2
+        - npm run build
+
+  player_coachhelm_development:
+    name: Player CoachHelm And Development
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/player-coachhelm-development.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - memory/context/coachhelm-ai.md
+        - docs/v3-feature-audit.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/v3-research-golf-domain.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/coachhelm/**
+        - src/app/golf/(dashboard)/dashboard/my-insights/**
+        - src/app/golf/(dashboard)/dashboard/my-development/**
+        - src/app/golf/(dashboard)/dashboard/development/**
+        - src/app/golf/(dashboard)/dashboard/rounds/[id]/review/**
+      components:
+        - src/components/golf/coachhelm/player/**
+        - src/components/golf/coachhelm/round-review/**
+        - src/components/golf/coachhelm/insight-card/**
+        - src/components/golf/coachhelm/v3/GoalCard/**
+        - src/components/golf/coachhelm/v3/GoalCreationModal/**
+        - src/components/golf/coachhelm/v3/IntentPill/**
+        - src/components/golf/coachhelm/v3/IntentDrawer/**
+        - src/components/golf/coachhelm/v3/StandingBar/**
+        - src/components/golf/coachhelm/v3/CounterfactualLine.tsx
+        - src/components/golf/coachhelm/v3/HeroNarrativeCard.tsx
+      api:
+        - src/app/api/coachhelm/v3/**
+      actions:
+        - src/app/golf/actions/shot-analytics.ts
+        - src/app/golf/actions/intelligence-dashboard.ts
+        - src/app/golf/actions/development.ts
+        - src/app/golf/actions/player-feedback.ts
+        - src/app/golf/actions/round-reviews.ts
+        - src/app/golf/actions/v3/**
+      services:
+        - src/lib/coachhelm/v2/**
+        - src/lib/coachhelm/v3/**
+      db:
+        - supabase/migrations/*focus_area*.sql
+        - supabase/migrations/*feedback*.sql
+        - supabase/migrations/*round_review*.sql
+        - supabase/migrations/*genome*.sql
+        - supabase/migrations/*goal*.sql
+      tests:
+        - src/test/app/golf/dashboard/coachhelm/**
+        - src/test/coachhelm/v3/**
+        - src/test/coachhelm/v2/post-round-trigger.test.ts
+    integrations:
+      - supabase
+      - coachhelm_ai
+      - shot_tracking
+      - stats
+    review:
+      required_docs:
+        - memory/features/player-coachhelm-development.md
+        - memory/context/golfhelm-features.md
+        - memory/context/coachhelm-ai.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/app/golf/dashboard/coachhelm src/test/coachhelm/v3
+        - npm run build
+
+  team_communications:
+    name: Team Communications
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/team-communications.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/PUSH_NOTIFICATION_AUDIT.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/messages/**
+        - src/app/golf/(dashboard)/dashboard/announcements/**
+      components:
+        - src/components/golf/messages/**
+        - src/components/golf/announcements/**
+      api:
+        - src/app/api/messages/**
+        - src/app/api/announcements/**
+      actions:
+        - src/app/golf/actions/messages.ts
+        - src/app/golf/actions/message-attachments.ts
+        - src/app/golf/actions/announcements.ts
+        - src/app/golf/actions/communication.ts
+      services:
+        - src/lib/supabase/**
+      db:
+        - supabase/migrations/*messag*.sql
+        - supabase/migrations/*announcement*.sql
+        - supabase/migrations/*communication*.sql
+      tests:
+        - e2e/messages.spec.ts
+    integrations:
+      - supabase
+      - notifications
+      - storage
+      - tasks
+      - documents
+    review:
+      required_docs:
+        - memory/features/team-communications.md
+        - memory/context/golfhelm-features.md
+        - memory/context/golfhelm-database.md
+      required_checks:
+        - npm run typecheck
+        - npm run test:e2e -- e2e/messages.spec.ts
+        - npm run build
+
+  team_operations:
+    name: Team Operations
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/team-operations.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/PUSH_NOTIFICATION_AUDIT.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/tasks/**
+        - src/app/golf/(dashboard)/dashboard/documents/**
+        - src/app/golf/(dashboard)/dashboard/travel/**
+        - src/app/golf/(dashboard)/dashboard/hub/**
+      components:
+        - src/components/golf/tasks/**
+        - src/components/golf/documents/**
+        - src/components/golf/travel/**
+        - src/components/golf/player-hub/**
+      api:
+        - src/app/api/tasks/**
+        - src/app/api/documents/**
+        - src/app/api/travel/**
+      actions:
+        - src/app/golf/actions/tasks.ts
+        - src/app/golf/actions/task-templates.ts
+        - src/app/golf/actions/task-reminders.ts
+        - src/app/golf/actions/documents.ts
+        - src/app/golf/actions/event-documents.ts
+        - src/app/golf/actions/travel.ts
+        - src/app/golf/actions/dashboard-data.ts
+      services:
+        - src/lib/supabase/**
+      db:
+        - supabase/migrations/*task*.sql
+        - supabase/migrations/*document*.sql
+        - supabase/migrations/*travel*.sql
+      tests:
+        - src/app/golf/actions/__tests__/travel.test.ts
+    integrations:
+      - supabase
+      - storage
+      - calendar
+      - announcements
+    review:
+      required_docs:
+        - memory/features/team-operations.md
+        - memory/context/golfhelm-features.md
+        - memory/context/golfhelm-database.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/app/golf/actions/__tests__/travel.test.ts
+        - npm run build
+
+  roster_team:
+    name: Roster And Team
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/roster-team.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/roster/**
+        - src/app/golf/(dashboard)/dashboard/team/**
+      components:
+        - src/components/golf/roster/**
+        - src/components/golf/dashboard/team-pulse-card.tsx
+      api:
+        - src/app/api/roster/**
+        - src/app/api/team/**
+      actions:
+        - src/app/golf/actions/roster.ts
+        - src/app/golf/actions/teams.ts
+        - src/app/golf/actions/player-profile-stats.ts
+      services:
+        - src/lib/auth/**
+      db:
+        - supabase/migrations/*roster*.sql
+        - supabase/migrations/*team*.sql
+        - supabase/migrations/*coach_staff*.sql
+      tests:
+        - e2e/roster.spec.ts
+        - src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx
+    integrations:
+      - supabase
+      - team_access_control
+      - stats
+    review:
+      required_docs:
+        - memory/features/roster-team.md
+        - memory/context/golfhelm-features.md
+        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+      required_checks:
+        - npm run typecheck
+        - npm run test:e2e -- e2e/roster.spec.ts
+        - npm run build
+
+  auth_onboarding_join:
+    name: Auth Onboarding And Join
+    status: active
+    owner: platform
+    criticality: high
+    docs:
+      feature: memory/features/auth-onboarding-join.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/architecture/COMPREHENSIVE_AUTH_SYSTEM_PLAN.md
+        - docs/security/auth-config.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(auth)/**
+        - src/app/golf/(onboarding)/**
+        - src/app/golf/join/**
+      components:
+        - src/components/golf/onboarding/**
+        - src/components/golf/settings/JoinTeamSection.tsx
+      api:
+        - src/app/api/auth/**
+      actions:
+        - src/app/golf/actions/auth.ts
+        - src/app/golf/actions/onboarding.ts
+        - src/app/golf/actions/access-code.ts
+        - src/app/golf/actions/roster.ts
+      services:
+        - src/lib/auth/**
+        - src/lib/supabase/**
+      db:
+        - supabase/migrations/*auth*.sql
+        - supabase/migrations/*user*.sql
+        - supabase/migrations/*join*.sql
+      tests:
+        - e2e/auth.spec.ts
+        - e2e/golf-team-join.spec.ts
+        - src/test/lib/auth/**
+    integrations:
+      - supabase
+      - team_access_control
+    review:
+      required_docs:
+        - memory/features/auth-onboarding-join.md
+        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+        - docs/security/auth-config.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/lib/auth
+        - npm run test:e2e -- e2e/auth.spec.ts e2e/golf-team-join.spec.ts
+
+  settings_preferences:
+    name: Settings And Preferences
+    status: active
+    owner: product
+    criticality: medium
+    docs:
+      feature: memory/features/settings-preferences.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/v3-feature-audit.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/PUSH_NOTIFICATION_AUDIT.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/settings/**
+      components:
+        - src/components/golf/settings/**
+        - src/components/golf/coachhelm/settings/**
+      api:
+        - src/app/api/settings/**
+      actions:
+        - src/app/golf/actions/v3/notification-prefs.ts
+        - src/app/golf/actions/coaching-philosophy.ts
+        - src/app/golf/actions/teams.ts
+      services:
+        - src/lib/coachhelm/v3/foundation/flags.ts
+      db:
+        - supabase/migrations/*settings*.sql
+        - supabase/migrations/*notification*.sql
+        - supabase/migrations/*coach_philosophy*.sql
+      tests:
+        - src/test/coachhelm/v3/notifications.test.ts
+    integrations:
+      - supabase
+      - notifications
+      - coachhelm_ai
+    review:
+      required_docs:
+        - memory/features/settings-preferences.md
+        - memory/context/golfhelm-features.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/coachhelm/v3/notifications.test.ts
+        - npm run build
+
+  player_hub:
+    name: Player Hub
+    status: active
+    owner: product
+    criticality: high
+    docs:
+      feature: memory/features/player-hub.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/PUSH_NOTIFICATION_AUDIT.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - memory/context/golfhelm-database.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/hub/**
+      components:
+        - src/components/golf/player-hub/**
+      api:
+        - src/app/api/dashboard/**
+      actions:
+        - src/app/golf/actions/dashboard-data.ts
+        - src/app/golf/actions/travel.ts
+        - src/app/golf/actions/tasks.ts
+        - src/app/golf/actions/attendance.ts
+      services:
+        - src/lib/supabase/**
+      db:
+        - supabase/migrations/*travel*.sql
+        - supabase/migrations/*task*.sql
+        - supabase/migrations/*event*.sql
+      tests:
+        - src/components/golf/dashboard/__tests__/team-pulse-card.test.tsx
+    integrations:
+      - team_operations
+      - calendar
+      - team_communications
+    review:
+      required_docs:
+        - memory/features/player-hub.md
+        - memory/context/golfhelm-features.md
+        - memory/features/team-operations.md
+      required_checks:
+        - npm run typecheck
+        - npm run build
+
+  admin_platform:
+    name: Admin Platform
+    status: active
+    owner: platform
+    criticality: high
+    docs:
+      feature: memory/features/admin-platform.md
+      flows:
+        - memory/context/golfhelm-features.md
+        - docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md
+        - docs/BI_DASHBOARD_ARCHITECTURE.md
+      ui:
+        - memory/projects/golfhelm.md
+        - docs/v3-design-language.md
+      business_logic:
+        - docs/SECURITY_AUDIT.md
+        - docs/OBSERVABILITY.md
+        - docs/v3-testing-standards.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/admin/**
+      components:
+        - src/app/golf/admin/components/**
+        - src/app/golf/admin/crm/components/**
+      api:
+        - src/app/api/admin/**
+      actions:
+        - src/app/golf/actions/admin*.ts
+        - src/app/golf/actions/admin/**
+        - src/app/golf/actions/crm-*.ts
+        - src/app/golf/actions/resend-activity.ts
+      services:
+        - src/lib/supabase/admin*
+        - src/lib/cron/**
+      db:
+        - supabase/migrations/*admin*.sql
+        - supabase/migrations/*crm*.sql
+        - supabase/migrations/*audit*.sql
+      tests:
+        - src/test/lib/cron/auth.test.ts
+        - src/test/api/cron/shared-auth.test.ts
+    integrations:
+      - supabase
+      - datadog
+      - sentry
+      - resend
+      - crm
+    review:
+      required_docs:
+        - memory/features/admin-platform.md
+        - docs/OBSERVABILITY.md
+        - docs/SECURITY_AUDIT.md
+      required_checks:
+        - npm run typecheck
+        - npm run test -- --run src/test/lib/cron/auth.test.ts src/test/api/cron/shared-auth.test.ts
+        - npm run build
+
+  team_access_control:
+    name: Team Access Control And RLS
+    status: active
+    owner: platform
+    criticality: high
+    docs:
+      feature: memory/features/team-access-control.md
+      flows:
+        - docs/architecture/USER_ROLE_DATA_OWNERSHIP.md
+        - docs/v3-rls-template.md
+      ui:
+        - AGENTS.md
+        - memory/projects/golfhelm.md
+      business_logic:
+        - memory/glossary.md
+        - memory/context/golfhelm-database.md
+        - docs/SECURITY_AUDIT.md
+      incidents:
+        - docs/operations/2026-05-17-p0-runbook.md
+    code:
+      routes:
+        - src/app/golf/(dashboard)/dashboard/settings/**
+        - src/app/golf/(dashboard)/dashboard/team/**
+        - src/app/golf/(dashboard)/dashboard/roster/**
+        - src/app/golf/join/**
+        - src/app/golf/admin/**
+      components:
+        - src/components/golf/settings/**
+        - src/components/golf/roster/**
+        - src/components/golf/team/**
+      api:
+        - src/app/api/admin/**
+        - src/app/api/auth/**
+      actions:
+        - src/app/golf/actions/auth.ts
+        - src/app/golf/actions/roster.ts
+        - src/app/golf/actions/teams.ts
+        - src/app/golf/actions/onboarding.ts
+        - src/app/golf/actions/admin*.ts
+      services:
+        - src/lib/supabase/**
+        - src/lib/auth/**
+      db:
+        - supabase/migrations/*.sql
+        - supabase/tests/rls/*.sql
+      tests:
+        - src/test/lib/auth/**
+        - src/test/lib/cron/auth.test.ts
+        - supabase/tests/rls/*.sql
+    integrations:
+      - supabase
+      - github_actions
+    review:
+      required_docs:
+        - memory/features/team-access-control.md
+        - memory/glossary.md
+        - memory/context/golfhelm-database.md
+        - docs/v3-rls-template.md
+      required_checks:
+        - npm run typecheck
+        - npm run test:rls
+        - supabase db lint --schema public
+
+systems:
+  supabase:
+    docs: docs/setup/SUPABASE_MCP_SETUP.md
+    code:
+      - src/lib/supabase/**
+      - supabase/**
+    criticality: high
+  review_gate:
+    docs: .github/branch-protection.md
+    code:
+      - .github/workflows/review-gate.yml
+      - .coderabbit.yaml
+      - .greptile/**
+    criticality: high
+
+integrations:
+  github_actions:
+    docs: .github/branch-protection.md
+    code:
+      - .github/workflows/**
+    criticality: high
+  vercel:
+    docs: docs/setup/ENVIRONMENT_VARIABLES.md
+    code:
+      - vercel.json
+      - src/app/api/**
+    criticality: medium
+  sentry:
+    docs: docs/guides/SENTRY_SETUP_GUIDE.md
+    code:
+      - sentry.*
+      - src/instrumentation*.ts
+    criticality: medium
+  datadog:
+    docs: docs/OBSERVABILITY.md
+    code:
+      - datadog/**
+      - src/instrumentation*.ts
+    criticality: medium

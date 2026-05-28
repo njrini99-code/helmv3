@@ -9,7 +9,7 @@
 -- WITH CHECK EXISTS clause that references `is_primary` plus team ownership.
 
 BEGIN;
-\i supabase/tests/rls/_helpers.sql
+\ir _helpers.sql
 
 SELECT plan(3);
 
@@ -30,10 +30,10 @@ SELECT ok(
 
 -- Test 2: the policy references team_id ownership in the WITH CHECK expression.
 -- Before the fix, the expression only mentioned coach_id and auth.uid().
--- After the fix, it must reference is_primary and the team_id column.
+-- After the fix, it must require primary-coach ownership of the target team.
 SELECT ok(
-  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'is_primary'),
-  'INSERT WITH CHECK references is_primary (proves team-ownership requirement)'
+  tests.policy_with_check_contains('public', 'golf_team_coach_staff', 'golf_team_coach_staff_insert', 'is_golf_team_primary_coach'),
+  'INSERT WITH CHECK requires primary coach ownership of team_id'
 );
 
 -- Test 3: the policy still verifies coach_id ownership too (no regression on

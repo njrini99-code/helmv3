@@ -47,6 +47,7 @@ import { loadAlertPostureForPlayer } from '@/lib/coachhelm/v3/intent/loader';
 import { toInsightInput } from '@/lib/coachhelm/v2/insights/to-insight-input';
 import { logServerError } from '@/lib/server-error-logger';
 import { loadCoachWeightsForPlayer, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
+import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
 import { checkRateLimit } from '@/lib/auth/supabase-rate-limit';
 
@@ -2561,21 +2562,31 @@ async function loadEvidenceBackedInsights(
           evidence,
           category: row.category ?? undefined,
           insight_type: row.insight_type,
-        } as ComposedInsight & { id: string; evidence: unknown; category?: string; insight_type: string };
+          metric: typeof evidence?.metric === 'string' ? evidence.metric : undefined,
+        } as ComposedInsight & { id: string; evidence: unknown; category?: string; insight_type: string; metric?: string };
       });
 
-    // W36 ranking: |strokes_impact| × confidence × coach_weight.
+    // W36 ranking: |strokes_impact| × confidence × coach_weight × goalBoost.
     // Loaded weights only include rows with sample_n ≥ 10 (un-calibrated
     // dimensions default to 1.0 inside scoreInsight).
+    //
+    // Tier-2 audit #6 (2026-05-27): also fetch the player's active goals
+    // once so insights touching a goal's metric/category float to the top
+    // (1.5× for one match, 2.0× for ≥2). Failure to load goals is non-
+    // fatal — we fall back to neutral ranking rather than failing the page.
     const weights = await loadCoachWeightsForPlayer(supabase, playerId);
+    const activeGoals = await loadActiveGoals(playerId).catch(() => []);
     const ranked = rankInsights(
       projected.map((p) => ({
         insight_type: p.insight_type,
         strokes_impact: p.strokeImpact ?? 0,
         confidence: p.confidence ?? 0,
+        metric: p.metric,
+        category: p.category,
         _ref: p,
       })),
       weights,
+      activeGoals,
     );
     return ranked.map((r) => r._ref);
   } catch {

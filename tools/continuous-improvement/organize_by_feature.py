@@ -20,8 +20,6 @@ Creates:
 import json
 import sys
 from pathlib import Path
-from typing import Dict, List
-import re
 
 
 class FeatureOrganizer:
@@ -55,7 +53,7 @@ class FeatureOrganizer:
             with open(understanding_file) as f:
                 self.understanding = json.load(f)
     
-    def categorize_by_feature(self) -> Dict[str, List[Dict]]:
+    def categorize_by_feature(self) -> dict[str, list[dict]]:
         """
         Group issues by feature area based on file paths and categories
         """
@@ -147,7 +145,7 @@ class FeatureOrganizer:
         # Remove empty groups
         return {k: v for k, v in feature_groups.items() if v}
     
-    def generate_feature_md(self, feature_name: str, issues: List[Dict]) -> str:
+    def generate_feature_md(self, feature_name: str, issues: list[dict]) -> str:
         """
         Generate a feature-specific markdown file
         """
@@ -270,7 +268,7 @@ Working on one feature at a time gives you:
         
         return "\n".join(context)
     
-    def _format_issue(self, issue: Dict) -> str:
+    def _format_issue(self, issue: dict) -> str:
         """
         Format a single issue for the markdown file
         """
@@ -385,7 +383,7 @@ Working on one feature at a time gives you:
         # Generate index file
         self._generate_index(feature_groups)
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   ✅ ORGANIZATION COMPLETE                                                   ║
@@ -401,7 +399,7 @@ Working on one feature at a time gives you:
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    def _generate_index(self, feature_groups: Dict[str, List[Dict]]):
+    def _generate_index(self, feature_groups: dict[str, list[dict]]):
         """
         Generate an index file showing all features and their issues
         """

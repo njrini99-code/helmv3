@@ -12,15 +12,14 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 # Prompts
 from core.deep_prompts import (
-    DEEP_UNDERSTANDING_PROMPT,
+    DEEP_CROSS_REFERENCE_PROMPT,
     DEEP_ESSAY_PROMPT,
     DEEP_FEATURE_SPEC_PROMPT,
     DEEP_RLS_PROMPT,
-    DEEP_CROSS_REFERENCE_PROMPT
+    DEEP_UNDERSTANDING_PROMPT,
 )
 
 
@@ -43,7 +42,7 @@ class OvernightAnalyzer:
         
     async def run_deep_understanding(self):
         """Phase 1: Build comprehensive understanding of the codebase"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         print(f"""
 ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -102,9 +101,9 @@ class OvernightAnalyzer:
     
     async def run_deep_essay(self):
         """Phase 2: Write comprehensive technical essay"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  📝 PHASE 2: PLATFORM ESSAY                                                  ║
@@ -161,7 +160,7 @@ class OvernightAnalyzer:
     
     async def run_deep_feature_specs(self):
         """Phase 3: Document every feature with detailed specs"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         features = self.understanding.get("features", [])
         if not features:
@@ -258,9 +257,9 @@ class OvernightAnalyzer:
     
     async def run_deep_rls_audit(self):
         """Phase 4: Comprehensive RLS security audit"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  🔐 PHASE 4: RLS SECURITY AUDIT                                              ║
@@ -321,9 +320,9 @@ class OvernightAnalyzer:
     
     async def run_synthesis(self):
         """Phase 5: Cross-reference and create action items"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║  🔄 PHASE 5: SYNTHESIS & ACTION ITEMS                                        ║
@@ -385,7 +384,7 @@ class OvernightAnalyzer:
 ║   🌙 HELM INTELLIGENCE - OVERNIGHT DEEP ANALYSIS                                 ║
 ║                                                                                  ║
 ║   Platform: {self.platform_name:<67} ║
-║   Path: {str(self.project_path):<71} ║
+║   Path: {self.project_path!s:<71} ║
 ║   Started: {start_time.strftime('%Y-%m-%d %H:%M:%S'):<66} ║
 ║                                                                                  ║
 ║   This will run for 1-2 hours and produce:                                       ║
@@ -431,7 +430,7 @@ class OvernightAnalyzer:
 ║   Duration: {str(duration).split('.')[0]:<67} ║
 ║   Completed: {end_time.strftime('%Y-%m-%d %H:%M:%S'):<65} ║
 ║                                                                                  ║
-║   📁 Outputs in {str(self.helm_dir):<61} ║
+║   📁 Outputs in {self.helm_dir!s:<61} ║
 ║                                                                                  ║
 ║   Key files:                                                                     ║
 ║   • ACTIONS.md        ← START HERE - prioritized work items                      ║
@@ -444,7 +443,7 @@ class OvernightAnalyzer:
 ╚══════════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    def _extract_json(self, text: str) -> Optional[dict]:
+    def _extract_json(self, text: str) -> dict | None:
         """Extract JSON from text"""
         import re
         json_pattern = r'```json\s*(.*?)\s*```'
@@ -452,7 +451,7 @@ class OvernightAnalyzer:
         for match in reversed(matches):  # Try last match first (usually most complete)
             try:
                 return json.loads(match)
-            except:
+            except json.JSONDecodeError:
                 continue
         return None
     

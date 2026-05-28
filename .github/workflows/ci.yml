@@ -31,7 +31,7 @@ jobs:
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
         run: |
           # Generate fresh types to a temp file (override the redirect in package.json)
-          npx supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > /tmp/generated-types.ts 2>&1 || {
+          npx supabase gen types typescript --project-id "$SUPABASE_PROJECT_ID" > /tmp/generated-types.ts 2>&1 || {
             echo "Could not generate types (project ID may be missing or invalid)"
             exit 0  # Don't fail CI if we can't verify
           }
@@ -87,14 +87,20 @@ jobs:
 
       - name: Run pgTAP RLS suites
         run: |
-          set -e
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
           for f in supabase/tests/rls/*.sql; do
             # Skip the helpers file — it's included via \i from the others.
             case "$f" in
               */_helpers.sql) continue ;;
             esac
             echo "::group::$f"
-            supabase test db --file "$f"
+            tmp_file="$tmp_dir/$(basename "$f")"
+            {
+              cat supabase/tests/rls/_helpers.sql
+              grep -Ev '^\\i(r)? .*_helpers\.sql$' "$f"
+            } > "$tmp_file"
+            supabase test db "$tmp_file"
             echo "::endgroup::"
           done
 

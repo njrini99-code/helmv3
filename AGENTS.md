@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Feature awareness
+
+- Treat `memory/registry.yml` as the feature routing table for AI work.
+- Before changing or reviewing mapped feature code, identify impacted files, map them through `memory/registry.yml`, and read the mapped `memory/features/*.md` current-state docs first.
+- Use `npm run knowledge:map -- --files <paths...>` to find impacted features.
+- Use `npm run knowledge:context -- --files <paths...> --task "<task>"` to build `/tmp/helmv3-context-pack.md` for larger changes or PR reviews.
+- If a feature is missing from `memory/registry.yml`, say so and either add the mapping or explicitly mark the feature-awareness gap.
+- Do not silently change business behavior without updating the relevant `memory/features/*` current-state doc or explaining why no doc update is needed.
+
 ## Mobile UI rules
 
 - Use the `mobile-app-consistency-system` skill for mobile web screens, responsive app UI, navigation, headers, cards, tabs, filters, buttons, chips, empty states, and layout refactors.

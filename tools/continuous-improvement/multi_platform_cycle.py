@@ -21,10 +21,7 @@ Usage:
 import asyncio
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
-from typing import List, Dict
-import subprocess
 
 
 class MultiPlatformOrchestrator:
@@ -32,7 +29,7 @@ class MultiPlatformOrchestrator:
     Manages improvement cycles across multiple platforms
     """
     
-    def __init__(self, project_path: str, platforms: List[str] = None):
+    def __init__(self, project_path: str, platforms: list[str] = None):
         self.project_path = Path(project_path)
         
         # Auto-detect platforms if not specified
@@ -46,13 +43,13 @@ class MultiPlatformOrchestrator:
 ║                                                                              ║
 ║   🔄 MULTI-PLATFORM CONTINUOUS IMPROVEMENT                                   ║
 ║                                                                              ║
-║   Project: {str(self.project_path):<59} ║
+║   Project: {self.project_path!s:<59} ║
 ║   Platforms: {', '.join(self.platforms):<57} ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    def _detect_platforms(self) -> List[str]:
+    def _detect_platforms(self) -> list[str]:
         """
         Auto-detect platforms by looking for:
         1. Domain-specific routes (src/app/baseball, src/app/golf)
@@ -138,10 +135,10 @@ class MultiPlatformOrchestrator:
         
         return results
     
-    def _print_summary(self, results: Dict):
+    def _print_summary(self, results: dict):
         """Print summary of all platform cycles"""
         
-        print(f"""
+        print("""
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   📊 MULTI-PLATFORM CYCLE SUMMARY                                            ║
@@ -174,7 +171,7 @@ class MultiPlatformOrchestrator:
         
         print()
     
-    def get_combined_stats(self) -> Dict:
+    def get_combined_stats(self) -> dict:
         """Get combined statistics across all platforms"""
         
         stats = {
@@ -193,7 +190,7 @@ class MultiPlatformOrchestrator:
         # Get latest summary for each platform
         for platform in self.platforms:
             # Find latest cycle for this platform
-            pattern = f"cycle-*-summary.json"
+            pattern = "cycle-*-summary.json"
             summaries = sorted(cycle_dir.glob(pattern))
             
             if summaries:

@@ -23,11 +23,9 @@ Usage:
 
 import asyncio
 import json
-import sys
+import re
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict
-import re
 
 
 class Issue:
@@ -39,9 +37,9 @@ class Issue:
                  description: str,
                  severity: str,
                  category: str,
-                 location: Dict,
+                 location: dict,
                  found_in_cycle: int,
-                 context: Dict = None):
+                 context: dict = None):
         self.id = id
         self.title = title
         self.description = description
@@ -76,7 +74,7 @@ class Issue:
         }
     
     @classmethod
-    def from_dict(cls, data: Dict):
+    def from_dict(cls, data: dict):
         issue = cls(
             id=data["id"],
             title=data["title"],
@@ -112,10 +110,10 @@ class CycleAgent:
         self.current_cycle = self._get_next_cycle_number()
         
         # Issue tracking
-        self.all_issues: List[Issue] = []
-        self.current_issues: List[Issue] = []
+        self.all_issues: list[Issue] = []
+        self.current_issues: list[Issue] = []
         
-    def _load_context(self) -> Dict:
+    def _load_context(self) -> dict:
         """Load accumulated context from previous runs"""
         context_file = self.helm_dir / "UNDERSTANDING.json"
         if context_file.exists():
@@ -137,7 +135,7 @@ class CycleAgent:
         
         return max(numbers) + 1 if numbers else 1
     
-    def _load_previous_cycle(self) -> Optional[Dict]:
+    def _load_previous_cycle(self) -> dict | None:
         """Load the previous cycle's issues"""
         if self.current_cycle == 1:
             return None
@@ -192,7 +190,7 @@ class CycleAgent:
 ║   ✅ CYCLE {self.current_cycle:03d} COMPLETE                                            ║
 ║                                                                              ║
 ║   📁 Issues exported to:                                                     ║
-║   {str(self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'):<75}║
+║   {self.cycle_dir / f'issues-cycle-{self.current_cycle:03d}.md'!s:<75}║
 ║                                                                              ║
 ║   📋 Next Steps:                                                             ║
 ║   1. Open the MD file in Cursor                                              ║
@@ -203,9 +201,9 @@ class CycleAgent:
 ╚══════════════════════════════════════════════════════════════════════════════╝
         """)
     
-    async def verify_previous_fixes(self, prev_cycle: Dict):
+    async def verify_previous_fixes(self, prev_cycle: dict):
         """Verify that previous fixes actually worked"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
         print(f"""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -289,7 +287,7 @@ If a fix broke something else, mark it as regression_found.
         full_output = "\n".join(verification_results)
         self._process_verification_results(full_output, fixed_issues)
     
-    def _process_verification_results(self, output: str, fixed_issues: List[Issue]):
+    def _process_verification_results(self, output: str, fixed_issues: list[Issue]):
         """Process verification results from Claude"""
         # Extract JSON blocks
         json_pattern = r'```json\s*(.*?)\s*```'
@@ -359,9 +357,9 @@ Verification Summary:
     
     async def find_new_issues(self):
         """Find new issues using context-aware detection"""
-        from claude_agent_sdk import query, ClaudeAgentOptions
+        from claude_agent_sdk import ClaudeAgentOptions, query
         
-        print(f"""
+        print("""
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🔍 PHASE 2: CONTEXT-AWARE ISSUE DETECTION
   Using deep understanding to find issues...
@@ -530,7 +528,7 @@ Start your investigation now. Be thorough. Find 5-15 real issues.
         print(f"   MD: {md_file}")
         print(f"   JSON: {json_file}")
     
-    def _generate_issues_md(self, issues: List[Issue]) -> str:
+    def _generate_issues_md(self, issues: list[Issue]) -> str:
         """Generate the MD file that Claude Code will update"""
         
         # Count by severity
