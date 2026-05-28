@@ -20,6 +20,7 @@ import {
   Cell,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import { IconSparkles, IconCheck, IconTrendingUp } from '@/components/icons';
 import type { InsightEffectivenessData, InsightTypeMetrics } from '@/app/golf/actions/coachhelm-analytics';
 
@@ -159,7 +160,33 @@ export function InsightEffectivenessPanel({
                   tickLine={false}
                   axisLine={false}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length || !payload[0]) return null;
+                    const d = payload[0].payload as {
+                      name: string;
+                      actionRate: number;
+                      improvementRate: number;
+                      effectivenessScore: number;
+                      generated: number;
+                    };
+                    // Rates are pre-rounded integer percents; "generated" is an
+                    // integer count. Each metric keeps its identifying color via
+                    // the row swatch, and every value is preserved exactly.
+                    return (
+                      <ChartTooltip
+                        label={d.name}
+                        rows={[
+                          { name: 'Action Rate', value: d.actionRate, suffix: '%', color: '#2563eb' },
+                          { name: 'Improvement Rate', value: d.improvementRate, suffix: '%', color: '#16a34a' },
+                          { name: 'Effectiveness', value: d.effectivenessScore, suffix: '%', color: '#9333ea' },
+                          { name: 'Generated', value: d.generated, suffix: ' insights', color: '#a8a29e' },
+                        ]}
+                        formatter={(v) => Math.round(v).toLocaleString()}
+                      />
+                    );
+                  }}
+                />
                 <Bar dataKey="effectivenessScore" radius={[0, 4, 4, 0]} maxBarSize={24}>
                   {chartData.map((entry, index) => (
                     <Cell
@@ -337,42 +364,6 @@ function RateIndicator({ value, highlighted }: { value: number; highlighted?: bo
       {percentage}%
     </span>
   );
-}
-
-function CustomTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: { name: string; actionRate: number; improvementRate: number; effectivenessScore: number; generated: number } }>;
-}) {
-  if (active && payload && payload.length && payload[0]) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-medium text-warm-900 mb-2">{data.name}</p>
-        <div className="space-y-1 text-xs">
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Action Rate:</span>
-            <span className="font-medium text-blue-600">{data.actionRate}%</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Improvement Rate:</span>
-            <span className="font-medium text-primary-600">{data.improvementRate}%</span>
-          </div>
-          <div className="flex justify-between gap-4 pt-1 border-t border-warm-100">
-            <span className="text-warm-500">Effectiveness:</span>
-            <span className="font-medium text-purple-600">{data.effectivenessScore}%</span>
-          </div>
-          <div className="flex justify-between gap-4 pt-1">
-            <span className="text-warm-500">Generated:</span>
-            <span className="text-warm-700">{data.generated} insights</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
 }
 
 function EmptyState() {

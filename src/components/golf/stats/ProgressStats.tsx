@@ -6,6 +6,7 @@ import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { IconChevronDown, IconChevronUp, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Shimmer } from '@/components/ui/shimmer';
 import { Button } from '@/components/ui/button';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 
 // Dynamic imports for recharts - reduces initial bundle size by ~150KB
 const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false });
@@ -90,22 +91,6 @@ function calculateTrend(data: number[]): { direction: 'up' | 'down' | 'stable'; 
   return { direction: 'stable', percentage };
 }
 
-// Custom tooltip for charts
-function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) {
-  if (!active || !payload?.length) return null;
-
-  return (
-    <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 p-3">
-      <p className="text-xs font-medium text-warm-500 mb-1">{label}</p>
-      {payload.map((entry, index) => (
-        <p key={index} className="text-sm font-medium" style={{ color: entry.color }}>
-          {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(1) : entry.value}
-        </p>
-      ))}
-    </div>
-  );
-}
-
 const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: RoundData[] }) {
   const [showMovingAvg, setShowMovingAvg] = useState(true);
 
@@ -180,7 +165,24 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
                 axisLine={{ stroke: '#e7e5e4' }}
                 tickLine={false}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  // Scores / moving-average keep their 1-decimal formatting and
+                  // each series keeps its line color via the row swatch.
+                  return (
+                    <ChartTooltip
+                      label={label as string}
+                      rows={payload.map((entry) => ({
+                        name: entry.name as string,
+                        value: entry.value as number | string,
+                        color: entry.color as string,
+                      }))}
+                      formatter={(v) => v.toFixed(1)}
+                    />
+                  );
+                }}
+              />
               <Area
                 type="monotone"
                 dataKey="score"
@@ -248,12 +250,23 @@ const ScoreDistributionChart = memo(function ScoreDistributionChart({ stats }: {
                 width={60}
               />
               <Tooltip
-                formatter={(value, _name, props) => {
-                  const payload = props?.payload as { pct: number } | undefined;
-                  return [
-                    `${value} (${payload?.pct?.toFixed(1) ?? 0}%)`,
-                    'Count'
-                  ];
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length || !payload[0]) return null;
+                  const d = payload[0].payload as { name: string; pct: number; fill: string };
+                  // Count is an integer; the share keeps its 1-decimal percent.
+                  // "Count: 5 (25.0%)" reading + category swatch preserved.
+                  return (
+                    <ChartTooltip
+                      label={d.name}
+                      rows={[
+                        {
+                          name: 'Count',
+                          value: `${payload[0].value} (${d.pct?.toFixed(1) ?? 0}%)`,
+                          color: d.fill,
+                        },
+                      ]}
+                    />
+                  );
                 }}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} />
@@ -500,11 +513,17 @@ const PuttMakeChart = memo(function PuttMakeChart({ stats }: { stats: GolfStats 
                 tickFormatter={(value) => `${value}%`}
               />
               <Tooltip
-                formatter={(value) => [`${(value as number).toFixed(1)}%`, 'Make Rate']}
-                contentStyle={{
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  borderRadius: '8px',
-                  border: '1px solid #e7e5e4',
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length || !payload[0]) return null;
+                  const d = payload[0].payload as { distance: string; fill: string };
+                  // Rate keeps its 1-decimal percent and distance-bucket swatch.
+                  return (
+                    <ChartTooltip
+                      label={d.distance}
+                      rows={[{ name: 'Make Rate', value: payload[0].value as number, suffix: '%', color: d.fill }]}
+                      formatter={(v) => v.toFixed(1)}
+                    />
+                  );
                 }}
               />
               <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
@@ -553,11 +572,17 @@ const GirByParChart = memo(function GirByParChart({ stats }: { stats: GolfStats 
                 tickFormatter={(value) => `${value}%`}
               />
               <Tooltip
-                formatter={(value) => [`${(value as number).toFixed(1)}%`, 'GIR Rate']}
-                contentStyle={{
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  borderRadius: '8px',
-                  border: '1px solid #e7e5e4',
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length || !payload[0]) return null;
+                  const d = payload[0].payload as { par: string; fill: string };
+                  // Rate keeps its 1-decimal percent and hole-type swatch.
+                  return (
+                    <ChartTooltip
+                      label={d.par}
+                      rows={[{ name: 'GIR Rate', value: payload[0].value as number, suffix: '%', color: d.fill }]}
+                      formatter={(v) => v.toFixed(1)}
+                    />
+                  );
                 }}
               />
               <Bar dataKey="pct" radius={[6, 6, 0, 0]} />
@@ -646,17 +671,18 @@ const StrokesGainedChart = memo(function StrokesGainedChart({ stats }: { stats: 
                 width={80}
               />
               <Tooltip
-                formatter={(value) => {
-                  const num = value as number;
-                  return [
-                    `${num >= 0 ? '+' : ''}${num.toFixed(2)}`,
-                    'SG/Round'
-                  ];
-                }}
-                contentStyle={{
-                  backgroundColor: 'rgba(255,255,255,0.95)',
-                  borderRadius: '8px',
-                  border: '1px solid #e7e5e4',
+                content={({ active, payload }) => {
+                  if (!active || !payload?.length || !payload[0]) return null;
+                  const d = payload[0].payload as { category: string; fill: string };
+                  // Strokes-gained: canonical 2-decimal + explicit sign, with the
+                  // gain/loss color preserved on the row swatch.
+                  return (
+                    <ChartTooltip
+                      label={d.category}
+                      rows={[{ name: 'SG/Round', value: payload[0].value as number, color: d.fill }]}
+                      formatter={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+                    />
+                  );
                 }}
               />
               <Bar dataKey="value" radius={[0, 6, 6, 0]} />

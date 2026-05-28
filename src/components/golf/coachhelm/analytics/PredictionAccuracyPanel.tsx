@@ -25,6 +25,7 @@ import {
   Pie,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { ChartTooltip } from '@/components/ui/chart-tooltip';
 import {
   IconTarget,
   IconCheck,
@@ -204,7 +205,30 @@ export function PredictionAccuracyPanel({
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
-                <Tooltip content={<AccuracyTooltip />} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length || !payload[0]) return null;
+                    const d = payload[0].payload as {
+                      date: string;
+                      accuracyRate: number;
+                      predictionsMade: number;
+                      predictionsValidated: number;
+                    };
+                    // Accuracy is a pre-rounded integer percent; the two
+                    // prediction counts are integers — all preserved exactly.
+                    return (
+                      <ChartTooltip
+                        label={d.date}
+                        rows={[
+                          { name: 'Accuracy', value: d.accuracyRate, suffix: '%', color: '#16a34a' },
+                          { name: 'Predictions', value: d.predictionsMade },
+                          { name: 'Validated', value: d.predictionsValidated },
+                        ]}
+                        formatter={(v) => Math.round(v).toLocaleString()}
+                      />
+                    );
+                  }}
+                />
                 <ReferenceLine y={70} stroke="#16A34A" strokeDasharray="3 3" />
                 <Line
                   type="monotone"
@@ -242,7 +266,37 @@ export function PredictionAccuracyPanel({
                   axisLine={false}
                   tickFormatter={(v) => `${v}%`}
                 />
-                <Tooltip content={<CalibrationTooltip />} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload?.length || !payload[0]) return null;
+                    const d = payload[0].payload as {
+                      range: string;
+                      actual: number;
+                      expected: number;
+                      count: number;
+                    };
+                    const diff = d.actual - d.expected;
+                    // Actual-accuracy keeps its calibration color cue (green when
+                    // within 10pts, amber otherwise). Percents are pre-rounded
+                    // integers; count is an integer. All values preserved.
+                    return (
+                      <ChartTooltip
+                        label={`${d.range} Confidence`}
+                        rows={[
+                          { name: 'Expected Accuracy', value: d.expected, suffix: '%' },
+                          {
+                            name: 'Actual Accuracy',
+                            value: d.actual,
+                            suffix: '%',
+                            color: Math.abs(diff) <= 10 ? '#16a34a' : '#d97706',
+                          },
+                          { name: 'Predictions', value: d.count },
+                        ]}
+                        formatter={(v) => Math.round(v).toLocaleString()}
+                      />
+                    );
+                  }}
+                />
                 <Bar dataKey="expected" fill="#e7e5e4" radius={[4, 4, 0, 0]} name="Expected" />
                 <Bar dataKey="actual" radius={[4, 4, 0, 0]} name="Actual">
                   {calibrationChartData.map((entry, index) => {
@@ -298,7 +352,30 @@ export function PredictionAccuracyPanel({
                       <Cell key={`cell-${index}`} fill={getErrorColor(entry.category)} />
                     ))}
                   </Pie>
-                  <Tooltip content={<ErrorTooltip />} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length || !payload[0]) return null;
+                      const d = payload[0].payload as {
+                        category: string;
+                        count: number;
+                        percentage: number;
+                      };
+                      // Preserve the exact "12 errors (34.5%)" reading: integer
+                      // error count + 1-decimal percent, passed as a single
+                      // pre-formatted string row.
+                      return (
+                        <ChartTooltip
+                          label={d.category}
+                          rows={[
+                            {
+                              name: '',
+                              value: `${d.count} errors (${d.percentage.toFixed(1)}%)`,
+                            },
+                          ]}
+                        />
+                      );
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -470,99 +547,6 @@ function ProgressBar({ value, color }: { value: number; color: 'amber' | 'blue' 
       </div>
     </div>
   );
-}
-
-function AccuracyTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: { date: string; accuracyRate: number; predictionsMade: number; predictionsValidated: number } }>;
-}) {
-  if (active && payload && payload.length && payload[0]) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-medium text-warm-900 mb-2">{data.date}</p>
-        <div className="space-y-1 text-xs">
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Accuracy:</span>
-            <span className="font-medium text-primary-600">{data.accuracyRate}%</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Predictions:</span>
-            <span className="text-warm-700">{data.predictionsMade}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Validated:</span>
-            <span className="text-warm-700">{data.predictionsValidated}</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-}
-
-function CalibrationTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: { range: string; actual: number; expected: number; count: number } }>;
-}) {
-  if (active && payload && payload.length && payload[0]) {
-    const data = payload[0].payload;
-    const diff = data.actual - data.expected;
-    return (
-      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-4 py-3">
-        <p className="text-sm font-medium text-warm-900 mb-2">{data.range} Confidence</p>
-        <div className="space-y-1 text-xs">
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Expected Accuracy:</span>
-            <span className="text-warm-700">{data.expected}%</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-warm-500">Actual Accuracy:</span>
-            <span
-              className={cn(
-                'font-medium',
-                Math.abs(diff) <= 10 ? 'text-primary-600' : 'text-amber-600'
-              )}
-            >
-              {data.actual}%
-            </span>
-          </div>
-          <div className="flex justify-between gap-4 pt-1 border-t border-warm-100">
-            <span className="text-warm-500">Predictions:</span>
-            <span className="text-warm-700">{data.count}</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-  return null;
-}
-
-function ErrorTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: { category: string; count: number; percentage: number } }>;
-}) {
-  if (active && payload && payload.length && payload[0]) {
-    const data = payload[0].payload;
-    return (
-      <div className="bg-cream-50/95 backdrop-blur-sm rounded-lg shadow-lg border border-warm-200 px-3 py-2">
-        <p className="text-sm font-medium text-warm-900">{data.category}</p>
-        <p className="text-xs text-warm-600">
-          {data.count} errors ({data.percentage.toFixed(1)}%)
-        </p>
-      </div>
-    );
-  }
-  return null;
 }
 
 function EmptyState() {
