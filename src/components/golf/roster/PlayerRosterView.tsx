@@ -52,7 +52,7 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
               <div className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6">
                 <IconUsers size={32} className="text-primary-700" />
               </div>
-              <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-3">No teammates yet</h3>
+              <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-3">No teammates yet</h3>
               <p className="text-[13.5px] text-warm-500 max-w-md mx-auto leading-relaxed">
                 Your team roster is empty. Your coach will add players to the team.
               </p>
@@ -79,7 +79,7 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
                           </div>
                         ) : (
                           <div className="w-[68px] h-[68px] md:w-[76px] md:h-[76px] rounded-2xl bg-warm-100/60 flex items-center justify-center">
-                            <span className="text-[22px] font-medium text-warm-500 tracking-[-0.005em]">
+                            <span className="text-h2 font-medium text-warm-500 tracking-[-0.005em]">
                               {(player.first_name?.[0] || '')}{(player.last_name?.[0] || '')}
                             </span>
                           </div>
@@ -95,14 +95,14 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
 
                       <div className="flex-1 min-w-0 pt-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-[18px] md:text-[20px] font-medium tracking-[-0.012em] text-warm-900 truncate">
+                          <h3 className="text-h3 font-medium tracking-[-0.012em] text-warm-900 truncate">
                             {player.first_name} {player.last_name}
                           </h3>
                           <YearBadge year={player.graduation_year} />
                         </div>
                         <div className="mt-2.5 flex items-center gap-3">
                           <span className={cn(
-                            'text-[13px] font-medium tabular-nums',
+                            'text-body-sm font-medium tabular-nums',
                             player.handicap !== null && player.handicap <= 0 ? 'text-primary-700' : 'text-warm-600'
                           )}>
                             {player.handicap !== null ? `${formatHandicap(player.handicap)} HCP` : '—'}

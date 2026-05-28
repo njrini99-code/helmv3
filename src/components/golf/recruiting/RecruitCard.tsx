@@ -50,7 +50,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
         <div
           className={cn(
             'w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center',
-            'font-medium text-[15px] tracking-[-0.005em]',
+            'font-medium text-body tracking-[-0.005em]',
             AVATAR_TONE[recruit.status],
           )}
         >
@@ -60,10 +60,10 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="text-[18px] md:text-[20px] font-medium text-warm-900 tracking-[-0.012em] truncate">
+              <h3 className="text-h3 font-medium text-warm-900 tracking-[-0.012em] truncate">
                 {fullName || 'Unnamed prospect'}
               </h3>
-              <div className="flex items-center gap-2 mt-1.5 text-[12px] text-warm-500">
+              <div className="flex items-center gap-2 mt-1.5 text-caption text-warm-500">
                 {recruit.hs_class && (
                   <span className="inline-flex items-center gap-1 tabular-nums">
                     <GraduationCap className="w-3.5 h-3.5" />

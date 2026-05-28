@@ -155,7 +155,7 @@ export function CausalRelationshipView({
         <div className="bg-white border border-warm-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-warm-600">Effect Strength</span>
-            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+            <span className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
               {Math.round(relationship.strength * 100)}%
             </span>
           </div>
@@ -184,7 +184,7 @@ export function CausalRelationshipView({
         <div className="bg-white border border-warm-200 rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-warm-600">Causal Confidence</span>
-            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+            <span className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
               {Math.round(relationship.confidence * 100)}%
             </span>
           </div>

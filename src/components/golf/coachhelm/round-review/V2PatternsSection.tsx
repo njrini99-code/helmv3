@@ -94,7 +94,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.12 * index + 0.2, duration: 0.3 }}
                   className={cn(
-                    'text-[11px] font-medium px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
+                    'text-eyebrow font-medium px-2.5 py-0.5 rounded-lg flex-shrink-0 tabular-nums',
                     isNegative
                       ? 'bg-red-100 text-red-700 border border-red-200/50'
                       : 'bg-primary-100 text-primary-700 border border-primary-200/50'
@@ -105,7 +105,7 @@ export function V2PatternsSection({ patterns }: V2PatternsSectionProps) {
               </div>
 
               {pattern.recommendation && (
-                <p className="text-[13px] text-warm-600 leading-relaxed mb-3 ml-[30px]">
+                <p className="text-body-sm text-warm-600 leading-relaxed mb-3 ml-[30px]">
                   {sanitizeNaN(pattern.recommendation)}
                 </p>
               )}

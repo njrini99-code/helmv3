@@ -14,7 +14,7 @@ export function DevPlanMockup() {
     )}>
       {/* Progress header */}
       <div className="flex items-center justify-between">
-        <span className="text-[9px] font-semibold text-warm-600">Hitting Program</span>
+        <span className="text-eyebrow font-semibold text-warm-600">Hitting Program</span>
         <span className="text-micro text-primary-600 font-semibold">67%</span>
       </div>
 

@@ -25,7 +25,7 @@ export function LiveRoundMockup() {
         <div className="bg-warm-50 rounded-[32px] overflow-hidden h-[572px] flex flex-col">
           {/* Dynamic Island + Status bar */}
           <div className="flex items-center justify-between px-6 pt-2.5 pb-1 bg-warm-900 shrink-0">
-            <span className="text-[10px] text-white/70 font-medium">9:41</span>
+            <span className="text-eyebrow text-white/70 font-medium">9:41</span>
             <div className="w-[80px] h-[24px] bg-black rounded-full" />
             <div className="flex items-center gap-1">
               <svg className="w-3 h-3 text-white/70" fill="currentColor" viewBox="0 0 24 24"><path d="M2 17h2v4H2zm4-5h2v9H6zm4-4h2v13h-2zm4-3h2v16h-2zm4-3h2v19h-2z"/></svg>
@@ -37,12 +37,12 @@ export function LiveRoundMockup() {
           {/* Scorecard Header */}
           <div className="bg-warm-900 shrink-0">
             <div className="flex justify-between items-center px-3 py-1.5 border-b border-warm-700">
-              <span className="text-[9px] font-semibold text-white/50 uppercase tracking-wide">← Prev</span>
+              <span className="text-eyebrow font-semibold text-white/50 uppercase tracking-wide">← Prev</span>
               <div className="flex items-center gap-1">
                 <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wide">Hole 7 of 18</span>
+                <span className="text-eyebrow font-bold text-emerald-400 uppercase tracking-wide">Hole 7 of 18</span>
               </div>
-              <span className="text-[9px] font-semibold text-white/50 uppercase tracking-wide">Next →</span>
+              <span className="text-eyebrow font-semibold text-white/50 uppercase tracking-wide">Next →</span>
             </div>
             <div className="flex">
               {[
@@ -52,14 +52,14 @@ export function LiveRoundMockup() {
                 { hole: 8, par: 3, score: null, color: '' },
               ].map((h) => (
                 <div key={h.hole} className={`flex-1 py-1.5 px-1 text-center border-r border-warm-700 ${h.current ? 'bg-emerald-600' : ''}`}>
-                  <div className={`text-[8px] font-semibold ${h.current ? 'text-white' : 'text-warm-400'}`}>{h.hole}</div>
-                  <div className={`text-[8px] ${h.current ? 'text-emerald-100' : 'text-warm-500'}`}>P{h.par}</div>
+                  <div className={`text-eyebrow font-semibold ${h.current ? 'text-white' : 'text-warm-400'}`}>{h.hole}</div>
+                  <div className={`text-eyebrow ${h.current ? 'text-emerald-100' : 'text-warm-500'}`}>P{h.par}</div>
                   <div className={`text-xs font-bold ${h.current ? 'text-white' : h.score !== null ? h.color : 'text-warm-600'}`}>{h.score ?? '-'}</div>
                 </div>
               ))}
               <div className="flex-1 py-1.5 px-1 text-center bg-warm-800">
-                <div className="text-[8px] font-semibold text-amber-400">OUT</div>
-                <div className="text-[8px] text-warm-500">P36</div>
+                <div className="text-eyebrow font-semibold text-amber-400">OUT</div>
+                <div className="text-eyebrow text-warm-500">P36</div>
                 <div className="text-xs font-bold text-amber-400">-</div>
               </div>
             </div>
@@ -70,14 +70,14 @@ export function LiveRoundMockup() {
             {/* Shot Pills */}
             <div className="bg-white py-2 px-3 border-b border-warm-100 shadow-sm">
               <div className="flex items-center gap-1.5">
-                <span className="text-[8px] font-semibold text-warm-400 uppercase tracking-wider shrink-0">Shot</span>
+                <span className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wider shrink-0">Shot</span>
                 <div className="flex gap-1">
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">1</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-emerald-600 text-white shadow-sm">2</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">3</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">4</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">5</div>
-                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-[10px] font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">6</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">1</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-emerald-600 text-white shadow-sm">2</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">3</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">4</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">5</div>
+                  <div className="w-7 h-6 rounded-md flex items-center justify-center text-eyebrow font-semibold bg-warm-50 text-warm-300 ring-1 ring-warm-200">6</div>
                 </div>
               </div>
             </div>
@@ -89,24 +89,24 @@ export function LiveRoundMockup() {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-bold">Hole 7</h3>
-                      <span className="px-1.5 py-0.5 bg-white/15 rounded text-[9px] font-semibold uppercase">Par 4</span>
+                      <span className="px-1.5 py-0.5 bg-white/15 rounded text-eyebrow font-semibold uppercase">Par 4</span>
                     </div>
-                    <p className="text-emerald-100 text-[10px] mt-0.5">Shot 2 · Approach · <span className="font-medium">Fairway</span></p>
+                    <p className="text-emerald-100 text-eyebrow mt-0.5">Shot 2 · Approach · <span className="font-medium">Fairway</span></p>
                   </div>
                   <div className="text-right">
-                    <p className="text-emerald-200 text-[8px] font-semibold uppercase tracking-wider">Distance</p>
+                    <p className="text-emerald-200 text-eyebrow font-semibold uppercase tracking-wider">Distance</p>
                     <p className="text-xl font-bold">156<span className="text-xs ml-0.5 text-emerald-100">YDS</span></p>
                   </div>
                 </div>
                 <div className="mt-2.5 bg-white/10 rounded-lg p-2.5">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-[8px] text-emerald-100 font-semibold uppercase">Progress</span>
-                    <span className="text-[8px] text-emerald-100 font-bold">60%</span>
+                    <span className="text-eyebrow text-emerald-100 font-semibold uppercase">Progress</span>
+                    <span className="text-eyebrow text-emerald-100 font-bold">60%</span>
                   </div>
                   <div className="h-1 bg-white/20 rounded-full overflow-hidden">
                     <div className="h-full bg-white rounded-full" style={{ width: '60%' }} />
                   </div>
-                  <div className="flex justify-between mt-1 text-[8px] text-emerald-100">
+                  <div className="flex justify-between mt-1 text-eyebrow text-emerald-100">
                     <span>Tee</span>
                     <span className="font-bold">156 yds left</span>
                     <span>Hole</span>
@@ -118,10 +118,10 @@ export function LiveRoundMockup() {
             {/* Shot Result */}
             <div className="mx-2.5 mt-2">
               <div className="bg-cream-100/75 backdrop-blur rounded-xl p-3 border border-warm-200/60 shadow-sm">
-                <p className="text-[8px] font-bold text-warm-500 uppercase tracking-wider mb-2">Shot Result</p>
+                <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-2">Shot Result</p>
                 <div className="grid grid-cols-3 gap-1">
                   {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (
-                    <button key={r} className={`py-1.5 rounded-lg text-[10px] font-semibold ${r === 'Green' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</button>
+                    <button key={r} className={`py-1.5 rounded-lg text-eyebrow font-semibold ${r === 'Green' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</button>
                   ))}
                 </div>
               </div>
@@ -130,14 +130,14 @@ export function LiveRoundMockup() {
             {/* Distance */}
             <div className="mx-2.5 mt-2">
               <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl p-3 border-2 border-emerald-200">
-                <p className="text-[8px] font-bold text-warm-500 uppercase tracking-wider mb-1.5">Distance to Hole</p>
+                <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-1.5">Distance to Hole</p>
                 <div className="flex items-baseline justify-center gap-0.5">
                   <span className="text-2xl font-bold text-warm-900">12</span>
                   <span className="text-xs font-semibold text-warm-400">feet</span>
                 </div>
                 <div className="flex gap-1 mt-2">
                   {['5ft', '10ft', '15ft', '20ft', '30ft'].map((d) => (
-                    <button key={d} className={`flex-1 py-1 rounded text-[9px] font-semibold ${d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'}`}>{d}</button>
+                    <button key={d} className={`flex-1 py-1 rounded text-eyebrow font-semibold ${d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'}`}>{d}</button>
                   ))}
                 </div>
               </div>
@@ -203,7 +203,7 @@ export function QualifierMockup() {
             { label: 'Spots', value: '5' },
           ].map((s) => (
             <div key={s.label} className="flex-1 bg-emerald-700/30 backdrop-blur-sm rounded-lg px-3 py-2 ring-1 ring-emerald-500/10">
-              <p className="text-emerald-300/60 text-[10px] font-semibold uppercase tracking-wide">{s.label}</p>
+              <p className="text-emerald-300/60 text-eyebrow font-semibold uppercase tracking-wide">{s.label}</p>
               <p className="text-white text-sm font-bold mt-0.5">{s.value}</p>
             </div>
           ))}
@@ -215,7 +215,7 @@ export function QualifierMockup() {
         <div className="px-5 py-3.5 border-b border-warm-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-bold text-warm-900 tracking-tight">Leaderboard</span>
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-200/50">
+            <span className="flex items-center gap-1 text-eyebrow font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full ring-1 ring-emerald-200/50">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Live
             </span>
@@ -257,7 +257,7 @@ export function QualifierMockup() {
                     )}>
                       {player.name}
                     </p>
-                    <p className={cn("text-[11px]", !isQualifying ? "text-warm-300" : "text-warm-400")}>
+                    <p className={cn("text-eyebrow", !isQualifying ? "text-warm-300" : "text-warm-400")}>
                       {player.rounds}
                     </p>
                   </div>
@@ -298,7 +298,7 @@ export function QualifierMockup() {
                 {isCutline && (
                   <div className="flex items-center gap-3 px-5 py-1.5">
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent" />
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest shrink-0">Cutline</span>
+                    <span className="text-eyebrow font-bold text-emerald-500 uppercase tracking-widest shrink-0">Cutline</span>
                     <div className="flex-1 h-px bg-gradient-to-r from-transparent via-emerald-300 to-transparent" />
                   </div>
                 )}

@@ -151,10 +151,10 @@ function PeriodHeader({ label, rounds }: PeriodHeaderProps) {
   return (
     <div className="flex items-end justify-between gap-4 mb-3 pl-1">
       <div className="flex items-baseline gap-3 min-w-0">
-        <h2 className="font-serif text-[15px] uppercase tracking-[0.16em] text-warm-500 whitespace-nowrap">
+        <h2 className="font-serif text-body uppercase tracking-[0.16em] text-warm-500 whitespace-nowrap">
           {label}
         </h2>
-        <div className="hidden sm:flex items-baseline gap-2.5 text-[12px] text-warm-400 min-w-0 truncate">
+        <div className="hidden sm:flex items-baseline gap-2.5 text-caption text-warm-400 min-w-0 truncate">
           <span className="tabular-nums">
             {scored.length} round{scored.length === 1 ? '' : 's'}
           </span>
@@ -244,13 +244,13 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
             <div className="flex items-center gap-2">
               <TypeChip tone={typeMeta.tone}>{typeMeta.label}</TypeChip>
               {isBestOfPeriod && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-px text-[9px] font-semibold uppercase tracking-[0.08em] text-primary-700">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-px text-eyebrow font-semibold uppercase tracking-[0.08em] text-primary-700">
                   <IconTrophy size={9} className="-ml-0.5" />
                   Best
                 </span>
               )}
             </div>
-            <span className="text-[11px] font-medium text-warm-400 tabular-nums">
+            <span className="text-eyebrow font-medium text-warm-400 tabular-nums">
               {formatDate(round.round_date)}
             </span>
           </div>
@@ -262,7 +262,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
               <span
                 className={cn(
                   'font-display tabular-nums leading-none transition-colors duration-300',
-                  'text-[40px] md:text-[44px] tracking-[-0.025em] font-medium',
+                  'text-display tracking-[-0.025em] font-medium',
                   scoreTone === 'under' && 'text-primary-700 group-hover/card:text-primary-800',
                   scoreTone === 'par' && 'text-warm-800 group-hover/card:text-warm-900',
                   scoreTone === 'over' && 'text-warm-800 group-hover/card:text-warm-900',
@@ -272,7 +272,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
               </span>
               <span
                 className={cn(
-                  'rounded-md px-1.5 py-px text-[11px] font-semibold tabular-nums',
+                  'rounded-md px-1.5 py-px text-eyebrow font-semibold tabular-nums',
                   'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   'group-hover/card:scale-[1.06] origin-left',
                   scoreTone === 'under' && 'bg-primary-100 text-primary-700',
@@ -298,16 +298,16 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
           {/* Course + city */}
           <div className="mt-1.5 flex items-baseline justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-[13px] font-medium text-warm-900 group-hover/card:text-primary-700 transition-colors duration-200">
+              <p className="truncate text-body-sm font-medium text-warm-900 group-hover/card:text-primary-700 transition-colors duration-200">
                 {round.course_name ?? 'Unknown course'}
               </p>
               {(round.course_city || round.course_state) && (
-                <p className="truncate text-[11px] text-warm-500">
+                <p className="truncate text-eyebrow text-warm-500">
                   {[round.course_city, round.course_state].filter(Boolean).join(', ')}
                 </p>
               )}
             </div>
-            <span className="flex-shrink-0 text-[10px] font-medium text-warm-400 tabular-nums">
+            <span className="flex-shrink-0 text-eyebrow font-medium text-warm-400 tabular-nums">
               {holesPlayed}h
             </span>
           </div>
@@ -324,17 +324,17 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
           >
             <div className="overflow-hidden">
               <div className="mt-3 flex items-center justify-between gap-3 border-t border-warm-100 pt-2.5">
-                <div className="flex items-center gap-3 text-[11px] text-warm-600 min-w-0">
+                <div className="flex items-center gap-3 text-eyebrow text-warm-600 min-w-0">
                   {round.total_putts !== null && (
                     <MicroStat label="Putts" value={`${round.total_putts}`} />
                   )}
                   {fir !== null && <MicroStat label="FIR" value={`${fir}%`} />}
                   {gir !== null && <MicroStat label="GIR" value={`${gir}%`} />}
                   {fir === null && gir === null && round.total_putts === null && (
-                    <span className="text-warm-400 italic text-[11px]">No stats logged</span>
+                    <span className="text-warm-400 italic text-eyebrow">No stats logged</span>
                   )}
                 </div>
-                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary-700 whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 text-eyebrow font-medium text-primary-700 whitespace-nowrap">
                   View round
                   <IconArrowRight
                     size={12}
@@ -362,7 +362,7 @@ function TypeChip({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-md px-1.5 py-px text-[9px] font-semibold uppercase tracking-[0.1em]',
+        'inline-flex items-center rounded-md px-1.5 py-px text-eyebrow font-semibold uppercase tracking-[0.1em]',
         tone === 'amber' && 'bg-helm-amber-50 text-helm-amber-700',
         tone === 'purple' && 'bg-purple-50 text-purple-700',
         tone === 'warm' && 'bg-warm-100 text-warm-600',
@@ -377,7 +377,7 @@ function MicroStat({ label, value }: { label: string; value: string }) {
   return (
     <span className="inline-flex items-baseline gap-1 whitespace-nowrap">
       <span className="font-semibold text-warm-800 tabular-nums">{value}</span>
-      <span className="text-[10px] uppercase tracking-[0.08em] text-warm-400">{label}</span>
+      <span className="text-eyebrow uppercase tracking-[0.08em] text-warm-400">{label}</span>
     </span>
   );
 }
@@ -468,7 +468,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     value={stats.totalRounds}
                     decimals={0}
                     staggerIndex={0}
-                    className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]"
+                    className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]"
                   />
                 }
               />
@@ -481,7 +481,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     value={stats.avg}
                     decimals={1}
                     staggerIndex={1}
-                    className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]"
+                    className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]"
                   />
                 }
               />
@@ -496,7 +496,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     decimals={0}
                     staggerIndex={2}
                     className={cn(
-                      'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+                      'text-h1 font-light tabular-nums tracking-[-0.025em]',
                       stats.best < 72 ? 'text-primary-700' : 'text-warm-900',
                     )}
                   />
@@ -519,7 +519,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                   stats.avgToPar !== null ? (
                     <span
                       className={cn(
-                        'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+                        'text-h1 font-light tabular-nums tracking-[-0.025em]',
                         stats.avgToPar < 0 ? 'text-primary-700' : 'text-warm-900',
                       )}
                     >
@@ -532,7 +532,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                       />
                     </span>
                   ) : (
-                    <span className="text-[28px] font-light text-warm-300">—</span>
+                    <span className="text-h1 font-light text-warm-300">—</span>
                   )
                 }
               />
@@ -543,7 +543,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                   stats.trend ? (
                     <span
                       className={cn(
-                        'text-[10px] font-semibold uppercase tracking-[0.08em] px-1.5 py-px rounded-full',
+                        'text-eyebrow font-semibold uppercase tracking-[0.08em] px-1.5 py-px rounded-full',
                         stats.trend === 'improving' && 'text-primary-700 bg-primary-100',
                         stats.trend === 'declining' && 'text-helm-amber-700 bg-helm-amber-50',
                         stats.trend === 'stable' && 'text-warm-500 bg-warm-100',
@@ -554,7 +554,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                   ) : null
                 }
                 value={
-                  <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+                  <span className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
                     <AnimatedNumber value={stats.underParPct} decimals={0} staggerIndex={4} />%
                   </span>
                 }
@@ -572,7 +572,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
               'bg-cream-50/80 backdrop-blur-md border-b border-warm-200/50',
             )}
           >
-            <div className="inline-flex items-center gap-1 rounded-full bg-cream-100 p-1 text-[11px] font-medium">
+            <div className="inline-flex items-center gap-1 rounded-full bg-cream-100 p-1 text-eyebrow font-medium">
               {(['all', 'practice', 'qualifier', 'tournament'] as RoundFilter[]).map((f) => {
                 const active = filter === f;
                 const count = filterCounts[f];
@@ -591,7 +591,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                     <span className="capitalize">{f === 'all' ? 'All' : f}</span>
                     <span
                       className={cn(
-                        'tabular-nums text-[10px]',
+                        'tabular-nums text-eyebrow',
                         active ? 'text-warm-500' : 'text-warm-400',
                       )}
                     >
@@ -606,7 +606,7 @@ export function RoundLibraryClient({ rounds, userRole, stats }: RoundLibraryClie
                 type="single"
                 value={grouping}
                 onValueChange={(v) => v && setGrouping(v as Grouping)}
-                className="text-[11px]"
+                className="text-eyebrow"
               >
                 <ToggleGroupItem value="month" className="px-3 py-1.5 rounded-full data-[state=on]:bg-white data-[state=on]:text-warm-900 data-[state=on]:shadow-[0_1px_2px_hsl(42_14%_22%/0.06),0_4px_10px_hsl(42_14%_22%/0.08)]">
                   Month

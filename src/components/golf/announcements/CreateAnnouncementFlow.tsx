@@ -210,7 +210,7 @@ function AnnouncementDialog({
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           {/* ── Header ──────────────────────────────────────────── */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-warm-100 flex-shrink-0">
-            <DrawerTitle id="ann-dialog-title" className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">
+            <DrawerTitle id="ann-dialog-title" className="text-body font-medium text-warm-900 tracking-[-0.005em]">
               New Announcement
             </DrawerTitle>
             <button
@@ -236,7 +236,7 @@ function AnnouncementDialog({
               autoCapitalize="sentences"
               autoCorrect="on"
               enterKeyHint="next"
-              className="w-full text-[17px] font-medium text-warm-900 tracking-[-0.012em] placeholder:text-warm-300 bg-transparent outline-none border-none"
+              className="w-full text-body-lg font-medium text-warm-900 tracking-[-0.012em] placeholder:text-warm-300 bg-transparent outline-none border-none"
             />
 
             {/* Message textarea */}
@@ -454,7 +454,7 @@ function AnnouncementDialog({
                         className="flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-lg border border-warm-200 bg-white text-xs"
                       >
                         <div className={cn('w-5 h-5 rounded flex items-center justify-center', colors.bg)}>
-                          <span className={cn('text-[8px] font-medium leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
+                          <span className={cn('text-eyebrow font-medium leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
                         </div>
                         <span className="font-medium text-warm-700 max-w-[120px] truncate">{doc.title}</span>
                         <button
@@ -515,7 +515,7 @@ function AnnouncementDialog({
                               className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 text-left transition-colors"
                             >
                               <div className={cn('w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0', colors.bg)}>
-                                <span className={cn('text-[10px] font-medium', colors.text)}>{getFileLabel(doc.file_type)}</span>
+                                <span className={cn('text-eyebrow font-medium', colors.text)}>{getFileLabel(doc.file_type)}</span>
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-warm-700 truncate">{doc.title}</p>

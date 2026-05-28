@@ -324,7 +324,7 @@ export function MobileEventSheet({
 
         {/* Header with close */}
         <div className="flex items-center justify-between px-5 pb-3">
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {isCreating ? 'New Event' : isViewMode ? 'Event Details' : 'Edit Event'}
           </h2>
           <button
@@ -410,7 +410,7 @@ export function MobileEventSheet({
               autoCorrect="on"
               enterKeyHint="next"
               className={cn(
-                'w-full text-[20px] font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300',
+                'w-full text-h3 font-medium text-warm-900 tracking-[-0.015em] placeholder:text-warm-300',
                 'bg-transparent border-0 outline-none p-0',
                 'disabled:text-warm-700',
                 'min-h-[40px]'
@@ -690,22 +690,22 @@ export function MobileEventSheet({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <CheckCircle2 className="w-4 h-4 text-primary-600 mx-auto mb-0.5" />
-                    <p className="text-[17px] font-medium tracking-[-0.005em] text-primary-700">{rsvpSummary.accepted}</p>
+                    <p className="text-body-lg font-medium tracking-[-0.005em] text-primary-700">{rsvpSummary.accepted}</p>
                     <p className="text-xs text-primary-600 font-medium">Going</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <HelpCircle className="w-4 h-4 text-amber-600 mx-auto mb-0.5" />
-                    <p className="text-[17px] font-medium tracking-[-0.005em] text-amber-700">{rsvpSummary.tentative}</p>
+                    <p className="text-body-lg font-medium tracking-[-0.005em] text-amber-700">{rsvpSummary.tentative}</p>
                     <p className="text-xs text-amber-600 font-medium">Maybe</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <XCircle className="w-4 h-4 text-rose-600 mx-auto mb-0.5" />
-                    <p className="text-[17px] font-medium tracking-[-0.005em] text-rose-700">{rsvpSummary.declined}</p>
+                    <p className="text-body-lg font-medium tracking-[-0.005em] text-rose-700">{rsvpSummary.declined}</p>
                     <p className="text-xs text-rose-600 font-medium">No</p>
                   </div>
                   <div className="bg-white rounded-xl p-2.5 text-center shadow-sm">
                     <Clock className="w-4 h-4 text-warm-500 mx-auto mb-0.5" />
-                    <p className="text-[17px] font-medium tracking-[-0.005em] text-warm-700">{rsvpSummary.pending}</p>
+                    <p className="text-body-lg font-medium tracking-[-0.005em] text-warm-700">{rsvpSummary.pending}</p>
                     <p className="text-xs text-warm-500 font-medium">Pending</p>
                   </div>
                 </div>

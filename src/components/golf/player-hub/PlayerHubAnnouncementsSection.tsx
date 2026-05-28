@@ -142,12 +142,12 @@ export function PlayerHubAnnouncementsSection({ announcements }: PlayerHubAnnoun
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className={cn(
                         'font-medium text-warm-900 truncate',
-                        unread ? 'text-[14px]' : 'text-sm'
+                        unread ? 'text-body-sm' : 'text-sm'
                       )}>
                         {ann.title}
                       </h3>
                       {needsAck && (
-                        <span className="flex-shrink-0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                        <span className="flex-shrink-0 px-1.5 py-0.5 text-eyebrow font-medium uppercase tracking-wider rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                           Action
                         </span>
                       )}

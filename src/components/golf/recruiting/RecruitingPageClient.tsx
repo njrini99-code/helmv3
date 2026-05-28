@@ -105,7 +105,7 @@ export function RecruitingPageClient({
           The "Add prospect" CTA moves into the toolbar below. */}
 
       {loadError && (
-        <div className="px-5 py-3 rounded-2xl bg-rose-50/70 ring-1 ring-rose-200/50 text-[13px] text-rose-700">
+        <div className="px-5 py-3 rounded-2xl bg-rose-50/70 ring-1 ring-rose-200/50 text-body-sm text-rose-700">
           Couldn&apos;t load your prospect list — {loadError}. Try refreshing.
         </div>
       )}
@@ -132,13 +132,13 @@ export function RecruitingPageClient({
               )}
             >
               <span className={cn(
-                'inline-flex items-center text-[10px] font-medium uppercase tracking-[0.12em]',
+                'inline-flex items-center text-eyebrow font-medium uppercase tracking-[0.12em]',
                 s.softText,
               )}>
                 <span className={cn('inline-block w-1.5 h-1.5 rounded-full mr-2', s.dot)} />
                 {s.label}
               </span>
-              <span className="text-[34px] md:text-[40px] leading-none font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+              <span className="text-h1 md:text-display leading-none font-light text-warm-900 tabular-nums tracking-[-0.025em]">
                 <AnimatedNumber value={count} />
               </span>
               <span className="text-[11.5px] text-warm-500">
@@ -194,7 +194,7 @@ export function RecruitingPageClient({
               setFormOpen(true);
             }}
             className={cn(
-              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
               'bg-primary-600/95 text-white',
               'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
               'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
@@ -250,7 +250,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
       <div className="w-16 h-16 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-5">
         <GraduationCap className="w-7 h-7 text-primary-700" />
       </div>
-      <h3 className="text-[26px] md:text-[30px] font-light tracking-[-0.025em] text-warm-900 mb-2">
+      <h3 className="text-h2 md:text-h1 font-light tracking-[-0.025em] text-warm-900 mb-2">
         {isFiltered ? 'No prospects match' : 'Start your prospect list'}
       </h3>
       <p className="text-[13.5px] text-warm-500 max-w-md mx-auto mb-7 leading-relaxed">
@@ -264,7 +264,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
           onClick={onAdd}
           className={cn(
             'group inline-flex items-center gap-2 px-6 py-3 rounded-full',
-            'bg-primary-600/95 text-white text-[14px] font-medium tracking-[-0.005em]',
+            'bg-primary-600/95 text-white text-body-sm font-medium tracking-[-0.005em]',
             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
             'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
           )}

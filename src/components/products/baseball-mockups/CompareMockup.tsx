@@ -64,7 +64,7 @@ function CompareStatRow({
   return (
     <div className="space-y-1">
       <div className="flex justify-between items-center">
-        <span className="text-[9px] text-warm-500">{label}</span>
+        <span className="text-eyebrow text-warm-500">{label}</span>
         <div className="flex gap-3">
           <span className={cn(
             "text-micro font-semibold",

@@ -22,7 +22,7 @@ export function PipelineMockup() {
             "px-2 py-1 rounded-t-lg text-center",
             stage.color
           )}>
-            <p className="text-[9px] font-semibold text-warm-700 truncate">{stage.label}</p>
+            <p className="text-eyebrow font-semibold text-warm-700 truncate">{stage.label}</p>
             <p className="text-micro text-warm-500">{stage.count}</p>
           </div>
 
@@ -38,7 +38,7 @@ export function PipelineMockup() {
               />
             ))}
             {stage.count > 3 && (
-              <p className="text-[8px] text-warm-400 text-center">+{stage.count - 3} more</p>
+              <p className="text-eyebrow text-warm-400 text-center">+{stage.count - 3} more</p>
             )}
           </div>
         </div>

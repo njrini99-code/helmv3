@@ -115,7 +115,7 @@ export function CalendarHeader({
         </button>
 
         {/* Editorial title — sculptural, light weight */}
-        <h2 className="text-[20px] md:text-[26px] font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
+        <h2 className="text-h3 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
           {getTitle()}
         </h2>
 
@@ -243,7 +243,7 @@ export function CalendarHeader({
             type="button"
             onClick={onAddEvent}
             className={cn(
-              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
               'bg-primary-600/95 text-white',
               'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
               'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'

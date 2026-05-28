@@ -57,22 +57,22 @@ export function PuttHeatmap({
         {/* Header */}
         <div className="flex items-baseline justify-between mb-5">
           <div>
-            <div className="text-[11px] uppercase tracking-[0.14em] text-warm-500">
+            <div className="text-eyebrow uppercase tracking-[0.14em] text-warm-500">
               Putting
             </div>
-            <h3 className="text-[18px] font-medium text-warm-900 tracking-[-0.012em]">
+            <h3 className="text-h3 font-medium text-warm-900 tracking-[-0.012em]">
               {title}
             </h3>
           </div>
           {hasData && (
             <div className="text-right">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-warm-500">
+              <div className="text-eyebrow uppercase tracking-[0.14em] text-warm-500">
                 Make %
               </div>
               <div className="text-2xl font-medium text-warm-900 tabular-nums tracking-[-0.02em]">
                 {formatPct(data.overall_make_pct)}
               </div>
-              <div className="text-[11px] text-warm-400 tabular-nums">
+              <div className="text-eyebrow text-warm-400 tabular-nums">
                 {data.total_made}/{data.total_putts}
               </div>
             </div>
@@ -247,7 +247,7 @@ export function PuttHeatmap({
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.18, ease: EASE_CINEMATIC }}
-                  className="absolute left-1/2 -translate-x-1/2 -bottom-2 translate-y-full z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-[11px] text-warm-800 whitespace-nowrap shadow-lg"
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-2 translate-y-full z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
                   role="tooltip"
                 >
                   <div className="flex items-baseline gap-2">
@@ -267,7 +267,7 @@ export function PuttHeatmap({
               )}
 
               {/* Legend */}
-              <div className="flex items-center gap-4 mt-3 px-1 text-[11px] text-warm-500">
+              <div className="flex items-center gap-4 mt-3 px-1 text-eyebrow text-warm-500">
                 <span className="inline-flex items-center gap-1.5">
                   <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]" />
                   Made
@@ -282,7 +282,7 @@ export function PuttHeatmap({
             {/* Stat ladder */}
             <div className="space-y-5">
               <div>
-                <h4 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
+                <h4 className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-3">
                   Make rate by distance
                 </h4>
                 <ul className="space-y-2.5">
@@ -322,10 +322,10 @@ export function PuttHeatmap({
               {/* Miss-bias callout */}
               {data.miss_bias.dominant && data.miss_bias.share >= 0.4 && (
                 <div className="surface-lift rounded-2xl p-4">
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-1">
+                  <div className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-1">
                     Miss tendency
                   </div>
-                  <div className="text-[15px] text-warm-900 tracking-[-0.01em]">
+                  <div className="text-body text-warm-900 tracking-[-0.01em]">
                     <span className="font-medium">
                       {Math.round(data.miss_bias.share * 100)}%
                     </span>{' '}
@@ -339,7 +339,7 @@ export function PuttHeatmap({
                     </span>
                     .
                   </div>
-                  <div className="text-[11px] text-warm-500 mt-1">
+                  <div className="text-eyebrow text-warm-500 mt-1">
                     Based on {data.miss_bias.total} missed putt
                     {data.miss_bias.total === 1 ? '' : 's'}.
                   </div>

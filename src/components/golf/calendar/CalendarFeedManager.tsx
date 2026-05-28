@@ -97,7 +97,7 @@ export function CalendarFeedManager({
       <div className="p-6 border-b border-warm-200">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">Calendar Feeds</h2>
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em]">Calendar Feeds</h2>
             <p className="text-sm text-warm-500 mt-1">
               Subscribe to your calendar in Apple Calendar, Google Calendar, or Outlook
             </p>

@@ -77,7 +77,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             >
               <span>{option.label}</span>
               {option.value === sortField && (
-                <span className="text-primary-500 text-[14px]">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
+                <span className="text-primary-500 text-body-sm">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
               )}
             </DropdownMenuItem>
           ))}

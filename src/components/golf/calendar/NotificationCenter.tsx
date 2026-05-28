@@ -159,7 +159,7 @@ export function NotificationCenter() {
             count badge when we know the number. iOS red (#FF3B30). */}
         {unreadCount > 0 && (
           <span
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-[10px] font-medium rounded-full flex items-center justify-center ring-2 ring-cream-50 tabular-nums"
+            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 text-white text-eyebrow font-medium rounded-full flex items-center justify-center ring-2 ring-cream-50 tabular-nums"
             style={{ backgroundColor: '#FF3B30' }}
           >
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -193,7 +193,7 @@ export function NotificationCenter() {
                 <div className="flex items-center gap-2">
                   <h3 className="text-subhead font-medium text-warm-900">Notifications</h3>
                   {unreadCount > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-[10px] font-medium text-primary-700 tabular-nums">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary-50 ring-1 ring-primary-100 text-eyebrow font-medium text-primary-700 tabular-nums">
                       {unreadCount}
                     </span>
                   )}
@@ -374,7 +374,7 @@ function NotificationRow({
         <div className="flex-1 min-w-0">
           <p
             className={cn(
-              'text-[14px] font-medium leading-snug',
+              'text-body-sm font-medium leading-snug',
               !notification.read ? 'text-warm-900' : 'text-warm-700',
             )}
           >

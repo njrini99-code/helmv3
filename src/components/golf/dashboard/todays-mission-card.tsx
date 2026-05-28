@@ -149,12 +149,12 @@ export function TodaysMissionCard({
         <div className="p-7 flex flex-col h-full min-h-[360px]">
           <div className="flex items-center gap-2 mb-4">
             <IconSparkles size={14} className="text-primary-600" />
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary-700">
+            <span className="text-eyebrow font-medium uppercase tracking-[0.18em] text-primary-700">
               Today&apos;s Mission
             </span>
           </div>
           <h3
-            className="text-[26px] md:text-[28px] leading-[1.1] font-medium text-warm-900 tracking-[-0.02em] mb-3"
+            className="text-h2 md:text-h1 leading-[1.1] font-medium text-warm-900 tracking-[-0.02em] mb-3"
             style={{ fontFamily: 'var(--font-fraunces), Georgia, serif' }}
           >
             Lock in your baseline.
@@ -196,18 +196,18 @@ export function TodaysMissionCard({
               className="w-1.5 h-1.5 rounded-full bg-primary-500 animate-pulse"
               aria-hidden="true"
             />
-            <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-primary-700">
+            <span className="text-eyebrow font-medium uppercase tracking-[0.18em] text-primary-700">
               Today&apos;s Mission
             </span>
           </div>
-          <span className="text-[11px] text-warm-500 tabular-nums font-medium">
+          <span className="text-eyebrow text-warm-500 tabular-nums font-medium">
             ~{totalMinutes} min
           </span>
         </div>
 
         {/* Hero line */}
         <h3
-          className="text-[26px] md:text-[30px] leading-[1.05] font-medium text-warm-900 tracking-[-0.025em] mb-2"
+          className="text-h2 md:text-h1 leading-[1.05] font-medium text-warm-900 tracking-[-0.025em] mb-2"
           style={{ fontFamily: 'var(--font-fraunces), Georgia, serif' }}
         >
           {topArea.title}
@@ -246,7 +246,7 @@ export function TodaysMissionCard({
                   >
                     {isChecked && <IconCheck size={11} className="text-white" />}
                   </span>
-                  <span className="text-[11px] font-medium text-warm-400 tabular-nums w-4 flex-shrink-0">
+                  <span className="text-eyebrow font-medium text-warm-400 tabular-nums w-4 flex-shrink-0">
                     {i + 1}
                   </span>
                   <span
@@ -257,7 +257,7 @@ export function TodaysMissionCard({
                   >
                     {drill.label}
                   </span>
-                  <span className="text-[11px] text-warm-400 tabular-nums flex-shrink-0">
+                  <span className="text-eyebrow text-warm-400 tabular-nums flex-shrink-0">
                     {drill.minutes}m
                   </span>
                 </button>

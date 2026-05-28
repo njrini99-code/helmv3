@@ -125,7 +125,7 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
         className={cn(
           'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
           'bg-primary-100 text-primary-700 border border-primary-200/70',
-          'text-[10px] font-medium tabular-nums',
+          'text-eyebrow font-medium tabular-nums',
           className,
         )}
       >
@@ -155,7 +155,7 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
         className={cn(
           'inline-flex items-center gap-1 px-2 py-0.5 rounded-full',
           'bg-amber-50 text-amber-700 border border-amber-200/70',
-          'text-[10px] font-medium',
+          'text-eyebrow font-medium',
           className,
         )}
       >
@@ -544,11 +544,11 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
             <div className="text-right flex-shrink-0">
               <div
                 data-testid="hero-strokes-impact"
-                className="text-[36px] md:text-[44px] font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
+                className="text-display font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
               >
                 <AnimatedNumber value={impact} decimals={1} prefix="~" />
               </div>
-              <div className="text-[11px] uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
+              <div className="text-eyebrow uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
                 strokes/round
               </div>
             </div>
@@ -557,7 +557,7 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
           <div>
             <h2
               data-testid="hero-title"
-              className="text-[26px] md:text-[30px] leading-[1.1] font-light text-warm-900 tracking-[-0.022em]"
+              className="text-h2 md:text-h1 leading-[1.1] font-light text-warm-900 tracking-[-0.022em]"
             >
               {title}
             </h2>
@@ -685,7 +685,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -732,12 +732,12 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
                 fire('create_focus_area', startFocus);
               }}
               className={cn(
-                'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+                'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                 'bg-primary-600/95 text-white shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
                 'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                 focusPending && 'opacity-60 pointer-events-none',
-                emphasis && 'px-6 py-2.5 text-[14px]',
+                emphasis && 'px-6 py-2.5 text-body-sm',
               )}
             >
               Create focus area
@@ -752,7 +752,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >

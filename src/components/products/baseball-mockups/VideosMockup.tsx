@@ -38,13 +38,13 @@ function VideoThumbnail({ featured, small }: { featured?: boolean; small?: boole
       </div>
 
       {/* Duration badge */}
-      <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/60 text-[8px] text-white">
+      <div className="absolute bottom-1 right-1 px-1 py-0.5 rounded bg-black/60 text-eyebrow text-white">
         {featured ? '2:45' : small ? '0:32' : '1:15'}
       </div>
 
       {/* View count */}
       {featured && (
-        <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-primary-500 text-[8px] text-white font-semibold">
+        <div className="absolute top-1 left-1 px-1 py-0.5 rounded bg-primary-500 text-eyebrow text-white font-semibold">
           Primary
         </div>
       )}

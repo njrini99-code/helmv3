@@ -101,7 +101,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
 
       <div className="relative">
         <div className="flex items-baseline justify-between gap-4 mb-3">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500">
+          <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500">
             Today
           </p>
           <AnimatePresence>
@@ -113,9 +113,9 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
                 animate="visible"
                 exit="exit"
                 transition={badgeTransition}
-                className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.14em] text-warm-500"
+                className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
               >
-                <span aria-hidden className="text-[12px] leading-none">✦</span>
+                <span aria-hidden className="text-caption leading-none">✦</span>
                 AI summary
               </m.span>
             )}
@@ -130,7 +130,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
             animate="visible"
             exit="exit"
             transition={crossfadeTransition}
-            className="text-[17px] md:text-[18px] leading-relaxed text-warm-900"
+            className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
           >
             {text}
           </m.p>

@@ -78,7 +78,7 @@ export function V2PredictionCard({ prediction }: V2PredictionCardProps) {
             className="flex items-center gap-3"
           >
             <div className={cn(
-              'text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em]',
+              'text-h1 font-light tabular-nums tracking-[-0.025em]',
               isPositive ? 'text-primary-600' : predictedValue === 0 ? 'text-warm-800' : 'text-red-500',
             )}>
               {predictedValue > 0 ? '+' : ''}{predictedValue.toFixed(1)}

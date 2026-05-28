@@ -116,9 +116,9 @@ function Bubble({ message, prefersReducedMotion }: { message: ChatMessage; prefe
       initial={prefersReducedMotion ? false : { opacity: 0, y: 2 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: DURATION.short, ease: EASE_TAP }}
-      className="max-w-[85%] inline-flex flex-wrap items-center gap-1.5 rounded-full bg-warm-100/80 backdrop-blur-sm px-3 py-1.5 text-[11px] text-warm-700"
+      className="max-w-[85%] inline-flex flex-wrap items-center gap-1.5 rounded-full bg-warm-100/80 backdrop-blur-sm px-3 py-1.5 text-eyebrow text-warm-700"
     >
-      <span aria-hidden className="text-[10px] text-warm-500 uppercase tracking-[0.12em]">
+      <span aria-hidden className="text-eyebrow text-warm-500 uppercase tracking-[0.12em]">
         Looked up
       </span>
       {calls.map((c, i) => (

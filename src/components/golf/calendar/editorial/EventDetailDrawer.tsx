@@ -146,12 +146,12 @@ export function EventDetailDrawer({
           {/* Eyebrow strip — type label + accent dot. */}
           <div className="flex items-center gap-2 mb-1">
             <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', railClass)} />
-            <span className="font-serif uppercase text-[11px] tracking-[0.16em] text-warm-500">
+            <span className="font-serif uppercase text-eyebrow tracking-[0.16em] text-warm-500">
               {typeLabel}
             </span>
           </div>
           <DrawerTitle>{event.title}</DrawerTitle>
-          <p className="text-[13px] text-warm-500 leading-relaxed mt-1.5 flex items-center gap-1.5">
+          <p className="text-body-sm text-warm-500 leading-relaxed mt-1.5 flex items-center gap-1.5">
             <IconClock size={13} className="flex-shrink-0 text-warm-400" />
             <span>{formatDateLine(event)}</span>
           </p>
@@ -172,7 +172,7 @@ export function EventDetailDrawer({
             >
               <span className="flex items-center gap-2.5 min-w-0">
                 <IconMapPin size={16} className="flex-shrink-0 text-warm-500" />
-                <span className="text-[14px] text-warm-900 font-medium truncate">{event.location}</span>
+                <span className="text-body-sm text-warm-900 font-medium truncate">{event.location}</span>
               </span>
               <IconExternalLink size={14} className="flex-shrink-0 text-warm-400" />
             </a>
@@ -180,7 +180,7 @@ export function EventDetailDrawer({
 
           {/* Description — only when present. */}
           {event.description && (
-            <p className="text-[14px] leading-[1.55] text-warm-700 whitespace-pre-wrap">
+            <p className="text-body-sm leading-[1.55] text-warm-700 whitespace-pre-wrap">
               {event.description}
             </p>
           )}
@@ -198,10 +198,10 @@ export function EventDetailDrawer({
                   key={stat.label}
                   className="rounded-2xl border border-warm-200/55 bg-cream-50/70 p-3"
                 >
-                  <p className={cn('text-[20px] font-display font-medium leading-none tabular-nums', stat.tone)}>
+                  <p className={cn('text-h3 font-display font-medium leading-none tabular-nums', stat.tone)}>
                     {stat.value}
                   </p>
-                  <p className="font-serif uppercase text-[10px] tracking-[0.12em] text-warm-500 mt-1.5">
+                  <p className="font-serif uppercase text-eyebrow tracking-[0.12em] text-warm-500 mt-1.5">
                     {stat.label}
                   </p>
                 </div>
@@ -212,7 +212,7 @@ export function EventDetailDrawer({
           {/* Player RSVP CTA row. */}
           {!isCoach && onRespond && (
             <div>
-              <p className="font-serif uppercase text-[11px] tracking-[0.16em] text-warm-500 mb-2.5">
+              <p className="font-serif uppercase text-eyebrow tracking-[0.16em] text-warm-500 mb-2.5">
                 Your response
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -228,7 +228,7 @@ export function EventDetailDrawer({
                       aria-pressed={isSelected}
                       className={cn(
                         'inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl',
-                        'min-h-[44px] text-[13px] font-medium tracking-[-0.005em]',
+                        'min-h-[44px] text-body-sm font-medium tracking-[-0.005em]',
                         'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                         'disabled:opacity-60',
@@ -250,7 +250,7 @@ export function EventDetailDrawer({
                 })}
               </div>
               {error && (
-                <p className="text-[12px] text-rose-600 mt-2.5">{error}</p>
+                <p className="text-caption text-rose-600 mt-2.5">{error}</p>
               )}
             </div>
           )}
@@ -268,7 +268,7 @@ export function EventDetailDrawer({
                 onOpenChange(false);
                 onEdit(event);
               }}
-              className="text-[13px] font-medium text-primary-700 hover:text-primary-800 transition-colors"
+              className="text-body-sm font-medium text-primary-700 hover:text-primary-800 transition-colors"
             >
               Edit details
             </button>
@@ -278,7 +278,7 @@ export function EventDetailDrawer({
           <DrawerClose asChild>
             <button
               type="button"
-              className="text-[13px] font-medium text-warm-500 hover:text-warm-800 transition-colors"
+              className="text-body-sm font-medium text-warm-500 hover:text-warm-800 transition-colors"
             >
               Close
             </button>

@@ -92,7 +92,7 @@ export function WhatIfPanel({
             <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
               <IconSparkles size={20} className="text-primary-600" />
             </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
+            <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Improvement Opportunities</h3>
           </div>
         </div>
 
@@ -105,7 +105,7 @@ export function WhatIfPanel({
         >
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
-          <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+          <span className="text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
             {hasPrediction ? (
               <>{Number(resolvedCurrentPrediction ?? 0) > 0 ? '+' : ''}{Number(resolvedCurrentPrediction ?? 0).toFixed(1)}</>
             ) : '--'}
@@ -128,7 +128,7 @@ export function WhatIfPanel({
                 </span>
               </div>
               <div className="text-right">
-                <p className="text-[13px] font-medium text-primary-700 tabular-nums">
+                <p className="text-body-sm font-medium text-primary-700 tabular-nums">
                   {Number(simResult.projectedScore ?? 0) > 0 ? '+' : ''}{Number(simResult.projectedScore ?? 0).toFixed(1)}
                 </p>
                 {simResult.rankChange !== 0 && (

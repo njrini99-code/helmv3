@@ -37,7 +37,7 @@ export function CalendarMockup() {
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-0.5 mb-1">
         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="text-[8px] text-warm-400 text-center font-medium">
+          <div key={i} className="text-eyebrow text-warm-400 text-center font-medium">
             {d}
           </div>
         ))}
@@ -51,7 +51,7 @@ export function CalendarMockup() {
               <div
                 key={di}
                 className={cn(
-                  "aspect-square flex flex-col items-center justify-center rounded text-[9px]",
+                  "aspect-square flex flex-col items-center justify-center rounded text-eyebrow",
                   day === 15 && "bg-primary-100 text-primary-700 font-semibold"
                 )}
               >
@@ -82,7 +82,7 @@ function LegendItem({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1">
       <div className={cn("w-1.5 h-1.5 rounded-full", color)} />
-      <span className="text-[8px] text-warm-500">{label}</span>
+      <span className="text-eyebrow text-warm-500">{label}</span>
     </div>
   );
 }

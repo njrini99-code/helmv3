@@ -97,7 +97,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
         <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl">💸</span>
         </div>
-        <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Expenses Yet</h3>
+        <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No Expenses Yet</h3>
         <p className="text-sm text-warm-500 max-w-sm mx-auto">
           {isCoach
             ? 'Add your first expense to start tracking costs for this trip.'

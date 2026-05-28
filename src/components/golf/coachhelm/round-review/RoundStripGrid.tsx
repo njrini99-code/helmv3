@@ -40,7 +40,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
 
   const renderNine = (nine: HoleRow[], label: string) => (
     <div>
-      <div className="text-[10px] uppercase tracking-[0.18em] text-warm-500 mb-2 px-1">
+      <div className="text-eyebrow uppercase tracking-[0.18em] text-warm-500 mb-2 px-1">
         {label}
       </div>
       <div className="flex gap-1.5 md:gap-2">
@@ -72,7 +72,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
 
           return (
             <div key={h.hole_number} className="flex flex-col items-center gap-1">
-              <span className="text-[9px] tabular-nums text-warm-400">
+              <span className="text-eyebrow tabular-nums text-warm-400">
                 {h.hole_number}
               </span>
               <HoleShotPath
@@ -84,7 +84,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
                 size="strip"
                 onClick={anchorHref ? handleClick : undefined}
               />
-              <span className={`text-[10px] font-medium tabular-nums leading-none ${scoreColor}`}>
+              <span className={`text-eyebrow font-medium tabular-nums leading-none ${scoreColor}`}>
                 {label ?? '—'}
               </span>
             </div>
@@ -92,7 +92,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
         })}
         {/* Nine total */}
         <div className="ml-1 flex flex-col items-center justify-end gap-1 self-stretch">
-          <span className="text-[9px] uppercase tracking-[0.14em] text-warm-400">
+          <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-400">
             Tot
           </span>
           <div className="h-28 md:h-32 w-7 md:w-8 flex items-center justify-center rounded-2xl bg-warm-100/70 ring-1 ring-warm-200/60">
@@ -100,7 +100,7 @@ export function RoundStripGrid({ holes, shotsByHole, detailAnchorPrefix }: Props
               {nine.reduce((sum, h) => sum + (h.score ?? 0), 0) || '—'}
             </span>
           </div>
-          <span className="text-[10px] text-warm-400">&nbsp;</span>
+          <span className="text-eyebrow text-warm-400">&nbsp;</span>
         </div>
       </div>
     </div>

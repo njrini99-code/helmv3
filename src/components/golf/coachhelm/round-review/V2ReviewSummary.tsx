@@ -190,7 +190,7 @@ export function V2ReviewSummary({
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35, duration: 0.4 }}
-                className="text-[15px] font-medium text-warm-900 tracking-[-0.005em] mb-2"
+                className="text-body font-medium text-warm-900 tracking-[-0.005em] mb-2"
               >
                 {headline}
               </m.h4>

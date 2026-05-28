@@ -372,7 +372,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
+                    'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out will-change-transform',
                     'active:scale-[0.98]',
                     isActive
@@ -437,7 +437,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                       onClick={handleNavClick}
                       title={isCollapsed ? item.name : undefined}
                       className={cn(
-                        'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
+                        'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                         'transition-colors duration-150 ease-out',
                         isActive
                           ? 'bg-white/10 text-primary-400 border-l-[3px] border-primary-500'
@@ -488,7 +488,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   onClick={handleNavClick}
                   title={isCollapsed ? item.name : undefined}
                   className={cn(
-                    'flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
+                    'flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
                     'transition-colors duration-150 ease-out',
                     isActive
                       ? 'bg-white/10 text-primary-400'
@@ -550,7 +550,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
           aria-label="Sign out"
           title={isCollapsed ? 'Sign out' : undefined}
           className={cn(
-            'w-full flex items-center gap-3 py-3 rounded-[10px] text-[13px] font-medium min-h-[44px]',
+            'w-full flex items-center gap-3 py-3 rounded-[10px] text-body-sm font-medium min-h-[44px]',
             'text-white/60 hover:bg-red-500/10 hover:text-red-400',
             'transition-colors duration-150 ease-out active:scale-[0.98]',
             isCollapsed ? 'justify-center px-2' : 'px-3'

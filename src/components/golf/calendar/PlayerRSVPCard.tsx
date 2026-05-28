@@ -260,7 +260,7 @@ export function PlayerRSVPCard({
                     />
                     <span
                       className={cn(
-                        'text-[11px] font-medium text-center uppercase tracking-wide',
+                        'text-eyebrow font-medium text-center uppercase tracking-wide',
                         isSelected ? 'text-white' : option.colorClass
                       )}
                     >

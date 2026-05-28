@@ -128,7 +128,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 <IconSparkles size={20} className="text-primary-600" />
               </div>
               <div>
-                <DrawerTitle id="confirm-classes-title" className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+                <DrawerTitle id="confirm-classes-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
                   Review Your Schedule
                 </DrawerTitle>
                 <p className="text-sm text-warm-500 mt-0.5">
@@ -306,7 +306,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         <div className="flex items-center gap-2 mb-1.5">
                           {cls.course_code && (
                             <span
-                              className="font-mono text-[11px] font-medium px-1.5 py-0.5 rounded"
+                              className="font-mono text-eyebrow font-medium px-1.5 py-0.5 rounded"
                               style={{
                                 // ~8% tint of the class color (was a `${color}15` hex-alpha
                                 // hack; color-mix keeps it valid when the color is a token var).

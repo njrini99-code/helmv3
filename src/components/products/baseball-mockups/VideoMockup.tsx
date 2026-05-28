@@ -65,7 +65,7 @@ export function VideoMockup() {
           <div className="absolute bottom-3 left-4 right-4">
             <div className="flex items-end justify-between">
               <div>
-                <span className="inline-block px-2 py-0.5 bg-emerald-500 text-[9px] text-white font-bold uppercase tracking-wider rounded mb-1">
+                <span className="inline-block px-2 py-0.5 bg-emerald-500 text-eyebrow text-white font-bold uppercase tracking-wider rounded mb-1">
                   Highlight
                 </span>
                 <h4 className="text-white font-semibold text-sm">State Championship At-Bat</h4>
@@ -153,13 +153,13 @@ function VideoThumb({ color, label, duration, isNew }: {
         </div>
 
         {/* Duration badge */}
-        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 text-white text-[9px] font-medium rounded">
+        <span className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-black/80 text-white text-eyebrow font-medium rounded">
           {duration}
         </span>
 
         {/* New indicator */}
         {isNew && (
-          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-emerald-500 text-white text-[8px] font-bold uppercase tracking-wider rounded">
+          <span className="absolute top-1 left-1 px-1.5 py-0.5 bg-emerald-500 text-white text-eyebrow font-bold uppercase tracking-wider rounded">
             New
           </span>
         )}

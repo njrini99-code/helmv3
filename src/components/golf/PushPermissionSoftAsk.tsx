@@ -94,7 +94,7 @@ export function PushPermissionSoftAsk() {
           <IconBell size={28} className="text-white" />
         </m.div>
 
-        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
+        <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
           Stay in the loop
         </h2>
         <p className="text-sm text-warm-500 mt-1.5 max-w-sm">
@@ -139,7 +139,7 @@ export function PushPermissionSoftAsk() {
           </button>
         </div>
 
-        <p className="text-[11px] text-warm-600 mt-2 max-w-xs leading-relaxed">
+        <p className="text-eyebrow text-warm-600 mt-2 max-w-xs leading-relaxed">
           You can change this anytime in Settings.
         </p>
       </div>

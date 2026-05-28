@@ -27,7 +27,7 @@ export function DiscoveryMockup() {
 function FilterPill({ label, active }: { label: string; active?: boolean }) {
   return (
     <div className={cn(
-      "px-2 py-0.5 rounded text-[9px] font-medium",
+      "px-2 py-0.5 rounded text-eyebrow font-medium",
       active
         ? "bg-primary-100 text-primary-700 border border-primary-200"
         : "bg-cream-100/68 text-warm-600 border border-warm-200/55"
@@ -49,13 +49,13 @@ function DiscoveryPlayerCard({ featured }: { featured?: boolean }) {
         <div className="flex items-center gap-1">
           <div className="h-2 w-14 bg-warm-200 rounded" />
           {featured && (
-            <span className="text-[8px] text-primary-600 font-semibold">TOP</span>
+            <span className="text-eyebrow text-primary-600 font-semibold">TOP</span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-1">
-          <span className="text-[8px] text-warm-500">SS</span>
-          <span className="text-[8px] text-warm-500">2026</span>
-          <span className="text-[8px] text-primary-600 font-semibold">89 mph</span>
+          <span className="text-eyebrow text-warm-500">SS</span>
+          <span className="text-eyebrow text-warm-500">2026</span>
+          <span className="text-eyebrow text-primary-600 font-semibold">89 mph</span>
         </div>
       </div>
       <div className="w-6 h-6 rounded bg-primary-50 flex items-center justify-center">

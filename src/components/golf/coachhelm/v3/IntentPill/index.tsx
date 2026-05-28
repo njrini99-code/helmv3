@@ -36,7 +36,7 @@ export function IntentPill({
 
   const sizeClasses = size === 'md'
     ? 'text-xs px-2.5 py-1 gap-1.5'
-    : 'text-[10px] px-2 py-0.5 gap-1';
+    : 'text-eyebrow px-2 py-0.5 gap-1';
 
   const baseClasses =
     'inline-flex items-center font-medium rounded-full border tabular-nums transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]';

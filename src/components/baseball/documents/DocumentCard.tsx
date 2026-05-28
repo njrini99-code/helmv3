@@ -266,7 +266,7 @@ export function DocumentCard({
         </div>
 
         {/* Title */}
-        <h3 className="font-semibold text-warm-900 mb-1 truncate text-[15px] leading-tight">
+        <h3 className="font-semibold text-warm-900 mb-1 truncate text-body leading-tight">
           {document.title}
         </h3>
 

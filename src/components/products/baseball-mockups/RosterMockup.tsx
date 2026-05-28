@@ -51,7 +51,7 @@ function RosterRow({ jersey, recruiting }: { jersey: number; recruiting?: boolea
 
       {/* Recruiting status */}
       {recruiting && (
-        <span className="text-[8px] px-1 py-0.5 rounded bg-primary-100 text-primary-700 font-medium">
+        <span className="text-eyebrow px-1 py-0.5 rounded bg-primary-100 text-primary-700 font-medium">
           Recruiting
         </span>
       )}

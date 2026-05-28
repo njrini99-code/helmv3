@@ -46,7 +46,7 @@ export function Hero(props: StandingBarProps) {
     >
       {/* Eyebrow + label */}
       <div className="flex items-baseline justify-between gap-3 mb-1">
-        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-warm-500">
+        <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500">
           Standing
         </p>
         {showTeam && (
@@ -79,7 +79,7 @@ export function Hero(props: StandingBarProps) {
       <Bar youPct={youPct} teamPct={teamPct} pgaPct={pgaPct} size="hero" />
 
       {/* Scale endpoints */}
-      <div className="flex items-baseline justify-between text-[10px] text-warm-400 mt-1.5 tabular-nums">
+      <div className="flex items-baseline justify-between text-eyebrow text-warm-400 mt-1.5 tabular-nums">
         <span>{formatValue(props.scale.min, props.unit)}</span>
         <span>{formatValue(props.scale.max, props.unit)}</span>
       </div>
@@ -140,7 +140,7 @@ function HeroEmpty({ label }: { label: string }) {
       data-state="empty"
       className="bg-white/80 backdrop-blur-xl border border-white/30 rounded-3xl shadow-glass p-6"
     >
-      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-warm-500 mb-1">
+      <p className="text-eyebrow font-medium uppercase tracking-[0.08em] text-warm-500 mb-1">
         Standing
       </p>
       <h2 className="text-lg md:text-xl font-medium text-warm-900 tracking-[-0.015em]">

@@ -109,7 +109,7 @@ function formatShortDate(iso: string): string {
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="bg-cream-100/75 backdrop-blur-xl border border-warm-200/45 rounded-2xl p-4 shadow-sm">
-      <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wide mb-1">{label}</p>
+      <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wide mb-1">{label}</p>
       <p className="text-2xl font-bold text-warm-900 tabular-nums leading-none">{value}</p>
       {sub && <p className="text-xs text-warm-400 mt-1">{sub}</p>}
     </div>
@@ -377,7 +377,7 @@ export function PlayerProfileClient({
                 {player.jersey_number && (
                   <span className="absolute -top-2 -right-2 min-w-[26px] h-[26px] px-1.5
                                    flex items-center justify-center
-                                   bg-primary-600 text-white text-[11px] font-bold rounded-full border-2 border-white shadow">
+                                   bg-primary-600 text-white text-eyebrow font-bold rounded-full border-2 border-white shadow">
                     #{player.jersey_number}
                   </span>
                 )}
@@ -454,25 +454,25 @@ export function PlayerProfileClient({
             {/* ── Key stat row ─────────────────────────────────────────── */}
             <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mt-6 pt-5 border-t border-warm-100">
               <div className="text-center">
-                <p className="text-[11px] text-warm-400 uppercase tracking-wide">AVG</p>
+                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">AVG</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {formatAvg(aggregates?.career_avg)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-warm-400 uppercase tracking-wide">OBP</p>
+                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">OBP</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {formatAvg(aggregates?.career_obp)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-warm-400 uppercase tracking-wide">HR</p>
+                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">HR</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {careerHR}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[11px] text-warm-400 uppercase tracking-wide">Sessions</p>
+                <p className="text-eyebrow text-warm-400 uppercase tracking-wide">Sessions</p>
                 <p className="text-xl font-bold text-warm-900 mt-0.5 tabular-nums">
                   {aggregates?.total_sessions ?? stats.length}
                 </p>
@@ -608,10 +608,10 @@ export function PlayerProfileClient({
                           <IconTarget size={18} className="text-purple-600" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-purple-500 uppercase tracking-wide">Pressure</p>
+                          <p className="text-eyebrow font-semibold text-purple-500 uppercase tracking-wide">Pressure</p>
                           <p className="text-base font-bold text-warm-900">{pressureIndex}</p>
                           {aggregates?.pressure_gap != null && (
-                            <p className="text-[10px] text-warm-400">
+                            <p className="text-eyebrow text-warm-400">
                               {aggregates.pressure_gap > 0 ? '+' : ''}{(aggregates.pressure_gap * 1000).toFixed(0)} pts game vs scrimmage
                             </p>
                           )}
@@ -624,11 +624,11 @@ export function PlayerProfileClient({
                           <IconActivity size={18} className="text-amber-600" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wide">Trend Velocity</p>
+                          <p className="text-eyebrow font-semibold text-amber-500 uppercase tracking-wide">Trend Velocity</p>
                           <p className="text-base font-bold text-warm-900">
                             {(aggregates.trend_magnitude * 100).toFixed(1)}%
                           </p>
-                          <p className="text-[10px] text-warm-400">Rate of change</p>
+                          <p className="text-eyebrow text-warm-400">Rate of change</p>
                         </div>
                       </div>
                     )}
@@ -638,12 +638,12 @@ export function PlayerProfileClient({
                           <IconBolt size={18} className="text-primary-600" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-semibold text-primary-600 uppercase tracking-wide">Exit Velocity</p>
+                          <p className="text-eyebrow font-semibold text-primary-600 uppercase tracking-wide">Exit Velocity</p>
                           <p className="text-base font-bold text-warm-900">
                             {aggregates.avg_exit_velocity.toFixed(1)} mph
                           </p>
                           {aggregates.max_exit_velocity && (
-                            <p className="text-[10px] text-warm-400">
+                            <p className="text-eyebrow text-warm-400">
                               Max {aggregates.max_exit_velocity.toFixed(1)} mph
                             </p>
                           )}
@@ -810,7 +810,7 @@ export function PlayerProfileClient({
             {/* Summary row */}
             {filteredStats.length > 0 && (
               <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-4">
-                <p className="text-[10px] font-semibold text-warm-400 uppercase tracking-wide mb-3">
+                <p className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wide mb-3">
                   Totals — {statFilter === 'all' ? 'All Sessions' : statFilter === 'game' ? 'Game Sessions' : 'Scrimmage Sessions'}
                 </p>
                 <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
@@ -824,7 +824,7 @@ export function PlayerProfileClient({
                     { label: 'SO', value: String(statSummary.so) },
                   ].map(({ label, value }) => (
                     <div key={label} className="text-center">
-                      <p className="text-[10px] text-warm-400 uppercase">{label}</p>
+                      <p className="text-eyebrow text-warm-400 uppercase">{label}</p>
                       <p className="text-base font-bold text-warm-900 tabular-nums">{value}</p>
                     </div>
                   ))}
@@ -870,7 +870,7 @@ export function PlayerProfileClient({
                             </td>
                             <td className="px-3 py-3">
                               <span
-                                className={`px-2 py-0.5 text-[11px] font-semibold rounded-md whitespace-nowrap ${
+                                className={`px-2 py-0.5 text-eyebrow font-semibold rounded-md whitespace-nowrap ${
                                   stat.stat_type === 'game'
                                     ? 'bg-primary-100 text-primary-700'
                                     : stat.stat_type === 'practice'
@@ -923,14 +923,14 @@ export function PlayerProfileClient({
                     >
                       {label}
                       {key !== 'all' && (videoTypeCounts[key] ?? 0) > 0 && (
-                        <span className={`ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full ${
+                        <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
                           videoFilter === key ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videoTypeCounts[key]}
                         </span>
                       )}
                       {key === 'all' && (
-                        <span className={`ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full ${
+                        <span className={`ml-1.5 text-eyebrow px-1.5 py-0.5 rounded-full ${
                           videoFilter === 'all' ? 'bg-white/20 text-white' : 'bg-warm-100 text-warm-500'
                         }`}>
                           {videos.length}
@@ -984,7 +984,7 @@ export function PlayerProfileClient({
                     {/* Type badge */}
                     {video.video_type && (
                       <div className="absolute top-2 left-2">
-                        <span className="px-2 py-0.5 text-[10px] font-semibold bg-black/50 text-white rounded-md capitalize">
+                        <span className="px-2 py-0.5 text-eyebrow font-semibold bg-black/50 text-white rounded-md capitalize">
                           {video.video_type}
                         </span>
                       </div>

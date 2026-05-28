@@ -142,7 +142,7 @@ export function UpcomingSection({
             <IconClipboardList size={16} className="text-amber-500" />
             <h3 className="font-semibold text-warm-900 text-sm">Tasks Due</h3>
             {pendingTasks > 0 && (
-              <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+              <Badge variant="warning" className="text-eyebrow px-1.5 py-0">
                 {pendingTasks}
               </Badge>
             )}
@@ -182,7 +182,7 @@ export function UpcomingSection({
             <IconBell size={16} className="text-purple-500" />
             <h3 className="font-semibold text-warm-900 text-sm">Messages</h3>
             {unreadMessages > 0 && (
-              <Badge variant="danger" className="text-[10px] px-1.5 py-0">
+              <Badge variant="danger" className="text-eyebrow px-1.5 py-0">
                 {unreadMessages}
               </Badge>
             )}

@@ -160,7 +160,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                       {player.jersey_number != null && (
                         <span className="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1
                                          flex items-center justify-center
-                                         bg-primary-600 text-white text-[10px] font-bold rounded-full">
+                                         bg-primary-600 text-white text-eyebrow font-bold rounded-full">
                           #{player.jersey_number}
                         </span>
                       )}
@@ -199,19 +199,19 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                     <div className="grid grid-cols-3 gap-2">
                       {height && (
                         <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
-                          <p className="text-[10px] text-warm-400 uppercase tracking-wide mb-0.5">Height</p>
+                          <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">Height</p>
                           <p className="text-sm font-semibold text-warm-900">{height}</p>
                         </div>
                       )}
                       {player.weight_lbs && (
                         <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
-                          <p className="text-[10px] text-warm-400 uppercase tracking-wide mb-0.5">Weight</p>
+                          <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">Weight</p>
                           <p className="text-sm font-semibold text-warm-900">{player.weight_lbs} lbs</p>
                         </div>
                       )}
                       {player.bats && (
                         <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
-                          <p className="text-[10px] text-warm-400 uppercase tracking-wide mb-0.5">Bats/Throws</p>
+                          <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">Bats/Throws</p>
                           <p className="text-sm font-semibold text-warm-900">
                             {player.bats}/{player.throws ?? '?'}
                           </p>
@@ -219,7 +219,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                       )}
                       {player.gpa && (
                         <div className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-2.5 text-center shadow-sm">
-                          <p className="text-[10px] text-warm-400 uppercase tracking-wide mb-0.5">GPA</p>
+                          <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">GPA</p>
                           <p className="text-sm font-semibold text-warm-900">{player.gpa.toFixed(2)}</p>
                         </div>
                       )}
@@ -244,7 +244,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
                           key={label}
                           className="bg-cream-100/75 border border-white/20 backdrop-blur-xl rounded-xl p-3 shadow-sm"
                         >
-                          <p className="text-[10px] text-warm-400 uppercase tracking-wide mb-0.5">{label}</p>
+                          <p className="text-eyebrow text-warm-400 uppercase tracking-wide mb-0.5">{label}</p>
                           <p className="text-lg font-bold text-warm-900 tabular-nums">{value}</p>
                         </div>
                       ))}
