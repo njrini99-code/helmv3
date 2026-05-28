@@ -12,6 +12,11 @@
  *
  * Premium polish: card uses canonical enter motion + the progress bar
  * scales-in from the left so progress feels EARNED, not assumed.
+ *
+ * Tier 4 polish (v3 feature audit feature #4): pair the existing
+ * `v3-lift` CSS class with canonical Framer Motion `liftHover` + `tapPress`
+ * so the card responds on both pointer hover and touch press. Framer
+ * Motion 12 honors `prefers-reduced-motion` automatically.
  */
 
 import { m } from 'framer-motion';
@@ -21,6 +26,8 @@ import { formatValue } from '@/components/golf/coachhelm/v3/StandingBar';
 import {
   enterVariants,
   enterTransition,
+  liftHover,
+  tapPress,
   EASE_CINEMATIC,
   DURATION,
 } from '@/lib/coachhelm/v3/motion';
@@ -69,6 +76,8 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         initial="hidden"
         animate="visible"
         transition={enterTransition}
+        whileHover={liftHover}
+        whileTap={tapPress}
         data-testid="goal-card-compact"
         data-goal-id={goal.id}
         className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3 v3-lift"
@@ -87,6 +96,8 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
       initial="hidden"
       animate="visible"
       transition={enterTransition}
+      whileHover={liftHover}
+      whileTap={tapPress}
       data-testid="goal-card"
       data-goal-id={goal.id}
       className="bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl shadow-glass p-5 v3-lift"
