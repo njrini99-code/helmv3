@@ -33,6 +33,10 @@ export default function SignupPage() {
   const [accessGranted, setAccessGranted] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState(false);
+  // Team join code carried in via the invite link (/golf/join/<CODE> →
+  // /golf/signup?returnTo=...). Prefills the access-code field and is forwarded
+  // to onboarding so the player auto-joins the inviting team.
+  const [joinCode, setJoinCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (isNativeApp()) {
@@ -43,12 +47,36 @@ export default function SignupPage() {
     }
   }, [router]);
 
+  // Prefill the access code from an invite link so coach-invited players can
+  // continue with a single tap. Read from window.location to avoid needing a
+  // useSearchParams Suspense boundary on this gate.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    let linkCode = params.get('joinCode') || params.get('code');
+    if (!linkCode) {
+      const returnTo = params.get('returnTo');
+      const match = returnTo?.match(/\/golf\/join\/([^/?#]+)/i);
+      if (match?.[1]) linkCode = decodeURIComponent(match[1]);
+    }
+    if (linkCode) {
+      const normalized = linkCode.trim().toUpperCase();
+      setJoinCode(normalized);
+      setCode(normalized);
+    }
+  }, []);
+
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const isValid = await validateAccessCode(code);
+    const entered = code.trim();
+    const isValid = await validateAccessCode(entered);
     if (isValid) {
       setAccessGranted(true);
       setCodeError(false);
+      // If a player typed a team join code directly (no invite link), carry it
+      // to onboarding so they still auto-join that team. Non-team codes (e.g.
+      // the global access code) are a harmless no-op on the onboarding side.
+      if (!joinCode && entered) setJoinCode(entered.toUpperCase());
     } else {
       setCodeError(true);
     }
@@ -117,16 +145,16 @@ export default function SignupPage() {
                 <div>
                   <input
                     type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
+                    inputMode="text"
+                    pattern="[A-Za-z0-9]*"
                     autoComplete="one-time-code"
                     autoCorrect="off"
-                    autoCapitalize="none"
+                    autoCapitalize="characters"
                     spellCheck={false}
                     enterKeyHint="go"
                     aria-label="Access code"
                     value={code}
-                    onChange={(e) => { setCode(e.target.value); setCodeError(false); }}
+                    onChange={(e) => { setCode(e.target.value.toUpperCase()); setCodeError(false); }}
                     placeholder="Enter access code"
                     autoFocus
                     className={`w-full h-12 px-4 rounded-xl border bg-cream-100/82 text-warm-900 placeholder:text-warm-400 text-center text-lg tracking-widest font-medium focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-500 transition-all ${
@@ -311,7 +339,7 @@ export default function SignupPage() {
                 <div className="h-12 bg-primary-400/20 rounded-xl" />
               </div>
             }>
-              <GolfSignUpForm />
+              <GolfSignUpForm joinCode={joinCode} />
             </Suspense>
           </m.div>
         </m.div>

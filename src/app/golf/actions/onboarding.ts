@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
+import { processGolfTeamInvitation } from '@/app/golf/actions/teams';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -308,7 +309,7 @@ export async function ensurePlayerRecord() {
  * Complete player onboarding
  * Creates or updates player record, optionally auto-joins a team via joinCode
  */
-export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
+export async function completePlayerOnboarding(input: PlayerOnboardingInput, joinCode?: string) {
   const supabase = await createClient();
 
   try {
@@ -373,6 +374,8 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
       updated_at: new Date().toISOString(),
     };
 
+    let playerId = existingPlayer?.id ?? null;
+
     if (existingPlayer) {
       const { error } = await supabase
         .from('golf_players')
@@ -384,16 +387,38 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
         return { success: false, error: 'Failed to update player profile. Please try again.' };
       }
     } else {
-      const { error } = await supabase
+      const { data: created, error } = await supabase
         .from('golf_players')
         .insert({
           user_id: user.id,
           ...playerData,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         await logServerError(`[Onboarding] Player creation failed: ${error instanceof Error ? error.message : String(error)}`, { action: 'onboarding.completePlayerOnboarding' });
         return { success: false, error: 'Failed to create player profile. Please try again.' };
+      }
+      playerId = created?.id ?? null;
+    }
+
+    // Coach-invited players arrive with the team join code in tow (carried
+    // through the invite link → signup gate → onboarding). Auto-add them to
+    // that team here so the invite actually lands them on the roster.
+    // Best-effort: a bad/expired code or an "already on a team" conflict never
+    // blocks onboarding — the player still completes setup and reaches the
+    // dashboard, where they can join from the invite link as a fallback.
+    let joinedTeam = false;
+    if (joinCode?.trim() && playerId) {
+      try {
+        const joinResult = await processGolfTeamInvitation(joinCode.trim(), playerId);
+        joinedTeam = joinResult.success === true;
+        if (!joinedTeam) {
+          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for code ${joinCode.trim().toUpperCase()}`, { action: 'onboarding.completePlayerOnboarding' });
+        }
+      } catch (joinError) {
+        await logServerError(`[Onboarding] Auto-join threw: ${joinError instanceof Error ? joinError.message : String(joinError)}`, { action: 'onboarding.completePlayerOnboarding' });
       }
     }
 
@@ -401,6 +426,7 @@ export async function completePlayerOnboarding(input: PlayerOnboardingInput) {
 
     return {
       success: true,
+      joinedTeam,
     };
 
   } catch (error) {
