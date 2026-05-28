@@ -9,12 +9,12 @@
  * but with a player picker to add the second.
  */
 
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadGenomes } from '@/lib/coachhelm/v3/genome/loader';
 import { GenomeRadar, type RadarSeries } from '@/components/golf/coachhelm/v3/Genome/GenomeRadar';
+import { GenomeComparePicker } from '@/components/golf/coachhelm/v3/Genome/GenomeComparePicker';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Reveal } from '@/components/ui/reveal';
@@ -124,7 +124,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
               Pick players
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <PlayerColumn
+              <GenomeComparePicker
                 heading="Player 1"
                 selectedId={playerA?.id ?? null}
                 otherId={playerB?.id ?? null}
@@ -132,7 +132,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
                 paramName="p1"
                 otherSlot={p2}
               />
-              <PlayerColumn
+              <GenomeComparePicker
                 heading="Player 2"
                 selectedId={playerB?.id ?? null}
                 otherId={playerA?.id ?? null}
@@ -148,58 +148,3 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
   );
 }
 
-function PlayerColumn({
-  heading,
-  selectedId,
-  otherId,
-  roster,
-  paramName,
-  otherSlot,
-}: {
-  heading: string;
-  selectedId: string | null;
-  otherId: string | null;
-  roster: { id: string; name: string }[];
-  paramName: 'p1' | 'p2';
-  /** Currently-selected value for the OTHER slot. Preserved in links. */
-  otherSlot: string | undefined;
-}) {
-  const otherParam = paramName === 'p1' ? 'p2' : 'p1';
-  return (
-    <div className="surface-matte rounded-2xl p-4">
-      <h3 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
-        {heading}
-      </h3>
-      <ul role="list" className="space-y-1 max-h-72 overflow-y-auto pr-1">
-        {roster.map((p) => {
-          const isSelected = p.id === selectedId;
-          const isOther = p.id === otherId;
-          const params = new URLSearchParams();
-          params.set(paramName, p.id);
-          if (otherSlot) params.set(otherParam, otherSlot);
-          const href = `/golf/dashboard/coachhelm/genome/compare?${params.toString()}`;
-          return (
-            <li key={p.id}>
-              <Link
-                href={href}
-                aria-current={isSelected ? 'true' : undefined}
-                aria-disabled={isOther || undefined}
-                tabIndex={isOther ? -1 : undefined}
-                className={`group block px-3 py-2 rounded-lg text-sm v3-lift transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
-                  isSelected
-                    ? 'bg-warm-900 text-white'
-                    : isOther
-                      ? 'text-warm-400 cursor-not-allowed pointer-events-none'
-                      : 'text-warm-800 hover:bg-warm-100'
-                }`}
-              >
-                {p.name}
-                {isOther && <span className="text-[10px] ml-2 opacity-60">(in other slot)</span>}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}

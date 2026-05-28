@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatComposer } from './ChatComposer';
@@ -53,6 +53,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion() ?? false;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -116,12 +117,12 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
             onClick={() => setOpen(true)}
             aria-label="Open coach chat"
             variants={badgeVariants}
-            initial="hidden"
+            initial={prefersReducedMotion ? false : 'hidden'}
             animate="visible"
             exit="exit"
             transition={badgeTransition}
-            whileHover={liftHover}
-            whileTap={tapPress}
+            whileHover={prefersReducedMotion ? undefined : liftHover}
+            whileTap={prefersReducedMotion ? undefined : tapPress}
             className="fixed bottom-6 right-6 z-40 h-14 w-14 rounded-full bg-primary-600 text-white shadow-[0_10px_24px_-12px_rgba(22,163,74,0.55)] hover:bg-primary-700 flex items-center justify-center"
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -206,9 +207,9 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                 {messages.length === 0 && !pending && (
                   <m.div
                     variants={enterVariants}
-                    initial="hidden"
+                    initial={prefersReducedMotion ? false : 'hidden'}
                     animate="visible"
-                    transition={{ ...enterTransition, delay: 0.15 }}
+                    transition={{ ...enterTransition, delay: prefersReducedMotion ? 0 : 0.15 }}
                     className="mt-10 max-w-sm mx-auto text-center"
                   >
                     <span aria-hidden className="inline-flex h-10 w-10 rounded-full bg-primary-50 text-primary-700 items-center justify-center mb-3">
@@ -226,11 +227,14 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                           type="button"
                           onClick={() => void handleSend(q)}
                           variants={enterVariants}
-                          initial="hidden"
+                          initial={prefersReducedMotion ? false : 'hidden'}
                           animate="visible"
-                          transition={{ ...enterTransition, delay: 0.25 + stagger(i) }}
-                          whileHover={liftHover}
-                          whileTap={tapPress}
+                          transition={{
+                            ...enterTransition,
+                            delay: prefersReducedMotion ? 0 : 0.25 + stagger(i),
+                          }}
+                          whileHover={prefersReducedMotion ? undefined : liftHover}
+                          whileTap={prefersReducedMotion ? undefined : tapPress}
                           className="text-left text-[13px] px-3 py-2 rounded-xl border border-warm-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 text-warm-800 transition"
                         >
                           {q}

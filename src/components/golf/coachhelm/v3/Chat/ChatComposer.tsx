@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type KeyboardEvent } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { liftHover, tapPress } from '@/lib/coachhelm/v3/motion';
 
 interface Props {
@@ -10,8 +10,20 @@ interface Props {
   placeholder?: string;
 }
 
+/**
+ * v3 polish — chat composer.
+ *
+ * Polish vs. original:
+ *   - Focus ring is canonical primary-500/40 (audit feature #8).
+ *   - Send button is "magnetic": liftHover + colored helm-green
+ *     shadow that deepens on hover, so the click target feels
+ *     physically responsive (not flat).
+ *   - Respects `useReducedMotion()` — drops framer hover/tap so
+ *     keyboard users on reduced-motion get a static affordance.
+ */
 export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
   const [value, setValue] = useState('');
+  const prefersReducedMotion = useReducedMotion() ?? false;
   const canSend = !disabled && value.trim().length > 0;
 
   async function submit() {
@@ -27,6 +39,16 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
       void submit();
     }
   }
+
+  // Magnetic shadow tier — deeper on hover to read as "lift", matched
+  // to the EASE_TAP timing the v3-lift CSS uses so the visual + the
+  // framer translateY land in lockstep.
+  const sendShadow = canSend
+    ? 'shadow-[0_8px_18px_-12px_rgba(22,163,74,0.55)] hover:shadow-[0_14px_28px_-12px_rgba(22,163,74,0.65)]'
+    : 'shadow-none';
+
+  const hoverProps = prefersReducedMotion || !canSend ? {} : { whileHover: liftHover };
+  const tapProps = prefersReducedMotion || !canSend ? {} : { whileTap: tapPress };
 
   return (
     <div className="surface-hairline border-t bg-white/80 backdrop-blur-sm p-3 flex items-end gap-2">
@@ -45,9 +67,9 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         onClick={submit}
         disabled={!canSend}
         aria-label="Send message"
-        whileHover={canSend ? liftHover : undefined}
-        whileTap={canSend ? tapPress : undefined}
-        className="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition shadow-[0_8px_18px_-12px_rgba(22,163,74,0.55)]"
+        {...hoverProps}
+        {...tapProps}
+        className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-shadow duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${sendShadow}`}
       >
         Send
         <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden>
