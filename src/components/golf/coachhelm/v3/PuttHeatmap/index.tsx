@@ -203,7 +203,7 @@ export function PuttHeatmap({
                   {/* Plotted putts */}
                   <g>
                     {data.plotted.map((p, i) => {
-                      const fill = p.made ? '#10b981' : 'transparent';
+                      const fill = p.made ? 'var(--color-primary-600)' : 'transparent';
                       const stroke = p.made ? '#065f46' : '#e3543b';
                       const radius = p.made ? 2.6 : 2.4;
                       return (
@@ -225,7 +225,7 @@ export function PuttHeatmap({
                         >
                           {/* Outer glow for made putts so they read first */}
                           {p.made && (
-                            <circle cx={p.x} cy={p.y} r={radius + 1.6} fill="#10b981" opacity={0.18} />
+                            <circle cx={p.x} cy={p.y} r={radius + 1.6} fill="var(--color-primary-600)" opacity={0.18} />
                           )}
                           <circle
                             cx={p.x}

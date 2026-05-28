@@ -9,8 +9,9 @@
 
 import { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { cn } from '@/lib/utils';
+import { ChartShell } from '@/components/ui';
 import {
   IconChartRadar,
   IconCheck,
@@ -49,7 +50,8 @@ export function PatternImpactPanel({
   const prefersReducedMotion = useReducedMotion();
   const hasPatterns = data.patternsDetected > 0;
 
-  // Prepare pie chart data
+  // Prepare lifecycle-distribution chart data (W5B: rendered as a horizontal
+  // bar chart, not a donut — synthesis §5, no pie/donut chrome).
   const lifecycleChartData = useMemo(() => {
     return Object.entries(data.lifecycle)
       .filter(([, count]) => count > 0)
@@ -183,28 +185,45 @@ export function PatternImpactPanel({
           </div>
         </div>
 
-        {/* Lifecycle Distribution Chart */}
+        {/* Lifecycle Distribution Chart — W5B: donut → horizontal bar via
+            ChartShell. Each lifecycle state keeps its own semantic color
+            (preserved via <Cell>), the per-state count is the bar length, and
+            the legend + tooltip carry the same name/value read the donut did. */}
         {lifecycleChartData.length > 0 && (
-          <div className="bg-cream-100/75 backdrop-blur-xl rounded-2xl border border-white/20 p-4">
-            <h4 className="text-sm font-medium text-warm-700 mb-4">Current Distribution</h4>
+          <ChartShell
+            title="Current Distribution"
+            noEntrance
+            className="bg-cream-100/75 backdrop-blur-xl border-white/20 rounded-2xl p-4 shadow-none"
+          >
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={lifecycleChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
+                <BarChart
+                  data={lifecycleChartData}
+                  layout="vertical"
+                  margin={{ top: 4, right: 16, left: 8, bottom: 4 }}
+                >
+                  <XAxis
+                    type="number"
+                    allowDecimals={false}
+                    tick={{ fontSize: 11, fill: '#78716c' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    tick={{ fontSize: 12, fill: '#374151', fontWeight: 500 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={72}
+                  />
+                  <Tooltip content={<LifecycleTooltip />} cursor={{ fill: 'rgba(120,113,108,0.08)' }} />
+                  <Bar dataKey="value" radius={[0, 6, 6, 0]}>
                     {lifecycleChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
-                  </Pie>
-                  <Tooltip content={<LifecycleTooltip />} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
             <div className="flex flex-wrap justify-center gap-3 mt-2">
@@ -215,7 +234,7 @@ export function PatternImpactPanel({
                 </span>
               ))}
             </div>
-          </div>
+          </ChartShell>
         )}
       </div>
 
