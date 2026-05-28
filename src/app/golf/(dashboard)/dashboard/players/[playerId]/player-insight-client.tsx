@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -429,6 +430,15 @@ export function PlayerInsightClient({
           subtitle="Player Insight"
           backHref="/golf/dashboard/roster"
           backLabel="Roster"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Roster', href: '/golf/dashboard/roster' },
+                { label: playerName || 'Player Insight' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
 

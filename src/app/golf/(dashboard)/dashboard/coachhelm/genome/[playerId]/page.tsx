@@ -24,6 +24,7 @@ import { GenomePersonaPanel } from '@/components/golf/coachhelm/v3/Genome/Genome
 import { GenomeDimensionGrid } from '@/components/golf/coachhelm/v3/Genome/GenomeDimensionGrid';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
 
@@ -68,6 +69,16 @@ export default async function CoachGenomePage({ params }: PageProps) {
           title="Genome"
           backHref="/golf/dashboard/coachhelm"
           backLabel="CoachHelm"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'CoachHelm', href: '/golf/dashboard/coachhelm' },
+                { label: 'Genome', href: '/golf/dashboard/coachhelm' },
+                { label: name },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
 

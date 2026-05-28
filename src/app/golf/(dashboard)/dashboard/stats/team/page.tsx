@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { TeamStatsTable } from './team-stats-table';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
 import type { Metadata } from 'next';
 
@@ -101,6 +102,15 @@ export default async function TeamStatsPage() {
           subtitle={team?.name || 'Your Team'}
           backHref="/golf/dashboard/stats"
           backLabel="Stats"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Stats', href: '/golf/dashboard/stats' },
+                { label: 'Team' },
+              ]}
+            />
+          }
         />
         <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-16 text-center">
           <p className="text-warm-500">No players on your roster yet.</p>
@@ -306,6 +316,15 @@ export default async function TeamStatsPage() {
           subtitle={`${team?.name || 'Your Team'} • ${playersWithStats.length} player${playersWithStats.length !== 1 ? 's' : ''}`}
           backHref="/golf/dashboard/stats"
           backLabel="Stats"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Stats', href: '/golf/dashboard/stats' },
+                { label: 'Team' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
 

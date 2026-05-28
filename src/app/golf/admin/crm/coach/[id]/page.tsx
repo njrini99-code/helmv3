@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getCoachEngagement } from '@/app/golf/actions/crm-engagement';
 import type { Coach } from '../../crm-config';
 import { CoachPageHeader } from '../../components/coach/CoachPageHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { CoachInfoBlock } from '../../components/coach/CoachInfoBlock';
 import { CoachAttachmentsBlock } from '../../components/coach/CoachAttachmentsBlock';
 import { CoachTimeline } from '../../components/timeline/CoachTimeline';
@@ -98,6 +99,13 @@ export default async function CoachDetailPage({ params }: PageProps) {
   return (
     <main className="min-h-screen bg-cream-100">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+        <Breadcrumb
+          items={[
+            { label: 'CRM', href: '/golf/admin/crm' },
+            { label: 'Coach', href: '/golf/admin/crm' },
+            { label: coach.name },
+          ]}
+        />
         <CoachPageHeader coach={coach} engagement={engagement} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

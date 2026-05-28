@@ -46,7 +46,8 @@
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { deriveBreadcrumbItems } from '@/components/ui/breadcrumb';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
@@ -156,6 +157,12 @@ interface DefaultHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 
   subtitle?: React.ReactNode;
   /** Optional right-rail content (CTA, metadata pills) — desktop only on md+ */
   actions?: React.ReactNode;
+  /**
+   * Optional breadcrumb trail rendered above the eyebrow/title. Pass a
+   * `<Breadcrumb … />` element (or `<Breadcrumb auto />`) to give deep routes
+   * a visible trail back to their section root.
+   */
+  breadcrumb?: React.ReactNode;
 }
 
 function DefaultHeader({
@@ -165,24 +172,28 @@ function DefaultHeader({
   title,
   subtitle,
   actions,
+  breadcrumb,
   forwardedRef,
   ...props
 }: DefaultHeaderProps & { forwardedRef?: React.Ref<HTMLDivElement> }) {
   return (
-    <div
-      ref={forwardedRef}
-      className={cn(
-        'flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6',
-        className,
-      )}
-      {...props}
-    >
-      <div className="flex flex-col gap-3">
-        {eyebrow && <Eyebrow accent={eyebrowAccent}>{eyebrow}</Eyebrow>}
-        <PageTitle>{title}</PageTitle>
-        {subtitle && <PageSubtitle>{subtitle}</PageSubtitle>}
+    <div className="flex flex-col gap-3">
+      {breadcrumb}
+      <div
+        ref={forwardedRef}
+        className={cn(
+          'flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6',
+          className,
+        )}
+        {...props}
+      >
+        <div className="flex flex-col gap-3">
+          {eyebrow && <Eyebrow accent={eyebrowAccent}>{eyebrow}</Eyebrow>}
+          <PageTitle>{title}</PageTitle>
+          {subtitle && <PageSubtitle>{subtitle}</PageSubtitle>}
+        </div>
+        {actions && <div className="flex items-center gap-2 md:flex-shrink-0">{actions}</div>}
       </div>
-      {actions && <div className="flex items-center gap-2 md:flex-shrink-0">{actions}</div>}
     </div>
   );
 }
@@ -190,6 +201,21 @@ function DefaultHeader({
 // ============================================================================
 // Shared back-navigation chevron (large-title + mobile-nav variants)
 // ============================================================================
+
+/**
+ * Resolve the breadcrumb-parent href for a pathname — the second-to-last crumb
+ * in the derived trail. Used as the deterministic smart-back fallback so a
+ * deep-linked / cold-started page lands on its logical parent (not a blind
+ * router.back() into nothing, nor a hardcoded dashboard). Returns null for
+ * root pages (a single-crumb trail has no parent).
+ */
+function breadcrumbParentHref(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const items = deriveBreadcrumbItems(pathname);
+  if (items.length < 2) return null;
+  const parent = items[items.length - 2];
+  return parent?.href ?? null;
+}
 
 function BackChevron({
   backHref,
@@ -204,6 +230,8 @@ function BackChevron({
   className: string;
   labelClassName: string;
 }) {
+  const pathname = usePathname();
+
   if (typeof backHref === 'string') {
     return (
       <Link
@@ -228,7 +256,9 @@ function BackChevron({
         if (typeof window !== 'undefined' && window.history.length > 1) {
           router.back();
         } else {
-          router.push('/golf/dashboard');
+          // No history (deep link / native cold start): land on the
+          // breadcrumb parent, falling back to the dashboard root.
+          router.push(breadcrumbParentHref(pathname) ?? '/golf/dashboard');
         }
       }}
       className={className}
@@ -266,6 +296,11 @@ export interface LargeTitleHeaderProps {
   backHref?: string | true;
   /** Optional label next to the chevron (e.g., "Roster") */
   backLabel?: string;
+  /**
+   * Optional breadcrumb trail rendered above the large title (desktop) and the
+   * scroll-away title (mobile). Pass a `<Breadcrumb … />` element.
+   */
+  breadcrumb?: React.ReactNode;
 }
 
 /** Scroll distance (px) at which the compact title fully fades in. */
@@ -299,6 +334,7 @@ function LargeTitleHeader({
   scrollContainerRef,
   backHref,
   backLabel,
+  breadcrumb,
 }: Omit<LargeTitleHeaderProps, 'variant'>) {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
@@ -434,6 +470,7 @@ function LargeTitleHeader({
                 just title + optional quiet subtitle on warm cream. */}
             <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
               <div className="min-w-0 flex-1">
+                {breadcrumb && <div className="mb-0.5">{breadcrumb}</div>}
                 <h1 className="text-h1 leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
                   {title}
                 </h1>
@@ -463,6 +500,7 @@ function LargeTitleHeader({
           No eyebrow, no hairline, no glass tray — just the title sitting
           on warm cream and scrolling away naturally. Zero flicker. */}
       <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-3">
+        {breadcrumb && <div className="mb-1.5">{breadcrumb}</div>}
         <h1 className="text-h1 leading-[1.05] font-medium tracking-[-0.018em] text-warm-900 truncate">
           {title}
         </h1>
@@ -512,6 +550,12 @@ export interface MobileNavHeaderProps {
   backHref?: string | true;
   /** Optional label next to the chevron (e.g., "Roster" or "Back") */
   backLabel?: string;
+  /**
+   * Optional breadcrumb trail rendered above the title row. Pass a
+   * `<Breadcrumb … />` element to give deep routes a visible trail back to
+   * their section root (complements the ← back chevron on detail pages).
+   */
+  breadcrumb?: React.ReactNode;
 }
 
 /**
@@ -533,6 +577,7 @@ function MobileNavHeader({
   className,
   backHref,
   backLabel,
+  breadcrumb,
 }: Omit<MobileNavHeaderProps, 'variant'>) {
   const router = useRouter();
 
@@ -556,6 +601,7 @@ function MobileNavHeader({
   return (
     <div className={cn('golf-mobile-page-header', className)}>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-5">
+        {breadcrumb && <div className="mb-2">{breadcrumb}</div>}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {BackNav}
