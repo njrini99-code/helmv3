@@ -35,8 +35,6 @@ export interface RadarSeries {
 
 export interface GenomeRadarProps {
   series: RadarSeries[];
-  /** SVG box size in CSS px. Square. */
-  size?: number;
 }
 
 interface SpokePoint {
@@ -51,7 +49,7 @@ interface SpokePoint {
   textAnchor: 'start' | 'middle' | 'end';
 }
 
-export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
+export function GenomeRadar({ series }: GenomeRadarProps) {
   const [hover, setHover] = useState<{ dim_id: string; series_idx: number } | null>(null);
   const prefersReducedMotion = useReducedMotion() ?? false;
   // Scale all entrance delays to 0 when reduced motion is set. This
@@ -77,8 +75,19 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
     });
   }, []);
 
-  // --- View geometry: SVG viewBox is -1.4..+1.4 to leave room for labels ---
+  // --- View geometry ---
+  // All internal geometry below is computed in unit-circle space (the
+  // outer ring is radius 1, labels sit at radius 1.18). To make the
+  // chart fluid we render into a fixed `0 0 100 100` viewBox and place
+  // every drawn element inside a single transform that maps unit space
+  // into the box: translate to the center (50,50) then scale by 50/VB.
+  // This is a pure coordinate remap — the rendered geometry, stroke
+  // widths, font sizes, and proportions are identical to the previous
+  // -VB..+VB viewBox; only the container is now responsive.
   const VB = 1.4;
+  // Half the viewBox edge; unit radius 1 → SCALE px, the full VB span
+  // (1.4) reaches the box edge at 50.
+  const SCALE = 50 / VB;
 
   function project(s: RadarSeries): Array<{ x: number; y: number; norm: number | null }> {
     return spokes.map((sp) => {
@@ -98,11 +107,12 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
   }
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative w-full max-w-md aspect-square">
       <svg
-        viewBox={`-${VB} -${VB} ${VB * 2} ${VB * 2}`}
-        width={size}
-        height={size}
+        viewBox="0 0 100 100"
+        width="100%"
+        height="100%"
+        preserveAspectRatio="xMidYMid meet"
         aria-label="Player genome radar"
         role="img"
       >
@@ -119,6 +129,10 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
           </filter>
         </defs>
 
+        {/* All geometry is authored in unit-circle space and mapped into
+            the 0..100 viewBox by this single transform: unit (0,0) → box
+            center (50,50); unit radius 1 → SCALE px. */}
+        <g transform={`translate(50 50) scale(${SCALE})`}>
         {/* ----- Spider grid: 4 rings (animated entrance, outermost first) ----- */}
         {[1, 0.75, 0.5, 0.25].map((r, i) => (
           <m.circle
@@ -235,6 +249,7 @@ export function GenomeRadar({ series, size = 360 }: GenomeRadarProps) {
             {sp.label}
           </text>
         ))}
+        </g>
       </svg>
 
       {/* ----- Hover tooltip — series-colored dot + label + value ----- */}

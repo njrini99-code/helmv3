@@ -115,7 +115,6 @@ export default async function CoachGenomePage({ params }: PageProps) {
             <section className="surface-matte rounded-3xl p-6 md:p-8 mb-6 md:mb-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7 flex items-center justify-center min-w-0">
                 <GenomeRadar
-                  size={420}
                   series={
                     [
                       {

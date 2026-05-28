@@ -102,7 +102,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
               </p>
             ) : (
               <div className="flex items-center justify-center">
-                <GenomeRadar size={460} series={series} />
+                <GenomeRadar series={series} />
               </div>
             )}
             {series.length > 0 && (
