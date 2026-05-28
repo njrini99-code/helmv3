@@ -262,9 +262,9 @@ function CompositeRatingCircle({ rating }: { rating: number }) {
         <AnimatedNumber
           value={rating}
           decimals={0}
-          className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', ratingColor(rating))}
+          className={cn('text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]', ratingColor(rating))}
         />
-        <span className="text-[10px] text-warm-400 font-medium uppercase tracking-wider">Rating</span>
+        <span className="text-eyebrow text-warm-400 font-medium uppercase tracking-wider">Rating</span>
       </div>
     </div>
   );
@@ -470,7 +470,7 @@ export function PlayerInsightClient({
                       </div>
                     ) : (
                       <div className="w-16 h-16 rounded-2xl bg-warm-100/65 flex items-center justify-center">
-                        <span className="text-[18px] font-medium text-warm-500 tracking-[-0.005em]">
+                        <span className="text-h3 font-medium text-warm-500 tracking-[-0.005em]">
                           {(player.first_name?.[0] ?? '')}{(player.last_name?.[0] ?? '')}
                         </span>
                       </div>
@@ -478,10 +478,10 @@ export function PlayerInsightClient({
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-[22px] md:text-[28px] font-medium tracking-[-0.022em] text-warm-900 truncate">
+                    <h2 className="text-h2 md:text-h1 font-medium tracking-[-0.022em] text-warm-900 truncate">
                       {playerName}
                     </h2>
-                    <p className="text-[13px] text-warm-500 mt-1">
+                    <p className="text-body-sm text-warm-500 mt-1">
                       {player.graduation_year ? `Class ${player.graduation_year}` : 'No class year'}
                       {' · '}
                       {formatHandicap(player.handicap)} Handicap
@@ -489,7 +489,7 @@ export function PlayerInsightClient({
                     <div className="mt-2.5">
                       <span
                         className={cn(
-                          'inline-flex items-center px-3 py-0.5 rounded-full text-[11px] font-medium',
+                          'inline-flex items-center px-3 py-0.5 rounded-full text-eyebrow font-medium',
                           statusBadgeStyles(playerStatus),
                         )}
                       >
@@ -504,7 +504,7 @@ export function PlayerInsightClient({
 
               {/* Category Breakdown Card */}
               <div className="surface-matte rounded-3xl p-6 md:p-7">
-                <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Category Breakdown</h3>
+                <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em] mb-4">Category Breakdown</h3>
                 <div className="space-y-3">
                   <CategoryBar label="Tee Game" value={categoryBreakdown.teeGame} />
                   <CategoryBar label="Approach" value={categoryBreakdown.approach} />
@@ -516,7 +516,7 @@ export function PlayerInsightClient({
 
               {/* Trend Summary Card */}
               <div className="surface-matte rounded-3xl p-6 md:p-7">
-                <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Trend Summary</h3>
+                <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em] mb-4">Trend Summary</h3>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
                     <p className="text-xs text-warm-500 font-medium uppercase tracking-wide mb-1">Recent Avg</p>
@@ -526,10 +526,10 @@ export function PlayerInsightClient({
                         decimals={1}
                         prefix={trendSummary.recentAvg > 0 ? '+' : ''}
                         staggerIndex={0}
-                        className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                        className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]"
                       />
                     ) : (
-                      <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                      <p className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
                     )}
                   </div>
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
@@ -540,10 +540,10 @@ export function PlayerInsightClient({
                         decimals={1}
                         prefix={trendSummary.previousAvg > 0 ? '+' : ''}
                         staggerIndex={1}
-                        className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                        className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]"
                       />
                     ) : (
-                      <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                      <p className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
                     )}
                   </div>
                   <div className="bg-cream-50/55 rounded-2xl p-4 text-center">
@@ -554,13 +554,13 @@ export function PlayerInsightClient({
                         decimals={0}
                         staggerIndex={2}
                         className={cn(
-                          'text-[17px] font-medium tracking-[-0.005em] tabular-nums',
+                          'text-body-lg font-medium tracking-[-0.005em] tabular-nums',
                           trendSummary.streakType === 'positive' ? 'text-emerald-600' :
                           trendSummary.streakType === 'negative' ? 'text-red-500' : 'text-warm-900',
                         )}
                       />
                     ) : (
-                      <p className="text-[17px] font-medium tracking-[-0.005em] tabular-nums text-warm-900">--</p>
+                      <p className="text-body-lg font-medium tracking-[-0.005em] tabular-nums text-warm-900">--</p>
                     )}
                   </div>
                 </div>
@@ -584,16 +584,16 @@ export function PlayerInsightClient({
               <div className="surface-matte rounded-3xl overflow-hidden">
                 <div className="px-6 md:px-7 pt-6 pb-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-[17px] md:text-[20px] font-medium tracking-[-0.012em] text-warm-700">
+                    <h3 className="text-body-lg md:text-h3 font-medium tracking-[-0.012em] text-warm-700">
                       Active Patterns
                     </h3>
-                    <span className="text-[12px] font-medium text-warm-400 tabular-nums">
+                    <span className="text-caption font-medium text-warm-400 tabular-nums">
                       {patterns.length}
                     </span>
                   </div>
                 </div>
                 {patterns.length === 0 ? (
-                  <p className="text-[13px] text-warm-400 text-center pb-8 px-6">No active patterns detected</p>
+                  <p className="text-body-sm text-warm-400 text-center pb-8 px-6">No active patterns detected</p>
                 ) : (
                   <ul className="divide-y divide-warm-200/30">
                     {patterns.map((pattern) => (
@@ -601,13 +601,13 @@ export function PlayerInsightClient({
                         <div className="flex items-start justify-between gap-3 mb-1.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', severityDotColor(pattern.severity))} aria-hidden="true" />
-                            <span className="text-[14px] font-medium tracking-[-0.005em] text-warm-900 truncate">
+                            <span className="text-body-sm font-medium tracking-[-0.005em] text-warm-900 truncate">
                               {pattern.name ?? 'Pattern'}
                             </span>
                           </div>
                           {pattern.stroke_impact !== null && (
                             <span className={cn(
-                              'text-[11px] font-medium tabular-nums flex-shrink-0 px-2 py-0.5 rounded-full',
+                              'text-eyebrow font-medium tabular-nums flex-shrink-0 px-2 py-0.5 rounded-full',
                               pattern.stroke_impact < 0
                                 ? 'bg-rose-50/65 text-rose-700'
                                 : 'bg-emerald-50/65 text-emerald-700',
@@ -617,12 +617,12 @@ export function PlayerInsightClient({
                           )}
                         </div>
                         {pattern.description && (
-                          <p className="text-[12px] text-warm-500 line-clamp-2 leading-relaxed mb-2 pl-3.5">
+                          <p className="text-caption text-warm-500 line-clamp-2 leading-relaxed mb-2 pl-3.5">
                             {pattern.description}
                           </p>
                         )}
                         <div className="flex items-center justify-between gap-2 pl-3.5">
-                          <div className="flex items-center gap-1.5 text-[11px] text-warm-400">
+                          <div className="flex items-center gap-1.5 text-eyebrow text-warm-400">
                             <span className="capitalize">{pattern.lifecycle_state ?? 'detected'}</span>
                             {pattern.first_detected && (
                               <>
@@ -634,14 +634,14 @@ export function PlayerInsightClient({
                           <div className="flex items-center gap-2">
                             <Link
                               href={`/golf/dashboard/patterns?pattern=${pattern.id}`}
-                              className="text-[11px] font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
+                              className="text-eyebrow font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
                             >
                               Details
                             </Link>
                             <span className="text-warm-200" aria-hidden>·</span>
                             <Link
                               href={`/golf/dashboard/development?player=${player.id}`}
-                              className="text-[11px] font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
+                              className="text-eyebrow font-medium text-primary-700 hover:text-primary-800 transition-colors duration-300"
                             >
                               Focus
                             </Link>
@@ -662,7 +662,7 @@ export function PlayerInsightClient({
               <div className="surface-matte rounded-3xl p-6 md:p-7" data-testid="player-insight-section">
                 <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                   <div className="flex items-center gap-3">
-                    <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">AI Insights</h3>
+                    <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em]">AI Insights</h3>
                     <span className="text-xs text-warm-400 font-medium">
                       {insights.length} insight{insights.length !== 1 ? 's' : ''}
                     </span>
@@ -756,7 +756,7 @@ export function PlayerInsightClient({
               {/* Focus Areas Card */}
               <div className="surface-matte rounded-3xl p-6 md:p-7">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">Focus Areas</h3>
+                  <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em]">Focus Areas</h3>
                   <Link
                     href={`/golf/dashboard/development?player=${player.id}`}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
@@ -790,7 +790,7 @@ export function PlayerInsightClient({
                             </div>
                             <span
                               className={cn(
-                                'inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border capitalize flex-shrink-0',
+                                'inline-flex items-center px-1.5 py-0.5 rounded text-eyebrow font-medium border capitalize flex-shrink-0',
                                 focusAreaStatusBadge(fa.status),
                               )}
                             >
@@ -799,7 +799,7 @@ export function PlayerInsightClient({
                           </div>
                           {fa.target_value !== null && (
                             <div>
-                              <div className="flex items-center justify-between text-[11px] text-warm-400 mb-1">
+                              <div className="flex items-center justify-between text-eyebrow text-warm-400 mb-1">
                                 <span>{fa.current_value ?? 0}</span>
                                 <span>{fa.target_value}</span>
                               </div>
@@ -811,7 +811,7 @@ export function PlayerInsightClient({
                               </div>
                             </div>
                           )}
-                          <p className="text-[11px] text-warm-400">
+                          <p className="text-eyebrow text-warm-400">
                             Started {formatRelativeDate(fa.created_at)}
                           </p>
                         </div>
@@ -824,14 +824,14 @@ export function PlayerInsightClient({
               {/* Predictions Card */}
               {predictions.length > 0 && (
                 <div className="surface-matte rounded-3xl p-6 md:p-7">
-                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em] mb-4">Predictions</h3>
+                  <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em] mb-4">Predictions</h3>
                   <div className="space-y-3">
                     {predictions.map((pred) => (
                       <div key={pred.id} className="bg-cream-50/55 rounded-2xl p-4 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-warm-900 truncate">{formatMetricLabel(pred.metric)}</p>
                           {pred.due_date && (
-                            <p className="text-[11px] text-warm-400 mt-0.5">Due {formatRelativeDate(pred.due_date)}</p>
+                            <p className="text-eyebrow text-warm-400 mt-0.5">Due {formatRelativeDate(pred.due_date)}</p>
                           )}
                         </div>
                         <div className="text-right flex-shrink-0">
@@ -839,11 +839,11 @@ export function PlayerInsightClient({
                             <AnimatedNumber
                               value={pred.predicted_value}
                               decimals={1}
-                              className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                              className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]"
                             />
                           )}
                           {pred.confidence !== null && (
-                            <p className="text-[11px] text-warm-400 tabular-nums">{Math.round(pred.confidence * 100)}% conf</p>
+                            <p className="text-eyebrow text-warm-400 tabular-nums">{Math.round(pred.confidence * 100)}% conf</p>
                           )}
                         </div>
                       </div>
@@ -855,7 +855,7 @@ export function PlayerInsightClient({
               {/* Recent Rounds Card */}
               <div className="surface-matte rounded-3xl p-6 md:p-7">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">Recent Rounds</h3>
+                  <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em]">Recent Rounds</h3>
                   <Link
                     href={`/golf/dashboard/stats?player=${player.id}`}
                     className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
@@ -884,7 +884,7 @@ export function PlayerInsightClient({
                             <p className="text-sm font-medium text-warm-900 truncate group-hover:text-primary-700 transition-colors">
                               {round.course_name ?? 'Unknown Course'}
                             </p>
-                            <p className="text-[11px] text-warm-400 mt-0.5">
+                            <p className="text-eyebrow text-warm-400 mt-0.5">
                               {formatRelativeDate(round.round_date ?? round.created_at)}
                               {round.holes_played && ` · ${round.holes_played} holes`}
                             </p>
@@ -894,10 +894,10 @@ export function PlayerInsightClient({
                               <AnimatedNumber
                                 value={round.total_score}
                                 decimals={0}
-                                className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]"
+                                className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]"
                               />
                             ) : (
-                              <p className="text-[20px] md:text-[22px] font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
+                              <p className="text-h3 md:text-h2 font-light text-warm-900 tabular-nums tracking-[-0.022em]">--</p>
                             )}
                             {diff !== null && (
                               <p className={cn(

@@ -240,7 +240,7 @@ export function CalendarView({
         {/* Day Headers */}
         <div className="grid grid-cols-7 border-b border-warm-100/40">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-            <div key={d} className="py-2 text-center text-[11px] font-semibold text-warm-400 uppercase tracking-wider">
+            <div key={d} className="py-2 text-center text-eyebrow font-semibold text-warm-400 uppercase tracking-wider">
               {d}
             </div>
           ))}
@@ -285,7 +285,7 @@ export function CalendarView({
                             onMouseEnter={() => setHoveredEvent(event.id)}
                             onMouseLeave={() => setHoveredEvent(null)}
                             className={cn(
-                              'flex items-center gap-1 text-[11px] leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium',
+                              'flex items-center gap-1 text-eyebrow leading-tight px-1.5 py-[3px] rounded-lg truncate cursor-pointer transition-all font-medium',
                               config.pillBg,
                               config.pillText,
                               hoveredEvent === event.id && 'ring-1 ring-offset-1 ring-warm-300 shadow-sm'
@@ -297,7 +297,7 @@ export function CalendarView({
                         );
                       })}
                       {dayEvents.length > 3 && (
-                        <div className="text-[10px] text-warm-400 pl-1 font-medium">
+                        <div className="text-eyebrow text-warm-400 pl-1 font-medium">
                           +{dayEvents.length - 3} more
                         </div>
                       )}
@@ -338,7 +338,7 @@ export function CalendarView({
                 isToday(date) && 'bg-primary-50/30'
               )}
             >
-              <div className="text-[11px] font-semibold text-warm-400 uppercase tracking-wider">{format(date, 'EEE')}</div>
+              <div className="text-eyebrow font-semibold text-warm-400 uppercase tracking-wider">{format(date, 'EEE')}</div>
               <div className={cn(
                 'text-base font-bold mt-0.5 w-8 h-8 mx-auto flex items-center justify-center rounded-full',
                 isToday(date) ? 'bg-primary-500 text-white' : 'text-warm-900'
@@ -356,7 +356,7 @@ export function CalendarView({
             <div className="w-16 shrink-0">
               {hours.map((hour) => (
                 <div key={hour} className="h-16 border-b border-warm-100/30 pr-2 text-right">
-                  <span className="text-[11px] text-warm-400 font-medium">
+                  <span className="text-eyebrow text-warm-400 font-medium">
                     {format(setHours(new Date(), hour), 'h a')}
                   </span>
                 </div>
@@ -413,12 +413,12 @@ export function CalendarView({
                           <span className="truncate">{event.title}</span>
                         </div>
                         {height > 40 && (
-                          <div className="text-[10px] text-warm-500 truncate">
+                          <div className="text-eyebrow text-warm-500 truncate">
                             {format(startTime, 'h:mm a')}
                           </div>
                         )}
                         {height > 60 && event.coach_name && (
-                          <div className="text-[10px] text-warm-500 truncate">
+                          <div className="text-eyebrow text-warm-500 truncate">
                             {event.coach_name}
                           </div>
                         )}
@@ -638,7 +638,7 @@ export function CalendarView({
             {(['demo', 'follow_up', 'call', 'meeting'] as const).map((type) => {
               const config = EVENT_TYPE_CONFIG[type];
               return (
-                <div key={type} className="flex items-center gap-1.5 text-[11px]">
+                <div key={type} className="flex items-center gap-1.5 text-eyebrow">
                   <span className={cn('w-2 h-2 rounded-full', config.dotColor)} />
                   <span className="text-warm-500 font-medium">{config.label}</span>
                 </div>

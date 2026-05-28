@@ -366,7 +366,7 @@ function CoachDetailPanelInner({
               {isOverdue && (
                 <div className="mt-2 ml-[26px] px-2.5 py-1.5 rounded-lg bg-red-50/80 border border-red-200/40 flex items-center gap-1.5">
                   <IconClock size={12} className="text-red-500" />
-                  <span className="text-[11px] font-medium text-red-600">Overdue: {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : ''}</span>
+                  <span className="text-eyebrow font-medium text-red-600">Overdue: {coach.next_follow_up_at ? formatShort(coach.next_follow_up_at) : ''}</span>
                 </div>
               )}
             </>
@@ -434,8 +434,8 @@ function CoachDetailPanelInner({
                       <textarea value={notesValue} onChange={e => setNotesValue(e.target.value)} autoFocus rows={3}
                         className="w-full bg-white/50 border border-warm-200/60 rounded-lg px-2.5 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/30" placeholder="Add notes..." />
                       <div className="flex gap-1.5">
-                        <button onClick={saveNotes} className="px-2 py-1 bg-primary-600 text-white rounded-md text-[10px] font-semibold hover:bg-primary-700 transition-colors">Save</button>
-                        <button onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className="px-2 py-1 text-[10px] text-warm-500 hover:text-warm-700">Cancel</button>
+                        <button onClick={saveNotes} className="px-2 py-1 bg-primary-600 text-white rounded-md text-eyebrow font-semibold hover:bg-primary-700 transition-colors">Save</button>
+                        <button onClick={() => { setEditingNotes(false); setNotesValue(coach.notes || ''); }} className="px-2 py-1 text-eyebrow text-warm-500 hover:text-warm-700">Cancel</button>
                       </div>
                     </div>
                   ) : (
@@ -453,14 +453,14 @@ function CoachDetailPanelInner({
                 </span>
                 <div className="flex-1 flex flex-wrap items-center gap-1">
                   {(coach.tags || []).map((tag, i) => (
-                    <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-700 rounded-md text-[10px] font-medium">
+                    <span key={i} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-primary-50 text-primary-700 rounded-md text-eyebrow font-medium">
                       {tag}
                       <button onClick={() => removeTag(tag)} aria-label={`Remove tag ${tag}`} className="hover:text-red-600 transition-colors"><IconX size={8} aria-hidden="true" /></button>
                     </span>
                   ))}
                   <div className="flex items-center gap-0.5">
                     <input id="tag-input" type="text" value={newTag} onChange={e => setNewTag(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()}
-                      placeholder="+" className="bg-transparent border-none text-[10px] text-warm-400 w-12 focus:outline-none focus:w-20 transition-all placeholder:text-warm-300" />
+                      placeholder="+" className="bg-transparent border-none text-eyebrow text-warm-400 w-12 focus:outline-none focus:w-20 transition-all placeholder:text-warm-300" />
                     {newTag && <button onClick={addTag} aria-label="Add tag" className="w-4 h-4 rounded bg-primary-100 text-primary-600 flex items-center justify-center hover:bg-primary-200 transition-colors"><IconPlus size={8} aria-hidden="true" /></button>}
                   </div>
                 </div>

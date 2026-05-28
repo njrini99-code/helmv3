@@ -77,7 +77,7 @@ export function PipelineColumn({
         </div>
         <span
           className={cn(
-            'inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-[11px] font-bold tabular-nums',
+            'inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full text-eyebrow font-bold tabular-nums',
             countBg,
             countText,
             isOver && 'bg-primary-600 text-white',
@@ -88,7 +88,7 @@ export function PipelineColumn({
       </div>
 
       {description && (
-        <p className="px-3 pt-2 text-[10px] text-warm-400">{description}</p>
+        <p className="px-3 pt-2 text-eyebrow text-warm-400">{description}</p>
       )}
 
       {/* Card list */}

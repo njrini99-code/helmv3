@@ -29,7 +29,7 @@ function ErrorState({ error }: { error: string }) {
             <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
               <IconInfo size={32} className="text-red-500" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
               Unable to Load AI Dashboard
             </h2>
             <p className="text-warm-600 mb-6">{error}</p>
@@ -58,7 +58,7 @@ function NotPlayerState() {
             <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
               <IconSparkles size={32} className="text-amber-500" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
               Player Dashboard Only
             </h2>
             <p className="text-warm-600 mb-6">
@@ -90,7 +90,7 @@ function CoachHelmDisabledState({ reason }: { reason: string }) {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconSparkles size={32} className="text-warm-400" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
               CoachHelm AI Not Available
             </h2>
             <p className="text-warm-600 mb-6">

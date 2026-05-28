@@ -221,7 +221,7 @@ export default async function RoundDetailPage({
               callout so it reads as a magazine pull-quote, not body copy. */}
           {aiRecap && (
             <blockquote className="mt-7 border-l-2 border-helm-amber-300 pl-5 max-w-[60ch]">
-              <p className="font-serif italic text-[18px] leading-[1.55] tracking-[-0.005em] text-warm-800">
+              <p className="font-serif italic text-h3 leading-[1.55] tracking-[-0.005em] text-warm-800">
                 {aiRecap}
               </p>
             </blockquote>

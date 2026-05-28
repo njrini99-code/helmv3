@@ -44,7 +44,7 @@ function MissDirectionChart({ pills }: { pills: MissPill[] }) {
       className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="approach-miss-chart"
     >
-      <p className="text-[11px] uppercase tracking-wide text-warm-500 font-medium mb-3">
+      <p className="text-eyebrow uppercase tracking-wide text-warm-500 font-medium mb-3">
         Miss direction
       </p>
       <div className="grid grid-cols-2 gap-2">

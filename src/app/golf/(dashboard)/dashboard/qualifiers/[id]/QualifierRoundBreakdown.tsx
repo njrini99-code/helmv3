@@ -43,7 +43,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
     <div className="relative surface-matte rounded-3xl overflow-clip p-6">
       <div className="flex items-center gap-2 mb-4">
         <IconChartBar size={20} className="text-warm-500" />
-        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Round-by-Round Scores</h2>
+        <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Round-by-Round Scores</h2>
       </div>
 
       <div className="overflow-x-auto overscroll-x-contain touch-pan-x -mx-2 px-2" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -101,7 +101,7 @@ export function QualifierRoundBreakdown({ breakdown, maxRoundNumber }: Qualifier
                     );
                   })}
                   <td className="py-3 pl-3 text-right">
-                    <span className="text-[13px] font-medium text-warm-900 tabular-nums">
+                    <span className="text-body-sm font-medium text-warm-900 tabular-nums">
                       {hasRounds ? data.totalScore : '-'}
                     </span>
                   </td>

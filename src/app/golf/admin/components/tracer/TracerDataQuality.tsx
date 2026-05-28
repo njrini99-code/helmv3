@@ -80,7 +80,7 @@ function SortableTh<K extends string>({
   return (
     <th
       className={cn(
-        'px-4 py-3.5 font-medium text-[11px] uppercase tracking-wider cursor-pointer select-none group/th',
+        'px-4 py-3.5 font-medium text-eyebrow uppercase tracking-wider cursor-pointer select-none group/th',
         'transition-colors hover:text-warm-700',
         active ? 'text-warm-700' : 'text-warm-400',
         align === 'center' && 'text-center'
@@ -90,7 +90,7 @@ function SortableTh<K extends string>({
       <span className="inline-flex items-center gap-1">
         {label}
         {active ? (
-          <span className="text-primary-600 font-bold text-[10px]">{asc ? '\u2191' : '\u2193'}</span>
+          <span className="text-primary-600 font-bold text-eyebrow">{asc ? '\u2191' : '\u2193'}</span>
         ) : (
           <ArrowUpDown size={12} className="text-warm-300 opacity-0 group-hover/th:opacity-100 transition-opacity" />
         )}
@@ -208,12 +208,12 @@ function StatsAccuracyRow({
       <td className="px-4 py-3.5 text-center">
         <div className="flex items-center justify-center gap-2">
           {stat.is_stale ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold bg-amber-50 text-amber-700">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               Stale
             </span>
           ) : (
-            <span className="text-[11px] text-warm-400">{timeAgo(stat.cache_updated_at)}</span>
+            <span className="text-eyebrow text-warm-400">{timeAgo(stat.cache_updated_at)}</span>
           )}
           {onRefreshCache && (
             <button
@@ -426,9 +426,9 @@ export function TracerDataQuality({
                     const info = issues.filter(i => i.severity === 'info').length;
                     return (
                       <>
-                        {crit > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-50 text-red-700"><IconAlertCircle size={10} />{crit}</span>}
-                        {warn > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700"><IconWarning size={10} />{warn}</span>}
-                        {info > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700"><IconInfo size={10} />{info}</span>}
+                        {crit > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold bg-red-50 text-red-700"><IconAlertCircle size={10} />{crit}</span>}
+                        {warn > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold bg-amber-50 text-amber-700"><IconWarning size={10} />{warn}</span>}
+                        {info > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold bg-blue-50 text-blue-700"><IconInfo size={10} />{info}</span>}
                       </>
                     );
                   })()}
@@ -440,7 +440,7 @@ export function TracerDataQuality({
                 <select
                   value={severityFilter}
                   onChange={(e) => setSeverityFilter(e.target.value as IssueSeverity | 'all')}
-                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
                 >
                   <option value="all">All Severity</option>
                   <option value="critical">Critical</option>
@@ -450,7 +450,7 @@ export function TracerDataQuality({
                 <select
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value as IssueCategory | 'all')}
-                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
                 >
                   <option value="all">All Categories</option>
                   <option value="missing_data">Missing Data</option>
@@ -463,7 +463,7 @@ export function TracerDataQuality({
                 <select
                   value={groupBy}
                   onChange={(e) => setGroupBy(e.target.value as GroupByOption)}
-                  className="text-[11px] px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
+                  className="text-eyebrow px-2 py-1 rounded-lg border border-warm-200/50 bg-white/50 text-warm-600"
                 >
                   <option value="category">Group: Category</option>
                   <option value="player">Group: Player</option>
@@ -479,8 +479,8 @@ export function TracerDataQuality({
                 <div key={groupName}>
                   {groupBy !== 'none' && (
                     <div className="px-5 py-2 bg-warm-50/50 border-b border-warm-100/30 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-warm-600 uppercase tracking-wider">{groupName}</span>
-                      <span className="text-[10px] font-medium text-warm-400">{groupIssues.length} issue{groupIssues.length !== 1 ? 's' : ''}</span>
+                      <span className="text-eyebrow font-semibold text-warm-600 uppercase tracking-wider">{groupName}</span>
+                      <span className="text-eyebrow font-medium text-warm-400">{groupIssues.length} issue{groupIssues.length !== 1 ? 's' : ''}</span>
                     </div>
                   )}
                   {groupIssues.map((iss) => (
@@ -620,7 +620,7 @@ export function TracerDataQuality({
             </div>
 
             {/* Legend */}
-            <div className="px-5 py-3 border-t border-warm-100/50 flex items-center gap-4 text-[11px] text-warm-400 flex-wrap">
+            <div className="px-5 py-3 border-t border-warm-100/50 flex items-center gap-4 text-eyebrow text-warm-400 flex-wrap">
               <span>
                 Format:{' '}
                 <span className="font-medium text-warm-500">cached</span>{' '}
@@ -671,19 +671,19 @@ export function TracerDataQuality({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-warm-100/80">
-                    <th className="px-4 py-3.5 text-left text-[11px] font-medium text-warm-400 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                       Player
                     </th>
-                    <th className="px-4 py-3.5 text-left text-[11px] font-medium text-warm-400 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                       Round / Course
                     </th>
-                    <th className="px-4 py-3.5 text-left text-[11px] font-medium text-warm-400 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-left text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                       Issue
                     </th>
-                    <th className="px-4 py-3.5 text-center text-[11px] font-medium text-warm-400 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                       Value
                     </th>
-                    <th className="px-4 py-3.5 text-center text-[11px] font-medium text-warm-400 uppercase tracking-wider">
+                    <th className="px-4 py-3.5 text-center text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                       Threshold
                     </th>
                   </tr>

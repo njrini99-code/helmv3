@@ -104,17 +104,17 @@ function JoinTeamBanner() {
                         <IconUsers size={20} className="text-primary-700" />
                     </div>
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-[18px] md:text-[20px] leading-tight font-medium tracking-[-0.012em] text-warm-900 mb-1">
+                        <h3 className="text-h3 md:text-h3 leading-tight font-medium tracking-[-0.012em] text-warm-900 mb-1">
                             Join your team
                         </h3>
-                        <p className="text-warm-500 text-[13px] leading-relaxed max-w-md">
+                        <p className="text-warm-500 text-body-sm leading-relaxed max-w-md">
                             Drop in the invite code from your coach to unlock schedules, qualifiers, and CoachHelm insights.
                         </p>
                     </div>
                     <Link
                         href="/golf/dashboard/settings"
                         className={cn(
-                            'inline-flex items-center gap-2 px-5 py-2.5 rounded-full flex-shrink-0 text-[13px] font-medium',
+                            'inline-flex items-center gap-2 px-5 py-2.5 rounded-full flex-shrink-0 text-body-sm font-medium',
                             'bg-primary-600/95 text-white',
                             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
                             'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
@@ -239,7 +239,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         </div>
                                     </div>
 
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50/60 text-[11px] font-medium uppercase tracking-[0.14em] text-primary-700 mb-5">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50/60 text-eyebrow font-medium uppercase tracking-[0.14em] text-primary-700 mb-5">
                                         <IconSparkles size={11} />
                                         Day 1
                                     </span>
@@ -255,7 +255,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                         href="/golf/dashboard/rounds/new"
                                         className={cn(
                                             'group inline-flex items-center gap-2 px-7 py-3.5 rounded-full',
-                                            'bg-primary-600/95 text-white font-medium text-[15px] tracking-[-0.005em]',
+                                            'bg-primary-600/95 text-white font-medium text-body tracking-[-0.005em]',
                                             'shadow-[0_4px_14px_rgba(22,163,74,0.20)]',
                                             'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.28)]',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-50'
@@ -286,7 +286,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                     <span className={cn('w-10 h-10 rounded-2xl flex items-center justify-center', toneCls)}>
                                                         {item.icon}
                                                     </span>
-                                                    <span className="text-[12.5px] font-medium text-warm-700 leading-tight tracking-[-0.005em]">
+                                                    <span className="text-body-sm font-medium text-warm-700 leading-tight tracking-[-0.005em]">
                                                         {item.label}
                                                     </span>
                                                 </div>
@@ -399,8 +399,8 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                                 <div className="w-14 h-14 rounded-2xl bg-warm-100/65 flex items-center justify-center mb-4">
                                                     <IconChartBar size={22} className="text-warm-400" />
                                                 </div>
-                                                <p className="text-[17px] font-medium tracking-[-0.012em] text-warm-900 mb-1.5">Not enough data yet</p>
-                                                <p className="text-[13px] text-warm-500">Submit 2+ rounds to see your scoring trend</p>
+                                                <p className="text-body-lg font-medium tracking-[-0.012em] text-warm-900 mb-1.5">Not enough data yet</p>
+                                                <p className="text-body-sm text-warm-500">Submit 2+ rounds to see your scoring trend</p>
                                             </div>
                                         </PremiumGlassCard>
                                     </>
@@ -473,7 +473,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                             <Link
                                 href="/golf/dashboard/rounds/new"
                                 className={cn(
-                                    'group flex items-center justify-center gap-2 w-full py-4 rounded-full text-[14px] font-medium tracking-[-0.005em]',
+                                    'group flex items-center justify-center gap-2 w-full py-4 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                                     'bg-primary-600/95 text-white',
                                     'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
                                     'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'

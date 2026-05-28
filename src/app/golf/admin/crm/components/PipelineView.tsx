@@ -378,7 +378,7 @@ function KanbanCard({
         <div className="flex items-center gap-1.5">
           {/* Division badge */}
           <span className={cn(
-            'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+            'text-eyebrow font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
             coach.division === 'D2' ? 'bg-blue-50 text-blue-700' : 'bg-primary-50 text-primary-700'
           )}>
             {coach.division}
@@ -424,7 +424,7 @@ function EmptyColumn() {
         <IconUsers size={20} aria-hidden="true" />
       </div>
       <p className="text-xs text-warm-400 font-medium">No coaches here yet</p>
-      <p className="text-[10px] text-warm-300 mt-0.5">Drag coaches here or update their status</p>
+      <p className="text-eyebrow text-warm-300 mt-0.5">Drag coaches here or update their status</p>
     </div>
   );
 }

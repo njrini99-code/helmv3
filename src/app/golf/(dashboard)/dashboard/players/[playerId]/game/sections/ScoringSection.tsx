@@ -46,7 +46,7 @@ function ParTypeBars({ bars }: { bars: Bar[] }) {
       className="rounded-xl bg-cream-100/75 border border-warm-200 p-4"
       data-testid="scoring-par-chart"
     >
-      <p className="text-[11px] uppercase tracking-wide text-warm-500 font-medium mb-3">
+      <p className="text-eyebrow uppercase tracking-wide text-warm-500 font-medium mb-3">
         Avg by par type
       </p>
       <div className="grid grid-cols-3 gap-3">
@@ -67,13 +67,13 @@ function ParTypeBars({ bars }: { bars: Bar[] }) {
                 tone,
               )}
             >
-              <span className="text-[10px] uppercase tracking-wide font-medium opacity-70">
+              <span className="text-eyebrow uppercase tracking-wide font-medium opacity-70">
                 {bar.label}
               </span>
               <span className="text-xl font-medium tabular-nums mt-0.5">
                 {bar.value.toFixed(2)}
               </span>
-              <span className="text-[10px] tabular-nums mt-0.5 opacity-80">
+              <span className="text-eyebrow tabular-nums mt-0.5 opacity-80">
                 {diff > 0 ? `+${diff.toFixed(2)}` : diff.toFixed(2)}
               </span>
             </div>

@@ -54,15 +54,15 @@ function DailyAreaChartCard({
         <div className="flex items-center gap-3 sm:gap-6 text-right flex-wrap">
           <div>
             <p className="text-lg sm:text-2xl font-bold text-warm-900 tabular-nums">{todayCount}</p>
-            <p className="text-[10px] sm:text-label text-warm-400 font-medium">Today</p>
+            <p className="text-eyebrow sm:text-label text-warm-400 font-medium">Today</p>
           </div>
           <div>
             <p className="text-sm sm:text-lg font-semibold text-warm-700 tabular-nums">{avg}</p>
-            <p className="text-[10px] sm:text-label text-warm-400 font-medium">Avg/Day</p>
+            <p className="text-eyebrow sm:text-label text-warm-400 font-medium">Avg/Day</p>
           </div>
           <div>
             <p className="text-sm sm:text-lg font-semibold text-warm-700 tabular-nums">{total}</p>
-            <p className="text-[10px] sm:text-label text-warm-400 font-medium">30d Total</p>
+            <p className="text-eyebrow sm:text-label text-warm-400 font-medium">30d Total</p>
           </div>
         </div>
       </div>

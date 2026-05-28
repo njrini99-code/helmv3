@@ -112,7 +112,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
             {coach.tags.map((tag) => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md text-[11px] font-medium"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary-50 text-primary-700 rounded-md text-eyebrow font-medium"
               >
                 <IconHash size={10} />
                 {tag}
@@ -194,7 +194,7 @@ export function CoachInfoBlock({ coach }: CoachInfoBlockProps) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="px-5 py-4 border-b border-warm-100/40 last:border-b-0">
-      <h3 className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider mb-2">
+      <h3 className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wider mb-2">
         {title}
       </h3>
       <div className="space-y-1.5">{children}</div>

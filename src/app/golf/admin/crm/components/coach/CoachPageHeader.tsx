@@ -117,7 +117,7 @@ export function CoachPageHeader({
                 <span className="text-warm-300">·</span>
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded text-[10px] font-bold',
+                    'px-1.5 py-0.5 rounded text-eyebrow font-bold',
                     coach.division === 'D2'
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-primary-100 text-primary-700',
@@ -144,7 +144,7 @@ export function CoachPageHeader({
           {isOverdue && coach.next_follow_up_at && (
             <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-red-50/80 border border-red-200/40">
               <IconClock size={12} className="text-red-500" />
-              <span className="text-[11px] font-medium text-red-600">
+              <span className="text-eyebrow font-medium text-red-600">
                 Overdue follow-up · {formatShort(coach.next_follow_up_at)}
               </span>
             </div>

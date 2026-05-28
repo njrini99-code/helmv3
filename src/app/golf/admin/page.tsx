@@ -168,7 +168,7 @@ function AdminBrand({ compact = false }: { compact?: boolean }) {
         <div className="text-xl font-bold leading-none tracking-tight text-white">
           Golf<span className="text-primary-400">Helm</span>
         </div>
-        <div className="mt-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">
+        <div className="mt-1 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">
           Admin
         </div>
       </div>
@@ -598,13 +598,13 @@ function AdminDashboardContent() {
                 <div className="text-label font-semibold text-warm-500 uppercase tracking-wider">
                   Quick Stats
                 </div>
-                <div className="text-[11px] text-warm-600 mt-1">
+                <div className="text-eyebrow text-warm-600 mt-1">
                   Operational snapshot for the admin rail
                 </div>
               </div>
               <div
                 className={cn(
-                  'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] transition-all duration-300',
+                  'inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-eyebrow font-semibold uppercase tracking-[0.14em] transition-all duration-300',
                   overallHealth === 'healthy'
                     ? 'border-primary-500/20 bg-primary-500/10 text-primary-300'
                     : overallHealth === 'warning'
@@ -643,10 +643,10 @@ function AdminDashboardContent() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-warm-500">
+                      <div className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-500">
                         {stat.label}
                       </div>
-                      <div className="text-[11px] leading-5 text-warm-600 mt-1">
+                      <div className="text-eyebrow leading-5 text-warm-600 mt-1">
                         {stat.detail}
                       </div>
                     </div>
@@ -688,7 +688,7 @@ function AdminDashboardContent() {
                     {realtime.isConnected ? 'Live Updates' : 'Realtime Reconnecting'}
                   </span>
                 </div>
-                <span className="text-[11px] text-warm-500">
+                <span className="text-eyebrow text-warm-500">
                   {alerts.unreadCount > 0 ? `${alerts.unreadCount} unread` : 'All caught up'}
                 </span>
               </div>
@@ -757,7 +757,7 @@ function AdminDashboardContent() {
         {/* Mobile Quick Stats — compact 2x2 grid */}
         {quickStats && (
           <div className="px-3 pb-3 border-t border-white/10 pt-3">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600 px-1 mb-2">
+            <div className="text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600 px-1 mb-2">
               Quick Stats
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -789,7 +789,7 @@ function AdminDashboardContent() {
                   >
                     {stat.value}
                   </div>
-                  <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-warm-600 mt-0.5 leading-tight">
+                  <div className="text-eyebrow font-medium uppercase tracking-[0.12em] text-warm-600 mt-0.5 leading-tight">
                     {stat.label}
                   </div>
                 </div>

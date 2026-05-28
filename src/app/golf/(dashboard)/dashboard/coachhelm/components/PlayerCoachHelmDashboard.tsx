@@ -424,7 +424,7 @@ export function PlayerCoachHelmDashboard({
                       <div className="lg:col-span-7 space-y-3 min-w-0">
                         {secondaryFiltered.length > 0 && (
                           <>
-                            <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 px-1">
+                            <h3 className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 px-1">
                               {topInsight ? 'More for you' : 'Your insights'}
                             </h3>
                             {secondaryFiltered.map((insight) => (
@@ -461,7 +461,7 @@ export function PlayerCoachHelmDashboard({
                       Lower visual priority than the insight feed: these are
                       reference panels, not the primary signal of the day. */}
                   <section>
-                    <h3 className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-3 px-1">
+                    <h3 className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-500 mb-3 px-1">
                       Performance overview
                     </h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6">

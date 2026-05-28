@@ -158,7 +158,7 @@ function KpiCard({
             {value}
           </p>
           {subtitle && (
-            <p className="text-[11px] text-warm-400 mt-0.5">{subtitle}</p>
+            <p className="text-eyebrow text-warm-400 mt-0.5">{subtitle}</p>
           )}
         </div>
         <div

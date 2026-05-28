@@ -167,7 +167,7 @@ function ActivityRow({ event }: { event: TracerActivityEvent }) {
 
       {/* Timestamp */}
       <span
-        className="text-[10px] sm:text-[11px] text-warm-400 flex-shrink-0 tabular-nums mt-0.5"
+        className="text-eyebrow sm:text-eyebrow text-warm-400 flex-shrink-0 tabular-nums mt-0.5"
         title={new Date(event.timestamp).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
       >
         {timeAgo(event.timestamp)}

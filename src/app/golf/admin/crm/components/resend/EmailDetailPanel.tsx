@@ -131,7 +131,7 @@ export function EmailDetailPanel({
                     Email details
                   </p>
                   {resendMessageId && (
-                    <p className="text-[11px] text-warm-500 font-mono">
+                    <p className="text-eyebrow text-warm-500 font-mono">
                       {resendMessageId.slice(0, 18)}…
                     </p>
                   )}
@@ -277,7 +277,7 @@ function Metadata({ email }: { email: EmailRow }) {
         <div>
           <span
             className={cn(
-              'inline-block text-[11px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
+              'inline-block text-eyebrow font-medium px-1.5 py-0.5 rounded uppercase tracking-wide',
               email.source === 'crm'
                 ? 'bg-blue-50 text-blue-700'
                 : email.source === 'transactional'
@@ -449,7 +449,7 @@ function ClicksSection({
         <h4 className="text-xs font-semibold text-warm-500 uppercase tracking-wide">
           Clicks
         </h4>
-        <span className="text-[11px] text-warm-500 tabular-nums">
+        <span className="text-eyebrow text-warm-500 tabular-nums">
           {clicks.length.toLocaleString()} recorded
         </span>
       </div>
@@ -478,7 +478,7 @@ function ClicksSection({
                     (no URL)
                   </span>
                 )}
-                <span className="text-[11px] px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 shrink-0">
+                <span className="text-eyebrow px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 shrink-0">
                   {device}
                 </span>
                 <span

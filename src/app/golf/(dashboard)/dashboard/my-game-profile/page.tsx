@@ -50,7 +50,7 @@ export default async function MyGameProfilePage() {
       <div className="max-w-xl mx-auto px-4 md:px-6 py-6 md:py-10">
         <Reveal>
           <header className="mb-6">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
+            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               Your game profile
             </p>
             <h1 className="text-3xl font-medium text-warm-900 tracking-tight">
@@ -92,7 +92,7 @@ export default async function MyGameProfilePage() {
 
             <Reveal staggerIndex={3}>
               <section>
-                <h2 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
+                <h2 className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-3">
                   Dimensions
                 </h2>
                 <GenomeDimensionGrid vector={genome.vector} />

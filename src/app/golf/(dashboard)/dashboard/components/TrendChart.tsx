@@ -243,10 +243,10 @@ export function TrendChart({
                 {/* First + last labels along bottom */}
                 {points.length > 0 && (
                     <>
-                        <span className="absolute left-2 bottom-0 text-[10px] text-warm-400">
+                        <span className="absolute left-2 bottom-0 text-eyebrow text-warm-400">
                             {points[0]!.label}
                         </span>
-                        <span className="absolute right-2 bottom-0 text-[10px] text-warm-400">
+                        <span className="absolute right-2 bottom-0 text-eyebrow text-warm-400">
                             {points[points.length - 1]!.label}
                         </span>
                     </>

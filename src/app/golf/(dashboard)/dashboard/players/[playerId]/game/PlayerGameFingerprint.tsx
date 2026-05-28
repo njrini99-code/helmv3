@@ -140,7 +140,7 @@ export function PlayerGameFingerprint({ fingerprint }: PlayerGameFingerprintProp
 
         <TrendSection trend={fingerprint.trend} />
 
-        <p className="text-[11px] text-warm-400 text-center pt-2">
+        <p className="text-eyebrow text-warm-400 text-center pt-2">
           Generated {new Date(fingerprint.generated_at).toLocaleString()}
         </p>
       </div>
