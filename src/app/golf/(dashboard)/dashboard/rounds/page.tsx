@@ -9,6 +9,7 @@ import type { GolfRound } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { UnfinishedRoundsSection } from './unfinished-rounds-section';
 import { RoundLibraryClient, type RoundLibraryRound } from '@/components/golf/rounds/RoundLibraryClient';
+import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = {
   title: 'Rounds | Helm Golf',
@@ -207,10 +208,10 @@ export default async function RoundsPage() {
         >
           {userRole === 'player' && (
             <Link href="/golf/dashboard/rounds/new">
-              <button className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+              <Button variant="primary" className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                 <IconPlus size={16} />
                 New Round
-              </button>
+              </Button>
             </Link>
           )}
         </LargeTitleHeader>
@@ -243,10 +244,10 @@ export default async function RoundsPage() {
               </p>
               {userRole === 'player' && (
                 <Link href="/golf/dashboard/rounds/new">
-                  <button className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                  <Button variant="primary" className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white font-medium text-sm rounded-xl hover:bg-primary-700 shadow-sm hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                     <IconPlus size={16} />
                     Submit First Round
-                  </button>
+                  </Button>
                 </Link>
               )}
             </div>

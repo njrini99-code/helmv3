@@ -7,6 +7,7 @@ import { IconUsers, IconMessage } from '@/components/icons';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { Button } from '@/components/ui/button';
 
 interface PlayerRosterPlayer {
   id: string;
@@ -114,10 +115,10 @@ export function PlayerRosterView({ players, teamName }: PlayerRosterViewProps) {
 
                   <div className="px-6 md:px-7 pb-6 md:pb-7">
                     <Link href={`/golf/dashboard/messages?player=${player.id}`} className="block">
-                      <button className="w-full pill-soft justify-center py-2.5">
+                      <Button variant="ghost" className="w-full pill-soft justify-center py-2.5">
                         <IconMessage size={15} />
                         Message
-                      </button>
+                      </Button>
                     </Link>
                   </div>
                 </div>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -537,12 +537,12 @@ export function DevelopmentPlansClient({
               </div>
             </div>
 
-            <button
+            <IconButton variant="default" aria-label="Expand"
               onClick={() => setExpandedCardId(isExpanded ? null : fa.id)}
               className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             >
               <IconChevronDown size={16} className={cn('transition-transform duration-200', isExpanded && 'rotate-180')} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Progress bar */}
@@ -601,12 +601,12 @@ export function DevelopmentPlansClient({
                     Complete
                   </Button>
                 )}
-                <button
+                <IconButton variant="default" aria-label="Delete"
                   onClick={() => handleDelete(fa.id)}
                   className="ml-auto p-2 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <IconTrash size={14} />
-                </button>
+                </IconButton>
               </div>
             </div>
           )}
@@ -663,7 +663,7 @@ export function DevelopmentPlansClient({
           {AREA_TYPES.map(type => {
             const Icon = type.icon;
             return (
-              <button
+              <Button variant="primary"
                 key={type.value}
                 type="button"
                 onClick={() => handleAreaTypeChange(type.value)}
@@ -679,7 +679,7 @@ export function DevelopmentPlansClient({
                   'text-xs font-medium leading-tight text-center',
                   formData.area_type === type.value ? 'text-primary-700' : 'text-warm-600',
                 )}>{type.label}</span>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -723,7 +723,7 @@ export function DevelopmentPlansClient({
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               {currentAreaType.suggestedMetrics.map(m => (
-                <button
+                <Button variant="primary"
                   key={m}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, target_metric: m }))}
@@ -735,7 +735,7 @@ export function DevelopmentPlansClient({
                   )}
                 >
                   {m}
-                </button>
+                </Button>
               ))}
             </div>
             <input
@@ -806,7 +806,7 @@ export function DevelopmentPlansClient({
 
   const playerFilterPills = players.length > 0 ? (
     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4 md:-mx-6 md:px-6">
-      <button
+      <Button variant="primary"
         onClick={() => setSelectedPlayerId(null)}
         className={cn(
           'px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-[color,background-color,box-shadow] duration-150 flex-shrink-0',
@@ -816,11 +816,11 @@ export function DevelopmentPlansClient({
         )}
       >
         All Players
-      </button>
+      </Button>
       {players.map(player => {
         const playerAreaCount = focusAreas.filter(fa => fa.player_id === player.id && fa.status !== 'completed').length;
         return (
-          <button
+          <Button variant="primary"
             key={player.id}
             onClick={() => setSelectedPlayerId(player.id)}
             className={cn(
@@ -841,7 +841,7 @@ export function DevelopmentPlansClient({
                 {playerAreaCount}
               </span>
             )}
-          </button>
+          </Button>
         );
       })}
     </div>
@@ -1086,12 +1086,12 @@ export function DevelopmentPlansClient({
                         );
                       })}
                       {areas.length > 3 && (
-                        <button
+                        <Button variant="primary"
                           onClick={() => setSelectedPlayerId(player.id)}
                           className="w-full text-center text-sm text-primary-600 hover:text-primary-700 font-medium py-2 rounded-lg hover:bg-primary-50 active:bg-primary-100 transition-colors"
                         >
                           +{areas.length - 3} more
-                        </button>
+                        </Button>
                       )}
                     </div>
                   )}

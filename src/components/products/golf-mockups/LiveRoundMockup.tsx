@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 export function LiveRoundMockup() {
   return (
     <div className="relative mx-auto w-[300px]">
@@ -137,7 +138,7 @@ export function LiveRoundMockup() {
               <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-2.5">Shot Result</p>
               <div className="grid grid-cols-3 gap-1.5">
                 {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (
-                  <button
+                  <Button variant="primary"
                     key={r}
                     className={`py-2 rounded-lg text-eyebrow font-semibold transition-colors ${
                       r === 'Green'
@@ -146,7 +147,7 @@ export function LiveRoundMockup() {
                     }`}
                   >
                     {r}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -162,14 +163,14 @@ export function LiveRoundMockup() {
               </div>
               <div className="flex gap-1.5 mt-2.5">
                 {['5ft', '10ft', '15ft', '20ft'].map((d) => (
-                  <button
+                  <Button variant="primary"
                     key={d}
                     className={`flex-1 py-1.5 rounded-md text-eyebrow font-semibold ${
                       d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'
                     }`}
                   >
                     {d}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -177,16 +178,16 @@ export function LiveRoundMockup() {
 
           {/* Next Shot Button */}
           <div className="mx-3 mt-2.5 mb-4">
-            <button className="w-full py-3 bg-emerald-600 text-white text-sm font-semibold rounded-xl shadow-sm shadow-emerald-950/10">
+            <Button variant="primary" className="w-full py-3 bg-emerald-600 text-white text-sm font-semibold rounded-xl shadow-sm shadow-emerald-950/10">
               Next Shot →
-            </button>
+            </Button>
             <div className="flex gap-2 mt-2">
-              <button className="flex-1 py-2.5 bg-red-50 text-red-600 text-eyebrow font-semibold rounded-lg border border-red-200">
+              <Button variant="danger" className="flex-1 py-2.5 bg-red-50 text-red-600 text-eyebrow font-semibold rounded-lg border border-red-200">
                 + Penalty
-              </button>
-              <button className="flex-1 py-2.5 bg-warm-100 text-warm-600 text-eyebrow font-semibold rounded-lg border border-warm-200">
+              </Button>
+              <Button variant="ghost" className="flex-1 py-2.5 bg-warm-100 text-warm-600 text-eyebrow font-semibold rounded-lg border border-warm-200">
                 Undo Last
-              </button>
+              </Button>
             </div>
           </div>
 

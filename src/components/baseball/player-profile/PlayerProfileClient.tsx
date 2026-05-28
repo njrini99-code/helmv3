@@ -35,6 +35,7 @@ import {
 import type { BaseballPlayerStats, BaseballPlayerAggregates, BaseballCoachInsight } from '@/lib/types';
 import { PlayerInsightsPanel } from './PlayerInsightsPanel';
 import { PlayerNotesSection } from './PlayerNotesSection';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -488,7 +489,7 @@ export function PlayerProfileClient({
             { id: 'stats' as const, label: 'Stats', icon: <IconActivity size={15} /> },
             { id: 'videos' as const, label: `Videos${videos.length > 0 ? ` (${videos.length})` : ''}`, icon: <IconVideo size={15} /> },
           ]).map((tab) => (
-            <button
+            <Button variant="primary"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] duration-200 whitespace-nowrap ${
@@ -499,7 +500,7 @@ export function PlayerProfileClient({
             >
               {tab.icon}
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -659,16 +660,16 @@ export function PlayerProfileClient({
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-semibold text-warm-900">Videos</h3>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setActiveTab('videos')}
                       className="flex items-center gap-1 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors"
                     >
                       View all ({videos.length}) <IconChevronRight size={13} />
-                    </button>
+                    </Button>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {videos.slice(0, 4).map((v) => (
-                      <button
+                      <Button variant="ghost"
                         key={v.id}
                         onClick={() => { setSelectedVideo(v); setActiveTab('videos'); }}
                         className="group relative aspect-video rounded-xl overflow-hidden bg-warm-100 hover:ring-2 hover:ring-primary-500 transition-shadow"
@@ -685,7 +686,7 @@ export function PlayerProfileClient({
                             <IconPlay size={16} className="text-warm-900 ml-0.5" />
                           </div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -721,10 +722,10 @@ export function PlayerProfileClient({
                     <IconNote size={15} className="text-warm-400" />
                     Coach Notes
                   </h3>
-                  <button className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
+                  <Button variant="ghost" className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 transition-colors font-medium">
                     <IconPlus size={13} />
                     Add
-                  </button>
+                  </Button>
                 </div>
                 <PlayerNotesSection notes={notes.slice(0, 3)} compact />
               </div>
@@ -751,13 +752,13 @@ export function PlayerProfileClient({
                     <span className="text-sm font-bold text-primary-600">{stats.length}</span>
                   </div>
                 </div>
-                <button
+                <Button variant="primary"
                   onClick={() => setActiveTab('stats')}
                   className="flex items-center justify-center gap-1 w-full mt-4 py-2 text-xs font-medium text-primary-600
                              bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
                 >
                   View all stats <IconChevronRight size={12} />
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -791,7 +792,7 @@ export function PlayerProfileClient({
             <div className="flex items-center gap-2">
               <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
                 {(['all', 'game', 'practice'] as const).map((f) => (
-                  <button
+                  <Button variant="primary"
                     key={f}
                     onClick={() => setStatFilter(f)}
                     className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] ${
@@ -801,7 +802,7 @@ export function PlayerProfileClient({
                     }`}
                   >
                     {f === 'all' ? 'All' : f === 'game' ? 'Game' : 'Scrimmage'}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <span className="text-xs text-warm-400">{filteredStats.length} sessions</span>
@@ -912,7 +913,7 @@ export function PlayerProfileClient({
               <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 <div className="flex bg-cream-100/75 backdrop-blur-sm border border-warm-200/45 rounded-xl p-1 gap-1 shadow-sm">
                   {videoTabs.map(({ key, label }) => (
-                    <button
+                    <Button variant="primary"
                       key={key}
                       onClick={() => setVideoFilter(key)}
                       className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-[color,background-color,box-shadow] whitespace-nowrap ${
@@ -936,7 +937,7 @@ export function PlayerProfileClient({
                           {videos.length}
                         </span>
                       )}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -954,7 +955,7 @@ export function PlayerProfileClient({
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {videosByFilter.map((video) => (
-                  <button
+                  <Button variant="ghost"
                     key={video.id}
                     onClick={() => setSelectedVideo(video)}
                     className="group relative aspect-video rounded-2xl overflow-hidden bg-warm-100
@@ -996,7 +997,7 @@ export function PlayerProfileClient({
                         <p className="text-xs text-white font-medium truncate">{video.title}</p>
                       </div>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -1029,13 +1030,13 @@ export function PlayerProfileClient({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
-              <button
+              <IconButton variant="default" aria-label="Close"
                 onClick={() => setSelectedVideo(null)}
                 className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-black/50 text-white
                            hover:bg-black/70 flex items-center justify-center transition-colors"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
 
               {/* Video player */}
               <div className="aspect-video bg-black">

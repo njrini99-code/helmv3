@@ -10,6 +10,7 @@ import type {
 } from '@/app/golf/actions/resend-activity';
 import { getDomainBreakdown } from '@/app/golf/actions/resend-activity';
 import { formatRate, formatCount } from './shared';
+import { Button } from '@/components/ui/button';
 
 interface DomainBreakdownProps {
   window: ActivityWindow;
@@ -254,7 +255,7 @@ function SortableTh({
         align === 'right' ? 'text-right pr-6 pl-4' : 'text-left pl-6 pr-4'
       )}
     >
-      <button
+      <Button variant="ghost"
         onClick={() => onClick(k)}
         className={cn(
           'inline-flex items-center gap-1 hover:text-warm-900 transition-colors',
@@ -270,7 +271,7 @@ function SortableTh({
         >
           {dir === 'desc' ? '▼' : '▲'}
         </span>
-      </button>
+      </Button>
     </th>
   );
 }

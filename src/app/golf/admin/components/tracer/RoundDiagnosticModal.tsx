@@ -15,6 +15,7 @@ import { IconRotateCcw as RotateCcw, IconHash as Hash } from '@/components/icons
 import { resolveDashboardIncident } from '@/app/golf/actions/admin-data';
 import { DetailModal } from '../DetailModal';
 import { timeAgo } from '../admin-utils';
+import { Button } from '@/components/ui/button';
 import {
   getTracerRoundDiagnostic,
   type TracerRoundDiagnosticData,
@@ -557,7 +558,7 @@ function ErrorsList({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
+                  <Button variant="danger"
                     type="button"
                     onClick={() => handleCopy(incident.copySummary, incident.id)}
                     className={cn(
@@ -575,10 +576,10 @@ function ErrorsList({
                       : copyState?.target === incident.id && copyState.status === 'error'
                         ? 'Copy failed'
                         : 'Copy'}
-                  </button>
+                  </Button>
 
                   {incident.status === 'open' && (
-                    <button
+                    <Button variant="primary"
                       type="button"
                       onClick={() => handleResolve(incident)}
                       disabled={resolvePending}
@@ -590,16 +591,16 @@ function ErrorsList({
                     >
                       <RotateCcw size={16} />
                       {resolvePending ? 'Resolving...' : 'Mark resolved'}
-                    </button>
+                    </Button>
                   )}
 
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => setExpandedId(isExpanded ? null : incident.id)}
                     className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
                   >
                     {isExpanded ? 'Hide detail' : 'Show detail'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 

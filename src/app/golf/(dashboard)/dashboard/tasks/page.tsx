@@ -222,12 +222,12 @@ export default function GolfTasksPage() {
                 Review and update tasks that are past their due date
               </p>
             </div>
-            <button
+            <Button variant="danger"
               onClick={() => setFilter('active')}
               className="text-xs font-medium text-red-700 hover:text-red-800 px-2 py-1 rounded-md hover:bg-red-100 transition-colors flex-shrink-0"
             >
               View
-            </button>
+            </Button>
           </m.div>
         )}
 
@@ -302,7 +302,7 @@ export default function GolfTasksPage() {
               >
                 {/* Templates Section */}
                 <div className="surface-matte rounded-3xl overflow-clip">
-                  <button
+                  <Button variant="ghost"
                     onClick={() => setShowTemplates(!showTemplates)}
                     className="w-full flex items-center justify-between p-4 hover:bg-warm-50/50 transition-colors"
                   >
@@ -315,7 +315,7 @@ export default function GolfTasksPage() {
                     ) : (
                       <IconChevronRight size={18} className="text-warm-400" />
                     )}
-                  </button>
+                  </Button>
 
                   <AnimatePresence>
                     {showTemplates && (

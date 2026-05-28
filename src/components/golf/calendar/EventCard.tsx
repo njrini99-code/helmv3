@@ -7,6 +7,7 @@ import type { SyntheticListenerMap } from '@dnd-kit/core/dist/hooks/utilities';
 import { cn } from '@/lib/utils';
 import type { EventType } from '@/lib/types/calendar';
 import { getEventTypeConfig, formatTime } from '@/lib/calendar/event-styles';
+import { Button } from '@/components/ui/button';
 
 interface EventCardProps {
   id: string;
@@ -50,7 +51,7 @@ const EventCardInner = forwardRef<
 
   if (compact) {
     return (
-      <button
+      <Button variant="ghost"
         ref={ref}
         onClick={onClick}
         className={cn(
@@ -71,12 +72,12 @@ const EventCardInner = forwardRef<
         {...dragListeners}
       >
         <p className="font-medium text-[11.5px] truncate leading-tight tracking-[-0.005em]">{title}</p>
-      </button>
+      </Button>
     );
   }
 
   return (
-    <button
+    <Button variant="ghost"
       ref={ref}
       onClick={onClick}
       className={cn(
@@ -113,7 +114,7 @@ const EventCardInner = forwardRef<
           )}
         </div>
       </div>
-    </button>
+    </Button>
   );
 });
 

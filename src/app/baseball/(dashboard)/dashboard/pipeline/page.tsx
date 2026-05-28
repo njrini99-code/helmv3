@@ -9,7 +9,7 @@ import { PipelineColumn } from '@/components/features/pipeline-column';
 import { PipelineCard } from '@/components/features/pipeline-card';
 import { PageLoading } from '@/components/ui/loading';
 import { SkeletonPipeline } from '@/components/ui/skeleton-loader';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Avatar } from '@/components/ui/avatar';
@@ -456,12 +456,12 @@ export default function PipelinePage() {
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
             <span>{error}</span>
-            <button
+            <Button variant="danger"
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-700 font-medium transition-colors"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         )}
 
@@ -471,7 +471,7 @@ export default function PipelinePage() {
         {/* View Toggle Tabs */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div className="flex items-center gap-1 p-1 bg-warm-100 rounded-lg overflow-x-auto scrollbar-hide">
-            <button
+            <Button variant="ghost"
               onClick={() => setViewMode('pipeline')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
@@ -482,8 +482,8 @@ export default function PipelinePage() {
             >
               <IconLayoutGrid size={16} />
               Pipeline
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => setViewMode('position')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
@@ -495,8 +495,8 @@ export default function PipelinePage() {
               <IconTarget size={16} />
               <span className="hidden sm:inline">Position Planner</span>
               <span className="sm:hidden">Planner</span>
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => setViewMode('list')}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap min-h-[44px]',
@@ -507,7 +507,7 @@ export default function PipelinePage() {
             >
               <IconList size={16} />
               List
-            </button>
+            </Button>
           </div>
 
           {/* Grad Year Filter (shared) */}
@@ -594,7 +594,7 @@ export default function PipelinePage() {
                   ? watchlist.length
                   : watchlist.filter(w => w.pipeline_stage === tab.value).length;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={tab.value}
                     role="tab"
                     aria-selected={filterTab === tab.value}
@@ -615,7 +615,7 @@ export default function PipelinePage() {
                         {count}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -635,12 +635,12 @@ export default function PipelinePage() {
                 />
               </div>
               {positionFilter !== 'all' && (
-                <button
+                <Button variant="ghost"
                   onClick={() => setPositionFilter('all')}
                   className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
                 >
                   Clear position filter
-                </button>
+                </Button>
               )}
             </div>
 
@@ -671,12 +671,12 @@ export default function PipelinePage() {
                     >
                       Remove Selected
                     </Button>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setSelectedPlayers(new Set())}
                       className="text-sm leading-relaxed text-warm-600 hover:text-warm-900 underline"
                     >
                       Clear selection
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -798,13 +798,13 @@ export default function PipelinePage() {
                         >
                           {item.notes ? 'Edit Note' : 'Add Note'}
                         </Button>
-                        <button
+                        <IconButton variant="default"
                           onClick={() => setRemoveConfirm(item.id)}
                           className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors flex items-center justify-center"
                           aria-label="Remove from pipeline"
                         >
                           <IconTrash size={18} />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
                   ))}
@@ -901,13 +901,13 @@ export default function PipelinePage() {
                               {formatDate(item.updated_at)}
                             </td>
                             <td className="px-6 py-4">
-                              <button
+                              <Button variant="ghost"
                                 onClick={() => startEditingNote(item.id, item.notes)}
                                 className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
                                 title={item.notes || 'Add note'}
                               >
                                 {item.notes ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes) : 'Add note'}
-                              </button>
+                              </Button>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
@@ -918,13 +918,13 @@ export default function PipelinePage() {
                                 >
                                   View
                                 </Button>
-                                <button
+                                <IconButton variant="default"
                                   onClick={() => setRemoveConfirm(item.id)}
                                   className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                                   aria-label="Remove from watchlist"
                                 >
                                   <IconTrash size={16} />
-                                </button>
+                                </IconButton>
                               </div>
                             </td>
                           </tr>

@@ -23,6 +23,7 @@ import {
   setMinutes,
 } from 'date-fns';
 import { IconChevronLeft, IconChevronRight, IconCalendar, IconPlus } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -560,24 +561,24 @@ export function CalendarView({
 
           {/* Navigation */}
           <div className="flex items-center gap-0.5">
-            <button
+            <IconButton variant="default" aria-label="Previous"
               onClick={() => navigate('prev')}
               className="p-1.5 rounded-lg hover:bg-warm-100/70 active:bg-warm-200/70 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconChevronLeft size={16} />
-            </button>
-            <button
+            </IconButton>
+            <Button variant="ghost"
               onClick={() => navigate('today')}
               className="px-2.5 py-1 rounded-lg text-xs font-semibold text-warm-500 hover:bg-warm-100/70 active:bg-warm-200/70 hover:text-warm-700 transition-colors uppercase tracking-wide"
             >
               Today
-            </button>
-            <button
+            </Button>
+            <IconButton variant="default" aria-label="Next"
               onClick={() => navigate('next')}
               className="p-1.5 rounded-lg hover:bg-warm-100/70 active:bg-warm-200/70 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconChevronRight size={16} />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -588,7 +589,7 @@ export function CalendarView({
             'bg-warm-50/60 border border-warm-100/50'
           )}>
             {(['month', 'week', 'day'] as const).map((view) => (
-              <button
+              <Button variant="ghost"
                 key={view}
                 onClick={() => setViewMode(view)}
                 className={cn(
@@ -599,7 +600,7 @@ export function CalendarView({
                 )}
               >
                 {view}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -615,7 +616,7 @@ export function CalendarView({
               <span>Synced</span>
             </div>
           ) : (
-            <button
+            <Button variant="ghost"
               onClick={onConnectGoogle}
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
@@ -630,7 +631,7 @@ export function CalendarView({
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               <span>Connect Google</span>
-            </button>
+            </Button>
           )}
 
           {/* Legend */}
@@ -669,13 +670,13 @@ export function CalendarView({
           <p className="text-warm-500 text-sm mb-6 max-w-sm">
             Schedule your first demo or follow-up to start tracking your outreach pipeline.
           </p>
-          <button
+          <Button variant="primary"
             onClick={() => onSlotClick?.(new Date())}
             className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm shadow-primary-500/25"
           >
             <IconPlus size={16} />
             Schedule Event
-          </button>
+          </Button>
         </div>
       ) : (
         <>

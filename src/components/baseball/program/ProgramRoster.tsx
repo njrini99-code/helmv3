@@ -12,6 +12,7 @@ import {
   IconSparkles,
 } from '@/components/icons';
 import type { Player } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 type RosterPlayer = Pick<
   Player,
@@ -234,7 +235,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
           </h3>
           <div className="space-y-2">
             {(playersByYear[year] || []).map((player) => (
-              <button
+              <Button variant="ghost"
                 key={player.id}
                 onClick={() => handleViewPlayer(player.id)}
                 className="w-full bg-white rounded-xl border border-warm-200 p-4 hover:border-primary-200 hover:shadow-md transition-all text-left group"
@@ -279,7 +280,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
                     />
                   </div>
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

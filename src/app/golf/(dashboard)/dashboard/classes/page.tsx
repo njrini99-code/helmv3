@@ -603,7 +603,7 @@ export default function GolfClassesPage() {
                             const { code, name } = parseClassName(cls.class_name);
                             const location = getLocationDisplay(cls);
                             return (
-                              <button
+                              <Button variant="ghost"
                                 key={`${cls.id}-${day}`}
                                 onClick={() => handleClassClick(cls)}
                                 className="w-full text-left p-3 min-h-[64px] rounded-xl border border-white/20 hover:border-warm-200/55 hover:active:bg-warm-50 transition-all bg-cream-100/68 backdrop-blur-sm"
@@ -626,7 +626,7 @@ export default function GolfClassesPage() {
                                 {location && (
                                   <p className="text-xs text-warm-400 mt-0.5">{location}</p>
                                 )}
-                              </button>
+                              </Button>
                             );
                           })
                         ) : (
@@ -659,7 +659,7 @@ export default function GolfClassesPage() {
                   const { code, name } = parseClassName(cls.class_name);
                   const location = getLocationDisplay(cls);
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={cls.id}
                       onClick={() => handleClassClick(cls)}
                       className="w-full text-left p-4 min-h-[72px] rounded-xl border border-warm-200 hover:border-warm-300 hover:shadow-sm active:bg-warm-50 transition-all bg-white flex items-center gap-4"
@@ -706,7 +706,7 @@ export default function GolfClassesPage() {
                           )}
                         </div>
                       </div>
-                    </button>
+                    </Button>
                   );
                 }) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">

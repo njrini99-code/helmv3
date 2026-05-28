@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconActivity, IconWarning } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 // ============================================
 // TYPES
@@ -40,7 +41,7 @@ export function LiveEventCounter({
   const hasIssues = errors > 0 || critical > 0;
 
   return (
-    <button
+    <Button variant="danger"
       onClick={onClick}
       className={cn(
         'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all duration-200',
@@ -110,7 +111,7 @@ export function LiveEventCounter({
           </div>
         )}
       </div>
-    </button>
+    </Button>
   );
 }
 

@@ -47,6 +47,7 @@ import {
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types (preserved from previous shape — the non-insight sections depend on
@@ -667,7 +668,7 @@ export function PlayerInsightClient({
                       {insights.length} insight{insights.length !== 1 ? 's' : ''}
                     </span>
                   </div>
-                  <button
+                  <Button variant="primary"
                     type="button"
                     onClick={handleRefresh}
                     disabled={isRefreshing}
@@ -682,7 +683,7 @@ export function PlayerInsightClient({
                   >
                     <IconActivity size={14} className={isRefreshing ? 'animate-pulse' : ''} />
                     {isRefreshing ? 'Analyzing…' : 'Refresh Analysis'}
-                  </button>
+                  </Button>
                 </div>
                 {refreshNotice && (
                   <div

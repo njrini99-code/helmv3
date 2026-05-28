@@ -11,6 +11,7 @@ import { PatternDashboard } from '@/components/golf/coachhelm/patterns';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -70,7 +71,7 @@ export function PatternsDashboardClient({
         title="Pattern Management"
         subtitle="Review and manage AI-detected performance patterns"
       >
-        <button
+        <Button variant="ghost"
           onClick={handleRefresh}
           disabled={isPending}
           aria-label="Refresh patterns"
@@ -84,7 +85,7 @@ export function PatternsDashboardClient({
         >
           <IconRefresh size={16} className={isPending ? 'animate-spin' : ''} />
           <span className="hidden sm:inline">Refresh</span>
-        </button>
+        </Button>
       </LargeTitleHeader>
 
       {/* Main content */}

@@ -20,6 +20,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { EventChip } from './EventChip';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { Button } from '@/components/ui/button';
 
 interface AgendaViewProps {
   events: CalendarEvent[];
@@ -157,13 +158,13 @@ export function AgendaView({
               type="calendar"
               variant="card"
               action={isCoach && onCreateEvent ? (
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={onCreateEvent}
                   className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-5 py-2 text-body-sm font-medium text-white transition-all hover:bg-primary-700"
                 >
                   Create event
-                </button>
+                </Button>
               ) : undefined}
             />
           </div>
@@ -186,13 +187,13 @@ export function AgendaView({
               {isCoach && onCreateEvent && (
                 <>
                   {' '}
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={onCreateEvent}
                     className="text-primary-700 font-medium hover:text-primary-800 underline-offset-4 hover:underline"
                   >
                     Schedule something
-                  </button>
+                  </Button>
                   .
                 </>
               )}

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { IconStar, IconSearch, IconX, IconClock, IconChevronDown, IconChevronUp, IconFileText, IconAlertCircle, IconLoader, IconBookmark } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
 import { SaveSegmentDialog } from './segments/SaveSegmentDialog';
+import { Button, IconButton } from '@/components/ui/button';
 
 export interface Filters {
   status: CoachStatus | 'all';
@@ -112,16 +113,16 @@ export function CoachFilters({
             )}
           />
           {localSearch && (
-            <button onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
+            <IconButton variant="default" aria-label="Close" onClick={() => { setLocalSearch(''); setFilters(f => ({ ...f, search: '' })); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600">
               <IconX size={14} />
-            </button>
+            </IconButton>
           )}
         </div>
 
         {/* Division segment control */}
         <div className="inline-flex items-center gap-0.5 p-0.5 bg-white/60 border border-warm-200/60 rounded-full">
           {(['all', 'D2', 'D3'] as const).map(div => (
-            <button
+            <Button variant="primary"
               key={div}
               onClick={() => setFilters(f => ({ ...f, division: div === 'all' ? 'all' : div }))}
               className={cn(
@@ -132,7 +133,7 @@ export function CoachFilters({
               )}
             >
               {div === 'all' ? 'All' : div}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -144,7 +145,7 @@ export function CoachFilters({
             { value: 'womens', label: "Women's" },
             { value: 'both', label: 'Both' },
           ] as const).map(opt => (
-            <button
+            <Button variant="primary"
               key={opt.value}
               onClick={() => setFilters(f => ({ ...f, program: opt.value }))}
               className={cn(
@@ -155,12 +156,12 @@ export function CoachFilters({
               )}
             >
               {opt.label}
-            </button>
+            </Button>
           ))}
         </div>
 
         {/* More Filters toggle */}
-        <button
+        <Button variant="primary"
           onClick={() => setShowMore(!showMore)}
           className={cn(
             'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
@@ -176,28 +177,28 @@ export function CoachFilters({
               {activeFilterCount}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Save as segment — only meaningful with at least one filter set */}
         {activeFilterCount > 0 && (
-          <button
+          <Button variant="primary"
             onClick={() => setSaveSegmentOpen(true)}
             className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-primary-200 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors whitespace-nowrap ml-auto"
             title="Save current filters as a reusable segment"
           >
             <IconBookmark size={12} /> Save as segment
-          </button>
+          </Button>
         )}
 
         {/* Clear */}
         {activeFilterCount > 0 && (
-          <button onClick={clearFilters}
+          <Button variant="danger" onClick={clearFilters}
             className={cn(
               'flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-red-600 hover:bg-red-50 transition-colors whitespace-nowrap',
               // When save-as-segment is also visible it already pushed itself with ml-auto.
             )}>
             <IconX size={12} /> Clear {activeFilterCount}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -262,7 +263,7 @@ export function CoachFilters({
           </select>
 
           {/* Quick filter pills */}
-          <button
+          <Button variant="ghost"
             onClick={() => setFilters(f => ({ ...f, followUpDue: !f.followUpDue }))}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
@@ -272,9 +273,9 @@ export function CoachFilters({
             )}
           >
             <IconClock size={12} /> Follow-ups Due
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             onClick={() => setFilters(f => ({ ...f, starred: !f.starred }))}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
@@ -284,9 +285,9 @@ export function CoachFilters({
             )}
           >
             <IconStar size={12} /> Starred
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             onClick={() => setFilters(f => ({ ...f, hasNotes: !f.hasNotes }))}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
@@ -296,9 +297,9 @@ export function CoachFilters({
             )}
           >
             <IconFileText size={12} /> Has Notes
-          </button>
+          </Button>
 
-          <button
+          <Button variant="ghost"
             onClick={() => setFilters(f => ({ ...f, noContact30Days: !f.noContact30Days }))}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors whitespace-nowrap',
@@ -308,7 +309,7 @@ export function CoachFilters({
             )}
           >
             <IconAlertCircle size={12} /> No Contact 30 Days
-          </button>
+          </Button>
         </div>
       )}
     </div>

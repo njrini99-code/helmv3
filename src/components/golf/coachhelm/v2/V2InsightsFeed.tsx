@@ -25,6 +25,7 @@ import {
   dismissComposedInsight,
 } from '@/app/golf/actions/insights';
 import type { ComposedInsight, MinedPattern, PerformancePrediction } from '@/lib/coachhelm/v2/types';
+import { Button } from '@/components/ui/button';
 
 interface InsightsFeedProps {
   teamId: string;
@@ -147,7 +148,7 @@ export function InsightsFeed({
             </div>
           </div>
 
-          <button
+          <Button variant="primary"
             onClick={handleGenerate}
             disabled={isPending}
             className={cn(
@@ -173,7 +174,7 @@ export function InsightsFeed({
                 Analyze Team
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -239,21 +239,21 @@ export function BatchVideoUpload({ roster }: BatchVideoUploadProps) {
                 Select Players ({selectedPlayers.length})
               </p>
               <div className="flex gap-2 text-xs">
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={selectAll}
                   className="text-primary-600 hover:text-primary-700 font-medium"
                 >
                   Select All
-                </button>
+                </Button>
                 <span className="text-warm-300">|</span>
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={clearSelection}
                   className="text-warm-600 hover:text-warm-700 font-medium"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </div>
             <div className="max-h-60 overflow-y-auto divide-y divide-warm-100">

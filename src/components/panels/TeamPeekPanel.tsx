@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconExternalLink,
   IconUsers,
@@ -224,13 +224,13 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
           <div className="px-6 pt-6 pb-4 border-b border-warm-100 flex-shrink-0">
             {/* Close button */}
             <div className="flex justify-end mb-3">
-              <button
+              <IconButton variant="default"
                 onClick={onClose}
                 className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 aria-label="Close panel"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
             <div className="flex items-start gap-4">
               {/* Logo */}
@@ -286,7 +286,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
           {/* ── Tabs ──────────────────────────────────────────────────── */}
           <div className="flex gap-1 px-6 pt-4 pb-0 flex-shrink-0">
             {(['details', 'roster'] as const).map((t) => (
-              <button
+              <Button variant="primary"
                 key={t}
                 onClick={() => setTab(t)}
                 className={cn(
@@ -297,7 +297,7 @@ export function TeamPeekPanel({ teamId, onClose }: TeamPeekPanelProps) {
                 )}
               >
                 {t === 'details' ? 'Details' : `Roster (${roster.length})`}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -474,7 +474,7 @@ function RosterTab({
           </p>
           <div className="space-y-1.5">
             {(byYear[year] ?? []).map((player) => (
-              <button
+              <Button variant="ghost"
                 key={player.id}
                 onClick={() => onPlayerClick(player.id)}
                 className="w-full flex items-center gap-3 p-3 rounded-xl bg-warm-50 hover:bg-white hover:shadow-md hover:border-primary-100 border border-transparent transition-all text-left group"
@@ -502,7 +502,7 @@ function RosterTab({
                   )}
                   <IconChevronRight size={14} className="text-warm-300 group-hover:text-primary-400 transition-colors" />
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

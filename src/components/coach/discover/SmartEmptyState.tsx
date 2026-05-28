@@ -247,7 +247,7 @@ export function SmartEmptyState({
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestions.map((suggestion, index) => (
-              <button
+              <Button variant="primary"
                 key={index}
                 onClick={suggestion.action}
                 className={cn(
@@ -271,7 +271,7 @@ export function SmartEmptyState({
                   </p>
                 </div>
                 <IconArrowRight size={16} className="text-warm-300 group-hover:text-primary-500 transition-colors flex-shrink-0" />
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -285,7 +285,7 @@ export function SmartEmptyState({
           </p>
           <div className="flex justify-center gap-3">
             {topStatesForPosition.map((state, index) => (
-              <button
+              <Button variant="primary"
                 key={state.code}
                 onClick={() => {
                   const params = new URLSearchParams(searchParams.toString());
@@ -302,7 +302,7 @@ export function SmartEmptyState({
               >
                 <p className="font-semibold text-warm-900">{state.name}</p>
                 <p className="text-sm text-warm-500">{state.count} players</p>
-              </button>
+              </Button>
             ))}
           </div>
         </div>

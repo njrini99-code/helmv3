@@ -6,6 +6,7 @@ import { IconX, IconBookmark, IconLoader } from '@/components/icons';
 import { listSegments } from '@/app/golf/actions/crm-foundations';
 import { enrollSegmentInSequence } from '@/app/golf/actions/crm-sequences';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // EnrollSegmentDialog — operator picks an existing CrmSegment, dialog enrolls
@@ -108,14 +109,14 @@ export function EnrollSegmentDialog({
                 Enroll a segment
               </h2>
             </div>
-            <button
+            <IconButton variant="default"
               type="button"
               onClick={() => onOpenChange(false)}
               aria-label="Close"
               className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
             >
               <IconX size={14} />
-            </button>
+            </IconButton>
           </div>
 
           <div className="px-5 py-4 space-y-4">
@@ -163,15 +164,15 @@ export function EnrollSegmentDialog({
           </div>
 
           <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
               className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
             >
               Close
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               type="button"
               onClick={handleEnroll}
               disabled={!selectedSegmentId || submitting}
@@ -183,7 +184,7 @@ export function EnrollSegmentDialog({
             >
               {submitting && <IconLoader size={14} className="animate-spin" />}
               Enroll segment
-            </button>
+            </Button>
           </div>
         </div>
       </div>

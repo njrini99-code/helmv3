@@ -24,6 +24,7 @@ import {
   IconSparkles,
 } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
+import { Button, IconButton } from '@/components/ui/button';
 
 // Alert level types matching the AI system
 export type AlertLevel = 'critical' | 'warning' | 'info' | 'suggestion';
@@ -264,7 +265,7 @@ export function AlertCard({
                 </a>
 
                 {onAcknowledge && !alert.acknowledgedAt && (
-                  <button
+                  <Button variant="primary"
                     onClick={(e) => {
                       e.stopPropagation();
                       onAcknowledge();
@@ -277,11 +278,11 @@ export function AlertCard({
                   >
                     <IconCheck size={12} />
                     Got It
-                  </button>
+                  </Button>
                 )}
 
                 {onDismiss && (
-                  <button
+                  <IconButton variant="default"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDismiss();
@@ -294,7 +295,7 @@ export function AlertCard({
                     )}
                   >
                     <IconX size={14} />
-                  </button>
+                  </IconButton>
                 )}
               </div>
             )}
@@ -302,7 +303,7 @@ export function AlertCard({
 
           {/* Compact mode expand button */}
           {compact && alert.callToAction && (
-            <button
+            <IconButton variant="default"
               onClick={() => setIsExpanded(!isExpanded)}
               aria-label={isExpanded ? 'Collapse alert details' : 'Expand alert details'}
               aria-expanded={isExpanded}
@@ -314,7 +315,7 @@ export function AlertCard({
               >
                 <IconChevronRight size={16} />
               </motion.div>
-            </button>
+            </IconButton>
           )}
         </div>
       </div>

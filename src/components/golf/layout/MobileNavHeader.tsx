@@ -6,6 +6,7 @@ import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
 import { IconChevronLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 interface MobileNavHeaderProps {
   title: string;
@@ -76,7 +77,7 @@ export function MobileNavHeader({
         )}
       </Link>
     ) : (
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={() => {
           void triggerHaptic('light');
@@ -100,7 +101,7 @@ export function MobileNavHeader({
             {backLabel}
           </span>
         )}
-      </button>
+      </Button>
     )
   ) : (
     <MobileMenuButton />

@@ -8,6 +8,7 @@ import { TeamHealthCards } from './TeamHealthCards';
 import { TeamUserDirectory } from './TeamUserDirectory';
 import { UserDetailPanel } from './UserDetailPanel';
 import { BulkEmailModal } from '@/app/golf/admin/crm/components/BulkEmailModal';
+import { Button } from '@/components/ui/button';
 
 /** Recipient shape consumed by BulkEmailModal.prefilledRecipients. */
 type ReengagePrefill = { email: string; name?: string | null; coach_id?: string | null };
@@ -243,7 +244,7 @@ export function PeopleTab({ data }: Props) {
       {/* View Mode Sub-Tabs */}
       <div className="flex items-center gap-1 p-1 bg-warm-50/60 rounded-full border border-warm-100/50 w-full sm:w-fit overflow-x-auto scrollbar-hide">
         {viewTabs.map((tab) => (
-          <button
+          <Button variant="danger"
             key={tab.value}
             onClick={() => setViewMode(tab.value)}
             className={cn(
@@ -264,7 +265,7 @@ export function PeopleTab({ data }: Props) {
                 {tab.count}
               </span>
             )}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -279,7 +280,7 @@ export function PeopleTab({ data }: Props) {
             {atRiskCount} user{atRiskCount !== 1 ? 's' : ''} at risk
           </p>
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto overflow-x-auto scrollbar-hide">
-            <button
+            <Button variant="ghost"
               onClick={handleSelectAll}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
@@ -287,8 +288,8 @@ export function PeopleTab({ data }: Props) {
               )}
             >
               {selectedAtRiskIds.size === allAtRiskIds.length ? 'Deselect All' : 'Select All'}
-            </button>
-            <button
+            </Button>
+            <Button variant="danger"
               onClick={handleEmailReengagement}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
@@ -298,8 +299,8 @@ export function PeopleTab({ data }: Props) {
             >
               <IconMail size={12} />
               Email Re-engagement
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={handleExportCsv}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-200',
@@ -309,7 +310,7 @@ export function PeopleTab({ data }: Props) {
             >
               <IconDownload size={12} />
               Export CSV
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -513,7 +514,7 @@ function SummaryCard({
       </div>
       <p className="text-micro text-warm-400 uppercase tracking-wider font-medium">{label}</p>
       {action && (
-        <button
+        <Button variant="danger"
           type="button"
           onClick={action.onClick}
           className={cn(
@@ -525,7 +526,7 @@ function SummaryCard({
         >
           <IconMail size={11} />
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

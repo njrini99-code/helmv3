@@ -159,7 +159,7 @@ export function InsightExportModal({
           </label>
           <div className="grid grid-cols-2 gap-3">
             {FORMAT_OPTIONS.map((option) => (
-              <button
+              <Button variant="primary"
                 key={option.value}
                 type="button"
                 onClick={() => setSelectedFormat(option.value)}
@@ -185,7 +185,7 @@ export function InsightExportModal({
                     <IconCheck size={12} className="text-white" />
                   </motion.div>
                 )}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

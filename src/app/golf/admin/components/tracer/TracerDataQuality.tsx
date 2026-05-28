@@ -15,6 +15,7 @@ import { timeAgo } from '../admin-utils';
 import { DataCompletenessGrid } from './DataCompletenessGrid';
 import { DataQualityIssueRow } from './DataQualityIssueRow';
 import { PlayerQualityScoreCard } from './PlayerQualityScoreCard';
+import { IconButton } from '@/components/ui/button';
 import type {
   TracerStatsAccuracy,
   PlayerCompleteness,
@@ -216,14 +217,14 @@ function StatsAccuracyRow({
             <span className="text-eyebrow text-warm-400">{timeAgo(stat.cache_updated_at)}</span>
           )}
           {onRefreshCache && (
-            <button
+            <IconButton variant="default" aria-label="Refresh"
               type="button"
               onClick={() => onRefreshCache(stat.player_id)}
               title="Refresh cache"
               className="p-1 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100/50 transition-colors"
             >
               <IconRefresh size={12} />
-            </button>
+            </IconButton>
           )}
         </div>
       </td>

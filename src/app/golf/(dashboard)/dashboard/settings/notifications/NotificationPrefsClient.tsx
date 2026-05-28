@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { IconButton } from '@/components/ui/button';
 import {
   setCategoryChannel,
   setQuietMode,
@@ -122,7 +123,7 @@ function Toggle({
   ariaLabel: string;
 }) {
   return (
-    <button
+    <IconButton variant="primary"
       type="button"
       role="switch"
       aria-checked={checked}
@@ -140,6 +141,6 @@ function Toggle({
           checked ? 'translate-x-4' : 'translate-x-0.5'
         }`}
       />
-    </button>
+    </IconButton>
   );
 }

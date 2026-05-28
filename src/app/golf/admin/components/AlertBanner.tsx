@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -129,7 +130,7 @@ function AlertItem({
       {/* Actions */}
       <div className="flex-shrink-0 flex items-center gap-2">
         {alert.actionLabel && alert.onAction && (
-          <button
+          <Button variant="ghost"
             onClick={alert.onAction}
             className={cn(
               'px-3 py-1.5 rounded-lg text-sm font-medium text-white transition-colors',
@@ -138,10 +139,10 @@ function AlertItem({
             )}
           >
             {alert.actionLabel}
-          </button>
+          </Button>
         )}
         
-        <button
+        <IconButton variant="default"
           onClick={onDismiss}
           className={cn(
             'p-1.5 rounded-lg transition-colors',
@@ -153,7 +154,7 @@ function AlertItem({
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </IconButton>
       </div>
 
       {/* Auto-dismiss progress bar */}

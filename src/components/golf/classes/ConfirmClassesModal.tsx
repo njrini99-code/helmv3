@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { IconX, IconCheck, IconPencil, IconTrash, IconClock, IconMapPin, IconCalendar, IconUser, IconSparkles } from '@/components/icons';
@@ -136,13 +136,13 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                 </p>
               </div>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
               className="p-2 text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors -mt-1 -mr-1"
             >
               <IconX size={18} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Quick Stats */}
@@ -226,7 +226,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                         <label className="block text-xs font-medium text-warm-500 mb-2 uppercase tracking-wider">Meeting Days</label>
                         <div className="flex gap-2">
                           {DAYS.map(day => (
-                            <button
+                            <Button variant="ghost"
                               key={day.abbrev}
                               type="button"
                               onClick={() => handleDayToggle(index, day.abbrev)}
@@ -239,7 +239,7 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
                               style={cls.days.includes(day.abbrev) ? { backgroundColor: cls.color || DEFAULT_CLASS_COLOR } : undefined}
                             >
                               {day.label}
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>
@@ -371,20 +371,20 @@ export function ConfirmClassesModal({ isOpen, onClose, onConfirm, parsedClasses 
 
                       {/* Actions */}
                       <div className="flex items-center gap-0.5 flex-shrink-0">
-                        <button
+                        <IconButton variant="primary" aria-label="Edit"
                           onClick={() => handleEdit(index)}
                           className="p-2 text-warm-300 hover:text-primary-600 hover:bg-primary-50 active:bg-primary-100 rounded-lg transition-all duration-150"
                           title="Edit class"
                         >
                           <IconPencil size={16} />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton variant="default" aria-label="Delete"
                           onClick={() => handleDelete(index)}
                           className="p-2 text-warm-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all duration-150"
                           title="Remove class"
                         >
                           <IconTrash size={16} />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
                   )}

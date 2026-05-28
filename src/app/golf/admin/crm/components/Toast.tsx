@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { IconXCircle, IconCheckCircle2, IconWarning, IconInfo, IconX } from '@/components/icons';
+import { IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -142,7 +143,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             >
               <Icon size={16} className={cn('flex-shrink-0', config.iconClass)} />
               <span className="text-sm font-medium text-warm-800 flex-1">{item.message}</span>
-              <button
+              <IconButton variant="default" aria-label="Close"
                 onClick={() => {
                   const existing = timersRef.current.get(item.id);
                   if (existing) clearTimeout(existing);
@@ -152,7 +153,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 className="flex-shrink-0 p-0.5 rounded-md text-warm-400 hover:text-warm-600 transition-colors"
               >
                 <IconX size={12} />
-              </button>
+              </IconButton>
             </div>
           );
         })}

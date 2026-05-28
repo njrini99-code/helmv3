@@ -21,6 +21,7 @@ import {
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
 import { format, addDays, addHours } from 'date-fns';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -198,24 +199,24 @@ export function QuickActionsPanel({
         <div className="bg-gradient-to-r from-warm-800 to-warm-900 text-white p-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <button
+              <IconButton variant="default" aria-label="Favorite"
                 onClick={() => onUpdate({ is_starred: !coach.is_starred })}
                 className="hover:scale-110 transition-transform"
               >
                 <IconStar size={20} className={cn(coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-white/40')} />
-              </button>
+              </IconButton>
               <div>
                 <h2 className="text-xl font-bold">{coach.school}</h2>
                 <p className="text-warm-300 text-sm">{coach.name} &middot; {coach.conference}</p>
               </div>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               aria-label="Close"
               className="p-2 rounded-xl hover:bg-white/10 transition-colors"
             >
               <IconX size={18} className="text-white/70" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
 
           {/* Quick Status Bar */}
@@ -242,20 +243,20 @@ export function QuickActionsPanel({
             <div className="space-y-4">
               {/* Primary Actions */}
               <div className="grid grid-cols-2 gap-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => setView('schedule')}
                   className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-violet-500 to-violet-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <IconCalendar size={20} />
                   <span>Schedule</span>
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   onClick={() => setView('log')}
                   className="flex items-center justify-center gap-2 p-4 bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-[transform,box-shadow] hover:scale-[1.02]"
                 >
                   <IconPencil size={20} />
                   <span>Log Contact</span>
-                </button>
+                </Button>
               </div>
 
               {/* Quick Contact */}
@@ -276,12 +277,12 @@ export function QuickActionsPanel({
                     <IconPhone size={16} /> Call
                   </a>
                 )}
-                <button
+                <Button variant="ghost"
                   onClick={() => setView('note')}
                   className="flex-1 flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-xl font-medium hover:bg-amber-100 transition-colors"
                 >
                   <IconFileText size={16} /> Note
-                </button>
+                </Button>
               </div>
 
               {/* Change Status */}
@@ -294,7 +295,7 @@ export function QuickActionsPanel({
                     const config = statusConfig[status];
                     const isActive = coach.status === status;
                     return (
-                      <button
+                      <Button variant="ghost"
                         key={status}
                         onClick={() => handleStatusChange(status)}
                         className={cn(
@@ -305,7 +306,7 @@ export function QuickActionsPanel({
                         )}
                       >
                         {config.icon} {config.label}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -317,7 +318,7 @@ export function QuickActionsPanel({
                   Priority
                 </label>
                 <div className="flex gap-2">
-                  <button
+                  <Button variant="ghost"
                     onClick={() => handlePriorityChange(0)}
                     className={cn(
                       'flex-1 py-2 rounded-xl text-sm font-medium transition-colors',
@@ -327,8 +328,8 @@ export function QuickActionsPanel({
                     )}
                   >
                     Normal
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     onClick={() => handlePriorityChange(1)}
                     className={cn(
                       'flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1',
@@ -338,8 +339,8 @@ export function QuickActionsPanel({
                     )}
                   >
                     <IconZap size={14} /> High
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     onClick={() => handlePriorityChange(2)}
                     className={cn(
                       'flex-1 py-2 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1',
@@ -349,7 +350,7 @@ export function QuickActionsPanel({
                     )}
                   >
                     <IconFlame size={14} /> Hot
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -357,19 +358,19 @@ export function QuickActionsPanel({
 
           {view === 'schedule' && (
             <div className="space-y-4">
-              <button
+              <Button variant="ghost"
                 onClick={() => setView('main')}
                 className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 <IconArrowLeft size={14} /> Back
-              </button>
+              </Button>
 
               <h3 className="text-lg font-bold text-warm-800">Schedule Event</h3>
 
               {/* Event Type */}
               <div className="grid grid-cols-4 gap-2">
                 {ACTION_TYPES.map((type) => (
-                  <button
+                  <Button variant="ghost"
                     key={type.value}
                     onClick={() => setScheduleForm(f => ({
                       ...f,
@@ -385,7 +386,7 @@ export function QuickActionsPanel({
                   >
                     <span className="block mb-1">{type.icon}</span>
                     <span className="text-xs font-medium">{type.label}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
 
@@ -396,7 +397,7 @@ export function QuickActionsPanel({
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {QUICK_TIMES.map((qt) => (
-                    <button
+                    <Button variant="ghost"
                       key={qt.label}
                       onClick={() => {
                         const { date, time } = qt.getValue();
@@ -405,7 +406,7 @@ export function QuickActionsPanel({
                       className="px-3 py-1.5 bg-warm-100 hover:bg-warm-200 rounded-xl text-sm font-medium text-warm-700 transition-colors"
                     >
                       {qt.label}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -443,7 +444,7 @@ export function QuickActionsPanel({
                 </label>
                 <div className="flex gap-2">
                   {[15, 30, 45, 60].map((d) => (
-                    <button
+                    <Button variant="primary"
                       key={d}
                       onClick={() => setScheduleForm(f => ({ ...f, duration: d }))}
                       className={cn(
@@ -454,7 +455,7 @@ export function QuickActionsPanel({
                       )}
                     >
                       {d}m
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -488,25 +489,25 @@ export function QuickActionsPanel({
               </div>
 
               {/* Submit */}
-              <button
+              <Button variant="primary"
                 onClick={handleSchedule}
                 disabled={submitting || !scheduleForm.date || !scheduleForm.time}
                 className="w-full py-3 bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-primary-600 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <IconCalendar size={18} />
                 {submitting ? 'Scheduling...' : 'Schedule Event'}
-              </button>
+              </Button>
             </div>
           )}
 
           {view === 'log' && (
             <div className="space-y-4">
-              <button
+              <Button variant="ghost"
                 onClick={() => setView('main')}
                 className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 <IconArrowLeft size={14} /> Back
-              </button>
+              </Button>
 
               <h3 className="text-lg font-bold text-warm-800">Log Contact</h3>
 
@@ -519,7 +520,7 @@ export function QuickActionsPanel({
                   { value: 'meeting' as const, icon: <IconUsers size={14} />, label: 'Meeting' },
                   { value: 'note' as const, icon: <IconFileText size={14} />, label: 'Note' },
                 ].map((type) => (
-                  <button
+                  <Button variant="primary"
                     key={type.value}
                     onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                     className={cn(
@@ -530,7 +531,7 @@ export function QuickActionsPanel({
                     )}
                   >
                     {type.icon} {type.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
 
@@ -576,25 +577,25 @@ export function QuickActionsPanel({
               </div>
 
               {/* Submit */}
-              <button
+              <Button variant="primary"
                 onClick={handleLogContact}
                 disabled={submitting}
                 className="w-full py-3 bg-primary-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-primary-600 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconCheck size={18} />
                 {submitting ? 'Saving...' : 'Log Contact'}
-              </button>
+              </Button>
             </div>
           )}
 
           {view === 'note' && (
             <div className="space-y-4">
-              <button
+              <Button variant="ghost"
                 onClick={() => setView('main')}
                 className="flex items-center gap-1 text-sm text-warm-500 hover:text-warm-700 mb-2"
               >
                 <IconArrowLeft size={14} /> Back
-              </button>
+              </Button>
 
               <h3 className="text-lg font-bold text-warm-800 flex items-center gap-2">
                 <IconFileText size={20} className="text-warm-600" /> Notes
@@ -609,14 +610,14 @@ export function QuickActionsPanel({
                 autoFocus
               />
 
-              <button
+              <Button variant="ghost"
                 onClick={handleSaveNote}
                 disabled={submitting}
                 className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold text-lg shadow-lg hover:bg-amber-600 hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <IconSave size={18} />
                 {submitting ? 'Saving...' : 'Save Note'}
-              </button>
+              </Button>
             </div>
           )}
         </div>

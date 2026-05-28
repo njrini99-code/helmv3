@@ -869,7 +869,7 @@ export function StatsUploadClient({
                             : 'border-amber-200 bg-amber-50'
                         }`}
                       >
-                        <button
+                        <Button variant="ghost"
                           onClick={() =>
                             setExpandedUnmatchedPlayer(
                               isExpanded ? null : match.csvName
@@ -891,7 +891,7 @@ export function StatsUploadClient({
                               isExpanded ? 'rotate-180' : ''
                             }`}
                           />
-                        </button>
+                        </Button>
 
                         {isExpanded && (
                           <div className="px-4 pb-4 border-t border-warm-100 pt-4">
@@ -903,7 +903,7 @@ export function StatsUploadClient({
                                 </p>
                                 <div className="space-y-2">
                                   {suggestions.map((sug) => (
-                                    <button
+                                    <Button variant="primary"
                                       key={sug.player.id}
                                       onClick={() =>
                                         handleManualAssignment(
@@ -919,7 +919,7 @@ export function StatsUploadClient({
                                       <span className="text-xs text-warm-400">
                                         {Math.round(sug.confidence * 100)}% match
                                       </span>
-                                    </button>
+                                    </Button>
                                   ))}
                                 </div>
                               </div>
@@ -948,7 +948,7 @@ export function StatsUploadClient({
                               {playerSearchQuery && (
                                 <div className="max-h-40 overflow-y-auto space-y-1">
                                   {filteredPlayers.slice(0, 8).map((player) => (
-                                    <button
+                                    <Button variant="ghost"
                                       key={player.id}
                                       onClick={() =>
                                         handleManualAssignment(
@@ -959,7 +959,7 @@ export function StatsUploadClient({
                                       className="w-full flex items-center p-2 rounded-lg hover:bg-warm-50 transition-colors text-left text-sm"
                                     >
                                       {player.firstName} {player.lastName}
-                                    </button>
+                                    </Button>
                                   ))}
                                   {filteredPlayers.length === 0 && (
                                     <p className="text-sm text-warm-400 text-center py-2">
@@ -972,14 +972,14 @@ export function StatsUploadClient({
 
                             {/* Skip Button */}
                             <div className="mt-4 pt-4 border-t border-warm-100">
-                              <button
+                              <Button variant="ghost"
                                 onClick={() =>
                                   handleManualAssignment(match.csvName, null)
                                 }
                                 className="text-sm text-warm-500 hover:text-warm-700 transition-colors"
                               >
                                 Skip this player
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         )}
@@ -1053,7 +1053,7 @@ export function StatsUploadClient({
                   </label>
                   <div className="flex gap-2">
                     {(['practice', 'game', 'other'] as const).map((type) => (
-                      <button
+                      <Button variant="primary"
                         key={type}
                         onClick={() => setStatType(type)}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -1063,7 +1063,7 @@ export function StatsUploadClient({
                         }`}
                       >
                         {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                   <p className="text-xs text-warm-500 mt-2">

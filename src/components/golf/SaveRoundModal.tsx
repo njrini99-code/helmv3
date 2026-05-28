@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconClock, IconTrash, IconAlertCircle } from '@/components/icons';
 import { useMobileNav } from '@/contexts/mobile-nav-context';
+import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -121,7 +122,7 @@ export function SaveRoundModal({
             {/* Action buttons */}
             <div className="space-y-3">
               {/* Save for Later */}
-              <button
+              <Button variant="primary"
                 onClick={handleSaveForLater}
                 disabled={saving}
                 type="button"
@@ -143,10 +144,10 @@ export function SaveRoundModal({
                     Resume this round anytime from the Rounds tab
                   </p>
                 </div>
-              </button>
+              </Button>
 
               {/* Delete Round */}
-              <button
+              <Button variant="ghost"
                 onClick={handleDelete}
                 disabled={saving}
                 className={cn(
@@ -172,14 +173,14 @@ export function SaveRoundModal({
                     {confirmingDelete ? 'This cannot be undone' : 'Discard this round completely'}
                   </p>
                 </div>
-              </button>
+              </Button>
               {confirmingDelete && (
-                <button
+                <Button variant="ghost"
                   onClick={() => setConfirmingDelete(false)}
                   className="w-full text-sm text-warm-500 hover:text-warm-700 py-1"
                 >
                   Cancel
-                </button>
+                </Button>
               )}
             </div>
 
@@ -190,13 +191,13 @@ export function SaveRoundModal({
           </div>
 
         <DrawerFooter className="bg-warm-50 border-t border-warm-200">
-            <button
+            <Button variant="ghost"
               onClick={onClose}
               disabled={saving}
               className="w-full px-4 py-2 text-sm font-medium text-warm-700 hover:text-warm-900 transition-colors disabled:opacity-50"
             >
               Cancel & Continue Playing
-            </button>
+            </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

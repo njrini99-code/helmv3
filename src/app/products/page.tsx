@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import Image from "next/image"
 import Link from "next/link"
 import { m, LazyMotion, domAnimation } from "framer-motion"
@@ -83,7 +84,7 @@ export default function ProductsPage() {
             {/* Product Buttons — centered wide pills */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="#golfhelm" className="group">
-                <button
+                <Button variant="ghost"
                   className="w-full sm:w-56 flex items-center gap-4 px-6 py-4 rounded-2xl
                            border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.5)]
                            hover:shadow-[0_12px_40px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-all duration-200
@@ -106,11 +107,11 @@ export default function ProductsPage() {
                   <span className="font-bold text-warm-900 text-base tracking-tight">
                     GolfHelm
                   </span>
-                </button>
+                </Button>
               </Link>
 
               <Link href="#baseballhelm" className="group">
-                <button
+                <Button variant="ghost"
                   className="w-full sm:w-56 flex items-center gap-4 px-6 py-4 rounded-2xl
                            border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.08),0_2px_8px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.03),inset_0_1px_0_rgba(255,255,255,0.5)]
                            hover:shadow-[0_12px_40px_rgba(0,0,0,0.12),0_4px_12px_rgba(0,0,0,0.06)] active:scale-[0.98] transition-all duration-200
@@ -133,7 +134,7 @@ export default function ProductsPage() {
                   <span className="font-bold text-warm-900 text-base tracking-tight">
                     BaseballHelm
                   </span>
-                </button>
+                </Button>
               </Link>
             </div>
           </m.div>

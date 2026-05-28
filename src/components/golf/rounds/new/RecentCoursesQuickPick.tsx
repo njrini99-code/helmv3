@@ -33,6 +33,7 @@ import {
 import { IconMapPin, IconArrowRight } from '@/components/icons';
 import type { RecentPlayedCourse } from '@/app/golf/actions/golf';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 interface RecentCoursesQuickPickProps {
   /** The player's recent courses, already enriched with round counts. Empty array hides the section. */
@@ -95,7 +96,7 @@ export function RecentCoursesQuickPick({
           const location = formatLocation(course);
           return (
             <li key={course.id}>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => handleTileTap(course)}
                 aria-label={`Start new round at ${course.courseName}`}
@@ -134,7 +135,7 @@ export function RecentCoursesQuickPick({
                     {course.teesPlayed ? `${course.teesPlayed} tees` : '—'}
                   </span>
                 )}
-              </button>
+              </Button>
             </li>
           );
         })}
@@ -192,21 +193,21 @@ export function RecentCoursesQuickPick({
               </div>
 
               <DrawerFooter>
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={handleConfirm}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-body font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-700 active:bg-primary-800 active-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 >
                   Start round
                   <IconArrowRight size={16} />
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setPendingCourse(null)}
                   className="w-full rounded-xl px-4 py-2.5 text-body-sm font-medium text-warm-500 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
                 >
                   Cancel
-                </button>
+                </Button>
               </DrawerFooter>
             </>
           )}

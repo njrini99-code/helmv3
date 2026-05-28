@@ -3,6 +3,7 @@
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { IconWarning, IconAlertCircle } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface NeedsAttentionProps {
   items: AdminDashboardData['needsAttention'];
@@ -77,12 +78,12 @@ export function NeedsAttentionSection({ items, openIncidents, onNavigateTab }: N
               </div>
             </div>
             {onNavigateTab && (
-              <button
+              <Button variant="ghost"
                 onClick={() => onNavigateTab(item.tab)}
                 className="min-h-[44px] flex-shrink-0 text-xs font-semibold text-warm-600 hover:text-warm-900 whitespace-nowrap transition-colors px-3 py-1.5 rounded-lg hover:bg-warm-100/60"
               >
                 View &rarr;
-              </button>
+              </Button>
             )}
           </div>
         ))}

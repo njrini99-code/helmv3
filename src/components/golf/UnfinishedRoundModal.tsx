@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { IconPlay, IconTrash, IconAlertCircle, IconWarning } from '@/components/icons';
 import { deleteInProgressRound } from '@/app/golf/actions/golf';
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
+import { Button } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -175,26 +176,26 @@ export function UnfinishedRoundModal({
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <button
+                  <Button variant="ghost"
                     onClick={handleCancelDelete}
                     disabled={deleting}
                     className="flex-1 px-4 py-3 rounded-xl border border-warm-200 bg-white text-warm-700 font-medium text-sm hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="danger"
                     onClick={handleConfirmDelete}
                     disabled={deleting}
                     className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-medium text-sm hover:bg-red-700 active:bg-red-800 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     {deleting ? 'Deleting...' : 'Delete Round'}
-                  </button>
+                  </Button>
                 </div>
               </>
             ) : (
               <>
                 {/* Resume */}
-                <button
+                <Button variant="primary"
                   onClick={handleResume}
                   disabled={deleting}
                   className={cn(
@@ -215,10 +216,10 @@ export function UnfinishedRoundModal({
                       Continue from hole {round.current_hole || 1}
                     </p>
                   </div>
-                </button>
+                </Button>
 
                 {/* Delete Round */}
-                <button
+                <Button variant="ghost"
                   onClick={handleDeleteClick}
                   disabled={deleting}
                   className={cn(
@@ -239,7 +240,7 @@ export function UnfinishedRoundModal({
                       Permanently remove this unfinished round
                     </p>
                   </div>
-                </button>
+                </Button>
               </>
             )}
           </div>

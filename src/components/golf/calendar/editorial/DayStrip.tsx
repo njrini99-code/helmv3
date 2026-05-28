@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 import { startOfWeek, addDays, isSameDay, isBefore, format } from 'date-fns';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { Button } from '@/components/ui/button';
 
 // Type → token color (kept in sync with EventChip).
 const TYPE_DOT_CLASS: Record<string, string> = {
@@ -122,7 +123,7 @@ export function DayStrip({
         }
 
         return (
-          <button
+          <Button variant="primary"
             key={key}
             type="button"
             onClick={() => {
@@ -204,7 +205,7 @@ export function DayStrip({
                 ))
               )}
             </span>
-          </button>
+          </Button>
         );
       })}
     </div>

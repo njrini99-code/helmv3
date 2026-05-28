@@ -13,6 +13,7 @@ import {
   IconX,
 } from '@/components/icons';
 import type { BaseballCoachInsight } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 interface PlayerInsightsPanelProps {
   insights: BaseballCoachInsight[];
@@ -72,7 +73,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
             key={insight.id}
             className={`rounded-xl border transition-all ${colors?.bg ?? ''} ${colors?.border ?? ''}`}
           >
-            <button
+            <Button variant="ghost"
               onClick={() => toggleExpand(insight.id)}
               className="w-full px-4 py-3 flex items-start gap-3 text-left"
             >
@@ -92,7 +93,7 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
               <div className="text-warm-400">
                 {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
               </div>
-            </button>
+            </Button>
 
             {isExpanded && (
               <div className="px-4 pb-4 pt-0">
@@ -126,14 +127,14 @@ export function PlayerInsightsPanel({ insights, expanded = false }: PlayerInsigh
                 )}
 
                 <div className="flex items-center gap-2 mt-3 pt-3 border-t border-warm-200/60">
-                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors">
+                  <Button variant="primary" className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 active:bg-primary-200 transition-colors">
                     <IconCheck size={14} />
                     Mark Addressed
-                  </button>
-                  <button className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors">
+                  </Button>
+                  <Button variant="ghost" className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-warm-600 bg-warm-100 rounded-lg hover:bg-warm-200 active:bg-warm-300 transition-colors">
                     <IconX size={14} />
                     Dismiss
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

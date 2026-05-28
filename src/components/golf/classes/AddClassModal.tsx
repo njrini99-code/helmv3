@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconX, IconPlus, IconCheck, IconWarning } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -268,13 +268,13 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
           <DrawerTitle id="add-class-title" className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
             {editingClass ? 'Edit Class' : 'Add Class'}
           </DrawerTitle>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
             className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -312,7 +312,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
             </label>
             <div className="flex items-center gap-2 mb-2">
               {DAYS.map(day => (
-                <button
+                <Button variant="primary"
                   key={day.abbrev}
                   type="button"
                   onClick={() => handleDayToggle(day.abbrev)}
@@ -324,12 +324,12 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   )}
                 >
                   {day.label}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="flex gap-2">
               {QUICK_DAY_PATTERNS.map(pattern => (
-                <button
+                <Button variant="primary"
                   key={pattern.label}
                   type="button"
                   onClick={() => handleQuickPattern(pattern.days)}
@@ -341,7 +341,7 @@ export function AddClassModal({ isOpen, onClose, onSave, editingClass, existingC
                   )}
                 >
                   {pattern.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

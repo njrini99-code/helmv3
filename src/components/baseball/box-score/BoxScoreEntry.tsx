@@ -213,7 +213,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
-        <button
+        <Button variant="ghost"
           onClick={() => setActiveTab('batting')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
             activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
@@ -221,8 +221,8 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         >
           <IconUser size={14} />
           Batting
-        </button>
-        <button
+        </Button>
+        <Button variant="ghost"
           onClick={() => setActiveTab('pitching')}
           className={`flex items-center gap-2 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
             activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
@@ -230,7 +230,7 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
         >
           <IconTrendingUp size={14} />
           Pitching
-        </button>
+        </Button>
       </div>
 
       {/* Batting table */}
@@ -428,13 +428,13 @@ export function BoxScoreEntry({ game, teamPlayers, initialBatting, initialPitchi
                             {calcWHIP(row.h, row.bb, row.ip)}
                           </td>
                           <td className="px-2 py-2 text-center">
-                            <button
+                            <Button variant="danger"
                               onClick={() => removePitcher(row.player_id)}
                               className="text-warm-300 hover:text-red-400 transition-colors text-lg leading-none"
                               title="Remove"
                             >
                               ×
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       );

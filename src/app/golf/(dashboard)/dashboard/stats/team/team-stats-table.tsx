@@ -15,6 +15,7 @@ import {
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
 import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
 import type { TeamPlayerStats } from './page';
+import { Button } from '@/components/ui/button';
 
 type SortKey =
   | 'name'
@@ -227,95 +228,95 @@ export function TeamStatsTable({
           <thead>
             <tr className="border-b border-warm-200/60">
               <th className="text-left px-4 py-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('name')}
                   className="flex items-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors"
                 >
                   Player
                   <SortIcon columnKey="name" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('rounds_played')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Rnds
                   <SortIcon columnKey="rounds_played" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('scoring_average')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Avg
                   <SortIcon columnKey="scoring_average" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('ai_rating')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                   title="CoachHelm composite rating (engine-derived)"
                 >
                   AI
                   <SortIcon columnKey="ai_rating" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('best_round')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Best
                   <SortIcon columnKey="best_round" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3 hidden md:table-cell">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('handicap')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   HCP
                   <SortIcon columnKey="handicap" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3 hidden lg:table-cell">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('fairway_pct')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   FW%
                   <SortIcon columnKey="fairway_pct" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3 hidden lg:table-cell">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('gir_pct')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   GIR%
                   <SortIcon columnKey="gir_pct" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3 hidden xl:table-cell">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('putts_per_round')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Putts
                   <SortIcon columnKey="putts_per_round" />
-                </button>
+                </Button>
               </th>
               <th className="text-center px-3 py-3 hidden sm:table-cell">
-                <button
+                <Button variant="ghost"
                   onClick={() => handleSort('scoring_trend')}
                   className="flex items-center justify-center gap-1 text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 hover:text-warm-700 transition-colors mx-auto"
                 >
                   Trend
                   <SortIcon columnKey="scoring_trend" />
-                </button>
+                </Button>
               </th>
               <th className="w-10 px-3 py-3" />
             </tr>

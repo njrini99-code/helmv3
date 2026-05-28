@@ -26,6 +26,7 @@ import {
 import { IconCheck, IconX, IconMapPin, IconClock, IconExternalLink } from '@/components/icons';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { Button } from '@/components/ui/button';
 
 // Same color/label vocabulary as EventChip — kept in sync intentionally.
 const TYPE_RAIL_CLASS: Record<string, string> = {
@@ -220,7 +221,7 @@ export function EventDetailDrawer({
                   const isSelected = rsvpStatus === opt.value;
                   const isPending = pendingStatus === opt.value;
                   return (
-                    <button
+                    <Button variant="primary"
                       key={opt.value}
                       type="button"
                       onClick={() => handleRespond(opt.value)}
@@ -245,7 +246,7 @@ export function EventDetailDrawer({
                       {opt.value === 'accepted' && <IconCheck size={14} />}
                       {opt.value === 'declined' && <IconX size={14} />}
                       <span>{opt.label}</span>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -262,7 +263,7 @@ export function EventDetailDrawer({
           style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}
         >
           {isCoach && onEdit ? (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => {
                 onOpenChange(false);
@@ -271,17 +272,17 @@ export function EventDetailDrawer({
               className="text-body-sm font-medium text-primary-700 hover:text-primary-800 transition-colors"
             >
               Edit details
-            </button>
+            </Button>
           ) : (
             <span aria-hidden />
           )}
           <DrawerClose asChild>
-            <button
+            <Button variant="ghost"
               type="button"
               className="text-body-sm font-medium text-warm-500 hover:text-warm-800 transition-colors"
             >
               Close
-            </button>
+            </Button>
           </DrawerClose>
         </div>
       </DrawerContent>

@@ -26,6 +26,7 @@ import {
   recordInteraction,
 } from '@/app/golf/actions/insights';
 import type { ComposedInsight } from '@/lib/coachhelm/v2/types';
+import { Button } from '@/components/ui/button';
 
 interface InsightActionPanelProps {
   playerId: string;
@@ -306,7 +307,7 @@ function ActionButton({
   const style = variantStyles[variant];
 
   return (
-    <button
+    <Button variant="primary"
       onClick={onClick}
       disabled={state.loading || state.success}
       className={cn(
@@ -387,6 +388,6 @@ function ActionButton({
           Error
         </div>
       )}
-    </button>
+    </Button>
   );
 }

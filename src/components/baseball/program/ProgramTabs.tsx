@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconBuilding, IconUsers } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface ProgramTabsProps {
   overviewContent: React.ReactNode;
@@ -26,7 +27,7 @@ export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachT
       {/* Tab Navigation */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl mb-6">
         {tabs.map((tab) => (
-          <button
+          <Button variant="ghost"
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={cn(
@@ -38,7 +39,7 @@ export function ProgramTabs({ overviewContent, rosterContent, coachType: _coachT
           >
             {tab.icon}
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

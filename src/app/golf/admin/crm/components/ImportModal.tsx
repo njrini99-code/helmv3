@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Division, ProgramType } from '../crm-config';
 import { IconX, IconCheck, IconWarning, IconUpload } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface ImportModalProps {
   onClose: () => void;
@@ -261,13 +262,13 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
             <IconUpload size={16} className="text-warm-600" />
             <h2 className="text-lg font-semibold text-warm-900">Import Coaches</h2>
           </div>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             aria-label="Close"
             className="text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={18} />
-          </button>
+          </IconButton>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
@@ -324,19 +325,19 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               <div className="flex justify-end gap-3">
-                <button
+                <Button variant="ghost"
                   onClick={onClose}
                   className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   onClick={parseCSV}
                   disabled={!csvText.trim()}
                   className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Parse & Preview
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -415,19 +416,19 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
               </div>
 
               <div className="flex justify-end gap-3">
-                <button
+                <Button variant="ghost"
                   onClick={() => { setStep('upload'); setDuplicateCount(0); }}
                   className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
                 >
                   Back
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   onClick={handleImport}
                   disabled={parsedData.filter(c => !c.isDuplicate).length === 0}
                   className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   Import {parsedData.filter(c => !c.isDuplicate).length} Coaches
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -488,12 +489,12 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
                 </div>
               )}
 
-              <button
+              <Button variant="primary"
                 onClick={onSuccess}
                 className="mt-6 bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors"
               >
                 Done
-              </button>
+              </Button>
             </div>
           )}
         </div>

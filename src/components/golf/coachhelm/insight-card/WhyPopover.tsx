@@ -31,6 +31,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { Button } from '@/components/ui/button';
 
 export interface WhyPopoverProps {
   insight: EvidenceInsight;
@@ -74,7 +75,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
     return (
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
+          <Button variant="ghost"
             type="button"
             data-testid="why-popover-trigger"
             onClick={(event) => event.stopPropagation()}
@@ -82,7 +83,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
           >
             <IconHelp size={12} aria-hidden />
             Why?
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           align="start"
@@ -99,7 +100,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
 
   return (
     <>
-      <button
+      <Button variant="ghost"
         type="button"
         data-testid="why-popover-trigger"
         onClick={(event) => {
@@ -110,7 +111,7 @@ export function WhyPopover({ insight, className }: WhyPopoverProps) {
       >
         <IconHelp size={12} aria-hidden />
         Why?
-      </button>
+      </Button>
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent>
           <DrawerHeader>

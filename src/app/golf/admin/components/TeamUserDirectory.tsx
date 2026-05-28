@@ -6,6 +6,7 @@ import { IconChevronRight, IconSearch, IconWarning, IconSparkles, IconTarget } f
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { ActivityDot } from './ActivityDot';
 import { timeAgo } from './admin-utils';
+import { Button } from '@/components/ui/button';
 
 type TeamMember = AdminDashboardData['userActivity']['teams'][0]['members'][0];
 type TeamData = AdminDashboardData['userActivity']['teams'][0];
@@ -103,7 +104,7 @@ function TeamSection({
   return (
     <div className="border-b border-warm-100/50 last:border-b-0">
       {/* Team header */}
-      <button
+      <Button variant="ghost"
         onClick={onToggle}
         className={cn(
           'w-full flex items-center gap-3 px-4 py-3',
@@ -131,7 +132,7 @@ function TeamSection({
             {team.activeCount} active
           </span>
         </div>
-      </button>
+      </Button>
 
       {/* Members table */}
       {isExpanded && (
@@ -307,7 +308,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
         {/* Role pills */}
         <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {roles.map((r) => (
-            <button
+            <Button variant="primary"
               key={r.value}
               onClick={() => setRoleFilter(r.value)}
               className={cn(
@@ -318,7 +319,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
               )}
             >
               {r.label}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -358,7 +359,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
         {filteredUnassigned.length > 0 && (
           <div className="border-t border-warm-200/50">
             <div className="border-l-2 border-l-amber-400 mx-2">
-              <button
+              <Button variant="ghost"
                 onClick={() => toggleTeam('__unassigned__')}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3',
@@ -376,7 +377,7 @@ export function TeamUserDirectory({ teams, unassigned, onSelectUser, expandedTea
                 <IconWarning size={14} className="text-amber-500 flex-shrink-0" />
                 <span className="text-sm font-semibold text-warm-700">No Team Assigned</span>
                 <span className="text-xs text-amber-600 font-medium">{filteredUnassigned.length} users</span>
-              </button>
+              </Button>
 
               {expanded.has('__unassigned__') && (
                 <div className="px-2 pb-2 overflow-x-auto">

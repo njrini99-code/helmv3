@@ -10,6 +10,7 @@ import {
   IconWarning,
 } from '@/components/icons';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
+import { Button } from '@/components/ui/button';
 import type {
   CrmTask,
   TaskKind,
@@ -138,7 +139,7 @@ export function TaskCard({
       <div className="flex items-start gap-2.5">
         {/* Complete checkbox */}
         {!readOnly && (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={handleComplete}
             disabled={busy || completed}
@@ -151,7 +152,7 @@ export function TaskCard({
             )}
           >
             {completed && <IconCheck size={10} />}
-          </button>
+          </Button>
         )}
 
         {/* Priority dot */}

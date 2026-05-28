@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signupAction } from '@/app/baseball/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
+import { Button } from '@/components/ui/button';
 
 type Role = 'player' | 'coach';
 
@@ -110,7 +111,7 @@ export function BaseballSignUpForm() {
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-warm-700">I am a...</legend>
         <div className="grid grid-cols-2 gap-3">
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setRole('player')}
             aria-pressed={role === 'player'}
@@ -127,9 +128,9 @@ export function BaseballSignUpForm() {
             <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
               Player
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setRole('coach')}
             aria-pressed={role === 'coach'}
@@ -146,7 +147,7 @@ export function BaseballSignUpForm() {
             <span className={`text-sm font-medium ${role === 'coach' ? 'text-primary-600' : 'text-warm-700'}`}>
               Coach
             </span>
-          </button>
+          </Button>
         </div>
       </fieldset>
 
@@ -245,7 +246,7 @@ export function BaseballSignUpForm() {
       </div>
 
       {/* Submit */}
-      <button
+      <Button variant="primary"
         type="submit"
         disabled={isLoading}
         className="
@@ -269,7 +270,7 @@ export function BaseballSignUpForm() {
         ) : (
           'Create account'
         )}
-      </button>
+      </Button>
 
       {/* Divider */}
       <div className="flex items-center gap-4 my-6">
@@ -279,7 +280,7 @@ export function BaseballSignUpForm() {
       </div>
 
       {/* Google SSO - placeholder */}
-      <button
+      <Button variant="ghost"
         type="button"
         disabled
         className="
@@ -300,7 +301,7 @@ export function BaseballSignUpForm() {
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
         Continue with Google
-      </button>
+      </Button>
 
       {/* Terms */}
       <p className="text-xs text-warm-400 text-center mt-4">

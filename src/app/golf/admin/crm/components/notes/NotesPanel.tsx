@@ -6,6 +6,7 @@ import { listCoachNotes } from '@/app/golf/actions/crm-foundations';
 import type { CrmNote } from '@/app/golf/admin/crm/types/foundations';
 import { AddNoteDialog } from './AddNoteDialog';
 import { NoteCard } from './NoteCard';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // NotesPanel — coach-scoped list of CrmNote rows. Self-contained:
@@ -75,13 +76,13 @@ export function NotesPanel({ coachId }: NotesPanelProps) {
             </span>
           )}
         </div>
-        <button
+        <Button variant="primary"
           type="button"
           onClick={() => setDialogOpen(true)}
           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
         >
           <IconPlus size={12} /> Add note
-        </button>
+        </Button>
       </div>
 
       {/* Body */}

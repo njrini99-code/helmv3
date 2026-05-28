@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { IconBookmark } from '@/components/icons';
 import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
+import { Button } from '@/components/ui/button';
 
 interface SegmentBadgeProps {
   segment: CrmSegment;
@@ -27,7 +28,7 @@ export function SegmentBadge({
 }: SegmentBadgeProps) {
   if (variant === 'chip') {
     return (
-      <button
+      <Button variant="primary"
         type="button"
         onClick={onClick}
         title={segment.description ?? segment.name}
@@ -41,12 +42,12 @@ export function SegmentBadge({
       >
         <IconBookmark size={9} />
         <span className="truncate">{segment.name}</span>
-      </button>
+      </Button>
     );
   }
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       onContextMenu={onContextMenu}
@@ -76,6 +77,6 @@ export function SegmentBadge({
           {count}
         </span>
       )}
-    </button>
+    </Button>
   );
 }

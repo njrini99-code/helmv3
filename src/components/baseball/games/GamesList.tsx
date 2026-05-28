@@ -128,7 +128,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       {/* Type filter tabs */}
       <div className="flex gap-1 p-1 bg-warm-100 rounded-xl w-fit">
         {(['all', 'game', 'scrimmage'] as TabFilter[]).map((tab) => (
-          <button
+          <Button variant="ghost"
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all capitalize ${
@@ -138,7 +138,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
             }`}
           >
             {tab === 'all' ? 'All' : tab === 'scrimmage' ? 'Scrimmages' : 'Games'}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -152,12 +152,12 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
       ) : error ? (
         <div className="bg-red-50 border border-red-100 rounded-2xl p-5 text-center">
           <p className="text-sm text-red-600">{error}</p>
-          <button
+          <Button variant="danger"
             onClick={() => fetchGames()}
             className="mt-3 text-sm text-red-600 underline"
           >
             Retry
-          </button>
+          </Button>
         </div>
       ) : games.length === 0 ? (
         <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-10 text-center">
@@ -189,13 +189,13 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
                 </div>
               )}
               {/* Delete action - accessible via right-click context or small button */}
-              <button
+              <Button variant="danger"
                 onClick={() => handleDelete(game.id)}
                 className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-warm-300 hover:text-red-500 transition-all text-xs hidden"
                 aria-label="Delete game"
               >
                 ×
-              </button>
+              </Button>
             </div>
           ))}
         </div>

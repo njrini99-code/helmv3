@@ -19,6 +19,7 @@ import {
   IconLayers,
 } from '@/components/icons';
 import type { BaseballDocument } from '@/app/baseball/actions/documents';
+import { Button, IconButton } from '@/components/ui/button';
 
 // Document categories for display
 const DOCUMENT_CATEGORIES: Record<string, string> = {
@@ -168,7 +169,7 @@ export function DocumentCard({
 
             {isCoach && (
               <div className="relative">
-                <button
+                <IconButton variant="default" aria-label="More options"
                   onClick={(e) => {
                     e.stopPropagation();
                     setActiveDropdown(activeDropdown === document.id ? null : document.id);
@@ -176,7 +177,7 @@ export function DocumentCard({
                   className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100/80 opacity-0 group-hover:opacity-100 transition-all"
                 >
                   <IconMoreVertical size={14} />
-                </button>
+                </IconButton>
 
                 {activeDropdown === document.id && (
                   <>
@@ -188,7 +189,7 @@ export function DocumentCard({
                       }}
                     />
                     <div className="absolute right-0 top-8 z-40 w-48 bg-white rounded-xl shadow-xl border border-warm-200 py-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                      <button
+                      <Button variant="ghost"
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePreview();
@@ -197,9 +198,9 @@ export function DocumentCard({
                         className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                       >
                         <IconEye size={14} /> Preview
-                      </button>
+                      </Button>
                       {onViewHistory && (
-                        <button
+                        <Button variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             onViewHistory(document);
@@ -207,10 +208,10 @@ export function DocumentCard({
                           className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconClock size={14} /> Version History
-                        </button>
+                        </Button>
                       )}
                       {onUploadVersion && (
-                        <button
+                        <Button variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             onUploadVersion(document);
@@ -218,10 +219,10 @@ export function DocumentCard({
                           className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconUpload size={14} /> Upload New Version
-                        </button>
+                        </Button>
                       )}
                       {onEdit && (
-                        <button
+                        <Button variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit(document);
@@ -229,10 +230,10 @@ export function DocumentCard({
                           className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconEdit size={14} /> Edit Details
-                        </button>
+                        </Button>
                       )}
                       {onMoveToFolder && (
-                        <button
+                        <Button variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             onMoveToFolder(document);
@@ -240,12 +241,12 @@ export function DocumentCard({
                           className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
                         >
                           <IconFolder size={14} /> Move to Folder
-                        </button>
+                        </Button>
                       )}
                       {onDelete && (
                         <>
                           <div className="my-1 h-px bg-warm-100" />
-                          <button
+                          <Button variant="danger"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(document);
@@ -254,7 +255,7 @@ export function DocumentCard({
                             className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 active:bg-red-100 transition-colors"
                           >
                             <IconTrash size={14} /> Delete
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -311,7 +312,7 @@ export function DocumentCard({
             <span>{timeAgo(document.created_at)}</span>
           </div>
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-            <button
+            <IconButton variant="primary" aria-label="Show"
               onClick={(e) => {
                 e.stopPropagation();
                 handlePreview();
@@ -320,7 +321,7 @@ export function DocumentCard({
               title="Preview"
             >
               <IconEye size={14} />
-            </button>
+            </IconButton>
             <a
               href={document.file_url}
               download

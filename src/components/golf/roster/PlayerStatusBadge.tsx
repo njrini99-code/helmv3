@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { updatePlayerStatus } from '@/app/golf/actions/golf';
 import { useToast } from '@/components/ui/sonner';
 import { IconChevronDown } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface PlayerStatusBadgeProps {
   playerId: string;
@@ -95,7 +96,7 @@ export function PlayerStatusBadge({
 
   return (
     <div className="relative">
-      <button
+      <Button variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
         disabled={loading}
         className={cn(
@@ -117,7 +118,7 @@ export function PlayerStatusBadge({
           'transition-transform duration-200',
           isOpen && 'rotate-180'
         )} />
-      </button>
+      </Button>
 
       {isOpen && (
         <>
@@ -134,7 +135,7 @@ export function PlayerStatusBadge({
           )}>
             <div className="py-1">
               {statuses.map(status => (
-                <button
+                <Button variant="ghost"
                   key={status.value}
                   onClick={() => handleStatusChange(status.value as 'active' | 'injured' | 'redshirt' | 'inactive')}
                   className={cn(
@@ -157,7 +158,7 @@ export function PlayerStatusBadge({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

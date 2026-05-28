@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { IconActivity, IconClock, IconUsers, IconGlobe, IconInfo } from '@/components/icons';
 import { timeAgo, formatBytes } from './admin-utils';
 import { HealthScoreBreakdownModal } from './HealthScoreBreakdownModal';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   health: AdminDashboardData['health'];
@@ -74,7 +75,7 @@ export function PlatformHealthCard({
           </div>
           <h3 className="text-base sm:text-lg font-semibold text-warm-900">Platform Health</h3>
           {canShowBreakdown && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setShowBreakdown(true)}
               className={cn(
@@ -87,7 +88,7 @@ export function PlatformHealthCard({
             >
               <span className="tabular-nums">{healthScore}/100</span>
               <IconInfo size={12} className="text-warm-400" />
-            </button>
+            </Button>
           )}
         </div>
         <div className="relative flex items-center gap-1.5">

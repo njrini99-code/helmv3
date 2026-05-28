@@ -28,6 +28,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 export interface GolfTabBarItem<T extends string> {
   id: T;
@@ -85,7 +86,7 @@ export function GolfTabBar<T extends string>({
         {tabs.map((tab) => {
           const isActive = value === tab.id;
           return (
-            <button
+            <Button variant="primary"
               key={tab.id}
               type="button"
               role="tab"
@@ -135,7 +136,7 @@ export function GolfTabBar<T extends string>({
                   {tab.count}
                 </span>
               )}
-            </button>
+            </Button>
           );
         })}
       </div>

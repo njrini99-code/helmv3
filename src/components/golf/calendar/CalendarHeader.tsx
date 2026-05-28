@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -100,7 +101,7 @@ export function CalendarHeader({
     <header className="flex items-center justify-between gap-3 px-4 md:px-6 py-4 md:py-5 flex-shrink-0 min-w-0">
       {/* Left: Title + Nav */}
       <div className="flex items-center gap-3 md:gap-4 min-w-0 flex-1">
-        <button
+        <IconButton variant="default"
           type="button"
           onClick={toggleMobile}
           className={cn(
@@ -112,7 +113,7 @@ export function CalendarHeader({
           aria-label="Open navigation menu"
         >
           <Menu className="w-5 h-5" />
-        </button>
+        </IconButton>
 
         {/* Editorial title — sculptural, light weight */}
         <h2 className="text-h3 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
@@ -121,7 +122,7 @@ export function CalendarHeader({
 
         {/* Navigation — borderless arrows */}
         <div className="flex items-center gap-0.5 ml-1">
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={() => onNavigate('prev')}
             aria-label={`Previous ${view}`}
@@ -133,8 +134,8 @@ export function CalendarHeader({
             )}
           >
             <ChevronLeft className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton variant="default"
             type="button"
             onClick={() => onNavigate('next')}
             aria-label={`Next ${view}`}
@@ -146,16 +147,16 @@ export function CalendarHeader({
             )}
           >
             <ChevronRight className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-          </button>
+          </IconButton>
         </div>
 
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => onNavigate('today')}
           className="pill-soft"
         >
           Today
-        </button>
+        </Button>
       </div>
 
       {/* Right: View Toggle + Add Event */}
@@ -168,7 +169,7 @@ export function CalendarHeader({
             className="inline-flex rounded-full p-1 bg-cream-100/70 ring-1 ring-warm-200/50"
           >
             {(['day', 'week', 'month'] as const).map((v) => (
-              <button
+              <Button variant="ghost"
                 type="button"
                 key={v}
                 role="radio"
@@ -182,7 +183,7 @@ export function CalendarHeader({
                 )}
               >
                 {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -191,7 +192,7 @@ export function CalendarHeader({
         {!isMobile && onSecondaryTimezoneChange && (
           <DropdownMenu open={tzDropdownOpen} onOpenChange={setTzDropdownOpen}>
             <DropdownMenuTrigger asChild>
-              <button
+              <Button variant="primary"
                 type="button"
                 onClick={() => void triggerHaptic('light')}
                 aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
@@ -208,7 +209,7 @@ export function CalendarHeader({
                     {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
                   </span>
                 )}
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[200px]">
               {secondaryTimezone && (
@@ -239,7 +240,7 @@ export function CalendarHeader({
 
         {/* Add Event — soft primary pill */}
         {onAddEvent && !isMobile && (
-          <button
+          <Button variant="primary"
             type="button"
             onClick={onAddEvent}
             className={cn(
@@ -251,7 +252,7 @@ export function CalendarHeader({
           >
             <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />
             Add Event
-          </button>
+          </Button>
         )}
       </div>
     </header>

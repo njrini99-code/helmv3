@@ -14,6 +14,7 @@ import {
 import { Avatar } from '@/components/ui/avatar';
 import { TimeRangeFilter, type TimeRange } from './TimeRangeFilter';
 import { StatTypeFilter, type StatCategory } from './StatTypeFilter';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   PressureGapIndicator,
   getGapColor,
@@ -151,7 +152,7 @@ interface PlayerRowProps {
 function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
   return (
     <div className="space-y-2">
-      <button
+      <Button variant="ghost"
         onClick={onToggleDetails}
         className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors text-left"
       >
@@ -178,7 +179,7 @@ function PlayerRow({ player, showDetails, onToggleDetails }: PlayerRowProps) {
           compact
           size="sm"
         />
-      </button>
+      </Button>
 
       {/* Expanded details */}
       {showDetails && (
@@ -347,13 +348,13 @@ export function GameVsPracticePanel({
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-warm-900">Practice vs Game</h3>
             {onExpandClick && (
-              <button
+              <IconButton variant="default" aria-label="Maximize"
                 onClick={onExpandClick}
                 className="p-1 rounded hover:bg-warm-100 transition-colors"
                 title="Expand comparison view"
               >
                 <IconMaximize size={14} className="text-warm-400" />
-              </button>
+              </IconButton>
             )}
           </div>
           <p className="text-xs text-warm-500 mt-0.5">
@@ -455,14 +456,14 @@ export function GameVsPracticePanel({
 
       {/* Show more/less button */}
       {pressureData.length > 6 && (
-        <button
+        <Button variant="primary"
           onClick={() => setShowAllPlayers(!showAllPlayers)}
           className="w-full mt-3 py-2 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
         >
           {showAllPlayers
             ? 'Show less'
             : `Show all ${pressureData.length} players`}
-        </button>
+        </Button>
       )}
     </div>
   );

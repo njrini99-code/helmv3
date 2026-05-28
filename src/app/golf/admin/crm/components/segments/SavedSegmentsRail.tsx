@@ -12,6 +12,7 @@ import type { CrmSegment } from '@/app/golf/admin/crm/types/foundations';
 import type { Filters } from '../CoachFilters';
 import { SegmentBadge } from './SegmentBadge';
 import { SaveSegmentDialog } from './SaveSegmentDialog';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // SavedSegmentsRail — pill list in sidebar. Each pill applies its filter
@@ -144,13 +145,13 @@ export function SavedSegmentsRail({
   if (collapsed) {
     return (
       <div className="px-3 py-2 border-t border-white/10">
-        <button
+        <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
           className="w-full flex items-center justify-center p-2.5 rounded-md text-warm-400 hover:bg-white/5 hover:text-white transition-all duration-200"
         >
           <IconBookmark size={16} />
-        </button>
+        </IconButton>
         <SaveSegmentDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
@@ -167,14 +168,14 @@ export function SavedSegmentsRail({
         <span className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500">
           Segments
         </span>
-        <button
+        <IconButton variant="default"
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
           className="p-1 rounded-md text-warm-400 hover:text-white hover:bg-white/10 transition-colors"
           title="Save current filters as segment"
         >
           <IconPlus size={14} />
-        </button>
+        </IconButton>
       </div>
 
       {loading && (
@@ -228,7 +229,7 @@ export function SavedSegmentsRail({
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => handleTogglePin(segment)}
               className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors flex items-center gap-2"
@@ -237,8 +238,8 @@ export function SavedSegmentsRail({
               {segment.pin_order === null || segment.pin_order === undefined
                 ? 'Pin to rail'
                 : 'Unpin from rail'}
-            </button>
-            <button
+            </Button>
+            <Button variant="danger"
               type="button"
               onClick={() => handleDelete(segment)}
               className={cn(
@@ -248,7 +249,7 @@ export function SavedSegmentsRail({
             >
               <IconX size={14} />
               Delete segment
-            </button>
+            </Button>
           </div>
         );
       })()}

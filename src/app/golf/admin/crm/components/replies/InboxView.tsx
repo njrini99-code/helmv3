@@ -11,6 +11,7 @@ import { getInboxFeed, type CrmReply } from '@/app/golf/actions/crm-replies';
 import { completeCrmTask } from '@/app/golf/actions/crm-foundations';
 import type { CrmTask } from '@/app/golf/admin/crm/types/foundations';
 import { ReplyThread } from './ReplyThread';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // InboxView — three-column layout (replies left, tasks right, selected
@@ -136,7 +137,7 @@ export function InboxView() {
                     selection?.kind === 'reply' && selection.reply.id === r.id;
                   return (
                     <li key={r.id}>
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => setSelection({ kind: 'reply', reply: r })}
                         className={cn(
@@ -165,7 +166,7 @@ export function InboxView() {
                         <p className="text-eyebrow text-warm-500 mt-0.5">
                           {relTime(r.received_at)}
                         </p>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}
@@ -205,13 +206,13 @@ export function InboxView() {
                         Due {relTime(selection.task.due_at)} · {selection.task.priority}
                       </p>
                     </div>
-                    <button
+                    <Button variant="primary"
                       type="button"
                       onClick={() => handleCompleteTask(selection.task)}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors"
                     >
                       <IconCheckCircle2 size={12} /> Complete
-                    </button>
+                    </Button>
                   </header>
                   {selection.task.description && (
                     <p className="text-sm text-warm-700 whitespace-pre-wrap mt-2">
@@ -241,7 +242,7 @@ export function InboxView() {
                     selection?.kind === 'task' && selection.task.id === t.id;
                   return (
                     <li key={t.id}>
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => setSelection({ kind: 'task', task: t })}
                         className={cn(
@@ -255,7 +256,7 @@ export function InboxView() {
                         <p className="text-eyebrow text-warm-500 mt-0.5">
                           {t.due_at ? `Due ${relTime(t.due_at)}` : 'No due date'} · {t.priority}
                         </p>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}

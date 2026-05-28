@@ -19,6 +19,7 @@ import {
 } from '@/components/icons';
 import { STATUS_COLORS } from '../crm-config';
 import type { Coach, CoachStatus, PipelineStage } from '../crm-config';
+import { Button } from '@/components/ui/button';
 
 interface CRMDashboardProps {
   allCoaches: Coach[];
@@ -241,7 +242,7 @@ export function CRMDashboard({
             Start by contacting your top prospects — prioritize by conference, division, or star your favorites first.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
+            <Button variant="primary"
               onClick={() => handleResearchNext(10)}
               disabled={processing === 'research'}
               className="w-full sm:w-auto px-5 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all duration-200 text-sm shadow-sm shadow-primary-500/25 disabled:opacity-50 hover:shadow-md"
@@ -250,8 +251,8 @@ export function CRMDashboard({
                 <IconArrowRight size={16} />
                 Move Top 10 to Pipeline
               </span>
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => handleResearchNext(25)}
               disabled={processing === 'research'}
               className="w-full sm:w-auto px-5 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm disabled:opacity-50"
@@ -260,13 +261,13 @@ export function CRMDashboard({
                 <IconArrowRight size={16} />
                 Move Top 25 to Pipeline
               </span>
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => onNavigate('list')}
               className="w-full sm:w-auto px-5 py-2.5 text-warm-500 hover:text-warm-700 rounded-xl font-medium transition-all duration-200 text-sm"
             >
               View All <IconArrowRight size={12} className="inline" />
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -285,12 +286,12 @@ export function CRMDashboard({
                 <p className="text-xs text-warm-500">Conversion by stage</p>
               </div>
             </div>
-            <button
+            <Button variant="ghost"
               onClick={() => onNavigate('pipeline')}
               className="text-xs font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors"
             >
               View Pipeline <IconArrowRight size={12} />
-            </button>
+            </Button>
           </div>
           <div className="space-y-3">
             {funnelData.map((stage) => {
@@ -531,19 +532,19 @@ export function CRMDashboard({
                 </div>
               </div>
               <div className="flex gap-2 w-full sm:w-auto">
-                <button
+                <Button variant="primary"
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-500 text-white hover:bg-primary-600 transition-all duration-200 shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
                 >
                   <IconArrowRight size={16} /> Move to Pipeline
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   onClick={() => onNavigate('pipeline')}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Pipeline
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -652,7 +653,7 @@ function CoachRow({
 }) {
   const statusColor = STATUS_COLORS[coach.status];
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => onClick?.(coach)}
       className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-warm-50/50 transition-colors text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
@@ -676,7 +677,7 @@ function CoachRow({
           {badge}
         </span>
       )}
-    </button>
+    </Button>
   );
 }
 

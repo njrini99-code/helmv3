@@ -238,12 +238,12 @@ export default function AcademicsPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
             <span>{error}</span>
-            <button
+            <Button variant="danger"
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-700 font-medium"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         )}
         {/* Summary Cards */}

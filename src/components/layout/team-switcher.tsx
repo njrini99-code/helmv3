@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useTeamStore, type Team } from '@/stores/team-store';
 import { IconChevronDown, IconCheck, IconUsers } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface TeamSwitcherProps {
   collapsed?: boolean;
@@ -44,7 +45,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
   if (collapsed) {
     return (
       <div className="relative" ref={dropdownRef}>
-        <button
+        <Button variant="ghost"
           onClick={() => setIsOpen(!isOpen)}
           title={selectedTeam?.name || 'Select team'}
           className="p-2 rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
@@ -63,7 +64,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
               {selectedTeam?.name?.charAt(0) || 'T'}
             </div>
           )}
-        </button>
+        </Button>
 
         {isOpen && (
           <div className="absolute left-full ml-2 top-0 w-56 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
@@ -74,7 +75,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
             </div>
             <div className="py-1">
               {teams.map((team) => (
-                <button
+                <Button variant="primary"
                   key={team.id}
                   onClick={() => handleTeamSelect(team)}
                   className={cn(
@@ -103,7 +104,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                   {team.id === selectedTeamId && (
                     <IconCheck size={16} className="text-primary-600" />
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -115,7 +116,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
   // Expanded view
   return (
     <div className="relative mb-4 px-1" ref={dropdownRef}>
-      <button
+      <Button variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           'w-full px-3 py-2.5 rounded-xl border transition-all duration-200',
@@ -154,7 +155,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
             isOpen && 'rotate-180'
           )}
         />
-      </button>
+      </Button>
 
       {isOpen && (
         <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl border border-warm-200 shadow-lg py-2 z-50">
@@ -165,7 +166,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
           </div>
           <div className="py-1 max-h-64 overflow-y-auto">
             {teams.map((team) => (
-              <button
+              <Button variant="primary"
                 key={team.id}
                 onClick={() => handleTeamSelect(team)}
                 className={cn(
@@ -205,11 +206,11 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
                 {team.id === selectedTeamId && (
                   <IconCheck size={16} className="text-primary-600 flex-shrink-0" />
                 )}
-              </button>
+              </Button>
             ))}
           </div>
           <div className="border-t border-warm-100 px-3 py-2 mt-1">
-            <button
+            <Button variant="ghost"
               onClick={() => {
                 setIsOpen(false);
                 router.push('/baseball/dashboard/teams');
@@ -217,7 +218,7 @@ export function TeamSwitcher({ collapsed = false }: TeamSwitcherProps) {
               className="w-full text-sm text-primary-600 hover:text-primary-700 font-medium py-1.5"
             >
               Manage All Teams →
-            </button>
+            </Button>
           </div>
         </div>
       )}

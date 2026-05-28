@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconFile,
   IconCheck,
@@ -128,13 +129,13 @@ export function UploadHistory({
       <div className="glass-standard rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
-          <button
+          <IconButton variant="default" aria-label="Refresh"
             onClick={fetchHistory}
             className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
             title="Retry"
           >
             <IconRefresh size={16} />
-          </button>
+          </IconButton>
         </div>
         <div className="flex flex-col items-center justify-center py-8 text-center">
           <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-3">
@@ -144,12 +145,12 @@ export function UploadHistory({
             Unable to load history
           </p>
           <p className="text-sm text-warm-500 mb-4">{error}</p>
-          <button
+          <Button variant="ghost"
             onClick={fetchHistory}
             className="text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
             Try again
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -178,13 +179,13 @@ export function UploadHistory({
     <div className="glass-standard rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-warm-900">Recent Uploads</h3>
-        <button
+        <IconButton variant="default" aria-label="Refresh"
           onClick={fetchHistory}
           className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
           title="Refresh"
         >
           <IconRefresh size={16} />
-        </button>
+        </IconButton>
       </div>
       <div className="space-y-3">
         {uploads.map((upload) => {
@@ -250,12 +251,12 @@ export function UploadHistory({
       </div>
 
       {showViewAll && onViewAll && uploads.length >= limit && (
-        <button
+        <Button variant="ghost"
           onClick={onViewAll}
           className="w-full mt-4 py-2 text-sm text-primary-600 hover:text-primary-700 font-medium text-center transition-colors"
         >
           View all uploads
-        </button>
+        </Button>
       )}
     </div>
   );

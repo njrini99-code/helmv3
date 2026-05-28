@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { IconUsers, IconX } from '@/components/icons';
 import { useGolfUser } from '@/contexts/golf-user-context';
+import { IconButton } from '@/components/ui/button';
 
 const DISMISS_KEY = 'golf_no_team_banner_dismissed';
 
@@ -39,7 +40,7 @@ export function NoTeamBanner() {
       >
         Join Team
       </Link>
-      <button
+      <IconButton variant="default"
         onClick={() => {
           sessionStorage.setItem(DISMISS_KEY, '1');
           setDismissed(true);
@@ -48,7 +49,7 @@ export function NoTeamBanner() {
         aria-label="Dismiss banner"
       >
         <IconX size={16} />
-      </button>
+      </IconButton>
     </div>
   );
 }

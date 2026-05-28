@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { signupAction } from '@/app/golf/actions/auth';
 import { Users, GraduationCap, AlertCircle } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
+import { Button } from '@/components/ui/button';
 
 type Role = 'player' | 'coach';
 
@@ -135,7 +136,7 @@ export function GolfSignUpForm() {
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-warm-700">I am a...</legend>
         <div className="grid grid-cols-2 gap-3">
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setRole('player')}
             aria-pressed={role === 'player'}
@@ -152,9 +153,9 @@ export function GolfSignUpForm() {
             <span className={`text-sm font-medium ${role === 'player' ? 'text-primary-600' : 'text-warm-700'}`}>
               Player
             </span>
-          </button>
+          </Button>
 
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setRole('coach')}
             aria-pressed={role === 'coach'}
@@ -171,7 +172,7 @@ export function GolfSignUpForm() {
             <span className={`text-sm font-medium ${role === 'coach' ? 'text-primary-600' : 'text-warm-700'}`}>
               Coach
             </span>
-          </button>
+          </Button>
         </div>
       </fieldset>
 
@@ -307,7 +308,7 @@ export function GolfSignUpForm() {
       </div>
 
       {/* Submit */}
-      <button
+      <Button variant="primary"
         type="submit"
         disabled={isLoading}
         className="
@@ -332,7 +333,7 @@ export function GolfSignUpForm() {
         ) : (
           'Create account'
         )}
-      </button>
+      </Button>
 
       {/* Terms */}
       <p className="text-xs text-warm-400 text-center mt-4">

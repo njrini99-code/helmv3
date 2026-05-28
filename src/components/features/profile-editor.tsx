@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Player } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 interface ProfileEditorProps {
   player: Player;
@@ -66,7 +67,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
       <div className="relative border-b border-border">
         <div className="flex gap-1 p-2">
           {TABS.map(tab => (
-            <button
+            <Button variant="ghost"
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
@@ -77,7 +78,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               )}
             >
               {tab.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -465,7 +466,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
               </p>
             )}
           </div>
-          <button
+          <Button variant="ghost"
             onClick={handleSave}
             disabled={isSaving}
             className={cn(
@@ -474,7 +475,7 @@ export function ProfileEditor({ player, onUpdate, className }: ProfileEditorProp
             )}
           >
             {isSaving ? 'Saving...' : 'Save Changes'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ import { getMatchScoreTier, formatMatchScore } from '@/lib/recruiting/match-calc
 import type { MatchScoreBreakdown } from '@/lib/types';
 import { RECRUITING_METRIC_LABELS } from '@/lib/types';
 import { IconChevronDown, IconTarget, IconAlertCircle } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface MatchScoreBadgeProps {
   score: number;
@@ -73,7 +74,7 @@ export function MatchScoreBadge({
   // Expandable badge with breakdown
   return (
     <div className={cn('relative', className)}>
-      <button
+      <Button variant="ghost"
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
           'flex items-center gap-2 rounded-xl font-semibold border transition-all',
@@ -89,7 +90,7 @@ export function MatchScoreBadge({
         {breakdown && (
           <IconChevronDown size={16} className={cn("transition-transform", isExpanded && "rotate-180")} />
         )}
-      </button>
+      </Button>
 
       {/* Breakdown dropdown */}
       {isExpanded && breakdown && (

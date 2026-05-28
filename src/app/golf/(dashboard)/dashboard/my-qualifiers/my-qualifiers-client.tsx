@@ -8,6 +8,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { Button } from '@/components/ui/button';
 
 interface MyQualifiersClientProps {
   qualifiers: PlayerQualifierInfo[];
@@ -182,7 +183,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
 
                       <div className="flex items-center gap-2">
                         {canEnterRounds && (
-                          <button
+                          <Button variant="primary"
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
@@ -192,7 +193,7 @@ export function MyQualifiersClient({ qualifiers, error }: MyQualifiersClientProp
                             className="px-3 py-1.5 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
                           >
                             Enter Round
-                          </button>
+                          </Button>
                         )}
                         <IconChevronRight size={20} className="text-warm-400 group-hover:text-warm-600 transition-colors" />
                       </div>

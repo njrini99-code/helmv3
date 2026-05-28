@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   data: Record<string, unknown>[];
@@ -41,7 +42,7 @@ export function DataExportButton({ data, filename, label = 'Export CSV' }: Props
   }, [data, filename]);
 
   return (
-    <button
+    <Button variant="ghost"
       onClick={handleExport}
       disabled={data.length === 0}
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/60 border border-white/30 text-warm-600 hover:bg-white/80 active:bg-white/90 hover:text-warm-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -52,6 +53,6 @@ export function DataExportButton({ data, filename, label = 'Export CSV' }: Props
         <line x1="12" y1="15" x2="12" y2="3" />
       </svg>
       {label}
-    </button>
+    </Button>
   );
 }

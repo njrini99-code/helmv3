@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -386,7 +386,7 @@ export function WatchlistClient() {
   };
 
   const SortableHeader = ({ label, sortKeyValue }: { label: string; sortKeyValue: SortKey }) => (
-    <button
+    <Button variant="ghost"
       onClick={() => handleSort(sortKeyValue)}
       className="flex items-center gap-1 text-left text-label font-medium uppercase tracking-wider text-warm-500 hover:text-warm-700 transition-colors"
     >
@@ -394,7 +394,7 @@ export function WatchlistClient() {
       {sortKey === sortKeyValue && (
         sortDirection === 'asc' ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />
       )}
-    </button>
+    </Button>
   );
 
   const clearFilters = () => {
@@ -555,12 +555,12 @@ export function WatchlistClient() {
                       <IconTrash size={14} className="mr-1" />
                       Remove
                     </Button>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => setSelectedIds(new Set())}
                       className="text-sm text-warm-600 hover:text-warm-900 underline"
                     >
                       Clear
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -670,12 +670,12 @@ export function WatchlistClient() {
                           <IconNote size={14} className="mr-1" />
                           Note
                         </Button>
-                        <button
+                        <IconButton variant="default" aria-label="Delete"
                           onClick={() => setRemoveConfirm(item.id)}
                           className="min-h-[44px] min-w-[44px] rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 flex items-center justify-center"
                         >
                           <IconTrash size={18} />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
                   ))}
@@ -773,7 +773,7 @@ export function WatchlistClient() {
                               {formatDate(item.added_at || item.created_at)}
                             </td>
                             <td className="px-6 py-4">
-                              <button
+                              <Button variant="ghost"
                                 onClick={() => setNoteModal({ id: item.id, note: item.notes || '' })}
                                 className="text-xs text-warm-600 hover:text-warm-900 underline max-w-[120px] truncate block"
                                 title={item.notes || 'Add note'}
@@ -782,7 +782,7 @@ export function WatchlistClient() {
                                   ? (item.notes.length > 20 ? item.notes.substring(0, 20) + '...' : item.notes)
                                   : 'Add note'
                                 }
-                              </button>
+                              </Button>
                             </td>
                             <td className="px-6 py-4">
                               <div className="flex items-center gap-2">
@@ -794,12 +794,12 @@ export function WatchlistClient() {
                                   <IconEye size={14} className="mr-1" />
                                   View
                                 </Button>
-                                <button
+                                <IconButton variant="default" aria-label="Delete"
                                   onClick={() => setRemoveConfirm(item.id)}
                                   className="p-1.5 rounded-lg text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                                 >
                                   <IconTrash size={16} />
-                                </button>
+                                </IconButton>
                               </div>
                             </td>
                           </tr>
@@ -852,7 +852,7 @@ export function WatchlistClient() {
           {playerSearchResults.length > 0 && (
             <div className="border border-warm-200 rounded-lg divide-y divide-warm-100 max-h-64 overflow-y-auto">
               {playerSearchResults.map(player => (
-                <button
+                <Button variant="ghost"
                   key={player.id}
                   onClick={() => handleAddPlayer(player)}
                   disabled={addingPlayer}
@@ -872,7 +872,7 @@ export function WatchlistClient() {
                     </p>
                   </div>
                   <IconPlus size={16} className="text-primary-600" />
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -885,7 +885,7 @@ export function WatchlistClient() {
 
           <div className="pt-4 border-t border-warm-200">
             <p className="text-xs text-warm-500 text-center">
-              Or <button onClick={() => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); }} className="text-primary-600 hover:underline">browse all players</button>
+              Or <Button variant="ghost" onClick={() => { setShowAddModal(false); router.push('/baseball/dashboard/discover'); }} className="text-primary-600 hover:underline">browse all players</Button>
             </p>
           </div>
         </div>
@@ -930,13 +930,13 @@ export function WatchlistClient() {
             Move {selectedIds.size} player{selectedIds.size !== 1 ? 's' : ''} to:
           </p>
           {stageOptions.filter(s => s.value !== '').map(option => (
-            <button
+            <Button variant="ghost"
               key={option.value}
               onClick={() => handleBulkStageChange(option.value as PipelineStage)}
               className="w-full text-left px-4 py-3 rounded-lg hover:bg-warm-50 transition-colors border border-warm-200"
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
       </Modal>

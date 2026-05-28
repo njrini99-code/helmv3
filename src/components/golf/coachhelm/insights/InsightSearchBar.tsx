@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { IconSearch, IconX } from '@/components/icons';
+import { IconButton } from '@/components/ui/button';
 
 interface InsightSearchBarProps {
   value: string;
@@ -110,7 +111,7 @@ export function InsightSearchBar({
 
       {/* Clear Button */}
       {localValue && (
-        <button
+        <IconButton variant="default"
           type="button"
           onClick={handleClear}
           className={cn(
@@ -123,7 +124,7 @@ export function InsightSearchBar({
           aria-label="Clear search"
         >
           <IconX size={14} />
-        </button>
+        </IconButton>
       )}
     </div>
   );

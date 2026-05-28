@@ -428,7 +428,7 @@ export function PlayerProfileClient({
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
                       className={cn(
@@ -448,7 +448,7 @@ export function PlayerProfileClient({
                           {tab.count}
                         </span>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -574,9 +574,9 @@ function OverviewTab({
                 <IconVideo size={20} className="text-primary-600" />
                 Featured Videos
               </h2>
-              <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+              <Button variant="ghost" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                 View All ({player.videos.length})
-              </button>
+              </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {player.videos.slice(0, 2).map((video) => (

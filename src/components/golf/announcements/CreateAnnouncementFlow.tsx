@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { IconPlus, IconSend, IconPaperclip, IconClipboardList, IconUsers, IconUser, IconCheck, IconX, IconSearch, IconFile, IconCalendar, IconChevronDown } from '@/components/icons';
 import { createEnrichedAnnouncement } from '@/app/golf/actions/announcements';
@@ -213,14 +213,14 @@ function AnnouncementDialog({
             <DrawerTitle id="ann-dialog-title" className="text-body font-medium text-warm-900 tracking-[-0.005em]">
               New Announcement
             </DrawerTitle>
-            <button
+            <IconButton variant="default"
               type="button"
               onClick={handleClose}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
               aria-label="Close"
             >
               <IconX size={18} />
-            </button>
+            </IconButton>
           </div>
 
           {/* ── Scrollable body ─────────────────────────────────── */}
@@ -260,7 +260,7 @@ function AnnouncementDialog({
                   {urgencyOptions.map((opt) => {
                     const isActive = urgency === opt.value;
                     return (
-                      <button
+                      <Button variant="ghost"
                         key={opt.value}
                         type="button"
                         onClick={() => setUrgency(opt.value)}
@@ -273,7 +273,7 @@ function AnnouncementDialog({
                       >
                         <div className={cn('w-1.5 h-1.5 rounded-full', isActive ? opt.dot : 'bg-warm-300')} />
                         {opt.label}
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -283,7 +283,7 @@ function AnnouncementDialog({
               <div className="flex items-center gap-3">
                 <span className="text-xs font-medium text-warm-500 w-16 flex-shrink-0">Send to</span>
                 <div className="flex gap-1">
-                  <button
+                  <Button variant="primary"
                     type="button"
                     onClick={() => { setRecipientPlayerIds(null); setShowPlayerPicker(false); setPlayerSearch(''); }}
                     className={cn(
@@ -295,8 +295,8 @@ function AnnouncementDialog({
                   >
                     <IconUsers size={11} />
                     All Team
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="primary"
                     type="button"
                     onClick={() => {
                       if (isAllTeam) setRecipientPlayerIds([]);
@@ -317,7 +317,7 @@ function AnnouncementDialog({
                       </span>
                     )}
                     <IconChevronDown size={10} className={cn('transition-transform', showPlayerPicker && !isAllTeam && '-rotate-180')} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -357,7 +357,7 @@ function AnnouncementDialog({
                         {filteredPlayers.map((player) => {
                           const isSelected = (recipientPlayerIds || []).includes(player.id);
                           return (
-                            <button
+                            <Button variant="primary"
                               key={player.id}
                               type="button"
                               onClick={() => {
@@ -377,7 +377,7 @@ function AnnouncementDialog({
                                 {isSelected && <IconCheck size={8} className="text-white" />}
                               </div>
                               <span className="truncate">{player.first_name || ''} {player.last_name || ''}</span>
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -392,7 +392,7 @@ function AnnouncementDialog({
 
             {/* ── Toolbar divider ──────────────────────────────────── */}
             <div className="border-t border-warm-100 pt-3 flex items-center gap-2 flex-wrap">
-              <button
+              <Button variant="primary"
                 type="button"
                 onClick={() => setRequiresAcknowledgement(!requiresAcknowledgement)}
                 className={cn(
@@ -404,10 +404,10 @@ function AnnouncementDialog({
               >
                 {requiresAcknowledgement ? <IconCheck size={11} /> : <span className="w-3 h-3 rounded border border-warm-300" />}
                 Require Ack
-              </button>
+              </Button>
 
               {documents.length > 0 && (
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={() => setShowDocPicker(!showDocPicker)}
                   className={cn(
@@ -420,10 +420,10 @@ function AnnouncementDialog({
                   <IconPaperclip size={11} />
                   {selectedDocumentIds.length > 0 ? `${selectedDocumentIds.length} Doc${selectedDocumentIds.length !== 1 ? 's' : ''}` : 'Attach'}
                   <IconChevronDown size={10} className={cn('transition-transform', showDocPicker && '-rotate-180')} />
-                </button>
+                </Button>
               )}
 
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setInlineTasks(prev => [...prev, { id: crypto.randomUUID(), title: '' }])}
                 className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-white border-warm-200 text-warm-500 hover:bg-warm-50 transition-colors"
@@ -435,7 +435,7 @@ function AnnouncementDialog({
                     {inlineTasks.length}
                   </span>
                 )}
-              </button>
+              </Button>
             </div>
 
             {/* Attached doc chips */}
@@ -457,13 +457,13 @@ function AnnouncementDialog({
                           <span className={cn('text-eyebrow font-medium leading-none', colors.text)}>{getFileLabel(doc.file_type)}</span>
                         </div>
                         <span className="font-medium text-warm-700 max-w-[120px] truncate">{doc.title}</span>
-                        <button
+                        <IconButton variant="default" aria-label="Close"
                           type="button"
                           onClick={() => setSelectedDocumentIds(prev => prev.filter(id => id !== doc.id))}
                           className="w-4 h-4 rounded flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors"
                         >
                           <IconX size={9} />
-                        </button>
+                        </IconButton>
                       </motion.div>
                     );
                   })}
@@ -505,7 +505,7 @@ function AnnouncementDialog({
                         {filteredAvailableDocs.map((doc) => {
                           const colors = getFileColor(doc.file_type);
                           return (
-                            <button
+                            <Button variant="ghost"
                               key={doc.id}
                               type="button"
                               onClick={() => {
@@ -522,7 +522,7 @@ function AnnouncementDialog({
                                 <p className="text-micro text-warm-400">{formatFileSize(doc.file_size)}</p>
                               </div>
                               <IconPlus size={12} className="text-warm-400 flex-shrink-0" />
-                            </button>
+                            </Button>
                           );
                         })}
                       </div>
@@ -604,13 +604,13 @@ function AnnouncementDialog({
                         </div>
                       </div>
                     </div>
-                    <button
+                    <IconButton variant="default" aria-label="Close"
                       type="button"
                       onClick={() => setInlineTasks(prev => prev.filter((_, i) => i !== index))}
                       className="w-5 h-5 rounded-md flex items-center justify-center hover:bg-red-50 text-warm-400 hover:text-red-500 transition-colors flex-shrink-0"
                     >
                       <IconX size={11} />
-                    </button>
+                    </IconButton>
                   </div>
                 </motion.div>
               ))}

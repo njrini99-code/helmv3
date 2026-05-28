@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { IconWarning, IconInfo, IconX } from '@/components/icons';
 import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface Props {
   items: AdminDashboardData['needsAttention'];
@@ -132,7 +133,7 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
             {/* Action + dismiss buttons — stack below text on very small screens, inline otherwise */}
             <div className="flex items-center gap-1 flex-shrink-0 mt-0.5">
               {onNavigateTab && item.tab && (
-                <button
+                <Button variant="ghost"
                   onClick={() => onNavigateTab(item.tab)}
                   className={cn(
                     'min-h-[44px] min-w-[44px] text-xs font-semibold px-3 py-2.5 rounded-lg transition-colors flex items-center gap-1',
@@ -141,9 +142,9 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
                 >
                   {item.severity === 'critical' ? 'Fix Now' : item.severity === 'warning' ? 'Review' : 'View'}
                   <span aria-hidden="true">&rarr;</span>
-                </button>
+                </Button>
               )}
-              <button
+              <IconButton variant="default"
                 onClick={() => dismiss(item.label)}
                 aria-label="Dismiss alert"
                 className={cn(
@@ -152,18 +153,18 @@ export function CriticalAlertsBanner({ items, onNavigateTab }: Props) {
                 )}
               >
                 <IconX size={16} />
-              </button>
+              </IconButton>
             </div>
           </div>
         );
       })}
       {!showAll && hiddenCount > 0 && (
-        <button
+        <Button variant="ghost"
           onClick={() => setShowAll(true)}
           className="min-h-[44px] text-xs font-medium text-warm-500 hover:text-warm-700 px-4 py-2.5 transition-colors"
         >
           Show {hiddenCount} more alert{hiddenCount > 1 ? 's' : ''}
-        </button>
+        </Button>
       )}
     </div>
   );

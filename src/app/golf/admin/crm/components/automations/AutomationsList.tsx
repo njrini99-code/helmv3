@@ -20,6 +20,7 @@ import type {
 } from '@/lib/crm/automations-engine';
 import { AutomationEditor } from './AutomationEditor';
 import { TRIGGER_EVENTS, isSeededAutomation } from './AutomationsSeed';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // AutomationsList — table of automations grouped by trigger_event.
@@ -124,13 +125,13 @@ export function AutomationsList() {
             Configurable rules that fire on email events and pipeline changes.
           </p>
         </div>
-        <button
+        <Button variant="primary"
           type="button"
           onClick={handleNew}
           className="flex items-center gap-2 px-3 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors shadow-sm"
         >
           <IconPlus size={14} /> New automation
-        </button>
+        </Button>
       </div>
 
       {/* Error */}
@@ -188,7 +189,7 @@ export function AutomationsList() {
                           className="flex items-start gap-3 px-4 py-3 hover:bg-warm-50/40 transition-colors"
                         >
                           {/* Active toggle */}
-                          <button
+                          <IconButton variant="primary"
                             type="button"
                             onClick={() => handleToggleActive(a)}
                             disabled={togglingId === a.id}
@@ -205,7 +206,7 @@ export function AutomationsList() {
                                 a.is_active ? 'translate-x-4' : 'translate-x-0.5',
                               )}
                             />
-                          </button>
+                          </IconButton>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -241,22 +242,22 @@ export function AutomationsList() {
 
                           {/* Actions */}
                           <div className="flex items-center gap-1 flex-shrink-0">
-                            <button
+                            <IconButton variant="default"
                               type="button"
                               onClick={() => handleEdit(a)}
                               aria-label="Edit automation"
                               className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
                             >
                               <IconEdit size={14} />
-                            </button>
-                            <button
+                            </IconButton>
+                            <IconButton variant="default"
                               type="button"
                               onClick={() => handleDelete(a)}
                               aria-label="Delete automation"
                               className="p-1.5 rounded-md text-warm-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                             >
                               <IconTrash size={14} />
-                            </button>
+                            </IconButton>
                           </div>
                         </li>
                       );

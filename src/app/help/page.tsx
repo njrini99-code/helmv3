@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import {
   MessageCircle,
   Mail,
@@ -121,7 +122,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
 
   return (
     <div className="border-b border-warm-100 last:border-0">
-      <button
+      <Button variant="ghost"
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-4 text-left hover:text-primary-600 transition-colors"
       >
@@ -131,7 +132,7 @@ function FAQItem({ question, answer }: { question: string; answer: string }) {
         ) : (
           <ChevronRight size={20} className="text-warm-400 flex-shrink-0" />
         )}
-      </button>
+      </Button>
       {isOpen && (
         <div className="pb-4 pr-8">
           <p className="text-warm-600 leading-relaxed">{answer}</p>

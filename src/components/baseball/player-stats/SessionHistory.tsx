@@ -15,6 +15,7 @@ import {
   IconChart,
 } from '@/components/icons';
 import type { BaseballPlayerStats } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 interface SessionHistoryProps {
   stats: BaseballPlayerStats[];
@@ -53,7 +54,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
 
   return (
     <div className="border-b border-warm-100 last:border-b-0">
-      <button
+      <Button variant="ghost"
         onClick={onToggle}
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-warm-50/50 transition-colors"
         aria-expanded={isExpanded}
@@ -85,7 +86,7 @@ function SessionRow({ stat, isExpanded, onToggle }: SessionRowProps) {
           </div>
           {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
         </div>
-      </button>
+      </Button>
 
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 bg-warm-50/30">
@@ -214,7 +215,7 @@ export function SessionHistory({ stats, className }: SessionHistoryProps) {
 
           <div className="flex gap-1 bg-warm-100 rounded-lg p-1" role="tablist" aria-label="Filter sessions">
             {(['all', 'game', 'practice'] as const).map((f) => (
-              <button
+              <Button variant="ghost"
                 key={f}
                 role="tab"
                 aria-selected={filter === f}
@@ -227,7 +228,7 @@ export function SessionHistory({ stats, className }: SessionHistoryProps) {
                 )}
               >
                 {f.charAt(0).toUpperCase() + f.slice(1)}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -25,6 +25,7 @@ import {
   Plane,
 } from 'lucide-react';
 import { useSafeAreaInsets, useHapticFeedback } from '@/hooks/use-mobile-detection';
+import { Button } from '@/components/ui/button';
 
 type QuickEventType = 'practice' | 'tournament' | 'qualifier' | 'meeting' | 'travel' | 'other';
 
@@ -192,7 +193,7 @@ export function QuickAddEventFAB({
           {QUICK_ACTIONS.map((action, index) => {
             const Icon = action.icon;
             return (
-              <button
+              <Button variant="ghost"
                 key={action.type}
                 type="button"
                 role="menuitem"
@@ -218,12 +219,12 @@ export function QuickAddEventFAB({
                 <span className="text-sm font-medium text-warm-900 whitespace-nowrap">
                   {action.label}
                 </span>
-              </button>
+              </Button>
             );
           })}
 
           {/* Generic "New Event" option */}
-          <button
+          <Button variant="ghost"
             type="button"
             role="menuitem"
             onClick={handleGenericAdd}
@@ -245,11 +246,11 @@ export function QuickAddEventFAB({
             <span className="text-sm font-medium text-warm-900">
               Other Event
             </span>
-          </button>
+          </Button>
         </div>
 
         {/* Main FAB button */}
-        <button
+        <Button variant="primary"
           type="button"
           onClick={handleToggle}
           disabled={disabled}
@@ -279,7 +280,7 @@ export function QuickAddEventFAB({
               <Plus className="w-7 h-7 text-white" strokeWidth={2.5} />
             )}
           </div>
-        </button>
+        </Button>
       </div>
     </>
   );

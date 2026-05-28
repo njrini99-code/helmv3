@@ -7,6 +7,7 @@ import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 export default function ForgotPasswordPage() {
   const isNative = isNativeApp();
@@ -248,7 +249,7 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
 
-                <button
+                <Button variant="primary"
                   type="submit"
                   disabled={loading}
                   className="
@@ -274,7 +275,7 @@ export default function ForgotPasswordPage() {
                   ) : (
                     'Send reset link'
                   )}
-                </button>
+                </Button>
               </form>
             )}
           </m.div>

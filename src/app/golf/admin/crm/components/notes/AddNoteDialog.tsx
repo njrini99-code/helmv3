@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconNote, IconX } from '@/components/icons';
 import { createCoachNote } from '@/app/golf/actions/crm-foundations';
+import { Button, IconButton } from '@/components/ui/button';
 import type {
   CrmNote,
   NoteKind,
@@ -116,14 +117,14 @@ export function AddNoteDialog({
                   Add note
                 </h2>
               </div>
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
                 className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
               >
                 <IconX size={14} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="px-5 py-4 space-y-4">
@@ -133,7 +134,7 @@ export function AddNoteDialog({
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {KIND_OPTIONS.map((opt) => (
-                    <button
+                    <Button variant="primary"
                       key={opt.value}
                       type="button"
                       onClick={() => setKind(opt.value)}
@@ -146,7 +147,7 @@ export function AddNoteDialog({
                     >
                       <span className="text-xs font-semibold">{opt.label}</span>
                       <span className="text-eyebrow text-warm-500 mt-0.5">{opt.hint}</span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </div>
@@ -191,15 +192,15 @@ export function AddNoteDialog({
             </div>
 
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
                 className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="submit"
                 disabled={submitting || !body.trim()}
                 className={cn(
@@ -209,7 +210,7 @@ export function AddNoteDialog({
                 )}
               >
                 {submitting ? 'Saving...' : 'Add note'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

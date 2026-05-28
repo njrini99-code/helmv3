@@ -11,6 +11,7 @@ import {
   IconWarning,
 } from '@/components/icons';
 import type { DevPlanProgressItem } from '@/app/baseball/actions/team-dashboard';
+import { Button } from '@/components/ui/button';
 
 interface TeamDevProgressProps {
   data: DevPlanProgressItem[];
@@ -131,9 +132,9 @@ export function TeamDevProgress({ data, loading }: TeamDevProgressProps) {
               Create development plans to track player goals and progress
             </p>
             <Link href="/baseball/dashboard/dev-plans">
-              <button className="mt-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+              <Button variant="ghost" className="mt-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
                 Create Dev Plan →
-              </button>
+              </Button>
             </Link>
           </div>
         ) : (

@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { PasswordStrengthIndicator } from '@/components/auth/password-strength-indicator';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 export default function ResetPasswordPage() {
   const isNative = isNativeApp();
@@ -266,7 +267,7 @@ export default function ResetPasswordPage() {
                 )}
               </div>
 
-              <button
+              <Button variant="primary"
                 type="submit"
                 disabled={loading || !password || !confirmPassword}
                 className="
@@ -292,7 +293,7 @@ export default function ResetPasswordPage() {
                 ) : (
                   'Update password'
                 )}
-              </button>
+              </Button>
             </form>
           </m.div>
         </m.div>

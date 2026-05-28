@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { BaseballSignInForm } from '@/components/auth/baseball-sign-in-form';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -211,19 +212,19 @@ function LoginContent() {
                 <div className="bg-helm-amber-400/10 border border-helm-amber-400/30 text-helm-amber-600 px-4 py-3 rounded-xl text-sm text-center">
                   You&apos;re already signed in
                 </div>
-                <button
+                <Button variant="primary"
                   onClick={() => router.push(returnTo || '/baseball/dashboard')}
                   className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                 >
                   {returnTo ? 'Continue' : 'Continue to Dashboard'}
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   onClick={handleSignOut}
                   disabled={isLoggingOut}
                   className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
                 >
                   {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
-                </button>
+                </Button>
               </div>
             ) : (
               <BaseballSignInForm />

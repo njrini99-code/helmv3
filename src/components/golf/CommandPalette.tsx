@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Command } from 'cmdk';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/ui/button';
 import {
   IconSearch, IconUsers, IconCalendar, IconChartBar, IconMessage,
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
@@ -135,12 +136,12 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
   return (
     <div className="fixed inset-0 z-50 animate-in fade-in-0 duration-200" role="dialog" aria-modal="true" aria-label="Command palette">
       {/* Backdrop */}
-      <button
+      <IconButton variant="default"
         type="button"
         aria-label="Close command palette"
         onClick={() => setOpen(false)}
         className="absolute inset-0 bg-warm-900/40 backdrop-blur-md cursor-default"
-      />
+      ><span className="sr-only">Close command palette</span></IconButton>
 
       {/* Palette frame */}
       <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">

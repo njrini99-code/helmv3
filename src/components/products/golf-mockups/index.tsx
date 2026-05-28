@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 /**
  * GolfHelm Feature Mockups - Varied visual treatments
@@ -121,7 +122,7 @@ export function LiveRoundMockup() {
                 <p className="text-eyebrow font-bold text-warm-500 uppercase tracking-wider mb-2">Shot Result</p>
                 <div className="grid grid-cols-3 gap-1">
                   {['Fairway', 'Rough', 'Sand', 'Green', 'Hole', 'Other'].map((r) => (
-                    <button key={r} className={`py-1.5 rounded-lg text-eyebrow font-semibold ${r === 'Green' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</button>
+                    <Button variant="primary" key={r} className={`py-1.5 rounded-lg text-eyebrow font-semibold ${r === 'Green' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-warm-100 text-warm-600'}`}>{r}</Button>
                   ))}
                 </div>
               </div>
@@ -137,7 +138,7 @@ export function LiveRoundMockup() {
                 </div>
                 <div className="flex gap-1 mt-2">
                   {['5ft', '10ft', '15ft', '20ft', '30ft'].map((d) => (
-                    <button key={d} className={`flex-1 py-1 rounded text-eyebrow font-semibold ${d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'}`}>{d}</button>
+                    <Button variant="primary" key={d} className={`flex-1 py-1 rounded text-eyebrow font-semibold ${d === '10ft' ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-300' : 'bg-warm-100 text-warm-500'}`}>{d}</Button>
                   ))}
                 </div>
               </div>
@@ -145,7 +146,7 @@ export function LiveRoundMockup() {
 
             {/* Next Shot Button */}
             <div className="mx-2.5 mt-2">
-              <button className="w-full py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow-sm">Next Shot →</button>
+              <Button variant="primary" className="w-full py-2.5 bg-emerald-600 text-white text-xs font-semibold rounded-xl shadow-sm">Next Shot →</Button>
             </div>
           </div>
 
@@ -479,14 +480,14 @@ export function CoachAIMockup() {
               <div className="flex-1">
                 <h4 className="font-medium text-warm-900 text-sm">{insight.title}</h4>
                 <p className="text-xs text-warm-500 mt-0.5">{insight.desc}</p>
-                <button className={cn(
+                <Button variant="ghost" className={cn(
                   "mt-2 text-xs font-medium",
                   insight.color === 'amber' && "text-amber-600",
                   insight.color === 'emerald' && "text-emerald-600",
                   insight.color === 'blue' && "text-blue-600"
                 )}>
                   {insight.action} →
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -111,7 +111,7 @@ export function ConversationList({
               const isCoachUser = isCoach(conversation);
 
               return (
-                <button
+                <Button variant="primary"
                   key={conversation.id}
                   onClick={() => onSelect(conversation.id)}
                   className={cn(
@@ -160,7 +160,7 @@ export function ConversationList({
                       </p>
                     </div>
                   </div>
-                </button>
+                </Button>
               );
             })}
           </div>

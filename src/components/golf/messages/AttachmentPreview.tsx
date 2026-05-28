@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { IconX, IconFile, IconImage, IconVideo, IconAlertCircle, IconMusic } from '@/components/icons';
+import { IconButton } from '@/components/ui/button';
 import {
   type PendingAttachment,
   formatFileSize,
@@ -156,7 +157,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
       )}
 
       {/* Remove Button */}
-      <button
+      <IconButton variant="default"
         type="button"
         onClick={onRemove}
         className={cn(
@@ -170,7 +171,7 @@ function AttachmentPreviewItem({ attachment, onRemove }: AttachmentPreviewItemPr
         aria-label={`Remove ${file.name}`}
       >
         <IconX size={12} />
-      </button>
+      </IconButton>
     </div>
   );
 }

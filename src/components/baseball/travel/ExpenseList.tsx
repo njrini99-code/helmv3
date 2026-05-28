@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconTrash, IconChevronDown, IconChevronUp } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import {
   deleteExpense,
   type BaseballTravelExpense,
@@ -171,7 +172,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
 
                     {isCoach && (
                       <div className="flex items-center gap-2 pt-2 border-t border-warm-100">
-                        <button
+                        <Button variant="danger"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(expense.id);
@@ -181,7 +182,7 @@ export function ExpenseList({ expenses, onRefresh, isCoach }: ExpenseListProps) 
                         >
                           <IconTrash size={14} />
                           {deleting === expense.id ? 'Deleting...' : 'Delete'}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>

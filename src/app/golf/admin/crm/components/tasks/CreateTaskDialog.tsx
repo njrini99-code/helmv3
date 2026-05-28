@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { IconClipboardList, IconX } from '@/components/icons';
 import { createCrmTask } from '@/app/golf/actions/crm-foundations';
+import { Button, IconButton } from '@/components/ui/button';
 import type {
   CrmTask,
   TaskKind,
@@ -157,14 +158,14 @@ export function CreateTaskDialog({
                   New task
                 </h2>
               </div>
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
                 className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
               >
                 <IconX size={14} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="px-5 py-4 space-y-4">
@@ -259,15 +260,15 @@ export function CreateTaskDialog({
             </div>
 
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-warm-100 bg-warm-50/40 rounded-b-2xl">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => onOpenChange(false)}
                 disabled={submitting}
                 className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="submit"
                 disabled={submitting || !title.trim()}
                 className={cn(
@@ -277,7 +278,7 @@ export function CreateTaskDialog({
                 )}
               >
                 {submitting ? 'Creating...' : 'Create task'}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

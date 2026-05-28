@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { logError } from '@/lib/error-logging';
+import { Button } from '@/components/ui/button';
 
 export default function GlobalError({
   error,
@@ -53,12 +54,12 @@ export default function GlobalError({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
+              <Button variant="ghost"
                 onClick={reset}
                 className="px-4 py-2 bg-white hover:bg-warm-50 text-warm-700 border border-warm-200 hover:border-warm-300 rounded-lg font-medium transition-colors"
               >
                 Try again
-              </button>
+              </Button>
               <a
                 href="/"
                 className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors"

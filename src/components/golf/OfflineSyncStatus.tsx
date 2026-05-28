@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/popover';
 import { useOfflineSyncStore } from '@/stores/offline-sync-store';
 import { useConnectionStatus } from '@/hooks/golf/use-connection-status';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -358,7 +359,7 @@ export function OfflineSyncStatus({
         >
           <Popover open={isExpanded} onOpenChange={setIsExpanded}>
             <PopoverTrigger asChild>
-              <button
+              <Button variant="ghost"
                 aria-label={`Sync status: ${statusDisplay.label}. ${isExpanded ? 'Collapse' : 'Expand'} details`}
                 className={cn(
                   'flex items-center gap-2 px-3 py-2 rounded-xl border shadow-lg backdrop-blur-sm transition-all',
@@ -377,7 +378,7 @@ export function OfflineSyncStatus({
                     isExpanded && 'rotate-180'
                   )}
                 />
-              </button>
+              </Button>
             </PopoverTrigger>
             <PopoverContent
               align="end"
@@ -388,13 +389,13 @@ export function OfflineSyncStatus({
               {/* Header */}
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-warm-900">Sync Status</span>
-                <button
+                <IconButton variant="default"
                   onClick={handleDismiss}
                   aria-label="Dismiss sync status"
                   className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
                 >
                   <XIcon className="w-4 h-4" />
-                </button>
+                </IconButton>
               </div>
 
               {/* Connection status */}
@@ -469,28 +470,28 @@ export function OfflineSyncStatus({
               {/* Actions */}
               <div className="flex gap-2 pt-2 border-t border-warm-100">
                 {isOnline && pendingCount.total > 0 && !isSyncing && (
-                  <button
+                  <Button variant="primary"
                     onClick={handleSyncNow}
                     className="flex-1 px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
                   >
                     Sync Now
-                  </button>
+                  </Button>
                 )}
                 {syncError && (
-                  <button
+                  <Button variant="danger"
                     onClick={handleRetry}
                     className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                   >
                     Retry
-                  </button>
+                  </Button>
                 )}
                 {!syncError && pendingCount.total === 0 && isOnline && (
-                  <button
+                  <Button variant="ghost"
                     onClick={handleDismiss}
                     className="flex-1 px-3 py-1.5 text-xs font-medium text-warm-600 hover:text-warm-900 transition-colors"
                   >
                     Dismiss
-                  </button>
+                  </Button>
                 )}
               </div>
             </PopoverContent>
@@ -618,28 +619,28 @@ export function OfflineSyncStatus({
           {/* Actions */}
           <div className="flex-shrink-0 flex items-center gap-2">
             {isOnline && pendingCount.total > 0 && !isSyncing && (
-              <button
+              <Button variant="primary"
                 onClick={handleSyncNow}
                 className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
               >
                 Sync
-              </button>
+              </Button>
             )}
             {syncError && (
-              <button
+              <Button variant="danger"
                 onClick={handleRetry}
                 className="inline-flex items-center justify-center min-h-[44px] px-3 py-2 text-xs font-medium text-red-600 bg-red-100 hover:bg-red-200 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
               >
                 Retry
-              </button>
+              </Button>
             )}
-            <button
+            <IconButton variant="default"
               onClick={handleDismiss}
               aria-label="Dismiss sync status"
               className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-warm-500 hover:text-warm-700 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50"
             >
               <XIcon className="w-4 h-4" />
-            </button>
+            </IconButton>
           </div>
         </div>
       </div>

@@ -27,6 +27,7 @@ import { InsightCard, type InsightAction } from '@/components/golf/coachhelm/ins
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { IconSparkles } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 export interface HubInsightSignalCardProps {
   insight: EvidenceInsight | null;
@@ -146,14 +147,14 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
             From your CoachHelm
           </h2>
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={handleDismissForToday}
           data-testid="hub-insight-dismiss-today"
           className="text-xs font-medium text-warm-400 hover:text-warm-700 transition-colors"
         >
           Dismiss for today
-        </button>
+        </Button>
       </div>
 
       <InsightCard

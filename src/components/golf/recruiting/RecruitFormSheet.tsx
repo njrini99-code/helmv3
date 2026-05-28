@@ -23,6 +23,7 @@ import {
   type RecruitStatus,
 } from '@/app/golf/actions/recruiting';
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -147,14 +148,14 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
                   : 'Add to Recruiting HQ'}
               </h2>
             </div>
-            <button
+            <IconButton variant="default"
               type="button"
               onClick={onClose}
               aria-label="Close"
               className="p-1.5 rounded-lg text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
             >
               <X className="w-5 h-5" />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -169,7 +170,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
               {RECRUIT_STATUSES.map((s) => {
                 const active = form.status === s.value;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={s.value}
                     type="button"
                     onClick={() => set('status', s.value as RecruitStatus)}
@@ -193,7 +194,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
                     <span className={cn('text-eyebrow font-medium', active ? 'text-white/85' : 'text-warm-500')}>
                       {s.description}
                     </span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -303,25 +304,25 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
             {isEditing && (
               confirmingDelete ? (
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={handleDelete}
                     disabled={saving}
                     className="px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50 transition-colors"
                   >
                     Confirm remove
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => setConfirmingDelete(false)}
                     disabled={saving}
                     className="text-xs text-warm-500 hover:text-warm-900 transition-colors"
                   >
                     Cancel
-                  </button>
+                  </Button>
                 </div>
               ) : (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setConfirmingDelete(true)}
                   disabled={saving}
@@ -329,20 +330,20 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   Remove
-                </button>
+                </Button>
               )
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onClose}
               disabled={saving}
               className="px-3 py-2 text-sm font-medium text-warm-700 hover:text-warm-900 transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               type="button"
               onClick={handleSave}
               disabled={saving || !form.first_name?.trim()}
@@ -355,7 +356,7 @@ export function RecruitFormSheet({ open, recruit, onClose, onSaved }: RecruitFor
             >
               <Save className="w-4 h-4" />
               {isEditing ? 'Save changes' : 'Add prospect'}
-            </button>
+            </Button>
           </div>
         </div>
       </DrawerContent>

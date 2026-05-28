@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { IconTrophy, IconAward, IconTarget, IconChevronDown, IconChevronUp } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
 
 interface LeaderboardEntry {
   playerId: string;
@@ -208,7 +209,7 @@ export function QualifierBracket({
           </span>
         </div>
         {leaderboard.length > effectiveCutline + 3 && (
-          <button
+          <Button variant="ghost"
             onClick={() => setShowAll(!showAll)}
             className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium"
           >
@@ -217,7 +218,7 @@ export function QualifierBracket({
             ) : (
               <>Show All ({leaderboard.length}) <IconChevronDown size={14} /></>
             )}
-          </button>
+          </Button>
         )}
       </div>
 

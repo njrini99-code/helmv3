@@ -98,7 +98,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
       )}
     >
       {/* Card header */}
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full text-left px-5 py-4 flex items-start gap-4"
@@ -138,7 +138,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
         >
           <IconChevronDown size={16} className="text-warm-400" />
         </motion.div>
-      </button>
+      </Button>
 
       {/* Expanded detail */}
       <AnimatePresence>

@@ -46,6 +46,7 @@ import { JoinRequestAlert } from '@/components/golf/roster/JoinRequestAlert';
 import { ShimmerCard } from '@/components/ui/shimmer';
 import type { CoachDashboardPayload, TodayEvent, ActionItem, TeamPulseData, DashboardDateRange } from '@/app/golf/actions/dashboard-data';
 import type { CalendarEvent } from '@/lib/types/calendar';
+import { Button } from '@/components/ui/button';
 
 const TrendChart = dynamic(() => import('./TrendChart').then(mod => ({ default: mod.TrendChart })), {
     loading: () => <ShimmerCard className="h-[200px] rounded-2xl" />,
@@ -218,12 +219,12 @@ const DateRangeSelector = memo(function DateRangeSelector({
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <button className="pill-soft" aria-label="Select date range">
+                <Button variant="ghost" className="pill-soft" aria-label="Select date range">
                     <IconClock size={12} className="text-warm-400" />
                     <span className="hidden sm:inline">{selected?.label}</span>
                     <span className="sm:hidden">{selected?.shortLabel}</span>
                     <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
-                </button>
+                </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 {DATE_RANGE_OPTIONS.map((option) => (

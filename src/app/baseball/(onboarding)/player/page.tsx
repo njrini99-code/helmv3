@@ -367,7 +367,7 @@ export default function BaseballPlayerOnboarding() {
 
                   <m.div variants={staggerItem} className="space-y-3">
                     {PLAYER_TYPES.map((opt) => (
-                      <button
+                      <Button variant="ghost"
                         key={opt.value}
                         onClick={() => { setPlayerType(opt.value); setDirection(1); setStep('about'); }}
                         className="w-full auth-glass-card rounded-2xl p-5 text-left hover:bg-white/90 transition-colors group"
@@ -382,7 +382,7 @@ export default function BaseballPlayerOnboarding() {
                           </div>
                           <IconArrowRight size={16} className="ml-auto text-warm-400 group-hover:text-warm-600 transition-colors" />
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </m.div>
                 </m.div>
@@ -403,13 +403,13 @@ export default function BaseballPlayerOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Back Button */}
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('type')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   {/* Header */}
@@ -558,13 +558,13 @@ export default function BaseballPlayerOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Back Button */}
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('about')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   {/* Header */}
@@ -685,13 +685,13 @@ export default function BaseballPlayerOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Back Button */}
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('measurables')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   {/* Header */}

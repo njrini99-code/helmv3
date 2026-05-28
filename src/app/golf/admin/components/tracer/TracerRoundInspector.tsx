@@ -17,6 +17,7 @@ import {
 import { IconFilter as Filter, IconStethoscope as Stethoscope, IconArrowUpDown as ArrowUpDown } from '@/components/icons';
 import { timeAgo, formatDate } from '../admin-utils';
 import type { FlatRound, TracerIncident } from './tracer-types';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -239,7 +240,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
         </div>
 
         {/* Stuck only toggle */}
-        <button
+        <Button variant="ghost"
           onClick={() => setStuckOnly((prev) => !prev)}
           className={cn(
             'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
@@ -258,10 +259,10 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
               {stuckCount}
             </span>
           )}
-        </button>
+        </Button>
 
         {/* Has errors toggle */}
-        <button
+        <Button variant="danger"
           onClick={() => setHasErrorsOnly((prev) => !prev)}
           className={cn(
             'flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200',
@@ -280,7 +281,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
               {errorCount}
             </span>
           )}
-        </button>
+        </Button>
       </div>
 
       {/* Summary Bar */}
@@ -532,7 +533,7 @@ function RoundRow({
 
         {/* Actions */}
         <td className="px-4 py-3.5 text-center">
-          <button
+          <Button variant="ghost"
             onClick={(e) => {
               e.stopPropagation();
               onDiagnose();
@@ -545,7 +546,7 @@ function RoundRow({
           >
             <Stethoscope size={12} />
             <span className="hidden sm:inline">Diagnose</span>
-          </button>
+          </Button>
         </td>
       </tr>
 

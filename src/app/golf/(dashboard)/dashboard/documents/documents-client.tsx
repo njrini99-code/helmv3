@@ -34,6 +34,7 @@ import { useToast } from '@/components/ui/sonner';
 import { DocumentPreview } from '@/components/golf/documents/DocumentPreview';
 import { VersionHistory } from '@/components/golf/documents/VersionHistory';
 import { UploadNewVersionModal } from '@/components/golf/documents/UploadNewVersionModal';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface Document {
   id: string;
@@ -525,34 +526,34 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         }
         belowContent={
           currentFolder !== null && currentFolder !== '' ? (
-            <button
+            <Button variant="ghost"
               onClick={() => { setCurrentFolder(null); setSearchQuery(''); setCategoryFilter(''); }}
               className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 transition-colors"
             >
               <IconArrowLeft size={14} />
               All Documents
-            </button>
+            </Button>
           ) : undefined
         }
       >
         {isCoach && (
           <>
             {!currentFolder && (
-              <button
+              <Button variant="ghost"
                 onClick={() => setShowNewFolderInput(true)}
                 className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-600 bg-white border border-warm-200 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 <IconFolderPlus size={16} />
                 <span className="hidden sm:inline">New Folder</span>
-              </button>
+              </Button>
             )}
-            <button
+            <Button variant="primary"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
             >
               <IconUpload size={16} />
               <span className="hidden sm:inline">Upload</span>
-            </button>
+            </Button>
           </>
         )}
       </LargeTitleHeader>
@@ -601,12 +602,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   </div>
                   <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Create Folder</h2>
                 </div>
-                <button
+                <IconButton variant="default" aria-label="Close"
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
                   className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                 >
                   <IconX size={18} />
-                </button>
+                </IconButton>
               </div>
               <div className="px-6 py-5">
                 <label className="block text-xs font-medium text-warm-600 mb-1.5">Folder Name</label>
@@ -626,19 +627,19 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 )}
               </div>
               <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
-                <button
+                <Button variant="ghost"
                   onClick={() => { setShowNewFolderInput(false); setNewFolderName(''); }}
                   className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button variant="primary"
                   onClick={handleCreateFolder}
                   disabled={!newFolderName.trim() || folders.includes(newFolderName.trim())}
                   className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   Create Folder
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -649,18 +650,18 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80">Folders</h2>
-              <button
+              <Button variant="ghost"
                 onClick={() => setCurrentFolder('')}
                 className="text-xs text-warm-500 hover:text-warm-700 transition-colors"
               >
                 View unfiled
-              </button>
+              </Button>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {folders.map((folder) => {
                 const count = documents.filter(d => d.folder === folder).length;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={folder}
                     onClick={() => { setCurrentFolder(folder); setSearchQuery(''); setCategoryFilter(''); }}
                     className="group/folder flex items-center gap-3 p-3.5 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-white hover:shadow-sm hover:border-warm-300/60 transition-colors text-left"
@@ -672,7 +673,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       <p className="text-sm font-medium text-warm-900 truncate">{folder}</p>
                       <p className="text-xs text-warm-400">{count} file{count !== 1 ? 's' : ''}</p>
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -695,12 +696,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 className="w-full pl-9 pr-9 py-2 rounded-lg border border-warm-200/35 focus:ring-2 focus:ring-primary-600/20 focus:border-primary-500 text-sm text-warm-900 placeholder:text-warm-400 bg-cream-100/68 backdrop-blur-sm transition-colors"
               />
               {searchQuery && (
-                <button
+                <IconButton variant="default" aria-label="Close"
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600"
                 >
                   <IconX size={14} />
-                </button>
+                </IconButton>
               )}
             </div>
 
@@ -713,7 +714,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 ).length;
                 if (count === 0) return null;
                 return (
-                  <button
+                  <Button variant="primary"
                     key={cat}
                     onClick={() => setCategoryFilter(categoryFilter === cat ? '' : cat)}
                     className={cn(
@@ -724,17 +725,17 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     )}
                   >
                     {cat}
-                  </button>
+                  </Button>
                 );
               })}
               {categoryFilter && (
-                <button
+                <IconButton variant="default" aria-label="Close"
                   onClick={() => setCategoryFilter('')}
                   className="p-1 rounded-md text-warm-400 hover:text-warm-600 hover:bg-warm-100 transition-colors"
                   title="Clear filter"
                 >
                   <IconX size={12} />
-                </button>
+                </IconButton>
               )}
             </div>
 
@@ -742,13 +743,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
             <div className="flex-shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button
+                  <Button variant="ghost"
                     onClick={() => { void triggerHaptic('light'); }}
                     className="flex items-center gap-1.5 h-11 px-3 text-xs font-medium text-warm-700 bg-cream-100/75 backdrop-blur-sm border border-warm-200/35 rounded-xl hover:bg-cream-50/92 hover:border-warm-300 active:scale-95 transition-[color,background-color,transform] duration-150 whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
                   >
                     {sortBy === 'newest' ? 'Newest' : sortBy === 'oldest' ? 'Oldest' : sortBy === 'name' ? 'Name' : 'Size'}
                     <IconChevronDown size={12} className="transition-transform data-[state=open]:rotate-180" />
-                  </button>
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   {([['newest', 'Newest first'], ['oldest', 'Oldest first'], ['name', 'Name A-Z'], ['size', 'Largest first']] as const).map(([value, label]) => (
@@ -793,13 +794,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   : 'Your team files and resources will appear here.'}
               </p>
               {isCoach && (
-                <button
+                <Button variant="primary"
                   onClick={() => fileInputRef.current?.click()}
                   className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors"
                 >
                   <IconUpload size={16} />
                   Upload First Document
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -820,13 +821,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                     Upload files to get started or drag & drop them here.
                   </p>
                   {isCoach && (
-                    <button
+                    <Button variant="primary"
                       onClick={() => fileInputRef.current?.click()}
                       className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors text-sm"
                     >
                       <IconUpload size={16} />
                       Upload to {currentFolder}
-                    </button>
+                    </Button>
                   )}
                 </>
               ) : (
@@ -834,12 +835,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                   <IconSearch size={36} className="mx-auto text-warm-300 mb-4" />
                   <h3 className="text-lg font-medium text-warm-900 mb-2">No Matching Documents</h3>
                   <p className="text-sm text-warm-500 mb-4">Try adjusting your search or filters</p>
-                  <button
+                  <Button variant="ghost"
                     onClick={() => { setSearchQuery(''); setCategoryFilter(''); }}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     Clear filters
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -881,7 +882,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       {isCoach && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <button
+                            <IconButton variant="default"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 void triggerHaptic('light');
@@ -890,7 +891,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                               aria-label="Document actions"
                             >
                               <IconMoreVertical size={16} />
-                            </button>
+                            </IconButton>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent
                             align="end"
@@ -980,13 +981,13 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                       <span>{timeAgo(doc.created_at)}</span>
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
+                      <IconButton variant="primary" aria-label="Show"
                         onClick={(e) => { e.stopPropagation(); openPreview(doc); }}
                         className="p-1.5 rounded-lg hover:bg-primary-50 active:bg-primary-100 text-primary-600 transition-colors"
                         title="Preview"
                       >
                         <IconEye size={14} />
-                      </button>
+                      </IconButton>
                       <a
                         href={doc.file_url}
                         download
@@ -1015,12 +1016,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                 <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Upload Documents</h2>
                 <p className="text-sm text-warm-500">{pendingFiles.length} file{pendingFiles.length !== 1 ? 's' : ''} selected</p>
               </div>
-              <button
+              <IconButton variant="default" aria-label="Close"
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="px-6 py-4 max-h-[70vh] overflow-y-auto space-y-5">
@@ -1063,12 +1064,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
                           {pf.file.name} &middot; {formatFileSize(pf.file.size)}
                         </p>
                       </div>
-                      <button
+                      <IconButton variant="default" aria-label="Close"
                         onClick={() => removePendingFile(pf.id)}
                         className="p-1 text-warm-400 hover:text-red-500 transition-colors flex-shrink-0"
                       >
                         <IconX size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                   ))}
                 </div>
@@ -1129,23 +1130,23 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
             {/* Footer */}
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
-              <button
+              <Button variant="ghost"
                 onClick={() => { setShowUploadModal(false); setPendingFiles([]); setError(null); }}
                 className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <IconButton variant="default" aria-label="Button"
                 onClick={() => { setUploadIsPublic(!uploadIsPublic); }}
                 className="hidden"
-              />
-              <button
+              ><span className="sr-only">Button</span></IconButton>
+              <Button variant="primary"
                 onClick={handleUpload}
                 disabled={uploading || pendingFiles.length === 0}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {uploading ? `Uploading... ${uploadProgress}%` : `Upload ${pendingFiles.length} File${pendingFiles.length !== 1 ? 's' : ''}`}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1157,9 +1158,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Edit Document</h2>
-              <button onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
+              <IconButton variant="default" aria-label="Close" onClick={() => { setShowEditModal(false); setEditingDocument(null); }} className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
 
             <div className="px-6 py-4 space-y-4">
@@ -1228,31 +1229,31 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
 
               {isCoach && (
                 <div className="pt-3 border-t border-warm-100">
-                  <button
+                  <Button variant="ghost"
                     onClick={() => { setShowEditModal(false); openUploadVersionModal(editingDocument); }}
                     className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     <IconUpload size={14} />
                     Upload new version of this file
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
 
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
-              <button
+              <Button variant="ghost"
                 onClick={() => { setShowEditModal(false); setEditingDocument(null); }}
                 className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={handleUpdate}
                 disabled={updating}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 text-sm"
               >
                 {updating ? 'Saving...' : 'Save Changes'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1270,18 +1271,18 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               <p className="text-sm text-warm-500">All versions will be permanently removed. This action cannot be undone.</p>
             </div>
             <div className="flex gap-3 px-6 pb-6">
-              <button
+              <Button variant="ghost"
                 onClick={() => setDeleteConfirmDoc(null)}
                 className="flex-1 px-4 py-2.5 border border-warm-200 rounded-xl font-medium text-warm-700 hover:bg-warm-50 transition-colors text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="danger"
                 onClick={handleDeleteConfirmed}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors text-sm"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1302,9 +1303,9 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Version History</h2>
-              <button onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
+              <IconButton variant="default" onClick={closeVersionHistory} aria-label="Close" className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors">
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
             <div className="flex-1 overflow-auto p-6">
               <VersionHistory
@@ -1335,12 +1336,12 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
           <div className="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-warm-100">
               <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Move to Folder</h2>
-              <button
+              <IconButton variant="default" aria-label="Close"
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             </div>
             <div className="px-6 py-5">
               <p className="text-sm text-warm-500 mb-3">
@@ -1360,18 +1361,18 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               </select>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-warm-100 bg-warm-50/50">
-              <button
+              <Button variant="ghost"
                 onClick={() => { setShowMoveModal(false); setMovingDocument(null); }}
                 className="flex-1 px-4 py-2.5 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-white transition-colors text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={handleMoveToFolder}
                 className="flex-1 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors text-sm"
               >
                 Move
-              </button>
+              </Button>
             </div>
           </div>
         </div>

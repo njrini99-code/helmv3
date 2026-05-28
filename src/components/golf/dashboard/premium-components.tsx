@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
 import { IOS_DURATION_NORMAL, IOS_EASE } from '@/lib/ios-animations';
+import { Button } from '@/components/ui/button';
 import {
     DURATION,
     EASE_CINEMATIC,
@@ -278,13 +279,13 @@ export function SectionHeader({
             </div>
             {action && (
                 <Link href={action.href} prefetch={true} className="flex-shrink-0">
-                    <button className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+                    <Button variant="ghost" className="group inline-flex items-center gap-1 min-h-[44px] px-2 -mx-2 rounded-lg text-body-sm font-medium text-warm-500 hover:text-primary-700 transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                         {action.label}
                         <IconArrowRight
                             size={13}
                             className="transition-transform duration-300 group-hover:translate-x-0.5"
                         />
-                    </button>
+                    </Button>
                 </Link>
             )}
         </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { REMINDER_PRESETS, ReminderType, ReminderPreset } from '@/lib/types/golf';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface ReminderPickerProps {
   dueDate?: string;
@@ -141,7 +142,7 @@ export function ReminderPicker({
           </svg>
           Set Reminder
         </label>
-        <button
+        <IconButton variant="primary"
           type="button"
           role="switch"
           aria-checked={isEnabled}
@@ -161,7 +162,7 @@ export function ReminderPicker({
               isEnabled ? 'translate-x-4' : 'translate-x-0'
             )}
           />
-        </button>
+        </IconButton>
       </div>
 
       {!dueDate && (
@@ -178,7 +179,7 @@ export function ReminderPicker({
             </label>
             <div className="flex flex-wrap gap-2">
               {REMINDER_PRESETS.map((preset) => (
-                <button
+                <Button variant="primary"
                   key={preset.value}
                   type="button"
                   onClick={() => handlePresetChange(preset.value)}
@@ -193,7 +194,7 @@ export function ReminderPicker({
                   )}
                 >
                   {preset.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -240,7 +241,7 @@ export function ReminderPicker({
                 { value: 'push', label: 'Push', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' },
                 { value: 'all', label: 'All', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
               ].map((type) => (
-                <button
+                <Button variant="primary"
                   key={type.value}
                   type="button"
                   onClick={() => handleTypeChange(type.value as ReminderType)}
@@ -255,7 +256,7 @@ export function ReminderPicker({
                   )}
                 >
                   {type.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import type { RecruitingMetricWeights } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 import {
   RECRUITING_METRIC_LABELS,
   RECRUITING_METRIC_DESCRIPTIONS,
@@ -132,12 +133,12 @@ export function RecruitingWeightDistributor({
             Adjust how much each attribute matters in your player rankings
           </p>
         </div>
-        <button
+        <Button variant="ghost"
           onClick={handleReset}
           className="text-sm text-warm-500 hover:text-warm-700 underline"
         >
           Reset to defaults
-        </button>
+        </Button>
       </div>
 
       {/* Sliders */}

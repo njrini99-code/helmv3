@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import type { RecruitingMinimumStandards } from '@/lib/types';
 import { AlertTriangle, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MinimumStandardsProps {
   values: RecruitingMinimumStandards;
@@ -132,12 +133,12 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
           </p>
         </div>
         {activeCount > 0 && (
-          <button
+          <Button variant="ghost"
             onClick={handleClearAll}
             className="text-sm text-warm-500 hover:text-warm-700 underline"
           >
             Clear all
-          </button>
+          </Button>
         )}
       </div>
 
@@ -174,7 +175,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
             >
               <div className="flex items-start gap-3">
                 {/* Toggle */}
-                <button
+                <Button variant="primary"
                   onClick={() => toggleStandard(config.key, config)}
                   className={cn(
                     'w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
@@ -184,7 +185,7 @@ export function MinimumStandards({ values, onChange }: MinimumStandardsProps) {
                   )}
                 >
                   {isEnabled && <Check className="w-4 h-4" />}
-                </button>
+                </Button>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">

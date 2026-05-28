@@ -8,7 +8,7 @@ import { DiscoverView } from '@/components/coach/discover/DiscoverView';
 import { PlayerPeekPanel } from '@/components/panels/PlayerPeekPanel';
 import { TeamPeekPanel } from '@/components/panels/TeamPeekPanel';
 import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { PageLoading } from '@/components/ui/loading';
 import { IconFilter, IconX } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
@@ -383,12 +383,12 @@ function DiscoverContent() {
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center justify-between">
             <span>{error}</span>
-            <button
+            <Button variant="danger"
               onClick={() => setError(null)}
               className="text-red-600 hover:text-red-700 font-medium transition-colors"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         )}
 
@@ -457,13 +457,13 @@ function DiscoverContent() {
                     </span>
                   )}
                 </div>
-                <button
+                <IconButton variant="default"
                   onClick={() => setMobileFiltersOpen(false)}
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-warm-100 active:bg-warm-200 transition-colors"
                   aria-label="Close filters"
                 >
                   <IconX size={20} className="text-warm-500" />
-                </button>
+                </IconButton>
               </div>
               <div className="p-6">
                 <FilterPanel currentFilters={filters} mode={filters.mode} />

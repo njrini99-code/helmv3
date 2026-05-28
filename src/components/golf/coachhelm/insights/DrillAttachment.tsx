@@ -21,6 +21,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { cn } from '@/lib/utils';
 import { IconPlay, IconTarget } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 import {
   getDrillsForInsight as defaultGetDrillsForInsight,
   recordDrillView as defaultRecordDrillView,
@@ -136,7 +137,7 @@ function DrillCard({ drill, onView }: DrillCardProps) {
   };
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={handleClick}
       disabled={pending}
@@ -179,6 +180,6 @@ function DrillCard({ drill, onView }: DrillCardProps) {
           {drill.duration_min} min
         </div>
       </div>
-    </button>
+    </Button>
   );
 }

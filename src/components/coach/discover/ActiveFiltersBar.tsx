@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconX } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface ActiveFiltersBarProps {
   filters: {
@@ -137,25 +138,25 @@ export function ActiveFiltersBar({ filters, totalCount, className }: ActiveFilte
               <span className="text-warm-400">{chip.label}:</span>
             )}
             <span className="font-medium text-warm-700">{chip.value}</span>
-            <button
+            <IconButton variant="default" aria-label="Close"
               onClick={() => removeFilter(chip.key, chip.removeValue)}
               className="ml-0.5 p-0.5 rounded hover:bg-warm-100 transition-colors active:bg-warm-200 text-warm-400
                          hover:text-warm-600 transition-colors"
             >
               <IconX size={12} />
-            </button>
+            </IconButton>
           </div>
         ))}
       </div>
 
       {chips.length > 1 && (
-        <button
+        <Button variant="ghost"
           onClick={clearAll}
           className="text-sm text-warm-500 hover:text-warm-700 font-medium
                      whitespace-nowrap transition-colors"
         >
           Clear all
-        </button>
+        </Button>
       )}
     </div>
   );

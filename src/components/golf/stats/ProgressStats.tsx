@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { IconChevronDown, IconChevronUp, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Shimmer } from '@/components/ui/shimmer';
+import { Button } from '@/components/ui/button';
 
 // Dynamic imports for recharts - reduces initial bundle size by ~150KB
 const Line = dynamic(() => import('recharts').then(mod => mod.Line), { ssr: false });
@@ -149,14 +150,14 @@ const ScoringTrendChart = memo(function ScoringTrendChart({ rounds }: { rounds: 
               {trend.direction === 'up' ? 'Improving' : 'Declining'} {trend.percentage.toFixed(1)}%
             </div>
           )}
-          <button
+          <Button variant="primary"
             onClick={() => setShowMovingAvg(!showMovingAvg)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               showMovingAvg ? 'bg-primary-100 text-primary-700' : 'bg-warm-100 text-warm-600'
             }`}
           >
             3-Round Avg
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -296,7 +297,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">Recent Rounds</h3>
         {rounds.length > 5 && (
-          <button
+          <Button variant="ghost"
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
           >
@@ -305,7 +306,7 @@ const RecentRounds = memo(function RecentRounds({ rounds }: { rounds: RoundData[
             ) : (
               <>Show All ({rounds.length}) <IconChevronDown size={16} /></>
             )}
-          </button>
+          </Button>
         )}
       </div>
       <div className="space-y-2">

@@ -9,6 +9,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover';
 import { IconMessage, IconChart, IconUser, IconChevronRight } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface PlayerQuickCardProps {
   player: {
@@ -30,13 +31,13 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
+        <Button variant="ghost"
           type="button"
           className={cn('inline-block text-left rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50', className)}
           aria-label={`Open quick card for ${name || 'player'}`}
         >
           {children}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
@@ -87,25 +88,25 @@ export function PlayerQuickCard({ player, children, className }: PlayerQuickCard
           {/* Quick Actions */}
           <div className="p-2">
             <Link href={`/golf/dashboard/stats?player=${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+              <Button variant="ghost" className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                 <IconChart size={16} className="text-warm-400" />
                 <span>View Stats</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />
-              </button>
+              </Button>
             </Link>
             <Link href={`/golf/dashboard/messages?player=${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+              <Button variant="ghost" className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                 <IconMessage size={16} className="text-warm-400" />
                 <span>Send Message</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />
-              </button>
+              </Button>
             </Link>
             <Link href={`/golf/dashboard/players/${player.id}`}>
-              <button className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
+              <Button variant="ghost" className="w-full flex items-center gap-2 px-3 py-3 min-h-[44px] text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50">
                 <IconUser size={16} className="text-warm-400" />
                 <span>View Profile</span>
                 <IconChevronRight size={14} className="ml-auto text-warm-400" />
-              </button>
+              </Button>
             </Link>
           </div>
         </div>

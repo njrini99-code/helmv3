@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { IconMapPin, IconHeart, IconHeartFilled } from '@/components/icons';
 import { addToInterests, removeFromInterests } from '@/app/baseball/actions/interests';
 import type { College } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 interface CollegeCardProps {
   college: College;
@@ -64,7 +65,7 @@ export function CollegeCard({
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold text-warm-900 truncate">{college.name}</h3>
                 {showInterestButton && (
-                  <button
+                  <Button variant="danger"
                     onClick={handleInterestClick}
                     disabled={loading}
                     className={`flex-shrink-0 p-1.5 rounded-full transition-colors ${
@@ -75,7 +76,7 @@ export function CollegeCard({
                     aria-label={interested ? 'Remove from interests' : 'Add to interests'}
                   >
                     {interested ? <IconHeartFilled size={18} /> : <IconHeart size={18} />}
-                  </button>
+                  </Button>
                 )}
               </div>
               <div className="flex items-center gap-1 text-sm text-warm-500 mt-1">

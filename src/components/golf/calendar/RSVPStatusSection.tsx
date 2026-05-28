@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { RSVPProgressRing } from './RSVPProgressRing';
 import { Users, Download, Search } from 'lucide-react';
 import '@/styles/calendar-tokens.css';
+import { Button } from '@/components/ui/button';
 
 interface RSVPParticipant {
   id: string;
@@ -156,13 +157,13 @@ export function RSVPStatusSection({
           </div>
 
           {onExport && (
-            <button
+            <Button variant="ghost"
               onClick={onExport}
               className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-warm-700 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 rounded-lg border border-warm-200 transition-colors"
             >
               <Download className="w-4 h-4" />
               Export
-            </button>
+            </Button>
           )}
         </div>
 
@@ -252,14 +253,14 @@ export function RSVPStatusSection({
             {/* Select all (if reminder function available) */}
             {onSendReminder && filteredParticipants.length > 1 && (
               <div className="p-3 bg-warm-50 border-b border-warm-200">
-                <button
+                <Button variant="ghost"
                   onClick={selectAll}
                   className="text-sm text-warm-700 hover:text-warm-900 font-medium"
                 >
                   {selectedIds.size === filteredParticipants.length
                     ? 'Deselect All'
                     : `Select All (${filteredParticipants.length})`}
-                </button>
+                </Button>
               </div>
             )}
 
@@ -282,12 +283,12 @@ export function RSVPStatusSection({
         <div className="p-4 border-t border-warm-200 bg-warm-50">
           <div className="flex items-center justify-between gap-4">
             <p className="text-sm text-warm-600">{selectedIds.size} selected</p>
-            <button
+            <Button variant="primary"
               onClick={handleSendReminder}
               className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
               Send Reminder
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -319,7 +320,7 @@ function FilterButton({
   };
 
   return (
-    <button
+    <Button variant="ghost"
       onClick={onClick}
       className={cn(
         'px-3 py-1.5 text-sm font-medium rounded-lg transition-colors',
@@ -331,7 +332,7 @@ function FilterButton({
       <span className={cn('tabular-nums', active ? 'opacity-90' : 'opacity-75')}>
         {count}
       </span>
-    </button>
+    </Button>
   );
 }
 

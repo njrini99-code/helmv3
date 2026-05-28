@@ -18,6 +18,7 @@ import {
 import type { ComponentType, SVGAttributes } from 'react';
 import { toast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   deleteTravelExpense,
   type TravelExpense,
@@ -196,7 +197,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                       <div>
                         <p className="text-warm-500 text-xs uppercase tracking-wide mb-1">Receipt</p>
                         {expense.receipt_url ? (
-                          <button
+                          <Button variant="ghost"
                             onClick={(e) => {
                               e.stopPropagation();
                               setViewingReceipt(expense.receipt_url);
@@ -205,7 +206,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                           >
                             <IconEye size={14} />
                             View
-                          </button>
+                          </Button>
                         ) : (
                           <p className="text-warm-400">None</p>
                         )}
@@ -222,7 +223,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                     {/* Actions */}
                     {isCoach && (
                       <div className="flex items-center gap-2 pt-2 border-t border-warm-100">
-                        <button
+                        <Button variant="ghost"
                           onClick={(e) => {
                             e.stopPropagation();
                             onEdit(expense);
@@ -231,8 +232,8 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                         >
                           <IconEdit size={14} />
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="danger"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDelete(expense.id);
@@ -242,7 +243,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                         >
                           <IconTrash size={14} />
                           {deleting === expense.id ? 'Deleting...' : 'Delete'}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -282,12 +283,12 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
           >
             <div className="p-4 border-b border-warm-200 flex items-center justify-between">
               <h3 className="font-medium text-warm-900">Receipt</h3>
-              <button
+              <IconButton variant="default" aria-label="Delete"
                 onClick={() => setViewingReceipt(null)}
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconTrash size={18} />
-              </button>
+              </IconButton>
             </div>
             <div className="p-4 max-h-[60vh] overflow-auto">
               {viewingReceipt.endsWith('.pdf') ? (

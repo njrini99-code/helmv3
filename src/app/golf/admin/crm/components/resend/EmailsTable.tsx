@@ -15,6 +15,7 @@ import type {
   EmailsListFilters,
 } from '@/app/golf/actions/resend-activity';
 import { getEmailsList } from '@/app/golf/actions/resend-activity';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   deriveStatus,
   STATUS_CONFIG,
@@ -113,13 +114,13 @@ export function EmailsTable({
               className="w-full pl-9 pr-9 py-2 text-sm bg-white/60 border border-warm-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 placeholder:text-warm-400"
             />
             {search && (
-              <button
+              <IconButton variant="default"
                 onClick={() => setSearch('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-warm-100 text-warm-400 hover:text-warm-700"
                 aria-label="Clear search"
               >
                 <IconX size={12} />
-              </button>
+              </IconButton>
             )}
           </div>
 
@@ -143,7 +144,7 @@ export function EmailsTable({
         {/* Status tabs */}
         <div className="flex items-center gap-1 flex-wrap">
           {STATUS_TABS.map((t) => (
-            <button
+            <Button variant="primary"
               key={t.id}
               onClick={() => setStatus(t.id)}
               className={cn(
@@ -154,7 +155,7 @@ export function EmailsTable({
               )}
             >
               {t.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -286,25 +287,25 @@ export function EmailsTable({
             {Math.min((page + 1) * pageSize, count)} of {count.toLocaleString()}
           </p>
           <div className="flex items-center gap-1">
-            <button
+            <IconButton variant="default"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
               disabled={page === 0}
               className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Previous page"
             >
               <IconChevronLeft size={14} />
-            </button>
+            </IconButton>
             <span className="text-xs text-warm-600 px-2 tabular-nums">
               {page + 1} / {totalPages}
             </span>
-            <button
+            <IconButton variant="default"
               onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={page >= totalPages - 1}
               className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label="Next page"
             >
               <IconChevronRight size={14} />
-            </button>
+            </IconButton>
           </div>
         </div>
       )}

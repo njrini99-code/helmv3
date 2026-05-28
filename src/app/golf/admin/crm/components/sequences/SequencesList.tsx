@@ -11,6 +11,7 @@ import {
   type CrmSequence,
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceCard } from './SequenceCard';
+import { Button } from '@/components/ui/button';
 
 interface SequencesListProps {
   selectedId: string | null;
@@ -91,7 +92,7 @@ export function SequencesList({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold text-warm-900">Sequences</h2>
-        <button
+        <Button variant="primary"
           type="button"
           onClick={() => setShowCreateForm((v) => !v)}
           className={cn(
@@ -101,7 +102,7 @@ export function SequencesList({
           )}
         >
           <IconPlus size={14} /> Create sequence
-        </button>
+        </Button>
       </div>
 
       {showCreateForm && (
@@ -244,15 +245,15 @@ function CreateSequenceForm({
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       <div className="flex justify-end gap-2">
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onCancel}
           disabled={submitting}
           className="px-3 py-1.5 text-sm text-warm-600 hover:text-warm-800 transition-colors disabled:opacity-50"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button variant="primary"
           type="submit"
           disabled={submitting || !name.trim()}
           className={cn(
@@ -263,7 +264,7 @@ function CreateSequenceForm({
         >
           {submitting && <IconLoader size={14} className="animate-spin" />}
           Create sequence
-        </button>
+        </Button>
       </div>
     </form>
   );

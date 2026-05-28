@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IconStar, IconArrowRight, IconMail, IconTrash, IconX, IconChevronUp } from '@/components/icons';
 import type { CoachStatus } from '../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface BulkActionsBarProps {
   selectedCount: number;
@@ -46,10 +47,10 @@ export function BulkActionsBar({
       {/* Move to Status */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors">
+          <Button variant="ghost" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors">
             <IconArrowRight size={14} /> Move to
             <IconChevronUp size={12} className="transition-transform data-[state=open]:rotate-180" />
-          </button>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" className="min-w-[180px] max-h-[400px] overflow-y-auto">
           {ALL_STATUSES.map(status => (
@@ -66,28 +67,28 @@ export function BulkActionsBar({
       </DropdownMenu>
 
       {/* Email */}
-      <button
+      <Button variant="ghost"
         onClick={() => onAction('email')}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconMail size={14} /> Email
-      </button>
+      </Button>
 
       {/* Star */}
-      <button
+      <Button variant="ghost"
         onClick={() => onAction('star')}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconStar size={14} /> Star
-      </button>
+      </Button>
 
       {/* Unstar */}
-      <button
+      <Button variant="ghost"
         onClick={() => onAction('unstar')}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-warm-700 hover:bg-warm-100 transition-colors"
       >
         <IconStar size={14} className="text-warm-400" /> Unstar
-      </button>
+      </Button>
 
       <div className="w-px h-5 bg-warm-200" />
 
@@ -95,24 +96,24 @@ export function BulkActionsBar({
       {confirmDelete ? (
         <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-1.5">
           <span className="text-sm font-medium text-red-700">Delete {selectedCount}?</span>
-          <button onClick={() => { onAction('delete'); setConfirmDelete(false); }}
-            className="px-2 py-0.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm font-bold">Yes</button>
-          <button onClick={() => setConfirmDelete(false)}
-            className="px-2 py-0.5 rounded-lg bg-warm-100 text-warm-600 hover:bg-warm-200 text-sm">No</button>
+          <Button variant="danger" onClick={() => { onAction('delete'); setConfirmDelete(false); }}
+            className="px-2 py-0.5 rounded-lg bg-red-500 text-white hover:bg-red-600 text-sm font-bold">Yes</Button>
+          <Button variant="ghost" onClick={() => setConfirmDelete(false)}
+            className="px-2 py-0.5 rounded-lg bg-warm-100 text-warm-600 hover:bg-warm-200 text-sm">No</Button>
         </div>
       ) : (
-        <button onClick={() => setConfirmDelete(true)}
+        <Button variant="danger" onClick={() => setConfirmDelete(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
           <IconTrash size={14} /> Delete
-        </button>
+        </Button>
       )}
 
       <div className="w-px h-5 bg-warm-200" />
 
       {/* Dismiss */}
-      <button onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
+      <IconButton variant="default" onClick={onClear} aria-label="Clear selection" className="p-1.5 rounded-md hover:bg-warm-100 transition-colors text-warm-500 hover:text-warm-900">
         <IconX size={14} aria-hidden="true" />
-      </button>
+      </IconButton>
     </div>
   );
 }

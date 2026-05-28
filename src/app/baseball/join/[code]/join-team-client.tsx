@@ -6,6 +6,7 @@ import { processTeamInvitation } from '@/app/baseball/actions/teams';
 import Image from 'next/image';
 import { IconCheck, IconUsers, IconUser, IconX, IconArrowLeft } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // CONFETTI COMPONENT
@@ -256,7 +257,7 @@ export function JoinTeamClient({
           )}
 
           <div className="space-y-3">
-            <button
+            <Button variant="primary"
               onClick={handleJoinTeam}
               disabled={state === 'loading'}
               className="w-full px-6 py-3 bg-primary-600 text-white font-medium rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
@@ -275,15 +276,15 @@ export function JoinTeamClient({
                   <span>Confirm & Join Team</span>
                 </>
               )}
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => router.push('/baseball/dashboard')}
               disabled={state === 'loading'}
               className="w-full px-6 py-3 bg-white text-warm-700 font-medium rounded-lg border border-warm-200 hover:bg-warm-50 active:bg-warm-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <IconArrowLeft size={18} />
               <span>Cancel</span>
-            </button>
+            </Button>
           </div>
 
           <div className="mt-6 pt-6 border-t border-warm-200/50">

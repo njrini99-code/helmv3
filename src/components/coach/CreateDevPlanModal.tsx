@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconPlus, IconTrash } from '@/components/icons';
 import { useAuth } from '@/hooks/use-auth';
@@ -165,13 +165,13 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
         {/* Header */}
         <div className="px-6 py-4 border-b border-warm-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-warm-900">Create Development Plan</h2>
-          <button
+          <IconButton variant="default"
             onClick={onClose}
             className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
             aria-label="Close development plan modal"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Form */}
@@ -190,7 +190,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
             ) : (
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-warm-200 rounded-lg p-2">
                 {players.map(player => (
-                  <button
+                  <Button variant="primary"
                     key={player.id}
                     type="button"
                     onClick={() => setSelectedPlayerId(player.id)}
@@ -213,7 +213,7 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                         {player.primary_position} • {player.grad_year}
                       </p>
                     </div>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -303,13 +303,13 @@ export function CreateDevPlanModal({ open, onClose, teamId }: CreateDevPlanModal
                       <span className="text-xs font-medium text-warm-500">
                         Goal {index + 1}
                       </span>
-                      <button
+                      <IconButton variant="default" aria-label="Delete"
                         type="button"
                         onClick={() => removeGoal(goal.id)}
                         className="p-1 text-warm-400 hover:text-red-500 transition-colors"
                       >
                         <IconTrash size={14} />
-                      </button>
+                      </IconButton>
                     </div>
                     <input
                       type="text"

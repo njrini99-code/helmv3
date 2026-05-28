@@ -6,6 +6,7 @@ import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp } from 
 import { cn } from '@/lib/utils';
 import { fadeUp } from '@/lib/motion';
 import { ReminderIcon } from './ReminderBadge';
+import { Button } from '@/components/ui/button';
 
 interface Task {
   id: string;
@@ -133,13 +134,13 @@ export function TaskCard({ task }: TaskCardProps) {
             )}
           </div>
 
-          <button
+          <Button variant="ghost"
             onClick={() => setExpanded(!expanded)}
             className="flex items-center gap-1 text-sm font-medium text-warm-600 hover:text-warm-900 active:scale-95 transition-colors"
           >
             {expanded ? 'Hide' : 'View'} details
             {expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </button>
+          </Button>
         </div>
 
         {/* Expanded Details */}

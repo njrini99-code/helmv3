@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { IconX, IconPlus, IconCheck } from '@/components/icons';
 
@@ -86,14 +86,14 @@ export function CompareBar({
               size="sm"
               className="ring-2 ring-warm-700"
             />
-            <button
+            <IconButton variant="default" aria-label="Close"
               onClick={() => onRemove(player.id)}
               className="absolute -top-1 -right-1 w-4 h-4 rounded-full 
                          bg-red-500 text-white opacity-0 group-hover:opacity-100
                          flex items-center justify-center transition-opacity"
             >
               <IconX size={10} />
-            </button>
+            </IconButton>
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 
                             px-2 py-1 rounded bg-warm-800 text-white text-xs
@@ -148,12 +148,12 @@ export function CompareBar({
           Add All
         </Button>
         
-        <button
+        <Button variant="ghost"
           onClick={onClear}
           className="px-3 py-1.5 text-sm text-warm-400 hover:text-white transition-colors"
         >
           Clear
-        </button>
+        </Button>
       </div>
     </div>
   );

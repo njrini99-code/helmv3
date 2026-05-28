@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronUp, ChevronDown, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip } from '@/components/ui/tooltip';
 import { CalendarSyncButton } from './CalendarSyncButton';
+import { Button, IconButton } from '@/components/ui/button';
 
 export interface TeamMember {
   id: string;
@@ -108,13 +109,13 @@ export function CalendarAvatarSidebar({
     return (
       <div className="relative">
         <Tooltip content="Expand sidebar" side="right">
-          <button
+          <IconButton variant="default"
             onClick={() => setIsCollapsed(false)}
             className="absolute left-0 top-3 z-30 w-6 h-10 bg-glass backdrop-blur-sm border border-warm-200/55 rounded-r-xl flex items-center justify-center hover:bg-white hover:scale-105 shadow-sm transition-all duration-200"
             aria-label="Expand player filter"
           >
             <ChevronLeft className="w-3.5 h-3.5 text-warm-500 rotate-180" />
-          </button>
+          </IconButton>
         </Tooltip>
       </div>
     );
@@ -128,17 +129,17 @@ export function CalendarAvatarSidebar({
   return (
     <aside aria-label="Player filter" className="w-[80px] px-3 pt-4 pb-3 flex flex-col items-center gap-3 surface-matte rounded-3xl flex-shrink-0 relative overflow-visible z-20 min-h-0">
       {/* Collapse Handle */}
-      <button
+      <IconButton variant="default"
         onClick={() => setIsCollapsed(true)}
         aria-label="Collapse player filter"
         className="absolute -right-3 top-4 w-6 h-12 bg-cream-50/92 border border-warm-200/55 rounded-r-xl flex items-center justify-center text-warm-400 cursor-pointer shadow-sm"
       >
         <ChevronLeft className="w-4 h-4" />
-      </button>
+      </IconButton>
 
       {/* ALL Button */}
       <Tooltip content="Show all team events" side="right">
-        <button
+        <Button variant="primary"
           onClick={handleAllClick}
           aria-pressed={isAllSelected}
           className={cn(
@@ -150,7 +151,7 @@ export function CalendarAvatarSidebar({
           )}
         >
           ALL
-        </button>
+        </Button>
       </Tooltip>
 
       {/* Divider */}
@@ -199,7 +200,7 @@ export function CalendarAvatarSidebar({
                   side="right"
                   delayMs={300}
                 >
-                  <button
+                  <Button variant="ghost"
                     role="option"
                     aria-selected={selected}
                     onClick={() => handleMemberClick(member.id)}
@@ -239,7 +240,7 @@ export function CalendarAvatarSidebar({
                         {selectedPlayerIds.indexOf(member.id) + 1}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 </Tooltip>
               );
             })
@@ -295,13 +296,13 @@ export function CalendarAvatarSidebar({
       <div className="w-full border-t border-warm-300/40 pt-2.5 mt-auto flex-shrink-0 flex flex-col items-center gap-2">
         <CalendarSyncButton variant="icon" />
         <Tooltip content="Manage feeds" side="right">
-          <button
+          <IconButton variant="default"
             onClick={() => onSyncSettings?.()}
             className="w-12 h-12 rounded-lg flex items-center justify-center bg-warm-100/60 text-warm-400 cursor-pointer transition-all duration-200 border-none flex-shrink-0 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200"
             aria-label="Manage feeds"
           >
             <Settings2 className="w-5 h-5" />
-          </button>
+          </IconButton>
         </Tooltip>
       </div>
     </aside>

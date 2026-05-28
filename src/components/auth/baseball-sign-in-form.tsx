@@ -7,6 +7,7 @@ import { loginAction } from '@/app/baseball/actions/auth';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -168,7 +169,7 @@ export function BaseballSignInForm() {
       </div>
 
       {/* Submit button — inline spinner, iOS ease, tactile press */}
-      <button
+      <Button variant="primary"
         type="submit"
         disabled={isLoading}
         aria-busy={isLoading}
@@ -194,7 +195,7 @@ export function BaseballSignInForm() {
         ) : (
           'Sign in'
         )}
-      </button>
+      </Button>
     </form>
   );
 }

@@ -12,6 +12,7 @@ import { ConflictWarning } from './ConflictWarning';
 import { useRSVP, usePlayerEventRSVP } from '@/hooks/useRSVP';
 import { toast } from '@/components/ui/sonner';
 import { EventDocumentsSection } from './EventDocumentsSection';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   Drawer,
   DrawerContent,
@@ -564,14 +565,14 @@ export function EventDetailModal({
             >
               {modalTitle}
             </DrawerTitle>
-            <button
+            <IconButton variant="default"
               ref={closeButtonRef}
               onClick={onClose}
               aria-label="Close modal"
               className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-lg flex items-center justify-center text-warm-400 hover:text-warm-600 hover:bg-cream-100/68 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
             >
               <X className="w-5 h-5" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
 
           {/* Event Type Selector - Colorful pills */}
@@ -581,7 +582,7 @@ export function EventDetailModal({
                 const Icon = pill.icon;
                 const isActive = formData.eventType === pill.type;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={pill.type}
                     type="button"
                     onClick={() => setFormData({ ...formData, eventType: pill.type })}
@@ -596,7 +597,7 @@ export function EventDetailModal({
                   >
                     <Icon className="w-3.5 h-3.5" />
                     {pill.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -778,7 +779,7 @@ export function EventDetailModal({
                     </span>
                   )}
                   {availablePlayers.length > 0 && (
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => {
                         if (formData.attendeeIds.length === availablePlayers.length) {
@@ -791,7 +792,7 @@ export function EventDetailModal({
                       className="text-xs font-medium text-primary-600 hover:text-primary-700 disabled:opacity-40 transition-colors"
                     >
                       {formData.attendeeIds.length === availablePlayers.length ? 'Clear' : 'Add All'}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -805,7 +806,7 @@ export function EventDetailModal({
                   {availablePlayers.map(player => {
                     const isSelected = formData.attendeeIds.includes(player.id);
                     return (
-                      <button
+                      <Button variant="primary"
                         key={player.id}
                         type="button"
                         onClick={() => handleToggleAttendee(player.id)}
@@ -829,7 +830,7 @@ export function EventDetailModal({
                           </div>
                         )}
                         <span>{player.first_name} {player.last_name[0]}.</span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1016,25 +1017,25 @@ export function EventDetailModal({
                 <>
                   {showDeleteConfirm ? (
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button variant="danger"
                         type="button"
                         onClick={handleDelete}
                         disabled={isSaving}
                         className="px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
                       >
                         Confirm Delete
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setShowDeleteConfirm(false)}
                         disabled={isSaving}
                         className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   ) : (
-                    <button
+                    <Button variant="danger"
                       type="button"
                       onClick={() => setShowDeleteConfirm(true)}
                       disabled={isSaving}
@@ -1042,7 +1043,7 @@ export function EventDetailModal({
                     >
                       <Trash2 className="w-4 h-4" />
                       Delete
-                    </button>
+                    </Button>
                   )}
                 </>
               )}
@@ -1050,16 +1051,16 @@ export function EventDetailModal({
 
             {/* Save/Cancel Buttons (right side) */}
             <div className="flex items-center gap-3">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={onClose}
                 disabled={isSaving}
                 className="px-4 py-2 text-sm font-medium text-warm-600 hover:text-warm-900 rounded-lg transition-colors"
               >
                 {isViewMode ? 'Close' : 'Cancel'}
-              </button>
+              </Button>
               {!isViewMode && (
-                <button
+                <Button variant="primary"
                   type="submit"
                   disabled={isSaving}
                   className={cn(
@@ -1070,7 +1071,7 @@ export function EventDetailModal({
                   )}
                 >
                   {isSaving ? 'Saving...' : isCreating ? 'Create Event' : 'Save Changes'}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -1143,7 +1144,7 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
         <ul className="p-2">
           {options.map((opt) => (
             <li key={opt.value}>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => onConfirm(opt.value)}
                 className={cn(
@@ -1154,18 +1155,18 @@ function SeriesScopeDialog({ action, onCancel, onConfirm }: SeriesScopeDialogPro
               >
                 <p className="text-sm font-medium text-warm-900">{opt.label}</p>
                 <p className="text-xs text-warm-500 mt-0.5">{opt.sub}</p>
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
         <div className="px-4 py-3 border-t border-warm-200/60 flex items-center justify-end gap-2">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onCancel}
             className="px-3 py-1.5 text-sm font-medium text-warm-600 hover:text-warm-900 transition-colors"
           >
             Cancel
-          </button>
+          </Button>
         </div>
         {danger && (
           <p className="px-5 pb-4 text-eyebrow text-rose-600/80">

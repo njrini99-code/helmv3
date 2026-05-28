@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { IconSparkles, IconCheck, IconX } from '@/components/icons';
 import { Shimmer } from '@/components/ui/shimmer';
 import { useCoachHelmSettings } from '@/hooks/coachhelm/useCoachHelmSettings';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface CoachHelmToggleProps {
   coachId: string;
@@ -106,7 +107,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
           </div>
 
           {/* Toggle */}
-          <button
+          <IconButton variant="primary"
             onClick={handleToggle}
             disabled={saving}
             className={cn(
@@ -124,7 +125,7 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               className="absolute top-1 h-6 w-6 rounded-full bg-white "
             />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -143,21 +144,21 @@ export function CoachHelmToggle({ coachId, onToggle }: CoachHelmToggleProps) {
             performance predictions. Your data will be preserved.
           </p>
           <div className="flex gap-2">
-            <button
+            <Button variant="ghost"
               onClick={handleConfirmDisable}
               disabled={saving}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors"
             >
               <IconX size={14} />
               Disable
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={() => setShowConfirm(false)}
               className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 rounded-lg transition-colors"
             >
               <IconCheck size={14} />
               Keep Enabled
-            </button>
+            </Button>
           </div>
         </motion.div>
       )}

@@ -16,6 +16,7 @@ import type { Coach } from '../../crm-config';
 import { STATUS_CONFIG, STATUS_COLORS } from '../../crm-config';
 import type { CoachEngagement } from '../../types/foundations';
 import { EngagementBadge } from '../badges/EngagementBadge';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // CoachPageHeader — top section of the per-coach detail page.
@@ -161,14 +162,14 @@ export function CoachPageHeader({
               <IconMail size={14} /> Email
             </a>
           ) : (
-            <button
+            <Button variant="ghost"
               type="button"
               disabled
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-warm-100 text-warm-400 cursor-not-allowed"
               title="No email on file"
             >
               <IconMail size={14} /> Email
-            </button>
+            </Button>
           )}
           {coach.phone ? (
             <a
@@ -178,32 +179,32 @@ export function CoachPageHeader({
               <IconPhone size={14} /> Call
             </a>
           ) : (
-            <button
+            <Button variant="ghost"
               type="button"
               disabled
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-warm-100 text-warm-400 cursor-not-allowed"
               title="No phone on file"
             >
               <IconPhone size={14} /> Call
-            </button>
+            </Button>
           )}
           {onSchedule && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onSchedule}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconCalendar size={14} /> Schedule
-            </button>
+            </Button>
           )}
           {onLogContact && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={onLogContact}
               className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl bg-white border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               <IconFileText size={14} /> Log Contact
-            </button>
+            </Button>
           )}
           {coach.athletics_url && (
             <a

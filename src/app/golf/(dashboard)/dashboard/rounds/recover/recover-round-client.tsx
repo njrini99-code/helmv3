@@ -13,6 +13,7 @@ import {
 import { clearEmergencySave } from '@/lib/utils/emergency-save';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 // Legacy IndexedDB access kept for older locally saved drafts
 const LEGACY_DB_NAME = 'golf_offline_db';
@@ -428,12 +429,12 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
               <p className="text-warm-400 text-sm mb-4">
                 This must be opened on the same device and browser that was used to track the round.
               </p>
-              <button
+              <Button variant="ghost"
                 onClick={() => router.push('/golf/dashboard/rounds')}
                 className="px-4 py-2 bg-warm-100 text-warm-700 rounded-xl text-sm font-medium hover:bg-warm-200 transition-colors"
               >
                 Back to Rounds
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -469,13 +470,13 @@ export default function RecoverRoundClient({ playerId }: { playerId: string }) {
                     <p className="text-xs text-warm-400 mb-3">
                       Last saved: {savedAt.toLocaleString()}
                     </p>
-                    <button
+                    <Button variant="primary"
                       onClick={() => handleRecover(round)}
                       disabled={isRecovering || recovering !== null}
                       className="w-full py-2.5 rounded-xl bg-primary-600 text-white font-medium text-sm hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       {isRecovering ? 'Recovering...' : 'Recover This Round'}
-                    </button>
+                    </Button>
                   </div>
                 );
               })}

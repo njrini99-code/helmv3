@@ -363,20 +363,20 @@ function ItineraryCard({
               {/* Actions */}
               {isCoach && (
                 <div className="flex items-center gap-2 pt-4 border-t border-warm-100">
-                  <button
+                  <Button variant="ghost"
                     onClick={(e) => { e.stopPropagation(); onEdit(); }}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                   >
                     <IconEdit size={14} />
                     Edit Trip
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="danger"
                     onClick={(e) => { e.stopPropagation(); onDelete(); }}
                     className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 active:bg-red-100 rounded-lg transition-colors"
                   >
                     <IconTrash size={14} />
                     Delete
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

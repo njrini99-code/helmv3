@@ -23,6 +23,7 @@ import { CreateFeedSection } from './CreateFeedSection';
 import { Calendar, Plus, Search, Filter } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import '@/styles/calendar-tokens.css';
+import { Button } from '@/components/ui/button';
 
 interface CalendarFeedManagerProps {
   feeds: CalendarFeed[];
@@ -103,7 +104,7 @@ export function CalendarFeedManager({
             </p>
           </div>
 
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => setShowCreateSection(!showCreateSection)}
             className={cn(
@@ -116,7 +117,7 @@ export function CalendarFeedManager({
           >
             <Plus className="w-4 h-4" />
             {showCreateSection ? 'Cancel' : 'New Feed'}
-          </button>
+          </Button>
         </div>
 
         {/* Search and filter */}

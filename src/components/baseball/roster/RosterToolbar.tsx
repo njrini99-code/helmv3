@@ -2,6 +2,7 @@
 
 import { useState, memo } from 'react';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconFilter,
   IconChevronDown,
@@ -59,7 +60,7 @@ export const RosterToolbar = memo(function RosterToolbar({
       <div className="flex items-center gap-2">
         {/* Sort Controls */}
         <div className="relative">
-          <button
+          <Button variant="ghost"
             onClick={() => setShowSortMenu(!showSortMenu)}
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
@@ -82,7 +83,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                 showSortMenu && 'rotate-180'
               )}
             />
-          </button>
+          </Button>
 
           {showSortMenu && (
             <>
@@ -98,7 +99,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                 )}
               >
                 {SORT_OPTIONS.map((option) => (
-                  <button
+                  <Button variant="primary"
                     key={option.value}
                     onClick={() => handleSortChange(option.value)}
                     className={cn(
@@ -114,7 +115,7 @@ export const RosterToolbar = memo(function RosterToolbar({
                         {sortDirection === 'asc' ? '↑' : '↓'}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </>
@@ -123,7 +124,7 @@ export const RosterToolbar = memo(function RosterToolbar({
 
         {/* View Toggle - Desktop only */}
         <div className="hidden lg:flex items-center bg-cream-100/75 backdrop-blur-sm border border-warm-200 rounded-xl p-1">
-          <button
+          <IconButton variant="primary"
             onClick={() => onViewModeChange('compact')}
             className={cn(
               'p-2 rounded-lg transition-all',
@@ -135,8 +136,8 @@ export const RosterToolbar = memo(function RosterToolbar({
             title="Compact view"
           >
             <IconList size={16} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton variant="primary"
             onClick={() => onViewModeChange('expanded')}
             className={cn(
               'p-2 rounded-lg transition-all',
@@ -148,13 +149,13 @@ export const RosterToolbar = memo(function RosterToolbar({
             title="Expanded view"
           >
             <IconLayoutGrid size={16} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {/* Export Button */}
       {onExport && (
-        <button
+        <Button variant="ghost"
           onClick={onExport}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium',
@@ -166,7 +167,7 @@ export const RosterToolbar = memo(function RosterToolbar({
         >
           <IconDownload size={14} />
           <span className="hidden sm:inline">Export</span>
-        </button>
+        </Button>
       )}
     </div>
   );

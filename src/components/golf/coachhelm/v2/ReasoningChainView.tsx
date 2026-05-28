@@ -21,6 +21,7 @@ import {
   IconInfo,
 } from '@/components/icons';
 import type { ReasoningResult, ReasoningStep, ReasoningType } from '@/lib/coachhelm/v2/types';
+import { Button } from '@/components/ui/button';
 
 interface ReasoningChainViewProps {
   reasoning: ReasoningResult;
@@ -115,7 +116,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
       {/* Alternative explanations */}
       {reasoning.alternatives && reasoning.alternatives.length > 0 && (
         <div className="border border-warm-200 rounded-xl overflow-hidden">
-          <button
+          <Button variant="ghost"
             onClick={() => setShowAlternatives(!showAlternatives)}
             className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           >
@@ -131,7 +132,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
-          </button>
+          </Button>
           <AnimatePresence>
             {showAlternatives && (
               <motion.div
@@ -171,7 +172,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
       {/* Sensitivity analysis */}
       {reasoning.sensitivities && reasoning.sensitivities.length > 0 && (
         <div className="border border-warm-200 rounded-xl overflow-hidden">
-          <button
+          <Button variant="ghost"
             onClick={() => setShowSensitivities(!showSensitivities)}
             className="w-full flex items-center justify-between px-4 py-3 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors"
           >
@@ -187,7 +188,7 @@ export function ReasoningChainView({ reasoning }: ReasoningChainViewProps) {
             >
               <IconChevronDown size={16} className="text-warm-400" />
             </motion.div>
-          </button>
+          </Button>
           <AnimatePresence>
             {showSensitivities && (
               <motion.div
@@ -252,7 +253,7 @@ function ReasoningStepCard({
         <div className="absolute left-5 top-12 bottom-0 w-px bg-warm-200" />
       )}
 
-      <button
+      <Button variant="ghost"
         onClick={onToggle}
         className={cn(
           'w-full text-left bg-white border rounded-xl p-4 transition-all',
@@ -364,7 +365,7 @@ function ReasoningStepCard({
             </motion.div>
           )}
         </AnimatePresence>
-      </button>
+      </Button>
     </div>
   );
 }

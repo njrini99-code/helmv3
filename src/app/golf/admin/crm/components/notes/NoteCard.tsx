@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconBookmark,
   IconPencil,
@@ -191,15 +192,15 @@ export function NoteCard({
 
         {!editing && (
           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
+            <IconButton variant="default"
               type="button"
               onClick={beginEdit}
               aria-label="Edit note"
               className="p-1 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
             >
               <IconPencil size={12} />
-            </button>
-            <button
+            </IconButton>
+            <IconButton variant="default"
               type="button"
               onClick={handleDelete}
               disabled={busy}
@@ -207,7 +208,7 @@ export function NoteCard({
               className="p-1 rounded-md text-warm-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
             >
               <IconTrash size={12} />
-            </button>
+            </IconButton>
           </div>
         )}
       </div>
@@ -234,7 +235,7 @@ export function NoteCard({
               Pin to top
             </label>
             <div className="flex items-center gap-1.5">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={cancelEdit}
                 disabled={busy}
@@ -243,15 +244,15 @@ export function NoteCard({
                 <span className="inline-flex items-center gap-1">
                   <IconX size={10} /> Cancel
                 </span>
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="button"
                 onClick={handleSave}
                 disabled={busy || !draft.trim()}
                 className="px-3 py-1 text-xs font-semibold rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {busy ? 'Saving...' : 'Save'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -259,22 +260,22 @@ export function NoteCard({
         <p className="mt-1.5 text-sm text-warm-800 leading-relaxed whitespace-pre-wrap break-words">
           {visibleBody}
           {isLong && !showFull && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(true)}
               className="ml-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
             >
               Show more
-            </button>
+            </Button>
           )}
           {isLong && showFull && (
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => setShowFull(false)}
               className="ml-1 text-xs text-primary-600 hover:text-primary-700 font-medium"
             >
               Show less
-            </button>
+            </Button>
           )}
         </p>
       )}

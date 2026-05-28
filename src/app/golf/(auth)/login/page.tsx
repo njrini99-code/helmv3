@@ -12,6 +12,7 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { isSafeInternalPath } from '@/lib/utils/safe-redirect';
 import { createClient } from '@/lib/supabase/client';
 import { isNativeApp } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -206,21 +207,21 @@ function LoginContent() {
                   <div className="bg-primary-400/10 border border-primary-400/30 text-primary-700 px-4 py-3 rounded-xl text-sm text-center">
                     You&apos;re already signed in
                   </div>
-                  <button
+                  <Button variant="primary"
                     onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
                     className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                     aria-label="Continue to dashboard"
                   >
                     {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     onClick={handleSignOut}
                     disabled={isLoggingOut}
                     className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
                     aria-label="Sign out and use a different account"
                   >
                     {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <GolfSignInForm />

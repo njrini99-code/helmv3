@@ -14,6 +14,7 @@ import { RecruitCard } from './RecruitCard';
 import { RecruitFormSheet } from './RecruitFormSheet';
 import { RECRUIT_STATUSES } from './RecruitStatusChip';
 import type { Recruit, RecruitStatus } from '@/app/golf/actions/recruiting';
+import { Button } from '@/components/ui/button';
 
 interface RecruitingPageClientProps {
   initialRecruits: Recruit[];
@@ -119,7 +120,7 @@ export function RecruitingPageClient({
           const active = filter === s.value;
           const count = counts[s.value];
           return (
-            <button
+            <Button variant="ghost"
               key={s.value}
               type="button"
               onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
@@ -144,7 +145,7 @@ export function RecruitingPageClient({
               <span className="text-[11.5px] text-warm-500">
                 {active ? 'Filtering' : s.description}
               </span>
-            </button>
+            </Button>
           );
         })}
       </section>
@@ -163,7 +164,7 @@ export function RecruitingPageClient({
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setFilter('all')}
             disabled={filter === 'all'}
@@ -173,7 +174,7 @@ export function RecruitingPageClient({
             )}
           >
             All ({counts.all})
-          </button>
+          </Button>
           <div className="relative">
             <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
             <select
@@ -187,7 +188,7 @@ export function RecruitingPageClient({
               ))}
             </select>
           </div>
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => {
               setEditing(null);
@@ -202,7 +203,7 @@ export function RecruitingPageClient({
           >
             <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />
             Add prospect
-          </button>
+          </Button>
         </div>
       </section>
 
@@ -259,7 +260,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
           : 'Add high-school golfers you’re tracking. Notes, contact info, and status all live here.'}
       </p>
       {!isFiltered && (
-        <button
+        <Button variant="primary"
           type="button"
           onClick={onAdd}
           className={cn(
@@ -271,7 +272,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
         >
           <Plus className="w-4 h-4 transition-transform duration-500 group-hover:rotate-90" />
           Add your first prospect
-        </button>
+        </Button>
       )}
     </div>
   );

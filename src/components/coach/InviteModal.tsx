@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { IconLink, IconCheck, IconCopy, IconX } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
@@ -88,13 +88,13 @@ export function InviteModal({ teamId, teamName, coachId, onClose }: InviteModalP
                 <p className="text-sm leading-relaxed text-warm-500">{teamName}</p>
               </div>
             </div>
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               aria-label="Close invite modal"
             >
               <IconX size={20} />
-            </button>
+            </IconButton>
           </div>
         </CardHeader>
 

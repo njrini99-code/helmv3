@@ -17,6 +17,7 @@ import {
 } from '@/components/icons';
 import { timeAgo } from './admin-utils';
 import { useAdminRealtimeContext } from './AdminRealtimeProvider';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   activity: AdminDashboardData['activity'];
@@ -363,7 +364,7 @@ export function ActivityFeed({ activity }: Props) {
               { value: 'ops', label: 'Ops', count: counts.ops },
               { value: 'issues', label: 'Issues', count: counts.issues },
             ] as { value: FeedFilter; label: string; count: number }[]).map((option) => (
-              <button
+              <Button variant="ghost"
                 key={option.value}
                 type="button"
                 onClick={() => setFilter(option.value)}
@@ -378,7 +379,7 @@ export function ActivityFeed({ activity }: Props) {
                 <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold text-warm-600 tabular-nums">
                   {option.count}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
 

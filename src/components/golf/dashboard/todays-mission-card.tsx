@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { IconTarget, IconCheck, IconArrowRight, IconSparkles } from '@/components/icons';
 import { getPlayerFocusAreas } from '@/app/golf/actions/insights';
+import { Button } from '@/components/ui/button';
 
 interface MissionDrill {
   id: string;
@@ -224,7 +225,7 @@ export function TodaysMissionCard({
             const isChecked = checked.has(drill.id);
             return (
               <li key={drill.id}>
-                <button
+                <Button variant="primary"
                   type="button"
                   onClick={() => toggle(drill.id)}
                   className={cn(
@@ -260,7 +261,7 @@ export function TodaysMissionCard({
                   <span className="text-eyebrow text-warm-400 tabular-nums flex-shrink-0">
                     {drill.minutes}m
                   </span>
-                </button>
+                </Button>
               </li>
             );
           })}

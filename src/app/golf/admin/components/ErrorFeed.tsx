@@ -18,6 +18,7 @@ import {
   IconUser,
 } from '@/components/icons';
 import { timeAgo } from './admin-utils';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   errorLogs: AdminDashboardData['errorLogs'];
@@ -431,7 +432,7 @@ export function ErrorFeed({ errorLogs }: Props) {
           </div>
         </div>
 
-        <button
+        <Button variant="danger"
           type="button"
           onClick={() => handleCopy(visibleFeedSummary || 'No incidents in the current view.', 'feed')}
           className={cn(
@@ -449,7 +450,7 @@ export function ErrorFeed({ errorLogs }: Props) {
             : copyState?.target === 'feed' && copyState.status === 'error'
               ? 'Copy failed'
               : 'Copy visible diagnostics'}
-        </button>
+        </Button>
       </div>
 
       {resolveState && (
@@ -479,7 +480,7 @@ export function ErrorFeed({ errorLogs }: Props) {
             { value: 'active', label: 'Active Queue', count: activeIncidents.length },
             { value: 'resolved', label: 'Resolved', count: resolvedIncidents.length },
           ] as { value: QueueTab; label: string; count: number }[]).map((option) => (
-            <button
+            <Button variant="ghost"
               key={option.value}
               type="button"
               onClick={() => setQueueTab(option.value)}
@@ -494,7 +495,7 @@ export function ErrorFeed({ errorLogs }: Props) {
               <span className="rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold text-warm-600 tabular-nums">
                 {option.count}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -511,7 +512,7 @@ export function ErrorFeed({ errorLogs }: Props) {
             { value: 'recent', label: 'Open + Active', count: liveCounts.open + liveCounts.active },
             { value: 'backlog', label: 'Backlog', count: liveCounts.historical },
           ] as { value: FeedMode; label: string; count: number }[]).map((option) => (
-            <button
+            <Button variant="ghost"
               key={option.value}
               type="button"
               onClick={() => setFeedMode(option.value)}
@@ -526,7 +527,7 @@ export function ErrorFeed({ errorLogs }: Props) {
               <span className="rounded-full bg-warm-100 px-2 py-0.5 text-eyebrow font-semibold text-warm-600 tabular-nums">
                 {option.count}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       )}
@@ -621,7 +622,7 @@ export function ErrorFeed({ errorLogs }: Props) {
 
                   <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                     {incident.status !== 'resolved' && (
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => handleResolve(incident)}
                         disabled={isResolving}
@@ -634,9 +635,9 @@ export function ErrorFeed({ errorLogs }: Props) {
                       >
                         <IconRotateCcw size={16} className={cn(isResolving && 'animate-spin')} />
                         {isResolving ? 'Resolving...' : 'Mark resolved'}
-                      </button>
+                      </Button>
                     )}
-                    <button
+                    <Button variant="danger"
                       type="button"
                       onClick={() => handleCopy(incident.copySummary, incident.id)}
                       className={cn(
@@ -654,15 +655,15 @@ export function ErrorFeed({ errorLogs }: Props) {
                         : copyState?.target === incident.id && copyState.status === 'error'
                           ? 'Copy failed'
                           : 'Copy'}
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : incident.id)}
                       className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
                     >
                       {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                       {isExpanded ? 'Hide' : 'Detail'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -700,7 +701,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                                 </p>
                               </div>
                               {underlying.status !== 'resolved' && (
-                                <button
+                                <Button variant="primary"
                                   type="button"
                                   onClick={() => handleResolve({
                                     ...underlying,
@@ -713,7 +714,7 @@ export function ErrorFeed({ errorLogs }: Props) {
                                   className="shrink-0 rounded-md border border-primary-200 bg-primary-50/70 px-2 py-1 text-eyebrow font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50"
                                 >
                                   Resolve
-                                </button>
+                                </Button>
                               )}
                             </li>
                           ))}

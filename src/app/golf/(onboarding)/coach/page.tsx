@@ -345,13 +345,13 @@ export default function GolfCoachOnboarding() {
                 <m.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
                   {/* Back Button */}
                   <m.div variants={staggerItem}>
-                    <button
+                    <Button variant="ghost"
                       onClick={() => goBack('program')}
                       className="flex items-center gap-1.5 text-sm font-medium text-warm-600 hover:text-warm-800 transition-colors min-h-[44px] px-2 -ml-2 rounded-lg active:bg-warm-100"
                     >
                       <IconArrowLeft size={16} />
                       Back
-                    </button>
+                    </Button>
                   </m.div>
 
                   {/* Header */}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconClipboardList } from '@/components/icons';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -219,14 +219,14 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
               <p className="font-medium text-warm-900">
                 {editingTemplate ? 'Edit Template' : 'Create Template'}
               </p>
-              <button
+              <IconButton variant="default"
                 type="button"
                 onClick={resetForm}
                 className="p-1 rounded-full hover:bg-warm-100 transition-colors active:bg-warm-200"
                 aria-label="Close form"
               >
                 <IconX size={16} className="text-warm-400" />
-              </button>
+              </IconButton>
             </div>
 
             <input
@@ -418,7 +418,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
 
                       {/* Actions (shown on hover) */}
                       <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                        <button
+                        <IconButton variant="default"
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -428,8 +428,8 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                           aria-label="Edit template"
                         >
                           <IconEdit size={14} className="text-warm-400" />
-                        </button>
-                        <button
+                        </IconButton>
+                        <IconButton variant="default"
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -439,7 +439,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                           aria-label="Delete template"
                         >
                           <IconTrash size={14} className="text-warm-400 hover:text-red-500" />
-                        </button>
+                        </IconButton>
                       </div>
                     </div>
                   </motion.div>

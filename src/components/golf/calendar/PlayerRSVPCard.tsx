@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import '@/styles/calendar-tokens.css';
+import { Button } from '@/components/ui/button';
 
 interface PlayerRSVPCardProps {
   event: {
@@ -220,7 +221,7 @@ export function PlayerRSVPCard({
                 const isCurrentSelection = currentResponse === option.value;
 
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={option.value}
                     type="button"
                     onClick={() => handleRespond(option.value)}
@@ -273,7 +274,7 @@ export function PlayerRSVPCard({
                         <CheckCircle2 className="w-3 h-3 text-white" />
                       </div>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

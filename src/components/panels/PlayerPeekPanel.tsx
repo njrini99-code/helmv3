@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PeekPanelRoot } from './PeekPanelRoot';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconExternalLink,
   IconStar,
@@ -154,13 +154,13 @@ export function PlayerPeekPanel({ playerId, onClose }: PlayerPeekPanelProps) {
         <div className="p-6 space-y-6">
           {/* Close button */}
           <div className="flex justify-end -mb-2">
-            <button
+            <IconButton variant="default"
               onClick={onClose}
               className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
               aria-label="Close panel"
             >
               <IconX size={18} />
-            </button>
+            </IconButton>
           </div>
 
           {/* Header */}

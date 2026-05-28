@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import type { BaseballPlayerSeasonStats } from '@/lib/types';
 import { IconTrendingUp, IconUser, IconDownload } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface SeasonStatsTableProps {
   stats: BaseballPlayerSeasonStats[];
@@ -139,7 +140,7 @@ export function SeasonStatsTable({
       {/* Header controls */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-1 p-1 bg-warm-100 rounded-xl">
-          <button
+          <Button variant="ghost"
             onClick={() => { setActiveTab('batting'); setSortField('avg'); setSortDir('desc'); }}
             className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
               activeTab === 'batting' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
@@ -147,9 +148,9 @@ export function SeasonStatsTable({
           >
             <IconUser size={14} />
             Batting
-          </button>
+          </Button>
           {hasPitchers && (
-            <button
+            <Button variant="ghost"
               onClick={() => { setActiveTab('pitching'); setSortField('era'); setSortDir('asc'); }}
               className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-lg transition-all ${
                 activeTab === 'pitching' ? 'bg-white text-warm-900 shadow-sm' : 'text-warm-500 hover:text-warm-700'
@@ -157,7 +158,7 @@ export function SeasonStatsTable({
             >
               <IconTrendingUp size={14} />
               Pitching
-            </button>
+            </Button>
           )}
         </div>
 
@@ -172,13 +173,13 @@ export function SeasonStatsTable({
             ))}
           </select>
 
-          <button
+          <Button variant="ghost"
             onClick={() => exportToCSV(stats, activeTab)}
             className="flex items-center gap-1.5 text-sm text-warm-500 hover:text-warm-700 border border-warm-200 rounded-lg px-3 py-1.5 bg-cream-100/75 transition-colors"
           >
             <IconDownload size={14} />
             Export
-          </button>
+          </Button>
         </div>
       </div>
 

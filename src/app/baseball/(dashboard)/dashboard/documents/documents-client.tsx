@@ -75,7 +75,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {CATEGORIES.map(cat => (
-            <button
+            <Button variant="primary"
               key={cat.value}
               onClick={() => setCategory(cat.value)}
               className={cn(
@@ -86,7 +86,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId: _coachId
               )}
             >
               {cat.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>

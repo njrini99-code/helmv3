@@ -30,6 +30,7 @@ import {
   generateTeamInsights,
 } from '@/app/golf/actions/insights';
 import { createFocusAreaFromInsight } from '@/app/golf/actions/development';
+import { Button } from '@/components/ui/button';
 
 interface InsightsFeedProps {
   coachId: string;
@@ -137,12 +138,12 @@ export function InsightsFeed({
     return (
       <div className="text-center py-8">
         <p className="text-sm text-red-600">{error}</p>
-        <button
+        <Button variant="ghost"
           onClick={loadInsights}
           className="mt-4 text-sm text-primary-600 hover:text-primary-700 font-medium"
         >
           Try Again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -161,14 +162,14 @@ export function InsightsFeed({
         />
 
         {showGenerateButton && (
-          <button
+          <Button variant="primary"
             onClick={handleGenerate}
             disabled={generating}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
             <IconSparkles size={18} />
             {generating ? 'Analyzing Team...' : 'Generate Insights'}
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -181,14 +182,14 @@ export function InsightsFeed({
           <p className="text-sm text-warm-500">
             {insights.length} active insight{insights.length !== 1 ? 's' : ''}
           </p>
-          <button
+          <Button variant="primary"
             onClick={handleGenerate}
             disabled={generating}
             className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 disabled:opacity-50 transition-colors"
           >
             <IconRefresh size={14} className={generating ? 'animate-spin' : ''} />
             {generating ? 'Analyzing...' : 'Refresh'}
-          </button>
+          </Button>
         </div>
       )}
 

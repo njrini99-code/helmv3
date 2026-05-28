@@ -17,6 +17,7 @@ import {
   IconCheck,
 } from '@/components/icons';
 import type { Coach, CoachStatus } from '../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface QuickActionsToolbarProps {
   allCoaches: Coach[];
@@ -116,7 +117,7 @@ export function QuickActionsToolbar({
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <button
+        <Button variant="ghost"
           onClick={() => handleMoveToPipeline(10)}
           disabled={processing === 'research'}
           className={cn(
@@ -134,9 +135,9 @@ export function QuickActionsToolbar({
             <div className="text-xs text-warm-500">Advance 10 leads to Contacted</div>
           </div>
           <IconArrowRight size={14} className="ml-auto text-warm-400" />
-        </button>
+        </Button>
 
-        <button
+        <Button variant="ghost"
           onClick={() => handleMoveToPipeline(25)}
           disabled={processing === 'research'}
           className={cn(
@@ -154,7 +155,7 @@ export function QuickActionsToolbar({
             <div className="text-xs text-warm-500">Batch move 25 leads</div>
           </div>
           <IconArrowRight size={14} className="ml-auto text-warm-400" />
-        </button>
+        </Button>
 
         <div className={cn(
           'flex items-center gap-3 p-4 rounded-xl text-left',
@@ -253,9 +254,9 @@ function SingleCoachQuickAction({
               <h3 className="font-bold text-base">{coach.name}</h3>
               <p className="text-warm-300 text-sm">{coach.school} &middot; {coach.conference}</p>
             </div>
-            <button onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
+            <IconButton variant="default" onClick={onClose} aria-label="Close" className="p-1.5 rounded-xl hover:bg-white/10 transition-colors">
               <IconX size={18} className="text-white/70" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
         </div>
 
@@ -265,7 +266,7 @@ function SingleCoachQuickAction({
 
           <div className="flex flex-wrap gap-2">
             {CONTACT_TYPES.map((type) => (
-              <button
+              <Button variant="primary"
                 key={type.value}
                 onClick={() => setLogForm(f => ({ ...f, type: type.value }))}
                 className={cn(
@@ -276,7 +277,7 @@ function SingleCoachQuickAction({
                 )}
               >
                 {type.icon} {type.label}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -289,20 +290,20 @@ function SingleCoachQuickAction({
           />
 
           <div className="flex gap-3">
-            <button
+            <Button variant="ghost"
               onClick={onClose}
               className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-white/60 border border-warm-200 text-warm-700 hover:bg-warm-50 transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               onClick={handleLogContact}
               disabled={submitting}
               className="flex-1 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-bold hover:bg-primary-600 transition-colors disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
             >
               <IconCheck size={14} />
               {submitting ? 'Saving...' : 'Log Contact'}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

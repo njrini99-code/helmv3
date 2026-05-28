@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { IconX, IconUser } from '@/components/icons';
 import type { Division, ProgramType, CoachStatus } from '../crm-config';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface AddCoachModalProps {
   onClose: () => void;
@@ -75,14 +76,14 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
             <IconUser size={16} className="text-warm-600" />
             <h2 className="text-lg font-semibold text-warm-900">Add New Coach</h2>
           </div>
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={onClose}
             aria-label="Close"
             className="text-warm-400 hover:text-warm-600 transition-colors"
           >
             <IconX size={18} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Body */}
@@ -238,21 +239,21 @@ export function AddCoachModal({ onClose, onSuccess, statusConfig }: AddCoachModa
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-warm-100 flex justify-end gap-3 flex-shrink-0">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onClose}
             className="bg-white border border-warm-200 text-warm-700 rounded-xl px-5 py-2.5 text-sm font-medium hover:bg-warm-50 transition-colors"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button variant="primary"
             type="submit"
             form="add-coach-form"
             disabled={submitting}
             className="bg-primary-500 hover:bg-primary-600 text-white rounded-xl px-5 py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
           >
             {submitting ? 'Adding...' : 'Add Coach'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

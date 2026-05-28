@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -198,7 +199,7 @@ export default function ForgotPasswordPage() {
                   Did not receive the email? Check your spam folder or try again with a different email address.
                 </p>
                 <Link href="/baseball/login">
-                  <button
+                  <Button variant="ghost"
                     className="
                       w-full py-2.5 sm:py-3
                       bg-white text-warm-700
@@ -211,7 +212,7 @@ export default function ForgotPasswordPage() {
                     "
                   >
                     Back to Sign In
-                  </button>
+                  </Button>
                 </Link>
               </div>
             ) : (
@@ -250,7 +251,7 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
 
-                <button
+                <Button variant="primary"
                   type="submit"
                   disabled={loading}
                   className="
@@ -276,7 +277,7 @@ export default function ForgotPasswordPage() {
                   ) : (
                     'Send reset link'
                   )}
-                </button>
+                </Button>
               </form>
             )}
           </motion.div>

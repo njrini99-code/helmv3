@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { Button } from '@/components/ui/button';
 
 // Type → accent rail color (token-driven; token classes resolve via tailwind).
 const TYPE_RAIL_CLASS: Record<string, string> = {
@@ -100,7 +101,7 @@ export function EventChip({
   const rsvp = showRsvp && rsvpStatus ? RSVP_PILL[rsvpStatus] : null;
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick ? () => onClick(event) : undefined}
       className={cn(
@@ -178,6 +179,6 @@ export function EventChip({
           </span>
         </div>
       )}
-    </button>
+    </Button>
   );
 }

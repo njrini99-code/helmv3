@@ -14,6 +14,7 @@ import { useShotStateMachine, type EditFormData } from '@/hooks/golf/use-shot-st
 import { usePenaltyHandler } from '@/hooks/golf/use-penalty-handler';
 import { useUndoManager } from '@/hooks/golf/use-undo-manager';
 import { useEditShotModal } from '@/hooks/golf/use-edit-shot-modal';
+import { Button, IconButton } from '@/components/ui/button';
 
 // Local alias for the Hole interface used by this component's props
 type Hole = RoundHole;
@@ -112,7 +113,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
     })();
 
     return (
-      <button
+      <Button variant="primary"
         key={hole.number}
         id={`hole-${hole.number}`}
         aria-label={`Hole ${hole.number}, Par ${hole.par}, ${hole.yardage} yards${hasScore ? `, Score: ${hole.score}` : ', not yet played'}${isCurrent ? ' (current hole)' : ''}${canNavigate && !isCurrent ? ', click to edit' : ''}`}
@@ -144,7 +145,7 @@ const ScorecardHeader = memo(function ScorecardHeader({
         {canNavigate && !isCurrent && !hasScore && (
           <div className="text-xs text-warm-400 mt-0.5">✎ Edit</div>
         )}
-      </button>
+      </Button>
     );
   };
 
@@ -152,20 +153,20 @@ const ScorecardHeader = memo(function ScorecardHeader({
     <div ref={headerRef} className="bg-warm-900 sticky top-0 z-50">
       <div className="lg:hidden flex justify-between items-center px-4 py-2 border-b border-warm-700">
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="ghost"
             onClick={() => scrollHoleIntoView(Math.max(1, currentHoleNumber - 1))}
             disabled={currentHoleIndex === 0}
             className="px-3 py-1.5 text-xs font-medium text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide"
           >
             ← Prev
-          </button>
+          </Button>
           {onExit && (
-            <button
+            <Button variant="ghost"
               onClick={onExit}
               className="px-3 py-1.5 text-xs font-medium bg-rose-500 hover:bg-rose-600 text-white rounded transition-colors uppercase tracking-wide"
             >
               Exit
-            </button>
+            </Button>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -194,13 +195,13 @@ const ScorecardHeader = memo(function ScorecardHeader({
             Hole {currentHoleNumber} of {holes.length}
           </span>
         </div>
-        <button
+        <Button variant="ghost"
           onClick={() => scrollHoleIntoView(Math.min(holes.length, currentHoleNumber + 1))}
           disabled={currentHoleIndex === holes.length - 1}
           className="px-3 py-1.5 text-xs font-medium text-white disabled:opacity-30 disabled:cursor-not-allowed transition-opacity uppercase tracking-wide"
         >
           Next →
-        </button>
+        </Button>
       </div>
 
       <div className="overflow-x-auto overscroll-x-contain touch-pan-x" style={{ WebkitOverflowScrolling: 'touch', maskImage: 'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 16px, black calc(100% - 16px), transparent 100%)' }}>
@@ -255,7 +256,7 @@ const ShotPillsBar = memo(function ShotPillsBar({
               const isSelected = selectedShotNumber === num;
 
               return (
-                <button
+                <Button variant="primary"
                   key={num}
                   type="button"
                   disabled={!isRecorded}
@@ -269,7 +270,7 @@ const ShotPillsBar = memo(function ShotPillsBar({
                   aria-label={isRecorded ? `View shot ${num}` : `Shot ${num} not recorded`}
                 >
                   {num}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -652,14 +653,14 @@ export default function ShotTrackingComprehensive({
               </span>
             )}
           </div>
-          <button
+          <Button variant="ghost"
             onClick={onExit}
             className="flex items-center gap-2 px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg font-medium text-sm transition-colors shadow-sm">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
             Save & Exit
-          </button>
+          </Button>
         </div>
       )}
 
@@ -789,7 +790,7 @@ export default function ShotTrackingComprehensive({
                       ? `${shot.distanceToHoleAfter}ft left`
                       : `${shot.distanceToHoleAfter}y left`;
                   return (
-                    <button
+                    <Button variant="danger"
                       key={shot.shotNumber}
                       onClick={() => handleEditShot(shot)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
@@ -851,19 +852,19 @@ export default function ShotTrackingComprehensive({
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                       </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
 
               {/* Back to current hole button — show when reviewing a past hole and there's an unplayed hole to return to */}
               {showBackToCurrentHole && (
-                <button
+                <Button variant="primary"
                   onClick={() => handleNavigateToHole(nextUnplayedIdx)}
                   className="w-full py-3 rounded-lg font-medium text-sm text-primary-600 bg-primary-50 ring-1 ring-primary-200 hover:bg-primary-100 hover:ring-primary-300 transition-colors"
                 >
                   Back to Current Hole →
-                </button>
+                </Button>
               )}
             </div>
           ) : (
@@ -879,7 +880,7 @@ export default function ShotTrackingComprehensive({
                   />
                   <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-4">Club Off Tee</p>
                   <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Club off tee">
-                    <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
+                    <Button variant="primary" onClick={() => dispatch({ type: 'SET_DRIVER', payload: true })}
                       role="radio"
                       aria-checked={usedDriver === true}
                       className={`flex-1 py-3 rounded-md font-medium text-sm transition-colors ${
@@ -887,8 +888,8 @@ export default function ShotTrackingComprehensive({
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                           : 'text-warm-600 hover:text-warm-900'}`}>
                       Driver
-                    </button>
-                    <button onClick={() => dispatch({ type: 'SET_DRIVER', payload: false })}
+                    </Button>
+                    <Button variant="primary" onClick={() => dispatch({ type: 'SET_DRIVER', payload: false })}
                       role="radio"
                       aria-checked={usedDriver === false}
                       className={`flex-1 py-3 rounded-md font-medium text-sm transition-colors ${
@@ -896,7 +897,7 @@ export default function ShotTrackingComprehensive({
                           ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                           : 'text-warm-600 hover:text-warm-900'}`}>
                       Non-Driver
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -913,7 +914,7 @@ export default function ShotTrackingComprehensive({
                     <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-3">Break</p>
                     <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200" role="radiogroup" aria-label="Putt break direction">
                       {[{v: 'left_to_right', l: 'L → R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R → L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
-                        <button key={b.v} onClick={() => dispatch({ type: 'SET_PUTT_BREAK', payload: b.v as ShotRecord['puttBreak'] })}
+                        <Button variant="primary" key={b.v} onClick={() => dispatch({ type: 'SET_PUTT_BREAK', payload: b.v as ShotRecord['puttBreak'] })}
                           role="radio"
                           aria-checked={puttBreak === b.v}
                           className={`flex-1 py-3 rounded-md font-medium text-sm transition-colors min-h-[44px] ${
@@ -921,7 +922,7 @@ export default function ShotTrackingComprehensive({
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {b.l}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -929,7 +930,7 @@ export default function ShotTrackingComprehensive({
                     <p className="text-xs font-medium text-warm-500 uppercase tracking-wide mb-3">Slope</p>
                     <div className="inline-flex bg-white rounded-lg p-1 w-full border border-primary-200" role="radiogroup" aria-label="Putt slope">
                       {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
-                        <button key={s.v} onClick={() => dispatch({ type: 'SET_PUTT_SLOPE', payload: s.v as ShotRecord['puttSlope'] })}
+                        <Button variant="primary" key={s.v} onClick={() => dispatch({ type: 'SET_PUTT_SLOPE', payload: s.v as ShotRecord['puttSlope'] })}
                           role="radio"
                           aria-checked={puttSlope === s.v}
                           className={`flex-1 py-3 rounded-md font-medium text-sm transition-colors min-h-[44px] ${
@@ -937,7 +938,7 @@ export default function ShotTrackingComprehensive({
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {s.l}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>
@@ -980,7 +981,7 @@ export default function ShotTrackingComprehensive({
                       const isRarePuttResult = isPutting && (r === 'rough' || r === 'sand');
                       const isSubtle = isRareTeeResult || isRarePuttResult;
                       return (
-                      <button key={r} onClick={() => handleResultSelect(r)}
+                      <Button variant="primary" key={r} onClick={() => handleResultSelect(r)}
                         role="radio"
                         aria-checked={resultOfShot === r}
                         className={`py-3 rounded-lg font-medium text-sm transition-colors ${
@@ -1005,7 +1006,7 @@ export default function ShotTrackingComprehensive({
                             resultOfShot === r ? 'text-primary-100' : 'text-warm-400'
                           }`}>(rolled off)</span>
                         )}
-                      </button>);
+                      </Button>);
                     });
                   })()}
                 </div>
@@ -1026,7 +1027,7 @@ export default function ShotTrackingComprehensive({
                   {isTeeShot && (
                     <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full" role="radiogroup" aria-label="Miss direction">
                       {['left', 'right'].map(d => (
-                        <button key={d} onClick={() => dispatch({ type: 'SET_MISS_DIRECTION', payload: d })}
+                        <Button variant="primary" key={d} onClick={() => dispatch({ type: 'SET_MISS_DIRECTION', payload: d })}
                           role="radio"
                           aria-checked={missDirection === d}
                           className={`flex-1 py-3 rounded-md font-medium text-sm transition-colors flex items-center justify-center gap-2 ${
@@ -1034,7 +1035,7 @@ export default function ShotTrackingComprehensive({
                               ? 'bg-primary-600 text-white shadow-sm shadow-primary-950/10'
                               : 'text-warm-600 hover:text-warm-900'}`}>
                           {d === 'left' ? '←' : ''} {d.charAt(0).toUpperCase() + d.slice(1)} {d === 'right' ? '→' : ''}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   )}
@@ -1092,7 +1093,7 @@ export default function ShotTrackingComprehensive({
                     {isPutting && (
                       <div className="grid grid-cols-6 gap-2">
                         {[5, 10, 15, 20, 30, 40].map((ft) => (
-                          <button
+                          <Button variant="primary"
                             key={ft}
                             type="button"
                             onClick={() => {
@@ -1106,12 +1107,12 @@ export default function ShotTrackingComprehensive({
                             }`}
                           >
                             {ft}ft
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     )}
                     <div className="inline-flex bg-white rounded-lg p-1 border-2 border-primary-300 w-full">
-                      <button
+                      <Button variant="primary"
                         onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
                         className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
                           distanceAfterUnit === 'yards'
@@ -1120,8 +1121,8 @@ export default function ShotTrackingComprehensive({
                         }`}
                       >
                         Yards
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="primary"
                         onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
                         className={`flex-1 py-2.5 rounded-md font-medium text-sm uppercase tracking-wide transition-colors ${
                           distanceAfterUnit === 'feet'
@@ -1130,7 +1131,7 @@ export default function ShotTrackingComprehensive({
                         }`}
                       >
                         Feet
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   {distanceAfterShot && (
@@ -1163,7 +1164,7 @@ export default function ShotTrackingComprehensive({
               {(() => {
                 const ready = isReadyForNextShot();
                 return (
-              <button
+              <Button variant="primary"
                 onClick={handleNextShot}
                 disabled={!ready}
                 aria-label={resultOfShot === 'hole' ? `Complete hole with score ${currentShot}` : 'Record next shot'}
@@ -1172,29 +1173,29 @@ export default function ShotTrackingComprehensive({
                     ? 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm shadow-primary-950/10 ring-1 ring-primary-700'
                     : 'bg-warm-100 text-warm-400 cursor-not-allowed ring-1 ring-warm-200'}`}>
                 {resultOfShot === 'hole' ? `Complete Hole - Score: ${currentShot}` : 'Next Shot →'}
-              </button>
+              </Button>
                 );
               })()}
 
               {/* Action Buttons Row */}
               <div className="flex gap-2">
                 {/* Penalty Button */}
-                <button
+                <Button variant="danger"
                   onClick={handleAddPenalty}
                   aria-label="Add penalty stroke"
                   className="flex-1 py-3 rounded-xl font-medium text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-200 transition-colors min-h-[44px]">
                   + Penalty
-                </button>
+                </Button>
 
                 {/* Undo Last Shot Button */}
                 {shotHistory.length > 0 && (
-                  <button
+                  <Button variant="ghost"
                     onClick={() => dispatch({ type: 'SHOW_UNDO_CONFIRM' })}
                     disabled={undoSaving}
                     aria-label="Undo last shot"
                     className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-600 bg-warm-50 hover:bg-warm-100 active:bg-warm-200 transition-colors disabled:opacity-50 min-h-[44px]">
                     {undoSaving ? 'Undoing...' : 'Undo Last'}
-                  </button>
+                  </Button>
                 )}
               </div>
 
@@ -1210,17 +1211,17 @@ export default function ShotTrackingComprehensive({
                     </span>
                   </p>
                   <div className="flex gap-2">
-                    <button
+                    <Button variant="ghost"
                       onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}
                       className="flex-1 py-2.5 rounded-xl font-medium text-xs text-warm-700 bg-white hover:bg-warm-50 active:bg-warm-100 transition-colors min-h-[44px]">
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="ghost"
                       onClick={handleUndoLastShot}
                       disabled={undoSaving}
                       className="flex-1 py-2.5 rounded-xl font-medium text-xs text-white bg-amber-600 hover:bg-amber-700 active:bg-amber-800 shadow-sm transition-colors disabled:opacity-50 min-h-[44px]">
                       {undoSaving ? 'Removing...' : 'Confirm'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -1410,7 +1411,7 @@ export default function ShotTrackingComprehensive({
                   {shotHistory.map((shot, idx) => {
                     const isSelected = selectedShotNumber === shot.shotNumber;
                     return (
-                      <button
+                      <Button variant="danger"
                         key={idx}
                         ref={(node) => { shotHistoryRefs.current[shot.shotNumber] = node; }}
                         onClick={() => {
@@ -1431,7 +1432,7 @@ export default function ShotTrackingComprehensive({
                         <span className={`font-medium ${shot.isPenalty ? 'text-red-500' : 'text-primary-600'}`}>
                           {shot.isPenalty ? '+1' : `${shot.shotDistance}y`}
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
                 </div>
@@ -1464,18 +1465,18 @@ export default function ShotTrackingComprehensive({
               </div>
             </div>
             <div className="flex gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => setPendingNavHoleIndex(null)}
                 className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]"
               >
                 Stay
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 onClick={confirmDiscardAndNavigate}
                 className="flex-1 py-3 rounded-xl font-medium text-sm text-white bg-amber-600 hover:bg-amber-700 active:bg-amber-800 shadow-sm shadow-amber-950/10 transition-colors min-h-[44px]"
               >
                 Discard & Go
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1495,27 +1496,27 @@ export default function ShotTrackingComprehensive({
             <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-6">Add Penalty Stroke</h2>
             <div className="space-y-2 mb-6">
               {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
-                <button key={p.v} onClick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: p.v })}
+                <Button variant="danger" key={p.v} onClick={() => dispatch({ type: 'SET_PENALTY_TYPE', payload: p.v })}
                   className={`w-full py-3 px-4 rounded-xl font-medium text-sm text-left transition-colors min-h-[44px] ${
                     penaltyType === p.v
                       ? 'bg-red-600 text-white shadow-sm shadow-red-950/10'
                       : 'bg-warm-50 text-warm-700 ring-1 ring-warm-200 hover:ring-red-300 hover:bg-red-50'}`}>
                   {p.l}
-                </button>
+                </Button>
               ))}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
+              <Button variant="ghost" onClick={() => dispatch({ type: 'CLOSE_PENALTY_MODAL' })}
                 className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors min-h-[44px]">
                 Cancel
-              </button>
-              <button onClick={confirmPenalty} disabled={!penaltyType}
+              </Button>
+              <Button variant="danger" onClick={confirmPenalty} disabled={!penaltyType}
                 className={`flex-1 py-3 rounded-xl font-medium text-sm transition-colors min-h-[44px] ${
                   penaltyType
                     ? 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm shadow-red-950/10'
                     : 'bg-warm-100 text-warm-400 cursor-not-allowed'}`}>
                 Add +1 Stroke
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -1543,7 +1544,7 @@ export default function ShotTrackingComprehensive({
                 <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
                   Edit Shot {editingShot.shotNumber}
                 </h2>
-                <button
+                <IconButton variant="default"
                   onClick={handleCloseEditModal}
                   aria-label="Close"
                   className="p-2 rounded-xl text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -1551,7 +1552,7 @@ export default function ShotTrackingComprehensive({
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
+                </IconButton>
               </div>
               {editError && (
                 <div className="mt-3 px-3 py-2 bg-red-50/80 border border-red-200/60 rounded-xl">
@@ -1570,14 +1571,14 @@ export default function ShotTrackingComprehensive({
                     <p className="text-xs text-red-700 mt-1">This action cannot be undone. Shot numbers will be resequenced.</p>
                   </div>
                   <div className="flex gap-3">
-                    <button
+                    <Button variant="ghost"
                       onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}
                       disabled={editSaving}
                       className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors disabled:opacity-50 min-h-[44px]"
                     >
                       Cancel
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="danger"
                       onClick={handleDeleteShot}
                       disabled={editSaving}
                       className="flex-1 py-3 rounded-xl font-medium text-sm bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm shadow-red-950/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
@@ -1594,7 +1595,7 @@ export default function ShotTrackingComprehensive({
                       ) : (
                         'Delete Shot'
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -1613,7 +1614,7 @@ export default function ShotTrackingComprehensive({
                       <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Penalty Type</p>
                       <div className="space-y-2">
                         {[{v: 'ob', l: 'Out of Bounds'}, {v: 'water', l: 'Water Hazard'}, {v: 'unplayable', l: 'Unplayable Lie'}, {v: 'lost', l: 'Lost Ball'}].map(p => (
-                          <button
+                          <Button variant="danger"
                             key={p.v}
                             onClick={() => updateEditForm({ penaltyType: p.v })}
                             className={`w-full py-3 px-4 rounded-lg font-medium text-sm text-left transition-colors ${
@@ -1623,7 +1624,7 @@ export default function ShotTrackingComprehensive({
                             }`}
                           >
                             {p.l}
-                          </button>
+                          </Button>
                         ))}
                       </div>
                     </div>
@@ -1634,7 +1635,7 @@ export default function ShotTrackingComprehensive({
                         <div>
                           <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Club</p>
                           <div className="inline-flex bg-warm-100 rounded-lg p-1 w-full">
-                            <button
+                            <Button variant="primary"
                               onClick={() => updateEditForm({ clubType: 'driver' })}
                               className={`flex-1 py-3 min-h-[48px] rounded-md font-medium text-sm transition-colors ${
                                 editFormData.clubType === 'driver'
@@ -1643,8 +1644,8 @@ export default function ShotTrackingComprehensive({
                               }`}
                             >
                               Driver
-                            </button>
-                            <button
+                            </Button>
+                            <Button variant="primary"
                               onClick={() => updateEditForm({ clubType: 'non_driver' })}
                               className={`flex-1 py-3 min-h-[48px] rounded-md font-medium text-sm transition-colors ${
                                 editFormData.clubType === 'non_driver'
@@ -1653,7 +1654,7 @@ export default function ShotTrackingComprehensive({
                               }`}
                             >
                               Non-Driver
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -1665,7 +1666,7 @@ export default function ShotTrackingComprehensive({
                           {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map(lie => {
                             const lieLabel = lie.charAt(0).toUpperCase() + lie.slice(1);
                             return (
-                            <button
+                            <Button variant="primary"
                               key={lie}
                               onClick={() => updateEditForm({ lieBefore: lie })}
                               className={`py-3 min-h-[48px] rounded-lg font-medium text-sm transition-colors ${
@@ -1678,7 +1679,7 @@ export default function ShotTrackingComprehensive({
                               {lie === 'green' && (
                                 <span className={`block text-xs font-normal leading-tight ${editFormData.lieBefore === 'green' ? 'text-primary-100' : 'text-warm-400'}`}>(putting surface)</span>
                               )}
-                            </button>);
+                            </Button>);
                           })}
                         </div>
                       </div>
@@ -1698,7 +1699,7 @@ export default function ShotTrackingComprehensive({
                             className="flex-1 h-12 px-4 rounded-lg text-body-lg font-medium text-warm-900 tracking-[-0.012em] text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-colors"
                           />
                           <div className="inline-flex bg-warm-100 rounded-lg p-1">
-                            <button
+                            <Button variant="primary"
                               onClick={() => updateEditForm({ distanceUnitBefore: 'yards' })}
                               className={`px-3 py-2.5 min-h-[44px] rounded-md font-medium text-xs uppercase transition-colors ${
                                 editFormData.distanceUnitBefore === 'yards'
@@ -1707,8 +1708,8 @@ export default function ShotTrackingComprehensive({
                               }`}
                             >
                               Yds
-                            </button>
-                            <button
+                            </Button>
+                            <Button variant="primary"
                               onClick={() => updateEditForm({ distanceUnitBefore: 'feet' })}
                               className={`px-3 py-2.5 min-h-[44px] rounded-md font-medium text-xs uppercase transition-colors ${
                                 editFormData.distanceUnitBefore === 'feet'
@@ -1717,7 +1718,7 @@ export default function ShotTrackingComprehensive({
                               }`}
                             >
                               Ft
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -1729,7 +1730,7 @@ export default function ShotTrackingComprehensive({
                           {(['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as const).map(r => {
                             const resultLabel = r.charAt(0).toUpperCase() + r.slice(1);
                             return (
-                            <button
+                            <Button variant="primary"
                               key={r}
                               onClick={() => {
                                 if (!editFormData) return;
@@ -1770,7 +1771,7 @@ export default function ShotTrackingComprehensive({
                               {r === 'green' && (
                                 <span className={`block text-xs font-normal leading-tight ${editFormData.result === 'green' ? 'text-primary-100' : 'text-warm-400'}`}>(putting surface, not fringe)</span>
                               )}
-                            </button>);
+                            </Button>);
                           })}
                         </div>
                       </div>
@@ -1783,7 +1784,7 @@ export default function ShotTrackingComprehensive({
                           {editingShot.shotType === 'putting' ? (
                             <div className="grid grid-cols-6 gap-2 mb-3">
                               {[3, 5, 10, 15, 20, 30].map((ft) => (
-                                <button
+                                <Button variant="primary"
                                   key={ft}
                                   type="button"
                                   onClick={() => updateEditForm({ distanceToHoleAfter: String(ft), distanceUnitAfter: 'feet' })}
@@ -1794,13 +1795,13 @@ export default function ShotTrackingComprehensive({
                                   }`}
                                 >
                                   {ft}ft
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           ) : (
                             <div className="grid grid-cols-5 gap-2 mb-3">
                               {[50, 100, 150, 200, 250].map((yds) => (
-                                <button
+                                <Button variant="primary"
                                   key={yds}
                                   type="button"
                                   onClick={() => updateEditForm({ distanceToHoleAfter: String(yds), distanceUnitAfter: 'yards' })}
@@ -1811,7 +1812,7 @@ export default function ShotTrackingComprehensive({
                                   }`}
                                 >
                                   {yds}
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           )}
@@ -1827,7 +1828,7 @@ export default function ShotTrackingComprehensive({
                               className="flex-1 h-12 px-4 rounded-lg text-body-lg font-medium text-warm-900 tracking-[-0.012em] text-center bg-white border-2 border-warm-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 focus:outline-none transition-colors"
                             />
                             <div className="inline-flex bg-warm-100 rounded-lg p-1">
-                              <button
+                              <Button variant="primary"
                                 onClick={() => updateEditForm({ distanceUnitAfter: 'yards' })}
                                 className={`px-3 py-2.5 min-h-[44px] rounded-md font-medium text-xs uppercase transition-colors ${
                                   editFormData.distanceUnitAfter === 'yards'
@@ -1836,8 +1837,8 @@ export default function ShotTrackingComprehensive({
                                 }`}
                               >
                                 Yds
-                              </button>
-                              <button
+                              </Button>
+                              <Button variant="primary"
                                 onClick={() => updateEditForm({ distanceUnitAfter: 'feet' })}
                                 className={`px-3 py-2.5 min-h-[44px] rounded-md font-medium text-xs uppercase transition-colors ${
                                   editFormData.distanceUnitAfter === 'feet'
@@ -1846,7 +1847,7 @@ export default function ShotTrackingComprehensive({
                                 }`}
                               >
                                 Ft
-                              </button>
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -1859,7 +1860,7 @@ export default function ShotTrackingComprehensive({
                           <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Miss Direction</p>
                           <div className="grid grid-cols-2 gap-2">
                             {['left', 'right', 'short', 'long'].map(dir => (
-                              <button
+                              <Button variant="primary"
                                 key={dir}
                                 onClick={() => updateEditForm({ missDirection: editFormData.missDirection === dir ? null : dir })}
                                 className={`py-3 min-h-[48px] rounded-lg font-medium text-sm capitalize transition-colors ${
@@ -1869,7 +1870,7 @@ export default function ShotTrackingComprehensive({
                                 }`}
                               >
                                 {dir}
-                              </button>
+                              </Button>
                             ))}
                           </div>
                         </div>
@@ -1891,7 +1892,7 @@ export default function ShotTrackingComprehensive({
                             <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Putt Break</p>
                             <div className="grid grid-cols-2 gap-2">
                               {[{v: 'left_to_right', l: 'L to R'}, {v: 'straight', l: 'Straight'}, {v: 'right_to_left', l: 'R to L'}, {v: 'multiple', l: 'Multiple'}].map(b => (
-                                <button
+                                <Button variant="primary"
                                   key={b.v}
                                   onClick={() => updateEditForm({ puttBreak: b.v as ShotRecord['puttBreak'] })}
                                   className={`py-3 min-h-[48px] rounded-lg font-medium text-sm transition-colors ${
@@ -1901,7 +1902,7 @@ export default function ShotTrackingComprehensive({
                                   }`}
                                 >
                                   {b.l}
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -1909,7 +1910,7 @@ export default function ShotTrackingComprehensive({
                             <p className="text-eyebrow font-medium text-warm-600 uppercase tracking-wider mb-3">Putt Slope</p>
                             <div className="grid grid-cols-2 gap-2">
                               {[{v: 'uphill', l: 'Uphill'}, {v: 'level', l: 'Level'}, {v: 'downhill', l: 'Downhill'}, {v: 'severe', l: 'Severe'}].map(s => (
-                                <button
+                                <Button variant="primary"
                                   key={s.v}
                                   onClick={() => updateEditForm({ puttSlope: s.v as ShotRecord['puttSlope'] })}
                                   className={`py-3 min-h-[48px] rounded-lg font-medium text-sm transition-colors ${
@@ -1919,7 +1920,7 @@ export default function ShotTrackingComprehensive({
                                   }`}
                                 >
                                   {s.l}
-                                </button>
+                                </Button>
                               ))}
                             </div>
                           </div>
@@ -1959,7 +1960,7 @@ export default function ShotTrackingComprehensive({
             {!showDeleteConfirm && (
               <div className="sticky bottom-0 bg-white border-t border-warm-200 px-6 py-4 rounded-b-2xl">
                 <div className="flex gap-3">
-                  <button
+                  <IconButton variant="default"
                     onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}
                     disabled={editSaving}
                     className="px-4 py-3 rounded-xl font-medium text-sm text-red-600 bg-red-50 hover:bg-red-100 active:bg-red-200 transition-colors disabled:opacity-50 min-h-[44px]"
@@ -1968,15 +1969,15 @@ export default function ShotTrackingComprehensive({
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                  </button>
-                  <button
+                  </IconButton>
+                  <Button variant="ghost"
                     onClick={handleCloseEditModal}
                     disabled={editSaving}
                     className="flex-1 py-3 rounded-xl font-medium text-sm text-warm-700 bg-warm-100 hover:bg-warm-200 active:bg-warm-300 transition-colors disabled:opacity-50 min-h-[44px]"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="primary"
                     onClick={handleSaveEditedShot}
                     disabled={editSaving}
                     className="flex-1 py-3 rounded-xl font-medium text-sm bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-sm shadow-primary-950/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px]"
@@ -1993,7 +1994,7 @@ export default function ShotTrackingComprehensive({
                     ) : (
                       'Save Changes'
                     )}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}

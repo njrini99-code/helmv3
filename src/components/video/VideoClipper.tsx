@@ -252,7 +252,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         />
 
         {/* Play/Pause Overlay */}
-        <button
+        <Button variant="primary"
           onClick={handlePlayPause}
           className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
         >
@@ -268,7 +268,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               </svg>
             )}
           </div>
-        </button>
+        </Button>
       </div>
 
       {/* Timeline */}
@@ -347,40 +347,40 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
         {/* Controls */}
         <div className="mt-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="ghost"
               onClick={handleSeekToStart}
               className="px-2 py-1 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded"
             >
               Go to Start
-            </button>
-            <button
+            </Button>
+            <Button variant="primary"
               onClick={handleSetStartFromCurrent}
               className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded"
             >
               Set Start Here
-            </button>
+            </Button>
           </div>
 
-          <button
+          <Button variant="primary"
             onClick={handlePreviewClip}
             className="px-4 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
           >
             Preview Clip
-          </button>
+          </Button>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button variant="primary"
               onClick={handleSetEndFromCurrent}
               className="px-2 py-1 text-xs font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded"
             >
               Set End Here
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               onClick={handleSeekToEnd}
               className="px-2 py-1 text-xs font-medium text-warm-600 hover:text-warm-900 hover:bg-warm-100 rounded"
             >
               Go to End
-            </button>
+            </Button>
           </div>
         </div>
       </div>

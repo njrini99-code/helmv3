@@ -117,7 +117,7 @@ export default function CompleteSignupClient() {
           <div>
             <label className="text-sm font-medium text-warm-700 mb-3 block">I am a...</label>
             <div className="grid grid-cols-2 gap-3">
-              <button
+              <Button variant="primary"
                 onClick={() => { setRole('coach'); setPlayerType(null); }}
                 className={cn(
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
@@ -128,8 +128,8 @@ export default function CompleteSignupClient() {
               >
                 <IconUsers size={20} className="text-primary-600" />
                 <span className="font-medium">Coach</span>
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={() => { setRole('player'); setCoachType(null); }}
                 className={cn(
                   'p-4 border-2 rounded-xl text-left transition-all flex items-center gap-3',
@@ -140,7 +140,7 @@ export default function CompleteSignupClient() {
               >
                 <IconUser size={20} className="text-primary-600" />
                 <span className="font-medium">Player</span>
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -159,7 +159,7 @@ export default function CompleteSignupClient() {
                       { value: 'juco', label: 'JUCO' },
                       { value: 'showcase', label: 'Showcase' },
                     ].map((type) => (
-                      <button
+                      <Button variant="primary"
                         key={type.value}
                         onClick={() => setCoachType(type.value as CoachType)}
                         className={cn(
@@ -170,7 +170,7 @@ export default function CompleteSignupClient() {
                         )}
                       >
                         {type.label}
-                      </button>
+                      </Button>
                     ))}
                   </>
                 ) : (
@@ -181,7 +181,7 @@ export default function CompleteSignupClient() {
                       { value: 'juco', label: 'JUCO' },
                       { value: 'college', label: 'College' },
                     ].map((type) => (
-                      <button
+                      <Button variant="primary"
                         key={type.value}
                         onClick={() => setPlayerType(type.value as PlayerType)}
                         className={cn(
@@ -192,7 +192,7 @@ export default function CompleteSignupClient() {
                         )}
                       >
                         {type.label}
-                      </button>
+                      </Button>
                     ))}
                   </>
                 )}

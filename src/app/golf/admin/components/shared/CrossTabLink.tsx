@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 type AdminTab = 'overview' | 'people' | 'system' | 'intelligence' | 'tracer';
 
@@ -20,7 +21,7 @@ export function CrossTabLink({
   onNavigateTab,
 }: CrossTabLinkProps) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={() => onNavigateTab?.(tab, filter)}
       className={cn(
@@ -44,6 +45,6 @@ export function CrossTabLink({
           d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
         />
       </svg>
-    </button>
+    </Button>
   );
 }

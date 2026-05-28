@@ -132,7 +132,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
         <div className={cn('absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl', urg.dot)} />
 
         {/* Card header */}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={handleExpand}
           className="w-full text-left pl-5 pr-4 py-4 flex items-start gap-3"
@@ -257,7 +257,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
           >
             <IconChevronDown size={14} className="text-warm-500" />
           </motion.div>
-        </button>
+        </Button>
 
         {/* Expanded detail */}
         <AnimatePresence>
@@ -289,7 +289,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                         <p className="text-label font-medium text-warm-400 uppercase tracking-[0.12em] opacity-80 mb-2.5">Attachments</p>
                         <div className="flex flex-wrap gap-2">
                           {detail.documents.map((d) => (
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               key={d.document_id}
                               onClick={() => {
@@ -302,7 +302,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                 <IconFile size={13} className="text-warm-400" />
                               </div>
                               <span className="text-xs font-medium text-warm-700">{d.document?.title || 'Document'}</span>
-                            </button>
+                            </Button>
                           ))}
                         </div>
                       </div>

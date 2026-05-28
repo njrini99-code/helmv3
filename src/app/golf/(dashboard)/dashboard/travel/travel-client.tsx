@@ -35,6 +35,7 @@ import {
 } from '@/app/golf/actions/travel';
 import { ExpenseForm, ExpenseList, ExpenseSummary } from '@/components/golf/travel';
 import { useToast } from '@/components/ui/sonner';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface TravelItinerary {
   id: string;
@@ -384,7 +385,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
         }
       >
         {isCoach && (
-          <button
+          <Button variant="primary"
             onClick={() => {
               resetForm();
               setShowModal(true);
@@ -394,7 +395,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             <IconPlus size={18} />
             <span className="hidden sm:inline">Add Itinerary</span>
             <span className="sm:hidden">Add</span>
-          </button>
+          </Button>
         )}
       </LargeTitleHeader>
 
@@ -436,7 +437,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 : 'Travel details will appear here when available'}
             </p>
             {isCoach && (
-              <button
+              <Button variant="primary"
                 onClick={() => {
                   resetForm();
                   setShowModal(true);
@@ -444,7 +445,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
               >
                 Create First Itinerary
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -517,25 +518,25 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       </div>
                       {isCoach && (
                         <div className="flex items-center gap-2">
-                          <button
+                          <IconButton variant="default" aria-label="Edit"
                             onClick={() => handleEdit(selectedItinerary)}
                             className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
                           >
                             <IconEdit size={18} className="text-warm-600" />
-                          </button>
-                          <button
+                          </IconButton>
+                          <IconButton variant="default" aria-label="Delete"
                             onClick={() => setDeleteConfirmId(selectedItinerary.id)}
                             className="p-2 hover:bg-red-50 rounded-lg transition-colors"
                           >
                             <IconTrash size={18} className="text-red-600" />
-                          </button>
+                          </IconButton>
                         </div>
                       )}
                     </div>
 
                     {/* Tabs */}
                     <div className="flex gap-4 border-b border-warm-200 -mb-6 -mx-6 px-6">
-                      <button
+                      <Button variant="ghost"
                         onClick={() => setActiveTab('details')}
                         className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
                           activeTab === 'details'
@@ -544,8 +545,8 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                         }`}
                       >
                         Details
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         onClick={() => setActiveTab('expenses')}
                         className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
                           activeTab === 'expenses'
@@ -555,7 +556,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                       >
                         <IconChartBar size={16} />
                         Expenses
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -665,17 +666,17 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                             <h3 className="font-medium text-warm-900">Trip Expenses</h3>
                             <div className="flex items-center gap-2">
                               {expenses.length > 0 && (
-                                <button
+                                <Button variant="ghost"
                                   onClick={handleExportCSV}
                                   disabled={exporting}
                                   className="flex items-center gap-2 px-3 py-1.5 text-sm text-warm-600 hover:text-warm-900 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                   <IconDownload size={16} />
                                   {exporting ? 'Exporting...' : 'Export CSV'}
-                                </button>
+                                </Button>
                               )}
                               {isCoach && (
-                                <button
+                                <Button variant="primary"
                                   onClick={() => {
                                     setEditingExpense(null);
                                     setShowExpenseForm(true);
@@ -684,7 +685,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                                 >
                                   <IconPlus size={16} />
                                   Add Expense
-                                </button>
+                                </Button>
                               )}
                             </div>
                           </div>
@@ -756,18 +757,18 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               <p className="text-sm text-warm-500">This action cannot be undone. All trip details and expenses will be removed.</p>
             </div>
             <div className="flex gap-3 px-6 pb-6">
-              <button
+              <Button variant="ghost"
                 onClick={() => setDeleteConfirmId(null)}
                 className="flex-1 px-4 py-2.5 border border-warm-200 rounded-xl font-medium text-warm-700 hover:bg-warm-50 transition-colors text-sm"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="danger"
                 onClick={() => handleDeleteConfirmed(deleteConfirmId)}
                 className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors text-sm"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -781,7 +782,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
               <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em]">
                 {editingId ? 'Edit Travel Itinerary' : 'Create Travel Itinerary'}
               </h2>
-              <button
+              <IconButton variant="default" aria-label="Close"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
@@ -789,7 +790,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors"
               >
                 <IconX size={20} />
-              </button>
+              </IconButton>
             </div>
 
             {error && (
@@ -982,7 +983,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
             </div>
 
             <div className="flex gap-3 pt-4 mt-4 border-t border-warm-200">
-              <button
+              <Button variant="ghost"
                 onClick={() => {
                   setShowModal(false);
                   resetForm();
@@ -990,14 +991,14 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                 className="flex-1 px-4 py-2 border border-warm-200 rounded-lg font-medium text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={handleSave}
                 disabled={saving}
                 className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Saving...' : editingId ? 'Save Changes' : 'Create Itinerary'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

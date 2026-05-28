@@ -28,6 +28,7 @@ import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/sonner';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { IconFlag } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 type Hole = RoundHole;
 
@@ -911,12 +912,12 @@ export default function ContinueRoundClient({
       {pendingFinalStats && !showFinishConfirm && !submitting && (
         <div className="sticky top-[var(--golf-mobile-header-offset)] z-20 bg-primary-600 px-4 py-3 text-white lg:top-[49px] flex items-center justify-between gap-3">
           <p className="text-sm font-medium">All holes completed — ready to submit!</p>
-          <button
+          <Button variant="primary"
             onClick={() => setShowFinishConfirm(true)}
             className="px-4 py-2 rounded-lg bg-white text-primary-700 text-sm font-medium hover:bg-primary-50 active:bg-primary-100 transition-colors flex-shrink-0"
           >
             Submit Round
-          </button>
+          </Button>
         </div>
       )}
 
@@ -976,7 +977,7 @@ export default function ContinueRoundClient({
               {recoveryData?.completedHoleStats.filter(h => h != null).length ?? 0} completed holes found in local backup.
             </p>
             <div className="flex gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => {
                   clearEmergencySave(roundId);
                   setShowRecoveryDialog(false);
@@ -985,8 +986,8 @@ export default function ContinueRoundClient({
                 className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 transition-colors"
               >
                 Discard
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={() => {
                   // Restore data from emergency save
                   if (!recoveryData) return;
@@ -1010,7 +1011,7 @@ export default function ContinueRoundClient({
                 className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 transition-colors"
               >
                 Restore
-              </button>
+              </Button>
             </div>
           </div>
         </DrawerContent>
@@ -1180,13 +1181,13 @@ export default function ContinueRoundClient({
                       transition={{ delay: 0.4, duration: 0.3 }}
                       className="flex gap-3"
                     >
-                      <button
+                      <Button variant="ghost"
                         onClick={() => setShowFinishConfirm(false)}
                         className="flex-1 py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                       >
                         Go Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="primary"
                         onClick={async () => {
                           if (!pendingFinalStats) return;
                           setShowFinishConfirm(false);
@@ -1195,7 +1196,7 @@ export default function ContinueRoundClient({
                         className="flex-1 py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm shadow-primary-950/10"
                       >
                         Submit Round
-                      </button>
+                      </Button>
                     </m.div>
                   </div>
                   </m.div>

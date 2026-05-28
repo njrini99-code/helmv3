@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { IconNote, IconEdit, IconTrash, IconClock } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface Note {
   id: string;
@@ -54,12 +55,12 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
                 </p>
 
                 {isLong && (
-                  <button
+                  <Button variant="ghost"
                     onClick={() => setExpandedNote(isExpanded ? null : note.id)}
                     className="text-xs text-primary-600 hover:text-primary-700 mt-1"
                   >
                     {isExpanded ? 'Show less' : 'Show more'}
-                  </button>
+                  </Button>
                 )}
 
                 <div className="flex items-center gap-3 mt-2 text-xs text-warm-400">
@@ -81,12 +82,12 @@ export function PlayerNotesSection({ notes, compact = false }: PlayerNotesSectio
 
               {!compact && (
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  <IconButton variant="default" aria-label="Edit" className="p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconEdit size={14} />
-                  </button>
-                  <button className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
+                  </IconButton>
+                  <IconButton variant="default" aria-label="Delete" className="p-1.5 rounded-lg text-warm-400 hover:text-red-500 hover:bg-white active:bg-cream-100/75 transition-colors">
                     <IconTrash size={14} />
-                  </button>
+                  </IconButton>
                 </div>
               )}
             </div>

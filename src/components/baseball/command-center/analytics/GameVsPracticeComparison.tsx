@@ -18,6 +18,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { TimeRangeFilter, type TimeRange } from './TimeRangeFilter';
 import { PressureGapIndicator } from './PressureGapIndicator';
 import { StatTypeFilter, type StatCategory } from './StatTypeFilter';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -172,12 +173,12 @@ function PlayerDetailCard({ player, onClose }: PlayerDetailCardProps) {
             </div>
           </div>
         </div>
-        <button
+        <IconButton variant="default" aria-label="Close"
           onClick={onClose}
           className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
         >
           <IconX size={16} className="text-warm-500" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Pressure Gap Visualization */}
@@ -264,7 +265,7 @@ function PlayerComparisonRow({
   onClick,
 }: PlayerComparisonRowProps) {
   return (
-    <button
+    <Button variant="primary"
       onClick={onClick}
       className={cn(
         'w-full grid grid-cols-12 gap-2 items-center p-2 rounded-lg transition-colors text-left',
@@ -325,7 +326,7 @@ function PlayerComparisonRow({
           )}
         </span>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -454,12 +455,12 @@ export function GameVsPracticeComparison({
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-warm-900">Game vs Practice Comparison</h3>
           {onClose && (
-            <button
+            <IconButton variant="default" aria-label="Close"
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
             >
               <IconX size={16} className="text-warm-500" />
-            </button>
+            </IconButton>
           )}
         </div>
         <div className="text-center py-8">
@@ -487,12 +488,12 @@ export function GameVsPracticeComparison({
             </p>
           </div>
           {onClose && (
-            <button
+            <IconButton variant="default" aria-label="Close"
               onClick={onClose}
               className="p-1.5 rounded-lg hover:bg-warm-100 transition-colors"
             >
               <IconX size={16} className="text-warm-500" />
-            </button>
+            </IconButton>
           )}
         </div>
 
@@ -567,7 +568,7 @@ export function GameVsPracticeComparison({
       {/* Column Headers */}
       <div className="px-4 py-2 border-b border-warm-100 bg-warm-50">
         <div className="grid grid-cols-12 gap-2 items-center">
-          <button
+          <Button variant="ghost"
             onClick={() => toggleSort('name')}
             className="col-span-5 flex items-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-700"
           >
@@ -578,8 +579,8 @@ export function GameVsPracticeComparison({
               ) : (
                 <IconChevronDown size={12} />
               ))}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => toggleSort('practiceAvg')}
             className="col-span-2 flex items-center justify-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-700"
           >
@@ -590,8 +591,8 @@ export function GameVsPracticeComparison({
               ) : (
                 <IconChevronDown size={12} />
               ))}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => toggleSort('gameAvg')}
             className="col-span-2 flex items-center justify-center gap-1 text-xs font-medium text-warm-500 hover:text-warm-700"
           >
@@ -602,8 +603,8 @@ export function GameVsPracticeComparison({
               ) : (
                 <IconChevronDown size={12} />
               ))}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={() => toggleSort('gap')}
             className="col-span-3 flex items-center justify-end gap-1 text-xs font-medium text-warm-500 hover:text-warm-700"
           >
@@ -614,7 +615,7 @@ export function GameVsPracticeComparison({
               ) : (
                 <IconChevronDown size={12} />
               ))}
-          </button>
+          </Button>
         </div>
       </div>
 

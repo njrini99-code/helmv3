@@ -16,6 +16,7 @@
 import { useState, useTransition } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import { setIntent } from '@/app/golf/actions/v3/intent';
+import { Button } from '@/components/ui/button';
 import {
   NARRATIVE_GOAL_PRESENTATION,
   type NarrativeGoal,
@@ -113,7 +114,7 @@ export function IntentDrawer({
                 const cfg = NARRATIVE_GOAL_PRESENTATION[g];
                 const selected = narrativeGoal === g;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={g}
                     type="button"
                     onClick={() => setNarrativeGoal(g)}
@@ -127,7 +128,7 @@ export function IntentDrawer({
                   >
                     <span aria-hidden="true">{cfg.emoji}</span>
                     {cfg.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -181,15 +182,15 @@ export function IntentDrawer({
 
             {/* Actions */}
             <div className="mt-6 flex items-center justify-end gap-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={onClose}
                 disabled={pending}
                 className="text-sm text-warm-700 px-4 py-2 rounded-xl hover:bg-warm-100 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 type="button"
                 onClick={submit}
                 disabled={pending}
@@ -197,7 +198,7 @@ export function IntentDrawer({
                 data-testid="intent-save"
               >
                 {pending ? 'Saving…' : 'Save'}
-              </button>
+              </Button>
             </div>
           </m.div>
         </m.div>

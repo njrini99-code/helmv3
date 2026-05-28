@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { GraduationCap, MapPin, Mail, Phone, MoreHorizontal } from 'lucide-react';
 import { RecruitStatusChip } from './RecruitStatusChip';
 import type { Recruit } from '@/app/golf/actions/recruiting';
+import { Button } from '@/components/ui/button';
 
 interface RecruitCardProps {
   recruit: Recruit;
@@ -34,7 +35,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
   const initials = getInitials(recruit.first_name, recruit.last_name);
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       className={cn(
@@ -112,6 +113,6 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
           <MoreHorizontal className="w-4 h-4" />
         </span>
       </div>
-    </button>
+    </Button>
   );
 }

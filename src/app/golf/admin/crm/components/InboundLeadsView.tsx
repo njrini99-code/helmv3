@@ -13,6 +13,7 @@ import {
 } from '@/components/icons';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { EmailStatusBadge } from './EmailStatusBadge';
+import { Button } from '@/components/ui/button';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -184,7 +185,7 @@ export function InboundLeadsView() {
             Demo requests from the landing page. Triage, contact, then promote into the CRM.
           </p>
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={fetchRequests}
           aria-label="Refresh inbound leads"
@@ -192,7 +193,7 @@ export function InboundLeadsView() {
         >
           <IconRefresh size={13} aria-hidden="true" />
           Refresh
-        </button>
+        </Button>
       </div>
 
       {/* KPI Cards */}
@@ -388,7 +389,7 @@ export function InboundLeadsView() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {isNew && (
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => markContacted(request.id)}
                         disabled={isProcessing}
@@ -396,10 +397,10 @@ export function InboundLeadsView() {
                         className="px-3 py-1.5 rounded-xl text-xs font-medium bg-white/60 border border-warm-200/60 text-warm-700 hover:bg-white hover:text-warm-900 transition-colors disabled:opacity-50"
                       >
                         Mark Contacted
-                      </button>
+                      </Button>
                     )}
                     {(isNew || isContacted) && (
-                      <button
+                      <Button variant="primary"
                         type="button"
                         onClick={() => addToCRM(request)}
                         disabled={isProcessing}
@@ -408,7 +409,7 @@ export function InboundLeadsView() {
                       >
                         <IconUserPlus size={12} aria-hidden="true" />
                         Add to CRM
-                      </button>
+                      </Button>
                     )}
                     {isConverted && (
                       <span

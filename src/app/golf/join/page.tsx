@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { IconUsers } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 const fadeIn = {
   initial: { opacity: 0, y: 16 },
@@ -113,13 +114,13 @@ export default function JoinTeamPage() {
                     </p>
                   )}
                 </div>
-                <button
+                <Button variant="primary"
                   type="submit"
                   disabled={!trimmed}
                   className="w-full px-4 py-3 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-primary-900/10 hover:shadow-xl hover:shadow-primary-900/15"
                 >
                   Join Team
-                </button>
+                </Button>
               </form>
 
               <p className="text-center text-xs text-warm-400 mt-4">

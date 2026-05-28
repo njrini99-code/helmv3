@@ -20,6 +20,7 @@ import { useState } from 'react';
 import { Plus, BookOpen, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TeamMember } from './CalendarAvatarSidebar';
+import { Button } from '@/components/ui/button';
 
 export interface BusyPeriodColor {
   bg: string;
@@ -254,7 +255,7 @@ interface FreeSlotProps {
 
 function FreeSlot({ isHovered, hasComparisonContext, onClick }: FreeSlotProps) {
   return (
-    <button
+    <Button variant="primary"
       type="button"
       onClick={onClick}
       className={cn(
@@ -286,7 +287,7 @@ function FreeSlot({ isHovered, hasComparisonContext, onClick }: FreeSlotProps) {
           ✓ Both available
         </span>
       )}
-    </button>
+    </Button>
   );
 }
 

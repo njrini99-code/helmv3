@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   IconMoreVertical,
   IconUsers,
@@ -141,7 +142,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
     <div className="relative">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button
+          <IconButton variant="default"
             onClick={() => {
               void triggerHaptic('light');
             }}
@@ -149,7 +150,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
             aria-label="Player actions"
           >
             <IconMoreVertical size={18} />
-          </button>
+          </IconButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem
@@ -233,14 +234,14 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
               </span>
             </p>
             <div className="flex justify-end gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => setShowRemoveConfirm(false)}
                 disabled={removing}
                 className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 active:bg-warm-100 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 onClick={handleRemovePlayer}
                 disabled={removing}
                 className="px-4 py-2 rounded-lg text-white font-medium transition-colors disabled:opacity-50 flex items-center gap-2 active:scale-95"
@@ -258,7 +259,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 ) : (
                   'Remove Player'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -278,7 +279,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
             {/* Status options */}
             <div className="space-y-2 mb-6">
               {statuses.map((status) => (
-                <button
+                <Button variant="primary"
                   key={status.value}
                   onClick={() => setSelectedStatus(status.value)}
                   disabled={updatingStatus}
@@ -310,7 +311,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                       </svg>
                     )}
                   </div>
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -322,7 +323,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
             )}
 
             <div className="flex justify-end gap-3">
-              <button
+              <Button variant="ghost"
                 onClick={() => {
                   setShowStatusModal(false);
                   setSelectedStatus(null);
@@ -331,8 +332,8 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 className="px-4 py-2 rounded-lg border border-warm-200 text-warm-700 hover:bg-warm-50 active:bg-warm-100 font-medium transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary"
                 onClick={handleStatusChange}
                 disabled={updatingStatus || !selectedStatus || selectedStatus === currentStatus}
                 className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors disabled:opacity-50 disabled:bg-warm-300 flex items-center gap-2"
@@ -349,7 +350,7 @@ export function PlayerActionsMenu({ playerId, playerName, currentStatus }: Playe
                 ) : (
                   'Update Status'
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ import {
 import { MobileRSVPButtons, type RSVPResponse } from './MobileRSVPButtons';
 import { formatTime } from '@/lib/calendar/event-styles';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { Button } from '@/components/ui/button';
 
 interface MobileEventCardProps {
   event: CalendarEvent;
@@ -121,7 +122,7 @@ export function MobileEventCard({
       )} />
 
       {/* Main card content - tappable */}
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={handleCardClick}
         className={cn(
@@ -202,7 +203,7 @@ export function MobileEventCard({
             )}
           </div>
         </div>
-      </button>
+      </Button>
 
       {/* Expanded RSVP section */}
       {isExpanded && requiresRsvp && (

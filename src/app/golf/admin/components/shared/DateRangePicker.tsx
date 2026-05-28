@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface DateRange {
   from: Date;
@@ -76,7 +77,7 @@ export function DateRangePicker({
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
       {presets.map(({ label, days }) => (
-        <button
+        <Button variant="primary"
           key={label}
           type="button"
           onClick={() => handlePreset(label, days)}
@@ -88,10 +89,10 @@ export function DateRangePicker({
           )}
         >
           {label}
-        </button>
+        </Button>
       ))}
 
-      <button
+      <Button variant="primary"
         type="button"
         onClick={() => setShowCustom((v) => !v)}
         className={cn(
@@ -102,7 +103,7 @@ export function DateRangePicker({
         )}
       >
         Custom
-      </button>
+      </Button>
 
       {/* Selected range label */}
       {value && (

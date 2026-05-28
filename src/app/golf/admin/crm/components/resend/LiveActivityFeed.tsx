@@ -9,6 +9,7 @@ import type { EmailEventRow } from '@/app/golf/actions/resend-activity';
 import { getRecentActivityFeed } from '@/app/golf/actions/resend-activity';
 import { EVENT_CONFIG, formatRelative, formatFullTimestamp } from './shared';
 import { useVisibilityAwareInterval } from '@/hooks/useVisibilityAwareInterval';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface LiveActivityFeedProps {
   initialLimit?: number;
@@ -121,7 +122,7 @@ export function LiveActivityFeed({
             </motion.span>
           )}
 
-          <button
+          <Button variant="ghost"
             onClick={() => setIsPaused((p) => !p)}
             className={cn(
               'text-xs font-medium px-2.5 py-1 rounded-md transition-colors',
@@ -132,16 +133,16 @@ export function LiveActivityFeed({
             title={isPaused ? 'Resume live updates' : 'Pause live updates'}
           >
             {isPaused ? 'Paused' : 'Live'}
-          </button>
+          </Button>
 
-          <button
+          <IconButton variant="default"
             onClick={handleRefresh}
             className="p-1.5 rounded-md text-warm-500 hover:text-warm-900 hover:bg-warm-100 transition-colors"
             title="Refresh"
             aria-label="Refresh feed"
           >
             <IconRefresh size={14} />
-          </button>
+          </IconButton>
         </div>
       </div>
 

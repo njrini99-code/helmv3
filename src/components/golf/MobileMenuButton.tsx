@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { IconMenu } from '@/components/icons';
 import { useSidebarSafe } from '@/contexts/sidebar-context';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { IconButton } from '@/components/ui/button';
 
 interface MobileMenuButtonProps {
   className?: string;
@@ -43,7 +44,7 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
   };
 
   return (
-    <button
+    <IconButton variant="default"
       type="button"
       onClick={handleClick}
       className={cn(
@@ -60,6 +61,6 @@ export function MobileMenuButton({ className, onClick, label = 'Open navigation 
       aria-controls="mobile-sidebar"
     >
       <IconMenu size={22} />
-    </button>
+    </IconButton>
   );
 }

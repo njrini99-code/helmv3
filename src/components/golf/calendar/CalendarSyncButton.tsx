@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/drawer';
 import { Tooltip } from '@/components/ui/tooltip';
 import { openExternalUrl } from '@/lib/utils/capacitor';
+import { Button, IconButton } from '@/components/ui/button';
 
 async function loadCalendarFeedActions() {
   return import('@/app/golf/actions/calendar-feeds');
@@ -167,7 +168,7 @@ export function CalendarSyncButton({
       {/* Trigger Button */}
       {variant === 'icon' ? (
         <Tooltip content="Subscribe to Calendar" side="right">
-          <button
+          <IconButton variant="default"
             onClick={() => setIsOpen(true)}
             className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center',
@@ -181,10 +182,10 @@ export function CalendarSyncButton({
             aria-label="Subscribe to Calendar"
           >
             <Calendar className="w-5 h-5" />
-          </button>
+          </IconButton>
         </Tooltip>
       ) : (
-        <button
+        <Button variant="primary"
           onClick={() => setIsOpen(true)}
           className={cn(
             'inline-flex items-center gap-2 px-4 py-2.5',
@@ -197,7 +198,7 @@ export function CalendarSyncButton({
         >
           <Calendar className="w-4 h-4" />
           Subscribe to Calendar
-        </button>
+        </Button>
       )}
 
       {/* Sheet */}
@@ -227,12 +228,12 @@ export function CalendarSyncButton({
             {error && !loading && (
               <div className="p-4 rounded-xl bg-rose-50 border border-rose-200">
                 <p className="text-sm text-rose-700">{error}</p>
-                <button
+                <Button variant="ghost"
                   onClick={loadFeedUrl}
                   className="mt-2 text-sm font-medium text-rose-600 hover:text-rose-700"
                 >
                   Try again
-                </button>
+                </Button>
               </div>
             )}
 
@@ -250,7 +251,7 @@ export function CalendarSyncButton({
                         {feedUrl.replace(/^https?:\/\//, 'webcal://')}
                       </code>
                     </div>
-                    <button
+                    <Button variant="primary"
                       onClick={handleCopy}
                       className={cn(
                         'shrink-0 p-2.5 rounded-lg font-medium text-sm transition-colors',
@@ -266,7 +267,7 @@ export function CalendarSyncButton({
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -277,7 +278,7 @@ export function CalendarSyncButton({
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                     {/* Google Calendar */}
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => calendarUrls?.google && void openExternalUrl(calendarUrls.google)}
                       className={cn(
@@ -291,10 +292,10 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Google
                       </span>
-                    </button>
+                    </Button>
 
                     {/* Apple Calendar */}
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => calendarUrls?.apple && void openExternalUrl(calendarUrls.apple)}
                       className={cn(
@@ -308,10 +309,10 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-warm-900">
                         Apple
                       </span>
-                    </button>
+                    </Button>
 
                     {/* Outlook */}
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => calendarUrls?.outlook && void openExternalUrl(calendarUrls.outlook)}
                       className={cn(
@@ -325,7 +326,7 @@ export function CalendarSyncButton({
                       <span className="text-xs font-medium text-warm-700 group-hover:text-blue-700">
                         Outlook
                       </span>
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -344,7 +345,7 @@ export function CalendarSyncButton({
 
                 {/* Regenerate Option */}
                 <div className="pt-2 border-t border-warm-100">
-                  <button
+                  <Button variant="ghost"
                     onClick={handleRegenerate}
                     disabled={regenerating}
                     className={cn(
@@ -362,7 +363,7 @@ export function CalendarSyncButton({
                     <span>
                       {regenerating ? 'Regenerating...' : 'Regenerate URL'}
                     </span>
-                  </button>
+                  </Button>
                   <p className="text-xs text-warm-500 mt-1.5 pl-6">
                     This will invalidate the old URL and create a new one
                   </p>

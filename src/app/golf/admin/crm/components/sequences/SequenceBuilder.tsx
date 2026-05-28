@@ -18,6 +18,7 @@ import {
 } from '@/app/golf/actions/crm-sequences';
 import { SequenceStepEditor } from './SequenceStepEditor';
 import { EnrollSegmentDialog } from './EnrollSegmentDialog';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // SequenceBuilder — inline editor for a single sequence. Vertical stepper of
@@ -131,7 +132,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
             </p>
           )}
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setEnrollDialogOpen(true)}
           className={cn(
@@ -141,7 +142,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
           )}
         >
           <IconBookmark size={14} /> Enroll segment
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -170,7 +171,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-warm-900">Steps</h3>
-          <button
+          <Button variant="primary"
             type="button"
             onClick={() => {
               setAdding(true);
@@ -184,7 +185,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
             )}
           >
             <IconPlus size={14} /> Add step
-          </button>
+          </Button>
         </div>
 
         {steps.length === 0 && !adding && (
@@ -211,7 +212,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                     onCancel={() => setEditingStepId(null)}
                   />
                 ) : (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => {
                       setEditingStepId(step.id);
@@ -241,7 +242,7 @@ export function SequenceBuilder({ sequenceId, onChange }: SequenceBuilderProps) 
                     <span className="text-xs text-warm-400 group-hover:text-warm-600 transition-colors">
                       Edit
                     </span>
-                  </button>
+                  </Button>
                 )}
               </div>
             );

@@ -7,6 +7,7 @@ import { loginAction } from '@/app/golf/actions/auth';
 import { Input } from '@/components/ui/input';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button } from '@/components/ui/button';
 
 function getErrorMessage(error: string): string {
   const lower = error.toLowerCase();
@@ -160,7 +161,7 @@ export function GolfSignInForm() {
       </div>
 
       {/* Submit button — inline spinner, iOS ease, tactile press */}
-      <button
+      <Button variant="primary"
         type="submit"
         disabled={isLoading}
         aria-busy={isLoading}
@@ -186,7 +187,7 @@ export function GolfSignInForm() {
         ) : (
           'Sign in'
         )}
-      </button>
+      </Button>
     </form>
   );
 }

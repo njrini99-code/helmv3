@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import {
   IconChartBar,
   IconTarget,
@@ -79,7 +80,7 @@ export function StatTypeFilter({
   return (
     <div className={cn('flex flex-wrap gap-1', className)}>
       {STAT_CATEGORIES.map((cat) => (
-        <button
+        <Button variant="primary"
           key={cat.value}
           onClick={() => onChange(cat.value)}
           title={cat.description}
@@ -98,7 +99,7 @@ export function StatTypeFilter({
               <span className="sm:hidden">{cat.shortLabel}</span>
             </>
           )}
-        </button>
+        </Button>
       ))}
     </div>
   );

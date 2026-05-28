@@ -4,6 +4,7 @@ import { memo, useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconBuilding } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 export type DiscoverMode = 'players' | 'teams';
 
@@ -95,7 +96,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
           const isActive = mode === option.value;
 
           return (
-            <button
+            <Button variant="ghost"
               key={option.value}
               data-mode={option.value}
               onClick={() => onChange(option.value)}
@@ -141,7 +142,7 @@ export const DiscoverToggle = memo(function DiscoverToggle({
                   </motion.span>
                 )}
               </AnimatePresence>
-            </button>
+            </Button>
           );
         })}
       </div>

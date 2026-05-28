@@ -10,6 +10,7 @@ import { EmailStatusBadge, type EmailStatusFields } from './EmailStatusBadge';
 import { SegmentBadge } from './segments/SegmentBadge';
 import { EngagementBadge } from './badges/EngagementBadge';
 import type { CoachEngagement } from '../types/foundations';
+import { Button, IconButton } from '@/components/ui/button';
 
 // The Coach type from crm-config.tsx predates Stream 1's migration that added
 // `last_email_event_type` and `last_email_event_at` to crm_coaches. Extend it
@@ -142,12 +143,12 @@ const CoachTableRow = React.memo(
 
         {/* Star */}
         <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
-          <button
+          <IconButton variant="default" aria-label="Favorite"
             onClick={handleStar}
             className={cn('transition-all duration-200 hover:scale-110 active:scale-95', coach.is_starred ? 'opacity-100' : 'opacity-20 group-hover:opacity-50')}
           >
             <IconStar size={14} className={cn('transition-colors duration-200', coach.is_starred ? 'fill-amber-400 text-amber-400' : 'text-warm-300 hover:text-amber-300')} />
-          </button>
+          </IconButton>
         </td>
 
         {/* Coach name + title */}
@@ -185,7 +186,7 @@ const CoachTableRow = React.memo(
         {/* Status dropdown */}
         <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
           <div className="relative">
-            <button
+            <Button variant="ghost"
               onClick={e => { e.stopPropagation(); onOpenStatus(isStatusOpen ? null : coach.id); }}
               className={cn(
                 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border transition-all',
@@ -196,11 +197,11 @@ const CoachTableRow = React.memo(
               <span className="flex items-center">{statusConfig[coach.status]?.icon}</span>
               <span>{statusConfig[coach.status]?.label}</span>
               <IconChevronDown size={12} className="opacity-50" />
-            </button>
+            </Button>
             {isStatusOpen && (
               <div className="absolute z-50 mt-1 py-1 min-w-[160px] max-h-[320px] overflow-y-auto bg-white/95 backdrop-blur-xl rounded-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
                 {ALL_STATUSES.map(status => (
-                  <button
+                  <Button variant="primary"
                     key={status}
                     onClick={() => { onStatusChange(coach.id, status); onOpenStatus(null); }}
                     className={cn(
@@ -210,7 +211,7 @@ const CoachTableRow = React.memo(
                   >
                     <span className="flex items-center">{statusConfig[status]?.icon}</span>
                     <span>{statusConfig[status]?.label}</span>
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -270,7 +271,7 @@ const CoachTableRow = React.memo(
         {/* Three-dot action menu */}
         <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
           <div className="relative">
-            <button
+            <IconButton variant="default" aria-label="More options"
               onClick={e => { e.stopPropagation(); onOpenAction(isActionOpen ? null : coach.id); }}
               className={cn(
                 'p-1.5 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200',
@@ -278,15 +279,15 @@ const CoachTableRow = React.memo(
               )}
             >
               <IconMoreHorizontal size={16} />
-            </button>
+            </IconButton>
             {isActionOpen && (
               <div className="absolute right-0 top-full mt-1 z-50 w-48 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl" onClick={e => e.stopPropagation()}>
-                <button
+                <Button variant="ghost"
                   onClick={() => { onLogContact(coach); onOpenAction(null); }}
                   className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 active:bg-warm-100 transition-colors flex items-center gap-2"
                 >
                   <IconMessageSquare size={16} className="text-warm-400" /> Log Contact
-                </button>
+                </Button>
                 {coach.email && (
                   <a
                     href={`mailto:${coach.email}`}
@@ -296,22 +297,22 @@ const CoachTableRow = React.memo(
                     <IconMail size={16} className="text-warm-400" /> Send Email
                   </a>
                 )}
-                <button
+                <Button variant="ghost"
                   onClick={() => { onStatusChange(coach.id, 'contacted' as CoachStatus); onOpenAction(null); }}
                   className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                 >
                   <IconArrowRight size={16} className="text-warm-400" /> Move to Contacted
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   onClick={() => { onToggleStar(coach.id, coach.is_starred); onOpenAction(null); }}
                   className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center gap-2"
                 >
                   <IconStar size={16} className="text-warm-400" /> {coach.is_starred ? 'Unstar' : 'Star'}
-                </button>
+                </Button>
 
                 {/* Set Priority submenu */}
                 <div className="relative">
-                  <button
+                  <Button variant="ghost"
                     onClick={e => { e.stopPropagation(); onOpenPriority(isPriorityOpen ? null : coach.id); }}
                     className="w-full px-3 py-2 text-left text-sm text-warm-700 hover:bg-warm-50 transition-colors active:bg-warm-100 flex items-center justify-between"
                   >
@@ -319,10 +320,10 @@ const CoachTableRow = React.memo(
                       <IconFlame size={16} className="text-warm-400" /> Set Priority
                     </span>
                     <IconChevronRight size={12} className="text-warm-400" />
-                  </button>
+                  </Button>
                   {isPriorityOpen && (
                     <div className="absolute left-full top-0 ml-1 z-50 w-36 py-1 rounded-xl bg-white/95 backdrop-blur-xl border border-warm-200/50 shadow-xl">
-                      <button
+                      <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 0); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
@@ -330,8 +331,8 @@ const CoachTableRow = React.memo(
                         )}
                       >
                         Normal
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 1); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
@@ -339,8 +340,8 @@ const CoachTableRow = React.memo(
                         )}
                       >
                         <IconZap size={16} className="text-amber-500" /> High
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="ghost"
                         onClick={() => { onPriorityChange?.(coach.id, 2); onOpenAction(null); onOpenPriority(null); }}
                         className={cn(
                           'w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors',
@@ -348,7 +349,7 @@ const CoachTableRow = React.memo(
                         )}
                       >
                         <IconFlame size={16} className="text-orange-500" /> Hot
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -566,20 +567,20 @@ export function CoachTable({
         <p className="text-sm text-warm-500 max-w-xs mx-auto mb-6">Try adjusting your filters or import some coaches to get started.</p>
         <div className="flex items-center justify-center gap-3">
           {onImport && (
-            <button
+            <Button variant="ghost"
               onClick={onImport}
               className="flex items-center gap-2 px-4 py-2.5 bg-white border border-warm-200/50 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-colors text-sm"
             >
               <IconUpload size={16} /> Import Coaches
-            </button>
+            </Button>
           )}
           {onAddCoach && (
-            <button
+            <Button variant="primary"
               onClick={onAddCoach}
               className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors text-sm shadow-sm shadow-primary-500/25"
             >
               <IconUserPlus size={16} /> Add Coach
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -690,9 +691,9 @@ function TH({ field, label, onSort, children, className }: {
 
 function PaginationButton({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} disabled={disabled}
+    <Button variant="ghost" onClick={onClick} disabled={disabled}
       className="px-2 py-1 rounded-lg hover:bg-white/60 disabled:opacity-40 text-sm font-medium transition-colors">
       {children}
-    </button>
+    </Button>
   );
 }

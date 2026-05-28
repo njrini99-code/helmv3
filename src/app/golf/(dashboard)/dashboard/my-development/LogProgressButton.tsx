@@ -105,13 +105,13 @@ export function LogProgressButton({
 
   return (
     <>
-      <button
+      <Button variant="primary"
         type="button"
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 border border-primary-200 rounded-lg transition-colors"
       >
         Log progress
-      </button>
+      </Button>
 
       <Drawer
         open={open}
@@ -240,7 +240,7 @@ export function MarkCompleteButton({
   }
 
   return (
-    <button
+    <Button variant="primary"
       type="button"
       onClick={handleClick}
       onBlur={() => setConfirming(false)}
@@ -253,6 +253,6 @@ export function MarkCompleteButton({
       }
     >
       {pending ? 'Saving…' : confirming ? 'Confirm complete' : 'Mark complete'}
-    </button>
+    </Button>
   );
 }

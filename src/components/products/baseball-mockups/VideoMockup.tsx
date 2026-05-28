@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 /**
  * Premium Video Library Mockup
@@ -17,9 +18,9 @@ export function VideoMockup() {
             <h3 className="font-semibold text-white text-sm tracking-tight">Video Library</h3>
             <p className="text-micro text-white/40 mt-0.5">234 clips • 12.4 GB</p>
           </div>
-          <button className="px-3 py-1.5 bg-emerald-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
+          <Button variant="primary" className="px-3 py-1.5 bg-emerald-500 text-white text-micro font-semibold rounded-md hover:bg-blue-400 transition-colors tracking-wide uppercase">
             Upload
-          </button>
+          </Button>
         </div>
 
         {/* Featured Video - cinematic player */}
@@ -110,12 +111,12 @@ export function VideoMockup() {
 
         {/* Bottom actions - text only, no icons */}
         <div className="px-4 pb-4 flex gap-2">
-          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          <Button variant="ghost" className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Create Clip
-          </button>
-          <button className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
+          </Button>
+          <Button variant="ghost" className="flex-1 py-2.5 bg-white/5 hover:bg-white/10 text-white/60 text-label font-medium rounded-lg transition-colors ring-1 ring-white/10">
             Share
-          </button>
+          </Button>
         </div>
       </div>
     </div>

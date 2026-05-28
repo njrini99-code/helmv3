@@ -280,7 +280,7 @@ export function GolfTeamBroadcastModal({
                 {filteredPlayers.map(player => {
                   const isSelected = selectedPlayerIds.has(player.id);
                   return (
-                    <button
+                    <Button variant="primary"
                       key={player.id}
                       onClick={() => togglePlayer(player.id)}
                       className={cn(
@@ -306,7 +306,7 @@ export function GolfTeamBroadcastModal({
                           </p>
                         )}
                       </div>
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -381,7 +381,7 @@ export function GolfTeamBroadcastModal({
             <p className="text-xs font-medium text-warm-500 mb-2">Quick suggestions</p>
             <div className="flex flex-wrap gap-2">
               {['Team Updates', 'Practice', 'Travel Info', 'Competition'].map(suggestion => (
-                <button
+                <Button variant="primary"
                   key={suggestion}
                   onClick={() => setBroadcastTitle(suggestion)}
                   className={cn(
@@ -392,7 +392,7 @@ export function GolfTeamBroadcastModal({
                   )}
                 >
                   {suggestion}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

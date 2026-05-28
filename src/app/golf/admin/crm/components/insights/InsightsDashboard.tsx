@@ -18,6 +18,7 @@ import { DeliverabilityCards } from './DeliverabilityCards';
 import { TemplatePerformanceTable } from './TemplatePerformanceTable';
 import { TimeToOpenChart } from './TimeToOpenChart';
 import { ClickHeatmap } from './ClickHeatmap';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // InsightsDashboard — top-level orchestrator for `/golf/admin/crm/insights`.
@@ -90,7 +91,7 @@ export function InsightsDashboard() {
             {WINDOWS.map((w) => {
               const isActive = w.id === window;
               return (
-                <button
+                <Button variant="primary"
                   key={w.id}
                   role="tab"
                   aria-selected={isActive}
@@ -103,11 +104,11 @@ export function InsightsDashboard() {
                   )}
                 >
                   {w.label}
-                </button>
+                </Button>
               );
             })}
           </div>
-          <button
+          <IconButton variant="default"
             type="button"
             onClick={() => fetchAll(window)}
             disabled={loading}
@@ -120,7 +121,7 @@ export function InsightsDashboard() {
             )}
           >
             <IconRefresh size={14} className={loading ? 'animate-spin' : ''} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -131,12 +132,12 @@ export function InsightsDashboard() {
             <p className="text-sm font-semibold text-red-800">Couldn’t load insights</p>
             <p className="text-xs text-red-600 mt-0.5">{error}</p>
           </div>
-          <button
+          <Button variant="danger"
             onClick={() => fetchAll(window)}
             className="text-xs font-semibold text-red-700 hover:text-red-900"
           >
             Retry
-          </button>
+          </Button>
         </div>
       )}
 

@@ -6,6 +6,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { IconUsers, IconChevronRight, IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/ui/button';
 
 interface JoinRequest {
   id: string;
@@ -103,13 +104,13 @@ export function JoinRequestAlert({ className, onDismiss, dismissible = true }: J
             </Link>
 
             {dismissible && (
-              <button
+              <IconButton variant="default"
                 onClick={handleDismiss}
                 className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-colors"
                 aria-label="Dismiss"
               >
                 <IconX size={18} />
-              </button>
+              </IconButton>
             )}
           </div>
         </div>

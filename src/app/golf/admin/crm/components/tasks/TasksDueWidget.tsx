@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { IconButton } from '@/components/ui/button';
 import {
   IconCheck,
   IconClipboardList,
@@ -188,7 +189,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
         onClick && 'cursor-pointer hover:bg-warm-50/60',
       )}
     >
-      <button
+      <IconButton variant="primary"
         type="button"
         onClick={(e) => {
           e.stopPropagation();
@@ -198,7 +199,7 @@ function DueRow({ task, onComplete, onClick }: DueRowProps) {
         className="w-4 h-4 rounded-md border border-warm-300 hover:border-primary-500 hover:bg-primary-50 flex items-center justify-center flex-shrink-0 transition-colors"
       >
         <IconCheck size={10} className="opacity-0" />
-      </button>
+      </IconButton>
 
       <span
         className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', PRIORITY_DOT[task.priority])}

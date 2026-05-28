@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
 import { IconAlertCircle } from '@/components/icons';
+import { Button } from '@/components/ui/button';
 
 interface RoundSubmitOverlayProps {
   /** Whether the overlay is visible */
@@ -208,7 +209,7 @@ export function RoundSubmitOverlay({
                   <p className="text-sm text-warm-500 mb-4">
                     Loading your round review{successCountdown > 0 ? ` in ${successCountdown}s` : ''}...
                   </p>
-                  <button
+                  <Button variant="primary"
                     onClick={() => {
                       hasNavigatedRef.current = false;
                       navigateToRound();
@@ -216,7 +217,7 @@ export function RoundSubmitOverlay({
                     className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm"
                   >
                     View Round Review
-                  </button>
+                  </Button>
 
                   {/* Escape hatch if navigation hangs */}
                   <AnimatePresence>
@@ -227,12 +228,12 @@ export function RoundSubmitOverlay({
                         exit={{ opacity: 0, height: 0 }}
                         className="mt-3"
                       >
-                        <button
+                        <Button variant="ghost"
                           onClick={() => router.push('/golf/dashboard/rounds')}
                           className="w-full py-2.5 rounded-xl bg-warm-100 text-warm-600 text-sm font-medium hover:bg-warm-200 transition-colors"
                         >
                           Go to All Rounds
-                        </button>
+                        </Button>
                       </m.div>
                     )}
                   </AnimatePresence>
@@ -277,40 +278,40 @@ export function RoundSubmitOverlay({
               <div className="flex flex-col gap-3">
                 {/* Primary action: retry */}
                 {onRetry && (
-                  <button
+                  <Button variant="primary"
                     onClick={onRetry}
                     className="w-full py-3 rounded-xl bg-primary-600 text-white font-medium hover:bg-primary-700 active:bg-primary-800 transition-colors shadow-sm"
                   >
                     Retry Submit
-                  </button>
+                  </Button>
                 )}
 
                 {/* Secondary action: save & exit */}
                 {onSaveAndExit && (
-                  <button
+                  <Button variant="ghost"
                     onClick={onSaveAndExit}
                     className="w-full py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                   >
                     Save &amp; Exit
-                  </button>
+                  </Button>
                 )}
 
                 {/* Fallback: go back to editing */}
-                <button
+                <Button variant="ghost"
                   onClick={onGoBack}
                   className="w-full py-3 rounded-xl bg-warm-100 text-warm-700 font-medium hover:bg-warm-200 active:bg-warm-300 transition-colors"
                 >
                   Go Back
-                </button>
+                </Button>
 
                 {/* Destructive action: discard round */}
                 {onDiscard && (
-                  <button
+                  <Button variant="ghost"
                     onClick={onDiscard}
                     className="w-full py-3 rounded-xl bg-sf-red/5 text-sf-red border border-sf-red/20 font-medium hover:bg-sf-red/10 active:bg-sf-red/15 transition-colors"
                   >
                     Discard Round
-                  </button>
+                  </Button>
                 )}
               </div>
             </m.div>
@@ -375,18 +376,18 @@ export function RoundSubmitOverlay({
                       Taking longer than expected?
                     </p>
                     <div className="flex gap-3">
-                      <button
+                      <Button variant="ghost"
                         onClick={onGoBack}
                         className="flex-1 py-2.5 rounded-xl bg-warm-100 text-warm-600 text-sm font-medium hover:bg-warm-200 transition-colors"
                       >
                         Go Back
-                      </button>
-                      <button
+                      </Button>
+                      <Button variant="primary"
                         onClick={() => router.push('/golf/dashboard/rounds')}
                         className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
                       >
                         View Rounds
-                      </button>
+                      </Button>
                     </div>
                   </m.div>
                 )}

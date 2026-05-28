@@ -18,6 +18,7 @@ import { IconLayers3 as Layers3, IconRotateCcw as RotateCcw } from '@/components
 import { AdminAreaChart, AdminDonutChart, AdminProgressBar } from '../AdminChart';
 import { timeAgo } from '../admin-utils';
 import type { ErrorGroup, AffectedPlayer, DailyCount, TracerIncident } from './tracer-types';
+import { Button } from '@/components/ui/button';
 
 interface RawTrace {
   id: string;
@@ -337,7 +338,7 @@ export default function TracerErrorAnalytics({
             </div>
           </div>
 
-          <button
+          <Button variant="danger"
             type="button"
             onClick={() => handleCopy(visibleFeedSummary || 'No tracer incidents in the current view.', 'feed')}
             className={cn(
@@ -355,7 +356,7 @@ export default function TracerErrorAnalytics({
               : copyState?.target === 'feed' && copyState.status === 'error'
                 ? 'Copy failed'
                 : 'Copy visible diagnostics'}
-          </button>
+          </Button>
         </div>
 
         {resolveState && (
@@ -385,7 +386,7 @@ export default function TracerErrorAnalytics({
               { value: 'active', label: 'Active', count: activeIncidents.length },
               { value: 'resolved', label: 'Resolved', count: resolvedIncidents.length },
             ] as { value: QueueTab; label: string; count: number }[]).map((option) => (
-              <button
+              <Button variant="ghost"
                 key={option.value}
                 type="button"
                 onClick={() => setQueueTab(option.value)}
@@ -400,7 +401,7 @@ export default function TracerErrorAnalytics({
                 <span className="rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold text-warm-600 tabular-nums">
                   {option.count}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -410,7 +411,7 @@ export default function TracerErrorAnalytics({
               { value: 'critical', label: 'Critical + error', count: (queueTab === 'resolved' ? resolvedIncidents : activeIncidents).filter((incident) => incident.severity === 'critical' || incident.severity === 'error').length },
               { value: 'recent', label: 'Last 24h', count: recentIncidentCount },
             ] as { value: FeedMode; label: string; count: number }[]).map((option) => (
-              <button
+              <Button variant="ghost"
                 key={option.value}
                 type="button"
                 onClick={() => setFeedMode(option.value)}
@@ -425,7 +426,7 @@ export default function TracerErrorAnalytics({
                 <span className="rounded-full bg-warm-100 px-2 py-0.5 text-xs font-semibold text-warm-600 tabular-nums">
                   {option.count}
                 </span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -433,7 +434,7 @@ export default function TracerErrorAnalytics({
         <div className="mt-3 flex items-center gap-2 text-xs text-warm-500">
           <span>Sort:</span>
           {(['lastSeen', 'occurrences', 'severity', 'playerCount'] as const).map((sortKey) => (
-            <button
+            <Button variant="ghost"
               key={sortKey}
               type="button"
               onClick={() => setSortBy(sortKey)}
@@ -447,7 +448,7 @@ export default function TracerErrorAnalytics({
               {sortKey === 'lastSeen' ? 'Latest' :
                sortKey === 'occurrences' ? 'Most frequent' :
                sortKey === 'severity' ? 'Severity' : 'Most affected'}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -455,13 +456,13 @@ export default function TracerErrorAnalytics({
           <div className="mt-5 flex flex-col items-center justify-center rounded-2xl border border-white/35 bg-white/55 px-6 py-10 text-sm text-warm-500">
             <p>No tracer incidents match this filter.</p>
             {queueTab === 'active' && resolvedIncidents.length > 0 && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setQueueTab('resolved')}
                 className="mt-2 text-primary-600 hover:text-primary-700 font-medium underline underline-offset-2"
               >
                 View {resolvedIncidents.length} resolved incident{resolvedIncidents.length !== 1 ? 's' : ''}
-              </button>
+              </Button>
             )}
           </div>
         ) : (
@@ -537,7 +538,7 @@ export default function TracerErrorAnalytics({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 xl:justify-end">
-                      <button
+                      <Button variant="danger"
                         type="button"
                         onClick={() => handleCopy(incident.copySummary, incident.id)}
                         className={cn(
@@ -555,11 +556,11 @@ export default function TracerErrorAnalytics({
                           : copyState?.target === incident.id && copyState.status === 'error'
                             ? 'Copy failed'
                             : 'Copy'}
-                      </button>
+                      </Button>
 
                       {incident.status === 'open' && (
                         <>
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             onClick={() => {
                               setInvestigatingIds((prev) => {
@@ -578,8 +579,8 @@ export default function TracerErrorAnalytics({
                           >
                             <IconEye size={16} />
                             {investigatingIds.has(incident.id) ? 'Investigating' : 'Start investigating'}
-                          </button>
-                          <button
+                          </Button>
+                          <Button variant="primary"
                             type="button"
                             onClick={() => handleResolve(incident)}
                             disabled={resolvePending}
@@ -591,18 +592,18 @@ export default function TracerErrorAnalytics({
                           >
                             <RotateCcw size={16} />
                             {resolvePending ? 'Resolving...' : 'Mark resolved'}
-                          </button>
+                          </Button>
                         </>
                       )}
 
-                      <button
+                      <Button variant="ghost"
                         type="button"
                         onClick={() => setExpandedId(isExpanded ? null : incident.id)}
                         className="inline-flex items-center gap-2 rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-sm font-medium text-warm-700 transition-colors hover:bg-white"
                       >
                         {isExpanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
                         {isExpanded ? 'Hide detail' : 'Show detail'}
-                      </button>
+                      </Button>
                     </div>
                   </div>
 
@@ -687,7 +688,7 @@ export default function TracerErrorAnalytics({
       {/* Raw Traces — individual ungrouped error events */}
       {rawTraces.length > 0 && (
         <div className={cn(GLASS_CARD, 'p-4 md:p-5')}>
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setShowRawTraces(!showRawTraces)}
             className="flex w-full items-center justify-between"
@@ -702,7 +703,7 @@ export default function TracerErrorAnalytics({
               </div>
             </div>
             {showRawTraces ? <IconChevronUp size={18} className="text-warm-400" /> : <IconChevronDown size={18} className="text-warm-400" />}
-          </button>
+          </Button>
 
           {showRawTraces && (
             <div className="mt-4 space-y-2">
@@ -770,7 +771,7 @@ export default function TracerErrorAnalytics({
             <h3 className="text-sm font-semibold text-warm-900">Error Trend</h3>
             <div className="flex items-center gap-1 rounded-lg bg-warm-100/50 p-0.5">
               {TIME_RANGES.map((range) => (
-                <button
+                <Button variant="ghost"
                   key={range.label}
                   type="button"
                   onClick={() => setTimeRange(range.label)}
@@ -782,7 +783,7 @@ export default function TracerErrorAnalytics({
                   )}
                 >
                   {range.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>

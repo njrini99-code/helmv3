@@ -53,6 +53,7 @@ const TracerTab = lazy(() => import('./components/TracerTab').then(m => ({ defau
 
 // Real-time components
 import { AdminRealtimeProvider, useAdminRealtimeContext } from './components/AdminRealtimeProvider';
+import { Button, IconButton } from '@/components/ui/button';
 import {
   AdminErrorBoundary,
   StatSkeleton as ImprovedStatSkeleton,
@@ -492,7 +493,7 @@ function AdminDashboardContent() {
                 : false;
 
               return (
-                <button
+                <Button variant="ghost"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
@@ -554,7 +555,7 @@ function AdminDashboardContent() {
                       {tab.label}
                     </div>
                   )}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -697,12 +698,12 @@ function AdminDashboardContent() {
         )}
 
         {/* Collapse Toggle */}
-        <button
+        <Button variant="ghost"
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="absolute -right-4 top-20 w-8 h-8 rounded-full bg-[#1C1917] border border-white/20 flex items-center justify-center text-warm-400 hover:text-white transition-colors shadow-lg"
         >
           {sidebarCollapsed ? <IconChevronRight size={14} /> : <ChevronLeft size={14} />}
-        </button>
+        </Button>
       </aside>
 
       {/* Mobile Sidebar */}
@@ -718,19 +719,19 @@ function AdminDashboardContent() {
           <Link href="/golf/admin" className="flex items-center min-w-0">
             <AdminBrand />
           </Link>
-          <button
+          <IconButton variant="default" aria-label="Close"
             onClick={() => setMobileMenuOpen(false)}
             className="p-3 text-warm-400 hover:text-white transition-colors"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
         <nav className="flex-1 px-3 py-2 space-y-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id;
             const TabIcon = tab.Icon;
             return (
-              <button
+              <Button variant="ghost"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
@@ -742,7 +743,7 @@ function AdminDashboardContent() {
               >
                 <TabIcon size={20} className={cn(isActive && 'text-primary-400')} />
                 <span className="text-sm font-medium">{tab.label}</span>
-              </button>
+              </Button>
             );
           })}
           <Link
@@ -816,12 +817,12 @@ function AdminDashboardContent() {
           )}
         >
           <div className="flex items-center justify-between gap-2">
-            <button
+            <IconButton variant="default" aria-label="Open menu"
               onClick={() => setMobileMenuOpen(true)}
               className="lg:hidden p-2 -ml-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors shrink-0"
             >
               <Menu size={22} />
-            </button>
+            </IconButton>
 
             <div className="flex items-center gap-3 min-w-0">
               {lastRefresh && (
@@ -833,7 +834,7 @@ function AdminDashboardContent() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button
+              <IconButton variant="default" aria-label="Refresh"
                 onClick={() => loadData(true)}
                 disabled={isRefreshing}
                 className={cn(
@@ -843,7 +844,7 @@ function AdminDashboardContent() {
                 title="Refresh (R)"
               >
                 <IconRefresh size={18} />
-              </button>
+              </IconButton>
 
               <Link
                 href="/golf/admin/crm"
@@ -853,14 +854,14 @@ function AdminDashboardContent() {
                 <span className="hidden sm:inline">CRM</span>
               </Link>
 
-              <button
+              <IconButton variant="default"
                 onClick={handleSignOut}
                 className="p-2 rounded-xl text-warm-500 hover:text-warm-700 hover:bg-warm-100/80 active:bg-warm-200 transition-colors"
                 title="Sign Out"
                 aria-label="Sign out"
               >
                 <LogOut size={18} />
-              </button>
+              </IconButton>
             </div>
           </div>
         </header>
@@ -880,12 +881,12 @@ function AdminDashboardContent() {
               <p className="text-sm text-warm-500 mb-4">
                 Your session has expired or you are no longer authorized. Please log in again to continue.
               </p>
-              <button
+              <Button variant="primary"
                 onClick={() => router.push('/golf/login')}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors"
               >
                 Log In Again
-              </button>
+              </Button>
             </div>
           ) : error ? (
             <div
@@ -894,12 +895,12 @@ function AdminDashboardContent() {
               )}
             >
               <p className="text-red-600 font-medium">{error}</p>
-              <button
+              <Button variant="danger"
                 onClick={() => window.location.reload()}
                 className="mt-3 text-sm text-red-500 underline hover:text-red-700"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           ) : loading ? (
             <div className="space-y-6">

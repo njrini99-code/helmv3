@@ -12,6 +12,7 @@ import {
 import type { ExtendedPattern, PatternSeverity } from '@/app/golf/actions/pattern-management';
 import { useFocusTrap } from '@/hooks/use-focus-trap';
 import { triggerHaptic } from '@/lib/utils/capacitor';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -149,13 +150,13 @@ export function PatternValidationModal({
                     </p>
                   </div>
                 </div>
-                <button
+                <IconButton variant="default"
                   onClick={onClose}
                   aria-label="Close"
                   className="p-2 rounded-lg text-warm-400 hover:text-warm-600 hover:bg-warm-100 active:bg-warm-200 transition-colors"
                 >
                   <IconX size={20} />
-                </button>
+                </IconButton>
               </div>
 
               {/* Content */}
@@ -199,7 +200,7 @@ export function PatternValidationModal({
                   </label>
                   <div className="space-y-2">
                     {severityOptions.map(option => (
-                      <button
+                      <Button variant="ghost"
                         key={option.value}
                         onClick={() => setSelectedSeverity(option.value)}
                         className={cn(
@@ -230,7 +231,7 @@ export function PatternValidationModal({
                             {option.description}
                           </div>
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -269,7 +270,7 @@ export function PatternValidationModal({
                       </div>
                     </div>
                   </div>
-                  <button
+                  <IconButton variant="primary" aria-label="Button"
                     type="button"
                     role="switch"
                     aria-checked={createFocusArea}
@@ -288,13 +289,13 @@ export function PatternValidationModal({
                         createFocusArea ? 'translate-x-6' : 'translate-x-1'
                       )}
                     />
-                  </button>
+                  </IconButton>
                 </div>
               </div>
 
               {/* Footer */}
               <div className="flex items-center justify-between px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
-                <button
+                <Button variant="ghost"
                   onClick={handleReject}
                   disabled={isLoading}
                   className={cn(
@@ -305,9 +306,9 @@ export function PatternValidationModal({
                 >
                   <IconX size={16} />
                   Pattern is Incorrect
-                </button>
+                </Button>
 
-                <button
+                <Button variant="primary"
                   onClick={handleConfirm}
                   disabled={isLoading}
                   className={cn(
@@ -326,7 +327,7 @@ export function PatternValidationModal({
                     <IconCheck size={16} />
                   )}
                   Confirm Pattern
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>

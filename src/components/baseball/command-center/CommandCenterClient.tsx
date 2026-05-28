@@ -17,6 +17,7 @@ import {
   IconMinus,
 } from '@/components/icons';
 import type { BaseballRosterPlayer, BaseballCoachInsight } from '@/lib/types';
+import { Button } from '@/components/ui/button';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ function PlayerRosterCard({
   const trend = player.aggregates?.recent_trend;
 
   return (
-    <button
+    <Button variant="ghost"
       onClick={onClick}
       className="w-full text-left bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4
                  shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
@@ -173,7 +174,7 @@ function PlayerRosterCard({
           </div>
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -351,12 +352,12 @@ export function CommandCenterClient({
                 />
               )}
               <Link href="/baseball/dashboard/stats/upload">
-                <button className="flex items-center gap-2 px-4 py-2 bg-cream-100/75 backdrop-blur-sm
+                <Button variant="ghost" className="flex items-center gap-2 px-4 py-2 bg-cream-100/75 backdrop-blur-sm
                                    border border-white/20 rounded-xl text-sm font-medium text-warm-700
                                    hover:bg-white hover:shadow-sm transition-[background-color,box-shadow]">
                   <IconUpload size={16} />
                   <span className="hidden sm:inline">Upload Stats</span>
-                </button>
+                </Button>
               </Link>
             </div>
           </div>
@@ -380,7 +381,7 @@ export function CommandCenterClient({
               {weekDays.map((day) => {
                 const dayEvents = eventsByDay.get(day.date.toDateString()) ?? [];
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={day.date.toISOString()}
                     onClick={() => router.push('/baseball/dashboard/calendar')}
                     className="flex flex-col items-center py-2.5 px-1 rounded-xl transition-colors group hover:bg-warm-50"
@@ -406,7 +407,7 @@ export function CommandCenterClient({
                         />
                       ))}
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -418,7 +419,7 @@ export function CommandCenterClient({
               { id: 'roster' as const, label: 'Roster', icon: <IconUsers size={15} /> },
               { id: 'stats' as const, label: 'Stats', icon: <IconChartBar size={15} /> },
             ]).map(({ id, label, icon }) => (
-              <button
+              <Button variant="primary"
                 key={id}
                 onClick={() => setActiveTab(id)}
                 className={`flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-medium transition-[color,background-color,box-shadow] ${
@@ -429,7 +430,7 @@ export function CommandCenterClient({
               >
                 {icon}
                 {label}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -481,11 +482,11 @@ export function CommandCenterClient({
 
                 {/* Upload stats */}
                 <Link href="/baseball/dashboard/stats/upload" className="sm:ml-auto">
-                  <button className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-warm-500
+                  <Button variant="ghost" className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-warm-500
                                      bg-cream-100/68 border border-warm-200/60 rounded-xl hover:bg-white transition-colors whitespace-nowrap">
                     <IconUpload size={14} />
                     Upload Stats
-                  </button>
+                  </Button>
                 </Link>
               </div>
 
@@ -510,12 +511,12 @@ export function CommandCenterClient({
               ) : filteredPlayers.length === 0 ? (
                 <div className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl shadow-sm p-10 text-center">
                   <p className="text-warm-500">No players match your search.</p>
-                  <button
+                  <Button variant="ghost"
                     onClick={() => { setSearchQuery(''); setPositionFilter('all'); }}
                     className="mt-3 text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
                     Clear filters
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -593,7 +594,7 @@ export function CommandCenterClient({
                     {/* Stat type filter */}
                     <div className="flex bg-cream-100/75 border border-warm-200/60 rounded-xl p-0.5 gap-0.5">
                       {(['all', 'game', 'scrimmage'] as const).map((t) => (
-                        <button
+                        <Button variant="primary"
                           key={t}
                           onClick={() => setStatTypeFilter(t)}
                           className={`px-3 py-1 rounded-lg text-xs font-medium transition-[color,background-color] ${
@@ -603,7 +604,7 @@ export function CommandCenterClient({
                           }`}
                         >
                           {t.charAt(0).toUpperCase() + t.slice(1)}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                     {/* Position filter */}

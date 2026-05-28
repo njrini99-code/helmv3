@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { IconX, IconUpload, IconFile } from '@/components/icons';
+import { Button, IconButton } from '@/components/ui/button';
 
 interface UploadNewVersionModalProps {
   open: boolean;
@@ -104,13 +105,13 @@ export function UploadNewVersionModal({
             <h2 className="text-lg font-semibold text-warm-900">Upload New Version</h2>
             <p className="text-sm text-warm-500 mt-0.5">{documentTitle}</p>
           </div>
-          <button
+          <IconButton variant="default" aria-label="Close"
             onClick={handleClose}
             disabled={uploading}
             className="p-2 hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             <IconX size={20} />
-          </button>
+          </IconButton>
         </div>
 
         {/* Content */}
@@ -165,7 +166,7 @@ export function UploadNewVersionModal({
                 <p className="text-sm text-warm-500 mt-1">
                   {formatFileSize(selectedFile.size)}
                 </p>
-                <button
+                <Button variant="ghost"
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedFile(null);
@@ -173,7 +174,7 @@ export function UploadNewVersionModal({
                   className="mt-3 text-sm text-warm-500 hover:text-warm-700 underline"
                 >
                   Choose different file
-                </button>
+                </Button>
               </div>
             ) : (
               <div>
@@ -205,14 +206,14 @@ export function UploadNewVersionModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-warm-200 bg-warm-50 rounded-b-2xl">
-          <button
+          <Button variant="ghost"
             onClick={handleClose}
             disabled={uploading}
             className="px-4 py-2 text-warm-700 font-medium hover:bg-warm-100 active:bg-warm-200 rounded-lg transition-colors disabled:opacity-50"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button variant="primary"
             onClick={handleSubmit}
             disabled={!selectedFile || uploading}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
@@ -228,7 +229,7 @@ export function UploadNewVersionModal({
                 Upload Version
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

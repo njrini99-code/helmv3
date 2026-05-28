@@ -51,6 +51,7 @@ import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
 import type { HoleFormat } from '@/components/golf/stats/sections/shared-primitives';
+import { Button, IconButton } from '@/components/ui/button';
 
 // ============================================================================
 // TYPES
@@ -213,7 +214,7 @@ function PlayerCard({
     : player.stats?.best_round;
 
   return (
-    <button
+    <Button variant="ghost"
       onClick={onClick}
       className="w-full group surface-matte rounded-3xl p-4 hover:hover:-translate-y-0.5 hover:bg-cream-100/82 active:bg-cream-50/92 transition-[transform,box-shadow,background-color] duration-200 text-left"
     >
@@ -282,7 +283,7 @@ function PlayerCard({
           <IconChevronRight size={20} className="text-warm-300 group-hover:text-warm-500 transition-colors" />
         </div>
       </div>
-    </button>
+    </Button>
   );
 }
 
@@ -1061,7 +1062,7 @@ export default function StatsClient({
         backHref={userRole === 'coach' ? '/golf/dashboard/stats' : undefined}
         backLabel={userRole === 'coach' ? 'Team Stats' : undefined}
       >
-        <button
+        <IconButton variant="default"
           onClick={handleRefresh}
           disabled={loadingDetailed || intelligenceRefreshing}
           className="flex h-10 w-10 items-center justify-center rounded-xl border border-warm-200 bg-cream-100/82 text-warm-600 shadow-sm transition-colors hover:border-primary-300 hover:text-primary-600 disabled:opacity-50"
@@ -1072,19 +1073,19 @@ export default function StatsClient({
             size={18}
             className={loadingDetailed || intelligenceRefreshing ? 'animate-spin' : undefined}
           />
-        </button>
+        </IconButton>
       </LargeTitleHeader>
 
       {/* Floating Back Button for Coaches */}
       {userRole === 'coach' && (
-        <button
+        <IconButton variant="default"
           onClick={handleBackClick}
           aria-label="Go back"
           className="group fixed left-4 z-50 hidden h-12 w-12 items-center justify-center rounded-xl border border-warm-200 bg-cream-50/92 backdrop-blur-sm shadow-lg transition-colors hover:bg-white hover:shadow-xl lg:flex"
           style={{ top: 'max(1rem, env(safe-area-inset-top, 0.5rem))' }}
         >
           <IconChevronLeft size={20} className="text-warm-600 group-hover:text-primary-600 transition-colors" />
-        </button>
+        </IconButton>
       )}
 
       {/* Editorial hero band — sits between the sticky title header and
@@ -1185,13 +1186,13 @@ export default function StatsClient({
             </div>
             <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Something Went Wrong</h2>
             <p className="text-warm-500 max-w-sm mx-auto mb-6">{statsError}</p>
-            <button
+            <Button variant="primary"
               onClick={handleRefresh}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium transition-colors"
             >
               <IconRefresh size={16} />
               Try Again
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

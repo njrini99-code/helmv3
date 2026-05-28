@@ -5,6 +5,7 @@ import type { AdminDashboardData } from '@/app/golf/actions/admin-data';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconChevronDown, IconChevronRight } from '@/components/icons';
 import { timeAgo } from './admin-utils';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   teamRosters: AdminDashboardData['teamRosters'];
@@ -60,18 +61,18 @@ export function TeamRosterCard({ teamRosters }: Props) {
           </div>
         </div>
         <div className="flex gap-1.5">
-          <button
+          <Button variant="ghost"
             onClick={expandAll}
             className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-white/50 rounded-lg hover:bg-white/70 transition-all"
           >
             Expand All
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             onClick={collapseAll}
             className="px-2.5 py-1 text-xs text-warm-500 hover:text-warm-700 bg-white/50 rounded-lg hover:bg-white/70 transition-all"
           >
             Collapse
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -82,7 +83,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
           return (
             <div key={team.id} className="bg-white/50 rounded-xl overflow-hidden transition-all duration-200">
               {/* Team header - clickable */}
-              <button
+              <Button variant="ghost"
                 onClick={() => toggleTeam(team.id)}
                 className="w-full flex items-center justify-between p-4 text-left hover:bg-white/70 transition-colors"
               >
@@ -101,7 +102,7 @@ export function TeamRosterCard({ teamRosters }: Props) {
                   <span>{team.players.length} players</span>
                   <span>{team.coaches.length} coaches</span>
                 </div>
-              </button>
+              </Button>
 
               {/* Expanded roster */}
               {isExpanded && (
