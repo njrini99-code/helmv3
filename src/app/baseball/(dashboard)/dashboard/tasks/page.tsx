@@ -14,7 +14,7 @@ import type { BaseballTask } from '@/app/baseball/actions/tasks';
 import { TasksList } from '@/components/baseball/tasks/TasksList';
 import { CreateTaskModal } from '@/components/baseball/tasks/CreateTaskModal';
 import { ReminderBanner } from '@/components/baseball/tasks/ReminderBanner';
-import { TaskListSkeleton } from '@/components/baseball/tasks/TaskSkeleton';
+import { TaskListSkeleton } from '@/components/ui/skeleton';
 
 interface RosterPlayer {
   id: string;

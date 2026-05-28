@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonDiscover } from '@/components/ui/skeleton-loader';
+import { SkeletonDiscover } from '@/components/ui/skeleton';
 
 export default function DiscoverLoading() {
   return (

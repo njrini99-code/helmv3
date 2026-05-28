@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { TooltipContentProps } from 'recharts/types/component/Tooltip';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconChart,

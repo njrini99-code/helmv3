@@ -1,4 +1,4 @@
-import { RoundsListSkeleton } from '@/components/golf/GolfSkeletons';
+import { RoundsListSkeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return <RoundsListSkeleton />;

@@ -28,7 +28,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import GolfStatsDisplay, { Sparkline } from '@/components/golf/stats/GolfStatsDisplay';
 import { generateStatisticalStrengthsWeaknesses } from '@/lib/golf/strokes-gained';
-import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { DetailedStatsSkeleton, StatsPageSkeleton } from '@/components/ui/skeleton';
 import { StatsIntelligenceStrip } from '@/components/golf/stats/StatsIntelligenceStrip';
 import { refreshPlayerAnalysisAsCoach } from '@/app/golf/actions/insights';
 import {

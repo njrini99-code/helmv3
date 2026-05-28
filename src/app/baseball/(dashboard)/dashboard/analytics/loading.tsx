@@ -1,6 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonStat } from '@/components/ui/skeleton-loader';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton, SkeletonStat } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (

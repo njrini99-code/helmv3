@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonMessages } from '@/components/ui/skeleton-loader';
+import { SkeletonMessages } from '@/components/ui/skeleton';
 
 export default function MessagesLoading() {
   return (

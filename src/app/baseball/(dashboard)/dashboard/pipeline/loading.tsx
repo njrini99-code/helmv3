@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonPipelineKanban } from '@/components/ui/skeleton-loader';
+import { SkeletonPipelineKanban } from '@/components/ui/skeleton';
 
 export default function PipelineLoading() {
   return (

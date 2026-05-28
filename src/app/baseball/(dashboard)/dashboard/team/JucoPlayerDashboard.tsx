@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import { StatCard } from '@/components/features/stat-card';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   IconEye,
   IconStar,

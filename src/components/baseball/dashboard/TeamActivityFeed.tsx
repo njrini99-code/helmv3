@@ -1,7 +1,7 @@
 'use client';
 
 import { Avatar } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconActivity,

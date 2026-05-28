@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/header';
 import { PipelineColumn } from '@/components/features/pipeline-column';
 import { PipelineCard } from '@/components/features/pipeline-card';
 import { PageLoading } from '@/components/ui/loading';
-import { SkeletonPipeline } from '@/components/ui/skeleton-loader';
+import { SkeletonPipeline } from '@/components/ui/skeleton';
 import { Button, IconButton } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { EmptyState } from '@/components/ui/empty-state';

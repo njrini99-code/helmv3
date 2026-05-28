@@ -1,4 +1,4 @@
-import { AnnouncementCardSkeleton } from '@/components/golf/GolfSkeletons';
+import { AnnouncementCardSkeleton } from '@/components/ui/skeleton';
 import { Shimmer } from '@/components/ui/shimmer';
 
 export default function Loading() {

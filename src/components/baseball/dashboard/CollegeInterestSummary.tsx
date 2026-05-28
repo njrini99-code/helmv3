@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ShineEffect } from '@/components/ui/shine-effect';
 import {
   IconEye,

@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { SkeletonDashboard } from '@/components/ui/skeleton-loader';
+import { SkeletonDashboard } from '@/components/ui/skeleton';
 
 export default function DashboardLoading() {
   return (

@@ -1,4 +1,4 @@
-import { GenericPageSkeleton } from '@/components/golf/GolfSkeletons';
+import { GenericPageSkeleton } from '@/components/ui/skeleton';
 
 export default function IntelligenceLoading() {
   return <GenericPageSkeleton />;

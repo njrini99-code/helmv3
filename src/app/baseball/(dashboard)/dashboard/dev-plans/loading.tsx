@@ -1,5 +1,5 @@
 import { Header } from '@/components/layout/header';
-import { Skeleton } from '@/components/ui/skeleton-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Loading() {
   return (
