@@ -53,16 +53,16 @@ interface EmptyStateConfig {
 const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   roster: {
     icon: <IconUsers size={40} />,
-    title: 'No Players Yet',
-    description: 'Start building your team by adding players to your roster.',
+    title: 'Your roster is empty',
+    description: 'Add your first player to start building the lineup.',
     action: {
       label: 'Add First Player',
     },
   },
   rounds: {
     icon: <IconGolf size={40} />,
-    title: 'No Rounds Recorded',
-    description: 'Track your performance by submitting your first round.',
+    title: 'No rounds on the card',
+    description: 'Post your first round to start tracking your game.',
     action: {
       label: 'Submit Round',
       href: '/golf/dashboard/rounds/new',
@@ -70,24 +70,24 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   calendar: {
     icon: <IconCalendar size={40} />,
-    title: 'No Upcoming Events',
-    description: 'Your calendar is clear. Schedule practices, tournaments, or team meetings.',
+    title: 'Nothing on the schedule',
+    description: 'Add a practice, tournament, or team meeting to fill the calendar.',
     action: {
       label: 'Create Event',
     },
   },
   messages: {
     icon: <IconMessage size={40} />,
-    title: 'No Conversations',
-    description: 'Start communicating with your team members.',
+    title: 'No conversations yet',
+    description: 'Start a thread to keep the team in the loop.',
     action: {
       label: 'New Message',
     },
   },
   stats: {
     icon: <IconChart size={40} />,
-    title: 'No Stats Available',
-    description: 'Stats will appear here once rounds are recorded.',
+    title: 'No stats to show yet',
+    description: 'Post a round and your numbers will start building here.',
     action: {
       label: 'Submit a Round',
       href: '/golf/dashboard/rounds/new',
@@ -95,37 +95,37 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   qualifiers: {
     icon: <IconFlag size={40} />,
-    title: 'No Qualifiers',
-    description: 'Create a qualifier to determine your tournament lineup.',
+    title: 'No qualifiers running',
+    description: 'Set up a qualifier to settle who earns the travel lineup.',
     action: {
       label: 'Create Qualifier',
     },
   },
   announcements: {
     icon: <IconBook size={40} />,
-    title: 'No Announcements',
-    description: 'Keep your team informed with important updates.',
+    title: 'No announcements posted',
+    description: 'Post an update to keep the team on the same page.',
     action: {
       label: 'Post Announcement',
     },
   },
   travel: {
     icon: <IconAirplane size={40} />,
-    title: 'No Travel Plans',
-    description: 'Plan your next trip and share itineraries with your team.',
+    title: 'No trips planned',
+    description: 'Build an itinerary so the team knows where and when to show up.',
     action: {
       label: 'Create Itinerary',
     },
   },
   search: {
     icon: <IconSearch size={40} />,
-    title: 'No Results Found',
-    description: 'Try adjusting your search terms or filters.',
+    title: 'No matches found',
+    description: 'Tweak your search or clear a filter to widen the results.',
   },
   watchlist: {
     icon: <IconStar size={40} />,
-    title: 'No Players in Watchlist',
-    description: 'Start building your recruiting pipeline by adding players to watch.',
+    title: 'Your watchlist is empty',
+    description: 'Star players you are tracking to build your recruiting board.',
     action: {
       label: 'Discover Players',
       href: '/baseball/dashboard/discover',
@@ -133,8 +133,8 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   pipeline: {
     icon: <IconTarget size={40} />,
-    title: 'Empty Pipeline',
-    description: 'Add recruits to your pipeline to track their recruiting status.',
+    title: 'Your pipeline is empty',
+    description: 'Add recruits to follow each prospect through every stage.',
     action: {
       label: 'Find Recruits',
       href: '/baseball/dashboard/discover',
@@ -142,13 +142,13 @@ const emptyStateConfigs: Record<EmptyStateType, EmptyStateConfig> = {
   },
   camps: {
     icon: <IconCalendar size={40} />,
-    title: 'No Camps Available',
-    description: 'Check back soon for upcoming camps and showcases.',
+    title: 'No camps on the calendar',
+    description: 'Check back soon — upcoming camps and showcases will land here.',
   },
   videos: {
     icon: <IconVideo size={40} />,
-    title: 'No Videos Yet',
-    description: 'Upload your first highlight video to showcase your skills.',
+    title: 'No film on file',
+    description: 'Upload a highlight clip to put your swing in front of coaches.',
     action: {
       label: 'Upload Video',
     },
