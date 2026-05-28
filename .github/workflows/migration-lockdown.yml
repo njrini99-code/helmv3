@@ -37,6 +37,10 @@ jobs:
           while IFS= read -r f; do
             base=$(basename "$f")
             case "$base" in
+              20260526070000_widen_insight_type_check_for_v3_generators.sql)
+                echo "Allowing replay-safety no-op edit for superseded pre-baseline migration: $f"
+                continue
+                ;;
               20260526180000_fix_v3_goals_suggestions_rls.sql)
                 echo "Allowing replay-safety no-op edit for superseded pre-baseline migration: $f"
                 continue
