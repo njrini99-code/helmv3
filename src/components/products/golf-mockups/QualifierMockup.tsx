@@ -77,7 +77,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Decorative element */}
-      <div className="absolute -bottom-4 left-1/2 -tranwarm-x-1/2 w-3/4 h-8 bg-amber-500/10 blur-xl rounded-full" />
+      <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-3/4 h-8 bg-amber-500/10 blur-xl rounded-full" />
     </div>
   );
 }

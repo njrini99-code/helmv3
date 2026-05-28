@@ -53,7 +53,7 @@ function PipelineCard({ isDragging }: { isDragging?: boolean }) {
       "bg-white rounded p-1.5",
       "border border-warm-100",
       "shadow-[0_1px_2px_rgba(0,0,0,0.04)]",
-      isDragging && "ring-2 ring-primary-300 shadow-md tranwarm-x-1 -tranwarm-y-1"
+      isDragging && "ring-2 ring-primary-300 shadow-md translate-x-1 -translate-y-1"
     )}>
       <div className="flex items-center gap-1.5">
         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-warm-200 to-warm-300 flex-shrink-0" />

@@ -187,7 +187,7 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
     <m.div
       variants={fadeUp}
       onClick={onExpand}
-      className="group relative surface-matte rounded-3xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-tranwarm-y-0.5"
+      className="group relative surface-matte rounded-3xl overflow-clip cursor-pointer transition-[transform,box-shadow] duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
       {/* Colored top accent based on trip proximity */}
       <div className={cn(
@@ -240,7 +240,7 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
             </div>
           </div>
 
-          <IconChevronRight size={18} className="text-warm-300 group-hover:text-warm-500 group-hover:tranwarm-x-0.5 transition-[color,transform] flex-shrink-0 mt-1" />
+          <IconChevronRight size={18} className="text-warm-300 group-hover:text-warm-500 group-hover:translate-x-0.5 transition-[color,transform] flex-shrink-0 mt-1" />
         </div>
       </div>
     </m.div>
@@ -427,7 +427,7 @@ const PlayerTaskCard = memo(function PlayerTaskCard({
       className={cn(
         'relative surface-matte rounded-3xl overflow-clip transition-[transform,box-shadow] duration-300',
         isCompleted && 'opacity-60',
-        !isCompleted && 'hover:shadow-lg hover:-tranwarm-y-0.5',
+        !isCompleted && 'hover:shadow-lg hover:-translate-y-0.5',
       )}
     >
       {/* Urgency accent */}
@@ -533,7 +533,7 @@ const EventRSVPCard = memo(function EventRSVPCard({
       variants={fadeUp}
       className={cn(
         'relative surface-matte rounded-3xl overflow-clip transition-[transform,box-shadow] duration-300',
-        !isPast && 'hover:shadow-lg hover:-tranwarm-y-0.5',
+        !isPast && 'hover:shadow-lg hover:-translate-y-0.5',
         isPast && 'opacity-60',
       )}
     >

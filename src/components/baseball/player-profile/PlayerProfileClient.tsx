@@ -782,7 +782,7 @@ export function PlayerProfileClient({
                   AVG · OBP · SLG · OPS · ERA · WHIP · game log
                 </p>
               </div>
-              <span className="text-primary-600 text-sm font-medium group-hover:tranwarm-x-1 transition-transform">
+              <span className="text-primary-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
                 View →
               </span>
             </Link>

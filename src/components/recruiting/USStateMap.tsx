@@ -419,7 +419,7 @@ export const USStateMap = memo(function USStateMap({
 
             {/* Pointer arrow */}
             <div
-              className="absolute -left-2 top-1/2 -tranwarm-y-1/2 w-4 h-4 rotate-45"
+              className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rotate-45"
               style={{
                 background: 'rgba(15, 23, 42, 0.92)',
                 borderLeft: '1px solid rgba(255, 255, 255, 0.12)',

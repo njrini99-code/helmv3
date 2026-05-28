@@ -220,8 +220,8 @@ export function Select({
               'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
               'transition-[opacity,transform] duration-150 ease-out origin-top',
               isAnimating
-                ? 'opacity-100 scale-y-100 tranwarm-y-0'
-                : 'opacity-0 scale-y-95 -tranwarm-y-1'
+                ? 'opacity-100 scale-y-100 translate-y-0'
+                : 'opacity-0 scale-y-95 -translate-y-1'
             )}
           >
             {searchable && (
@@ -439,8 +439,8 @@ export function MultiSelect({
               'absolute z-50 w-full mt-1 bg-white rounded-[14px] border border-warm-200 shadow-lg overflow-hidden',
               'transition-[opacity,transform] duration-150 ease-out origin-top',
               isAnimating
-                ? 'opacity-100 scale-y-100 tranwarm-y-0'
-                : 'opacity-0 scale-y-95 -tranwarm-y-1'
+                ? 'opacity-100 scale-y-100 translate-y-0'
+                : 'opacity-0 scale-y-95 -translate-y-1'
             )}
           >
             <div className="max-h-60 overflow-y-auto py-1" role="listbox" aria-multiselectable="true">

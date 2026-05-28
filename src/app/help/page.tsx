@@ -177,7 +177,7 @@ export default function HelpPage() {
         <div className="relative mb-8">
           <Search
             size={20}
-            className="absolute left-4 top-1/2 -tranwarm-y-1/2 text-warm-400"
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-warm-400"
           />
           <input
             type="text"

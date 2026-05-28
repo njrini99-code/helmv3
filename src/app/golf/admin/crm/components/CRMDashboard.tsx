@@ -534,13 +534,13 @@ export function CRMDashboard({
                 <button
                   onClick={() => handleResearchNext(10)}
                   disabled={processing === 'research' || (stats.byStatus.new_lead || 0) === 0}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-500 text-white hover:bg-primary-600 transition-all duration-200 shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-tranwarm-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm bg-primary-500 text-white hover:bg-primary-600 transition-all duration-200 shadow-sm shadow-primary-500/25 disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 hover:shadow-md flex-1 sm:flex-initial"
                 >
                   <IconArrowRight size={16} /> Move to Pipeline
                 </button>
                 <button
                   onClick={() => onNavigate('pipeline')}
-                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-tranwarm-y-0.5 flex-1 sm:flex-initial"
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white/60 border border-warm-200 text-warm-700 rounded-xl font-medium hover:bg-warm-50 active:bg-warm-100 transition-all duration-200 text-sm hover:-translate-y-0.5 flex-1 sm:flex-initial"
                 >
                   <IconChartBar size={16} /> Open Pipeline
                 </button>
@@ -597,7 +597,7 @@ function KPICard({
       'shadow-sm',
       'p-5',
       'transition-[transform,box-shadow] duration-200 group',
-      'hover:-tranwarm-y-0.5 hover:shadow-lg',
+      'hover:-translate-y-0.5 hover:shadow-lg',
       accent && 'border-l-[3px] border-l-primary-500',
       className
     )}>

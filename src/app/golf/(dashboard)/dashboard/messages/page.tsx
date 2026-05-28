@@ -559,7 +559,7 @@ export default function GolfMessagesPage() {
                               {/* Desktop: absolute positioned, hover reveal */}
                               <div className={cn(
                                 'absolute hidden lg:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity',
-                                'right-full mr-1 top-1/2 -tranwarm-y-1/2'
+                                'right-full mr-1 top-1/2 -translate-y-1/2'
                               )}>
                                 <button
                                   onClick={() => handleStartEdit(msg.id, msg.content)}

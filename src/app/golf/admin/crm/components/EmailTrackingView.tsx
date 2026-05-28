@@ -909,7 +909,7 @@ function StatCard({
       'bg-white/70 backdrop-blur-xl border border-white/20 rounded-2xl p-5',
       'shadow-glass',
       'transition-[transform,box-shadow] duration-200 group',
-      'hover:-tranwarm-y-0.5 hover:shadow-lg',
+      'hover:-translate-y-0.5 hover:shadow-lg',
     )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">

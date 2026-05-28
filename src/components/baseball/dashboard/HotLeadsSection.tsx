@@ -205,7 +205,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
             <h2 className="font-semibold text-warm-900 tracking-tight">Hot Leads</h2>
           </div>
           <Link href="/baseball/dashboard/pipeline" className="text-sm text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
-            Pipeline <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
+            Pipeline <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
         <div className="flex flex-col items-center justify-center py-12 px-6">
@@ -240,7 +240,7 @@ export function HotLeadsSection({ watchlist, loading }: HotLeadsSectionProps) {
           </div>
         </div>
         <Link href="/baseball/dashboard/pipeline" className="text-sm text-warm-500 hover:text-warm-900 flex items-center gap-1 transition-colors group">
-          View all <IconChevronRight size={14} className="group-hover:tranwarm-x-0.5 transition-transform" />
+          View all <IconChevronRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
       <div className="divide-y divide-warm-100/50">

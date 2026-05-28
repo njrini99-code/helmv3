@@ -84,7 +84,7 @@ export function SearchBar({
       <div className="relative flex-1 group">
         <IconSearch
           size={18}
-          className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400
                      transition-colors group-focus-within:text-warm-600 pointer-events-none"
         />
         <input
@@ -110,7 +110,7 @@ export function SearchBar({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-1 top-1/2 -tranwarm-y-1/2 min-w-[44px] min-h-[44px] p-2
+            className="absolute right-1 top-1/2 -translate-y-1/2 min-w-[44px] min-h-[44px] p-2
                        flex items-center justify-center rounded-full
                        text-warm-400 hover:text-warm-600 hover:bg-warm-100
                        transition-colors"
@@ -165,7 +165,7 @@ export function CompactSearch({
     <div className={cn('relative', className)}>
       <IconSearch
         size={16}
-        className="absolute left-2.5 top-1/2 -tranwarm-y-1/2 text-warm-400 pointer-events-none"
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
       />
       <input
         type="text"

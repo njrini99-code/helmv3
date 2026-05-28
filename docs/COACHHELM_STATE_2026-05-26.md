@@ -1208,7 +1208,7 @@ Summarized from `.full-review-2026-05-17-golfhelm-audit/05-final-report.md`. Ful
 
 ### P3 — Low / Backlog
 
-- **Finding 7** — `tranwarm-*` typo: 206 occurrences across 126 files (76 in scope) — global rename + add `eslint-plugin-tailwindcss`
+- **Finding 7** — `translate-*` typo: 206 occurrences across 126 files (76 in scope) — global rename + add `eslint-plugin-tailwindcss`
 - **P-HIGH-2** — Replace HTTP self-call fetch with `after()` (rolls into Finding 2)
 - **Q-NEW-11** — Replace `console.error`/`console.debug` in `coachhelm/v2/` with `logServerError`
 - **Q-NEW-13** — Add unit invariant: `unit === 'percent' → 0 <= value <= 1`

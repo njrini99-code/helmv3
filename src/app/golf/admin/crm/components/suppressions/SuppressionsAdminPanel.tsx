@@ -150,7 +150,7 @@ export function SuppressionsAdminPanel() {
           <div className="relative">
             <IconMail
               size={14}
-              className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400 pointer-events-none"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400 pointer-events-none"
             />
             <input
               type="email"

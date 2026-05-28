@@ -197,7 +197,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       />
 
       {/* Dialog */}
-      <div className="absolute top-[20%] left-1/2 -tranwarm-x-1/2 w-full max-w-lg animate-scale-in">
+      <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-full max-w-lg animate-scale-in">
         <div className={cn(
           'bg-cream-100/68 backdrop-blur-[24px]',
           'rounded-2xl',

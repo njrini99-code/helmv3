@@ -12,10 +12,10 @@ export function ShotTrackingMockup() {
       {/* Course illustration */}
       <div className="absolute inset-0">
         {/* Fairway */}
-        <div className="absolute left-8 top-1/2 -tranwarm-y-1/2 w-[60%] h-24 bg-emerald-200/60 rounded-full blur-sm" />
+        <div className="absolute left-8 top-1/2 -translate-y-1/2 w-[60%] h-24 bg-emerald-200/60 rounded-full blur-sm" />
 
         {/* Green */}
-        <div className="absolute right-12 top-1/2 -tranwarm-y-1/2 w-20 h-20 bg-emerald-300/80 rounded-full" />
+        <div className="absolute right-12 top-1/2 -translate-y-1/2 w-20 h-20 bg-emerald-300/80 rounded-full" />
 
         {/* Flag */}
         <div className="absolute right-[70px] top-[38%]">
@@ -24,7 +24,7 @@ export function ShotTrackingMockup() {
         </div>
 
         {/* Tee box */}
-        <div className="absolute left-4 top-1/2 -tranwarm-y-1/2 w-6 h-6 bg-warm-300/60 rounded" />
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 bg-warm-300/60 rounded" />
       </div>
 
       {/* Shot path - animated dots */}

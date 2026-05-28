@@ -126,7 +126,7 @@ export function RecruitingPageClient({
               className={cn(
                 'group relative flex flex-col items-start gap-1.5 px-5 py-4 rounded-3xl surface-matte',
                 'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
-                'hover:-tranwarm-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
+                'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
                 active && 'ring-1 ring-primary-500/35',
               )}
@@ -152,7 +152,7 @@ export function RecruitingPageClient({
       {/* Toolbar — borderless notebook search + soft pill controls */}
       <section className="mt-7 flex flex-col md:flex-row items-stretch md:items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-1 top-1/2 -tranwarm-y-1/2 w-4 h-4 text-warm-400" />
+          <Search className="absolute left-1 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
           <input
             type="text"
             value={search}
@@ -175,7 +175,7 @@ export function RecruitingPageClient({
             All ({counts.all})
           </button>
           <div className="relative">
-            <ArrowUpDown className="absolute left-3 top-1/2 -tranwarm-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
+            <ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-warm-400 pointer-events-none" />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}

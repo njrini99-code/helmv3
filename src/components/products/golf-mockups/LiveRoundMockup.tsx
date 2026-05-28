@@ -198,7 +198,7 @@ export function LiveRoundMockup() {
       </div>
 
       {/* Glow effect */}
-      <div className="absolute -bottom-10 left-1/2 -tranwarm-x-1/2 w-56 h-20 bg-emerald-500/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-56 h-20 bg-emerald-500/15 blur-3xl rounded-full" />
     </div>
   );
 }

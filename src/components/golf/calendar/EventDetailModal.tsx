@@ -712,7 +712,7 @@ export function EventDetailModal({
                 />
                 <div className={cn(
                   'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
-                  formData.allDay && 'tranwarm-x-4'
+                  formData.allDay && 'translate-x-4'
                 )} />
               </div>
               <span className="text-sm text-warm-600">All day</span>
@@ -923,7 +923,7 @@ export function EventDetailModal({
                   />
                   <div className={cn(
                     'absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200',
-                    formData.requiresRsvp && 'tranwarm-x-4'
+                    formData.requiresRsvp && 'translate-x-4'
                   )} />
                 </div>
               </label>

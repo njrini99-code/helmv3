@@ -56,7 +56,7 @@ const DrawerContent = React.forwardRef<
         // Desktop center-mode: when the parent uses Drawer.Root with
         // direction="bottom" (default) on desktop, callers can override
         // via className with sm:* utilities (e.g. sm:rounded-3xl
-        // sm:max-w-2xl sm:mx-auto sm:bottom-1/2 sm:tranwarm-y-1/2)
+        // sm:max-w-2xl sm:mx-auto sm:bottom-1/2 sm:translate-y-1/2)
         className,
       )}
       {...props}

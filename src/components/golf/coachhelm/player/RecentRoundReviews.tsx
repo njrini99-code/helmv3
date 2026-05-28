@@ -59,7 +59,7 @@ function RoundReviewCard({
         className={cn(
           'flex items-center gap-4 p-4 rounded-xl transition-all duration-200',
           'surface-matte',
-          'hover:bg-cream-50/92 hover:shadow-md hover:-tranwarm-y-0.5',
+          'hover:bg-cream-50/92 hover:shadow-md hover:-translate-y-0.5',
           'group'
         )}
       >

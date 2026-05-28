@@ -338,7 +338,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
                   View round
                   <IconArrowRight
                     size={12}
-                    className="transition-transform duration-300 group-hover/card:tranwarm-x-0.5"
+                    className="transition-transform duration-300 group-hover/card:translate-x-0.5"
                   />
                 </span>
               </div>

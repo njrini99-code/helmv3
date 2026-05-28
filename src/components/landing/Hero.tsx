@@ -74,7 +74,7 @@ function EmailCapture() {
         <button
           type="submit"
           disabled={loading}
-          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-tranwarm-y-0.5 active:tranwarm-y-0"
+          className="px-7 py-3.5 rounded-xl bg-primary-600 hover:bg-primary-500 text-white font-semibold text-sm transition-[background-color,transform,opacity] duration-150 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0"
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
@@ -244,7 +244,7 @@ export function Hero() {
                   <span className="text-white/70 text-sm font-medium tracking-tight group-hover:text-white/90 transition-colors">
                     Explore GolfHelm
                   </span>
-                  <svg className="w-4 h-4 text-white/30 group-hover:text-white/50 group-hover:tranwarm-x-0.5 transition-[color,transform] duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 text-white/30 group-hover:text-white/50 group-hover:translate-x-0.5 transition-[color,transform] duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                   </svg>
                 </div>
@@ -339,7 +339,7 @@ export function Hero() {
       {/* Scroll indicator */}
       <m.div
         style={{ opacity }}
-        className="absolute bottom-8 pb-safe left-1/2 -tranwarm-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
+        className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
       >
         <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
           Scroll

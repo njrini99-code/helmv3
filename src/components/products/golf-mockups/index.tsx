@@ -157,7 +157,7 @@ export function LiveRoundMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -tranwarm-x-1/2 w-48 h-16 bg-emerald-500/15 blur-3xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-16 bg-emerald-500/15 blur-3xl rounded-full" />
     </div>
   );
 }
@@ -309,7 +309,7 @@ export function QualifierMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-6 left-1/2 -tranwarm-x-1/2 w-3/4 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-3/4 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
     </div>
   );
 }
@@ -494,7 +494,7 @@ export function CoachAIMockup() {
       </div>
 
       {/* Glow */}
-      <div className="absolute -bottom-8 left-1/2 -tranwarm-x-1/2 w-2/3 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
+      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-2/3 h-12 bg-emerald-500/10 blur-2xl rounded-full" />
     </div>
   );
 }

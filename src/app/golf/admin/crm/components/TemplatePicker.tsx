@@ -279,7 +279,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
           <span className="text-sm font-semibold">Templates</span>
         </div>
         <div className="relative flex-1 max-w-xs">
-          <IconSearch size={14} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             value={search}
@@ -290,7 +290,7 @@ export function TemplatePicker({ onSelect, coachData }: TemplatePickerProps) {
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-2.5 top-1/2 -tranwarm-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-warm-400 hover:text-warm-600 transition-colors"
             >
               <IconX size={14} />
             </button>

@@ -469,7 +469,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                       className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                       placeholder="185"
                     />
-                    <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">lbs</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">lbs</span>
                   </div>
                 </div>
               </div>
@@ -487,7 +487,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="85"
                       />
-                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">mph</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
                     </div>
                   </div>
 
@@ -501,7 +501,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-12"
                         placeholder="90"
                       />
-                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">mph</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">mph</span>
                     </div>
                   </div>
 
@@ -516,7 +516,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="7.2"
                       />
-                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">sec</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
                     </div>
                   </div>
 
@@ -531,7 +531,7 @@ export function CollegeProfileEditor({ player, onUpdate, className }: CollegePro
                         className="w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-600 bg-cream-100/60 pr-10"
                         placeholder="2.0"
                       />
-                      <span className="absolute right-3 top-1/2 -tranwarm-y-1/2 text-warm-400 text-sm">sec</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-warm-400 text-sm">sec</span>
                     </div>
                   </div>
                 </div>

@@ -213,7 +213,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
           const clickH   = (d.clicked / maxSent) * 100;
           return (
             <div key={d.day} className="flex-1 flex flex-col justify-end h-full relative group">
-              <div className="absolute -top-1 left-1/2 -tranwarm-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                 <div className="whitespace-nowrap bg-warm-900 text-white text-[10px] font-medium px-2 py-1 rounded shadow-lg">
                   <div className="font-semibold mb-0.5">
                     {new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}

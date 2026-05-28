@@ -250,7 +250,7 @@ export function NotificationCenter({
 
                         {/* Unread indicator */}
                         {!notification.read && (
-                          <div className="absolute left-2 top-1/2 -tranwarm-y-1/2 w-2 h-2 bg-blue-600 rounded-full" />
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2 bg-blue-600 rounded-full" />
                         )}
                       </div>
                     </div>

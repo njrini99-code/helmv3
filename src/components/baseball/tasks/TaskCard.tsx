@@ -139,7 +139,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
       initial="hidden"
       animate="visible"
       layout
-      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-tranwarm-y-0.5"
+      className="relative glass-standard rounded-2xl overflow-clip transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5"
     >
       <div className="p-5">
         {/* Header */}

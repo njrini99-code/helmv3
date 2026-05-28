@@ -24,7 +24,7 @@ export function Skeleton({ className, variant = 'default', animate = 'shimmer' }
       )}
     >
       {animate === 'shimmer' && (
-        <div className="absolute inset-0 -tranwarm-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+        <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/40 to-transparent" />
       )}
     </div>
   );

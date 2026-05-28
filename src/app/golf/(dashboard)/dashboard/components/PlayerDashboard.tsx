@@ -281,7 +281,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                             return (
                                                 <div
                                                     key={item.label}
-                                                    className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl bg-cream-50/55 ring-1 ring-warm-200/35 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-tranwarm-y-[2px]"
+                                                    className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl bg-cream-50/55 ring-1 ring-warm-200/35 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px]"
                                                 >
                                                     <span className={cn('w-10 h-10 rounded-2xl flex items-center justify-center', toneCls)}>
                                                         {item.icon}

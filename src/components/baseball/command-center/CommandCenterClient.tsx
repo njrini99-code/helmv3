@@ -126,7 +126,7 @@ function PlayerRosterCard({
     <button
       onClick={onClick}
       className="w-full text-left bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-4
-                 shadow-sm hover:shadow-md hover:-tranwarm-y-0.5 transition-[transform,box-shadow] duration-200 group"
+                 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[transform,box-shadow] duration-200 group"
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
@@ -443,7 +443,7 @@ export function CommandCenterClient({
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Search */}
                 <div className="relative flex-1 max-w-xs">
-                  <IconSearch size={15} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+                  <IconSearch size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
                   <input
                     type="text"
                     placeholder="Search players…"

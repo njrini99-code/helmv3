@@ -666,7 +666,7 @@ function ToggleSwitch({
             'absolute top-[2px] left-[2px] h-[27px] w-[27px] rounded-full bg-white',
             'shadow-[0_3px_8px_rgba(0,0,0,0.15),0_3px_1px_rgba(0,0,0,0.06)]',
             'transition-transform duration-200 ease-out',
-            checked && 'tranwarm-x-[20px]'
+            checked && 'translate-x-[20px]'
           )}
         />
       </div>

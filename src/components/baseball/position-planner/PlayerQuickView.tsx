@@ -366,7 +366,7 @@ export function PlayerQuickView({ player, watchlistItem, onClose }: PlayerQuickV
                 View Full Profile
                 <IconChevronRight
                   size={16}
-                  className="transition-transform duration-200 group-hover:tranwarm-x-0.5"
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
                 />
               </span>
             </Button>

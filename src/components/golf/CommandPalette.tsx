@@ -135,7 +135,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       />
 
       {/* Palette frame */}
-      <div className="absolute top-[18%] left-1/2 -tranwarm-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
         <Command
           label="Command palette"
           loop

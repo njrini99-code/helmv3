@@ -199,7 +199,7 @@ export function RecruitingWeightDistributor({
 
               {/* Thumb indicator */}
               <div
-                className="absolute top-1/2 -tranwarm-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-primary-500 pointer-events-none transition-all duration-150"
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-md border-2 border-primary-500 pointer-events-none transition-all duration-150"
                 style={{ left: `calc(${values[metric.key]}% - 8px)` }}
               />
             </div>

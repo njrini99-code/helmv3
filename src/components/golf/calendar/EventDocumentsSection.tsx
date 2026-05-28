@@ -296,7 +296,7 @@ function DocumentPickerDialog({
 
         <div className="px-4 py-3 border-b border-warm-200/60">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -tranwarm-y-1/2 w-4 h-4 text-warm-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-warm-400" />
             <input
               type="text"
               value={query}

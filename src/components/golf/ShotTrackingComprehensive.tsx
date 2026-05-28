@@ -1264,7 +1264,7 @@ export default function ShotTrackingComprehensive({
 
               {/* Fairway - refined center strip with gradient */}
               <div
-                className="absolute top-10 bottom-10 left-1/2 -tranwarm-x-1/2 w-10 rounded-full"
+                className="absolute top-10 bottom-10 left-1/2 -translate-x-1/2 w-10 rounded-full"
                 style={{
                   background: 'linear-gradient(90deg, #2d5a48 0%, #3d7a60 50%, #2d5a48 100%)',
                   boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)',
@@ -1273,7 +1273,7 @@ export default function ShotTrackingComprehensive({
 
               {/* Green at top - subtle gradient with fringe */}
               <div
-                className="absolute top-3 left-1/2 -tranwarm-x-1/2 w-12 h-9 rounded-[50%]"
+                className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-9 rounded-[50%]"
                 style={{
                   background: 'radial-gradient(ellipse at center, #4a9970 0%, #3d7a60 70%, #2d5a48 100%)',
                   boxShadow: '0 0 8px rgba(74,153,112,0.3)',
@@ -1281,7 +1281,7 @@ export default function ShotTrackingComprehensive({
               />
 
               {/* Hole/Pin - minimalist premium style */}
-              <div className="absolute top-5 left-1/2 -tranwarm-x-1/2 flex flex-col items-center z-20">
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 flex flex-col items-center z-20">
                 {/* Flag pole - thin elegant line */}
                 <div
                   className="w-px h-5 rounded-full"
@@ -1309,7 +1309,7 @@ export default function ShotTrackingComprehensive({
 
               {/* Tee box - subtle marker */}
               <div
-                className="absolute bottom-4 left-1/2 -tranwarm-x-1/2 w-6 h-2.5 rounded-sm"
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 w-6 h-2.5 rounded-sm"
                 style={{
                   background: 'linear-gradient(180deg, #8b7355 0%, #6b5a45 100%)',
                   boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',

@@ -38,7 +38,7 @@ export function BaseballDiamond({
     >
       {/* Ambient glow behind the field */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute top-1/2 left-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 w-[120%] h-[120%] bg-gradient-radial from-primary-500/8 via-primary-500/3 to-transparent blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-radial from-primary-500/8 via-primary-500/3 to-transparent blur-3xl" />
       </div>
 
       {/* SVG Baseball Field */}

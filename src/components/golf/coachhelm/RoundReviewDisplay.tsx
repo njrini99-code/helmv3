@@ -817,7 +817,7 @@ export function RoundReviewDisplay({
                         >
                           {/* Bar above or below zero */}
                           <div
-                            className="absolute left-1/2 -tranwarm-x-1/2"
+                            className="absolute left-1/2 -translate-x-1/2"
                             style={{
                               top: isOver ? midY - barH : midY,
                               height: barH || 1,

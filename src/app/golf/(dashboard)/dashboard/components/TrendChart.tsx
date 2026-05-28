@@ -228,7 +228,7 @@ export function TrendChart({
                 {/* Tooltip */}
                 {hoverPt && (
                     <div
-                        className="absolute pointer-events-none -tranwarm-x-1/2 -tranwarm-y-full rounded-lg bg-warm-900 text-white text-xs px-2.5 py-1.5 shadow-lg whitespace-nowrap"
+                        className="absolute pointer-events-none -translate-x-1/2 -translate-y-full rounded-lg bg-warm-900 text-white text-xs px-2.5 py-1.5 shadow-lg whitespace-nowrap"
                         style={{
                             left: `${(hoverPt.x / W) * 100}%`,
                             top: `${(hoverPt.y / H) * 100}%`,

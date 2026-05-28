@@ -162,7 +162,7 @@ export function UserActivityTable({ users }: Props) {
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4">
         <div className="relative flex-1 max-w-xs">
-          <IconSearch size={14} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+          <IconSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
           <input
             type="text"
             placeholder="Search name, email, team..."

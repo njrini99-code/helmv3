@@ -1632,7 +1632,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
                       {/* Search bar — only if 4+ courses */}
                       {savedCourses.length >= 4 && (
                         <div className="relative">
-                          <IconSearch size={16} className="absolute left-3 top-1/2 -tranwarm-y-1/2 text-warm-400" />
+                          <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-warm-400" />
                           <input
                             type="search"
                             value={courseSearchQuery}

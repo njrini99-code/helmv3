@@ -317,7 +317,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('start');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
           </div>
 
           {/* End Handle */}
@@ -332,7 +332,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
               setIsDragging('end');
             }}
           >
-            <div className="absolute top-1/2 left-1/2 -tranwarm-x-1/2 -tranwarm-y-1/2 w-1 h-6 bg-white rounded-full" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-full" />
           </div>
 
           {/* Current Time Indicator */}
@@ -340,7 +340,7 @@ export function VideoClipper({ video, onClipCreated, onCancel }: VideoClipperPro
             className="absolute top-0 bottom-0 w-0.5 bg-red-500 pointer-events-none"
             style={{ left: `${currentPercent}%` }}
           >
-            <div className="absolute -top-1 left-1/2 -tranwarm-x-1/2 w-3 h-3 bg-red-500 rounded-full" />
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full" />
           </div>
         </div>
 
