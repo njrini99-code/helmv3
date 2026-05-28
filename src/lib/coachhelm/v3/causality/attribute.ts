@@ -16,8 +16,10 @@
  *
  * W35 follow-up: dispatch via `metric-sources.ts` so the 5 SG headline
  * metrics + GIR + penalty rate + sand-save scrambling now produce real
- * lifts. The 16 metrics that need shot-level data, between-cohort
- * comparisons, or per-par breakdowns are explicitly marked
+ * lifts. Subsequently graduated: big-number rate via
+ * `round_stats_cache_computed`, and per-par scoring via `hole_level_avg`.
+ * The 12 metrics that need shot-level putt-distance data, between-cohort
+ * comparisons, or per-lie scrambling breakdowns are explicitly marked
  * `intentional-null` — the cron logs those as `intentional-no-lift`
  * (a different observability bucket from "deferred = unknown metric").
  */
@@ -26,8 +28,11 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import {
   lookupMetricSource,
+  ALL_SCORING_COLUMNS,
   type MetricSourceDef,
   type RoundStatsCacheRatioSource,
+  type RoundStatsCacheComputedSource,
+  type HoleLevelAvgSource,
 } from '@/lib/coachhelm/v3/causality/metric-sources';
 
 type Sb = SupabaseClient<Database>;
@@ -141,6 +146,86 @@ async function averageRoundStatsCacheRatio(
 }
 
 /**
+ * Average a computed ratio from `golf_round_stats_cache` scoring-distribution
+ * columns over a window. The numerator is the sum of the specified columns;
+ * the denominator is the sum of ALL scoring-distribution columns (= total
+ * holes scored). Computed per round, then averaged across the window.
+ */
+async function averageRoundStatsCacheComputed(
+  sb: Sb,
+  player_id: string,
+  source: RoundStatsCacheComputedSource,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  const allCols = ALL_SCORING_COLUMNS;
+  const selectCols = `round_id, ${allCols.join(', ')}, golf_rounds!inner(round_date, status, player_id)`;
+  const { data } = await sb
+    .from('golf_round_stats_cache')
+    .select(selectCols)
+    .eq('player_id', player_id)
+    .eq('golf_rounds.player_id', player_id)
+    .eq('golf_rounds.status', 'completed')
+    .gte('golf_rounds.round_date', startIso.slice(0, 10))
+    .lte('golf_rounds.round_date', endIso.slice(0, 10));
+  type Row = Record<string, unknown>;
+  const ratios: number[] = [];
+  for (const row of (data ?? []) as unknown as Row[]) {
+    let numSum = 0;
+    let denSum = 0;
+    for (const col of allCols) {
+      const v = row[col];
+      if (typeof v !== 'number' || !Number.isFinite(v)) continue;
+      denSum += v;
+      if ((source.numerator_columns as string[]).includes(col)) numSum += v;
+    }
+    if (denSum <= 0) continue;
+    ratios.push((numSum / denSum) * source.scale);
+  }
+  if (ratios.length === 0) return { ok: false, reason: 'no-data' };
+  const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length;
+  return { ok: true, avg, n: ratios.length };
+}
+
+/**
+ * Average score-to-par on holes of a specific par type across a window.
+ * Queries `golf_holes` joined to `golf_rounds` (filtering by player_id,
+ * status='completed', round_date in window), filters by `par = par_filter`,
+ * and computes `AVG(score - par)` across all matching holes.
+ */
+async function averageHoleLevelByPar(
+  sb: Sb,
+  player_id: string,
+  source: HoleLevelAvgSource,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  const { data } = await sb
+    .from('golf_holes')
+    .select('score, par, round_id, golf_rounds!inner(round_date, status, player_id)')
+    .eq('golf_rounds.player_id', player_id)
+    .eq('golf_rounds.status', 'completed')
+    .eq('par', source.par_filter)
+    .gte('golf_rounds.round_date', startIso.slice(0, 10))
+    .lte('golf_rounds.round_date', endIso.slice(0, 10));
+  type Row = Record<string, unknown>;
+  const diffs: number[] = [];
+  const roundIds = new Set<string>();
+  for (const row of (data ?? []) as unknown as Row[]) {
+    const score = row['score'];
+    const par = row['par'];
+    const roundId = row['round_id'];
+    if (typeof score !== 'number' || typeof par !== 'number') continue;
+    if (!Number.isFinite(score) || !Number.isFinite(par)) continue;
+    diffs.push(score - par);
+    if (typeof roundId === 'string') roundIds.add(roundId);
+  }
+  if (diffs.length === 0) return { ok: false, reason: 'no-data' };
+  const avg = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+  return { ok: true, avg, n: roundIds.size || 1 };
+}
+
+/**
  * Pull the player's average for `target_metric_id` over rounds whose
  * date falls inside [start, end]. Dispatches via the schema-of-truth
  * dispatch table in `./metric-sources.ts`.
@@ -176,6 +261,12 @@ async function dispatchWindow(
   }
   if (source.kind === 'rounds') {
     return averageGolfRoundsColumn(sb, player_id, source.column, startIso, endIso);
+  }
+  if (source.kind === 'round_stats_cache_computed') {
+    return averageRoundStatsCacheComputed(sb, player_id, source, startIso, endIso);
+  }
+  if (source.kind === 'hole_level_avg') {
+    return averageHoleLevelByPar(sb, player_id, source, startIso, endIso);
   }
   return averageRoundStatsCacheRatio(sb, player_id, source, startIso, endIso);
 }

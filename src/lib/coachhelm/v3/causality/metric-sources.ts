@@ -10,7 +10,7 @@
  * This module is the schema-of-truth for "given a {@link MetricId}, where
  * do I find a per-round value I can average over a window?"
  *
- * Three source kinds cover the 28 canonical metrics:
+ * Five source kinds cover the 28 canonical metrics:
  *
  *  1. `rounds` — column lives on `golf_rounds` directly (the 5 SG headline
  *     metrics + score_to_par are denormalised onto the round row).
@@ -20,7 +20,14 @@
  *     window using the safe `Σ numerator / Σ denominator` form, not a
  *     simple mean of per-round percentages (avoids the small-denominator
  *     skew that a per-round average would produce).
- *  3. `intentional-null` — the metric has no per-round time-series we can
+ *  3. `round_stats_cache_computed` — the metric is derived from multiple
+ *     scoring-distribution columns on `golf_round_stats_cache` (e.g.
+ *     big-number rate = (double_bogeys + triple_plus) / total-holes × 100).
+ *     Computed per round, then averaged across the window.
+ *  4. `hole_level_avg` — the metric needs hole-level data from `golf_holes`
+ *     joined to `golf_rounds`. Currently used for per-par scoring averages
+ *     (AVG(score − par) filtered by hole par type).
+ *  5. `intentional-null` — the metric has no per-round time-series we can
  *     trust (e.g. shot-bucket putt make %, putt miss bias, approach
  *     proximity by distance). These intentionally produce no lift and the
  *     cron logs them as `intentional-no-lift` so monitoring can tell
@@ -52,6 +59,20 @@ export type GolfRoundsAvgColumn =
   | 'strokes_gained_putting'
   | 'total_penalties';
 
+/** Columns on `golf_round_stats_cache` that form the scoring distribution. */
+export type ScoringDistributionColumn =
+  | 'eagles'
+  | 'birdies'
+  | 'pars'
+  | 'bogeys'
+  | 'double_bogeys'
+  | 'triple_plus';
+
+/** All scoring-distribution columns — used as the denominator for computed ratios. */
+export const ALL_SCORING_COLUMNS: ScoringDistributionColumn[] = [
+  'eagles', 'birdies', 'pars', 'bogeys', 'double_bogeys', 'triple_plus',
+];
+
 /** Two-column ratios we sum-of-numerator over sum-of-denominator across the window. */
 export interface RoundStatsCacheRatioSource {
   kind: 'round_stats_cache_ratio';
@@ -66,6 +87,34 @@ export interface GolfRoundsSource {
   column: GolfRoundsAvgColumn;
 }
 
+/**
+ * Computed ratio from `golf_round_stats_cache` scoring-distribution
+ * columns. Unlike `round_stats_cache_ratio` (which divides two named
+ * columns), this source derives both numerator and denominator from
+ * multi-column sums per round — e.g. big-number rate =
+ * (double_bogeys + triple_plus) / total-holes-scored × 100.
+ *
+ * Aggregated as a simple mean of per-round percentages (every completed
+ * round gets equal weight regardless of holes played).
+ */
+export interface RoundStatsCacheComputedSource {
+  kind: 'round_stats_cache_computed';
+  /** Scoring-distribution columns summed to form the numerator. */
+  numerator_columns: ScoringDistributionColumn[];
+  /** Multiplier applied after the ratio (e.g. ×100 for percentages). */
+  scale: number;
+}
+
+/**
+ * Hole-level average score-to-par filtered by hole par value.
+ * Queries `golf_holes` joined to `golf_rounds` and computes
+ * AVG(score − par) across the window for holes of the given par type.
+ */
+export interface HoleLevelAvgSource {
+  kind: 'hole_level_avg';
+  par_filter: 3 | 4 | 5;
+}
+
 export interface IntentionalNullSource {
   kind: 'intentional-null';
   /** Short machine-readable reason, used in observability logs. */
@@ -75,6 +124,8 @@ export interface IntentionalNullSource {
 export type MetricSourceDef =
   | GolfRoundsSource
   | RoundStatsCacheRatioSource
+  | RoundStatsCacheComputedSource
+  | HoleLevelAvgSource
   | IntentionalNullSource;
 
 /**
@@ -96,10 +147,9 @@ export type MetricSourceDef =
  *  - **Scrambling by lie** (`scrambling_pct_rough|fairway`) — the cache row
  *    only stores aggregate sand-save numbers. Rough/fairway split would
  *    require a shot-level pass.
- *  - **Per-par scoring** (`scoring_par_3|4|5`) — `golf_round_stats_cache`
- *    doesn't break score by par type. `golf_player_stats_cache` has
- *    `par3_average / par4_average / par5_average` columns but those are
- *    player-aggregates with no time-series.
+ *  - **Per-par scoring** (`scoring_par_3|4|5`) — ✓ graduated to
+ *    `hole_level_avg`, joining `golf_holes` to `golf_rounds` and computing
+ *    `AVG(score − par)` filtered by hole par value.
  *  - **Pressure / warmup** (`practice_tournament_delta`, `opening_hole_delta`)
  *    — these are *between-round-cohort* deltas, not per-round measurements.
  *    Treating them as a per-round time-series doesn't make causal sense.
@@ -145,17 +195,18 @@ export const METRIC_SOURCE: Record<MetricId, MetricSourceDef> = {
 
   // Course management — both are per-round measurable
   penalty_rate_per_round: { kind: 'rounds', column: 'total_penalties' },
-  // `big_number_rate` would need a hole-level count of doubles+triples /
-  // total holes per round; `golf_round_stats_cache` has the counts but no
-  // explicit "holes played in this round" column (`pars + bogeys + ...`
-  // works only when every hole is scored). Defer to a future ratio source
-  // that aggregates the row's bogey-or-worse counts properly.
-  big_number_rate: { kind: 'intentional-null', reason: 'needs-holes-played-denominator' },
+  // `big_number_rate` = (double_bogeys + triple_plus) / total-holes-scored × 100
+  // where total-holes-scored = eagles + birdies + pars + bogeys + double_bogeys + triple_plus.
+  big_number_rate: {
+    kind: 'round_stats_cache_computed',
+    numerator_columns: ['double_bogeys', 'triple_plus'],
+    scale: 100,
+  },
 
-  // Per-par scoring — no per-par split on round_stats_cache
-  scoring_par_3: { kind: 'intentional-null', reason: 'needs-per-par-round-breakdown' },
-  scoring_par_4: { kind: 'intentional-null', reason: 'needs-per-par-round-breakdown' },
-  scoring_par_5: { kind: 'intentional-null', reason: 'needs-per-par-round-breakdown' },
+  // Per-par scoring — hole-level AVG(score − par) filtered by par type
+  scoring_par_3: { kind: 'hole_level_avg', par_filter: 3 },
+  scoring_par_4: { kind: 'hole_level_avg', par_filter: 4 },
+  scoring_par_5: { kind: 'hole_level_avg', par_filter: 5 },
 
   // GIR % — per-round ratio (greens_hit / greens_total)
   gir_pct: {
