@@ -648,7 +648,7 @@ export default function CRMPage() {
       )}>
         {/* Logo */}
         <div className={cn('flex items-center gap-3 px-4 h-16', sidebarCollapsed && 'justify-center px-0')}>
-          <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
+          <div className="w-9 h-9 rounded-md bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25">
             <IconTarget size={18} className="text-white" />
           </div>
           {!sidebarCollapsed && <span className="font-bold text-lg text-white tracking-tight">Coach CRM</span>}
@@ -657,7 +657,7 @@ export default function CRMPage() {
         {/* Back to Dashboard */}
         <div className="px-3 mb-2">
           <a href="/golf/admin" className={cn(
-            'flex items-center gap-3 px-3 py-2 rounded-[10px]',
+            'flex items-center gap-3 px-3 py-2 rounded-md',
             'text-warm-400 hover:bg-white/5 hover:text-white transition-all duration-200',
             sidebarCollapsed && 'justify-center'
           )}>
@@ -680,7 +680,7 @@ export default function CRMPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'group relative flex items-center gap-3 w-full rounded-[10px] transition-all duration-200',
+                    'group relative flex items-center gap-3 w-full rounded-md transition-all duration-200',
                     sidebarCollapsed ? 'justify-center p-3' : 'px-3 py-2.5',
                     isActive ? 'bg-white/10 text-white' : 'text-warm-400 hover:bg-white/5 hover:text-white'
                   )}
@@ -716,7 +716,7 @@ export default function CRMPage() {
           <button
             onClick={() => setShowAddModal(true)}
             className={cn(
-              'w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] font-medium transition-all duration-200',
+              'w-full flex items-center justify-center gap-2 py-2.5 rounded-md font-medium transition-all duration-200',
               'bg-gradient-to-r from-primary-500 to-primary-600 text-white hover:from-primary-600 hover:to-primary-700'
             )}
           >
@@ -725,10 +725,10 @@ export default function CRMPage() {
           </button>
           {!sidebarCollapsed && (
             <div className="flex gap-2">
-              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              <button onClick={() => setShowImportModal(true)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconUpload size={14} /> Import
               </button>
-              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-[10px] text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
+              <button onClick={exportToCSV} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-md text-sm font-medium bg-white/5 hover:bg-white/10 text-warm-400 transition-all duration-200">
                 <IconDownload size={14} /> Export
               </button>
             </div>

@@ -94,7 +94,7 @@ export default async function GolfQualifiersPage() {
 
       {/* Main Content */}
       <AnimatedItem>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Editorial hero band — anchors the qualifier grid beneath the
             sticky title header in the magazine-cover rhythm. */}
         <Reveal>

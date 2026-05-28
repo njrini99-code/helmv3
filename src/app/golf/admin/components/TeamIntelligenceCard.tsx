@@ -7,7 +7,7 @@ interface Props {
   teams: AdminDashboardData['teams'];
 }
 
-const barColors = ['#16A34A', '#2563EB', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
+const barColors = ['var(--color-primary-600)', '#2563EB', '#8B5CF6', '#F59E0B', '#EC4899', '#14B8A6'];
 
 function TeamComparisonChart({ teams }: { teams: AdminDashboardData['teams'] }) {
   const teamsWithScore = teams.filter((t) => t.avgScore != null).slice(0, 6);

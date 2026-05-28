@@ -3,7 +3,7 @@
  */
 export default function MyStandingLoading() {
   return (
-    <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 animate-pulse">
+    <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 animate-pulse">
       <div className="h-8 w-44 bg-warm-100 rounded mb-3" />
       <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
         <div className="h-4 w-24 bg-warm-100 rounded mb-3" />

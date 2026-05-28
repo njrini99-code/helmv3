@@ -219,7 +219,7 @@ export default async function RoundsPage() {
       {/* Unfinished rounds — banner-style, sits above the library */}
       {hasUnfinished && (
         <AnimatedItem>
-          <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-4">
             <UnfinishedRoundsSection rounds={inProgressRounds} />
           </div>
         </AnimatedItem>
@@ -228,7 +228,7 @@ export default async function RoundsPage() {
       {/* Empty state — when neither completed nor in-progress rounds exist */}
       {rounds.length === 0 && inProgressRounds.length === 0 ? (
         <AnimatedItem>
-          <div className="max-w-3xl mx-auto px-4 md:px-6 py-12">
+          <div className="max-w-[1280px] mx-auto px-4 md:px-6 py-12">
             <div className="surface-stone rounded-3xl p-12 text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary-50/65 flex items-center justify-center mx-auto mb-6">
                 <IconGolf size={26} className="text-primary-700" />

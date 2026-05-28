@@ -102,7 +102,7 @@ export default async function TeamStatsPage() {
           backHref="/golf/dashboard/stats"
           backLabel="Stats"
         />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-16 text-center">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-16 text-center">
           <p className="text-warm-500">No players on your roster yet.</p>
         </div>
       </div>
@@ -311,7 +311,7 @@ export default async function TeamStatsPage() {
 
       {/* Table */}
       <AnimatedItem>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8 pb-24">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8 pb-24">
         <TeamStatsTable
           players={playersWithStats}
           intelligenceByPlayer={intelligenceResult.success && intelligenceResult.data

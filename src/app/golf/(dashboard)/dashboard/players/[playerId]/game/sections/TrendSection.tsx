@@ -103,10 +103,10 @@ export function TrendSection({ trend }: TrendSectionProps) {
                 <Line
                   type="monotone"
                   dataKey="score_to_par"
-                  stroke="#16a34a"
+                  stroke="var(--color-primary-600)"
                   strokeWidth={2}
                   dot={<TrendDot />}
-                  activeDot={{ r: 5, fill: '#16a34a' }}
+                  activeDot={{ r: 5, fill: 'var(--color-primary-600)' }}
                   connectNulls
                 />
               </LineChart>
@@ -149,7 +149,7 @@ function TrendDot(props: { cx?: number; cy?: number; payload?: { notable?: boole
       cx={cx}
       cy={cy}
       r={notable ? 5 : 3}
-      fill={notable ? '#f59e0b' : '#16a34a'}
+      fill={notable ? '#f59e0b' : 'var(--color-primary-600)'}
       stroke="#ffffff"
       strokeWidth={1.5}
     />

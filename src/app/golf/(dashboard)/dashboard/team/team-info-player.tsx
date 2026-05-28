@@ -68,7 +68,7 @@ export function TeamInfoPlayer({ team, coach, roster, announcements, tasks = [] 
         title={team.name}
         subtitle={`Season: ${team.season || 'Current'}`}
       />
-      <div className="p-4 md:p-6 lg:p-8 max-w-4xl mx-auto">
+      <div className="p-4 md:p-6 lg:p-8 max-w-[720px] mx-auto">
       {/* Editorial hero band — frames the program identity beneath the
           sticky title header in the magazine-cover rhythm. */}
       <Reveal>

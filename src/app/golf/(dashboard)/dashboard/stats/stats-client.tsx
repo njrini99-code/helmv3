@@ -854,7 +854,7 @@ export default function StatsClient({
           title="Team Stats"
           subtitle={`${players.length} players on your roster`}
         />
-        <div className="max-w-6xl mx-auto p-4 md:p-6">
+        <div className="max-w-[1536px] mx-auto p-4 md:p-6">
 
           {/* Editorial hero band — frames the team stats grid in the
               magazine-cover rhythm beneath the sticky title header. The
@@ -1090,7 +1090,7 @@ export default function StatsClient({
       {/* Editorial hero band — sits between the sticky title header and
           the intelligence strip so the surface reads with magazine rhythm.
           Stone plinth gives the copy a sculpted-matte foundation. */}
-      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-4 md:pt-6">
         <Reveal>
           <div className="surface-stone rounded-3xl p-6 md:p-10">
             <PageHeader
@@ -1110,7 +1110,7 @@ export default function StatsClient({
       {/* CoachHelm AI strip — engine-derived ratings + evidence insights,
           rendered above raw stats so the "what matters" layer reads first. */}
       {resolvedPlayerId && (
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 md:pt-6">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-4 md:pt-6">
           <StatsIntelligenceStrip
             playerId={resolvedPlayerId}
             audience={userRole === 'coach' ? 'coach' : 'player'}
@@ -1125,7 +1125,7 @@ export default function StatsClient({
           and not their full history. Suppressed when a preset is active —
           that cap is a user-driven request, not silent truncation. */}
       {detailedStats?.truncated && (
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-4">
           <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 md:px-5 md:py-4 text-sm text-amber-800 flex items-start gap-3">
             <span className="mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-full bg-amber-100 text-amber-700 text-xs font-semibold" aria-hidden="true">!</span>
             <p className="leading-relaxed">
@@ -1178,7 +1178,7 @@ export default function StatsClient({
         />
       ) : statsError ? (
         /* Error state when server action fails */
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-16 pb-8">
           <div className="relative surface-matte rounded-3xl border border-red-200/50 p-8 md:p-12 text-center">
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-red-300" />
@@ -1197,7 +1197,7 @@ export default function StatsClient({
       ) : (
         /* Empty state when no stats available */
         <LazyMotion features={domAnimation}>
-          <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-8">
+          <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-16 pb-8">
             <m.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1272,7 +1272,7 @@ export default function StatsClient({
 
       {/* Recent Rounds Section */}
       {rounds.length > 0 && (
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pb-8 mt-6">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 pb-8 mt-6">
           <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-3">Recent Rounds</h3>
           <div className="space-y-2">
             {rounds.slice(0, 10).map((round) => {

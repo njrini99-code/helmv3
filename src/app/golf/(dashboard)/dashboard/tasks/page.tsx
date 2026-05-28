@@ -135,7 +135,7 @@ export default function GolfTasksPage() {
   if (loading) {
     return (
       <div className="min-h-full bg-transparent">
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
+        <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8 space-y-6">
           <div className="flex items-center justify-between">
             <div className="h-7 w-28 skeleton-shimmer rounded-lg" />
             <div className="h-9 w-24 skeleton-shimmer rounded-lg" />
@@ -183,7 +183,7 @@ export default function GolfTasksPage() {
       </LargeTitleHeader>
 
       <PullToRefresh onRefresh={handleRefresh}>
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
 
         {/* Editorial hero band — frames the task list beneath the sticky
             LargeTitleHeader so the surface reads with magazine rhythm. */}

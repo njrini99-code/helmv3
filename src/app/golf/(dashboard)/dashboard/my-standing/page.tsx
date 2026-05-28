@@ -115,7 +115,7 @@ export default async function MyStandingPage() {
       </AnimatedItem>
 
       <AnimatedItem>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8">
+        <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
           <Reveal>
             <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
               <PageHeader

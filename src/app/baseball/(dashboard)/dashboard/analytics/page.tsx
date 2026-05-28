@@ -178,9 +178,9 @@ export default function AnalyticsPage() {
                   <Line
                     type="monotone"
                     dataKey="views"
-                    stroke="#16A34A"
+                    stroke="var(--color-primary-600)"
                     strokeWidth={2}
-                    dot={{ fill: '#16A34A', r: 4 }}
+                    dot={{ fill: 'var(--color-primary-600)', r: 4 }}
                     activeDot={{ r: 6 }}
                   />
                 </LineChart>

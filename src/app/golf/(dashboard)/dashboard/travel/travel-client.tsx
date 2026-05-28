@@ -399,7 +399,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
       </LargeTitleHeader>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Editorial hero band — anchors the trip list beneath the sticky
             title header in the magazine-cover rhythm used across the app. */}
         <Reveal>

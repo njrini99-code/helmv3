@@ -48,7 +48,7 @@ export default function ProfilePage() {
           </Button>
         </Link>
       </Header>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-[720px] mx-auto">
         {isCollegePlayer ? (
           <CollegeProfileEditor player={player} onUpdate={handleUpdate} />
         ) : (

@@ -147,7 +147,7 @@ export function SavedSegmentsRail({
         <button
           onClick={() => setDialogOpen(true)}
           aria-label="Save current filters as segment"
-          className="w-full flex items-center justify-center p-2.5 rounded-[10px] text-warm-400 hover:bg-white/5 hover:text-white transition-all duration-200"
+          className="w-full flex items-center justify-center p-2.5 rounded-md text-warm-400 hover:bg-white/5 hover:text-white transition-all duration-200"
         >
           <IconBookmark size={16} />
         </button>
@@ -180,7 +180,7 @@ export function SavedSegmentsRail({
       {loading && (
         <div className="px-3 py-2 space-y-1">
           {[0, 1].map((i) => (
-            <div key={i} className="h-7 rounded-[10px] bg-white/5 skeleton-shimmer" />
+            <div key={i} className="h-7 rounded-md bg-white/5 skeleton-shimmer" />
           ))}
         </div>
       )}
@@ -224,7 +224,7 @@ export function SavedSegmentsRail({
         return (
           <div
             ref={contextRef}
-            className="fixed z-[60] min-w-[180px] py-1 rounded-xl bg-white shadow-2xl border border-warm-200/60"
+            className="fixed z-modal min-w-[180px] py-1 rounded-xl bg-white shadow-2xl border border-warm-200/60"
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >

@@ -172,7 +172,7 @@ export default function CoachHelmLoading() {
 
       {/* Header skeleton */}
       <div className="sticky top-0 z-20 border-b border-warm-200/30 relative bg-cream-100/60 backdrop-blur-sm pt-[max(0.25rem,env(safe-area-inset-top,0px))] lg:pt-0">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <SkeletonPulse className="w-12 h-12 rounded-xl" />
@@ -192,7 +192,7 @@ export default function CoachHelmLoading() {
       </div>
 
       {/* Main Content skeleton */}
-      <div className="relative max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="relative max-w-[1536px] mx-auto px-4 md:px-6 py-8">
         {/* Section toggle skeleton */}
         <m.div
           initial={{ opacity: 0 }}

@@ -41,7 +41,7 @@ export default async function SeasonStatsPage() {
     .eq('season_year', currentYear) as { data: BaseballPlayerSeasonStats[] | null };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8 space-y-8">
       {/* Page header */}
       <div>
         <h1 className="text-2xl font-bold text-warm-900">{team.name} — Stats</h1>

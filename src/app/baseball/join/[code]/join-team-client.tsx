@@ -26,7 +26,7 @@ function Confetti({ active }: { active: boolean }) {
   const generateConfetti = useCallback(() => {
     const colors = [
       '#22c55e', // green-500
-      '#16a34a', // green-600
+      'var(--color-primary-600)', // green-600
       '#4ade80', // green-400
       '#fbbf24', // amber-400
       '#f59e0b', // amber-500

@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function DocumentsLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <Skeleton className="h-8 w-40 mb-2" />

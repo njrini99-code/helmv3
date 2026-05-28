@@ -91,7 +91,7 @@ export default async function StatsUploadPage() {
         teamName={team.name}
         players={players}
       />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="max-w-[720px] mx-auto px-4 sm:px-6">
         <UploadHistory teamId={team.id} />
       </div>
     </div>

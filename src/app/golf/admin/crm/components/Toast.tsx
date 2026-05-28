@@ -121,7 +121,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Toast container — bottom-right */}
-      <div className="fixed bottom-4 right-4 z-[100] flex flex-col-reverse gap-2 pointer-events-none">
+      <div className="fixed bottom-4 right-4 z-toolbar flex flex-col-reverse gap-2 pointer-events-none">
         {toasts.slice(-MAX_VISIBLE).map(item => {
           const config = TOAST_CONFIG[item.type];
           const Icon = config.icon;

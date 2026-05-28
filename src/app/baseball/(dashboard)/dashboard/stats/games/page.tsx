@@ -27,7 +27,7 @@ export default async function GamesPage() {
   if (!team) redirect('/baseball/dashboard/team');
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-8">
       <GamesList teamId={team.id} title="Games & Scrimmages" showAddButton={true} />
     </div>
   );

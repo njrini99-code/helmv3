@@ -55,7 +55,7 @@ const SUB_TABS: { id: BISubTab; label: string; icon: ReactNode }[] = [
   { id: 'health', label: 'Health', icon: <IconHeart size={14} /> },
 ];
 
-const CHART_GREEN = '#16A34A';
+const CHART_GREEN = 'var(--color-primary-600)';
 const CHART_BLUE = '#3B82F6';
 const CHART_AMBER = '#F59E0B';
 const CHART_RED = '#EF4444';

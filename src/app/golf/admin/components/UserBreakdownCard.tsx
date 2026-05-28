@@ -23,7 +23,7 @@ export function UserBreakdownCard({ users }: Props) {
     label: s.status.charAt(0).toUpperCase() + s.status.slice(1),
     value: s.count,
     color: s.status === 'active'
-      ? '#16A34A'
+      ? 'var(--color-primary-600)'
       : s.status === 'inactive'
         ? '#9CA3AF'
         : s.status === 'graduated'
@@ -37,7 +37,7 @@ export function UserBreakdownCard({ users }: Props) {
     label: y.year.charAt(0).toUpperCase() + y.year.slice(1),
     value: y.count,
     color: y.year === 'freshman'
-      ? '#16A34A'
+      ? 'var(--color-primary-600)'
       : y.year === 'sophomore'
         ? '#2563EB'
         : y.year === 'junior'
@@ -145,7 +145,7 @@ export function UserBreakdownCard({ users }: Props) {
         <AdminAreaChart
           data={chartData}
           title="New Signups (12 Weeks)"
-          color="#16A34A"
+          color="var(--color-primary-600)"
           height={100}
         />
       )}

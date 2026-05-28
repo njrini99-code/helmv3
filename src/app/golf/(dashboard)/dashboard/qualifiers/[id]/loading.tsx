@@ -1,7 +1,7 @@
 export default function Loading() {
   return (
     <div className="min-h-full bg-transparent">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1280px] mx-auto px-6 py-8">
         {/* Back Button Skeleton */}
         <div className="h-5 w-32 bg-warm-100/60 rounded skeleton-shimmer mb-6" />
 

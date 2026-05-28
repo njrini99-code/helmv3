@@ -17,7 +17,7 @@ const labelSizes = { sm: 'text-[8px]', md: 'text-[10px]', lg: 'text-xs' } as con
 
 function getScoreColor(score: number): string {
   if (score >= 75) return '#059669'; // emerald-600
-  if (score >= 50) return '#16A34A'; // green-600 / primary
+  if (score >= 50) return 'var(--color-primary-600)'; // green-600 / primary
   if (score >= 25) return '#F59E0B'; // amber-500
   return '#EF4444'; // red-500
 }

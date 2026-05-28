@@ -312,7 +312,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
 
             {/* MAIN CONTENT */}
             <m.div
-                className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
+                className="max-w-[1280px] mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"

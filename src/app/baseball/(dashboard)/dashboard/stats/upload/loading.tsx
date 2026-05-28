@@ -1,7 +1,7 @@
 export default function StatsUploadLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8">
         {/* Header skeleton */}
         <div className="flex items-center gap-4 mb-8">
           <div className="w-10 h-10 rounded-lg bg-warm-200 animate-pulse" />

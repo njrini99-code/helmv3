@@ -67,7 +67,7 @@ export default async function RecruitingPreferencesPage() {
 
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-warm-900">Recruiting Preferences</h1>

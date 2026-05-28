@@ -50,7 +50,7 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
           backLabel="CoachHelm"
         />
       </AnimatedItem>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">
         <Reveal>
           <header className="mb-7">
             <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">

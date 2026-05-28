@@ -870,7 +870,7 @@ export function DevelopmentPlansClient({
       {/* Editorial hero plinth — magazine-cover framing for the
           development plans surface. Sits beneath the sticky
           LargeTitleHeader and anchors the active-plan context. */}
-      <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 pt-6">
         <Reveal>
           <div className="surface-stone rounded-3xl p-6 md:p-10 mb-6">
             <PageHeader
@@ -891,7 +891,7 @@ export function DevelopmentPlansClient({
 
       {/* Summary stats */}
       {focusAreas.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-[1536px] mx-auto px-4 md:px-6">
           <Reveal staggerIndex={1} className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="surface-matte rounded-xl p-4">
               <div className="flex items-center gap-2 mb-1">
@@ -934,7 +934,7 @@ export function DevelopmentPlansClient({
       )}
 
       {/* Content */}
-      <Reveal staggerIndex={2} className="max-w-7xl mx-auto px-4 md:px-6 py-6">
+      <Reveal staggerIndex={2} className="max-w-[1536px] mx-auto px-4 md:px-6 py-6">
         {players.length === 0 ? (
           <div className="relative surface-matte rounded-3xl overflow-clip">
             <EmptyState

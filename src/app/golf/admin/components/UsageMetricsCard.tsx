@@ -5,7 +5,7 @@ import { AdminAreaChart, AdminDonutChart, AdminProgressBar, AdminFunnelChart } f
 import { IconChartBar } from '@/components/icons';
 
 const ROUND_TYPE_COLORS: Record<string, string> = {
-  practice: '#16A34A',
+  practice: 'var(--color-primary-600)',
   tournament: '#2563EB',
   qualifier: '#F59E0B',
   casual: '#8B5CF6',
@@ -54,7 +54,7 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
   const funnelStages = funnel ? [
     { label: 'Started', value: funnel.roundsStarted, color: '#3B82F6' },
     { label: 'Completed', value: funnel.roundsCompleted, color: '#2563EB' },
-    { label: 'Scored', value: funnel.roundsWithScore, color: '#16A34A' },
+    { label: 'Scored', value: funnel.roundsWithScore, color: 'var(--color-primary-600)' },
     { label: 'Reviewed', value: funnel.roundsReviewed, color: '#8B5CF6' },
     { label: 'With Insights', value: funnel.roundsWithInsights, color: '#F59E0B' },
   ] : [];
@@ -92,17 +92,17 @@ export function UsageMetricsCard({ usage, dataQuality, funnel }: Props) {
             <QualityGauge
               label="Distance"
               percentage={dataQuality.distancePercentage}
-              color={dataQuality.distancePercentage > 70 ? '#16A34A' : dataQuality.distancePercentage > 40 ? '#F59E0B' : '#EF4444'}
+              color={dataQuality.distancePercentage > 70 ? 'var(--color-primary-600)' : dataQuality.distancePercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
             <QualityGauge
               label="Lie"
               percentage={dataQuality.liePercentage}
-              color={dataQuality.liePercentage > 70 ? '#16A34A' : dataQuality.liePercentage > 40 ? '#F59E0B' : '#EF4444'}
+              color={dataQuality.liePercentage > 70 ? 'var(--color-primary-600)' : dataQuality.liePercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
             <QualityGauge
               label="Club"
               percentage={dataQuality.clubPercentage}
-              color={dataQuality.clubPercentage > 70 ? '#16A34A' : dataQuality.clubPercentage > 40 ? '#F59E0B' : '#EF4444'}
+              color={dataQuality.clubPercentage > 70 ? 'var(--color-primary-600)' : dataQuality.clubPercentage > 40 ? '#F59E0B' : '#EF4444'}
             />
           </div>
         </div>

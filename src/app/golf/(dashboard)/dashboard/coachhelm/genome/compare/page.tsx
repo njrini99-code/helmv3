@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   title: 'Compare players · Genome · CoachHelm',
 };
 
-const PLAYER_A_HEX = '#16A34A'; // helm green
+const PLAYER_A_HEX = 'var(--color-primary-600)'; // helm green
 const PLAYER_B_HEX = '#F59E0B'; // amber 500
 
 export default async function GenomeComparePage({ searchParams }: PageProps) {
@@ -74,7 +74,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
         <MobileNavHeader title="Compare" backHref="/golf/dashboard/coachhelm" backLabel="CoachHelm" />
       </AnimatedItem>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">
         <Reveal>
           <header className="surface-stone rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
             <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-1.5">

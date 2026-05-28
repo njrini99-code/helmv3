@@ -71,7 +71,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
         />
       </AnimatedItem>
 
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">
         {/* ----- Header plinth ----- */}
         <Reveal>
           <header className="surface-stone rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
@@ -117,7 +117,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
                       {
                         label: name,
                         colorClass: 'primary-600',
-                        hex: '#16A34A',
+                        hex: 'var(--color-primary-600)',
                         vector: genome.vector,
                       },
                     ] satisfies RadarSeries[]

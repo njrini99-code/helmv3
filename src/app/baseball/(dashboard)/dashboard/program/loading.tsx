@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function ProgramLoading() {
   return (
     <div className="min-h-dvh bg-cream-100">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-[720px] mx-auto px-4 sm:px-6 py-8">
         <Skeleton className="h-8 w-48 mb-2" />
         <Skeleton className="h-4 w-64 mb-8" />
         <div className="glass-standard rounded-xl p-6 space-y-6">

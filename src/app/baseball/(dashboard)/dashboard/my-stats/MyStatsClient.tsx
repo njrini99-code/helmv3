@@ -121,7 +121,7 @@ export function MyStatsClient() {
         subtitle="Track your performance and progress"
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Player Header */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">

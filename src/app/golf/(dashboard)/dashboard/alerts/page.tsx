@@ -17,6 +17,7 @@ import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable'
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { ContainerReading } from '@/components/ui/containers';
 
 export const metadata = {
   title: 'Alerts | CoachHelm',
@@ -68,7 +69,7 @@ export default async function AlertsPage() {
   return (
     <div>
       <LargeTitleHeader title="Alerts" subtitle="High-priority signals that need your attention." />
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6 md:py-8 space-y-5">
+      <ContainerReading className="py-6 md:py-8 space-y-5">
         <Reveal>
           <div className="surface-stone rounded-3xl p-6 md:p-8">
             <PageHeader
@@ -82,7 +83,7 @@ export default async function AlertsPage() {
         <Reveal staggerIndex={1}>
           <CoachAlertCenter coachId={coach.id} teamId={teamId} />
         </Reveal>
-      </div>
+      </ContainerReading>
     </div>
   );
 }

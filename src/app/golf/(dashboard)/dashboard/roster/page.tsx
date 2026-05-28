@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { ContainerGrid } from '@/components/ui/containers';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -328,7 +329,7 @@ export default async function GolfRosterPage() {
 
       {/* Main Content */}
       <AnimatedItem>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <ContainerGrid wide className="py-6 md:py-8">
         {/* Editorial hero plinth — magazine-cover framing for the
             roster, sitting beneath the sticky LargeTitleHeader. */}
         <Reveal>
@@ -490,7 +491,7 @@ export default async function GolfRosterPage() {
             ))}
           </Reveal>
         )}
-      </div>
+      </ContainerGrid>
       </AnimatedItem>
     </AnimatedPage>
     </RosterPageClient>

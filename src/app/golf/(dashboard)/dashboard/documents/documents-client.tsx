@@ -557,7 +557,7 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
         )}
       </LargeTitleHeader>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[720px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Editorial hero band — frames the document grid beneath the sticky
             title header. Skipped while inside a sub-folder so the back-nav
             controls stay close to the file list. */}

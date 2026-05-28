@@ -43,7 +43,7 @@ const iconTextColors: Record<string, string> = {
 };
 
 const sparklineColors: Record<string, string> = {
-  green: '#16A34A',
+  green: 'var(--color-primary-600)',
   red: '#EF4444',
   amber: '#F59E0B',
   blue: '#2563EB',
@@ -165,7 +165,7 @@ export const AdminStatCard = memo(function AdminStatCard({
           {hasSparkline && (
             <AdminSparkline
               data={sparklineData}
-              color={sparklineColor ?? sparklineColors[accentColor] ?? '#16A34A'}
+              color={sparklineColor ?? sparklineColors[accentColor] ?? 'var(--color-primary-600)'}
               width={100}
               height={40}
               showEndDot

@@ -65,7 +65,7 @@ export function TracerKPICards({
         accentColor={critical7d > 0 ? 'red' : errors7d > 0 ? 'amber' : 'green'}
         detail={critical7d > 0 ? `${critical7d} critical` : 'No critical'}
         sparklineData={sparklineData?.errors}
-        sparklineColor={critical7d > 0 ? '#EF4444' : errors7d > 0 ? '#F59E0B' : '#16A34A'}
+        sparklineColor={critical7d > 0 ? '#EF4444' : errors7d > 0 ? '#F59E0B' : 'var(--color-primary-600)'}
       />
       <AdminStatCard
         key={`stats-mismatches-${statsMismatches}`}

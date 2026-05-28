@@ -8,7 +8,7 @@ export default async function SavedComparisonsPage() {
 
   return (
     <div className="min-h-dvh bg-cream">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-[1536px] mx-auto px-6 py-8">
         {/* Page Header */}
         <div className="flex items-center justify-between mb-8">
           <div>

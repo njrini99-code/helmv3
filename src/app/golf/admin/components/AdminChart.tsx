@@ -27,7 +27,7 @@ interface AdminBarChartProps {
 export function AdminBarChart({
   data,
   title,
-  color = '#16A34A',
+  color = 'var(--color-primary-600)',
   height = 200,
   showTooltip: _showTooltip = true,
 }: AdminBarChartProps) {
@@ -253,7 +253,7 @@ export function AdminProgressBar({
   label,
   value,
   max,
-  color = '#16A34A',
+  color = 'var(--color-primary-600)',
 }: AdminProgressBarProps) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   return (
@@ -287,7 +287,7 @@ interface AdminAreaChartProps {
 export function AdminAreaChart({
   data,
   title,
-  color = '#16A34A',
+  color = 'var(--color-primary-600)',
   height = 200,
   showGrid = true,
   gradientId: gradientIdProp,
@@ -526,7 +526,7 @@ interface AdminSparklineProps {
 
 export function AdminSparkline({
   data,
-  color = '#16A34A',
+  color = 'var(--color-primary-600)',
   width = 100,
   height = 40,
   showEndDot = true,

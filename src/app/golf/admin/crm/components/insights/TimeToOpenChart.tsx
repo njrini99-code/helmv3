@@ -100,7 +100,7 @@ export function TimeToOpenChart({ buckets, loading }: TimeToOpenChartProps) {
                 cursor={{ fill: 'rgba(22,163,74,0.06)' }}
                 content={<TimeToOpenTooltip />}
               />
-              <Bar dataKey="count" fill="#16A34A" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="count" fill="var(--color-primary-600)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

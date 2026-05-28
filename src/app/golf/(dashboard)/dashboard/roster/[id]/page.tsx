@@ -179,7 +179,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
       </AnimatedItem>
 
       <AnimatedItem>
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
+      <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">
         {/* Profile Header Card - Compact */}
         <div className="relative surface-matte rounded-3xl overflow-clip mb-8">
           <div className="relative p-6">

@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-[1280px] mx-auto">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <div className="h-9 w-20 bg-warm-100/60 rounded-lg skeleton-shimmer" />

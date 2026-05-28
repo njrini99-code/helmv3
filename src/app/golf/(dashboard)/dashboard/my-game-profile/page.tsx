@@ -75,7 +75,7 @@ export default async function MyGameProfilePage() {
                       {
                         label: firstName,
                         colorClass: 'primary-600',
-                        hex: '#16A34A',
+                        hex: 'var(--color-primary-600)',
                         vector: genome.vector,
                       },
                     ] satisfies RadarSeries[]
