@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -93,15 +94,15 @@ function CompositeRatingCardImpl({
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-        <div className="flex flex-col items-center gap-4 py-8">
+        <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
             Game Strength
           </p>
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
-            <IconInfo size={24} className="text-warm-400" />
-          </div>
-          <p className="text-sm text-warm-600">Not enough data yet</p>
-          <p className="text-xs text-warm-400">Complete more rounds to unlock your game rating</p>
+          <EmptyState
+            variant="minimal"
+            icon={<IconInfo size={20} />}
+            description="Not enough data yet. Complete more rounds to unlock your game rating."
+          />
         </div>
       </GlassCard>
     );

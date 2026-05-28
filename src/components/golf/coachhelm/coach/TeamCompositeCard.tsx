@@ -3,6 +3,7 @@
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconUsers } from '@/components/icons';
 
 interface TeamCompositeCardProps {
@@ -73,15 +74,15 @@ export function TeamCompositeCard({
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-        <div className="flex flex-col items-center gap-4 py-8">
+        <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
             Team Game Strength
           </p>
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
-            <IconUsers size={24} className="text-warm-400" />
-          </div>
-          <p className="text-sm text-warm-600">No active players on the team</p>
-          <p className="text-xs text-warm-400">Add players to see team game strength</p>
+          <EmptyState
+            variant="minimal"
+            icon={<IconUsers size={20} />}
+            description="No active players on the team yet. Add players to see team game strength."
+          />
         </div>
       </GlassCard>
     );
@@ -91,19 +92,15 @@ export function TeamCompositeCard({
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-        <div className="flex flex-col items-center gap-4 py-8">
+        <div className="flex flex-col items-center gap-2 py-6">
           <p className="text-sm font-medium uppercase tracking-wider text-warm-500">
             Team Game Strength
           </p>
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center">
-            <IconUsers size={24} className="text-warm-400" />
-          </div>
-          <p className="text-sm text-warm-600 max-w-xs text-center">
-            Not enough round data to calculate team strengths
-          </p>
-          <p className="text-xs text-warm-400 text-center max-w-xs">
-            As players submit more rounds, detailed category ratings will appear here
-          </p>
+          <EmptyState
+            variant="minimal"
+            icon={<IconUsers size={20} />}
+            description="Not enough round data to calculate team strengths. As players submit more rounds, detailed category ratings will appear here."
+          />
         </div>
       </GlassCard>
     );

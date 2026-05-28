@@ -8,6 +8,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { EmptyState } from '@/components/ui/empty-state';
 import { cn } from '@/lib/utils';
 import type { TeeStats, ApproachStats, AroundGreenStats, PuttingAnalytics } from '@/app/golf/actions/shot-analytics';
 
@@ -418,15 +419,11 @@ export function ShotTypeBreakdown({
 
       {/* Empty state */}
       {!teeStats && !approachStats && !aroundGreenStats && !puttingStats && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-warm-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M3 20h18M6 16V8M10 16V4M14 16v-6M18 16V9" />
-            </svg>
-          </div>
-          <p className="text-sm text-warm-500">No shot data available</p>
-          <p className="text-xs text-warm-400 mt-1">Track rounds to see your performance breakdown</p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          type="stats"
+          description="No shot data yet. Track rounds to see your performance breakdown."
+        />
       )}
     </div>
   );

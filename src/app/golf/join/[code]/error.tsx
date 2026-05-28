@@ -1,5 +1,7 @@
 'use client';
 
+import { RouteErrorBoundary } from '@/components/errors';
+
 export default function Error({
   error,
   reset,
@@ -8,17 +10,14 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-dvh flex items-center justify-center bg-cream">
-      <div className="text-center p-8">
-        <h2 className="text-xl font-semibold text-warm-900 mb-2">Failed to validate invite</h2>
-        <p className="text-warm-600 mb-4">{error.message || 'An error occurred'}</p>
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
+    <RouteErrorBoundary
+      error={error}
+      reset={reset}
+      route="/golf/join/[code]"
+      component="GolfJoinCodePage"
+      title="Failed to load join page"
+      message="We couldn't load the team join page. The link may have expired."
+      homePath="/golf"
+    />
   );
 }

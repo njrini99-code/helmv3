@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconSparkles,
   IconZap,
@@ -71,11 +72,11 @@ export function WhatIfPanel({
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <IconSparkles size={32} className="text-warm-300 mb-3" />
-          <p className="text-sm font-medium text-warm-500">No improvement data available</p>
-          <p className="text-xs text-warm-400 mt-1">Check back after more rounds are analyzed</p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          icon={<IconSparkles size={20} />}
+          description="No improvement data yet. Check back after more rounds are analyzed."
+        />
       </GlassCard>
     );
   }

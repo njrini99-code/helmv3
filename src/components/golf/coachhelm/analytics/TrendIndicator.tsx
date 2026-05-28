@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown } from '@/components/icons';
+import { EmptyState } from '@/components/ui/empty-state';
 import type { TrendData } from '@/app/golf/actions/shot-analytics';
 
 interface TrendIndicatorProps {
@@ -234,10 +235,11 @@ export function TrendSummary({ trends, className, animated = true }: TrendSummar
 
       {/* Empty state */}
       {trends.length === 0 && (
-        <div className="text-center py-4">
-          <p className="text-sm text-warm-400">No trend data available</p>
-          <p className="text-xs text-warm-400 mt-1">Need more rounds to compare</p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          type="stats"
+          description="No trend data yet — need more rounds to compare."
+        />
       )}
     </div>
   );

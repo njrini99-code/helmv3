@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconMinus } from '@/components/icons';
 import { motion } from 'framer-motion';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface TeamCategory {
   id: string;
@@ -65,7 +66,11 @@ export function CategoryCard({ category }: CategoryCardProps) {
   if (!category) {
     return (
       <div className="surface-matte rounded-3xl p-6">
-        <p className="text-warm-500 text-sm">No category data available.</p>
+        <EmptyState
+          variant="minimal"
+          type="generic"
+          description="No category data available yet."
+        />
       </div>
     );
   }
@@ -121,7 +126,11 @@ export function CategoryCard({ category }: CategoryCardProps) {
           </ul>
         </div>
       ) : (
-        <p className="text-sm text-warm-400">No insights for this category yet.</p>
+        <EmptyState
+          variant="minimal"
+          type="generic"
+          description="No insights for this category yet. As shots roll in, AI insights will appear here."
+        />
       )}
     </motion.div>
   );

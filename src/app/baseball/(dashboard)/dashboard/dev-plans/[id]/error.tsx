@@ -1,5 +1,7 @@
 'use client';
 
+import { RouteErrorBoundary } from '@/components/errors';
+
 export default function Error({
   error,
   reset,
@@ -8,20 +10,14 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="min-h-[400px] flex items-center justify-center">
-      <div className="text-center p-8">
-        <h2 className="text-lg font-semibold text-warm-900 mb-2">
-          Something went wrong
-        </h2>
-        <p className="text-warm-600 mb-4">{error.message}</p>
-        <button
-          onClick={reset}
-          aria-label="Try again"
-          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 active:bg-primary-800 transition-colors"
-        >
-          Try again
-        </button>
-      </div>
-    </div>
+    <RouteErrorBoundary
+      error={error}
+      reset={reset}
+      route="/baseball/dashboard/dev-plans/[id]"
+      component="DevPlanDetailPage"
+      title="Failed to load development plan"
+      message="We couldn't load this development plan. Please try again."
+      homePath="/baseball/dashboard/dev-plans"
+    />
   );
 }
