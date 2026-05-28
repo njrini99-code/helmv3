@@ -2,7 +2,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PlayerStatsLoading() {
   return (
-    <div className="min-h-dvh bg-[#FFFEFA]">
+    <div className="min-h-dvh bg-cream-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6">

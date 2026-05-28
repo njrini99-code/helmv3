@@ -157,7 +157,7 @@ export default async function BaseballCalendarPage() {
       <div
         className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
         style={{
-          background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
+          background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
         }}
       >
         <div className="flex-1 flex items-center justify-center p-6">
@@ -196,7 +196,7 @@ export default async function BaseballCalendarPage() {
     <div
       className="h-[calc(100vh-5.5rem-env(safe-area-inset-bottom))] md:h-screen flex flex-col"
       style={{
-        background: 'linear-gradient(180deg, #FFFEFA 0%, #FDF9F0 33%, #FAF5EB 66%, #F5F0E6 100%)',
+        background: 'linear-gradient(180deg, #F7F5F2 0%, #F4EFE6 33%, #F1ECE0 66%, #ECE5D6 100%)',
       }}
     >
       {/* Event summary strip — only shown when there are events */}

@@ -57,7 +57,7 @@ export default function ProductsPage() {
       <section id="main-content" className="relative" style={{
         background: `
           radial-gradient(ellipse 80% 60% at 50% 60%, rgba(21, 128, 61, 0.15), transparent),
-          linear-gradient(180deg, #FFFEFA 0%, #EDE8DD 100%)
+          linear-gradient(180deg, #F7F5F2 0%, #EDE8DD 100%)
         `
       }}>
         {/* Animation in contained box */}

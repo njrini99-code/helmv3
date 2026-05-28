@@ -96,7 +96,7 @@ export default async function CoachDetailPage({ params }: PageProps) {
   }
 
   return (
-    <main className="min-h-dvh bg-[#FFFEFA]">
+    <main className="min-h-screen bg-cream-100">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
         <CoachPageHeader coach={coach} engagement={engagement} />
 

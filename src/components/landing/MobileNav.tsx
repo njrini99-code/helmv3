@@ -131,7 +131,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3, ease: smooth }}
-              className="fixed inset-0 z-[9999] md:hidden bg-[#F5F0E6]"
+              className="fixed inset-0 z-[9999] md:hidden bg-[#ECE5D6]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {/* Gradient enhancement layer */}
@@ -140,7 +140,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                 style={{
                   background: `
                     radial-gradient(ellipse 90% 50% at 50% 30%, rgba(21, 128, 61, 0.1), transparent),
-                    linear-gradient(180deg, #FFFEFA 0%, #F5F0E6 50%, #EDE8DD 100%)
+                    linear-gradient(180deg, #F7F5F2 0%, #ECE5D6 50%, #EDE8DD 100%)
                   `,
                 }}
               />

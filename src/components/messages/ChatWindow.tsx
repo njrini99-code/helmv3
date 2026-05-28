@@ -87,7 +87,7 @@ export function ChatWindow({
   };
 
   return (
-    <div className={cn('flex flex-col bg-[#FFFEFA]', className)}>
+    <div className={cn('flex flex-col bg-cream-100', className)}>
       {/* Header — iOS-native chat title bar with back chevron on mobile */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-warm-200/70 bg-cream-50/92 backdrop-blur-xl sticky top-0 z-10">
         {onBack && (

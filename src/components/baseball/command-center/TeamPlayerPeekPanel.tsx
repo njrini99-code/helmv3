@@ -115,7 +115,7 @@ export function TeamPlayerPeekPanel({ player, onClose }: TeamPlayerPeekPanelProp
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 36 }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[400px] bg-[#FFFEFA]
+            className="fixed right-0 top-0 h-full w-full sm:w-[400px] bg-cream-100
                        shadow-2xl z-50 flex flex-col overflow-hidden"
           >
             {/* Close button */}

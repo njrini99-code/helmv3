@@ -298,7 +298,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
       </div>
 
       {/* Sub-navigation pills */}
-      <div className="sticky top-0 z-10 bg-[#FFFEFA]/80 backdrop-blur-md py-2">
+      <div className="sticky top-0 z-10 bg-cream-100/80 backdrop-blur-md py-2">
       <div className="flex items-center gap-1 p-1 bg-white/50 backdrop-blur-sm border border-white/30 rounded-full w-full sm:w-fit overflow-x-auto">
         {SUB_TABS.map((tab) => (
           <button
