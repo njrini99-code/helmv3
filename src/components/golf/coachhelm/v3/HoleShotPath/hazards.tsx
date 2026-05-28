@@ -18,7 +18,7 @@
 
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { useId } from 'react';
 import type { PlottedHazard } from './geometry';
 import { EASE_CINEMATIC } from '@/lib/coachhelm/v3/motion';
@@ -30,6 +30,7 @@ interface HazardsProps {
 }
 
 export function Hazards({ hazards, staticRender = false }: HazardsProps) {
+  const prefersReducedMotion = useReducedMotion();
   const rawId = useId();
   const id = rawId.replace(/:/g, '-');
   const sandGrad = `sandGrad-${id}`;
@@ -74,7 +75,7 @@ export function Hazards({ hazards, staticRender = false }: HazardsProps) {
               key={key}
               initial={initial}
               animate={animate}
-              transition={transition}
+              transition={prefersReducedMotion ? { duration: 0 } : (transition)}
               style={{ transformOrigin: `${h.x}px ${h.y}px` }}
             >
               {/* Subtle dark rim for depth */}
@@ -113,7 +114,7 @@ export function Hazards({ hazards, staticRender = false }: HazardsProps) {
               key={key}
               initial={initial}
               animate={animate}
-              transition={transition}
+              transition={prefersReducedMotion ? { duration: 0 } : (transition)}
               style={{ transformOrigin: `${h.x}px ${h.y}px` }}
             >
               {/* Bank / shoreline */}
@@ -160,7 +161,7 @@ export function Hazards({ hazards, staticRender = false }: HazardsProps) {
             key={key}
             initial={initial}
             animate={animate}
-            transition={transition}
+            transition={prefersReducedMotion ? { duration: 0 } : (transition)}
             style={{ transformOrigin: `${h.x}px ${h.y}px` }}
           >
             <ellipse

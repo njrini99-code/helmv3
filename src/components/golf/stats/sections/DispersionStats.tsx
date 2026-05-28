@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type {
   SprayChartMode,
   SprayChartResponse,
@@ -114,6 +114,7 @@ function SummaryChip({
   value: string;
   tone?: 'neutral' | 'primary' | 'warm';
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const toneClass = tone === 'primary'
     ? 'border-primary-200/80 bg-primary-100/80 text-primary-700'
     : tone === 'warm'
@@ -125,7 +126,7 @@ function SummaryChip({
       className={`rounded-2xl border px-3 py-2 shadow-sm backdrop-blur-sm ${toneClass}`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 280, damping: 24 })}
     >
       <div className="text-[10px] font-medium uppercase tracking-[0.16em] opacity-70">{label}</div>
       <div className="mt-1 text-sm font-medium">{value}</div>
@@ -134,6 +135,7 @@ function SummaryChip({
 }
 
 function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
+  const prefersReducedMotion = useReducedMotion();
   const items = [
     {
       key: 'playable',
@@ -166,7 +168,7 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
           className={`rounded-2xl border px-4 py-3 shadow-sm ${item.className}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.04 * index, type: 'spring', stiffness: 260, damping: 22 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.04 * index, type: 'spring', stiffness: 260, damping: 22 })}
         >
           <div className="text-[11px] font-medium uppercase tracking-[0.16em] opacity-75">{item.label}</div>
           <div className="mt-1 flex items-end justify-between gap-3">
@@ -180,6 +182,7 @@ function OutcomeStrip({ group }: { group: SprayChartShotGroup }) {
 }
 
 function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
+  const prefersReducedMotion = useReducedMotion();
   const width = 360;
   const height = 320;
   const padding = 28;
@@ -205,7 +208,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
         strokeWidth="1.5"
         initial={{ opacity: 0.78 }}
         animate={{ opacity: [0.78, 1, 0.82] }}
-        transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 4.5, repeat: Infinity, ease: 'easeInOut' })}
       />
       <line x1={width / 2} y1={height - padding} x2={width / 2} y2={padding + 8} stroke="#d6d3d1" strokeDasharray="4 6" />
       <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#d6d3d1" />
@@ -216,7 +219,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
         fill="#dcfce7"
         fillOpacity={0.35}
         animate={{ r: [12, 18, 12], opacity: [0.45, 0.18, 0.45] }}
-        transition={{ duration: 3.6, repeat: Infinity, ease: 'easeInOut' }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 3.6, repeat: Infinity, ease: 'easeInOut' })}
       />
       <text x={width / 2} y={height - 8} textAnchor="middle" className="fill-warm-500 text-[10px]">Tee</text>
       <text x={width / 2} y={padding} textAnchor="middle" className="fill-warm-500 text-[10px]">Landing area</text>
@@ -228,7 +231,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
             key={point.id}
             initial={{ opacity: 0, scale: 0.75 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.22 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.22 })}
           >
             <title>{point.tooltip}</title>
             <circle
@@ -248,6 +251,7 @@ function DrivingPointCloud({ group }: { group: SprayChartShotGroup }) {
 }
 
 function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
+  const prefersReducedMotion = useReducedMotion();
   const width = 360;
   const height = 320;
   const padding = 28;
@@ -272,7 +276,7 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
           stroke="#e7e5e4"
           strokeDasharray="5 5"
           animate={{ opacity: [0.45, 0.7, 0.45] }}
-          transition={{ duration: 4 + ratio, repeat: Infinity, ease: 'easeInOut' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 4 + ratio, repeat: Infinity, ease: 'easeInOut' })}
         />
       ))}
       <line x1={padding} y1={height / 2} x2={width - padding} y2={height / 2} stroke="#d6d3d1" />
@@ -285,7 +289,7 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
         stroke="#16a34a"
         strokeWidth="2"
         animate={{ r: [9, 13, 9], opacity: [0.9, 0.65, 0.9] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 3.2, repeat: Infinity, ease: 'easeInOut' })}
       />
       <text x={width / 2} y={padding - 4} textAnchor="middle" className="fill-warm-500 text-[10px]">Long</text>
       <text x={width / 2} y={height - 10} textAnchor="middle" className="fill-warm-500 text-[10px]">Short</text>
@@ -299,7 +303,7 @@ function ApproachPointCloud({ group }: { group: SprayChartShotGroup }) {
             key={point.id}
             initial={{ opacity: 0, scale: 0.75 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.22 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.22 })}
           >
             <title>{point.tooltip}</title>
             <circle
@@ -363,6 +367,7 @@ function DirectionalSummary({ group }: { group: SprayChartShotGroup }) {
 }
 
 function PointCloudLegend() {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="flex flex-wrap items-center gap-3 text-xs text-warm-500">
       {Object.entries(OUTCOME_STYLES).map(([key, style]) => (
@@ -371,7 +376,7 @@ function PointCloudLegend() {
           className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 ${OUTCOME_SURFACE_STYLES[key as keyof typeof OUTCOME_SURFACE_STYLES]}`}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.08 })}
         >
           <span className="inline-block h-2.5 w-2.5 rounded-full shadow-sm" style={{ backgroundColor: style.fill }} />
           <span>{style.label}</span>
@@ -388,6 +393,7 @@ export function DispersionStats({
   data: SprayChartResponse | null;
   loading?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const [family, setFamily] = useState<SprayChartShotFamily>('driving');
   const [mode, setMode] = useState<SprayChartMode>('point-cloud');
 
@@ -431,7 +437,7 @@ export function DispersionStats({
         className="space-y-3 rounded-3xl border border-white/70 bg-gradient-to-br from-white via-primary-50/40 to-amber-50/50 p-4 shadow-sm"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 260, damping: 24 })}
       >
         <div className="space-y-1">
           <h3 className="text-[15px] font-medium text-warm-900 tracking-[-0.005em]">{FAMILY_LABELS[family]} spray summary</h3>
@@ -514,7 +520,7 @@ export function DispersionStats({
             className="rounded-3xl border border-white/70 bg-gradient-to-b from-white to-warm-50/70 p-3 shadow-inner"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05, type: 'spring', stiffness: 240, damping: 22 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.05, type: 'spring', stiffness: 240, damping: 22 })}
           >
             {mode === 'point-cloud' ? (
               family === 'driving' ? <DrivingPointCloud group={currentGroup} /> : <ApproachPointCloud group={currentGroup} />

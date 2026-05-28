@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSparkles,
@@ -94,6 +94,7 @@ function comparisonArrow(cmp: StatComparison): { icon: string; color: string; la
 }
 
 export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewViewerProps) {
+  const prefersReducedMotion = useReducedMotion();
   const {
     review,
     ruleBasedContent,
@@ -164,14 +165,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
         className={cn('rounded-2xl border border-dashed border-warm-300 bg-cream-100/60 backdrop-blur-xl p-10', className)}
       >
         <div className="flex flex-col items-center justify-center text-center">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
             className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mb-5 shadow-lg shadow-primary-500/25"
           >
             <IconSparkles size={28} className="text-white" />
@@ -179,7 +180,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <motion.h3
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25 })}
             className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2"
           >
             Round Review
@@ -187,7 +188,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 })}
             className="text-sm text-warm-500 max-w-sm mb-7"
           >
             Get a detailed performance breakdown with scoring analysis, putting stats, driving data, and improvement priorities.
@@ -195,7 +196,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.45 })}
           >
             <Button
               onClick={generate}
@@ -229,14 +230,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           <div className="relative">
             <motion.div
               animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ repeat: Infinity, duration: 3, ease: 'easeInOut' })}
               className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/25"
             >
               <IconSparkles size={28} className="text-white" />
             </motion.div>
             <motion.div
               animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0, 0.3] }}
-              transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ repeat: Infinity, duration: 2, ease: 'easeInOut' })}
               className="absolute -inset-3 bg-primary-500/15 rounded-3xl"
             />
           </div>
@@ -249,7 +250,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
           >
             <motion.div
               animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ repeat: Infinity, duration: 1.5, ease: 'easeInOut' })}
               className="h-full w-1/2 bg-gradient-to-r from-transparent via-primary-500 to-transparent rounded-full"
             />
           </motion.div>
@@ -270,14 +271,14 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4 })}
       className={cn('space-y-5', className)}
     >
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
         className="flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
@@ -390,7 +391,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
           className="space-y-5 pt-2"
         >
           <div className="flex items-center gap-3 px-1">
@@ -432,6 +433,7 @@ function sanitizeNaN(text: string): string {
 
 /** Grade + Summary */
 function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
+  const prefersReducedMotion = useReducedMotion();
   const gc = gradeColors[content.overallGrade] ?? gradeColors['C']!;
   const cleanSummary = sanitizeNaN(content.summary);
   return (
@@ -440,7 +442,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
         <motion.div
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
           className={cn(
             'flex-shrink-0 w-16 h-16 rounded-2xl flex items-center justify-center border-2 ring-4 shadow-lg',
             gc.bg, gc.text, gc.border, gc.ring, gc.glow,
@@ -474,6 +476,7 @@ function ScorecardStrip({
   holes: HoleBreakdown[];
   frontBack: RoundReviewContent['frontBackSplit'];
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const front = holes.filter(h => h.hole <= 9);
   const back = holes.filter(h => h.hole >= 10);
   const frontScore = frontBack.front.score;
@@ -513,7 +516,7 @@ function ScorecardStrip({
                   <motion.span
                     initial={{ scale: 0.6, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.05 * i, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.05 * i, duration: 0.35, ease: [0.16, 1, 0.3, 1] })}
                     className={cn(
                       'inline-flex items-center justify-center w-7 h-7 text-eyebrow font-medium rounded-lg transition-shadow',
                       scoreToPairColor(h.scoreToPar),
@@ -612,6 +615,7 @@ function ScoringDistribution({
   dist: RoundReviewContent['scoringDistribution'];
   totalHoles: number;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const segments = [
     { label: 'Eagle+', count: dist.eagles.length, color: 'bg-amber-400', text: 'text-amber-700' },
     { label: 'Birdie', count: dist.birdies.length, color: 'bg-primary-500', text: 'text-primary-700' },
@@ -632,7 +636,7 @@ function ScoringDistribution({
             key={s.label}
             initial={{ width: 0 }}
             animate={{ width: `${(s.count / totalHoles) * 100}%` }}
-            transition={{ delay: 0.2 + i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 + i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
             className={cn('flex items-center justify-center text-eyebrow font-medium text-white', s.color)}
             style={{ minWidth: s.count > 0 ? '32px' : 0 }}
           >
@@ -699,6 +703,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
 
 /** Key Stats Grid */
 function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
@@ -713,7 +718,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
               className={cn(
                 'p-3.5 rounded-xl border transition-colors',
                 stat.comparison === 'above' && 'bg-primary-50/60 border-primary-100',
@@ -736,6 +741,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
 
 /** Momentum Chart */
 function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
+  const prefersReducedMotion = useReducedMotion();
   if (data.length === 0) return null;
   const values = data.map(d => d.rollingScoreToPar);
   const min = Math.min(...values, -1);
@@ -789,7 +795,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.03 * i, duration: 0.3 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.03 * i, duration: 0.3 })}
                   className={cn(
                     'absolute rounded-full -translate-x-1/2',
                     isLast ? 'w-3 h-3 ring-2 ring-cream-50' : 'w-1.5 h-1.5',
@@ -831,6 +837,7 @@ function GameBreakdownSection({
   driving: RoundReviewContent['drivingAnalysis'];
   shortGame: RoundReviewContent['shortGameAnalysis'];
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const hasDriving = driving && (driving.avgDistance !== null || driving.fairwayPct !== null);
   const hasShortGame = shortGame && (shortGame.scrambleAttempts > 0 || shortGame.sandAttempts > 0);
   const hasPutting = !!putting;
@@ -856,7 +863,7 @@ function GameBreakdownSection({
                 key={item.label}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 * i, duration: 0.35 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.35 })}
                 className={cn('text-center p-3 rounded-xl', item.bg)}
               >
                 <div className={cn('text-h1 font-light tabular-nums tracking-[-0.025em]', item.textColor)}>{item.value}</div>
@@ -957,14 +964,14 @@ function GameBreakdownSection({
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${driving.missPattern.total > 0 ? Math.round((driving.missPattern.left / driving.missPattern.total) * 100) : 0}%` }}
-                    transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
                     className="bg-blue-400 h-full rounded-l-full"
                   />
                   <div className="flex-1" />
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${driving.missPattern.total > 0 ? Math.round((driving.missPattern.right / driving.missPattern.total) * 100) : 0}%` }}
-                    transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
                     className="bg-orange-400 h-full rounded-r-full"
                   />
                 </div>
@@ -1022,7 +1029,7 @@ function GameBreakdownSection({
                   key={i}
                   initial={{ opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.05 * i }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.05 * i })}
                   className="flex items-center gap-2.5 text-xs px-3 py-2 rounded-lg bg-warm-50/50 border border-warm-100/50"
                 >
                   <span className={cn(
@@ -1068,6 +1075,7 @@ function HighlightsAndImprovements({
   highlights: RoundReviewContent['highlights'];
   improvements: RoundReviewContent['areasForImprovement'];
 }) {
+  const prefersReducedMotion = useReducedMotion();
   if ((!highlights || highlights.length === 0) && (!improvements || improvements.length === 0)) return null;
 
   return (
@@ -1084,7 +1092,7 @@ function HighlightsAndImprovements({
                 key={i}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * i, duration: 0.35 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.35 })}
                 className="p-3.5 rounded-xl bg-cream-100/82 border border-primary-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -1109,7 +1117,7 @@ function HighlightsAndImprovements({
                 key={i}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.1 * i, duration: 0.35 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.35 })}
                 className="p-3.5 rounded-xl bg-cream-100/82 border border-amber-100 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -1128,6 +1136,7 @@ function HighlightsAndImprovements({
 
 /** Strokes to Gain Priority */
 function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
@@ -1140,7 +1149,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
             key={i}
             initial={{ opacity: 0, x: -12 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
             className="flex items-center gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
           >
             <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center border border-blue-200/50 shadow-sm">
@@ -1161,6 +1170,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
 
 /** Recommendations */
 function RecommendationsCard({ recs }: { recs: string[] }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
       <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
@@ -1173,7 +1183,7 @@ function RecommendationsCard({ recs }: { recs: string[] }) {
             key={i}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * i, duration: 0.35 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * i, duration: 0.35 })}
             className="flex items-start gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100/50"
           >
             <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white flex items-center justify-center text-micro font-medium mt-0.5 shadow-sm">

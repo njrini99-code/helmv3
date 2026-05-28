@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { getTeamJoinRequests, acceptJoinRequest, rejectJoinRequest } from '@/app/golf/actions/teams';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
@@ -28,6 +28,7 @@ interface JoinRequest {
 }
 
 export function PendingJoinRequests() {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { addToast } = useToast();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
@@ -172,7 +173,7 @@ export function PendingJoinRequests() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               style={{ overflow: 'hidden' }}
             >
               {error && (

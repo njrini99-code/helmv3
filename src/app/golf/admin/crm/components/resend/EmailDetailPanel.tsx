@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import {
@@ -45,6 +45,7 @@ export function EmailDetailPanel({
   onClose,
   onSendFollowup,
 }: EmailDetailPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [email, setEmail] = useState<EmailRow | null>(null);
   const [events, setEvents] = useState<EmailEventRow[]>([]);
   const [clicks, setClicks] = useState<EmailClick[]>([]);
@@ -108,7 +109,7 @@ export function EmailDetailPanel({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="fixed inset-0 bg-warm-900/20 backdrop-blur-sm z-40"
             onClick={onClose}
           />
@@ -118,7 +119,7 @@ export function EmailDetailPanel({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
             className="fixed top-0 right-0 h-full w-full max-w-2xl z-50 bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto"
           >
             {/* Header */}

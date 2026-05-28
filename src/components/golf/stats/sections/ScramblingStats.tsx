@@ -1,11 +1,12 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 
 export function ScramblingStats({ stats }: { stats: GolfStats }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       className="space-y-4"
@@ -83,7 +84,7 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
               className="w-full text-sm"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 })}
             >
               <thead>
                 <tr className="border-b border-warm-200">
@@ -107,7 +108,7 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
                       className="border-b border-warm-100 last:border-0 hover:bg-warm-50/50 transition-colors"
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + idx * 0.03 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 + idx * 0.03 })}
                     >
                       <td className="py-2 px-2 text-warm-600">{row.label}</td>
                       <td className="py-2 px-2 text-center text-warm-900 tabular-nums">{formatStat(data.fairway, '', 2)}</td>

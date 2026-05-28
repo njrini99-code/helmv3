@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -19,6 +19,7 @@ export function OverviewSWCard({
   item: StatisticalStrengthWeakness;
   type: 'strength' | 'weakness';
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const isStrength = type === 'strength';
   const impactAbs = Math.abs(item.strokeImpact);
   const impactStr = `${isStrength ? '+' : '-'}${impactAbs.toFixed(1)}`;
@@ -30,9 +31,9 @@ export function OverviewSWCard({
           ? 'bg-primary-50/60 border-primary-200/60'
           : 'bg-red-50/50 border-red-200/60'
       }`}
-      initial={{ opacity: 0, y: 10 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, y: 10 })}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 24 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 24 })}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
@@ -77,6 +78,7 @@ export function OverviewStats({
   statisticalWeaknesses?: StatisticalStrengthWeakness[];
   holeFormat?: HoleFormat;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   // Resolve headline scoring average based on format filter
   const headlineScoringAvg = holeFormat === '9' ? stats.scoringAverage9
     : holeFormat === '18' ? stats.scoringAverage18
@@ -94,7 +96,7 @@ export function OverviewStats({
     <motion.div
       className="space-y-6"
       variants={containerVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
     >
       {/* Player Header Card */}

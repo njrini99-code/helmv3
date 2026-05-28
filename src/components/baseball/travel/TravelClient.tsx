@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -259,6 +259,7 @@ function ItineraryCard({
   onRefreshExpenses,
   formatDate,
 }: ItineraryCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className="glass-standard rounded-2xl overflow-clip">
       {/* Header Row */}
@@ -300,7 +301,7 @@ function ItineraryCard({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="overflow-hidden"
           >
             <div className="px-5 pb-5 border-t border-warm-100 pt-4 space-y-6">

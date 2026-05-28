@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -539,6 +539,7 @@ function SettingsExpandableRow({
   isLast?: boolean;
   children: React.ReactNode;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div className={cn(!isLast && !isExpanded && 'border-b border-warm-100')}>
       <Button variant="ghost"
@@ -559,7 +560,7 @@ function SettingsExpandableRow({
         </div>
         <m.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           className="flex-shrink-0"
         >
           <IconChevronDown size={18} className="text-warm-300" />
@@ -572,7 +573,7 @@ function SettingsExpandableRow({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             className="overflow-hidden"
           >
             <div className={cn('px-4 pb-4', !isLast && 'border-b border-warm-100')}>

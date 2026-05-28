@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -19,6 +19,7 @@ interface PerformancePredictionProps {
 }
 
 export function PerformancePrediction({ prediction, playerState }: PerformancePredictionProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Empty state when no prediction available
   if (!prediction) {
     return (
@@ -119,7 +120,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
         <m.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.3 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3 })}
           className="text-center"
         >
           <p className="text-xs text-warm-500 uppercase tracking-wide mb-1">Estimated Score</p>
@@ -150,7 +151,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <m.div
               initial={{ width: 0 }}
               animate={{ width: `${confidencePercent}%` }}
-              transition={{ duration: 0.6, delay: 0.2, ease: 'easeOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, delay: 0.2, ease: 'easeOut' })}
               className="absolute inset-y-0 left-0 bg-primary-500 rounded-full"
             />
 
@@ -158,7 +159,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
             <m.div
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3, delay: 0.5 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.5 })}
               className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-primary-600 rounded-full shadow-md"
               style={{
                 left: `${Math.min(Math.max(((Number(rangeHigh) - Number(rangeLow)) > 0 ? ((predictedValue - Number(rangeLow)) / (Number(rangeHigh) - Number(rangeLow))) * 100 : 50), 5), 95)}%`,
@@ -181,7 +182,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
                 key={i}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 * i }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.1 * i })}
                 className="flex items-center justify-between text-sm bg-cream-100/60 rounded-lg px-3 py-2"
               >
                 <span className="text-warm-600">{factor.name}</span>
@@ -220,7 +221,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
         <m.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
           className="mt-4 pt-4 border-t border-white/20 flex items-center gap-2"
         >
           <stateMessage.icon size={16} className={stateMessage.color} />

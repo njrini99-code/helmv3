@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCheck, IconCalendar } from '@/components/icons';
 import { completeAnnouncementTask } from '@/app/golf/actions/announcements';
@@ -23,6 +23,7 @@ export function AnnouncementTaskItem({
   isCompleted: initialCompleted,
   onCompleted,
 }: AnnouncementTaskItemProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isCompleted, setIsCompleted] = useState(initialCompleted);
   const [loading, setLoading] = useState(false);
 
@@ -71,13 +72,13 @@ export function AnnouncementTaskItem({
               : 'border-warm-300 hover:border-primary-400'
           )}
           animate={isCompleted ? { scale: [1, 1.2, 1] } : {}}
-          transition={{ duration: 0.3 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3 })}
         >
           {isCompleted && (
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.1, type: 'spring', stiffness: 500, damping: 15 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1, type: 'spring', stiffness: 500, damping: 15 })}
             >
               <IconCheck size={12} className="text-white" />
             </motion.div>

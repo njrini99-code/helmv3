@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { generateHeroNarrative } from '@/app/golf/actions/v3/llm';
 import {
@@ -38,6 +38,7 @@ export interface HeroNarrativeCardProps {
 }
 
 export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [text, setText] = useState(props.fallbackText);
   const [usedLlm, setUsedLlm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -85,7 +86,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
       variants={heroVariants}
       initial="hidden"
       animate="visible"
-      transition={heroTransition}
+      transition={prefersReducedMotion ? { duration: 0 } : (heroTransition)}
       className="mb-5 md:mb-6"
     >
       <Card variant="raised" hover={false} className="overflow-hidden">
@@ -100,7 +101,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
             <m.div
               className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
               animate={{ x: ['0%', '400%'] }}
-              transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1.6, repeat: Infinity, ease: 'easeInOut' })}
             />
           </m.div>
         )}
@@ -118,7 +119,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  transition={badgeTransition}
+                  transition={prefersReducedMotion ? { duration: 0 } : (badgeTransition)}
                   className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
                 >
                   <span aria-hidden className="text-caption leading-none">✦</span>
@@ -135,7 +136,7 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
               initial="hidden"
               animate="visible"
               exit="exit"
-              transition={crossfadeTransition}
+              transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
               className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
             >
               {text}

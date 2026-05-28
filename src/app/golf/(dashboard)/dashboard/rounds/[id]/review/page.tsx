@@ -9,7 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -140,6 +140,7 @@ function derivePromoteSuggestion(
 // ============================================================================
 
 export default function RoundReviewPage() {
+  const prefersReducedMotion = useReducedMotion();
   const params = useParams();
   const { addToast } = useToast();
   const roundId = params.id as string;
@@ -443,7 +444,7 @@ export default function RoundReviewPage() {
     return (
       <m.div
         variants={containerVariants}
-        initial="hidden"
+        initial={prefersReducedMotion ? false : "hidden"}
         animate="visible"
         className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
       >
@@ -575,7 +576,7 @@ export default function RoundReviewPage() {
   return (
     <m.div
       variants={containerVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
       className="pb-[calc(var(--golf-mobile-bottom-nav-offset)+1rem)] lg:pb-6"
     >

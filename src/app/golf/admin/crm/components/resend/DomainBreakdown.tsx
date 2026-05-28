@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconGlobe } from '@/components/icons';
 import type {
@@ -19,6 +19,7 @@ interface DomainBreakdownProps {
 type SortKey = 'total' | 'delivered' | 'opened' | 'clicked' | 'bounced';
 
 export function DomainBreakdown({ window }: DomainBreakdownProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [rows, setRows] = useState<DomainStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortKey, setSortKey] = useState<SortKey>('total');
@@ -163,7 +164,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                   key={row.domain}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.02, duration: 0.2 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.02, duration: 0.2 })}
                   className="hover:bg-white/70 transition-colors"
                 >
                   <td className="px-6 py-3">

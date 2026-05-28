@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCheck, IconX, IconInfo, IconWarning, IconActivity } from '@/components/icons';
 import { IconButton } from '@/components/ui/button';
@@ -224,6 +224,7 @@ interface AdminToastItemProps {
 }
 
 function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
+  const prefersReducedMotion = useReducedMotion();
   const config = variantConfig[toast.variant];
   const Icon = config.icon;
 
@@ -249,7 +250,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
       initial={{ opacity: 0, x: 50, scale: 0.95 }}
       animate={{ opacity: 1, x: 0, scale: 1 }}
       exit={{ opacity: 0, x: 50, scale: 0.95 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
       className={cn(
         'relative flex items-start gap-3 p-4 rounded-xl border shadow-xl min-w-[340px] max-w-md overflow-hidden',
         'bg-white/90 backdrop-blur-xl',
@@ -303,7 +304,7 @@ function AdminToastItem({ toast, onClose }: AdminToastItemProps) {
           className={cn('absolute bottom-0 left-0 h-0.5', config.bgClass.replace('/50', ''))}
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
-          transition={{ duration: (toast.duration ?? 5000) / 1000, ease: 'linear' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: (toast.duration ?? 5000) / 1000, ease: 'linear' })}
         />
       )}
     </motion.div>

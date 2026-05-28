@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { Player, Organization } from '@/lib/types';
 import { DiscoverToggle, type DiscoverMode } from './DiscoverToggle';
@@ -121,6 +121,7 @@ export function DiscoverView({
   playerStateCounts = {},
   teamStateCounts = {},
 }: DiscoverViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -504,7 +505,7 @@ export function DiscoverView({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
             >
             <div className="relative glass-standard rounded-2xl overflow-clip p-8">
               {/* Decorative top highlight */}
@@ -569,7 +570,7 @@ export function DiscoverView({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
           >
             {playersLoading ? (
               <PlayerCardGrid
@@ -626,7 +627,7 @@ export function DiscoverView({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.4, 0, 0.2, 1] })}
           >
             <div className={cn(
               'transition-opacity duration-200',

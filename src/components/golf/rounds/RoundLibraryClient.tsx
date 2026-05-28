@@ -20,7 +20,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
@@ -198,6 +198,7 @@ interface RoundCardV2Props {
 }
 
 function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: RoundCardV2Props) {
+  const prefersReducedMotion = useReducedMotion();
   const stp = round.score_to_par ?? 0;
   const scoreTone =
     stp < 0 ? 'under' : stp === 0 ? 'par' : 'over';
@@ -222,7 +223,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
       <m.article
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.32, ease: PREMIUM_EASE, delay: staggerIndex * 0.05 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.32, ease: PREMIUM_EASE, delay: staggerIndex * 0.05 })}
         className={cn(
           'group/card relative overflow-clip rounded-2xl',
           'border border-warm-200/55 bg-white',

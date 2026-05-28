@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
@@ -101,6 +101,7 @@ function AnnouncementDialog({
   documents,
   onClose,
 }: CreateAnnouncementFlowProps & { isOpen: boolean; onClose: () => void }) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const titleRef = useRef<HTMLInputElement>(null);
@@ -329,7 +330,7 @@ function AnnouncementDialog({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                   className="overflow-hidden"
                 >
                   <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
@@ -478,7 +479,7 @@ function AnnouncementDialog({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                   className="overflow-hidden"
                 >
                   <div className="border border-warm-200 rounded-xl overflow-hidden bg-white">
@@ -552,7 +553,7 @@ function AnnouncementDialog({
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8, height: 0 }}
-                  transition={{ duration: 0.15 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
                   layout
                 >
                   <div className="flex items-start gap-2 p-2.5 border border-warm-200 rounded-xl bg-warm-50/30">

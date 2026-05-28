@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -81,9 +81,10 @@ interface FilterChipProps {
 }
 
 function FilterChip({ label, onRemove, colorClass = 'bg-primary-100 text-primary-700' }: FilterChipProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.span
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.9 })}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       className={cn(
@@ -118,6 +119,7 @@ export function InsightFiltersPanel({
   className,
   defaultExpanded = true,
 }: InsightFiltersPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -440,10 +442,10 @@ export function InsightFiltersPanel({
           <AnimatePresence>
             {!isExpanded && filterChips.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0, height: 0 })}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 style={{ overflow: 'hidden' }}
                 className="px-4 pb-3"
               >
@@ -465,10 +467,10 @@ export function InsightFiltersPanel({
           <AnimatePresence>
             {isExpanded && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0, height: 0 })}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 style={{ overflow: 'hidden' }}
               >
                 <div className="px-4 pb-4 border-t border-warm-100">
@@ -524,7 +526,7 @@ export function InsightFiltersPanel({
             <>
               {/* Backdrop */}
               <motion.div
-                initial={{ opacity: 0 }}
+                initial={prefersReducedMotion ? false : ({ opacity: 0 })}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-40 bg-warm-900/50 backdrop-blur-sm"
@@ -533,10 +535,10 @@ export function InsightFiltersPanel({
 
               {/* Drawer */}
               <motion.div
-                initial={{ y: '100%' }}
+                initial={prefersReducedMotion ? false : ({ y: '100%' })}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 300 })}
                 className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl max-h-[85vh] overflow-auto"
               >
                 {/* Handle */}

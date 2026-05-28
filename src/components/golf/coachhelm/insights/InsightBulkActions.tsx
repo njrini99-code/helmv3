@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, IconButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
@@ -46,6 +46,7 @@ export function InsightBulkActions({
   isAllSelected,
   className,
 }: InsightBulkActionsProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean;
@@ -121,7 +122,7 @@ export function InsightBulkActions({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 400 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 400 })}
             className={cn(
               'fixed bottom-[calc(var(--golf-mobile-bottom-nav-offset)+env(safe-area-inset-bottom))] left-1/2 z-40 -translate-x-1/2 lg:bottom-6',
               'w-full max-w-2xl px-4',

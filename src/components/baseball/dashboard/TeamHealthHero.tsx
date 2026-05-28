@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   IconUsers,
   IconCheck,
@@ -30,6 +30,7 @@ function ProgressRing({
   strokeWidth?: number;
   color?: string;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = max > 0 ? Math.min(value / max, 1) : 0;
@@ -59,7 +60,7 @@ function ProgressRing({
         className={color}
         initial={{ strokeDashoffset: circumference }}
         animate={{ strokeDashoffset: offset }}
-        transition={{ duration: 0.8, ease: [0.33, 1, 0.68, 1] }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, ease: [0.33, 1, 0.68, 1] })}
         style={{
           strokeDasharray: circumference,
         }}

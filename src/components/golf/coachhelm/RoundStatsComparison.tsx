@@ -10,7 +10,7 @@
  * - Mobile-friendly responsive design
  */
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -131,6 +131,7 @@ function StatBar({
   formatValue,
   index,
 }: StatBarProps) {
+  const prefersReducedMotion = useReducedMotion();
   const playerStatus = getComparisonStatus(roundValue, playerAvg, higherIsBetter);
   // teamStatus available for future team comparison features
   const _teamStatus = getComparisonStatus(roundValue, teamAvg, higherIsBetter);
@@ -171,7 +172,7 @@ function StatBar({
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.3 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1, duration: 0.3 })}
       className="space-y-2"
     >
       {/* Header */}
@@ -205,7 +206,7 @@ function StatBar({
         <motion.div
           initial={{ scaleX: 0.5 }}
           animate={{ scaleX: barWidth / 100 }}
-          transition={{ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.1 + 0.2, duration: 0.5, ease: 'easeOut' })}
           className={cn(
             'absolute top-0 bottom-0 left-0 w-full rounded-full origin-left',
             config.color

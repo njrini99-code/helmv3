@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconTrendingUp, IconTarget, IconFlag, IconGolf, IconAward, IconChartBar, IconCrosshair, IconFilter, IconChevronDown, IconDownload, IconPrinter, IconHome } from '@/components/icons';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import type { StatisticalStrengthWeakness } from '@/lib/golf/strokes-gained';
@@ -104,6 +104,7 @@ export default function GolfStatsDisplay({
   activeCategory: controlledCategory,
   onCategoryChange,
 }: StatsDisplayProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [internalCategory, setInternalCategory] = useState<StatsCategory>(isCoachView ? 'overview' : 'scoring');
   const activeCategory = controlledCategory ?? internalCategory;
   const handleCategoryChange = (category: StatsCategory) => {
@@ -157,24 +158,24 @@ export default function GolfStatsDisplay({
     <div className="min-h-full bg-transparent print:bg-white">
       <div ref={contentRef} className="max-w-4xl mx-auto px-4 py-6 print:max-w-none print:px-8">
         {/* Header */}
-        <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
+        <motion.div className="mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 25 })}>
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-3">
             <div className="flex-1 min-w-0">
-              <motion.h1 className="text-xl sm:text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+              <motion.h1 className="text-xl sm:text-[24px] md:text-[28px] font-medium text-warm-900 tracking-[-0.022em] truncate" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>
                 {playerName ? `${playerName}'s Stats` : 'My Stats'}
               </motion.h1>
-              <motion.p className="text-warm-500 text-xs sm:text-sm mt-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+              <motion.p className="text-warm-500 text-xs sm:text-sm mt-1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}>
                 {stats.roundsPlayed} rounds • {stats.holesPlayed} holes
               </motion.p>
             </div>
             <div className="flex items-center gap-2 sm:gap-2 print:hidden flex-shrink-0">
               <motion.button onClick={handleExportPDF} disabled={isExporting} className={`p-2.5 rounded-lg border transition-colors ${isExporting ? 'bg-warm-100 border-warm-200 text-warm-400 cursor-not-allowed' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={isExporting ? {} : { scale: 1.05 }} whileTap={isExporting ? {} : { scale: 0.95 }} title="Export as PDF">
-                {isExporting ? <motion.div className="h-[18px] w-[18px] border-2 border-warm-300 border-t-primary-500 rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} /> : <IconDownload size={18} />}
+                {isExporting ? <motion.div className="h-[18px] w-[18px] border-2 border-warm-300 border-t-primary-500 rounded-full" animate={{ rotate: 360 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })} /> : <IconDownload size={18} />}
               </motion.button>
               <motion.button onClick={handlePrint} className="p-2.5 rounded-lg border bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600 transition-colors" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Print stats"><IconPrinter size={18} /></motion.button>
               <motion.button onClick={() => setShowFilters(!showFilters)} className={`p-2.5 rounded-lg border transition-colors ${showFilters ? 'bg-primary-50 border-primary-200 text-primary-600' : 'bg-white border-warm-200 text-warm-500 hover:border-primary-300 hover:text-primary-600'}`} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Filter options"><IconFilter size={18} /></motion.button>
               {onRoundChange && rounds.length > 0 && (
-                <motion.div className="flex-1 min-w-[100px] sm:min-w-[200px] max-w-[200px] sm:max-w-none" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
+                <motion.div className="flex-1 min-w-[100px] sm:min-w-[200px] max-w-[200px] sm:max-w-none" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}>
                   <label className="hidden sm:block text-xs font-medium text-warm-500 uppercase tracking-wide mb-1.5">View Stats</label>
                   <select value={selectedRoundId} onChange={(e) => onRoundChange(e.target.value as string | 'overall')} className="w-full px-2 sm:px-3 py-2 rounded-lg border border-warm-200 text-xs sm:text-sm font-medium text-warm-700 bg-white hover:border-primary-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none transition-colors">
                     <option value="overall">Overall</option>
@@ -195,14 +196,14 @@ export default function GolfStatsDisplay({
           )}
           <AnimatePresence>
             {showFilters && (
-              <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 25 }}>
+              <motion.div className="surface-matte rounded-xl p-4 mb-4" initial={{ opacity: 0, height: 0, marginBottom: 0 }} animate={{ opacity: 1, height: 'auto', marginBottom: 16 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 25 })}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-medium text-warm-700">Quick Filters</h3>
                   <Button variant="ghost" onClick={() => setShowFilters(false)} className="text-xs text-warm-400 hover:text-warm-600 transition-colors">Close</Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {FILTER_PRESETS.map((preset, idx) => (
-                    <motion.button key={preset.label} onClick={() => handleFilterClick(preset.filter)} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${isFilterActive(preset.filter) ? 'bg-primary-600 text-white border border-primary-600' : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700'}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: idx * 0.03 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{preset.label}</motion.button>
+                    <motion.button key={preset.label} onClick={() => handleFilterClick(preset.filter)} className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${isFilterActive(preset.filter) ? 'bg-primary-600 text-white border border-primary-600' : 'bg-white border border-warm-200 text-warm-600 hover:border-primary-300 hover:bg-primary-50 active:bg-primary-100 hover:text-primary-700'}`} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.03 })} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>{preset.label}</motion.button>
                   ))}
                 </div>
                 {filterOptions && filterOptions.courses.length > 0 && (
@@ -245,7 +246,7 @@ export default function GolfStatsDisplay({
           className="mb-4"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
         >
           <GolfTabBar
             tabs={categories}
@@ -257,13 +258,13 @@ export default function GolfStatsDisplay({
         </motion.div>
 
         <AnimatePresence mode="wait">
-          <motion.p key={activeCategory} className="text-sm text-warm-500 mb-4" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={{ duration: 0.2 }}>
+          <motion.p key={activeCategory} className="text-sm text-warm-500 mb-4" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}>
             {categories.find(c => c.id === activeCategory)?.description}
           </motion.p>
         </AnimatePresence>
 
         <AnimatePresence mode="wait">
-          <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+          <motion.div key={activeCategory} variants={tabContentVariants} initial="initial" animate="animate" exit="exit" transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 300, damping: 30 })}>
             {activeCategory === 'overview' && <OverviewStats stats={stats} playerName={playerName} playerProfile={playerProfile} trendData={trendData} statisticalStrengths={statisticalStrengths} statisticalWeaknesses={statisticalWeaknesses} holeFormat={holeFormat} />}
             {activeCategory === 'progress' && <ProgressStats stats={stats} rounds={rounds} />}
             {activeCategory === 'dispersion' && <DispersionStats data={sprayChartData} loading={sprayChartLoading} />}
@@ -278,12 +279,12 @@ export default function GolfStatsDisplay({
         </AnimatePresence>
 
         {stats.roundsPlayed === 0 && (
-          <motion.div className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}>
-            <motion.div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4" animate={{ boxShadow: ['0 0 0 0 rgba(22, 163, 74, 0)', '0 0 0 20px rgba(22, 163, 74, 0.1)', '0 0 0 0 rgba(22, 163, 74, 0)'] }} transition={{ duration: 2, repeat: Infinity }}>
+          <motion.div className="text-center py-16" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 200 })}>
+            <motion.div className="w-20 h-20 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-4" animate={{ boxShadow: ['0 0 0 0 rgba(22, 163, 74, 0)', '0 0 0 20px rgba(22, 163, 74, 0.1)', '0 0 0 0 rgba(22, 163, 74, 0)'] }} transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2, repeat: Infinity })}>
               <IconGolf size={40} className="text-warm-300" />
             </motion.div>
-            <motion.h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>No Stats Yet</motion.h2>
-            <motion.p className="text-warm-500 max-w-sm mx-auto" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>Complete rounds with shot tracking to see your detailed statistics here.</motion.p>
+            <motion.h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}>No Stats Yet</motion.h2>
+            <motion.p className="text-warm-500 max-w-sm mx-auto" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}>Complete rounds with shot tracking to see your detailed statistics here.</motion.p>
           </motion.div>
         )}
       </div>

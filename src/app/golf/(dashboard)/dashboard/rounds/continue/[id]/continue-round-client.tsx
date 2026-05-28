@@ -26,7 +26,7 @@ import { useOfflineSync } from '@/hooks/golf/use-offline-sync';
 import { useRoundStatusSync } from '@/hooks/golf/use-round-status-sync';
 import { OfflineIndicator } from '@/components/golf/OfflineIndicator';
 import { useToast } from '@/components/ui/sonner';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconFlag } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 
@@ -69,6 +69,7 @@ export default function ContinueRoundClient({
   initialInProgressShotsByHole,
   serverDataTimestamp,
 }: ContinueRoundClientProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -1060,7 +1061,7 @@ export default function ContinueRoundClient({
                   <m.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                   >
                   {/* Celebration Header */}
                   <div className="relative overflow-hidden rounded-t-2xl bg-primary-600 px-6 pt-6 pb-5 text-center">
@@ -1068,7 +1069,7 @@ export default function ContinueRoundClient({
                     <m.div
                       initial={{ opacity: 0, scale: 0.5 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200, damping: 15 })}
                       className="relative"
                     >
                       <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-3">
@@ -1079,7 +1080,7 @@ export default function ContinueRoundClient({
                         <m.span
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.25, duration: 0.3 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.3 })}
                           className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
                         >
                           {totalScore}
@@ -1087,7 +1088,7 @@ export default function ContinueRoundClient({
                         <m.span
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          transition={{ delay: 0.35 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35 })}
                           className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}
                         >
                           ({toParLabel})
@@ -1102,7 +1103,7 @@ export default function ContinueRoundClient({
                     <m.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2, duration: 0.3 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.3 })}
                       className="grid grid-cols-3 gap-3 mb-5"
                     >
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
@@ -1123,7 +1124,7 @@ export default function ContinueRoundClient({
                     <m.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3, duration: 0.3 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.3 })}
                       className="mb-6"
                     >
                       <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
@@ -1178,7 +1179,7 @@ export default function ContinueRoundClient({
                     <m.div
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4, duration: 0.3 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.3 })}
                       className="flex gap-3"
                     >
                       <Button variant="ghost"

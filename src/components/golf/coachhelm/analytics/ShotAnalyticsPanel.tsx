@@ -8,7 +8,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Shimmer } from '@/components/ui/shimmer';
@@ -44,6 +44,7 @@ export function ShotAnalyticsPanel({
   periodDays = 30,
   className,
 }: ShotAnalyticsPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
   const [data, setData] = useState<PlayerShotAnalytics | null>(initialData || null);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +134,7 @@ export function ShotAnalyticsPanel({
               <>
                 <motion.div
                   animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })}
                 >
                   <IconRefresh size={14} />
                 </motion.div>
@@ -241,7 +242,7 @@ export function ShotAnalyticsPanel({
                         key={i}
                         initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.1 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.1 })}
                         className="p-3 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-800"
                       >
                         {insight}

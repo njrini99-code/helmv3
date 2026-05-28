@@ -2,7 +2,7 @@
 
 import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconCalendar, IconMapPin, IconClock, IconArrowRight } from '@/components/icons';
 import type { TodayEvent } from '@/app/golf/actions/dashboard-data';
@@ -46,6 +46,7 @@ interface TodayTimelineProps {
 }
 
 export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
+  const prefersReducedMotion = useReducedMotion();
     const scrollRef = useRef<HTMLDivElement>(null);
     const nowRef = useRef<HTMLDivElement>(null);
 
@@ -191,7 +192,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                             key={event.id}
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.16, 1, 0.3, 1] })}
                             className={cn(
                                 'rounded-2xl p-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                                 isCurrent
@@ -356,7 +357,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                             key={event.id}
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.06, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                                            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.06, duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
                                             className="absolute"
                                             style={{ left: leftPx, width: widthPx, top: topPx }}
                                             aria-label={eventLabel}

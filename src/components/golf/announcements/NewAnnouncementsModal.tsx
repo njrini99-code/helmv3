@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconBell, IconCheck, IconChevronRight } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -87,6 +87,7 @@ interface NewAnnouncementsModalProps {
  * rest of the app (command palette, event sheets, etc.).
  */
 export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncementsModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
@@ -151,7 +152,7 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
               key={ann.id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.04, type: 'spring', stiffness: 400, damping: 30 })}
               className={cn(
                 'relative rounded-2xl overflow-hidden border transition-all duration-200',
                 needsAck

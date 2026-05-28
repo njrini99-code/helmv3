@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconChevronDown } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +18,7 @@ export function DeepDiveAccordion({
   children,
   defaultOpen = false,
 }: DeepDiveAccordionProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
@@ -37,7 +38,7 @@ export function DeepDiveAccordion({
         </div>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           className="text-warm-400 flex-shrink-0 ml-2"
         >
           <IconChevronDown size={16} />
@@ -50,7 +51,7 @@ export function DeepDiveAccordion({
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.4, 0, 0.2, 1] })}
             className="overflow-hidden"
           >
             <div className="px-5 pb-5">{children}</div>

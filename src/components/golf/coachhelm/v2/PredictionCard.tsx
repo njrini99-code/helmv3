@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconTarget } from '@/components/icons';
 import type { PerformancePrediction, TailRiskProbabilities } from '@/lib/coachhelm/v2/types';
@@ -11,6 +11,7 @@ interface PredictionCardProps {
 }
 
 export function PredictionCard({ prediction, playerName }: PredictionCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const isPositive = prediction.predictedValue < 0;
   const isNeutral = Math.abs(prediction.predictedValue) < 0.5;
 
@@ -87,7 +88,7 @@ export function PredictionCard({ prediction, playerName }: PredictionCardProps) 
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${confidencePercent}%` }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
               className="absolute inset-y-0 left-0 bg-blue-500 rounded-full"
             />
           </div>

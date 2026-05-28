@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
@@ -147,6 +147,7 @@ export function PlayerCoachHelmDashboard({
   topInsight = null,
   secondaryInsights = [],
 }: PlayerCoachHelmDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { addToast } = useToast();
   const [dashboardData, setDashboardData] = useState<PlayerCoachHelmDashboardData>(initialData);
@@ -369,7 +370,7 @@ export function PlayerCoachHelmDashboard({
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  transition={crossfadeTransition}
+                  transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
                   className="space-y-6 md:space-y-8"
                 >
                   {/* ───── W31: LLM hero narrative (Haiku) ─────
@@ -524,7 +525,7 @@ export function PlayerCoachHelmDashboard({
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: DURATION.short, ease: EASE_TAP }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: DURATION.short, ease: EASE_TAP })}
                           className="overflow-hidden"
                         >
                           <div className="pt-4 space-y-3">
@@ -545,7 +546,7 @@ export function PlayerCoachHelmDashboard({
                                   initial="hidden"
                                   animate="visible"
                                   exit="exit"
-                                  transition={crossfadeTransition}
+                                  transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
                                 >
                                   <ShotAnalysisCard
                                     shotData={shotData ?? undefined}
@@ -560,7 +561,7 @@ export function PlayerCoachHelmDashboard({
                                   initial="hidden"
                                   animate="visible"
                                   exit="exit"
-                                  transition={crossfadeTransition}
+                                  transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
                                 >
                                   <WhatIfPanel
                                     playerId={playerId}
@@ -585,7 +586,7 @@ export function PlayerCoachHelmDashboard({
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  transition={crossfadeTransition}
+                  transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
                 >
                   <ShotAnalyticsPanel
                     playerId={playerId}

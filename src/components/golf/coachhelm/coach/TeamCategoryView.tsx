@@ -11,7 +11,7 @@ import {
   IconTrendingUp,
   IconActivity,
 } from '@/components/icons';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CategoryCard } from './CategoryCard';
@@ -78,6 +78,7 @@ export function TeamCategoryView({
   lastAnalyzed,
   onPlayerClick,
 }: TeamCategoryViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [activeTabId, setActiveTabId] = useState<string>(
     categories[0]?.id ?? ''
   );
@@ -161,7 +162,7 @@ export function TeamCategoryView({
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25, ease: 'easeOut' })}
             className="space-y-4"
           >
             <CategoryCard category={activeCategory} />

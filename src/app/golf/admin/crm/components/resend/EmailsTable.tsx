@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useTransition, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSearch,
@@ -53,6 +53,7 @@ export function EmailsTable({
   selectedMessageId,
   since,
 }: EmailsTableProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [rows, setRows] = useState<EmailRow[]>([]);
   const [count, setCount] = useState(0);
   const [search, setSearch] = useState('');
@@ -197,7 +198,7 @@ export function EmailsTable({
                   return (
                     <motion.tr
                       key={row.resend_message_id}
-                      initial={{ opacity: 0 }}
+                      initial={prefersReducedMotion ? false : ({ opacity: 0 })}
                       animate={{ opacity: 1 }}
                       className={cn(
                         'group cursor-pointer transition-colors',

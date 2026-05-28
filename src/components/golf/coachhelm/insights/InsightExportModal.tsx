@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Drawer,
@@ -74,6 +74,7 @@ export function InsightExportModal({
   selectedIds,
   onExportComplete,
 }: InsightExportModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>('csv');
   const [isExporting, setIsExporting] = useState(false);
   const [exportResult, setExportResult] = useState<{
@@ -178,7 +179,7 @@ export function InsightExportModal({
                 </div>
                 {selectedFormat === option.value && (
                   <motion.div
-                    initial={{ scale: 0 }}
+                    initial={prefersReducedMotion ? false : ({ scale: 0 })}
                     animate={{ scale: 1 }}
                     className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center"
                   >
@@ -210,7 +211,7 @@ export function InsightExportModal({
         {/* Result Message */}
         {exportResult && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
             className={cn(
               'p-3 rounded-lg text-sm',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import {
@@ -54,6 +54,7 @@ function PlayerPatternCard({
   onViewEvidence?: (pattern: ExtendedPattern) => void;
   defaultExpanded?: boolean;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   // Calculate summary stats
@@ -126,7 +127,7 @@ function PlayerPatternCard({
           {/* Expand icon */}
           <motion.div
             animate={{ rotate: expanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="text-warm-400 flex-shrink-0"
           >
             <IconChevronDown size={20} />
@@ -140,7 +141,7 @@ function PlayerPatternCard({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               style={{ overflow: 'hidden' }}
             >
               <div className="px-4 pb-4 space-y-3 border-t border-warm-100 pt-4">

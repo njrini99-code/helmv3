@@ -2,7 +2,7 @@
 
 import { memo, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -82,6 +82,7 @@ export const TeamCard = memo(function TeamCard({
   variant = 'default',
   className,
 }: TeamCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isHovered, setIsHovered] = useState(false);
 
   const typeStyle = TYPE_COLORS[team.type];
@@ -98,7 +99,7 @@ export const TeamCard = memo(function TeamCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       whileHover={{ y: -2 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 400, damping: 25 })}
     >
       {/* Card Content */}
       <div className="p-4">
@@ -282,7 +283,7 @@ export const TeamCard = memo(function TeamCard({
         className="absolute inset-0 rounded-2xl pointer-events-none"
         initial={{ opacity: 0 }}
         animate={{ opacity: isHovered ? 1 : 0 }}
-        transition={{ duration: 0.2 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
         style={{
           background: `linear-gradient(135deg, ${team.primaryColor || '#16a34a'}10 0%, transparent 50%)`,
           border: `1px solid ${team.primaryColor || '#16a34a'}20`,
@@ -309,6 +310,7 @@ export function TeamCardGrid({
   loading,
   emptyMessage = 'No teams found',
 }: TeamCardGridProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -361,7 +363,7 @@ export function TeamCardGrid({
           key={team.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: index * 0.05 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: index * 0.05 })}
         >
           <TeamCard
             team={team}

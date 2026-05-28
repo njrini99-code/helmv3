@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -46,6 +46,7 @@ export function ExpenseForm({
   teamId,
   itineraryId,
 }: ExpenseFormProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -124,7 +125,7 @@ export function ExpenseForm({
       >
         {error && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
             animate={{ opacity: 1, y: 0 }}
             className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600"
           >
@@ -141,8 +142,8 @@ export function ExpenseForm({
                 key={cat.value}
                 type="button"
                 onClick={() => setCategory(cat.value)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
+                whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
                 className={`p-3 rounded-xl border-2 text-center transition-all ${
                   category === cat.value
                     ? 'border-primary-600 bg-primary-50 shadow-sm'
@@ -201,8 +202,8 @@ export function ExpenseForm({
                 key={option.value}
                 type="button"
                 onClick={() => setPaidBy(option.value)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
+                whileTap={prefersReducedMotion ? undefined : ({ scale: 0.98 })}
                 className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                   paidBy === option.value
                     ? 'border-primary-600 bg-primary-50 text-primary-700'

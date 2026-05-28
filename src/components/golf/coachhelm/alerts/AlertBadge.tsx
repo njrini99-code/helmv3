@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -20,6 +20,7 @@ interface AlertCounts {
 }
 
 export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [counts, setCounts] = useState<AlertCounts>({ critical: 0, warning: 0, info: 0, total: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -125,11 +126,11 @@ export function AlertBadge({ coachId, teamId, className }: AlertBadgeProps) {
               scale: [1, 1.4, 1],
               opacity: [0.5, 0, 0.5],
             }}
-            transition={{
+            transition={prefersReducedMotion ? { duration: 0 } : ({
               duration: 2,
               repeat: Infinity,
               ease: 'easeInOut',
-            }}
+            })}
           />
         )}
       </Badge>
@@ -145,6 +146,7 @@ interface NavAlertBadgeProps {
 }
 
 export function NavAlertBadge({ count, hasCritical = false, className }: NavAlertBadgeProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (count === 0) return null;
 
   const displayCount = count > 99 ? '99+' : count;
@@ -174,11 +176,11 @@ export function NavAlertBadge({ count, hasCritical = false, className }: NavAler
             scale: [1, 1.4, 1],
             opacity: [0.5, 0, 0.5],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 2,
             repeat: Infinity,
             ease: 'easeInOut',
-          }}
+          })}
         />
       )}
     </Badge>

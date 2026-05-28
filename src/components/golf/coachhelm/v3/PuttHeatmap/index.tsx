@@ -16,7 +16,7 @@
  */
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import {
   buildPuttHeatmap,
   formatPct,
@@ -40,6 +40,7 @@ export function PuttHeatmap({
   title = 'Putting heatmap',
   className,
 }: PuttHeatmapProps) {
+  const prefersReducedMotion = useReducedMotion();
   const data = useMemo(() => buildPuttHeatmap(putts), [putts]);
   const [hovered, setHovered] = useState<PlottedPutt | null>(null);
 
@@ -52,7 +53,7 @@ export function PuttHeatmap({
         variants={enterVariants}
         initial="hidden"
         animate="visible"
-        transition={enterTransition}
+        transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
       >
         {/* Header */}
         <div className="flex items-baseline justify-between mb-5">
@@ -178,7 +179,7 @@ export function PuttHeatmap({
                           strokeWidth={0.6}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          transition={{ duration: 0.4, delay: 0.1 + i * 0.05, ease: EASE_CINEMATIC }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: 0.1 + i * 0.05, ease: EASE_CINEMATIC })}
                         />
                       </g>
                     ))}
@@ -210,11 +211,11 @@ export function PuttHeatmap({
                           key={p.key}
                           initial={{ opacity: 0, scale: 0.4 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          transition={{
+                          transition={prefersReducedMotion ? { duration: 0 } : ({
                             duration: 0.45,
                             delay: 0.35 + stagger(i % 30),
                             ease: EASE_CINEMATIC,
-                          }}
+                          })}
                           style={{ transformOrigin: `${p.x}px ${p.y}px` }}
                           onMouseEnter={() => setHovered(p)}
                           onMouseLeave={() => setHovered(null)}
@@ -246,7 +247,7 @@ export function PuttHeatmap({
                 <m.div
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.18, ease: EASE_CINEMATIC }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.18, ease: EASE_CINEMATIC })}
                   className="absolute left-1/2 -translate-x-1/2 -bottom-2 translate-y-full z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
                   role="tooltip"
                 >
@@ -295,7 +296,7 @@ export function PuttHeatmap({
                         variants={enterVariants}
                         initial="hidden"
                         animate="visible"
-                        transition={{ ...enterTransition, delay: 0.15 + stagger(i) }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ ...enterTransition, delay: 0.15 + stagger(i) })}
                         className="grid grid-cols-[68px_1fr_56px] items-center gap-3"
                       >
                         <span className="text-xs text-warm-700 tabular-nums">
@@ -306,7 +307,7 @@ export function PuttHeatmap({
                             className="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full"
                             initial={{ width: 0 }}
                             animate={{ width: `${barWidth}%` }}
-                            transition={{ duration: 0.7, delay: 0.25 + stagger(i), ease: EASE_CINEMATIC }}
+                            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.7, delay: 0.25 + stagger(i), ease: EASE_CINEMATIC })}
                           />
                         </div>
                         <span className="text-xs tabular-nums text-right">

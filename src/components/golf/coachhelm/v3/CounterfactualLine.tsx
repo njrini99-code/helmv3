@@ -15,7 +15,7 @@
  * `prefers-reduced-motion` automatically.
  */
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import {
   computeCounterfactual,
   formatCounterfactualLine,
@@ -33,6 +33,7 @@ export function CounterfactualLine({
   className,
   ...input
 }: CounterfactualLineProps) {
+  const prefersReducedMotion = useReducedMotion();
   const projection = computeCounterfactual(input);
   const text = formatCounterfactualLine(projection);
   if (!text) return null;
@@ -48,7 +49,7 @@ export function CounterfactualLine({
       className={`${sizeClasses} text-warm-500 italic mt-1 ${className ?? ''}`}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.3, delay: 0.15 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, delay: 0.15 })}
     >
       {text}
     </m.p>

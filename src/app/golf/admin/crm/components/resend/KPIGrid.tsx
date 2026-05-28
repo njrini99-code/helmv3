@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSend,
@@ -37,6 +37,7 @@ const ACCENT_CONFIG = {
 };
 
 export function KPIGrid({ stats, loading }: KPIGridProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (loading || !stats) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -128,7 +129,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
             key={card.label}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.03, duration: 0.25 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: i * 0.03, duration: 0.25 })}
             className={cn(
               'glass-standard rounded-2xl p-6 border-l-[4px]',
               cfg.border,

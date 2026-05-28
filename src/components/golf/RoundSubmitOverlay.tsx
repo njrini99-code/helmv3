@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domAnimation, m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 
@@ -54,6 +54,7 @@ export function RoundSubmitOverlay({
   onSaveAndExit,
   onDiscard,
 }: RoundSubmitOverlayProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [showSafetyEscape, setShowSafetyEscape] = useState(false);
   const [showSuccessEscape, setShowSuccessEscape] = useState(false);
@@ -146,7 +147,7 @@ export function RoundSubmitOverlay({
             <m.div
               initial={{ opacity: 0, scale: 0.9, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
               className="relative w-full max-w-sm"
             >
               <div className="glass-prominent rounded-2xl shadow-2xl overflow-hidden">
@@ -158,13 +159,13 @@ export function RoundSubmitOverlay({
                   <m.div
                     initial={{ scale: 0, rotate: -45 }}
                     animate={{ scale: 1, rotate: 0 }}
-                    transition={{ delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.5, type: 'spring', stiffness: 200, damping: 14 })}
                     className="relative w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mx-auto mb-4"
                   >
                     <m.svg
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ delay: 0.4, duration: 0.4 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.4 })}
                       className="w-8 h-8 text-white"
                       viewBox="0 0 24 24"
                       fill="none"
@@ -180,7 +181,7 @@ export function RoundSubmitOverlay({
                   <m.h3
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
                     className="text-lg font-medium text-white/90 mb-1"
                   >
                     Round Submitted
@@ -188,7 +189,7 @@ export function RoundSubmitOverlay({
                   <m.div
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4 })}
                     className="flex items-baseline justify-center gap-2"
                   >
                     <span className="text-display font-light tracking-[-0.025em] text-white tabular-nums">{totalScore}</span>
@@ -203,7 +204,7 @@ export function RoundSubmitOverlay({
                 <m.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.5 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5 })}
                   className="p-5 text-center"
                 >
                   <p className="text-sm text-warm-500 mb-4">
@@ -258,7 +259,7 @@ export function RoundSubmitOverlay({
             <m.div
               initial={{ opacity: 0, scale: 0.95, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
               className="relative glass-prominent rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center"
             >
               {/* Error icon */}
@@ -333,7 +334,7 @@ export function RoundSubmitOverlay({
             <m.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3 })}
               className="relative glass-prominent rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
             >
               {/* Animated progress ring */}

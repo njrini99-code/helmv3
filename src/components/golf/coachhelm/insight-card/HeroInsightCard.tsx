@@ -11,7 +11,7 @@
  * wrapper at the top of their layouts.
  */
 import type { CSSProperties } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { InsightCard, type InsightCardProps } from './InsightCard';
 
 export interface HeroInsightCardProps extends Omit<InsightCardProps, 'density'> {
@@ -32,6 +32,7 @@ export function HeroInsightCard({
   mountAnimation = true,
   ...rest
 }: HeroInsightCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (!mountAnimation) {
     return <InsightCard {...rest} density="hero" />;
   }
@@ -45,7 +46,7 @@ export function HeroInsightCard({
       data-testid="hero-insight-card"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.3, ease: 'easeOut' })}
       style={staggerStyle}
     >
       <InsightCard {...rest} density="hero" />

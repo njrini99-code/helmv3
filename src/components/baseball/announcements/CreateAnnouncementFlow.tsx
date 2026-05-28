@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +24,7 @@ interface CreateAnnouncementFlowProps {
 }
 
 export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFlowProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -152,7 +153,7 @@ export function CreateAnnouncementFlow({ players, teamId }: CreateAnnouncementFl
                   <motion.div
                     className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
                     animate={{ left: requiresAcknowledgement ? 18 : 2 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', stiffness: 500, damping: 30 })}
                   />
                 </div>
               </div>

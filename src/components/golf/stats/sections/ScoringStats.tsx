@@ -1,12 +1,13 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import type { GolfStats } from '@/lib/utils/golf-stats-calculator-shots';
 import { formatStat, formatStatInt } from '@/lib/utils/golf-stats-calculator-shots';
 import { containerVariants, StatCard, StatRow, StatSection } from './shared-primitives';
 import type { HoleFormat } from './shared-primitives';
 
 export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; holeFormat?: HoleFormat }) {
+  const prefersReducedMotion = useReducedMotion();
   const hasBothFormats = stats.roundsPlayed18 > 0 && stats.roundsPlayed9 > 0;
   const has18 = stats.roundsPlayed18 > 0;
 
@@ -155,7 +156,7 @@ export function ScoringStats({ stats, holeFormat = 'all' }: { stats: GolfStats; 
               className={`text-center p-3 ${item.bg} rounded-lg hover:scale-105 transition-transform cursor-default`}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: idx * 0.05, type: 'spring', stiffness: 300 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.05, type: 'spring', stiffness: 300 })}
             >
               <div className={`text-[24px] md:text-[30px] font-light tracking-[-0.025em] ${item.color} tabular-nums`}>
                 {formatStat(item.value, '', 2)}

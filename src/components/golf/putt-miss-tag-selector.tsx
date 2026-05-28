@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { PuttMissTag } from '@/lib/types/golf';
 
@@ -15,6 +15,7 @@ export function PuttMissTagSelector({
   onTagsChange, 
   disabled,
 }: PuttMissTagSelectorProps) {
+  const prefersReducedMotion = useReducedMotion();
   const tags: PuttMissTag[] = ['short', 'long', 'low', 'high'];
   const tagLabels: Record<PuttMissTag, string> = {
     short: 'Short',
@@ -53,7 +54,7 @@ export function PuttMissTagSelector({
               type="button"
               onClick={() => toggleTag(tag)}
               disabled={disabled}
-              whileTap={{ scale: 0.96 }}
+              whileTap={prefersReducedMotion ? undefined : ({ scale: 0.96 })}
               className={cn(
                 'relative px-4 py-3 rounded-xl border transition-all duration-200',
                 'text-sm font-medium',

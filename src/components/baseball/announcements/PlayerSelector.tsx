@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconUsers, IconUser, IconCheck } from '@/components/icons';
 
@@ -18,6 +18,7 @@ interface PlayerSelectorProps {
 }
 
 export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerSelectorProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [searchQuery, setSearchQuery] = useState('');
   const isAllTeam = selectedPlayerIds === null;
 
@@ -122,7 +123,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="overflow-hidden"
           >
             <div className="mt-3 border border-warm-200 rounded-xl overflow-hidden">
@@ -145,7 +146,7 @@ export function PlayerSelector({ players, selectedPlayerIds, onChange }: PlayerS
                       onClick={() => togglePlayer(player.id)}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.02 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.02 })}
                       whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.98 }}
                       className={cn(

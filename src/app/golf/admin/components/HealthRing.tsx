@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion, useSpring } from 'framer-motion';
+import { motion, useSpring, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
@@ -87,6 +87,7 @@ export function HealthRing({
   label = 'Health Score',
   sublabel,
 }: HealthRingProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -201,7 +202,7 @@ export function HealthRing({
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: mounted ? `${Math.min(pct, 100)}%` : 0 }}
-                      transition={{ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, delay: 0.2 + i * 0.1, ease: 'easeOut' })}
                       className="h-full rounded-full"
                       style={{ backgroundColor: itemColor }}
                     />

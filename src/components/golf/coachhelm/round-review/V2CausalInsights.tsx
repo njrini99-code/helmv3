@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconSparkles } from '@/components/icons';
 import type { CausalRelationship } from '@/lib/coachhelm/v2/types';
@@ -18,13 +18,14 @@ function formatLabel(text: string): string {
 }
 
 export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
+  const prefersReducedMotion = useReducedMotion();
   if (insights.length === 0) return null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
       className="rounded-2xl bg-cream-100/82 backdrop-blur-sm border border-warm-200 overflow-clip shadow-sm"
     >
       {/* Header */}
@@ -45,7 +46,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
               key={insight.id}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 * index, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
               className="p-4 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
             >
               {/* Cause -> Effect flow */}
@@ -56,7 +57,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.15 * index + 0.2, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 * index + 0.2, duration: 0.3, ease: [0.16, 1, 0.3, 1] })}
                   className="flex items-center justify-center w-6 h-6 bg-gradient-to-br from-amber-100 to-amber-50 rounded-full flex-shrink-0 border border-amber-200/50"
                 >
                   <IconArrowRight size={12} className="text-amber-600" />
@@ -80,7 +81,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${strengthPct}%` }}
-                      transition={{ delay: 0.15 * index + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 * index + 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
                       className={cn(
                         'h-full rounded-full',
                         strengthPct >= 70 ? 'bg-primary-500' :

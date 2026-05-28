@@ -25,7 +25,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { createGoal } from '@/app/golf/actions/v3/goals';
 import {
   METRIC_IDS,
@@ -60,6 +60,7 @@ export function GoalCreationModal({
   onClose,
   initialMetricId,
 }: GoalCreationModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [metricId, setMetricId] = useState<MetricId>(initialMetricId ?? 'sg_putting');
   const [windowDays, setWindowDays] = useState(30);
   const [targetValue, setTargetValue] = useState<string>('');
@@ -110,7 +111,7 @@ export function GoalCreationModal({
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={backdropTransition}
+          transition={prefersReducedMotion ? { duration: 0 } : (backdropTransition)}
           onClick={onClose}
         >
           <m.div
@@ -119,7 +120,7 @@ export function GoalCreationModal({
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={drawerTransition}
+            transition={prefersReducedMotion ? { duration: 0 } : (drawerTransition)}
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-medium text-warm-900 mb-4">New goal</h2>

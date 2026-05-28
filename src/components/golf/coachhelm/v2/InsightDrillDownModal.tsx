@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -101,6 +101,7 @@ export function InsightDrillDownModal({
   causalRelationship,
   onAction,
 }: InsightDrillDownModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const toneStyle = toneColors[insight.tone] || toneColors.neutral;
 
@@ -186,7 +187,7 @@ export function InsightDrillDownModal({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
                 className="space-y-6"
               >
                 {/* Full body */}
@@ -259,7 +260,7 @@ export function InsightDrillDownModal({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
               >
                 {insight.reasoning ? (
                   <ReasoningChainView reasoning={insight.reasoning} />
@@ -278,7 +279,7 @@ export function InsightDrillDownModal({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
               >
                 <EvidenceSourcesView
                   playerId={playerId}
@@ -294,7 +295,7 @@ export function InsightDrillDownModal({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.15 })}
               >
                 <InsightActionPanel
                   playerId={playerId}

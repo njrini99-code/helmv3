@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { GolfSignInForm } from '@/components/auth/golf-sign-in-form';
 import { CoastalScene } from '@/components/golf/scenes/CoastalScene';
 import { CourseScene } from '@/components/golf/scenes/CourseScene';
@@ -15,6 +15,7 @@ import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
 function LoginContent() {
+  const prefersReducedMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const router = useRouter();
   const LOGIN_MESSAGES: Record<string, string> = {
@@ -112,7 +113,7 @@ function LoginContent() {
           <m.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
             onAnimationComplete={() => setBrandMountDone(true)}
             className="flex flex-col items-center gap-2.5 shrink-0"
           >
@@ -158,7 +159,7 @@ function LoginContent() {
             aria-label="Login form"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] })}
             className="w-full max-w-[420px] mt-5 shrink-0"
             style={{
               padding: '22px 20px 18px',

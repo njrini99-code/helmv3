@@ -11,7 +11,7 @@
  */
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconCheck,
@@ -285,6 +285,7 @@ function ActionButton({
   state,
   onClick,
 }: ActionButtonProps) {
+  const prefersReducedMotion = useReducedMotion();
   const variantStyles = {
     success: {
       base: 'bg-primary-600 hover:bg-primary-700 text-white border-primary-600',
@@ -334,7 +335,7 @@ function ActionButton({
             >
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1, repeat: Infinity, ease: 'linear' })}
               >
                 <IconRefresh size={18} />
               </motion.div>

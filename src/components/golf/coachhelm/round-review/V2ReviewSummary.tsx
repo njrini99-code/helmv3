@@ -21,7 +21,7 @@
  * present, we render the hero + disclosure layout.
  */
 import { useCallback, useTransition } from 'react';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { IconSparkles, IconTarget, IconChartBar } from '@/components/icons';
 import type { IntelligentRoundReview } from '@/lib/coachhelm/v2/types';
@@ -68,6 +68,7 @@ export function V2ReviewSummary({
   roundId,
   roundScore,
 }: V2ReviewSummaryProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const [, startTransition] = useTransition();
 
@@ -155,7 +156,7 @@ export function V2ReviewSummary({
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
           className="space-y-4"
         >
           {/* AI Summary Card */}
@@ -170,7 +171,7 @@ export function V2ReviewSummary({
                   <m.div
                     initial={{ width: 0 }}
                     animate={{ width: `${calibratedConfidence * 100}%` }}
-                    transition={{ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5, duration: 0.8, ease: [0.16, 1, 0.3, 1] })}
                     className={cn(
                       'h-full rounded-full',
                       calibratedConfidence >= 0.75 ? 'bg-primary-500' :
@@ -189,7 +190,7 @@ export function V2ReviewSummary({
               <m.h4
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.4 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35, duration: 0.4 })}
                 className="text-body font-medium text-warm-900 tracking-[-0.005em] mb-2"
               >
                 {headline}
@@ -197,7 +198,7 @@ export function V2ReviewSummary({
               <m.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.45, duration: 0.4 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.45, duration: 0.4 })}
                 className="text-sm text-warm-600 leading-relaxed"
               >
                 {body}
@@ -211,7 +212,7 @@ export function V2ReviewSummary({
               <m.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
                 className="rounded-xl bg-primary-50/70 border border-primary-200/50 p-4 shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -230,7 +231,7 @@ export function V2ReviewSummary({
               <m.div
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
                 className="rounded-xl bg-amber-50/70 border border-amber-200/50 p-4 shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
@@ -250,7 +251,7 @@ export function V2ReviewSummary({
             <m.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.35 }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.35 })}
               className="flex items-center gap-2 flex-wrap"
             >
               <div className="flex items-center gap-1.5 text-label font-medium text-warm-500">

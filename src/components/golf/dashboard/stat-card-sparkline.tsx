@@ -2,7 +2,7 @@
 
 import { ReactNode, memo, useMemo } from 'react';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Sparkline } from '@/components/ui/sparkline';
@@ -52,6 +52,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
     trend,
     accent = false,
 }: StatCardSparklineProps) {
+  const prefersReducedMotion = useReducedMotion();
     const hasSparkline = sparkline.length >= 2;
     const displayValue = value !== null ? value : '--';
     const isNumeric = value !== null;
@@ -77,7 +78,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             )}
             whileHover={{ y: -3 }}
             whileTap={href ? { y: -1, scale: 0.99 } : undefined}
-            transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.45, ease: [0.16, 1, 0.3, 1] })}
         >
             <div className="relative flex items-start justify-between gap-2 min-w-0">
                 <div className="flex-1 min-w-0">

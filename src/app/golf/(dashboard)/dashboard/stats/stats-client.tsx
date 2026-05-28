@@ -46,7 +46,7 @@ import {
   IconGolf,
   IconPlus,
 } from '@/components/icons';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { cn } from '@/lib/utils';
 import { FormatToggle } from '@/components/golf/stats/sections/shared-primitives';
@@ -307,6 +307,7 @@ export default function StatsClient({
   initialPlayerName = '',
   initialRounds = [],
 }: StatsClientProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Core state
   const [userRole, setUserRole] = useState<'coach' | 'player' | null>(initialUserRole ?? null);
   const [players, setPlayers] = useState<(Player & { stats?: PlayerStats })[]>(initialPlayers);
@@ -1202,13 +1203,13 @@ export default function StatsClient({
             <m.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] })}
               className="relative surface-matte rounded-3xl p-10 md:p-16 text-center overflow-clip"
             >
               <m.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15, duration: 0.4, ease: 'easeOut' }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.4, ease: 'easeOut' })}
                 className="w-20 h-20 rounded-2xl bg-primary-50/70 flex items-center justify-center mx-auto mb-6"
               >
                 <IconGolf size={36} className="text-primary-500" />
@@ -1216,7 +1217,7 @@ export default function StatsClient({
               <m.h2
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, duration: 0.4 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25, duration: 0.4 })}
                 className="text-2xl font-medium text-warm-900 mb-3"
               >
                 Your Stats Dashboard
@@ -1224,7 +1225,7 @@ export default function StatsClient({
               <m.p
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.4 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35, duration: 0.4 })}
                 className="text-warm-500 max-w-md mx-auto mb-8 leading-relaxed"
               >
                 Play your first round to unlock detailed performance analytics. Track your scoring trends, strokes gained, and identify areas to improve.
@@ -1234,7 +1235,7 @@ export default function StatsClient({
               <m.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.4 })}
                 className="grid grid-cols-3 gap-3 max-w-sm mx-auto mb-8"
               >
                 <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
@@ -1255,7 +1256,7 @@ export default function StatsClient({
                 <m.div
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.4 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.5, duration: 0.4 })}
                 >
                   <a
                     href="/golf/dashboard/rounds/new"

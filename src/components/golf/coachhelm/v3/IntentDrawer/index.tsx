@@ -14,7 +14,7 @@
  */
 
 import { useState, useTransition } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
 import { setIntent } from '@/app/golf/actions/v3/intent';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,6 +54,7 @@ export function IntentDrawer({
   player_name,
   current,
 }: IntentDrawerProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [narrativeGoal, setNarrativeGoal] = useState<NarrativeGoal>(current?.narrative_goal ?? 'develop');
   const [alertPosture, setAlertPosture] = useState<AlertPosture>(current?.alert_posture ?? 'balanced');
   const [notes, setNotes] = useState<string>(current?.notes ?? '');
@@ -91,7 +92,7 @@ export function IntentDrawer({
           initial="hidden"
           animate="visible"
           exit="exit"
-          transition={backdropTransition}
+          transition={prefersReducedMotion ? { duration: 0 } : (backdropTransition)}
           onClick={onClose}
         >
           <m.div
@@ -100,7 +101,7 @@ export function IntentDrawer({
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={drawerTransition}
+            transition={prefersReducedMotion ? { duration: 0 } : (drawerTransition)}
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-eyebrow uppercase tracking-[0.08em] text-warm-500 mb-1">Set intent</p>

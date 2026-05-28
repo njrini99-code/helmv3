@@ -19,7 +19,7 @@
 
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { useId } from 'react';
 import { VB } from './geometry';
 
@@ -50,6 +50,7 @@ interface TurfProps {
 }
 
 export function Turf({ showPinFlag = true }: TurfProps) {
+  const prefersReducedMotion = useReducedMotion();
   // useId so multiple HoleShotPath instances on the same page don't
   // clash on gradient IDs (e.g. the 18-hole grid renders 18 of these).
   const rawId = useId();
@@ -212,11 +213,11 @@ export function Turf({ showPinFlag = true }: TurfProps) {
             // Subtle flag wave — the path skews left/right just a hair.
             skewX: [0, -3, 0, 3, 0],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 4,
             repeat: Infinity,
             ease: 'easeInOut',
-          }}
+          })}
           style={{ transformOrigin: `${PIN_X}px ${PIN_TOP_Y + 1}px` }}
         >
           <path

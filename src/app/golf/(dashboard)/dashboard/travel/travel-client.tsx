@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 
 import {
   IconAirplane,
@@ -73,6 +73,7 @@ interface TravelClientProps {
 type TabType = 'details' | 'expenses';
 
 export function TravelClient({ itineraries: initialItineraries, coachId, teamId, isCoach }: TravelClientProps) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const badges = useNotificationBadges();
@@ -569,7 +570,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                         >
                           {/* Departure/Return */}
                           <div className="grid grid-cols-2 gap-6 mb-6">
@@ -659,7 +660,7 @@ export function TravelClient({ itineraries: initialItineraries, coachId, teamId,
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
+                          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
                         >
                           {/* Expense Actions */}
                           <div className="flex items-center justify-between mb-6">

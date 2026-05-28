@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { IconBell } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ const REMINDER_TONE: Record<'upcoming' | 'soon' | 'imminent' | 'past', BadgeTone
 };
 
 export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBadgeProps) {
+  const prefersReducedMotion = useReducedMotion();
   const reminderDate = new Date(reminderAt);
   const now = new Date();
   const diff = reminderDate.getTime() - now.getTime();
@@ -67,7 +68,7 @@ export function ReminderBadge({ reminderAt, className, size = 'md' }: ReminderBa
       tone={REMINDER_TONE[variant]}
       size="none"
       icon={<IconBell size={iconSize} />}
-      initial={{ opacity: 0, scale: 0.9 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.9 })}
       animate={{ opacity: 1, scale: 1 }}
       className={cn(
         sizeStyles[size],

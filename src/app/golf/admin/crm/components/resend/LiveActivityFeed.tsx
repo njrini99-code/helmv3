@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { IconRefresh, IconActivity } from '@/components/icons';
@@ -20,6 +20,7 @@ export function LiveActivityFeed({
   initialLimit = 50,
   onSelectMessage,
 }: LiveActivityFeedProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [events, setEvents] = useState<EmailEventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [liveCount, setLiveCount] = useState(0);
@@ -110,7 +111,7 @@ export function LiveActivityFeed({
         <div className="flex items-center gap-2">
           {liveCount > 0 && (
             <motion.span
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={prefersReducedMotion ? false : ({ scale: 0.9, opacity: 0 })}
               animate={{ scale: 1, opacity: 1 }}
               className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-50 text-primary-700 text-xs font-semibold"
             >
@@ -183,6 +184,7 @@ function FeedRow({
   isNew: boolean;
   onSelect?: (id: string) => void;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const cfg = EVENT_CONFIG[event.event_type] ?? {
     label: event.event_type,
     color: 'text-warm-600',
@@ -199,9 +201,9 @@ function FeedRow({
   return (
     <motion.li
       layout
-      initial={isNew ? { backgroundColor: 'rgba(22, 163, 74, 0.08)' } : false}
+      initial={prefersReducedMotion ? false : (isNew ? { backgroundColor: 'rgba(22, 163, 74, 0.08)' } : false)}
       animate={{ backgroundColor: 'rgba(255, 255, 255, 0)' }}
-      transition={{ duration: 2 }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 2 })}
       className={cn(
         'group relative px-6 py-3 flex items-start gap-3',
         onSelect && 'cursor-pointer hover:bg-white/70'

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { IconUsers } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ const fadeIn = {
 };
 
 export default function JoinTeamPage() {
+  const prefersReducedMotion = useReducedMotion();
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function JoinTeamPage() {
           <m.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.1 })}
             className="mb-6 sm:mb-8"
           >
             <div className="relative">

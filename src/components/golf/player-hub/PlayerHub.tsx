@@ -1,9 +1,9 @@
 'use client';
 
 import { memo, useState, useCallback, useEffect } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { fadeUp, staggerContainer } from '@/lib/motion';
+import { fadeUp, staggerContainer } from '@/lib/coachhelm/v3/motion';
 import { useFormatDate } from '@/hooks/golf/use-appearance-preferences';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -248,20 +248,21 @@ const TripCard = memo(function TripCard({ trip, now, onExpand }: { trip: TripDat
 });
 
 function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => void }) {
+  const prefersReducedMotion = useReducedMotion();
   const fmtDate = useFormatDate();
   return (
     <m.div
-      initial={{ opacity: 0 }}
+      initial={prefersReducedMotion ? false : ({ opacity: 0 })}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-warm-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center"
       onClick={onClose}
     >
       <m.div
-        initial={{ y: '100%', opacity: 0 }}
+        initial={prefersReducedMotion ? false : ({ y: '100%', opacity: 0 })}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: '100%', opacity: 0 }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 30, stiffness: 300 })}
         onClick={(e) => e.stopPropagation()}
         className={cn(
           'rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[85vh] overflow-y-auto overscroll-contain',
@@ -692,6 +693,7 @@ function OverviewSection({
 // ============================================================================
 
 export function PlayerHub({ trips, tasks, events, announcements, playerName, onCompleteTask, onRSVP, signalCard }: PlayerHubProps) {
+  const prefersReducedMotion = useReducedMotion();
   const badges = useNotificationBadges();
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedTrip, setSelectedTrip] = useState<TripData | null>(null);
@@ -793,9 +795,9 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               {/* Urgent alert */}
               {overdueTasks.length > 0 && (
                 <m.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.55, ease: [0.16, 1, 0.3, 1] })}
                   className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-red-50/65 ring-1 ring-red-200/40"
                 >
                   <div className="w-9 h-9 rounded-2xl bg-red-100/80 flex items-center justify-center flex-shrink-0">
@@ -819,9 +821,9 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
               {/* New travel itinerary alert */}
               {badges.travel > 0 && (
                 <m.div
-                  initial={{ opacity: 0, y: -10 }}
+                  initial={prefersReducedMotion ? false : ({ opacity: 0, y: -10 })}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.55, ease: [0.16, 1, 0.3, 1] })}
                   className="flex items-center gap-3 px-5 py-4 rounded-2xl bg-blue-50/65 ring-1 ring-blue-200/40"
                 >
                   <div className="w-9 h-9 rounded-2xl bg-blue-100/80 flex items-center justify-center flex-shrink-0">
@@ -872,7 +874,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   urgentCount={overdueTasks.length}
                   onViewAll={() => setActiveTab('tasks')}
                 >
-                  <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                  <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                     {pendingTasks.slice(0, 3).map(task => (
                       <PlayerTaskCard
                         key={task.id}
@@ -894,7 +896,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   urgentCount={pendingEvents.length}
                   onViewAll={() => setActiveTab('events')}
                 >
-                  <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                  <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                     {pendingEvents.slice(0, 3).map(event => (
                       <EventRSVPCard
                         key={event.id}
@@ -927,7 +929,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
             <div
             >
               {trips.length > 0 ? (
-                <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                   {trips.map(trip => (
                     <TripCard key={trip.id} trip={trip} now={now} onExpand={() => setSelectedTrip(trip)} />
                   ))}
@@ -957,7 +959,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                       <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         To Do ({pendingTasks.length})
                       </h2>
-                      <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                      <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                         {pendingTasks.map(task => (
                           <PlayerTaskCard
                             key={task.id}
@@ -976,7 +978,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                       <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         Completed ({completedTasks.length})
                       </h2>
-                      <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                      <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                         {completedTasks.map(task => (
                           <PlayerTaskCard
                             key={task.id}
@@ -1016,7 +1018,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                         <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Upcoming ({upcoming.length})
                         </h2>
-                        <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                        <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                           {upcoming.map(event => (
                             <EventRSVPCard
                               key={event.id}
@@ -1038,7 +1040,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                         <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Past ({past.length})
                         </h2>
-                        <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
+                        <m.div variants={staggerContainer} initial={prefersReducedMotion ? false : "hidden"} animate="visible" className="space-y-3">
                           {past.map(event => (
                             <EventRSVPCard
                               key={event.id}

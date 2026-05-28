@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconTrash, IconFile, IconCheck, IconUsers, IconClock, IconClipboardList } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -56,10 +56,11 @@ interface AnnouncementsCoachViewProps {
 }
 
 export function AnnouncementsCoachView({ announcements }: AnnouncementsCoachViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <motion.div
       variants={containerVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
       className="space-y-3"
     >
@@ -75,6 +76,7 @@ export function AnnouncementsCoachView({ announcements }: AnnouncementsCoachView
 // ─── Card ─────────────────────────────────────────────────────────────────────
 
 function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnouncementMeta }) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -252,7 +254,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
           {/* Expand chevron */}
           <motion.div
             animate={{ rotate: isExpanded ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             className="flex-shrink-0 mt-1 w-7 h-7 rounded-lg flex items-center justify-center bg-warm-50 group-hover:bg-warm-100 transition-colors"
           >
             <IconChevronDown size={14} className="text-warm-500" />
@@ -263,10 +265,10 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
         <AnimatePresence>
           {isExpanded && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
+              initial={prefersReducedMotion ? false : ({ height: 0, opacity: 0 })}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
               className="overflow-hidden"
             >
               <div className="pl-5 pr-4 pb-5 border-t border-warm-100">

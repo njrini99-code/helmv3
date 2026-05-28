@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { DiscoveryMockup, CompareMockup, VideoMockup, PipelineMiniMockup } from './baseball-mockups';
 import { IconArrowRight, IconVideo } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
  * Clean, professional design without vibe-coded patterns
  */
 export function BaseballHelmSection() {
+  const prefersReducedMotion = useReducedMotion();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -37,7 +38,7 @@ export function BaseballHelmSection() {
       <m.div
         className="relative max-w-5xl mx-auto px-5 sm:px-6"
         variants={containerVariants}
-        initial="hidden"
+        initial={prefersReducedMotion ? false : "hidden"}
         whileInView="visible"
         viewport={{ once: true, margin: "-50px" }}
       >

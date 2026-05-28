@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn, formatMetricLabel } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -44,6 +44,7 @@ export function WhatIfPanel({
   playerId: _playerId,
   profileData,
 }: WhatIfPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Resolve props: prefer typed props, fall back to parsing from profileData
   const resolvedCurrentPrediction = currentPrediction ?? (profileData?.currentPrediction as number | undefined) ?? 0;
   const hasPrediction = currentPrediction != null || (profileData?.currentPrediction != null);
@@ -102,7 +103,7 @@ export function WhatIfPanel({
           className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/40 border border-white/20"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
         >
           <IconTarget size={18} className="text-warm-500" />
           <span className="text-sm font-medium text-warm-600">Predicted:</span>
@@ -153,7 +154,7 @@ export function WhatIfPanel({
                 className="p-3 rounded-xl bg-white/40 border border-white/20"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 + i * 0.08 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 + i * 0.08 })}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">

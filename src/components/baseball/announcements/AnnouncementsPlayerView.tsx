@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconChevronDown, IconCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -40,11 +40,12 @@ interface AnnouncementsPlayerViewProps {
 }
 
 export function AnnouncementsPlayerView({ announcements, playerId }: AnnouncementsPlayerViewProps) {
+  const prefersReducedMotion = useReducedMotion();
   void playerId; // used for future per-player task filtering
   return (
     <motion.div
       variants={containerVariants}
-      initial="hidden"
+      initial={prefersReducedMotion ? false : "hidden"}
       animate="visible"
       className="space-y-3"
     >
@@ -58,6 +59,7 @@ export function AnnouncementsPlayerView({ announcements, playerId }: Announcemen
 }
 
 function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballAnnouncementMeta }) {
+  const prefersReducedMotion = useReducedMotion();
   const router = useRouter();
   const { showToast } = useToast();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -133,7 +135,7 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
         </div>
         <motion.div
           animate={{ rotate: isExpanded ? 180 : 0 }}
-          transition={{ duration: 0.2 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
           className="flex-shrink-0 mt-1"
         >
           <IconChevronDown size={16} className="text-warm-400" />
@@ -144,10 +146,10 @@ function PlayerAnnouncementCard({ announcement: ann }: { announcement: BaseballA
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
+            initial={prefersReducedMotion ? false : ({ height: 0, opacity: 0 })}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.25 })}
             className="overflow-hidden"
           >
             <div className="px-5 pb-4 border-t border-warm-100">

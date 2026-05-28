@@ -7,7 +7,7 @@
  * prediction accuracy, and strokes saved estimate.
  */
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconSparkles,
@@ -26,6 +26,7 @@ interface AnalyticsSummaryCardsProps {
 }
 
 export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCardsProps) {
+  const prefersReducedMotion = useReducedMotion();
   const cards = [
     {
       label: 'Total Insights',
@@ -112,7 +113,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
           key={card.label}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: index * 0.04 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.4, delay: index * 0.04 })}
           className="relative rounded-2xl border bg-cream-100/75 backdrop-blur-xl border-white/20 p-5 overflow-hidden hover:shadow-card-hover transition-all duration-200"
         >
           {/* Per-card color tint preserves chromatic cue over the glass base */}
@@ -164,7 +165,7 @@ export function AnalyticsSummaryCards({ data, className }: AnalyticsSummaryCards
                     )}
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(card.percentValue * 100, 100)}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.04 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.8, ease: 'easeOut', delay: 0.2 + index * 0.04 })}
                   />
                 </div>
               </div>

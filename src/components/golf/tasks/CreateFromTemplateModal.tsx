@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
@@ -32,6 +32,7 @@ export function CreateFromTemplateModal({
   teamId,
   players,
 }: CreateFromTemplateModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [loading, setLoading] = useState(false);
   const [customTitle, setCustomTitle] = useState(template.title);
   const [customDueDate, setCustomDueDate] = useState(() => {
@@ -195,7 +196,7 @@ export function CreateFromTemplateModal({
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 style={{ overflow: 'hidden' }}
                 className="mt-3 max-h-48 overflow-y-auto space-y-1 border border-warm-200 rounded-lg p-2"
               >
@@ -206,7 +207,7 @@ export function CreateFromTemplateModal({
                     onClick={() => togglePlayer(player.id)}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.03 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.03 })}
                     whileHover={{ scale: 1.01, x: 2 }}
                     whileTap={{ scale: 0.98 }}
                     className={cn(

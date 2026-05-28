@@ -47,7 +47,7 @@ import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Menu, Globe } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
 import { MobileMenuButton } from '@/components/golf/MobileMenuButton';
@@ -1004,6 +1004,7 @@ function RoundHeader({
   teesPlayed,
   notes,
 }: Omit<RoundHeaderProps, 'variant'>) {
+  const prefersReducedMotion = useReducedMotion();
   const { scoreDisplay: scoreDisplayMode } = useAppearancePreferences();
 
   const toParLabel = scoreToPar === null || scoreToPar === undefined
@@ -1057,7 +1058,7 @@ function RoundHeader({
             <motion.div
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, ease: [0.16, 1, 0.3, 1] })}
               className="flex items-center gap-4"
             >
               <Avatar
@@ -1097,7 +1098,7 @@ function RoundHeader({
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] })}
               className="text-right flex-shrink-0"
             >
               <div className="text-display font-light tracking-[-0.025em] text-warm-900 tabular-nums">
@@ -1107,7 +1108,7 @@ function RoundHeader({
                 <motion.div
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35, duration: 0.35 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.35, duration: 0.35 })}
                   className={cn('text-xl font-medium', scoreColor)}
                 >
                   {scoreDisplay}
@@ -1117,7 +1118,7 @@ function RoundHeader({
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.45, duration: 0.3 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.45, duration: 0.3 })}
                   className="text-xs text-warm-400 mt-1 tabular-nums"
                 >
                   {frontNine} / {backNine}
@@ -1153,7 +1154,7 @@ function RoundHeader({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] })}
         >
           <Card variant="glass">
             <div className="p-5">

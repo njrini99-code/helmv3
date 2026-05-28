@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconPlus, IconTrash, IconEdit, IconCheck, IconX, IconClipboardList } from '@/components/icons';
 import { Button, IconButton } from '@/components/ui/button';
 import { useToast } from '@/components/ui/sonner';
@@ -34,6 +34,7 @@ const categoryColors: Record<string, string> = {
 };
 
 export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -210,7 +211,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
             style={{ overflow: 'hidden' }}
             onSubmit={handleSubmit}
             className="bg-white rounded-xl border border-warm-200 p-4 space-y-3"
@@ -371,7 +372,7 @@ export function TaskTemplateList({ teamId, onSelectTemplate }: TaskTemplateListP
                     key={template.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
+                    transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
                     className="group relative bg-white rounded-lg border border-warm-200 p-3
                              hover:border-primary-200 hover:shadow-sm transition-all cursor-pointer"
                     onClick={() => onSelectTemplate(template)}

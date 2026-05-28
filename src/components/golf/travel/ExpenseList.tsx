@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   IconEdit,
   IconTrash,
@@ -51,6 +51,7 @@ const PAID_BY_LABELS: Record<string, string> = {
 };
 
 export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseListProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<string | null>(null);
@@ -120,7 +121,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
             key={expense.id}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05 })}
             className="bg-white rounded-xl border border-warm-200 overflow-hidden hover:shadow-md transition-shadow"
           >
             {/* Main Row */}
@@ -177,7 +178,7 @@ export function ExpenseList({ expenses, onEdit, onRefresh, isCoach }: ExpenseLis
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                   className="overflow-hidden"
                 >
                   <div className="px-4 pb-4 pt-2 border-t border-warm-100">

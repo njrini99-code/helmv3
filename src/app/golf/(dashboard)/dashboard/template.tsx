@@ -19,20 +19,21 @@
  * MotionConfig and will collapse the animation to an instant swap.
  */
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
 const PREMIUM_EASE = [0.16, 1, 0.3, 1] as const;
 const PREMIUM_DURATION = 0.38;
 
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
+  const prefersReducedMotion = useReducedMotion();
   const pathname = usePathname();
   return (
     <m.div
       key={pathname}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: PREMIUM_DURATION, ease: PREMIUM_EASE }}
+      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: PREMIUM_DURATION, ease: PREMIUM_EASE })}
       className="min-h-full"
     >
       {children}

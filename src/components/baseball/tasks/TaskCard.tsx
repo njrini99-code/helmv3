@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { IconCheck, IconClock, IconUsers, IconChevronDown, IconChevronUp, IconTrash } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { fadeUp } from '@/lib/motion';
+import { fadeUp } from '@/lib/coachhelm/v3/motion';
 import { ReminderBadge } from './ReminderBadge';
 import { completeTask, uncompleteTask, deleteTask } from '@/app/baseball/actions/tasks';
 import { useToast } from '@/components/ui/sonner';
@@ -55,6 +55,7 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -266,7 +267,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.22, ease: [0.16, 1, 0.3, 1] })}
               className="mt-4 pt-4 border-t border-warm-200"
             >
               <p className="text-xs font-semibold text-warm-400 uppercase tracking-wider mb-3">
@@ -300,7 +301,7 @@ export function TaskCard({ task, isCoach, currentPlayerId, onRefresh }: TaskCard
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        transition={{ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.05, type: 'spring', stiffness: 500, damping: 25 })}
                         className="flex items-center gap-2 text-primary-600"
                       >
                         <IconCheck size={16} />

@@ -10,7 +10,7 @@
  * `@/components/golf/coachhelm/insight-card` instead.
  */
 import { useState } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconX,
@@ -99,6 +99,7 @@ export function AlertCard({
   onDismiss,
   onAcknowledge,
 }: AlertCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragX, setDragX] = useState(0);
@@ -223,7 +224,7 @@ export function AlertCard({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   exit={{ opacity: 0, height: 0 }}
-                  transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                   className="mt-2 pt-2 border-t border-warm-200/60"
                 >
                   <p className="text-xs text-warm-500 mb-2">
@@ -311,7 +312,7 @@ export function AlertCard({
             >
               <motion.div
                 animate={{ rotate: isExpanded ? 90 : 0 }}
-                transition={{ duration: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
               >
                 <IconChevronRight size={16} />
               </motion.div>

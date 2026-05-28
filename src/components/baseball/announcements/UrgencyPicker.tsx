@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const urgencyOptions = [
@@ -56,6 +56,7 @@ interface UrgencyPickerProps {
 }
 
 export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
+  const prefersReducedMotion = useReducedMotion();
   return (
     <div>
       <label className="text-sm font-medium text-warm-700 block mb-2">
@@ -69,8 +70,8 @@ export function UrgencyPicker({ value, onChange }: UrgencyPickerProps) {
               key={opt.value}
               type="button"
               onClick={() => onChange(opt.value)}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={prefersReducedMotion ? undefined : ({ scale: 1.02 })}
+              whileTap={prefersReducedMotion ? undefined : ({ scale: 0.97 })}
               className={cn(
                 'relative p-3 rounded-xl border-2 text-left transition-all',
                 isActive

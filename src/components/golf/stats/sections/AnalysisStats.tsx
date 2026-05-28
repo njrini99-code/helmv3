@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { IconTarget } from '@/components/icons';
 import { containerVariants, StatCard, StatSection } from './shared-primitives';
 import type { WorstHoleResponse, CourseBreakdownResponse, TrendAnalysisResponse } from './types';
@@ -14,6 +14,7 @@ export function AnalysisStats({
   courseBreakdown?: CourseBreakdownResponse | null;
   trendData?: TrendAnalysisResponse | null;
 }) {
+  const prefersReducedMotion = useReducedMotion();
   // Helper to format date
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -50,7 +51,7 @@ export function AnalysisStats({
                 className="p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.1 })}
               >
                 <div className="text-xs text-amber-600 font-medium mb-1">Best Score</div>
                 <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-amber-700">{trendData.personalBests.bestScore.value}</div>
@@ -67,7 +68,7 @@ export function AnalysisStats({
                 className="p-4 rounded-xl bg-gradient-to-br from-primary-50 to-primary-50 border border-primary-200"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15 })}
               >
                 <div className="text-xs text-primary-600 font-medium mb-1">Best vs Par</div>
                 <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-primary-700">
@@ -86,7 +87,7 @@ export function AnalysisStats({
                 className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2 })}
               >
                 <div className="text-xs text-blue-600 font-medium mb-1">Best GIR %</div>
                 <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-blue-700">{trendData.personalBests.bestGir.value}%</div>
@@ -103,7 +104,7 @@ export function AnalysisStats({
                 className="p-4 rounded-xl bg-gradient-to-br from-purple-50 to-violet-50 border border-purple-200"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.25 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.25 })}
               >
                 <div className="text-xs text-purple-600 font-medium mb-1">Fewest Putts</div>
                 <div className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] text-purple-700">{trendData.personalBests.lowestPutts.value}</div>
@@ -208,7 +209,7 @@ export function AnalysisStats({
             className="text-xs text-warm-400 mt-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3 })}
           >
             {trendData.periodComparison.last30Days.roundCount} rounds in last 30 days
             {trendData.periodComparison.previous30Days.roundCount > 0 && (
@@ -265,7 +266,7 @@ export function AnalysisStats({
                   className="flex items-center justify-between py-2.5 border-b border-warm-100 last:border-0"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.05 })}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
@@ -294,7 +295,7 @@ export function AnalysisStats({
                   className="flex items-center justify-between py-2.5 border-b border-warm-100 last:border-0"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.05 })}
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center">
@@ -329,7 +330,7 @@ export function AnalysisStats({
                   }`}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.02 }}
+                  transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.02 })}
                 >
                   <div className="text-xs text-warm-500">Hole {hole.holeNumber}</div>
                   <div className={`text-[13px] font-medium ${
@@ -362,7 +363,7 @@ export function AnalysisStats({
                 className="flex items-center justify-between py-3 px-3 rounded-lg hover:bg-warm-50 active:bg-warm-100 transition-colors"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.03 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ delay: idx * 0.03 })}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${

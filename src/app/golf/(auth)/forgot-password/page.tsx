@@ -3,13 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
 import { AlertCircle, CheckCircle2, Mail } from 'lucide-react';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { Button } from '@/components/ui/button';
 
 export default function ForgotPasswordPage() {
+  const prefersReducedMotion = useReducedMotion();
   const isNative = isNativeApp();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -55,11 +56,11 @@ export default function ForgotPasswordPage() {
             y: [0, -20, 0],
             scale: [1, 1.05, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 15,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
         {/* Medium orb - bottom left */}
         <m.div
@@ -69,12 +70,12 @@ export default function ForgotPasswordPage() {
             y: [0, 25, 0],
             scale: [1, 0.95, 1],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 18,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 2
-          }}
+          })}
         />
         {/* Small accent orb - top left (hidden on very small screens) */}
         <m.div
@@ -83,12 +84,12 @@ export default function ForgotPasswordPage() {
             x: [0, 20, 0],
             y: [0, -15, 0],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 12,
             repeat: Infinity,
             ease: "easeInOut",
             delay: 1
-          }}
+          })}
         />
         {/* Tiny floating dot */}
         <m.div
@@ -97,11 +98,11 @@ export default function ForgotPasswordPage() {
             y: [0, -10, 0],
             opacity: [0.4, 0.8, 0.4],
           }}
-          transition={{
+          transition={prefersReducedMotion ? { duration: 0 } : ({
             duration: 4,
             repeat: Infinity,
             ease: "easeInOut"
-          }}
+          })}
         />
       </div>
 
@@ -120,7 +121,7 @@ export default function ForgotPasswordPage() {
         <m.div
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.6, ease: [0.16, 1, 0.3, 1] })}
           className="auth-glass-card rounded-2xl sm:rounded-3xl p-6 sm:p-8"
         >
           {/* Logo with glow effect */}
@@ -128,7 +129,7 @@ export default function ForgotPasswordPage() {
             className="flex flex-col items-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.2, duration: 0.5 })}
           >
             <div className="relative">
               <div className="absolute inset-0 bg-primary-500/30 rounded-full blur-xl scale-150" />
@@ -154,7 +155,7 @@ export default function ForgotPasswordPage() {
             className="text-center mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.3, duration: 0.5 })}
           >
             <h2 className="text-xl sm:text-2xl font-bold text-warm-900 mb-1 sm:mb-2">
               {success ? 'Check your email' : 'Reset your password'}
@@ -170,7 +171,7 @@ export default function ForgotPasswordPage() {
           <m.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.4, duration: 0.5 })}
           >
             {success ? (
               <div className="space-y-4 sm:space-y-5">
@@ -285,7 +286,7 @@ export default function ForgotPasswordPage() {
         <m.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.6, duration: 0.5 })}
         >
           {!success && (
             <p className="text-center mt-5 sm:mt-6 text-warm-600 text-sm">

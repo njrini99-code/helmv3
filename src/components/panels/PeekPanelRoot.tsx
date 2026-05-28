@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { IconX } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ export function PeekPanelRoot({
   title,
   className,
 }: PeekPanelProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Handle ESC key
   const handleEscape = useCallback(
     (e: KeyboardEvent) => {
@@ -67,7 +68,7 @@ export function PeekPanelRoot({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
             onClick={onClose}
             className="fixed inset-0 bg-warm-900/30 backdrop-blur-sm z-40"
           />
@@ -77,7 +78,7 @@ export function PeekPanelRoot({
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ type: 'spring', damping: 25, stiffness: 300 })}
             className={cn(
               'fixed top-0 right-0 h-full bg-white shadow-2xl z-50 flex flex-col',
               widthClasses[width],

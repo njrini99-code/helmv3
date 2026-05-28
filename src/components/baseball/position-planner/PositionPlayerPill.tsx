@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Avatar } from '@/components/ui/avatar';
 import { cn, getFullName } from '@/lib/utils';
 import type { Player, PipelineStage } from '@/lib/types';
@@ -95,6 +95,7 @@ export function PositionPlayerPill({
   index = 0,
   compact = false,
 }: PositionPlayerPillProps) {
+  const prefersReducedMotion = useReducedMotion();
   const colors: StageColorConfig = STAGE_COLORS[stage] ?? DEFAULT_COLORS;
   const fullName = getFullName(player.first_name, player.last_name);
 
@@ -104,11 +105,11 @@ export function PositionPlayerPill({
       initial={{ opacity: 0, scale: 0.8, y: 12 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8, y: -8 }}
-      transition={{
+      transition={prefersReducedMotion ? { duration: 0 } : ({
         delay: index * 0.06,
         duration: 0.35,
         ease: [0.16, 1, 0.3, 1]
-      }}
+      })}
       whileHover={{
         scale: 1.05,
         y: -2,
@@ -165,7 +166,7 @@ export function PositionPlayerPill({
         <motion.span
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ delay: index * 0.06 + 0.2, type: 'spring', stiffness: 500, damping: 25 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.06 + 0.2, type: 'spring', stiffness: 500, damping: 25 })}
           className={cn(
             'absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full',
             'ring-2 ring-white/80',
@@ -180,7 +181,7 @@ export function PositionPlayerPill({
         <motion.span
           initial={{ opacity: 0, x: -4 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: index * 0.06 + 0.1, duration: 0.25 }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ delay: index * 0.06 + 0.1, duration: 0.25 })}
           className={cn(
             'text-xs font-semibold truncate max-w-[100px]',
             'tracking-tight',
@@ -212,6 +213,7 @@ export function PositionPlayerStack({
   maxVisible = 2,
   expanded = false,
 }: PositionPlayerStackProps) {
+  const prefersReducedMotion = useReducedMotion();
   // Sort by stage priority then alphabetically
   const stagePriority: Record<PipelineStage, number> = {
     committed: 0,
@@ -267,7 +269,7 @@ export function PositionPlayerStack({
             initial={{ opacity: 0, y: -8, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.9 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.16, 1, 0.3, 1] })}
             className={cn(
               'flex items-center gap-2 mb-1 px-2',
               'text-micro font-bold uppercase tracking-widest',
@@ -303,7 +305,7 @@ export function PositionPlayerStack({
           animate={{ opacity: 1, scale: 1 }}
           whileHover={{ scale: 1.1, y: -1 }}
           whileTap={{ scale: 0.95 }}
-          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.16, 1, 0.3, 1] })}
           className={cn(
             'relative flex items-center justify-center',
             'w-7 h-7 rounded-full',

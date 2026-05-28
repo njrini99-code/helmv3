@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   IconX,
@@ -83,6 +83,7 @@ export function PatternValidationModal({
   onSubmit,
   isLoading = false,
 }: PatternValidationModalProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [selectedSeverity, setSelectedSeverity] = useState<PatternSeverity>(pattern.severity);
   const [notes, setNotes] = useState('');
   const [createFocusArea, setCreateFocusArea] = useState(true);
@@ -113,7 +114,7 @@ export function PatternValidationModal({
         <>
           {/* Backdrop */}
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0 })}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-warm-900/50 backdrop-blur-sm z-50"
@@ -122,7 +123,7 @@ export function PatternValidationModal({
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, scale: 0.95, y: 20 })}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed inset-0 flex items-center justify-center p-4 z-50 pointer-events-none"

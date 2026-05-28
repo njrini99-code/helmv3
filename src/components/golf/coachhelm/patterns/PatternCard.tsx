@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
@@ -90,6 +90,7 @@ export function PatternCard({
   onMarkAddressed,
   onResolve,
 }: PatternCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [expanded, setExpanded] = useState(false);
 
   const severity = severityConfig[pattern.severity];
@@ -259,7 +260,7 @@ export function PatternCard({
                     <motion.div
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.2 })}
                       className={cn(
                         'h-full rounded-full absolute top-0',
                         impactBgColor,
@@ -299,7 +300,7 @@ export function PatternCard({
                         className="text-primary-500"
                         initial={{ strokeDasharray: '0 88' }}
                         animate={{ strokeDasharray: `${confidencePercent * 0.88} 88` }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
+                        transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.5, delay: 0.3 })}
                       />
                     </svg>
                     <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-warm-700">
@@ -319,7 +320,7 @@ export function PatternCard({
             >
               <motion.div
                 animate={{ rotate: expanded ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2 })}
               >
                 <IconChevronDown size={20} />
               </motion.div>
@@ -333,7 +334,7 @@ export function PatternCard({
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
-                transition={{ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } }}
+                transition={prefersReducedMotion ? { duration: 0 } : ({ height: { type: 'spring', stiffness: 500, damping: 30 }, opacity: { duration: 0.2 } })}
                 className="overflow-hidden"
               >
                 <div className="pt-4 mt-4 border-t border-warm-100">

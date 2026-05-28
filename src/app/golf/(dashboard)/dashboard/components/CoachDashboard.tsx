@@ -4,7 +4,7 @@ import { useState, useEffect, memo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -117,6 +117,7 @@ export interface CoachDashboardData {
 // ============================================================================
 
 const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode?: string }) {
+  const prefersReducedMotion = useReducedMotion();
     const [copied, setCopied] = useState(false);
 
     const handleCopy = async () => {
@@ -142,9 +143,9 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
     return (
         <m.div
             className="relative overflow-hidden rounded-3xl surface-matte"
-            initial={{ opacity: 0, y: 14 }}
+            initial={prefersReducedMotion ? false : ({ opacity: 0, y: 14 })}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ delay: 0.15, duration: 0.55, ease: [0.16, 1, 0.3, 1] })}
         >
             <div
                 aria-hidden
@@ -252,6 +253,7 @@ interface CoachDashboardProps {
 }
 
 export function CoachDashboard({ data, enhancedData, dateRange: initialRange = 'all' }: CoachDashboardProps) {
+  const prefersReducedMotion = useReducedMotion();
     const { coach, team, stats, recentRounds, topPlayers, teamScoringTrend } = data;
     const router = useRouter();
     const [dateRange, setDateRange] = useState<DateRange>(initialRange);
@@ -315,7 +317,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
             <m.div
                 className="max-w-[1280px] mx-auto px-4 md:px-6 py-4 md:py-6 min-w-0"
                 variants={containerVariants}
-                initial="hidden"
+                initial={prefersReducedMotion ? false : "hidden"}
                 animate="visible"
             >
                 <JoinRequestAlert />

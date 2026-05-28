@@ -17,7 +17,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { LazyMotion, domAnimation, m } from 'framer-motion';
+import { LazyMotion, domAnimation, m, useReducedMotion } from 'framer-motion';
 import { Turf } from './turf';
 import { Hazards } from './hazards';
 import {
@@ -121,6 +121,7 @@ export function HoleShotPath({
   onClick,
   className,
 }: HoleShotPathProps) {
+  const prefersReducedMotion = useReducedMotion();
   const variant = SIZES[size];
   const [hovered, setHovered] = useState<PlottedShot | null>(null);
 
@@ -223,15 +224,13 @@ export function HoleShotPath({
                     opacity={0.92}
                     initial={variant.interactive ? { pathLength: 0, opacity: 0 } : false}
                     animate={variant.interactive ? { pathLength: 1, opacity: 0.92 } : undefined}
-                    transition={
-                      variant.interactive
+                    transition={prefersReducedMotion ? { duration: 0 } : (variant.interactive
                         ? {
                             duration: 0.55,
                             delay: 0.2 + stagger(i),
                             ease: EASE_CINEMATIC,
                           }
-                        : undefined
-                    }
+                        : undefined)}
                   />
                 );
               })}
@@ -250,15 +249,13 @@ export function HoleShotPath({
                     key={`dot-${s.shot_number}`}
                     initial={variant.interactive ? { scale: 0, opacity: 0 } : false}
                     animate={variant.interactive ? { scale: 1, opacity: 1 } : undefined}
-                    transition={
-                      variant.interactive
+                    transition={prefersReducedMotion ? { duration: 0 } : (variant.interactive
                         ? {
                             duration: 0.4,
                             delay: 0.32 + stagger(i),
                             ease: EASE_CINEMATIC,
                           }
-                        : undefined
-                    }
+                        : undefined)}
                     onMouseEnter={() => variant.interactive && setHovered(s)}
                     onMouseLeave={() => variant.interactive && setHovered(null)}
                     onFocus={() => variant.interactive && setHovered(s)}
@@ -307,7 +304,7 @@ export function HoleShotPath({
           <m.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, ease: EASE_CINEMATIC }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.18, ease: EASE_CINEMATIC })}
             className="absolute left-1/2 -translate-x-1/2 mt-2 z-10 pointer-events-none surface-lift rounded-xl px-3 py-2 text-eyebrow text-warm-800 whitespace-nowrap shadow-lg"
             role="tooltip"
           >
@@ -336,7 +333,7 @@ export function HoleShotPath({
             variants={enterVariants}
             initial="hidden"
             animate="visible"
-            transition={enterTransition}
+            transition={prefersReducedMotion ? { duration: 0 } : (enterTransition)}
             className="absolute inset-0 flex items-center justify-center pointer-events-none"
           >
             <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-100/70">
