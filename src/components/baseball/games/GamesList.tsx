@@ -109,6 +109,7 @@ export function GamesList({ teamId, title = 'Games & Scrimmages', showAddButton 
             onClick={() => fetchGames(true)}
             disabled={refreshing}
             className="h-8 w-8 p-0"
+            aria-label="Refresh games"
           >
             <IconRefresh size={16} className={refreshing ? 'animate-spin' : ''} />
           </Button>

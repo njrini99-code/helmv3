@@ -365,6 +365,7 @@ export function DocumentPreview({
               size="sm"
               className="px-2"
               onClick={() => onOpenChange(false)}
+              aria-label="Close preview"
             >
               <IconX size={20} />
             </Button>

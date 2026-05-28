@@ -320,7 +320,7 @@ export function PlayerComparison({
           {onClose && (
         <CardHeader className="flex flex-row items-center justify-between border-b border-border-light">
           <h2 className="text-lg font-semibold text-warm-900">Player Comparison</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={onClose} aria-label="Close comparison">
             <IconX size={18} />
           </Button>
         </CardHeader>

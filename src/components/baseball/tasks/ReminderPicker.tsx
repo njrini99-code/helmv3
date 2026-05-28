@@ -94,7 +94,7 @@ export function ReminderPicker({
           <IconBell size={16} className="text-warm-500" />
           Set Reminder
         </label>
-        <IconButton variant="primary" aria-label="Button"
+        <IconButton variant="primary" aria-label="Set reminder"
           type="button"
           role="switch"
           aria-checked={isEnabled}
