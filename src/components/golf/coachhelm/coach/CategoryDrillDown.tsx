@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { IconTrendingUp, IconTrendingDown, IconMinus, IconChevronRight, IconWarning } from '@/components/icons';
 import { motion } from 'framer-motion';
+import { EmptyState } from '@/components/ui/empty-state';
 
 interface Player {
   playerId: string;
@@ -72,7 +73,11 @@ export function CategoryDrillDown({
         <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400 mb-3">
           Player Breakdown
         </p>
-        <p className="text-sm text-warm-500">No player data available for this category.</p>
+        <EmptyState
+          variant="minimal"
+          type="generic"
+          description="No player data available for this category yet."
+        />
       </div>
     );
   }

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconGolf,
   IconCalendar,
@@ -132,21 +133,12 @@ export function RecentRoundReviews({ rounds }: RecentRoundReviewsProps) {
           </div>
         </div>
 
-        <div className="text-center py-8">
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mx-auto mb-3">
-            <IconGolf size={24} className="text-warm-400" />
-          </div>
-          <p className="text-sm text-warm-600 mb-1">No rounds to review yet</p>
-          <p className="text-xs text-warm-400 mb-4">
-            Complete a round to get AI-powered insights
-          </p>
-          <Link
-            href="/golf/dashboard/rounds/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            Log Your First Round
-          </Link>
-        </div>
+        <EmptyState
+          variant="minimal"
+          icon={<IconGolf size={20} />}
+          description="No rounds to review yet. Complete a round to get AI-powered insights."
+          action={{ label: 'Log Your First Round', href: '/golf/dashboard/rounds/new' }}
+        />
       </GlassCard>
     );
   }

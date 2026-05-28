@@ -13,6 +13,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTrendingUp,
   IconTrendingDown,
@@ -323,9 +324,11 @@ export function RoundStatsComparison({
             <p className="text-xs text-warm-500">vs your average</p>
           </div>
         </div>
-        <p className="text-sm text-warm-500 text-center py-4">
-          No stats available for comparison
-        </p>
+        <EmptyState
+          variant="minimal"
+          type="stats"
+          description="No stats available for comparison yet."
+        />
       </GlassCard>
     );
   }

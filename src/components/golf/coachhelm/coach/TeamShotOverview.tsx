@@ -3,6 +3,7 @@
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   IconTarget,
   IconWarning,
@@ -63,11 +64,11 @@ export function TeamShotOverview({
     return (
       <GlassCard className="relative overflow-hidden" glow="subtle">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600" />
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <IconTarget size={32} className="text-warm-300 mb-3" />
-          <p className="text-sm font-medium text-warm-500">No team shot analysis available</p>
-          <p className="text-xs text-warm-400 mt-1">Players need to log rounds with shot data to unlock this view</p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          icon={<IconTarget size={20} />}
+          description="No team shot analysis yet — players need to log rounds with shot data to unlock this view."
+        />
       </GlassCard>
     );
   }

@@ -8,6 +8,7 @@
  */
 
 import { useMemo } from 'react';
+import { EmptyState } from '@/components/ui/empty-state';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -298,17 +299,11 @@ export function MissPatternChart({
 
       {/* Empty state */}
       {sortedData.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-warm-100 flex items-center justify-center mb-3">
-            <svg className="w-6 h-6 text-warm-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" />
-              <circle cx="12" cy="12" r="6" />
-              <circle cx="12" cy="12" r="2" />
-            </svg>
-          </div>
-          <p className="text-sm text-warm-500">No miss pattern data available</p>
-          <p className="text-xs text-warm-400 mt-1">Track more rounds for insights</p>
-        </div>
+        <EmptyState
+          variant="minimal"
+          type="stats"
+          description="No miss pattern data yet. Track more rounds for insights."
+        />
       )}
     </div>
   );

@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/ui/glass-card';
 import { Shimmer } from '@/components/ui/shimmer';
+import { EmptyState } from '@/components/ui/empty-state';
 import { IconSparkles, IconRefresh, IconTarget, IconChartRadar, IconChart, IconTrendingUp } from '@/components/icons';
 import { MissPatternChart } from './MissPatternChart';
 import { ShotTypeBreakdown } from './ShotTypeBreakdown';
@@ -317,9 +318,11 @@ export function ShotAnalyticsPanel({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-warm-400 text-center py-4">
-                      Not enough shot data for distance analysis
-                    </p>
+                    <EmptyState
+                      variant="minimal"
+                      type="stats"
+                      description="Not enough shot data for distance analysis yet."
+                    />
                   )}
                 </div>
               </div>

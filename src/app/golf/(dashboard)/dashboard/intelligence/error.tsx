@@ -1,42 +1,23 @@
 'use client';
 
-import { useEffect } from 'react';
-import { GlassCard } from '@/components/ui/glass-card';
-import { Button } from '@/components/ui/button';
-import { IconInfo } from '@/components/icons';
+import { RouteErrorBoundary } from '@/components/errors';
 
-export default function IntelligenceError({
+export default function Error({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    console.error('Intelligence Dashboard Error:', error);
-  }, [error]);
-
   return (
-    <div className="min-h-full flex items-center justify-center p-6">
-      <GlassCard className="max-w-md w-full text-center p-8">
-        <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
-          <IconInfo size={32} className="text-red-500" />
-        </div>
-        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
-          Failed to Load Intelligence Dashboard
-        </h2>
-        <p className="text-warm-600 mb-6">
-          {'An unexpected error occurred while loading the dashboard.'}
-        </p>
-        <div className="flex gap-3 justify-center">
-          <Button variant="secondary" onClick={() => window.location.href = '/golf/dashboard'}>
-            Go to Dashboard
-          </Button>
-          <Button onClick={() => reset()}>
-            Try Again
-          </Button>
-        </div>
-      </GlassCard>
-    </div>
+    <RouteErrorBoundary
+      error={error}
+      reset={reset}
+      route="/golf/dashboard/intelligence"
+      component="IntelligencePage"
+      title="Failed to load Intelligence Hub"
+      message="We couldn't load the Intelligence Hub. Please try again."
+      homePath="/golf/dashboard"
+    />
   );
 }
