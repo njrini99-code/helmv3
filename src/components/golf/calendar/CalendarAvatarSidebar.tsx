@@ -183,7 +183,7 @@ export function CalendarAvatarSidebar({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-              <p className="text-[9px] text-warm-500 leading-tight">
+              <p className="text-eyebrow text-warm-500 leading-tight">
                 No team<br />members
               </p>
             </div>
@@ -233,7 +233,7 @@ export function CalendarAvatarSidebar({
                     {selected && playerColor && (
                       <span
                         aria-hidden="true"
-                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-[10px] font-medium"
+                        className="absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center text-white text-eyebrow font-medium"
                         style={{ background: playerColor.bg }}
                       >
                         {selectedPlayerIds.indexOf(member.id) + 1}
@@ -258,10 +258,10 @@ export function CalendarAvatarSidebar({
       {selectedPlayers.length > 0 && (
         <div className="w-full px-1 py-2 border-t border-warm-300/40 flex-shrink-0">
           <div className="flex items-center justify-center gap-1 mb-1.5">
-            <span className="text-[8px] font-medium text-warm-400 uppercase tracking-[0.1em]">
+            <span className="text-eyebrow font-medium text-warm-400 uppercase tracking-[0.1em]">
               Legend
             </span>
-            <span className="text-[8px] font-medium text-warm-400 tabular-nums">
+            <span className="text-eyebrow font-medium text-warm-400 tabular-nums">
               · {selectedPlayers.length}
             </span>
           </div>
@@ -279,7 +279,7 @@ export function CalendarAvatarSidebar({
                     aria-hidden="true"
                   />
                   <span
-                    className="text-[9px] text-warm-600 font-medium overflow-hidden text-ellipsis whitespace-nowrap"
+                    className="text-eyebrow text-warm-600 font-medium overflow-hidden text-ellipsis whitespace-nowrap"
                     title={getFullName(player)}
                   >
                     {player.first_name}

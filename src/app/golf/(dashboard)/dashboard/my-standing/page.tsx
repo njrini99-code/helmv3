@@ -192,7 +192,7 @@ function EmptyState() {
       >
         <BarChart3 className="h-6 w-6 text-warm-400" strokeWidth={1.5} />
       </div>
-      <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
+      <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
         More rounds needed
       </h3>
       <p className="text-warm-500 mb-2 max-w-sm mx-auto">

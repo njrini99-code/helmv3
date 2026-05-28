@@ -238,7 +238,7 @@ export function PatternDetailsView({ pattern, compact = false }: PatternDetailsV
           </h4>
           <div className="flex items-center gap-2">
             <TrendIcon size={20} className={trendInfo.color} />
-            <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+            <span className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
               {trendInfo.label}
             </span>
           </div>

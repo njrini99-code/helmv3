@@ -32,7 +32,7 @@ export function SegmentBadge({
         onClick={onClick}
         title={segment.description ?? segment.name}
         className={cn(
-          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium',
+          'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-eyebrow font-medium',
           'bg-primary-50 text-primary-700 border border-primary-200/60',
           'hover:bg-primary-100 transition-colors',
           'max-w-[120px] truncate',

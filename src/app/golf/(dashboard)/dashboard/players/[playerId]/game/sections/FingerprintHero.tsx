@@ -80,7 +80,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
         <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
           {/* Identity */}
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 font-medium">
+            <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 font-medium">
               Game Fingerprint
             </p>
             <h1
@@ -113,7 +113,7 @@ export function FingerprintHero({ player, composite }: FingerprintHeroProps) {
               >
                 {composite.rating != null ? composite.rating : '--'}
               </div>
-              <div className="text-[10px] uppercase tracking-[0.14em] text-warm-500 font-medium mt-1">
+              <div className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 font-medium mt-1">
                 Composite
               </div>
               <div
@@ -232,7 +232,7 @@ export function SectionBand({
         <div className="flex items-baseline justify-between gap-3">
           <div>
             {overline && (
-              <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 font-medium">
+              <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 font-medium">
                 {overline}
               </p>
             )}
@@ -316,7 +316,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
       )}
       data-tone={metric.tone}
     >
-      <span className="text-[10px] uppercase tracking-wide text-warm-500 font-medium">
+      <span className="text-eyebrow uppercase tracking-wide text-warm-500 font-medium">
         {metric.label}
       </span>
       <div className="flex items-baseline gap-1.5">
@@ -333,7 +333,7 @@ export function MetricPill({ metric }: { metric: FingerprintMetric }) {
           {metric.value}
         </span>
         {metric.comparison && (
-          <span className="text-[11px] text-warm-500">{metric.comparison}</span>
+          <span className="text-eyebrow text-warm-500">{metric.comparison}</span>
         )}
       </div>
     </div>

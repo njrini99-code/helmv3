@@ -72,19 +72,19 @@ export function UserBreakdownCard({ users }: Props) {
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalCoaches}
           </p>
-          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Coaches</p>
+          <p className="text-eyebrow sm:text-xs text-warm-500 mt-0.5">Coaches</p>
         </div>
         <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalPlayers}
           </p>
-          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Players</p>
+          <p className="text-eyebrow sm:text-xs text-warm-500 mt-0.5">Players</p>
         </div>
         <div className="bg-white/50 rounded-xl p-2 sm:p-3 text-center">
           <p className="text-lg sm:text-2xl font-semibold text-warm-900 tabular-nums">
             {users.totalAdmins}
           </p>
-          <p className="text-[11px] sm:text-xs text-warm-500 mt-0.5">Admins</p>
+          <p className="text-eyebrow sm:text-xs text-warm-500 mt-0.5">Admins</p>
         </div>
       </div>
 

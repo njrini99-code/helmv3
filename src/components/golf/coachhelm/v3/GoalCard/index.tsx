@@ -83,7 +83,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
         className="bg-white/70 backdrop-blur-md border border-white/30 rounded-xl px-3 py-2 flex items-center justify-between gap-3 v3-lift"
       >
         <span className="text-sm font-medium text-warm-900 truncate">{goal.title}</span>
-        <span className={`text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}>
+        <span className={`text-eyebrow font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}>
           {stateChip.label}
         </span>
       </m.div>
@@ -108,7 +108,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
           {goal.title}
         </h3>
         <span
-          className={`text-[10px] font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}
+          className={`text-eyebrow font-medium rounded-full px-2 py-0.5 shrink-0 ${stateChip.cls}`}
         >
           {stateChip.label}
         </span>
@@ -154,7 +154,7 @@ export function GoalCard({ goal, expanded = true }: GoalCardProps) {
       )}
 
       {/* Footer line */}
-      <p className="text-[11px] text-warm-500">
+      <p className="text-eyebrow text-warm-500">
         {goal.creator_role === 'coach' ? 'Assigned by coach' : 'Self-set'}
         {goal.shared_with_coach && goal.creator_role === 'player' && ' · shared with coach'}
       </p>

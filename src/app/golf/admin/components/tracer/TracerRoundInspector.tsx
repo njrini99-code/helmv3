@@ -103,7 +103,7 @@ function getInitials(name: string): string {
 
 function sortIndicator(active: boolean, asc: boolean) {
   if (!active) return <ArrowUpDown size={12} className="text-warm-300 opacity-0 group-hover/th:opacity-100 transition-opacity" />;
-  return <span className="text-primary-600 font-bold text-[10px]">{asc ? '\u2191' : '\u2193'}</span>;
+  return <span className="text-primary-600 font-bold text-eyebrow">{asc ? '\u2191' : '\u2193'}</span>;
 }
 
 // ============================================================================
@@ -252,7 +252,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
           Stuck
           {stuckCount > 0 && (
             <span className={cn(
-              'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold',
+              'inline-flex items-center justify-center w-5 h-5 rounded-full text-eyebrow font-bold',
               stuckOnly ? 'bg-amber-200 text-amber-900' : 'bg-amber-100 text-amber-700'
             )}>
               {stuckCount}
@@ -274,7 +274,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
           Errors
           {errorCount > 0 && (
             <span className={cn(
-              'inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold',
+              'inline-flex items-center justify-center w-5 h-5 rounded-full text-eyebrow font-bold',
               hasErrorsOnly ? 'bg-red-200 text-red-900' : 'bg-red-100 text-red-700'
             )}>
               {errorCount}
@@ -317,7 +317,7 @@ export function TracerRoundInspector({ rounds, onDiagnose }: TracerRoundInspecto
                 <SortableTh label="Status" sortKey="status" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
                 <SortableTh label="Holes" sortKey="holes" currentKey={sortKey} asc={sortAsc} onSort={handleSort} className="hidden md:table-cell" />
                 <SortableTh label="Issues" sortKey="issues" currentKey={sortKey} asc={sortAsc} onSort={handleSort} />
-                <th className="px-4 py-3.5 font-medium text-[11px] uppercase tracking-wider text-warm-400">Actions</th>
+                <th className="px-4 py-3.5 font-medium text-eyebrow uppercase tracking-wider text-warm-400">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -373,7 +373,7 @@ function SortableTh({
   return (
     <th
       className={cn(
-        'px-4 py-3.5 font-medium text-[11px] uppercase tracking-wider cursor-pointer select-none group/th',
+        'px-4 py-3.5 font-medium text-eyebrow uppercase tracking-wider cursor-pointer select-none group/th',
         'transition-colors hover:text-warm-700',
         active ? 'text-warm-700' : 'text-warm-400',
         align === 'left' && 'text-left',
@@ -436,7 +436,7 @@ function RoundRow({
         {/* Priority */}
         <td className="px-4 py-3.5 text-center">
           <span className={cn(
-            'inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border',
+            'inline-flex items-center px-2 py-0.5 rounded-full text-eyebrow font-semibold border',
             PRIORITY_BADGE_STYLES[priority.level]
           )}>
             {PRIORITY_LABELS[priority.level]}
@@ -513,17 +513,17 @@ function RoundRow({
         {/* Issues */}
         <td className="px-4 py-3.5 text-center">
           {issueCount > 0 ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-semibold bg-amber-50 text-amber-700">
               <IconWarning size={10} />
               {issueCount}
             </span>
           ) : round.status === 'completed' ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-green-600">
+            <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-green-600">
               <IconCheckCircle2 size={10} />
               Clear
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-warm-400">
+            <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-warm-400">
               <IconCircleDot size={10} />
               Watching
             </span>
@@ -564,7 +564,7 @@ function RoundRow({
                 <div className="px-3 py-3 sm:px-6 sm:py-4">
                   {/* Checks grid */}
                   <div className="mb-3">
-                    <span className="text-[11px] font-semibold text-warm-500 uppercase tracking-wider">
+                    <span className="text-eyebrow font-semibold text-warm-500 uppercase tracking-wider">
                       Recorded Round Snapshot
                     </span>
                   </div>
@@ -574,7 +574,7 @@ function RoundRow({
                         key={check.label}
                         title={`${check.label}: ${check.detail}`}
                         className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium',
+                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-eyebrow font-medium',
                           check.ok
                             ? 'bg-green-50/70 text-green-700'
                             : round.status === 'completed'
@@ -600,7 +600,7 @@ function RoundRow({
                   {/* Inline errors */}
                   <div className="space-y-1.5 mt-3">
                     <span className={cn(
-                      'text-[11px] font-semibold uppercase tracking-wider',
+                      'text-eyebrow font-semibold uppercase tracking-wider',
                       round.errors.length > 0 ? 'text-red-500' : 'text-green-600'
                     )}>
                       {round.errors.length > 0 ? `Open tracer incidents (${round.errors.length})` : 'Open tracer incidents'}
@@ -618,7 +618,7 @@ function RoundRow({
                   </div>
 
                   {/* Meta info */}
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-warm-200/30 text-[11px] text-warm-400">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-warm-200/30 text-eyebrow text-warm-400">
                     <span className="break-all">Round ID: <span className="font-mono text-warm-500">{round.round_id.slice(0, 8)}...</span></span>
                     {round.created_at && (
                       <span title={new Date(round.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}>
@@ -649,7 +649,7 @@ function RoundRow({
 function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: { status: string; stuck: boolean; currentHole?: number | null; expectedHoles?: number; updatedAt?: string | null }) {
   if (status === 'completed') {
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-green-50 text-green-700">
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-eyebrow font-semibold bg-green-50 text-green-700">
         Submitted
       </span>
     );
@@ -659,7 +659,7 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: {
     return (
       <div className="inline-flex flex-col items-center gap-0.5">
         <span className={cn(
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold',
+          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-eyebrow font-semibold',
           stuck ? 'bg-red-100 text-red-800' : 'bg-amber-50 text-amber-700'
         )}>
           <span className={cn(
@@ -670,7 +670,7 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: {
         </span>
         {currentHole != null && currentHole > 0 && (
           <span className={cn(
-            'text-[10px] font-medium tabular-nums',
+            'text-eyebrow font-medium tabular-nums',
             stuck ? 'text-red-500' : 'text-warm-500'
           )}>
             Hole {currentHole}{expectedHoles ? `/${expectedHoles}` : ''}
@@ -678,7 +678,7 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: {
         )}
         {stuck && updatedAt && (
           <span
-            className="text-[9px] text-red-400 tabular-nums"
+            className="text-eyebrow text-red-400 tabular-nums"
             title={new Date(updatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
           >
             {timeAgo(updatedAt)}
@@ -689,7 +689,7 @@ function StatusBadge({ status, stuck, currentHole, expectedHoles, updatedAt }: {
   }
 
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-warm-100 text-warm-500">
+    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-eyebrow font-semibold bg-warm-100 text-warm-500">
       Draft
     </span>
   );
@@ -710,7 +710,7 @@ function InlineError({ error }: { error: TracerIncident }) {
   return (
     <div className="flex items-start gap-2 rounded-lg bg-red-50/50 px-2.5 sm:px-3 py-2 text-xs text-red-600 min-w-0 overflow-hidden">
       <span className={cn(
-        'font-bold uppercase text-[9px] px-1.5 py-0.5 rounded flex-shrink-0 mt-px',
+        'font-bold uppercase text-eyebrow px-1.5 py-0.5 rounded flex-shrink-0 mt-px',
         badgeColors[error.severity] || 'bg-warm-100 text-warm-600'
       )}>
         {error.severity}
@@ -724,7 +724,7 @@ function InlineError({ error }: { error: TracerIncident }) {
       </div>
       {error.lastSeen && (
         <span
-          className="ml-auto flex-shrink-0 whitespace-nowrap text-[10px] text-warm-400 hidden sm:inline"
+          className="ml-auto flex-shrink-0 whitespace-nowrap text-eyebrow text-warm-400 hidden sm:inline"
           title={new Date(error.lastSeen).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
         >
           {timeAgo(error.lastSeen)}

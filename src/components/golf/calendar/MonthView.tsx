@@ -56,7 +56,7 @@ function DayCellContent({
       <div className="flex items-center justify-between mb-1.5">
         <div
           className={cn(
-            'w-7 h-7 flex items-center justify-center rounded-full text-[13px] font-medium transition-all',
+            'w-7 h-7 flex items-center justify-center rounded-full text-body-sm font-medium transition-all',
             isCurrentDay
               ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-[0_2px_10px_rgba(22,163,74,0.4)]'
               : isCurrentMonth
@@ -136,7 +136,7 @@ function DayCellContent({
             />
           ))}
           {busyDots.length > 5 && (
-            <span className="text-[10px] font-medium text-warm-500 ml-0.5 tabular-nums">
+            <span className="text-eyebrow font-medium text-warm-500 ml-0.5 tabular-nums">
               +{busyDots.length - 5}
             </span>
           )}
@@ -277,7 +277,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
         {DAYS.map((day) => (
           <div
             key={day}
-            className="px-3 py-2.5 text-center text-[11px] font-medium uppercase tracking-[0.1em] rounded-lg text-warm-500/70"
+            className="px-3 py-2.5 text-center text-eyebrow font-medium uppercase tracking-[0.1em] rounded-lg text-warm-500/70"
           >
             {day}
           </div>
@@ -340,7 +340,7 @@ export function MonthView({ month, events, onDateClick, onEventClick, isDraggabl
           <div className="w-16 h-16 rounded-2xl bg-warm-100/80 mx-auto flex items-center justify-center mb-4">
             <Calendar className="w-7 h-7 text-warm-400" />
           </div>
-          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
+          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
             No events this month
           </h3>
           <p className="text-sm text-warm-500 max-w-xs mx-auto">

@@ -249,7 +249,7 @@ const OverviewSummary = memo(function OverviewSummary({
               <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Patterns</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-[36px] md:text-[42px] font-light tabular-nums tracking-[-0.025em] text-warm-900">{patterns.length}</span>
+              <span className="text-display md:text-display font-light tabular-nums tracking-[-0.025em] text-warm-900">{patterns.length}</span>
             </div>
             <span className="text-sm text-warm-400">
               {highImpactPatterns} high-impact
@@ -263,7 +263,7 @@ const OverviewSummary = memo(function OverviewSummary({
               <span className="text-xs font-medium text-warm-400 uppercase tracking-wider">Insights</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="text-[36px] md:text-[42px] font-light tabular-nums tracking-[-0.025em] text-warm-900">{insights.length}</span>
+              <span className="text-display md:text-display font-light tabular-nums tracking-[-0.025em] text-warm-900">{insights.length}</span>
             </div>
             <span className="text-sm text-warm-400">total active</span>
           </div>
@@ -342,7 +342,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           <div className={cn('flex items-center gap-2 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
               'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-              isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
+              isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
               tone.badge
             )}>
               {tone.badgeText}
@@ -351,7 +351,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
             {strokeImpact !== null && strokeImpact > 0 && (
               <span className={cn(
                 'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
-                isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
+                isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
                 strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
                   : strokeImpact >= 0.5
@@ -369,7 +369,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
           {/* Headline */}
           <h4 className={cn(
             'font-medium text-warm-900 leading-snug mb-0.5',
-            isPage ? 'text-base' : 'text-[13px]'
+            isPage ? 'text-base' : 'text-body-sm'
           )}>
             {insight.headline}
           </h4>
@@ -403,7 +403,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 <div>
                   <h5 className={cn(
                     'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
-                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                    isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Evidence
                   </h5>
@@ -429,14 +429,14 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         </div>
                         <div className={cn(
                           'text-warm-400 leading-tight mt-0.5',
-                          isPage ? 'text-xs' : 'text-[9px]'
+                          isPage ? 'text-xs' : 'text-eyebrow'
                         )}>
                           {metric.label}
                         </div>
                         {metric.benchmark != null && (
                           <div className={cn(
                             'mt-1 font-medium',
-                            isPage ? 'text-xs' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-eyebrow',
                             metric.belowBenchmark ? 'text-red-500' : 'text-primary-500'
                           )}>
                             vs {metric.benchmark}{String(metric.value).includes('%') ? '%' : ''}
@@ -445,7 +445,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         {metric.trend && (
                           <div className={cn(
                             'mt-0.5 font-medium',
-                            isPage ? 'text-xs' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-eyebrow',
                             metric.trend === 'improving' ? 'text-primary-500' :
                             metric.trend === 'declining' ? 'text-red-500' :
                             'text-warm-400'
@@ -464,7 +464,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                 <div>
                   <h5 className={cn(
                     'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
-                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                    isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Evidence
                   </h5>
@@ -490,14 +490,14 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                         </div>
                         <div className={cn(
                           'text-warm-400 leading-tight mt-0.5',
-                          isPage ? 'text-xs' : 'text-[9px]'
+                          isPage ? 'text-xs' : 'text-eyebrow'
                         )}>
                           {step.premise?.split(':')[0]?.trim() || 'Metric'}
                         </div>
                         {step.inference?.startsWith('Benchmark:') && (
                           <div className={cn(
                             'mt-1 font-medium',
-                            isPage ? 'text-xs' : 'text-[8px]',
+                            isPage ? 'text-xs' : 'text-eyebrow',
                             step.conclusion?.includes('below') ? 'text-red-500' :
                             step.conclusion?.includes('above') ? 'text-primary-500' :
                             'text-warm-400'
@@ -520,7 +520,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                   <div className="flex items-center justify-between mb-1.5">
                     <span className={cn(
                       'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
-                      isPage ? 'text-xs' : 'text-[9px]'
+                      isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Stroke Impact
                     </span>
@@ -558,7 +558,7 @@ const EnhancedInsightCard = memo(function EnhancedInsightCard({
                     <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
                       'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
-                      isPage ? 'text-xs' : 'text-[9px]'
+                      isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Coach Action Plan
                     </span>
@@ -681,21 +681,21 @@ const InsightGroupCard = memo(function InsightGroupCard({
           <div className={cn('flex items-center gap-2 flex-wrap', isPage ? 'mb-2' : 'mb-1')}>
             <span className={cn(
               'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full',
-              isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
+              isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
               tone.badge
             )}>
               {tone.badgeText}
             </span>
             <span className={cn(
               'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-warm-100 text-warm-500',
-              isPage ? 'text-xs px-2 py-1' : 'text-[9px]'
+              isPage ? 'text-xs px-2 py-1' : 'text-eyebrow'
             )}>
               {CATEGORY_LABELS[group.category]}
             </span>
             {group.strokeImpact != null && group.strokeImpact > 0 && (
               <span className={cn(
                 'font-medium uppercase tracking-wider px-1.5 py-0.5 rounded-full tabular-nums',
-                isPage ? 'text-xs px-2 py-1' : 'text-[9px]',
+                isPage ? 'text-xs px-2 py-1' : 'text-eyebrow',
                 group.strokeImpact >= 1.0
                   ? 'bg-red-100 text-red-700'
                   : group.strokeImpact >= 0.5
@@ -713,7 +713,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
           {/* Headline */}
           <h4 className={cn(
             'font-medium text-warm-900 leading-snug mb-1',
-            isPage ? 'text-base' : 'text-[13px]'
+            isPage ? 'text-base' : 'text-body-sm'
           )}>
             {group.headline}
           </h4>
@@ -724,7 +724,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.isTeamWide && (
                 <span className={cn(
                   'inline-flex items-center gap-1 font-medium rounded-full border',
-                  isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                  isPage ? 'text-xs px-2.5 py-0.5' : 'text-eyebrow px-2 py-0.5',
                   'bg-primary-50 text-primary-700 border-primary-200/60'
                 )}>
                   <IconUsers size={isPage ? 12 : 10} />
@@ -736,7 +736,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                   key={p.playerId}
                   className={cn(
                     'inline-flex items-center font-medium rounded-full border',
-                    isPage ? 'text-xs px-2.5 py-0.5' : 'text-[9px] px-2 py-0.5',
+                    isPage ? 'text-xs px-2.5 py-0.5' : 'text-eyebrow px-2 py-0.5',
                     'bg-cream-100/75 text-warm-600 border-warm-200/60'
                   )}
                 >
@@ -746,7 +746,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
               {group.players.length > (isPage ? 8 : 4) && (
                 <span className={cn(
                   'text-warm-400 font-medium',
-                  isPage ? 'text-xs' : 'text-[9px]'
+                  isPage ? 'text-xs' : 'text-eyebrow'
                 )}>
                   +{group.players.length - (isPage ? 8 : 4)} more
                 </span>
@@ -783,7 +783,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                 <div>
                   <h5 className={cn(
                     'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
-                    isPage ? 'text-xs mb-2' : 'text-[9px] mb-1.5'
+                    isPage ? 'text-xs mb-2' : 'text-eyebrow mb-1.5'
                   )}>
                     Individual Details
                   </h5>
@@ -799,7 +799,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                         {mi.playerName && (
                           <span className={cn(
                             'flex-shrink-0 inline-flex items-center font-medium rounded-full border bg-cream-100/82 text-warm-700 border-warm-200/60',
-                            isPage ? 'text-xs px-2 py-0.5' : 'text-[8px] px-1.5 py-0.5'
+                            isPage ? 'text-xs px-2 py-0.5' : 'text-eyebrow px-1.5 py-0.5'
                           )}>
                             {mi.playerName}
                           </span>
@@ -810,7 +810,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                       </div>
                     ))}
                     {group.memberInsights.length > (isPage ? 6 : 3) && (
-                      <p className={cn('text-warm-400', isPage ? 'text-xs' : 'text-[9px]')}>
+                      <p className={cn('text-warm-400', isPage ? 'text-xs' : 'text-eyebrow')}>
                         +{group.memberInsights.length - (isPage ? 6 : 3)} more insights
                       </p>
                     )}
@@ -828,7 +828,7 @@ const InsightGroupCard = memo(function InsightGroupCard({
                     <IconTarget size={isPage ? 14 : 12} className="text-primary-600" />
                     <span className={cn(
                       'font-medium text-primary-700 uppercase tracking-[0.12em] opacity-90',
-                      isPage ? 'text-xs' : 'text-[9px]'
+                      isPage ? 'text-xs' : 'text-eyebrow'
                     )}>
                       Coach Action Plan
                     </span>
@@ -917,7 +917,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
           {getTypeIcon()}
           <span className={cn(
             'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80',
-            isPage ? 'text-xs' : 'text-[9px]'
+            isPage ? 'text-xs' : 'text-eyebrow'
           )}>
             {pattern.patternType}
           </span>
@@ -935,7 +935,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
         {/* Description */}
         <p className={cn(
           'font-medium text-warm-800 leading-snug mb-2 line-clamp-2',
-          isPage ? 'text-sm' : 'text-[12px]'
+          isPage ? 'text-sm' : 'text-caption'
         )}>
           {pattern.description || 'Pattern detected in performance data'}
         </p>
@@ -975,7 +975,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
               {/* Conditions */}
               {pattern.conditions.length > 0 && (
                 <div>
-                  <span className="text-[10px] font-medium text-warm-400 uppercase tracking-wider">
+                  <span className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">
                     When
                   </span>
                   <div className="mt-1 space-y-1">
@@ -991,22 +991,22 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
               {/* Stats grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
+                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
                     {Math.round(pattern.support * 100)}%
                   </div>
-                  <div className="text-[9px] text-warm-400">Frequency</div>
+                  <div className="text-eyebrow text-warm-400">Frequency</div>
                 </div>
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
+                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
                     {pattern.lift.toFixed(1)}x
                   </div>
-                  <div className="text-[9px] text-warm-400">Lift</div>
+                  <div className="text-eyebrow text-warm-400">Lift</div>
                 </div>
                 <div className="text-center bg-warm-50/80 rounded-lg py-2">
-                  <div className="text-[13px] font-medium text-warm-800 tabular-nums">
+                  <div className="text-body-sm font-medium text-warm-800 tabular-nums">
                     {pattern.sampleSize}
                   </div>
-                  <div className="text-[9px] text-warm-400">Samples</div>
+                  <div className="text-eyebrow text-warm-400">Samples</div>
                 </div>
               </div>
 
@@ -1015,7 +1015,7 @@ const EnhancedPatternCard = memo(function EnhancedPatternCard({
                 <div className="p-2.5 bg-primary-50/80 rounded-lg border border-primary-100/60">
                   <div className="flex items-center gap-2 mb-1">
                     <IconTarget size={10} className="text-primary-600" />
-                    <span className="text-[10px] font-medium text-primary-700 uppercase">Recommendation</span>
+                    <span className="text-eyebrow font-medium text-primary-700 uppercase">Recommendation</span>
                   </div>
                   <p className="text-xs text-primary-800 leading-relaxed">
                     {pattern.recommendation}
@@ -1076,7 +1076,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
           <div>
             <span className={cn(
               'font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 block',
-              isPage ? 'text-xs' : 'text-[9px]'
+              isPage ? 'text-xs' : 'text-eyebrow'
             )}>
               Next Round
             </span>
@@ -1108,7 +1108,7 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
 
         {/* Mini confidence gauge */}
         <div className="flex-1">
-          <div className={cn('flex justify-between text-warm-400 mb-0.5', isPage ? 'text-xs' : 'text-[9px]')}>
+          <div className={cn('flex justify-between text-warm-400 mb-0.5', isPage ? 'text-xs' : 'text-eyebrow')}>
             <span>Confidence</span>
             <span className="font-medium">{confidencePct}%</span>
           </div>
@@ -1158,13 +1158,13 @@ const EnhancedPredictionCard = memo(function EnhancedPredictionCard({
         <div className="flex gap-2 mt-2.5 pt-2.5 border-t border-warm-100">
           <div className="flex-1 text-center bg-red-50/60 rounded-lg py-1.5">
             <div className="text-xs text-red-400">Blowup</div>
-            <div className="text-[11px] font-medium text-red-600 tabular-nums">
+            <div className="text-eyebrow font-medium text-red-600 tabular-nums">
               {Math.round(prediction.tailRisks.blowupProbability * 100)}%
             </div>
           </div>
           <div className="flex-1 text-center bg-primary-50/60 rounded-lg py-1.5">
             <div className="text-xs text-primary-400">Great Round</div>
-            <div className="text-[11px] font-medium text-primary-600 tabular-nums">
+            <div className="text-eyebrow font-medium text-primary-600 tabular-nums">
               {Math.round(prediction.tailRisks.greatRoundProbability * 100)}%
             </div>
           </div>
@@ -1187,7 +1187,7 @@ function TabEmptyState({ icon, title, description, variant = 'widget' }: { icon:
       )}>
         {icon}
       </div>
-      <h4 className={cn('font-medium text-warm-700', isPage ? 'text-lg mb-1' : 'text-[13px] mb-0.5')}>{title}</h4>
+      <h4 className={cn('font-medium text-warm-700', isPage ? 'text-lg mb-1' : 'text-body-sm mb-0.5')}>{title}</h4>
       <p className={cn('text-warm-400 leading-relaxed', isPage ? 'text-sm max-w-xs' : 'text-xs max-w-[200px]')}>{description}</p>
     </div>
   );
@@ -1379,7 +1379,7 @@ export function IntelligenceCommandCenter({
             /* Page: two-column layout for top items */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider">Top Insights</h3>
+                <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider">Top Insights</h3>
                 {displayGroups ? (
                   insightGroups.slice(0, 2).map((group) => (
                     <InsightGroupCard
@@ -1418,13 +1418,13 @@ export function IntelligenceCommandCenter({
               <div className="space-y-4">
                 {sortedPatterns[0] && (
                   <>
-                    <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider">Top Pattern</h3>
+                    <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider">Top Pattern</h3>
                     <EnhancedPatternCard pattern={sortedPatterns[0]} variant={variant} />
                   </>
                 )}
                 {predictions[0] && (
                   <>
-                    <h3 className="text-[13px] font-medium text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
+                    <h3 className="text-body-sm font-medium text-warm-500 uppercase tracking-wider mt-4">Next Round Forecast</h3>
                     <EnhancedPredictionCard prediction={predictions[0]} variant={variant} />
                   </>
                 )}
@@ -1612,7 +1612,7 @@ export function IntelligenceCommandCenter({
             </div>
             <h4 className={cn(
               'font-medium text-warm-800',
-              isPage ? 'text-xl mb-2' : 'text-[13px] mb-1'
+              isPage ? 'text-xl mb-2' : 'text-body-sm mb-1'
             )}>
               Ready to Analyze
             </h4>
@@ -1626,7 +1626,7 @@ export function IntelligenceCommandCenter({
               {['Root Cause Chains', 'Stroke Leakage ROI', 'Break Analysis', 'Par-Type Profiling', 'Predictions'].map(feature => (
                 <span key={feature} className={cn(
                   'font-medium text-primary-600 bg-primary-50 rounded-full',
-                  isPage ? 'text-xs px-3 py-1' : 'text-[9px] px-2 py-0.5'
+                  isPage ? 'text-xs px-3 py-1' : 'text-eyebrow px-2 py-0.5'
                 )}>
                   {feature}
                 </span>

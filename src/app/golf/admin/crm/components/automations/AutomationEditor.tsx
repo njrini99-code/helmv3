@@ -282,7 +282,7 @@ export function AutomationEditor({
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1 text-[11px] text-warm-500">
+                  <p className="mt-1 text-eyebrow text-warm-500">
                     {TRIGGER_EVENTS.find((t) => t.value === triggerEvent)?.description}
                   </p>
                 </div>
@@ -299,7 +299,7 @@ export function AutomationEditor({
                     onChange={(e) => setPriority(parseInt(e.target.value, 10) || 0)}
                     className="w-full px-3 py-2 text-sm rounded-lg bg-white border border-warm-200/80 text-warm-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400"
                   />
-                  <p className="mt-1 text-[11px] text-warm-500">Lower runs first.</p>
+                  <p className="mt-1 text-eyebrow text-warm-500">Lower runs first.</p>
                 </div>
               </div>
 
@@ -452,7 +452,7 @@ export function AutomationEditor({
                   {showAdvanced ? '▾' : '▸'} Advanced JSON view
                 </button>
                 {showAdvanced && (
-                  <pre className="mt-2 p-3 bg-warm-50 border border-warm-200 rounded-lg text-[11px] text-warm-700 overflow-x-auto whitespace-pre">
+                  <pre className="mt-2 p-3 bg-warm-50 border border-warm-200 rounded-lg text-eyebrow text-warm-700 overflow-x-auto whitespace-pre">
                     {advancedJson}
                   </pre>
                 )}

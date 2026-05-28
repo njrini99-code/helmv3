@@ -56,7 +56,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
       <div className="flex items-start gap-4">
         <div
           className={cn(
-            'w-8 h-8 rounded-2xl flex items-center justify-center text-[12.5px] font-medium tabular-nums flex-shrink-0',
+            'w-8 h-8 rounded-2xl flex items-center justify-center text-caption font-medium tabular-nums flex-shrink-0',
             focusArea.priority === 1 && 'bg-primary-100/80 text-primary-700',
             focusArea.priority === 2 && 'bg-primary-50/80 text-primary-600',
             focusArea.priority === 3 && 'bg-warm-100/70 text-warm-700',
@@ -72,22 +72,22 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         </div>
 
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] mb-1">
+          <h4 className="font-medium text-warm-900 text-body-sm tracking-[-0.005em] mb-1">
             {focusArea.title}
           </h4>
-          <p className="text-[12.5px] text-warm-600 leading-relaxed line-clamp-2">
+          <p className="text-caption text-warm-600 leading-relaxed line-clamp-2">
             {focusArea.description}
           </p>
 
           {focusArea.target_improvement && (
-            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50/65 text-primary-700 text-[11.5px] font-medium rounded-full">
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 bg-primary-50/65 text-primary-700 text-eyebrow font-medium rounded-full">
               <IconTarget size={11} className="text-primary-600" />
               {focusArea.target_improvement}
             </div>
           )}
 
           {focusArea.specific_drills && focusArea.specific_drills.length > 0 && (
-            <p className="text-[11.5px] text-warm-400 mt-2">
+            <p className="text-eyebrow text-warm-400 mt-2">
               {focusArea.specific_drills.length} recommended drill{focusArea.specific_drills.length !== 1 ? 's' : ''}
             </p>
           )}

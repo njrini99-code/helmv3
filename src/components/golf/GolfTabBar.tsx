@@ -63,7 +63,7 @@ export function GolfTabBar<T extends string>({
   // Vertical breath: compact = tight (toolbars), default = editorial.
   // 44px touch target preserved either way (UX rule #2).
   const verticalPad = compact ? 'py-2.5' : 'py-3';
-  const fontSize = compact ? 'text-[13px]' : 'text-[14px]';
+  const fontSize = compact ? 'text-body-sm' : 'text-body-sm';
 
   return (
     <div
@@ -128,7 +128,7 @@ export function GolfTabBar<T extends string>({
               {tab.count !== undefined && tab.count > 0 && (
                 <span
                   className={cn(
-                    'tabular-nums text-[12px] font-medium transition-colors duration-200',
+                    'tabular-nums text-caption font-medium transition-colors duration-200',
                     isActive ? 'text-warm-600' : 'text-warm-400 group-hover:text-warm-500',
                   )}
                 >

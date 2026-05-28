@@ -264,7 +264,7 @@ export function BusinessIntelligenceTab({ data }: Props) {
         </div>
         <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">Activation</p>
+            <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">Activation</p>
             <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">
               {safeFixed(bi.growth.overallActivationRate, 0)}%
               {bi.growth.userGrowthRateWoW !== 0 && (
@@ -278,15 +278,15 @@ export function BusinessIntelligenceTab({ data }: Props) {
             </p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">D7 Retention</p>
+            <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">D7 Retention</p>
             <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{safeFixed(bi.retention.d7.rate, 0)}%</p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">WAU Stickiness</p>
+            <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">WAU Stickiness</p>
             <p className="text-lg font-bold text-warm-900 tabular-nums mt-0.5">{safeFixed(bi.retention.stickinessLogins, 0)}%</p>
           </div>
           <div className="rounded-xl bg-warm-50/60 px-3 py-2.5">
-            <p className="text-[11px] font-medium text-warm-400 uppercase tracking-wider">At-Risk</p>
+            <p className="text-eyebrow font-medium text-warm-400 uppercase tracking-wider">At-Risk</p>
             <p className={cn(
               'text-lg font-bold tabular-nums mt-0.5',
               bi.health.atRiskAccounts.length === 0 ? 'text-primary-600' : bi.health.atRiskAccounts.length <= 5 ? 'text-amber-600' : 'text-red-600'
@@ -596,7 +596,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <GlassCard className="text-center">
           <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Coach Weekly Retention</p>
           <p className={cn(
-            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+            'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
             r.coachWeeklyRetention >= 30 ? 'text-primary-600' : 'text-amber-600'
           )}>
             {r.coachWeeklyRetention}%
@@ -605,7 +605,7 @@ function RetentionSection({ bi }: { bi: AdminDashboardData['bi'] }) {
         <GlassCard className="text-center">
           <p className="text-xs font-medium text-warm-400 uppercase tracking-wider mb-1">Player Weekly Retention</p>
           <p className={cn(
-            'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+            'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
             r.playerWeeklyRetention >= 30 ? 'text-primary-600' : 'text-amber-600'
           )}>
             {r.playerWeeklyRetention}%
@@ -1043,7 +1043,7 @@ function ErrorAreaRow({ area, maxCount }: { area: { area: string; count: number;
           </div>
           <span className="text-xs font-semibold text-warm-700 w-8 text-right">{area.count}</span>
           {area.critical > 0 && (
-            <span className="text-[10px] font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">{area.critical} crit</span>
+            <span className="text-eyebrow font-bold text-red-600 bg-red-50 px-1.5 py-0.5 rounded-full">{area.critical} crit</span>
           )}
         </div>
         {area.recentErrors.length > 0 && (
@@ -1288,13 +1288,13 @@ function HealthSection({ bi }: { bi: AdminDashboardData['bi'] }) {
                         {acct.riskSignals.slice(0, 3).map((signal, i) => (
                           <span
                             key={i}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-warm-100 text-warm-600"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-eyebrow font-medium bg-warm-100 text-warm-600"
                           >
                             {signal}
                           </span>
                         ))}
                         {acct.riskSignals.length > 3 && (
-                          <span className="text-[10px] text-warm-400">+{acct.riskSignals.length - 3} more</span>
+                          <span className="text-eyebrow text-warm-400">+{acct.riskSignals.length - 3} more</span>
                         )}
                       </div>
                     </td>

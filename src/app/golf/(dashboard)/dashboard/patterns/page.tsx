@@ -17,7 +17,7 @@ function ErrorState({ error }: { error: string }) {
         <div className="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mx-auto mb-4">
           <IconInfo size={32} className="text-red-500" />
         </div>
-        <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
+        <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
           Unable to Load Patterns
         </h2>
         <p className="text-warm-600 mb-6">{error}</p>

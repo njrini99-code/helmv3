@@ -290,7 +290,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
               {getTransportIcon(trip.transportation_type)}
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="text-[22px] leading-tight font-medium tracking-[-0.01em] text-warm-900">
+              <h2 className="text-h2 leading-tight font-medium tracking-[-0.01em] text-warm-900">
                 {trip.event_name}
               </h2>
               <div className="flex items-center gap-1.5 text-warm-500 mt-1.5 text-sm">
@@ -306,7 +306,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-3">
             <div className="p-4 bg-cream-50/55 rounded-2xl">
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Depart</p>
               <p className="font-medium text-warm-900">{fmtDate(trip.departure_date)}</p>
               {trip.departure_time && (
                 <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.departure_time)}</p>
@@ -317,7 +317,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
             </div>
             {trip.return_date && (
               <div className="p-4 bg-cream-50/55 rounded-2xl">
-                <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
+                <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Return</p>
                 <p className="font-medium text-warm-900">{fmtDate(trip.return_date)}</p>
                 {trip.return_time && (
                   <p className="text-sm text-warm-500 mt-0.5">{formatTime(trip.return_time)}</p>
@@ -342,7 +342,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Room Assignments */}
           {trip.room_assignments && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Room Assignment</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Room Assignment</p>
               <p className="text-sm text-warm-700">{trip.room_assignments}</p>
             </div>
           )}
@@ -350,13 +350,13 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Uniform & Gear */}
           {trip.uniform_requirements && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Uniform</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Uniform</p>
               <p className="text-sm text-warm-700">{trip.uniform_requirements}</p>
             </div>
           )}
           {trip.gear_list && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Gear List</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Gear List</p>
               <p className="text-sm text-warm-700">{trip.gear_list}</p>
             </div>
           )}
@@ -364,7 +364,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Flight */}
           {trip.flight_info && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Flight Info</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Flight Info</p>
               <p className="text-sm text-warm-700">{trip.flight_info}</p>
             </div>
           )}
@@ -372,7 +372,7 @@ function TripDetailSheet({ trip, onClose }: { trip: TripData; onClose: () => voi
           {/* Notes */}
           {trip.notes && (
             <div>
-              <p className="text-[10.5px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Notes</p>
+              <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-2 opacity-80">Notes</p>
               <p className="text-sm text-warm-700">{trip.notes}</p>
             </div>
           )}
@@ -663,7 +663,7 @@ function OverviewSection({
           <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-warm-100/80 ring-1 ring-warm-200/60 text-warm-600 flex-shrink-0">
             {icon}
           </span>
-          <h2 className="text-[20px] leading-tight font-medium tracking-[-0.01em] text-warm-900 truncate">
+          <h2 className="text-h3 leading-tight font-medium tracking-[-0.01em] text-warm-900 truncate">
             {title}
           </h2>
           <StatusPill tone="warm" size="xs" className="flex-shrink-0">
@@ -677,7 +677,7 @@ function OverviewSection({
         </div>
         <button
           onClick={onViewAll}
-          className="text-[12px] font-medium text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
+          className="text-caption font-medium text-primary-700 hover:text-primary-800 transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 rounded-md"
         >
           View all →
         </button>
@@ -802,14 +802,14 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     <IconClipboardList size={16} className="text-red-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-medium tracking-[-0.005em] text-red-800">
+                    <p className="text-body-sm font-medium tracking-[-0.005em] text-red-800">
                       {overdueTasks.length} overdue task{overdueTasks.length !== 1 ? 's' : ''}
                     </p>
-                    <p className="text-[12px] text-red-600">Please complete these as soon as possible</p>
+                    <p className="text-caption text-red-600">Please complete these as soon as possible</p>
                   </div>
                   <button
                     onClick={() => setActiveTab('tasks')}
-                    className="text-[12px] font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
+                    className="text-caption font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </button>
@@ -828,14 +828,14 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     <IconAirplane size={16} className="text-blue-600" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-[14px] font-medium tracking-[-0.005em] text-blue-800">
+                    <p className="text-body-sm font-medium tracking-[-0.005em] text-blue-800">
                       {badges.travel} new travel itinerar{badges.travel !== 1 ? 'ies' : 'y'} posted
                     </p>
-                    <p className="text-[12px] text-blue-600">Check your upcoming trip details</p>
+                    <p className="text-caption text-blue-600">Check your upcoming trip details</p>
                   </div>
                   <a
                     href="/golf/dashboard/travel"
-                    className="text-[12px] font-medium text-blue-700 hover:text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
+                    className="text-caption font-medium text-blue-700 hover:text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </a>
@@ -954,7 +954,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   {/* Pending tasks */}
                   {pendingTasks.length > 0 && (
                     <div>
-                      <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
+                      <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         To Do ({pendingTasks.length})
                       </h2>
                       <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -973,7 +973,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   {/* Completed tasks */}
                   {completedTasks.length > 0 && (
                     <div>
-                      <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
+                      <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                         Completed ({completedTasks.length})
                       </h2>
                       <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -1013,7 +1013,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     const upcoming = events.filter(e => now ? new Date(e.start_time) >= now : true);
                     return upcoming.length > 0 ? (
                       <div>
-                        <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
+                        <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Upcoming ({upcoming.length})
                         </h2>
                         <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">
@@ -1035,7 +1035,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                     const past = now ? events.filter(e => new Date(e.start_time) < now) : [];
                     return past.length > 0 ? (
                       <div>
-                        <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
+                        <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] mb-4 opacity-80">
                           Past ({past.length})
                         </h2>
                         <m.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-3">

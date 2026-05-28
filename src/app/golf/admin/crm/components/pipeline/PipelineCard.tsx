@@ -112,14 +112,14 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           <div className="flex items-center justify-between gap-2 mt-2">
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               {coach.conference && (
-                <span className="text-[10px] font-medium text-warm-500 truncate">
+                <span className="text-eyebrow font-medium text-warm-500 truncate">
                   {coach.conference}
                 </span>
               )}
               {coach.division && (
                 <span
                   className={cn(
-                    'px-1.5 py-0.5 rounded text-[9px] font-bold flex-shrink-0',
+                    'px-1.5 py-0.5 rounded text-eyebrow font-bold flex-shrink-0',
                     coach.division === 'D2'
                       ? 'bg-blue-100 text-blue-700'
                       : 'bg-primary-100 text-primary-700',
@@ -133,11 +133,11 @@ export function PipelineCard({ coach, engagement, isOverlay, onClick }: Pipeline
           </div>
 
           <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-warm-100/60">
-            <span className="text-[10px] text-warm-400 truncate">
+            <span className="text-eyebrow text-warm-400 truncate">
               {lastContacted ? `Last contact ${lastContacted}` : 'No contact yet'}
             </span>
             {isOverdue && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] text-red-600 font-medium flex-shrink-0">
+              <span className="inline-flex items-center gap-0.5 text-eyebrow text-red-600 font-medium flex-shrink-0">
                 <IconClock size={9} /> Overdue
               </span>
             )}

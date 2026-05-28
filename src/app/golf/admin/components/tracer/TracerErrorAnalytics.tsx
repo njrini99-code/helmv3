@@ -138,8 +138,8 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 
   return (
     <div className="rounded-xl border border-white/40 bg-white/65 px-3 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
-      <p className={cn('mt-1 break-words text-sm text-warm-800', mono && 'font-mono text-[12px]')}>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
+      <p className={cn('mt-1 break-words text-sm text-warm-800', mono && 'font-mono text-caption')}>
         {value}
       </p>
     </div>
@@ -149,7 +149,7 @@ function MetaItem({ label, value, mono = false }: { label: string; value: string
 function NarrativePanel({ label, body }: { label: string; body: string }) {
   return (
     <div className="rounded-xl border border-white/40 bg-white/65 p-3">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <p className="mt-1.5 text-sm leading-6 text-warm-700">{body}</p>
     </div>
   );
@@ -483,30 +483,30 @@ export default function TracerErrorAnalytics({
                   <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', style.badge)}>
+                        <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', style.badge)}>
                           {incident.severity}
                         </span>
-                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600">
+                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                           {incident.featureArea}
                         </span>
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
+                        <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                           <Layers3 size={11} />
                           {incident.occurrences}
                         </span>
                         {incident.playerIds.length > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                             <IconUser size={11} />
                             {incident.playerIds.length}
                           </span>
                         )}
                         {incident.roundIds.length > 0 && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[11px] font-medium text-warm-600">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-medium text-warm-600">
                             <IconRoute size={11} />
                             {incident.roundIds.length} rounds
                           </span>
                         )}
                         <span className={cn(
-                          'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                          'inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]',
                           incident.status === 'open'
                             ? investigatingIds.has(incident.id)
                               ? 'border-amber-300 bg-amber-50 text-amber-700'
@@ -629,13 +629,13 @@ export default function TracerErrorAnalytics({
                       </div>
 
                       <div className="rounded-xl border border-white/40 bg-white/65 p-3">
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
+                        <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Raw message</p>
                         <p className="mt-1.5 break-words text-sm leading-6 text-warm-800">{incident.sampleMessage}</p>
                       </div>
 
                       {(incident.errorHint || incident.errorDetails) && (
                         <div className="rounded-xl border border-amber-100 bg-amber-50/65 p-3">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-600">Runtime guidance</p>
+                          <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-amber-600">Runtime guidance</p>
                           {incident.errorHint && (
                             <p className="mt-1.5 text-sm leading-6 text-amber-800">
                               <span className="font-medium">Hint:</span> {incident.errorHint}
@@ -651,14 +651,14 @@ export default function TracerErrorAnalytics({
 
                       <div className="grid gap-3 lg:grid-cols-2">
                         <div className="rounded-xl border border-white/40 bg-white/65 p-3">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
+                          <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Copy-ready brief</p>
                           <pre className="mt-2 max-h-[260px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
                             {incident.copySummary}
                           </pre>
                         </div>
 
                         <div className="rounded-xl border border-white/40 bg-white/65 p-3">
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Context and stack</p>
+                          <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Context and stack</p>
                           <div className="mt-2 space-y-3">
                             {incident.sampleContext ? (
                               <pre className="max-h-[180px] overflow-auto whitespace-pre-wrap break-words text-xs leading-6 text-warm-700">
@@ -720,16 +720,16 @@ export default function TracerErrorAnalytics({
                 return (
                   <div key={trace.id} className={cn('rounded-xl border bg-white/55 p-3', sevStyle.border)}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', sevStyle.badge)}>
+                      <span className={cn('inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', sevStyle.badge)}>
                         {trace.severity}
                       </span>
                       {featureArea && (
-                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-warm-600">
+                        <span className="inline-flex items-center rounded-full border border-white/40 bg-white/65 px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em] text-warm-600">
                           {featureArea}
                         </span>
                       )}
                       <span className={cn(
-                        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]',
+                        'inline-flex items-center rounded-full border px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]',
                         trace.resolved
                           ? 'border-primary-200 bg-primary-50 text-primary-700'
                           : 'border-red-200 bg-red-50 text-red-700'

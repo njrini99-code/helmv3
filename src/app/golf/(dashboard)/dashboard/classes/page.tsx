@@ -404,7 +404,7 @@ export default function GolfClassesPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-warm-400" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Join a Team First</h2>
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Join a Team First</h2>
             <p className="text-warm-500 mb-6">
               You need to be on a team before you can add your class schedule. Ask your coach for a join code.
             </p>
@@ -492,7 +492,7 @@ export default function GolfClassesPage() {
             <div className="w-16 h-16 rounded-2xl bg-warm-100 flex items-center justify-center mx-auto mb-4">
               <IconBook size={32} className="text-warm-300" />
             </div>
-            <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">
+            <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">
               No Classes Added
             </h3>
             <p className="text-warm-500 mb-6 max-w-md mx-auto">
@@ -525,7 +525,7 @@ export default function GolfClassesPage() {
                     value={classes.length}
                     decimals={0}
                     staggerIndex={0}
-                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
                   />
                   <p className="text-xs text-warm-500">Classes</p>
                 </div>
@@ -541,7 +541,7 @@ export default function GolfClassesPage() {
                     value={totalCredits}
                     decimals={0}
                     staggerIndex={1}
-                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
                   />
                   <p className="text-xs text-warm-500">Credits</p>
                 </div>
@@ -557,7 +557,7 @@ export default function GolfClassesPage() {
                     value={Object.keys(classesByDay).length}
                     decimals={0}
                     staggerIndex={2}
-                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
                   />
                   <p className="text-xs text-warm-500">Days/Week</p>
                 </div>
@@ -577,7 +577,7 @@ export default function GolfClassesPage() {
                     }
                     decimals={0}
                     staggerIndex={3}
-                    className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900"
+                    className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900"
                   />
                   <p className="text-xs text-warm-500">Buildings</p>
                 </div>
@@ -588,7 +588,7 @@ export default function GolfClassesPage() {
           {/* Schedule Grid */}
           <Card variant="glass">
             <div className="p-6">
-              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4">Weekly Schedule</h2>
+              <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4">Weekly Schedule</h2>
 
               {Object.keys(classesByDay).length > 0 ? (
                 <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 md:grid md:grid-cols-5 md:gap-4 md:overflow-x-visible md:snap-none md:pb-0 md:mx-0 md:px-0" style={{ WebkitOverflowScrolling: 'touch' }}>
@@ -652,7 +652,7 @@ export default function GolfClassesPage() {
           {/* All Classes List */}
           <Card variant="glass">
             <div className="p-6">
-              <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-4">All Classes</h2>
+              <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-4">All Classes</h2>
 
               <div className="space-y-3">
                 {classes && classes.length > 0 ? classes.map(cls => {

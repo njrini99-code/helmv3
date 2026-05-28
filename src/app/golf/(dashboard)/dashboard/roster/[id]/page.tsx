@@ -283,7 +283,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
         {/* Recent Rounds - Full Width */}
         <div className="mt-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Recent Rounds</h2>
+            <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Recent Rounds</h2>
             {totalRounds > 0 && (
               <Link
                 href={`/golf/dashboard/rounds?player=${player.id}`}
@@ -340,7 +340,7 @@ export default async function PlayerProfilePage({ params }: PageProps) {
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] tabular-nums">
+                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tabular-nums">
                           {round.total_score || '—'}
                         </p>
                         <p className={cn(

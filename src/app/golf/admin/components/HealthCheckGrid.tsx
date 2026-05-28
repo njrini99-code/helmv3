@@ -132,7 +132,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
                 <div className="flex items-center gap-2">
                   <span className={cn('h-2.5 w-2.5 rounded-full', statusColors[check.status])} />
                   <p className="text-sm font-semibold text-warm-900">{check.label}</p>
-                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]', statusBg[check.status], statusText[check.status])}>
+                  <span className={cn('rounded-full px-2 py-0.5 text-eyebrow font-semibold uppercase tracking-[0.14em]', statusBg[check.status], statusText[check.status])}>
                     {statusLabel[check.status]}
                   </span>
                 </div>
@@ -140,7 +140,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
               </div>
               {check.value ? (
                 <div className="rounded-xl border border-white/40 bg-white/70 px-3 py-2 text-right">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">Signal</p>
+                  <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">Signal</p>
                   <p className="mt-1 text-sm font-semibold tabular-nums text-warm-900">{check.value}</p>
                 </div>
               ) : null}
@@ -152,7 +152,7 @@ export function HealthCheckGrid({ health, errorLogs, loginSecurity, dataQuality:
       {/* Storage breakdown — retained for quick storage insight */}
       {health.largestTables.length > 0 && (
         <div className="mt-4 rounded-2xl border border-white/35 bg-white/55 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Storage Breakdown</p>
+          <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Storage Breakdown</p>
           <div className="mt-3 space-y-2">
             {health.largestTables.slice(0, 5).map((table) => {
               const pct = health.dbSizeBytes > 0 ? (table.size_bytes / health.dbSizeBytes) * 100 : 0;

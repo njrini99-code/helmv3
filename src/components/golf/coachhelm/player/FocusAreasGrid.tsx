@@ -104,7 +104,7 @@ function FocusAreaCardContent({
     <>
       {/* Priority indicator */}
       <div className={cn(
-        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-medium',
+        'absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-eyebrow font-medium',
         index === 0 ? 'bg-primary-100 text-primary-700' :
         index === 1 ? 'bg-primary-50 text-primary-600' :
         'bg-warm-100 text-warm-500'
@@ -135,7 +135,7 @@ function FocusAreaCardContent({
 
       {/* Strokes gained display */}
       <div className="flex items-baseline gap-1 mb-3 flex-wrap">
-        <span className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', strokesColor)}>
+        <span className={cn('text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]', strokesColor)}>
           {formatStrokesGained(focusArea.strokesGained)}
         </span>
         <span className="text-xs text-warm-500 whitespace-nowrap">strokes/round</span>

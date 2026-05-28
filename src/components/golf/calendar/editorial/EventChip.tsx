@@ -128,7 +128,7 @@ export function EventChip({
 
       {/* Time block — Geist tabular-nums, fixed width on md+ for alignment. */}
       <div className="flex-shrink-0 flex flex-col items-start justify-center w-[72px] md:w-[88px] pr-1">
-        <span className="font-serif uppercase text-[10px] tracking-[0.12em] text-warm-400 mb-0.5">
+        <span className="font-serif uppercase text-eyebrow tracking-[0.12em] text-warm-400 mb-0.5">
           {typeLabel}
         </span>
         {/* Times are formatted in the system timezone (date-fns `format`),
@@ -137,14 +137,14 @@ export function EventChip({
             `suppressHydrationWarning` here scopes the suppression to the
             single text node that legitimately reformats post-hydration. */}
         <span
-          className="text-[13px] md:text-[14px] font-medium text-warm-900 tabular-nums leading-tight"
+          className="text-body-sm md:text-body-sm font-medium text-warm-900 tabular-nums leading-tight"
           suppressHydrationWarning
         >
           {event.all_day ? 'All day' : format(new Date(event.start_time || event.start_date), 'h:mm a')}
         </span>
         {!event.all_day && event.end_time && (
           <span
-            className="text-[11px] text-warm-500 tabular-nums leading-tight"
+            className="text-eyebrow text-warm-500 tabular-nums leading-tight"
             suppressHydrationWarning
           >
             {format(new Date(event.end_time), 'h:mm a')}
@@ -154,11 +154,11 @@ export function EventChip({
 
       {/* Title + location. */}
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-        <p className="font-medium text-[14px] text-warm-900 tracking-[-0.005em] truncate">
+        <p className="font-medium text-body-sm text-warm-900 tracking-[-0.005em] truncate">
           {event.title}
         </p>
         {event.location && (
-          <p className="text-[11px] text-warm-500 truncate">
+          <p className="text-eyebrow text-warm-500 truncate">
             {event.location}
           </p>
         )}
@@ -170,7 +170,7 @@ export function EventChip({
           <span
             className={cn(
               'inline-flex items-center gap-1 px-2.5 py-1 rounded-full',
-              'text-[11px] font-medium tracking-[-0.005em]',
+              'text-eyebrow font-medium tracking-[-0.005em]',
               rsvp.className,
             )}
           >

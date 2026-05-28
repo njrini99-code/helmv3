@@ -172,7 +172,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                     <button
                       type="button"
                       onClick={newChat}
-                      className="text-[11px] uppercase tracking-[0.1em] text-warm-500 hover:text-warm-800 transition"
+                      className="text-eyebrow uppercase tracking-[0.1em] text-warm-500 hover:text-warm-800 transition"
                     >
                       New
                     </button>
@@ -181,7 +181,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                 <div className="flex items-center gap-4">
                   <Link
                     href="/golf/dashboard/coachhelm/chat"
-                    className="text-[11px] uppercase tracking-[0.1em] text-warm-500 hover:text-warm-800 transition"
+                    className="text-eyebrow uppercase tracking-[0.1em] text-warm-500 hover:text-warm-800 transition"
                   >
                     History →
                   </Link>
@@ -235,7 +235,7 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
                           }}
                           whileHover={prefersReducedMotion ? undefined : liftHover}
                           whileTap={prefersReducedMotion ? undefined : tapPress}
-                          className="text-left text-[13px] px-3 py-2 rounded-xl border border-warm-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 text-warm-800 transition"
+                          className="text-left text-body-sm px-3 py-2 rounded-xl border border-warm-200 bg-white hover:border-primary-300 hover:bg-primary-50/40 text-warm-800 transition"
                         >
                           {q}
                         </m.button>

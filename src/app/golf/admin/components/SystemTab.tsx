@@ -97,7 +97,7 @@ function StatTile({ label, value, tone = 'default', icon, tooltip }: StatTilePro
               : 'border-white/30 bg-white/55'
       )}
     >
-      <p className="text-[11px] sm:text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
+      <p className="text-eyebrow sm:text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400">{label}</p>
       <div className="flex items-center gap-1.5">
         {icon && (
           <span
@@ -234,7 +234,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
 
   return (
     <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Data Quality</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Data Quality</p>
       <div className="mt-3 flex flex-wrap items-center gap-4">
         <div className="relative h-20 w-20 flex-shrink-0">
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
@@ -257,7 +257,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="text-xl font-bold text-warm-900 tabular-nums">{overallScore}</span>
-            <span className="text-[9px] font-medium uppercase tracking-wider text-warm-400">/100</span>
+            <span className="text-eyebrow font-medium uppercase tracking-wider text-warm-400">/100</span>
           </div>
         </div>
 
@@ -281,7 +281,7 @@ function DataQualityRing({ quality }: { quality: AdminDashboardData['dataQuality
               </div>
             </div>
           ))}
-          <p className="text-[10px] text-warm-400">{quality.totalShots.toLocaleString()} shots tracked</p>
+          <p className="text-eyebrow text-warm-400">{quality.totalShots.toLocaleString()} shots tracked</p>
         </div>
       </div>
     </div>
@@ -313,7 +313,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-warm-900">{feature.feature}</span>
                 <span className={cn(
-                  'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase',
+                  'rounded px-1.5 py-0.5 text-eyebrow font-bold uppercase',
                   status === 'active' ? 'bg-primary-50 text-primary-700' :
                   status === 'low' ? 'bg-amber-50 text-amber-700' :
                   'bg-red-50 text-red-600'
@@ -332,7 +332,7 @@ function FeatureAdoptionGrid({ features }: { features: AdminDashboardData['usage
                   style={{ width: `${Math.max((feature.count / maxCount) * 100, 3)}%` }}
                 />
               </div>
-              <p className="mt-1.5 text-[10px] tabular-nums text-warm-400">{feature.count} total</p>
+              <p className="mt-1.5 text-eyebrow tabular-nums text-warm-400">{feature.count} total</p>
             </div>
           );
         })}
@@ -459,7 +459,7 @@ export function SystemTab({ data }: Props) {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-warm-900 truncate">{job.name}</p>
-                      <p className="text-[11px] text-warm-400">Every {job.expectedInterval}</p>
+                      <p className="text-eyebrow text-warm-400">Every {job.expectedInterval}</p>
                     </div>
                   </div>
                   <div
@@ -502,7 +502,7 @@ export function SystemTab({ data }: Props) {
 
             {/* Storage Quota */}
             <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">
+              <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">
                 Storage Quota
               </p>
               <div className="mt-3">
@@ -534,7 +534,7 @@ export function SystemTab({ data }: Props) {
                     style={{ width: `${Math.max(usagePct, 1)}%` }}
                   />
                 </div>
-                <p className="mt-1.5 text-[10px] text-warm-400">
+                <p className="mt-1.5 text-eyebrow text-warm-400">
                   {usagePct.toFixed(1)}% of {quotaGb} GB quota used
                 </p>
               </div>
@@ -616,7 +616,7 @@ function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardDat
 
   return (
     <div className="rounded-2xl border border-white/35 bg-white/55 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-warm-500">Infra Snapshot</p>
+      <p className="text-eyebrow font-semibold uppercase tracking-[0.18em] text-warm-500">Infra Snapshot</p>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {tiles.map((tile) => (
           <div key={tile.label} className="rounded-xl bg-white/70 p-3 text-center">
@@ -626,20 +626,20 @@ function InfraSnapshotPanel({ health, infraHealth }: { health: AdminDashboardDat
             )}>
               {tile.value}
             </p>
-            <p className="mt-0.5 text-[10px] text-warm-400">{tile.label}</p>
+            <p className="mt-0.5 text-eyebrow text-warm-400">{tile.label}</p>
           </div>
         ))}
       </div>
 
       {health.largestTables.length > 0 && (
         <div className="mt-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-warm-400 mb-2">Storage</p>
+          <p className="text-eyebrow font-semibold uppercase tracking-[0.16em] text-warm-400 mb-2">Storage</p>
           <div className="space-y-1.5">
             {health.largestTables.slice(0, 4).map((table) => {
               const pct = health.dbSizeBytes > 0 ? (table.size_bytes / health.dbSizeBytes) * 100 : 0;
               return (
                 <div key={table.table_name}>
-                  <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <div className="flex items-center justify-between gap-2 text-eyebrow">
                     <span className="truncate font-medium text-warm-700">
                       {table.table_name.replace(/^(golf_|baseball_)/, '')}
                     </span>

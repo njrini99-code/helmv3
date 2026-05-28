@@ -165,7 +165,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                         ) : (row.game?.opponent_name ?? 'Unknown')}
                       </td>
                       <td className="px-2 py-2 text-center">
-                        <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                        <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
                           row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
                         }`}>
                           {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
@@ -257,7 +257,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                       ) : (row.game?.opponent_name ?? 'Unknown')}
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <span className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                      <span className={`text-eyebrow font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded ${
                         row.game?.game_type === 'scrimmage' ? 'text-purple-600 bg-purple-50' : 'text-primary-600 bg-primary-50'
                       }`}>
                         {row.game?.game_type === 'scrimmage' ? 'SCR' : 'GM'}
@@ -277,7 +277,7 @@ export function PlayerGameLog({ batting, pitching }: PlayerGameLogProps) {
                     </td>
                     <td className="px-2 py-2 text-center">
                       {row.result && (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        <span className={`px-1.5 py-0.5 rounded text-eyebrow font-bold ${
                           row.result === 'W' ? 'bg-green-100 text-green-700' :
                           row.result === 'L' ? 'bg-red-100 text-red-700' :
                           row.result === 'S' ? 'bg-blue-100 text-blue-700' :

@@ -145,7 +145,7 @@ export function AddNoteDialog({
                       )}
                     >
                       <span className="text-xs font-semibold">{opt.label}</span>
-                      <span className="text-[11px] text-warm-500 mt-0.5">{opt.hint}</span>
+                      <span className="text-eyebrow text-warm-500 mt-0.5">{opt.hint}</span>
                     </button>
                   ))}
                 </div>
@@ -156,7 +156,7 @@ export function AddNoteDialog({
                   <label htmlFor="note-body" className="block text-xs font-medium text-warm-700">
                     Body <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-[10px] text-warm-400 tabular-nums">
+                  <span className="text-eyebrow text-warm-400 tabular-nums">
                     {body.length}/8000
                   </span>
                 </div>

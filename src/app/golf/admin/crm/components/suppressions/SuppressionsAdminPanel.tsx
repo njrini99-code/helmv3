@@ -213,7 +213,7 @@ export function SuppressionsAdminPanel() {
                   {opt.label}
                   <span
                     className={cn(
-                      'tabular-nums text-[10px]',
+                      'tabular-nums text-eyebrow',
                       isActive ? 'text-white/80' : 'text-warm-400',
                     )}
                   >
@@ -263,7 +263,7 @@ export function SuppressionsAdminPanel() {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[11px] font-semibold uppercase tracking-wider text-warm-500 border-b border-warm-100">
+                <tr className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 border-b border-warm-100">
                   <th className="px-4 py-2.5">Email</th>
                   <th className="px-4 py-2.5">Reason</th>
                   <th className="px-4 py-2.5">Source</th>

@@ -229,7 +229,7 @@ function AttachmentTypeOption({
         {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[15px] font-medium text-warm-800 leading-snug">{label}</p>
+        <p className="text-body font-medium text-warm-800 leading-snug">{label}</p>
         <p className="text-xs text-warm-500 leading-snug">{description}</p>
       </div>
     </DropdownMenuItem>

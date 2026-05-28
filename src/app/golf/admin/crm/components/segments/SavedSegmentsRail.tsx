@@ -164,7 +164,7 @@ export function SavedSegmentsRail({
   return (
     <div className="px-3 py-2 border-t border-white/10">
       <div className="flex items-center justify-between px-3 mb-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-warm-500">
+        <span className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500">
           Segments
         </span>
         <button
@@ -186,11 +186,11 @@ export function SavedSegmentsRail({
       )}
 
       {!loading && error && (
-        <p className="px-3 text-[11px] text-red-400">{error}</p>
+        <p className="px-3 text-eyebrow text-red-400">{error}</p>
       )}
 
       {!loading && !error && ordered.length === 0 && (
-        <p className="px-3 py-2 text-[11px] text-warm-500">
+        <p className="px-3 py-2 text-eyebrow text-warm-500">
           No segments yet — apply filters and click <IconBookmark size={10} className="inline" /> to save one.
         </p>
       )}

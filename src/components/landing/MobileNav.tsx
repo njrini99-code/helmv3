@@ -206,7 +206,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           className="group flex items-center justify-between py-4
                                      active:opacity-60 transition-opacity duration-100"
                         >
-                          <span className="text-[28px] font-semibold tracking-tight text-warm-900">
+                          <span className="text-h1 font-semibold tracking-tight text-warm-900">
                             {link.name}
                           </span>
                           <svg
@@ -243,7 +243,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                       >
                         <button
                           onClick={() => setShowDemoForm(true)}
-                          className="w-full py-4 rounded-2xl text-white font-semibold text-[15px] tracking-wide
+                          className="w-full py-4 rounded-2xl text-white font-semibold text-body tracking-wide
                                      active:scale-[0.98] transition-transform duration-150"
                           style={{
                             background: 'linear-gradient(135deg, #1c1917 0%, #292524 100%)',
@@ -276,7 +276,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         }}
                       >
                         <div>
-                          <label htmlFor="mobile-email" className="block text-[13px] font-medium text-warm-600 mb-2">
+                          <label htmlFor="mobile-email" className="block text-body-sm font-medium text-warm-600 mb-2">
                             Email address
                           </label>
                           <input
@@ -288,20 +288,20 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                             placeholder="you@example.com"
                             required
                             className="w-full px-4 py-3.5 rounded-xl border border-warm-200/80 bg-cream-100/82
-                                     text-warm-900 placeholder:text-warm-300 text-[15px]
+                                     text-warm-900 placeholder:text-warm-300 text-body
                                      focus:outline-none focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600/30
                                      transition-all duration-200"
                           />
                         </div>
                         {error && (
-                          <p className="text-[13px] text-red-600 font-medium">{error}</p>
+                          <p className="text-body-sm text-red-600 font-medium">{error}</p>
                         )}
                         <div className="flex gap-3">
                           <button
                             type="button"
                             onClick={() => setShowDemoForm(false)}
                             className="flex-1 py-3.5 rounded-xl border border-warm-200
-                                     text-warm-500 font-medium text-[14px]
+                                     text-warm-500 font-medium text-body-sm
                                      active:scale-[0.98] transition-all duration-150"
                           >
                             Cancel
@@ -309,7 +309,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                           <button
                             type="submit"
                             disabled={isSubmitting || !email.trim()}
-                            className="flex-1 py-3.5 rounded-xl text-white font-semibold text-[14px]
+                            className="flex-1 py-3.5 rounded-xl text-white font-semibold text-body-sm
                                      disabled:opacity-40 disabled:cursor-not-allowed
                                      active:scale-[0.98] transition-all duration-150"
                             style={{
@@ -349,7 +349,7 @@ export function MobileNav({ isDarkBg = false }: { isDarkBg?: boolean }) {
                         <button
                           onClick={close}
                           className="w-full py-3.5 rounded-xl bg-warm-100 text-warm-700
-                                   font-medium text-[14px] active:scale-[0.98] transition-transform duration-150"
+                                   font-medium text-body-sm active:scale-[0.98] transition-transform duration-150"
                         >
                           Back to Home
                         </button>

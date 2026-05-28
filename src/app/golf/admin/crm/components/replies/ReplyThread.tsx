@@ -121,12 +121,12 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
                   {r.from_address}
                 </span>
                 {!r.is_read && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-primary-50 border border-primary-200 text-[10px] font-medium text-primary-700">
+                  <span className="px-1.5 py-0.5 rounded-full bg-primary-50 border border-primary-200 text-eyebrow font-medium text-primary-700">
                     Unread
                   </span>
                 )}
                 {r.is_read && idx === 0 && (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-warm-500">
+                  <span className="inline-flex items-center gap-1 text-eyebrow text-warm-500">
                     <IconCheckCircle2 size={10} /> Read
                   </span>
                 )}
@@ -135,7 +135,7 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
                 <p className="text-xs text-warm-700 mt-0.5 truncate">{r.subject}</p>
               )}
             </div>
-            <time className="text-[11px] text-warm-500 flex-shrink-0">
+            <time className="text-eyebrow text-warm-500 flex-shrink-0">
               {relTime(r.received_at)}
             </time>
           </header>
@@ -153,7 +153,7 @@ export function ReplyThread({ reply, onRead }: ReplyThreadProps) {
           </div>
 
           {r.to_addresses.length > 0 && (
-            <p className="text-[11px] text-warm-500 mt-2 truncate">
+            <p className="text-eyebrow text-warm-500 mt-2 truncate">
               To: {r.to_addresses.join(', ')}
             </p>
           )}

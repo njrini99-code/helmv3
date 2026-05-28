@@ -160,7 +160,7 @@ export function AgendaView({
                 <button
                   type="button"
                   onClick={onCreateEvent}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-5 py-2 text-[13px] font-medium text-white transition-all hover:bg-primary-700"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary-600 px-5 py-2 text-body-sm font-medium text-white transition-all hover:bg-primary-700"
                 >
                   Create event
                 </button>
@@ -178,10 +178,10 @@ export function AgendaView({
       <div className={cn('mt-4 md:mt-5', className)}>
         <Reveal>
           <div className="rounded-2xl border border-warm-200/45 bg-cream-50/55 px-5 py-8 text-center">
-            <p className="font-serif uppercase text-[11px] tracking-[0.16em] text-warm-500 mb-2">
+            <p className="font-serif uppercase text-eyebrow tracking-[0.16em] text-warm-500 mb-2">
               {formatDayLabel(focusDate, nowRef)}
             </p>
-            <p className="text-[14px] text-warm-500 leading-[1.55]">
+            <p className="text-body-sm text-warm-500 leading-[1.55]">
               Nothing on the books for this day.
               {isCoach && onCreateEvent && (
                 <>
@@ -212,13 +212,13 @@ export function AgendaView({
             {/* Day header — editorial eyebrow rule above each day. */}
             <div className="flex items-center gap-3 mb-3">
               <p className={cn(
-                'font-serif uppercase text-[11px] tracking-[0.16em]',
+                'font-serif uppercase text-eyebrow tracking-[0.16em]',
                 nowRef && isSameDay(bucket.date, nowRef) ? 'text-primary-700' : 'text-warm-500',
               )}>
                 {bucket.label}
               </p>
               <span className="flex-1 h-px bg-warm-200/55" aria-hidden />
-              <span className="font-serif uppercase text-[10px] tracking-[0.12em] text-warm-400 tabular-nums">
+              <span className="font-serif uppercase text-eyebrow tracking-[0.12em] text-warm-400 tabular-nums">
                 {bucket.events.length} {bucket.events.length === 1 ? 'event' : 'events'}
               </span>
             </div>

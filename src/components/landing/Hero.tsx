@@ -190,7 +190,7 @@ export function Hero() {
               className="flex items-center gap-4 mb-5 lg:mb-8"
             >
               <div className="w-8 h-px bg-primary-600/70" />
-              <span className="text-primary-500/70 tracking-[0.25em] uppercase text-[11px] font-medium">
+              <span className="text-primary-500/70 tracking-[0.25em] uppercase text-eyebrow font-medium">
                 College Golf Intelligence
               </span>
             </div>
@@ -208,7 +208,7 @@ export function Hero() {
 
             {/* Subtitle */}
             <p
-              className="text-white text-[15px] lg:text-lg mt-5 lg:mt-7 max-w-md leading-relaxed"
+              className="text-white text-body lg:text-lg mt-5 lg:mt-7 max-w-md leading-relaxed"
             >
               The platform built for college golf coaches who demand
               clarity, precision, and a competitive edge.
@@ -282,8 +282,8 @@ export function Hero() {
                         height={14}
                         className="w-3.5 h-3.5 object-contain"
                       />
-                      <span className="text-[11px] text-white/60 font-medium">Dashboard | GolfHelm</span>
-                      <span className="text-white/20 text-[10px] ml-1">&#x2715;</span>
+                      <span className="text-eyebrow text-white/60 font-medium">Dashboard | GolfHelm</span>
+                      <span className="text-white/20 text-eyebrow ml-1">&#x2715;</span>
                     </div>
                     {/* New tab button */}
                     <div className="w-6 h-6 rounded-md flex items-center justify-center text-white/15 hover:bg-white/[0.04] text-xs">+</div>
@@ -306,7 +306,7 @@ export function Hero() {
                     <svg className="w-3 h-3 text-primary-600/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <span className="text-[11px] text-white/30 tracking-wide">helmsportslabs.com/golf/dashboard</span>
+                    <span className="text-eyebrow text-white/30 tracking-wide">helmsportslabs.com/golf/dashboard</span>
                   </div>
                   {/* Action icons */}
                   <div className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export function Hero() {
         style={{ opacity }}
         className="absolute bottom-8 pb-safe left-1/2 -translate-x-1/2 z-20 hidden md:flex flex-col items-center gap-2 transition-opacity duration-700 ease-out"
       >
-        <span className="text-white/15 text-[10px] tracking-[0.3em] uppercase font-medium">
+        <span className="text-white/15 text-eyebrow tracking-[0.3em] uppercase font-medium">
           Scroll
         </span>
         <m.div

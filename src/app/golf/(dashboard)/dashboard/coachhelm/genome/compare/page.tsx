@@ -77,7 +77,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
       <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-10">
         <Reveal>
           <header className="surface-stone rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
-            <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-1.5">
+            <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               Compare
             </p>
             <h1 className="text-2xl md:text-3xl font-medium text-warm-900 tracking-tight">
@@ -120,7 +120,7 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
 
         <Reveal staggerIndex={2}>
           <section>
-            <h2 className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-3">
+            <h2 className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-3">
               Pick players
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

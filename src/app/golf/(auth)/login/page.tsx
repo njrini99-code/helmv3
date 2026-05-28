@@ -208,7 +208,7 @@ function LoginContent() {
                   </div>
                   <button
                     onClick={() => router.push(returnTo || (isAdmin ? '/golf/admin' : '/golf/dashboard'))}
-                    className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-[15px] tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
+                    className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                     aria-label="Continue to dashboard"
                   >
                     {returnTo ? 'Continue' : isAdmin ? 'Continue to Admin Dashboard' : 'Continue to Dashboard'}
@@ -216,7 +216,7 @@ function LoginContent() {
                   <button
                     onClick={handleSignOut}
                     disabled={isLoggingOut}
-                    className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-[15px] tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
+                    className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
                     aria-label="Sign out and use a different account"
                   >
                     {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
@@ -234,14 +234,14 @@ function LoginContent() {
                 style={{ borderTop: '0.5px solid rgba(120,113,108,0.14)' }}
               >
                 {!isNative && (
-                  <p className="text-warm-600 text-[12px]">
+                  <p className="text-warm-600 text-caption">
                     New to GolfHelm?{' '}
                     <Link href={signupHref} className="text-primary-700 font-semibold hover:text-primary-600 transition-colors">
                       Create an account
                     </Link>
                   </p>
                 )}
-                <div className="flex items-center justify-center gap-1.5 text-[10px] text-warm-500 mt-1.5 tracking-[0.02em]">
+                <div className="flex items-center justify-center gap-1.5 text-eyebrow text-warm-500 mt-1.5 tracking-[0.02em]">
                   <Link href="/privacy" className="hover:text-warm-700 transition-colors">Privacy</Link>
                   <span className="text-warm-400" aria-hidden="true">·</span>
                   <Link href="/terms" className="hover:text-warm-700 transition-colors">Terms</Link>

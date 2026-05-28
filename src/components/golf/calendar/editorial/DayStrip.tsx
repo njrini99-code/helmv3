@@ -160,7 +160,7 @@ export function DayStrip({
             {/* Day-of-week eyebrow — uppercase tracking. */}
             <span
               className={cn(
-                'font-serif uppercase text-[10px] md:text-[11px] tracking-[0.12em] leading-none',
+                'font-serif uppercase text-eyebrow md:text-eyebrow tracking-[0.12em] leading-none',
                 dayIsSelected && 'text-warm-900',
                 !dayIsSelected && dayIsToday && 'text-primary-700',
                 !dayIsSelected && !dayIsToday && dayIsPast && 'text-warm-300',
@@ -173,7 +173,7 @@ export function DayStrip({
             {/* Editorial day number. */}
             <span
               className={cn(
-                'font-display text-[22px] md:text-[26px] font-medium leading-none tracking-[-0.02em] tabular-nums',
+                'font-display text-h2 md:text-h2 font-medium leading-none tracking-[-0.02em] tabular-nums',
                 dayIsSelected && 'text-warm-900',
                 !dayIsSelected && dayIsToday && 'text-warm-900',
                 !dayIsSelected && !dayIsToday && dayIsPast && 'text-warm-300',

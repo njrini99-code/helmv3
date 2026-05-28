@@ -180,7 +180,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2"
+            className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2"
           >
             Round Review
           </motion.h3>
@@ -240,7 +240,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
               className="absolute -inset-3 bg-primary-500/15 rounded-3xl"
             />
           </div>
-          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mt-7 mb-2">Analyzing Round...</h3>
+          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mt-7 mb-2">Analyzing Round...</h3>
           <p className="text-sm text-warm-500 text-center max-w-xs">
             Computing shot analytics, putting breakdown, and improvement priorities.
           </p>
@@ -285,7 +285,7 @@ export function RoundReviewViewer({ roundId, isCoach, className }: RoundReviewVi
             <IconSparkles size={18} className="text-white" />
           </div>
           <div>
-            <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Round Review</h2>
+            <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Round Review</h2>
             <p className="text-xs text-warm-500">
               {hasV2Data ? 'CoachHelm Intelligence' : 'Shot-Level Analytics'}
             </p>
@@ -446,7 +446,7 @@ function GradeSummaryCard({ content }: { content: RoundReviewContent }) {
             gc.bg, gc.text, gc.border, gc.ring, gc.glow,
           )}
         >
-          <span className="text-[32px] md:text-[36px] font-light tracking-[-0.025em]">{content.overallGrade}</span>
+          <span className="text-h1 md:text-display font-light tracking-[-0.025em]">{content.overallGrade}</span>
         </motion.div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -515,7 +515,7 @@ function ScorecardStrip({
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.05 * i, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                     className={cn(
-                      'inline-flex items-center justify-center w-7 h-7 text-[11px] font-medium rounded-lg transition-shadow',
+                      'inline-flex items-center justify-center w-7 h-7 text-eyebrow font-medium rounded-lg transition-shadow',
                       scoreToPairColor(h.scoreToPar),
                     )}
                   >
@@ -525,7 +525,7 @@ function ScorecardStrip({
               ))}
               <td className="py-2">
                 <span className={cn(
-                  'text-[13px] font-medium',
+                  'text-body-sm font-medium',
                   totalScore <= totalPar ? 'text-primary-700' : 'text-red-600',
                 )}>
                   {totalScore}
@@ -553,7 +553,7 @@ function ScorecardStrip({
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconFlag size={14} />
         Scorecard
       </h3>
@@ -622,7 +622,7 @@ function ScoringDistribution({
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Scoring Distribution
       </h3>
@@ -633,7 +633,7 @@ function ScoringDistribution({
             initial={{ width: 0 }}
             animate={{ width: `${(s.count / totalHoles) * 100}%` }}
             transition={{ delay: 0.2 + i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className={cn('flex items-center justify-center text-[11px] font-medium text-white', s.color)}
+            className={cn('flex items-center justify-center text-eyebrow font-medium text-white', s.color)}
             style={{ minWidth: s.count > 0 ? '32px' : 0 }}
           >
             {s.count}
@@ -701,7 +701,7 @@ function StatsDetailDisclosure({ content }: { content: RoundReviewContent }) {
 function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconChartBar size={14} />
         Key Stats
       </h3>
@@ -722,7 +722,7 @@ function KeyStatsGrid({ stats }: { stats: RoundReviewContent['keyStats'] }) {
               )}
             >
               <p className="text-label font-medium text-warm-500 mb-0.5">{formatLabel(stat.label)}</p>
-              <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{stat.value}</p>
+              <p className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{stat.value}</p>
               <p className={cn('text-label font-medium mt-0.5', cmp.color)}>
                 {cmp.icon} {cmp.label}
               </p>
@@ -744,7 +744,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
 
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconActivity size={14} />
         Round Momentum
       </h3>
@@ -754,7 +754,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
           className="absolute left-0 right-0 border-t border-dashed border-warm-200"
           style={{ top: `${((max - 0) / range) * 100}%` }}
         >
-          <span className="absolute -left-0.5 -top-2.5 text-[9px] font-medium text-warm-400">E</span>
+          <span className="absolute -left-0.5 -top-2.5 text-eyebrow font-medium text-warm-400">E</span>
         </div>
         {/* SVG line */}
         <svg className="absolute inset-0 w-full h-full" viewBox={`0 0 ${data.length - 1} ${range}`} preserveAspectRatio="none">
@@ -798,7 +798,7 @@ function MomentumChart({ data }: { data: RoundReviewContent['momentumData'] }) {
                   style={{ top: `${pct}%`, left: '50%' }}
                 />
                 {(i % 3 === 0 || isLast) && (
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[8px] text-warm-400 font-medium">
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-eyebrow text-warm-400 font-medium">
                     {d.hole}
                   </div>
                 )}
@@ -842,7 +842,7 @@ function GameBreakdownSection({
       {/* Putting */}
       {hasPutting && (
         <div className="p-5">
-          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+          <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconTarget size={14} />
             Putting
           </h3>
@@ -859,7 +859,7 @@ function GameBreakdownSection({
                 transition={{ delay: 0.1 * i, duration: 0.35 }}
                 className={cn('text-center p-3 rounded-xl', item.bg)}
               >
-                <div className={cn('text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]', item.textColor)}>{item.value}</div>
+                <div className={cn('text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]', item.textColor)}>{item.value}</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">{item.label}</div>
               </motion.div>
             ))}
@@ -917,27 +917,27 @@ function GameBreakdownSection({
       {/* Driving */}
       {hasDriving && (
         <div className={cn('p-5', hasPutting && 'border-t border-warm-100')}>
-          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+          <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconBolt size={14} />
             Driving
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             {driving.avgDistance !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.avgDistance}y</div>
+                <div className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.avgDistance}y</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Avg Distance</div>
               </div>
             )}
             {driving.longestDrive && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
-                <div className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.longestDrive.distance}y</div>
+                <div className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{driving.longestDrive.distance}y</div>
                 <div className="text-micro text-warm-500 font-medium mt-0.5">Longest (#{driving.longestDrive.hole})</div>
               </div>
             )}
             {driving.fairwayPct !== null && (
               <div className="text-center p-3 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+                  'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
                   driving.fairwayPct >= 60 ? 'text-primary-700' : driving.fairwayPct >= 45 ? 'text-warm-900' : 'text-red-600',
                 )}>
                   {driving.fairwayPct}%
@@ -982,7 +982,7 @@ function GameBreakdownSection({
       {/* Short Game */}
       {hasShortGame && (
         <div className={cn('p-5', (hasPutting || hasDriving) && 'border-t border-warm-100')}>
-          <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+          <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
             <IconTarget size={14} />
             Short Game
           </h3>
@@ -990,7 +990,7 @@ function GameBreakdownSection({
             {shortGame.scramblePct !== null && (
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+                  'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
                   shortGame.scramblePct >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.scramblePct}%
@@ -1003,7 +1003,7 @@ function GameBreakdownSection({
             {shortGame.sandAttempts > 0 && (
               <div className="text-center p-3.5 rounded-xl bg-warm-50">
                 <div className={cn(
-                  'text-[28px] md:text-[32px] font-light tabular-nums tracking-[-0.025em]',
+                  'text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em]',
                   (shortGame.sandSavePct ?? 0) >= 50 ? 'text-primary-700' : 'text-warm-900',
                 )}>
                   {shortGame.sandSavePct !== null ? `${shortGame.sandSavePct}%` : '--'}
@@ -1051,8 +1051,8 @@ function TimeframeBadge({ source }: { source?: 'round' | 'trend' }) {
     <span
       className={
         isTrend
-          ? 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200'
-          : 'inline-flex items-center text-[10px] font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200'
+          ? 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-warm-100 text-warm-600 border border-warm-200'
+          : 'inline-flex items-center text-eyebrow font-medium uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary-100 text-primary-700 border border-primary-200'
       }
     >
       {isTrend ? '90-day trend' : 'This round'}
@@ -1130,7 +1130,7 @@ function HighlightsAndImprovements({
 function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconBolt size={14} className="text-blue-600" />
         Biggest Improvement Opportunities
       </h3>
@@ -1144,7 +1144,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
             className="flex items-center gap-3 p-3.5 rounded-xl bg-warm-50/50 border border-warm-100 hover:bg-warm-50 active:bg-warm-100 transition-colors"
           >
             <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center border border-blue-200/50 shadow-sm">
-              <span className="text-[15px] font-medium text-blue-700 tabular-nums">
+              <span className="text-body font-medium text-blue-700 tabular-nums">
                 {item.potentialStrokes > 0 ? `-${item.potentialStrokes}` : item.potentialStrokes}
               </span>
             </div>
@@ -1163,7 +1163,7 @@ function StrokesToGainCard({ items }: { items: StrokesToGainItem[] }) {
 function RecommendationsCard({ recs }: { recs: string[] }) {
   return (
     <div className="rounded-2xl border border-warm-200 bg-cream-100/82 backdrop-blur-sm p-5 shadow-sm">
-      <h3 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
+      <h3 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-4 flex items-center gap-2">
         <IconSparkles size={14} className="text-primary-600" />
         Practice Recommendations
       </h3>

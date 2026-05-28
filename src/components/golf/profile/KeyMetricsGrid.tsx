@@ -84,7 +84,7 @@ function MetricCard({ label, value, subtext, colorClass = 'text-warm-900', index
       />
 
       {/* Value - large and prominent */}
-      <div className={cn('text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums tracking-tight', colorClass)}>
+      <div className={cn('text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums tracking-tight', colorClass)}>
         {value}
       </div>
 

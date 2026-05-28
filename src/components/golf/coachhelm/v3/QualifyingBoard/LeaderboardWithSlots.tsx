@@ -30,10 +30,10 @@ export function LeaderboardWithSlots({ candidates, topNCount }: Props) {
   return (
     <section className="surface-matte rounded-2xl overflow-hidden">
       <header className="px-6 py-4 surface-hairline border-b flex items-center gap-3">
-        <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+        <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
           Leaderboard
         </h2>
-        <span className="text-[11px] uppercase tracking-[0.14em] text-warm-500">
+        <span className="text-eyebrow uppercase tracking-[0.14em] text-warm-500">
           Top {topNCount} auto-lock
         </span>
       </header>

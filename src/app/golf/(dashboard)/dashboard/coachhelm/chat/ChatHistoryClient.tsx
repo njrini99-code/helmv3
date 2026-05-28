@@ -108,7 +108,7 @@ export function ChatHistoryClient({
                 </svg>
               </span>
               <span className="not-italic">No conversations yet.</span>
-              <span className="text-[11px] tracking-[0.04em]">Use the chat button on any dashboard page.</span>
+              <span className="text-eyebrow tracking-[0.04em]">Use the chat button on any dashboard page.</span>
             </li>
           )}
           {conversations.map((c, i) => (
@@ -133,7 +133,7 @@ export function ChatHistoryClient({
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate">{c.title ?? 'Untitled'}</span>
                   <span
-                    className={`text-[11px] tabular-nums shrink-0 ${
+                    className={`text-eyebrow tabular-nums shrink-0 ${
                       c.id === activeId ? 'text-white/70' : 'text-warm-400'
                     }`}
                   >
@@ -147,7 +147,7 @@ export function ChatHistoryClient({
         <p className="mt-5 px-3">
           <Link
             href="/golf/dashboard/coachhelm"
-            className="text-[11px] uppercase tracking-[0.14em] text-warm-500 hover:text-warm-800 transition"
+            className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 hover:text-warm-800 transition"
           >
             ← Back to CoachHelm
           </Link>

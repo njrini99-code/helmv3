@@ -77,7 +77,7 @@ export function NotificationPrefsClient({ prefs: initialPrefs, quietMode: initia
 
       {/* Per-category prefs */}
       <section className="surface-matte rounded-2xl overflow-hidden">
-        <header className="px-5 py-3 border-b border-warm-200/60 grid grid-cols-12 text-[11px] uppercase tracking-[0.14em] text-warm-500">
+        <header className="px-5 py-3 border-b border-warm-200/60 grid grid-cols-12 text-eyebrow uppercase tracking-[0.14em] text-warm-500">
           <div className="col-span-6">Category</div>
           {CHANNELS.map((c) => (
             <div key={c.key} className="col-span-2 text-center">{c.label}</div>

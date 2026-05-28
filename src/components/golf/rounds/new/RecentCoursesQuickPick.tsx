@@ -78,10 +78,10 @@ export function RecentCoursesQuickPick({
       {/* Editorial header */}
       <header className="mb-4">
         <Eyebrow accent="primary">Recent</Eyebrow>
-        <h2 className="mt-2 font-serif text-[20px] sm:text-[22px] font-medium tracking-[-0.015em] text-warm-900">
+        <h2 className="mt-2 font-serif text-h3 sm:text-h2 font-medium tracking-[-0.015em] text-warm-900">
           Pick up where you left off
         </h2>
-        <p className="mt-1 text-[13px] text-warm-500">
+        <p className="mt-1 text-body-sm text-warm-500">
           Tap a course to start a new round there.
         </p>
       </header>
@@ -104,7 +104,7 @@ export function RecentCoursesQuickPick({
                 {/* Round-count badge — top-right corner */}
                 {course.roundCount > 0 && (
                   <span
-                    className="absolute right-2.5 top-2.5 inline-flex items-center rounded-full bg-warm-100/85 px-1.5 py-0.5 text-[10px] font-medium tabular-nums tracking-tight text-warm-600 group-hover:bg-primary-50 group-hover:text-primary-700"
+                    className="absolute right-2.5 top-2.5 inline-flex items-center rounded-full bg-warm-100/85 px-1.5 py-0.5 text-eyebrow font-medium tabular-nums tracking-tight text-warm-600 group-hover:bg-primary-50 group-hover:text-primary-700"
                     aria-label={`${course.roundCount} rounds played`}
                   >
                     {course.roundCount}{' '}
@@ -115,13 +115,13 @@ export function RecentCoursesQuickPick({
                 )}
 
                 {/* Course name */}
-                <p className="mt-0.5 line-clamp-2 max-w-[90%] text-[14px] font-medium leading-tight tracking-[-0.005em] text-warm-900">
+                <p className="mt-0.5 line-clamp-2 max-w-[90%] text-body-sm font-medium leading-tight tracking-[-0.005em] text-warm-900">
                   {course.courseName}
                 </p>
 
                 {/* Location */}
                 {location && (
-                  <span className="mt-auto inline-flex items-center gap-1 pt-2 text-[12px] leading-tight text-warm-500">
+                  <span className="mt-auto inline-flex items-center gap-1 pt-2 text-caption leading-tight text-warm-500">
                     <IconMapPin
                       size={11}
                       className="flex-shrink-0 text-warm-400"
@@ -130,7 +130,7 @@ export function RecentCoursesQuickPick({
                   </span>
                 )}
                 {!location && (
-                  <span className="mt-auto pt-2 text-[12px] text-warm-400">
+                  <span className="mt-auto pt-2 text-caption text-warm-400">
                     {course.teesPlayed ? `${course.teesPlayed} tees` : '—'}
                   </span>
                 )}
@@ -163,26 +163,26 @@ export function RecentCoursesQuickPick({
                 {/* Quick stats strip — shows what we'll pre-fill */}
                 <dl className="grid grid-cols-3 gap-3 rounded-2xl border border-warm-200/45 bg-cream-100/65 px-4 py-3 text-center">
                   <div>
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-warm-400">
+                    <dt className="text-eyebrow uppercase tracking-[0.12em] text-warm-400">
                       Tees
                     </dt>
-                    <dd className="mt-1 text-[13px] font-medium text-warm-900">
+                    <dd className="mt-1 text-body-sm font-medium text-warm-900">
                       {pendingCourse.teesPlayed ?? '—'}
                     </dd>
                   </div>
                   <div className="border-x border-warm-200/45">
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-warm-400">
+                    <dt className="text-eyebrow uppercase tracking-[0.12em] text-warm-400">
                       Holes
                     </dt>
-                    <dd className="mt-1 text-[13px] font-medium text-warm-900">
+                    <dd className="mt-1 text-body-sm font-medium text-warm-900">
                       {pendingCourse.holesPerRound}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[10px] uppercase tracking-[0.12em] text-warm-400">
+                    <dt className="text-eyebrow uppercase tracking-[0.12em] text-warm-400">
                       Played
                     </dt>
-                    <dd className="mt-1 text-[13px] font-medium text-warm-900 tabular-nums">
+                    <dd className="mt-1 text-body-sm font-medium text-warm-900 tabular-nums">
                       {pendingCourse.roundCount > 0
                         ? `${pendingCourse.roundCount}×`
                         : 'New'}
@@ -195,7 +195,7 @@ export function RecentCoursesQuickPick({
                 <button
                   type="button"
                   onClick={handleConfirm}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-[15px] font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-700 active:bg-primary-800 active-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-body font-medium text-white shadow-sm transition-colors duration-150 hover:bg-primary-700 active:bg-primary-800 active-scale focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50"
                 >
                   Start round
                   <IconArrowRight size={16} />
@@ -203,7 +203,7 @@ export function RecentCoursesQuickPick({
                 <button
                   type="button"
                   onClick={() => setPendingCourse(null)}
-                  className="w-full rounded-xl px-4 py-2.5 text-[14px] font-medium text-warm-500 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+                  className="w-full rounded-xl px-4 py-2.5 text-body-sm font-medium text-warm-500 transition-colors hover:text-warm-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
                 >
                   Cancel
                 </button>

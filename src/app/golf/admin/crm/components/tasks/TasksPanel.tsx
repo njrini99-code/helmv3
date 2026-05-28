@@ -95,7 +95,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
           </span>
           <h3 className="text-sm font-semibold text-warm-900">Tasks</h3>
           {!loading && open.length > 0 && (
-            <span className="text-[11px] text-warm-400 tabular-nums">
+            <span className="text-eyebrow text-warm-400 tabular-nums">
               {open.length} open
             </span>
           )}
@@ -140,7 +140,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && open.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-warm-500 px-1">
+          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 px-1">
             Open
           </h4>
           <div className="space-y-1.5">
@@ -153,7 +153,7 @@ export function TasksPanel({ coachId }: TasksPanelProps) {
 
       {!loading && !error && completed.length > 0 && (
         <section className="space-y-2">
-          <h4 className="text-[10px] font-semibold uppercase tracking-wider text-warm-500 px-1">
+          <h4 className="text-eyebrow font-semibold uppercase tracking-wider text-warm-500 px-1">
             Recently completed
           </h4>
           <div className="space-y-1.5">

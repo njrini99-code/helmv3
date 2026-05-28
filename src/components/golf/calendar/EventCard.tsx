@@ -70,7 +70,7 @@ const EventCardInner = forwardRef<
         {...dragAttributes}
         {...dragListeners}
       >
-        <p className="font-medium text-[11.5px] truncate leading-tight tracking-[-0.005em]">{title}</p>
+        <p className="font-medium text-eyebrow truncate leading-tight tracking-[-0.005em]">{title}</p>
       </button>
     );
   }
@@ -101,12 +101,12 @@ const EventCardInner = forwardRef<
           <GripVertical className="w-3 h-3 opacity-35 flex-shrink-0 mt-0.5" />
         )}
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-[12px] truncate leading-tight mb-1 tracking-[-0.005em]">{title}</p>
-          <p className="text-[11px] opacity-70 leading-tight tabular-nums">
+          <p className="font-medium text-caption truncate leading-tight mb-1 tracking-[-0.005em]">{title}</p>
+          <p className="text-eyebrow opacity-70 leading-tight tabular-nums">
             {formatTime(startTime)}
           </p>
           {location && (
-            <p className="text-[11px] opacity-55 leading-tight flex items-center gap-0.5 mt-0.5">
+            <p className="text-eyebrow opacity-55 leading-tight flex items-center gap-0.5 mt-0.5">
               <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
               <span className="truncate">{location}</span>
             </p>

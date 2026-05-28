@@ -126,7 +126,7 @@ export function ShotAnalysisCard({
           <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center">
             <IconTarget size={20} className="text-primary-600" />
           </div>
-          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Shot Analysis</h3>
+          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Shot Analysis</h3>
         </div>
 
         {/* Yardage curve */}
@@ -307,7 +307,7 @@ export function ShotAnalysisCard({
                       strokeDashoffset={2 * Math.PI * 18 * (1 - Math.min(Number(safeResilience ?? 0) / 2, 1))}
                     />
                   </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[11px] font-medium text-warm-900 tabular-nums">
+                  <span className="absolute inset-0 flex items-center justify-center text-eyebrow font-medium text-warm-900 tabular-nums">
                     {Number(safeResilience ?? 0).toFixed(1)}
                   </span>
                 </div>

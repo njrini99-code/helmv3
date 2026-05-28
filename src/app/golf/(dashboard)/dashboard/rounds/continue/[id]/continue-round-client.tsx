@@ -960,7 +960,7 @@ export default function ContinueRoundClient({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <DrawerTitle className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
+            <DrawerTitle className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] text-center mb-2">
               Recover Unsaved Progress?
             </DrawerTitle>
             <p className="text-sm text-warm-500 text-center mb-1">
@@ -1079,7 +1079,7 @@ export default function ContinueRoundClient({
                           initial={{ opacity: 0, y: 8 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.25, duration: 0.3 }}
-                          className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-white tabular-nums"
+                          className="text-display md:text-display font-light tracking-[-0.025em] text-white tabular-nums"
                         >
                           {totalScore}
                         </m.span>
@@ -1105,15 +1105,15 @@ export default function ContinueRoundClient({
                       className="grid grid-cols-3 gap-3 mb-5"
                     >
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{totalPutts}</p>
+                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{totalPutts}</p>
                         <p className="text-xs text-warm-500 font-medium">Putts</p>
                       </div>
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
+                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{fairwaysHit}/{fairwayEligible}</p>
                         <p className="text-xs text-warm-500 font-medium">Fairways</p>
                       </div>
                       <div className="text-center p-3 rounded-xl bg-warm-50/80 border border-warm-100">
-                        <p className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{girCount}/{fs.length}</p>
+                        <p className="text-h3 font-medium text-warm-900 tracking-[-0.012em] tabular-nums">{girCount}/{fs.length}</p>
                         <p className="text-xs text-warm-500 font-medium">GIR</p>
                       </div>
                     </m.div>
@@ -1125,19 +1125,19 @@ export default function ContinueRoundClient({
                       transition={{ delay: 0.3, duration: 0.3 }}
                       className="mb-6"
                     >
-                      <p className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
+                      <p className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 mb-2">Scorecard</p>
                       <div className="rounded-xl border border-warm-200/35 overflow-x-auto overflow-hidden">
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((_, i) => (
                             <div key={`h${i}`} className="bg-warm-50 text-center py-1">
-                              <span className="text-[10px] font-medium text-warm-400">{i + 1}</span>
+                              <span className="text-eyebrow font-medium text-warm-400">{i + 1}</span>
                             </div>
                           ))}
                         </div>
                         <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: `repeat(${colCount}, 1fr)` }}>
                           {fs.slice(0, 9).map((h, i) => (
                             <div key={`p${i}`} className="bg-white text-center py-1">
-                              <span className="text-[10px] text-warm-400">{h?.par}</span>
+                              <span className="text-eyebrow text-warm-400">{h?.par}</span>
                             </div>
                           ))}
                         </div>
@@ -1152,14 +1152,14 @@ export default function ContinueRoundClient({
                             <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                               {fs.slice(9, 18).map((_, i) => (
                                 <div key={`h2${i}`} className="bg-warm-50 text-center py-1">
-                                  <span className="text-[10px] font-medium text-warm-400">{i + 10}</span>
+                                  <span className="text-eyebrow font-medium text-warm-400">{i + 10}</span>
                                 </div>
                               ))}
                             </div>
                             <div className="grid gap-px bg-warm-200/60" style={{ gridTemplateColumns: 'repeat(9, 1fr)' }}>
                               {fs.slice(9, 18).map((h, i) => (
                                 <div key={`p2${i}`} className="bg-white text-center py-1">
-                                  <span className="text-[10px] text-warm-400">{h?.par}</span>
+                                  <span className="text-eyebrow text-warm-400">{h?.par}</span>
                                 </div>
                               ))}
                             </div>

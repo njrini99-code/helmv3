@@ -39,11 +39,11 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                 <div className="flex items-end justify-between mb-5">
                     <div className="flex items-center gap-2.5">
                         <IconActivity size={14} className="text-primary-600" />
-                        <h3 className="text-[15px] md:text-[17px] font-medium text-warm-700 tracking-[-0.012em]">
+                        <h3 className="text-body md:text-body-lg font-medium text-warm-700 tracking-[-0.012em]">
                             Team Pulse
                         </h3>
                     </div>
-                    <span className="text-[12px] text-warm-400 tabular-nums">
+                    <span className="text-caption text-warm-400 tabular-nums">
                         <AnimatedNumber value={roundsThisWeek} /> rounds this week
                     </span>
                 </div>
@@ -79,19 +79,19 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                         <div className="flex items-center justify-between gap-2 mb-5">
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
-                                <span className="text-[12px] text-warm-600">
+                                <span className="text-caption text-warm-600">
                                     <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={improving} /></span> improving
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-warm-300" />
-                                <span className="text-[12px] text-warm-600">
+                                <span className="text-caption text-warm-600">
                                     <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={stable} /></span> stable
                                 </span>
                             </div>
                             <div className="flex items-center gap-1.5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-                                <span className="text-[12px] text-warm-600">
+                                <span className="text-caption text-warm-600">
                                     <span className="font-medium tabular-nums text-warm-900"><AnimatedNumber value={declining} /></span> declining
                                 </span>
                             </div>
@@ -103,10 +103,10 @@ export const TeamPulseCard = memo(function TeamPulseCard({ data }: TeamPulseCard
                                     <IconTrendingUp size={14} className="text-primary-700" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[13px] font-medium text-primary-800 truncate tracking-[-0.005em]">
+                                    <p className="text-body-sm font-medium text-primary-800 truncate tracking-[-0.005em]">
                                         Top Mover: {topMover.name}
                                     </p>
-                                    <p className="text-[11px] text-primary-600">
+                                    <p className="text-eyebrow text-primary-600">
                                         {topMover.delta} {topMover.delta === 1 ? 'stroke' : 'strokes'} lower avg
                                     </p>
                                 </div>

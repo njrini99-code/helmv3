@@ -87,7 +87,7 @@ export function TeamShotOverview({
               <IconTarget size={20} className="text-primary-600" />
             </div>
             <div>
-              <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Team Shot Analysis</h3>
+              <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Team Shot Analysis</h3>
               <p className="text-xs text-warm-400">Aggregated across all team players</p>
             </div>
           </div>

@@ -70,7 +70,7 @@ export function CategoryDrillDown({
   if (sortedPlayers.length === 0) {
     return (
       <div className="surface-matte rounded-3xl p-6">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400 mb-3">
+        <p className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400 mb-3">
           Player Breakdown
         </p>
         <EmptyState
@@ -91,7 +91,7 @@ export function CategoryDrillDown({
     >
       {/* Section title */}
       <div className="px-6 pt-5 pb-3">
-        <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400">
+        <p className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400">
           Player Breakdown
         </p>
       </div>

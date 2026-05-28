@@ -122,7 +122,7 @@ export function PremiumRoundHeader({
                 size="xl"
               />
               <div>
-                <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em]">{playerName}</h2>
+                <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em]">{playerName}</h2>
                 <p className="text-sm text-warm-500 mt-0.5">{formattedDate}</p>
                 <div className="flex items-center gap-2 mt-1.5">
                   <span className="text-sm font-medium text-warm-700">{courseName}</span>
@@ -156,7 +156,7 @@ export function PremiumRoundHeader({
               transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
               className="text-right flex-shrink-0"
             >
-              <div className="text-[44px] md:text-[52px] font-light tracking-[-0.025em] text-warm-900 tabular-nums">
+              <div className="text-display md:text-display font-light tracking-[-0.025em] text-warm-900 tabular-nums">
                 {totalScore ?? '--'}
               </div>
               {scoreDisplay !== null && (
@@ -194,7 +194,7 @@ export function PremiumRoundHeader({
                 className="rounded-xl bg-warm-50/50 p-3"
               >
                 <p className="text-xs text-warm-400 font-medium">{stat.label}</p>
-                <p className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] tabular-nums mt-0.5">{stat.value}</p>
+                <p className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tabular-nums mt-0.5">{stat.value}</p>
                 {stat.sub && (
                   <p className="text-xs text-warm-400 mt-0.5">{stat.sub}</p>
                 )}

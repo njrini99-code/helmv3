@@ -125,7 +125,7 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
           <p className="text-xs text-warm-500 uppercase tracking-wide mb-1">Estimated Score</p>
           <div className="flex items-center justify-center gap-3">
             <span className={cn(
-              'text-[44px] md:text-[52px] font-light tabular-nums tracking-[-0.025em]',
+              'text-display md:text-display font-light tabular-nums tracking-[-0.025em]',
               isPositive ? 'text-primary-700' : isNeutral ? 'text-warm-800' : 'text-red-600'
             )}>
               {formatScore(predictedValue)}
@@ -202,13 +202,13 @@ export function PerformancePrediction({ prediction, playerState }: PerformancePr
         <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/20">
           <div className="text-center p-3 bg-red-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Rough Round Risk</p>
-            <p className="text-[17px] font-medium tracking-[-0.005em] text-red-500">
+            <p className="text-body-lg font-medium tracking-[-0.005em] text-red-500">
               {Math.round(Number(prediction.tailRisks.blowupProbability ?? 0) * 100)}%
             </p>
           </div>
           <div className="text-center p-3 bg-primary-50/50 rounded-lg">
             <p className="text-xs text-warm-500 mb-1">Great Round Chance</p>
-            <p className="text-[17px] font-medium tracking-[-0.005em] text-primary-500">
+            <p className="text-body-lg font-medium tracking-[-0.005em] text-primary-500">
               {Math.round(Number(prediction.tailRisks.greatRoundProbability ?? 0) * 100)}%
             </p>
           </div>

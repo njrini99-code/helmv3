@@ -175,7 +175,7 @@ function LoginContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
           >
-            <h2 className="text-[26px] sm:text-[28px] leading-tight font-bold tracking-[-0.02em] text-warm-900 mb-2">
+            <h2 className="text-h2 sm:text-h1 leading-tight font-bold tracking-[-0.02em] text-warm-900 mb-2">
               Welcome back
             </h2>
             <p className="text-warm-500">Sign in to continue to your dashboard</p>
@@ -213,14 +213,14 @@ function LoginContent() {
                 </div>
                 <button
                   onClick={() => router.push(returnTo || '/baseball/dashboard')}
-                  className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-[15px] tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
+                  className="w-full min-h-[50px] py-3 bg-primary-600 text-white font-semibold text-body tracking-[-0.01em] rounded-xl shadow-lg shadow-primary-600/25 transition-all duration-200 ease-ios hover:bg-primary-700 hover:shadow-primary-600/30 active:scale-[0.97] active:duration-75"
                 >
                   {returnTo ? 'Continue' : 'Continue to Dashboard'}
                 </button>
                 <button
                   onClick={handleSignOut}
                   disabled={isLoggingOut}
-                  className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-[15px] tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
+                  className="w-full min-h-[50px] py-3 bg-warm-100 text-warm-700 font-semibold text-body tracking-[-0.01em] rounded-xl transition-all duration-200 ease-ios hover:bg-warm-200 active:scale-[0.97] active:duration-75 disabled:opacity-50 disabled:active:scale-100"
                 >
                   {isLoggingOut ? 'Signing out…' : 'Sign out & use a different account'}
                 </button>

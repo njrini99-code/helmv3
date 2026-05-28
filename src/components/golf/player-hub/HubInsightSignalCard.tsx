@@ -142,7 +142,7 @@ export function HubInsightSignalCard({ insight }: HubInsightSignalCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <IconSparkles size={14} className="text-primary-600" aria-hidden />
-          <h2 className="text-[11px] font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 border-b border-primary-200/40 pb-0.5">
+          <h2 className="text-eyebrow font-medium text-warm-500 uppercase tracking-[0.12em] opacity-80 border-b border-primary-200/40 pb-0.5">
             From your CoachHelm
           </h2>
         </div>

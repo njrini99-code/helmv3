@@ -87,7 +87,7 @@ export function AdminBarChart({
                 </div>
                 {/* Value label on hover */}
                 {d.value > 0 && (
-                  <span className="text-[9px] font-medium text-warm-500 tabular-nums mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-eyebrow font-medium text-warm-500 tabular-nums mb-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     {d.value}
                   </span>
                 )}
@@ -116,7 +116,7 @@ export function AdminBarChart({
             }}
           >
             <span
-              className="absolute -top-3 right-0 text-[8px] tabular-nums px-1 rounded"
+              className="absolute -top-3 right-0 text-eyebrow tabular-nums px-1 rounded"
               style={{ color: `${color}cc` }}
             >
               avg {Math.round(avg)}
@@ -128,7 +128,7 @@ export function AdminBarChart({
       <div className="flex gap-[3px] mt-1.5">
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center">
-            <span className="text-[9px] text-warm-400 truncate block leading-tight">
+            <span className="text-eyebrow text-warm-400 truncate block leading-tight">
               {d.label}
             </span>
           </div>

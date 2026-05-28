@@ -85,7 +85,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       {/* Header: Team average + trend */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-[30px] md:text-[34px] font-light tabular-nums tracking-[-0.025em] text-warm-900">
+          <p className="text-h1 md:text-h1 font-light tabular-nums tracking-[-0.025em] text-warm-900">
             {category.teamAvgLabel}
           </p>
         </div>
@@ -106,7 +106,7 @@ export function CategoryCard({ category }: CategoryCardProps) {
       {/* Insights list */}
       {category.insights.length > 0 ? (
         <div className="space-y-2.5">
-          <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400">
+          <p className="text-eyebrow font-medium uppercase tracking-[0.12em] opacity-80 text-warm-400">
             Insights
           </p>
           <ul className="space-y-2">

@@ -153,7 +153,7 @@ export function KPIGrid({ stats, loading }: KPIGridProps) {
                 <p className="text-xs text-warm-500 truncate">{card.secondary}</p>
               )}
               {card.live && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary-700 uppercase tracking-wider">
+                <span className="inline-flex items-center gap-1 text-eyebrow font-semibold text-primary-700 uppercase tracking-wider">
                   <span className="relative flex h-1.5 w-1.5">
                     <span className="absolute inline-flex h-full w-full rounded-full bg-primary-500 opacity-75 animate-ping" />
                     <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-500" />
@@ -214,7 +214,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
           return (
             <div key={d.day} className="flex-1 flex flex-col justify-end h-full relative group">
               <div className="absolute -top-1 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                <div className="whitespace-nowrap bg-warm-900 text-white text-[10px] font-medium px-2 py-1 rounded shadow-lg">
+                <div className="whitespace-nowrap bg-warm-900 text-white text-eyebrow font-medium px-2 py-1 rounded shadow-lg">
                   <div className="font-semibold mb-0.5">
                     {new Date(d.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
@@ -248,7 +248,7 @@ export function DailyTrendChart({ data }: DailyTrendChartProps) {
         })}
       </div>
 
-      <div className="mt-3 flex justify-between text-[10px] text-warm-400">
+      <div className="mt-3 flex justify-between text-eyebrow text-warm-400">
         <span>
           {new Date(data[0]!.day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>

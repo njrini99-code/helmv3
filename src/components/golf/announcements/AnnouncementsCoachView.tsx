@@ -145,7 +145,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
               )}
               <h3 className={cn(
                 'font-medium text-warm-900 truncate',
-                isNew ? 'text-[15px]' : 'text-sm'
+                isNew ? 'text-body' : 'text-sm'
               )}>
                 {ann.title}
               </h3>
@@ -197,7 +197,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                             {p.avatar_url ? (
                               <img src={p.avatar_url} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[8px] font-medium text-primary-700 leading-none">
+                              <span className="text-eyebrow font-medium text-primary-700 leading-none">
                                 {(p.first_name?.[0] || '')}{(p.last_name?.[0] || '')}
                               </span>
                             )}
@@ -205,7 +205,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                         ))}
                         {ann.acknowledged_count > 5 && (
                           <span className="w-5 h-5 rounded-full border-[1.5px] border-white flex items-center justify-center flex-shrink-0 bg-warm-100">
-                            <span className="text-[8px] font-medium text-warm-500 leading-none">+{ann.acknowledged_count - 5}</span>
+                            <span className="text-eyebrow font-medium text-warm-500 leading-none">+{ann.acknowledged_count - 5}</span>
                           </span>
                         )}
                       </span>
@@ -402,7 +402,7 @@ function CoachAnnouncementCard({ announcement: ann }: { announcement: GolfAnnoun
                                     {player?.avatar_url ? (
                                       <img src={player.avatar_url} alt="" className="w-full h-full object-cover" />
                                     ) : (
-                                      <span className="text-[10px] font-medium text-primary-700 leading-none">{initials}</span>
+                                      <span className="text-eyebrow font-medium text-primary-700 leading-none">{initials}</span>
                                     )}
                                   </div>
                                   <span className="text-xs text-warm-700 font-medium flex-1">

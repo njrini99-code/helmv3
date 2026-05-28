@@ -190,7 +190,7 @@ export function RoundSubmitOverlay({
                     transition={{ delay: 0.4 }}
                     className="flex items-baseline justify-center gap-2"
                   >
-                    <span className="text-[36px] md:text-[42px] font-light tracking-[-0.025em] text-white tabular-nums">{totalScore}</span>
+                    <span className="text-display md:text-display font-light tracking-[-0.025em] text-white tabular-nums">{totalScore}</span>
                     <span className={`text-lg font-medium ${toPar === 0 ? 'text-white/70' : toPar < 0 ? 'text-primary-100' : 'text-red-200'}`}>
                       ({toParLabel})
                     </span>
@@ -348,11 +348,11 @@ export function RoundSubmitOverlay({
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">{totalScore}</span>
+                  <span className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">{totalScore}</span>
                 </div>
               </div>
 
-              <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.012em] mb-1">
+              <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.012em] mb-1">
                 Submitting Round
               </h2>
               <p className="text-sm text-warm-500 mb-1">

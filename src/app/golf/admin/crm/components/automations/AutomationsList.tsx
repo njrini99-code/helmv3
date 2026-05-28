@@ -174,7 +174,7 @@ export function AutomationsList() {
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-warm-700">
                     {trigger.label}
                   </h3>
-                  <span className="text-[11px] text-warm-400">{rows.length}</span>
+                  <span className="text-eyebrow text-warm-400">{rows.length}</span>
                 </div>
                 <div className="rounded-2xl bg-white/70 backdrop-blur-xl border border-warm-200/60 overflow-hidden">
                   <ul className="divide-y divide-warm-100">
@@ -213,16 +213,16 @@ export function AutomationsList() {
                                 {a.name}
                               </span>
                               {seeded && (
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-medium text-blue-700">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-eyebrow font-medium text-blue-700">
                                   <IconCheckCircle2 size={10} /> Seeded
                                 </span>
                               )}
                               {!a.is_active && (
-                                <span className="px-2 py-0.5 rounded-full bg-warm-100 text-[10px] font-medium text-warm-600">
+                                <span className="px-2 py-0.5 rounded-full bg-warm-100 text-eyebrow font-medium text-warm-600">
                                   Inactive
                                 </span>
                               )}
-                              <span className="px-2 py-0.5 rounded-full bg-warm-50 border border-warm-200 text-[10px] text-warm-600">
+                              <span className="px-2 py-0.5 rounded-full bg-warm-50 border border-warm-200 text-eyebrow text-warm-600">
                                 priority {a.priority}
                               </span>
                             </div>
@@ -231,7 +231,7 @@ export function AutomationsList() {
                                 {a.description}
                               </p>
                             )}
-                            <p className="text-[11px] text-warm-500 mt-1">
+                            <p className="text-eyebrow text-warm-500 mt-1">
                               {condCount === 0
                                 ? 'Always runs'
                                 : `${condCount} condition${condCount === 1 ? '' : 's'}`}{' '}

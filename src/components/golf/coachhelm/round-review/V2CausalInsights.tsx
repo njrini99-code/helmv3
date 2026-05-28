@@ -67,7 +67,7 @@ export function V2CausalInsights({ insights }: V2CausalInsightsProps) {
               </div>
 
               {/* Mechanism */}
-              <p className="text-[13px] text-warm-600 leading-relaxed mb-3">
+              <p className="text-body-sm text-warm-600 leading-relaxed mb-3">
                 {insight.mechanism}
               </p>
 

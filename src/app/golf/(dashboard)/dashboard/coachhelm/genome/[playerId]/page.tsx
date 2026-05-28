@@ -75,7 +75,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
         {/* ----- Header plinth ----- */}
         <Reveal>
           <header className="surface-stone rounded-3xl p-6 md:p-8 mb-6 md:mb-8">
-            <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
+            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500 mb-1.5">
               Game profile
             </p>
             <h1 className="text-3xl md:text-4xl font-medium text-warm-900 tracking-tight">
@@ -136,7 +136,7 @@ export default async function CoachGenomePage({ params }: PageProps) {
           <Reveal staggerIndex={2}>
             <section>
               <header className="mb-4">
-                <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">
+                <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">
                   Dimensions
                 </h2>
                 <p className="text-sm text-warm-500">
@@ -166,10 +166,10 @@ export default async function CoachGenomePage({ params }: PageProps) {
               </h2>
               <p className="mt-2 text-sm text-warm-600 leading-relaxed max-w-md mx-auto">
                 The nightly cron will seed this player automatically. To trigger now, hit{' '}
-                <code className="font-mono text-[11px] bg-warm-100 px-1.5 py-0.5 rounded">
+                <code className="font-mono text-eyebrow bg-warm-100 px-1.5 py-0.5 rounded">
                   POST /api/coachhelm/v3/genome/compute
                 </code>{' '}
-                with player_id <span className="font-mono text-[11px]">{playerId}</span>.
+                with player_id <span className="font-mono text-eyebrow">{playerId}</span>.
               </p>
             </section>
           </Reveal>

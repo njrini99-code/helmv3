@@ -12,8 +12,8 @@ interface EngagementScoreProps {
 
 const sizePx = { sm: 32, md: 48, lg: 64 } as const;
 const strokeWidths = { sm: 3, md: 4, lg: 5 } as const;
-const fontSizes = { sm: 'text-[10px]', md: 'text-sm', lg: 'text-lg' } as const;
-const labelSizes = { sm: 'text-[8px]', md: 'text-[10px]', lg: 'text-xs' } as const;
+const fontSizes = { sm: 'text-eyebrow', md: 'text-sm', lg: 'text-lg' } as const;
+const labelSizes = { sm: 'text-eyebrow', md: 'text-eyebrow', lg: 'text-xs' } as const;
 
 function getScoreColor(score: number): string {
   if (score >= 75) return '#059669'; // emerald-600

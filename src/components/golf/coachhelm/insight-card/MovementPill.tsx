@@ -44,7 +44,7 @@ export function MovementPill({ insight, className }: MovementPillProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium tabular-nums',
+        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-medium tabular-nums',
         derived.improvement
           ? 'bg-primary-50 text-primary-700 border border-primary-200/60'
           : 'bg-amber-50 text-amber-700 border border-amber-200/60',

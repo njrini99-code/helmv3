@@ -229,7 +229,7 @@ export function LargeTitleHeader({
                 just title + optional quiet subtitle on warm cream. */}
             <div className="hidden lg:flex flex-1 min-w-0 ml-3 items-center">
               <div className="min-w-0 flex-1">
-                <h1 className="text-[28px] leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
+                <h1 className="text-h1 leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
                   {title}
                 </h1>
                 {subtitle && (
@@ -258,7 +258,7 @@ export function LargeTitleHeader({
           No eyebrow, no hairline, no glass tray — just the title sitting
           on warm cream and scrolling away naturally. Zero flicker. */}
       <div className="lg:hidden max-w-7xl mx-auto px-4 pt-0.5 pb-3">
-        <h1 className="text-[34px] leading-[1.05] font-medium tracking-[-0.018em] text-warm-900 truncate">
+        <h1 className="text-h1 leading-[1.05] font-medium tracking-[-0.018em] text-warm-900 truncate">
           {title}
         </h1>
         {subtitle && (

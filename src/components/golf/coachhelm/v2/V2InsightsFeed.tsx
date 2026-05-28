@@ -133,7 +133,7 @@ export function InsightsFeed({
               <IconSparkles size={16} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] uppercase tracking-[0.15em] text-warm-400">
+              <p className="text-eyebrow uppercase tracking-[0.15em] text-warm-400">
                 Intelligence Feed
               </p>
               <div className="flex flex-wrap items-center gap-2">

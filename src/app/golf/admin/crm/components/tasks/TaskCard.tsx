@@ -178,7 +178,7 @@ export function TaskCard({
             {assigneeInitials && (
               <span
                 title={`Assigned to ${task.assignee_id}`}
-                className="flex-shrink-0 w-5 h-5 rounded-full bg-warm-100 text-[10px] font-semibold text-warm-700 flex items-center justify-center"
+                className="flex-shrink-0 w-5 h-5 rounded-full bg-warm-100 text-eyebrow font-semibold text-warm-700 flex items-center justify-center"
               >
                 {assigneeInitials}
               </span>
@@ -194,7 +194,7 @@ export function TaskCard({
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <span
               className={cn(
-                'inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full border',
+                'inline-flex items-center text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
                 KIND_TONE[task.kind],
               )}
             >
@@ -204,7 +204,7 @@ export function TaskCard({
             {due && (
               <span
                 className={cn(
-                  'inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border',
+                  'inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border',
                   due.overdue
                     ? 'bg-red-50 text-red-700 border-red-200'
                     : 'bg-warm-50 text-warm-700 border-warm-200',
@@ -217,14 +217,14 @@ export function TaskCard({
             )}
 
             {completed && (
-              <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
+              <span className="inline-flex items-center gap-1 text-eyebrow font-medium px-1.5 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
                 <IconCheckCheck size={9} /> Completed
               </span>
             )}
           </div>
 
           {error && (
-            <p className="mt-1.5 text-[11px] text-red-600">
+            <p className="mt-1.5 text-eyebrow text-red-600">
               {error}
             </p>
           )}

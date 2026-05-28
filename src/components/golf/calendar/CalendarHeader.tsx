@@ -115,7 +115,7 @@ export function CalendarHeader({
         </button>
 
         {/* Editorial title — sculptural, light weight */}
-        <h2 className="text-[20px] md:text-[26px] font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
+        <h2 className="text-h3 md:text-h2 font-medium text-warm-900 tracking-[-0.022em] truncate min-w-0">
           {getTitle()}
         </h2>
 
@@ -175,7 +175,7 @@ export function CalendarHeader({
                 aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
-                  'px-4 py-1.5 text-[12.5px] font-medium rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'px-4 py-1.5 text-caption font-medium rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   view === v
                     ? 'bg-cream-50 text-warm-900 shadow-[0_1px_2px_rgba(58,50,40,0.05),0_4px_10px_rgba(58,50,40,0.04)]'
                     : 'text-warm-500 hover:text-warm-700'
@@ -196,7 +196,7 @@ export function CalendarHeader({
                 onClick={() => void triggerHaptic('light')}
                 aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'inline-flex items-center gap-1.5 rounded-full text-caption font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
                   secondaryTimezone
                     ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
                     : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
@@ -204,7 +204,7 @@ export function CalendarHeader({
               >
                 <Globe className="w-3.5 h-3.5" />
                 {secondaryTimezone && (
-                  <span className="text-[11.5px]">
+                  <span className="text-eyebrow">
                     {TZ_OPTIONS.find(t => t.value === secondaryTimezone)?.label ?? secondaryTimezone.split('/').pop()}
                   </span>
                 )}
@@ -243,7 +243,7 @@ export function CalendarHeader({
             type="button"
             onClick={onAddEvent}
             className={cn(
-              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-[13px] font-medium tracking-[-0.005em]',
+              'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
               'bg-primary-600/95 text-white',
               'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
               'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'

@@ -45,7 +45,7 @@ export default async function CoachHelmAnalyticsPage() {
         />
         <div className="flex items-center justify-center p-6">
           <div className="text-center">
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">No Team Found</h2>
             <p className="text-warm-600">
               You need to be associated with a team to view analytics.
             </p>

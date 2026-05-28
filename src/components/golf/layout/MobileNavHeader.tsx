@@ -113,7 +113,7 @@ export function MobileNavHeader({
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {BackNav}
             <div className="min-w-0 flex-1">
-              <h1 className="text-[22px] md:text-[26px] leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
+              <h1 className="text-h2 md:text-h2 leading-[1.08] font-medium tracking-[-0.022em] text-warm-900 truncate">
                 {title}
               </h1>
               {subtitle && (

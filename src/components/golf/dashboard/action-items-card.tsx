@@ -83,7 +83,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={cn(
-                                'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-4 text-[13px] font-medium transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                                'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-4 text-body-sm font-medium transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
                                 isActive ? 'text-warm-900' : 'text-warm-500 hover:text-warm-700'
                             )}
                         >
@@ -91,7 +91,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             <span>{tab.label}</span>
                             {tab.count > 0 && (
                                 <span className={cn(
-                                    'inline-flex min-w-[16px] h-[16px] items-center justify-center px-1 rounded-full text-[10px] font-medium tabular-nums',
+                                    'inline-flex min-w-[16px] h-[16px] items-center justify-center px-1 rounded-full text-eyebrow font-medium tabular-nums',
                                     isActive ? 'bg-primary-100/90 text-primary-700' : 'bg-warm-100/80 text-warm-500',
                                     tab.key === 'deadlines' && tab.count > 0 && (isActive ? 'bg-red-100 text-red-700' : 'bg-red-50 text-red-600')
                                 )}>
@@ -125,8 +125,8 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                 <div className="w-14 h-14 rounded-2xl bg-primary-50/65 flex items-center justify-center mb-4">
                                     <IconCheck size={22} className="text-primary-600/85" />
                                 </div>
-                                <p className="text-[15px] font-medium tracking-[-0.005em] text-warm-900 mb-1.5">All caught up</p>
-                                <p className="text-[12px] leading-relaxed text-warm-500">
+                                <p className="text-body font-medium tracking-[-0.005em] text-warm-900 mb-1.5">All caught up</p>
+                                <p className="text-caption leading-relaxed text-warm-500">
                                     {activeTab === 'tasks' ? 'No pending tasks' :
                                      activeTab === 'announcements' ? 'No new announcements' :
                                      'No upcoming deadlines'}
@@ -150,22 +150,22 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className={cn(
-                                                    'text-[14px] font-medium tracking-[-0.005em] truncate',
+                                                    'text-body-sm font-medium tracking-[-0.005em] truncate',
                                                     item.overdue ? 'text-red-700' : 'text-warm-900'
                                                 )}>
                                                     {item.title}
                                                 </p>
                                                 <div className="flex items-center gap-2 mt-0.5">
-                                                    <span className="text-[11px] text-warm-400 tabular-nums" suppressHydrationWarning>
+                                                    <span className="text-eyebrow text-warm-400 tabular-nums" suppressHydrationWarning>
                                                         {now ? formatRelativeDate(item.date, now) : ''}
                                                     </span>
                                                     {item.overdue && (
-                                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700">
+                                                        <span className="text-eyebrow font-medium px-2 py-0.5 rounded-full bg-red-50 text-red-700">
                                                             Overdue
                                                         </span>
                                                     )}
                                                     {(item.priority === 'high' || item.priority === 'urgent') && !item.overdue && (
-                                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
+                                                        <span className="text-eyebrow font-medium px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">
                                                             {item.priority === 'urgent' ? 'Urgent' : 'High'}
                                                         </span>
                                                     )}

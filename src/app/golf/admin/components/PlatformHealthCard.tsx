@@ -117,26 +117,26 @@ export function PlatformHealthCard({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <div className="bg-white/50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers1h}</p>
-            <p className="text-[11px] sm:text-micro text-warm-400 mt-0.5">Now</p>
+            <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">Now</p>
           </div>
           <div className="bg-white/50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers24h}</p>
-            <p className="text-[11px] sm:text-micro text-warm-400 mt-0.5">24h</p>
+            <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">24h</p>
           </div>
           <div className="bg-white/50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers7d}</p>
-            <p className="text-[11px] sm:text-micro text-warm-400 mt-0.5">7d</p>
+            <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">7d</p>
           </div>
           <div className="bg-white/50 rounded-xl p-2.5 text-center">
             <p className="text-lg font-semibold text-warm-900 tabular-nums">{health.realActiveUsers30d}</p>
-            <p className="text-[11px] sm:text-micro text-warm-400 mt-0.5">30d</p>
+            <p className="text-eyebrow sm:text-micro text-warm-400 mt-0.5">30d</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-1 mt-2 px-1">
-          <span className="text-[11px] sm:text-micro text-warm-400">
+          <span className="text-eyebrow sm:text-micro text-warm-400">
             {health.usersSignedInToday} signed in today
           </span>
-          <span className="text-[11px] sm:text-micro text-warm-400">
+          <span className="text-eyebrow sm:text-micro text-warm-400">
             {health.totalAuthUsers} total accounts
           </span>
         </div>
@@ -169,7 +169,7 @@ export function PlatformHealthCard({
           <p className="text-lg sm:text-xl font-semibold text-warm-900 tabular-nums">
             {health.roundsToday}
           </p>
-          <p className="text-[10px] sm:text-label text-warm-500 mt-0.5 leading-tight">
+          <p className="text-eyebrow sm:text-label text-warm-500 mt-0.5 leading-tight">
             Rounds Today
           </p>
         </div>
@@ -180,7 +180,7 @@ export function PlatformHealthCard({
           )}>
             {health.systemErrors7d}
           </p>
-          <p className="text-[10px] sm:text-label text-warm-500 mt-0.5 leading-tight">
+          <p className="text-eyebrow sm:text-label text-warm-500 mt-0.5 leading-tight">
             Errors (7d)
           </p>
         </div>
@@ -188,7 +188,7 @@ export function PlatformHealthCard({
           <p className="text-base sm:text-xl font-semibold text-warm-900 tabular-nums truncate">
             {Math.round(infraHealth?.totals?.avgResponseMs ?? 0)}ms
           </p>
-          <p className="text-[10px] sm:text-label text-warm-500 mt-0.5 leading-tight">
+          <p className="text-eyebrow sm:text-label text-warm-500 mt-0.5 leading-tight">
             API Latency
           </p>
         </div>
@@ -234,7 +234,7 @@ export function PlatformHealthCard({
         {/* Storage breakdown */}
         {health.largestTables.length > 0 && (
           <div className="mt-3">
-            <span className="text-[11px] sm:text-micro text-warm-400 uppercase tracking-wider font-medium">
+            <span className="text-eyebrow sm:text-micro text-warm-400 uppercase tracking-wider font-medium">
               Storage Breakdown
             </span>
             <div className="mt-1.5 space-y-1">
@@ -242,7 +242,7 @@ export function PlatformHealthCard({
                 const pct = health.dbSizeBytes > 0 ? (t.size_bytes / health.dbSizeBytes) * 100 : 0;
                 return (
                   <div key={t.table_name} className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-[10px] sm:text-label text-warm-500 w-20 sm:w-28 truncate shrink-0">
+                    <span className="text-eyebrow sm:text-label text-warm-500 w-20 sm:w-28 truncate shrink-0">
                       {t.table_name.replace('golf_', '')}
                     </span>
                     <div className="flex-1 h-1.5 bg-warm-100 rounded-full overflow-hidden min-w-0">
@@ -251,7 +251,7 @@ export function PlatformHealthCard({
                         style={{ width: `${Math.max(pct, 1)}%` }}
                       />
                     </div>
-                    <span className="text-[10px] sm:text-micro text-warm-400 tabular-nums w-12 sm:w-16 text-right shrink-0">
+                    <span className="text-eyebrow sm:text-micro text-warm-400 tabular-nums w-12 sm:w-16 text-right shrink-0">
                       {formatBytes(t.size_bytes)}
                     </span>
                     <span className="hidden sm:inline text-micro text-warm-300 tabular-nums w-12 text-right shrink-0">
@@ -302,7 +302,7 @@ export function PlatformHealthCard({
                 ? 'bg-amber-500'
                 : 'bg-red-500',
           )} />
-          <span className="text-[11px] sm:text-label text-warm-400">
+          <span className="text-eyebrow sm:text-label text-warm-400">
             Data Status: {freshnessLabel}
           </span>
         </div>

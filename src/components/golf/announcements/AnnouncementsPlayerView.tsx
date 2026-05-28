@@ -179,7 +179,7 @@ function PlayerAnnouncementCard({ announcement: ann, playerId, nowTs }: { announ
           <div className="flex items-center gap-2.5 mb-1.5">
             <h3 className={cn(
               'font-medium text-warm-900 truncate',
-              unread ? 'text-[15px]' : 'text-sm'
+              unread ? 'text-body' : 'text-sm'
             )}>
               {ann.title}
             </h3>

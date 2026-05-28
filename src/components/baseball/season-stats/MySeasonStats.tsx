@@ -75,7 +75,7 @@ export function MySeasonStats() {
               { label: 'SB', value: stats.sb },
             ].map(({ label, value }) => (
               <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
-                <p className="text-[10px] font-semibold text-warm-400 uppercase">{label}</p>
+                <p className="text-eyebrow font-semibold text-warm-400 uppercase">{label}</p>
                 <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
               </div>
             ))}
@@ -104,7 +104,7 @@ export function MySeasonStats() {
               { label: 'HR', value: stats.hr_allowed },
             ].map(({ label, value }) => (
               <div key={label} className="bg-warm-50 rounded-xl p-2 text-center">
-                <p className="text-[10px] font-semibold text-warm-400 uppercase">{label}</p>
+                <p className="text-eyebrow font-semibold text-warm-400 uppercase">{label}</p>
                 <p className="text-base font-bold text-warm-800 tabular-nums">{value}</p>
               </div>
             ))}

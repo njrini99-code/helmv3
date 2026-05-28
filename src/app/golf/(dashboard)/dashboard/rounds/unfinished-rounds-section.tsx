@@ -45,7 +45,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
     <>
       <div>
         <div className="flex items-center gap-2 mb-4">
-          <h2 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">Unfinished Rounds</h2>
+          <h2 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em]">Unfinished Rounds</h2>
           <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
             {localRounds.length}
           </span>
@@ -71,7 +71,7 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                   <div className="relative z-10 flex flex-col">
                     {/* Top row: type + time since */}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="px-2 py-0.5 text-[10px] font-medium rounded-full capitalize border bg-warm-50 text-warm-600 border-warm-200">
+                      <span className="px-2 py-0.5 text-eyebrow font-medium rounded-full capitalize border bg-warm-50 text-warm-600 border-warm-200">
                         {round.round_type || 'Round'}
                       </span>
                       <span className="text-xs text-warm-400">{timeAgo}</span>
@@ -82,11 +82,11 @@ export function UnfinishedRoundsSection({ rounds }: UnfinishedRoundsSectionProps
                       {isSetup ? (
                         <div className="flex items-center gap-2 text-amber-600">
                           <IconEdit size={20} />
-                          <span className="text-[17px] font-medium tracking-[-0.005em]">Setup</span>
+                          <span className="text-body-lg font-medium tracking-[-0.005em]">Setup</span>
                         </div>
                       ) : (
                         <div className="text-center">
-                          <p className="text-[28px] md:text-[32px] font-light text-amber-700 tracking-[-0.025em] tabular-nums">
+                          <p className="text-h1 md:text-h1 font-light text-amber-700 tracking-[-0.025em] tabular-nums">
                             {round.current_hole} <span className="text-base font-medium text-amber-400">/ {holesTarget}</span>
                           </p>
                         </div>

@@ -168,7 +168,7 @@ function KPICard({
       <div className="flex items-start justify-between">
         <div>
           <p className="text-sm text-warm-500 font-medium">{label}</p>
-          <p className="text-[24px] md:text-[30px] font-light tracking-[-0.025em] tabular-nums text-warm-900 mt-1">{value}</p>
+          <p className="text-h2 md:text-h1 font-light tracking-[-0.025em] tabular-nums text-warm-900 mt-1">{value}</p>
           {subtext && (
             <p className="text-sm text-warm-500 mt-1 flex items-center gap-1">
               {trend === 'up' && <IconTrendingUp size={14} className="text-primary-600" />}
@@ -220,7 +220,7 @@ function PlayerCard({
       <div className="flex items-center gap-4">
         {/* Rank badge */}
         <div className="w-8 text-center flex-shrink-0">
-          <span className={`text-[13px] font-medium ${rank <= 3 ? 'text-primary-600' : 'text-warm-400'}`}>
+          <span className={`text-body-sm font-medium ${rank <= 3 ? 'text-primary-600' : 'text-warm-400'}`}>
             #{rank}
           </span>
         </div>
@@ -256,7 +256,7 @@ function PlayerCard({
         {/* Stats block */}
         <div className="flex items-center gap-3 md:gap-6">
           <div className="text-center">
-            <p className="text-[28px] md:text-[32px] font-light text-warm-900 tabular-nums tracking-[-0.025em]">
+            <p className="text-h1 md:text-h1 font-light text-warm-900 tabular-nums tracking-[-0.025em]">
               {scoringAvg?.toFixed(1) || '--'}
             </p>
             <p className="text-xs text-warm-500 uppercase tracking-wide">Avg</p>
@@ -1011,12 +1011,12 @@ export default function StatsClient({
               </div>
               {players.length === 0 ? (
                 <>
-                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Players Yet</h3>
+                  <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No Players Yet</h3>
                   <p className="text-warm-500">Add players to your team to view their statistics.</p>
                 </>
               ) : (
                 <>
-                  <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-2">No Matching Players</h3>
+                  <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-2">No Matching Players</h3>
                   <p className="text-warm-500">Try adjusting your search or filters.</p>
                 </>
               )}
@@ -1183,7 +1183,7 @@ export default function StatsClient({
             <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-5">
               <IconChart size={36} className="text-red-300" />
             </div>
-            <h2 className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">Something Went Wrong</h2>
+            <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">Something Went Wrong</h2>
             <p className="text-warm-500 max-w-sm mx-auto mb-6">{statsError}</p>
             <button
               onClick={handleRefresh}
@@ -1238,15 +1238,15 @@ export default function StatsClient({
               >
                 <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
                   <IconChart size={18} className="text-warm-300 mx-auto mb-1.5" />
-                  <p className="text-[11px] font-medium text-warm-400">Scoring Trends</p>
+                  <p className="text-eyebrow font-medium text-warm-400">Scoring Trends</p>
                 </div>
                 <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
                   <IconTarget size={18} className="text-warm-300 mx-auto mb-1.5" />
-                  <p className="text-[11px] font-medium text-warm-400">Strokes Gained</p>
+                  <p className="text-eyebrow font-medium text-warm-400">Strokes Gained</p>
                 </div>
                 <div className="p-3 rounded-xl bg-warm-50/80 border border-warm-100">
                   <IconTrendingUp size={18} className="text-warm-300 mx-auto mb-1.5" />
-                  <p className="text-[11px] font-medium text-warm-400">Progress</p>
+                  <p className="text-eyebrow font-medium text-warm-400">Progress</p>
                 </div>
               </m.div>
 
@@ -1273,7 +1273,7 @@ export default function StatsClient({
       {/* Recent Rounds Section */}
       {rounds.length > 0 && (
         <div className="max-w-6xl mx-auto px-4 md:px-6 pb-8 mt-6">
-          <h3 className="text-[17px] font-medium text-warm-900 tracking-[-0.012em] mb-3">Recent Rounds</h3>
+          <h3 className="text-body-lg font-medium text-warm-900 tracking-[-0.012em] mb-3">Recent Rounds</h3>
           <div className="space-y-2">
             {rounds.slice(0, 10).map((round) => {
               const toPar = round.score_to_par ?? 0;

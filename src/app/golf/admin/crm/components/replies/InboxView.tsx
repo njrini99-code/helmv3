@@ -162,7 +162,7 @@ export function InboxView() {
                         {r.subject && (
                           <p className="text-xs text-warm-600 truncate">{r.subject}</p>
                         )}
-                        <p className="text-[11px] text-warm-500 mt-0.5">
+                        <p className="text-eyebrow text-warm-500 mt-0.5">
                           {relTime(r.received_at)}
                         </p>
                       </button>
@@ -201,7 +201,7 @@ export function InboxView() {
                       <h4 className="text-sm font-semibold text-warm-900">
                         {selection.task.title}
                       </h4>
-                      <p className="text-[11px] text-warm-500 mt-0.5">
+                      <p className="text-eyebrow text-warm-500 mt-0.5">
                         Due {relTime(selection.task.due_at)} · {selection.task.priority}
                       </p>
                     </div>
@@ -252,7 +252,7 @@ export function InboxView() {
                         <p className="text-sm font-medium text-warm-900 truncate">
                           {t.title}
                         </p>
-                        <p className="text-[11px] text-warm-500 mt-0.5">
+                        <p className="text-eyebrow text-warm-500 mt-0.5">
                           {t.due_at ? `Due ${relTime(t.due_at)}` : 'No due date'} · {t.priority}
                         </p>
                       </button>

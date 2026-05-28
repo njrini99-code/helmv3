@@ -169,7 +169,7 @@ export function JoinRequestsModal({ onClose }: JoinRequestsModalProps) {
                   <IconUsers size={20} className="text-white" />
                 </div>
                 <div>
-                  <h2 id="join-requests-modal-title" className="text-[20px] font-medium text-white tracking-[-0.012em]">Join Requests</h2>
+                  <h2 id="join-requests-modal-title" className="text-h3 font-medium text-white tracking-[-0.012em]">Join Requests</h2>
                   <p className="text-white/80 text-sm">
                     {loading ? (
                       <span className="inline-block h-3 w-24 rounded bg-white/20 animate-pulse" aria-label="Loading" />

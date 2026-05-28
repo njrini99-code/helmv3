@@ -172,7 +172,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                         {row.domain}
                       </span>
                       {bounceAlert && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-50 text-red-700 uppercase tracking-wide">
+                        <span className="text-eyebrow font-semibold px-1.5 py-0.5 rounded bg-red-50 text-red-700 uppercase tracking-wide">
                           High bounce
                         </span>
                       )}
@@ -189,19 +189,19 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-warm-900">{deliveryRate}</div>
-                    <div className="text-[11px] text-warm-500 tabular-nums">
+                    <div className="text-eyebrow text-warm-500 tabular-nums">
                       {formatCount(row.delivered)}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-warm-900">{openRate}</div>
-                    <div className="text-[11px] text-warm-500 tabular-nums">
+                    <div className="text-eyebrow text-warm-500 tabular-nums">
                       {formatCount(row.opened)}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="tabular-nums text-warm-900">{clickRate}</div>
-                    <div className="text-[11px] text-warm-500 tabular-nums">
+                    <div className="text-eyebrow text-warm-500 tabular-nums">
                       {formatCount(row.clicked)}
                     </div>
                   </td>
@@ -214,7 +214,7 @@ export function DomainBreakdown({ window }: DomainBreakdownProps) {
                     >
                       {bounceRate}
                     </div>
-                    <div className="text-[11px] text-warm-500 tabular-nums">
+                    <div className="text-eyebrow text-warm-500 tabular-nums">
                       {formatCount(row.bounced)}
                     </div>
                   </td>
@@ -264,7 +264,7 @@ function SortableTh({
         {label}
         <span
           className={cn(
-            'text-[8px] transition-opacity',
+            'text-eyebrow transition-opacity',
             active ? 'opacity-100' : 'opacity-0'
           )}
         >
@@ -297,7 +297,7 @@ function DomainFavicon({ domain }: { domain: string }) {
     return (
       <div
         className={cn(
-          'w-5 h-5 rounded flex items-center justify-center text-[10px] font-semibold shrink-0',
+          'w-5 h-5 rounded flex items-center justify-center text-eyebrow font-semibold shrink-0',
           bgClasses[bgIndex]
         )}
       >

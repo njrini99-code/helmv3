@@ -59,7 +59,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
     >
       <div className="p-6 md:p-7 space-y-4">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 font-medium">
+          <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 font-medium">
             07 · Trend
           </p>
           <h2
@@ -124,7 +124,7 @@ function TrendTooltip({ active, payload }: Partial<TooltipContentProps<number, s
   if (typeof p.score_to_par !== 'number') return null;
   return (
     <div className="rounded-lg bg-white shadow-md border border-warm-200 px-3 py-2">
-      <p className="text-[10px] text-warm-500 uppercase tracking-wide">{p.round_date}</p>
+      <p className="text-eyebrow text-warm-500 uppercase tracking-wide">{p.round_date}</p>
       <p className="text-sm font-medium text-warm-900 tabular-nums">
         {p.score_to_par === 0
           ? 'E'
@@ -134,7 +134,7 @@ function TrendTooltip({ active, payload }: Partial<TooltipContentProps<number, s
         {' to par'}
       </p>
       {p.course_name && (
-        <p className="text-[11px] text-warm-500 truncate max-w-[160px]">{p.course_name}</p>
+        <p className="text-eyebrow text-warm-500 truncate max-w-[160px]">{p.course_name}</p>
       )}
     </div>
   );

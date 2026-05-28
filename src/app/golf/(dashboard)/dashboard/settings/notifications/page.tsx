@@ -43,7 +43,7 @@ export default async function NotificationPrefsPage() {
       </AnimatedItem>
       <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-10">
         <header className="mb-8">
-          <p className="text-[11px] uppercase tracking-[0.14em] text-warm-500 mb-1.5">Settings</p>
+          <p className="text-eyebrow uppercase tracking-[0.14em] text-warm-500 mb-1.5">Settings</p>
           <h1 className="text-3xl font-medium text-warm-900 tracking-tight">Notifications</h1>
           <p className="mt-2 text-sm text-warm-600">
             Choose how each kind of update reaches you. Quiet mode silences everything except

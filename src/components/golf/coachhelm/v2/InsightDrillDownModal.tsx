@@ -141,7 +141,7 @@ export function InsightDrillDownModal({
           </div>
 
           {/* Headline */}
-          <h2 id="insight-drilldown-title" className="text-[20px] font-medium text-warm-900 tracking-[-0.015em] mb-2">
+          <h2 id="insight-drilldown-title" className="text-h3 font-medium text-warm-900 tracking-[-0.015em] mb-2">
             {insight.headline}
           </h2>
 

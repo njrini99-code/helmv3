@@ -51,7 +51,7 @@ function DevPlanCard({ item }: { item: DevPlanProgressItem }) {
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-warm-900 truncate">{item.playerName}</p>
           {item.hasOverdue && (
-            <Badge variant="warning" className="text-[10px] px-1.5 py-0">
+            <Badge variant="warning" className="text-eyebrow px-1.5 py-0">
               <IconWarning size={10} className="mr-0.5" />
               Overdue
             </Badge>
