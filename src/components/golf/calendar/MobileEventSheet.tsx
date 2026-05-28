@@ -461,7 +461,7 @@ export function MobileEventSheet({
               {/* All Day Toggle */}
               <div className="flex items-center justify-between pl-12">
                 <span id="all-day-label" className="text-sm text-warm-600">All day</span>
-                <IconButton variant="primary" aria-label="Button"
+                <IconButton variant="primary"
                   type="button"
                   role="switch"
                   aria-checked={formData.allDay}

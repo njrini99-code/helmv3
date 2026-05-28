@@ -1136,10 +1136,10 @@ export function DocumentsClient({ documents: initialDocuments, coachId, teamId, 
               >
                 Cancel
               </Button>
-              <IconButton variant="default" aria-label="Button"
+              <IconButton variant="default" aria-label="Toggle public visibility"
                 onClick={() => { setUploadIsPublic(!uploadIsPublic); }}
                 className="hidden"
-              ><span className="sr-only">Button</span></IconButton>
+              ><span className="sr-only">Toggle public visibility</span></IconButton>
               <Button variant="primary"
                 onClick={handleUpload}
                 disabled={uploading || pendingFiles.length === 0}

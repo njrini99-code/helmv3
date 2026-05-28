@@ -271,7 +271,7 @@ export function PatternValidationModal({
                       </div>
                     </div>
                   </div>
-                  <IconButton variant="primary" aria-label="Button"
+                  <IconButton variant="primary" aria-label="Create focus area"
                     type="button"
                     role="switch"
                     aria-checked={createFocusArea}

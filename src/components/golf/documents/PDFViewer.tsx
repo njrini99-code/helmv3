@@ -83,6 +83,7 @@ export function PDFViewer({
             size="icon-sm"
             onClick={handlePrevPage}
             disabled={currentPage <= 1}
+            aria-label="Previous page"
           >
             <ChevronLeftIcon className="h-4 w-4" />
           </Button>
@@ -94,6 +95,7 @@ export function PDFViewer({
             size="icon-sm"
             onClick={handleNextPage}
             disabled={currentPage >= totalPages}
+            aria-label="Next page"
           >
             <ChevronRightIcon className="h-4 w-4" />
           </Button>
@@ -106,6 +108,7 @@ export function PDFViewer({
             size="icon-sm"
             onClick={handleZoomOut}
             disabled={scale <= 0.5}
+            aria-label="Zoom out"
           >
             <ZoomOutIcon className="h-4 w-4" />
           </Button>
@@ -117,6 +120,7 @@ export function PDFViewer({
             size="icon-sm"
             onClick={handleZoomIn}
             disabled={scale >= 3}
+            aria-label="Zoom in"
           >
             <ZoomInIcon className="h-4 w-4" />
           </Button>

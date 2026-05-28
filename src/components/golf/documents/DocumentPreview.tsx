@@ -364,6 +364,7 @@ export function DocumentPreview({
               size="sm"
               className="px-2"
               onClick={() => onOpenChange(false)}
+              aria-label="Close preview"
             >
               <XIcon className="h-5 w-5" />
             </Button>

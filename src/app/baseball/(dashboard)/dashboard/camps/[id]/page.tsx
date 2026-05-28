@@ -419,6 +419,7 @@ export default function CampDetailPage() {
                           variant="secondary"
                           onClick={() => handleMarkNoShow(reg.id)}
                           className="text-amber-600"
+                          aria-label="Mark no-show"
                         >
                           <IconX size={14} />
                         </Button>

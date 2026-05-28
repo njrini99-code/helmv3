@@ -284,7 +284,7 @@ export function PrivacySettingsForm({
 
                 {/* Toggle Switch */}
                 <div className="relative">
-                <IconButton variant="primary" aria-label="Button"
+                <IconButton variant="primary" aria-label={setting.label}
                   id={setting.key}
                   type="button"
                   role="switch"
