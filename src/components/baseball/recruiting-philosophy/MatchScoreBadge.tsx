@@ -7,6 +7,20 @@ import type { MatchScoreBreakdown } from '@/lib/types';
 import { RECRUITING_METRIC_LABELS } from '@/lib/types';
 import { IconChevronDown, IconTarget, IconAlertCircle } from '@/components/icons';
 import { Button } from '@/components/ui/button';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
+
+// Match-score tier → canonical Badge tone (color-faithful). Tiers stay DISTINCT:
+// excellent=primary, good=emerald, average=amber, below_average=orange, poor=red.
+const TIER_TONE: Record<
+  'excellent' | 'good' | 'average' | 'below_average' | 'poor',
+  BadgeTone
+> = {
+  excellent: 'primary',
+  good: 'emerald',
+  average: 'amber',
+  below_average: 'orange',
+  poor: 'red',
+};
 
 interface MatchScoreBadgeProps {
   score: number;
@@ -34,6 +48,16 @@ export function MatchScoreBadge({
     lg: 'px-4 py-1.5 text-base',
   };
 
+  // excellent uses the stronger primary-100 tint (Badge primary-soft is -50).
+  const tierTintOverride: Record<typeof tier.tier, string> = {
+    excellent: 'bg-primary-100',
+    good: '',
+    average: '',
+    below_average: '',
+    poor: '',
+  };
+
+  // Expandable-button color recipe (keeps the original bg/text/border strings).
   const tierColors = {
     excellent: 'bg-primary-100 text-primary-700 border-primary-200',
     good: 'bg-emerald-50 text-emerald-700 border-emerald-200',
@@ -53,21 +77,23 @@ export function MatchScoreBadge({
   // Compact badge for list view
   if (!showBreakdown) {
     return (
-      <div
+      <Badge
+        tone={TIER_TONE[tier.tier]}
+        size="none"
+        icon={<IconTarget size={size === 'sm' ? 12 : 16} className="flex-shrink-0" />}
         className={cn(
-          'inline-flex items-center gap-1.5 rounded-full font-semibold border',
+          'font-semibold',
           sizeClasses[size],
-          tierColors[tier.tier],
+          tierTintOverride[tier.tier],
           !meetsStandards && 'opacity-60',
           className
         )}
       >
-        <IconTarget size={size === 'sm' ? 12 : 16} className="flex-shrink-0" />
         <span className="tabular-nums">{formatMatchScore(score)}</span>
         {!meetsStandards && (
           <IconAlertCircle size={size === "sm" ? 12 : 16} className="flex-shrink-0" />
         )}
-      </div>
+      </Badge>
     );
   }
 

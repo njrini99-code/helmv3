@@ -18,6 +18,7 @@
 
 import { cn } from '@/lib/utils';
 import type { ComponentType } from 'react';
+import { Badge, type BadgeTone } from '@/components/ui/badge';
 
 export type StatusPillTone =
   | 'primary'
@@ -33,6 +34,21 @@ export type StatusPillTone =
 
 export type StatusPillVariant = 'soft' | 'solid' | 'dot';
 export type StatusPillSize = 'xs' | 'sm' | 'md';
+
+// StatusPill tone → canonical Badge tone. success/danger/info are StatusPill's
+// semantic aliases (success≡primary, danger≡rose, info≡blue) — kept faithful.
+const STATUS_PILL_BADGE_TONE: Record<StatusPillTone, BadgeTone> = {
+  primary: 'primary',
+  amber: 'amber',
+  rose: 'rose',
+  blue: 'blue',
+  violet: 'violet',
+  teal: 'teal',
+  warm: 'warm',
+  success: 'primary',
+  danger: 'rose',
+  info: 'blue',
+};
 
 interface StatusPillProps {
   tone?: StatusPillTone;
@@ -132,11 +148,18 @@ export function StatusPill({
     );
   }
 
+  // soft/solid delegate their pill SHELL to the canonical <Badge> (Wave W2D).
+  // StatusPill's exact tone recipes (soft = ring-100 inset; solid = saturated +
+  // colored shadow glow) are layered on top so the rendered look is identical —
+  // and the colors stay distinct per tone (never flattened).
   return (
-    <span
+    <Badge
+      tone={STATUS_PILL_BADGE_TONE[tone]}
+      appearance={variant === 'solid' ? 'solid' : 'soft'}
+      size="none"
       aria-live={live}
       className={cn(
-        'inline-flex items-center rounded-full font-semibold tracking-wide whitespace-nowrap',
+        'font-semibold tracking-wide whitespace-nowrap border-transparent gap-0',
         SIZE_CLASSES[size],
         variant === 'soft' ? cn('ring-1 ring-inset', TONE_SOFT[tone]) : TONE_SOLID[tone],
         className,
@@ -154,6 +177,6 @@ export function StatusPill({
       )}
       {Icon && <Icon size={ICON_SIZE[size]} />}
       {children}
-    </span>
+    </Badge>
   );
 }

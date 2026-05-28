@@ -41,6 +41,14 @@ export function IntentPill({
   const baseClasses =
     'inline-flex items-center font-medium rounded-full border tabular-nums transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]';
 
+  // The exact hue is owned by the lib's NARRATIVE_GOAL_PRESENTATION map
+  // (`pillClass`), shared with IntentDrawer — the pill's color stays the single
+  // source of truth there. IntentPill does NOT hand-roll its own colors and
+  // intentionally keeps raw template-string composition: its custom
+  // `text-eyebrow` size token collides with `pillClass`'s `text-<hue>` under
+  // tailwind-merge (which would silently drop the size), so routing it through
+  // <Badge>'s cn() would be a behavior regression. See the W2D regression
+  // test's richer-treatment allowlist.
   const stateClasses = cfg
     ? cfg.pillClass
     : 'bg-warm-50 text-warm-500 border-warm-200';

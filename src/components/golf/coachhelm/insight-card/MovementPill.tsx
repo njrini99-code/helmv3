@@ -11,6 +11,7 @@
 import { useMemo } from 'react';
 import { m } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import type { InsightMovement } from '@/lib/coachhelm/v2/insights/types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { isImprovement } from './tone-derivation';
@@ -38,16 +39,18 @@ export function MovementPill({ insight, className }: MovementPillProps) {
   if (!movement || !derived) return null;
 
   return (
-    <m.span
+    <Badge
+      as={m.span}
+      tone={derived.improvement ? 'primary' : 'amber'}
+      size="none"
       data-testid="movement-pill"
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-eyebrow font-medium tabular-nums',
-        derived.improvement
-          ? 'bg-primary-50 text-primary-700 border border-primary-200/60'
-          : 'bg-amber-50 text-amber-700 border border-amber-200/60',
+        'gap-1 px-2 py-0.5 text-eyebrow tabular-nums',
+        // Preserve the original softened /60 border alpha.
+        derived.improvement ? 'border-primary-200/60' : 'border-amber-200/60',
         className,
       )}
     >
@@ -58,6 +61,6 @@ export function MovementPill({ insight, className }: MovementPillProps) {
         <span>{derived.delta.toFixed(1)}pt</span>
       )}
       <span className="text-warm-500">since last check</span>
-    </m.span>
+    </Badge>
   );
 }
