@@ -10,6 +10,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { NotificationPrefsClient } from './NotificationPrefsClient';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import type { Metadata } from 'next';
 import type { PrefsByCategory } from '@/lib/coachhelm/v3/notifications/router';
 
@@ -39,6 +40,15 @@ export default async function NotificationPrefsPage() {
           title="Notifications"
           backHref="/golf/dashboard/settings"
           backLabel="Settings"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Settings', href: '/golf/dashboard/settings' },
+                { label: 'Notifications' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
       <div className="max-w-2xl mx-auto px-4 md:px-6 py-6 md:py-10">

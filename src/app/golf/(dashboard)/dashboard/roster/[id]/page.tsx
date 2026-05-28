@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Shimmer, ShimmerCard } from '@/components/ui/shimmer';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
@@ -175,6 +176,15 @@ export default async function PlayerProfilePage({ params }: PageProps) {
           title={`${player.first_name} ${player.last_name}`}
           backHref="/golf/dashboard/roster"
           backLabel="Roster"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Roster', href: '/golf/dashboard/roster' },
+                { label: `${player.first_name} ${player.last_name}` },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
 

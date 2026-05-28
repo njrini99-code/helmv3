@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { IconChartBar } from '@/components/icons';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { RoundReviewViewer } from '@/components/golf/coachhelm/RoundReviewViewer';
 import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader';
 import { Reveal } from '@/components/ui/reveal';
@@ -192,6 +193,15 @@ export default async function RoundDetailPage({
           subtitle={playerName}
           backHref="/golf/dashboard/rounds"
           backLabel="Rounds"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Rounds', href: '/golf/dashboard/rounds' },
+                { label: roundData.course_name || 'Round' },
+              ]}
+            />
+          }
         >
           <Link href="/golf/dashboard/stats">
             <Button variant="secondary" size="sm">

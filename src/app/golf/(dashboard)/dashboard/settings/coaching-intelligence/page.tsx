@@ -15,6 +15,7 @@ import type { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconCheck } from '@/components/icons';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
 import { Button } from '@/components/ui/button';
 import {
@@ -252,6 +253,15 @@ export default function CoachingIntelligenceSettingsPage() {
                     title="Coaching Philosophy"
                     backHref="/golf/dashboard/settings"
                     backLabel="Settings"
+                    breadcrumb={
+                        <Breadcrumb
+                            items={[
+                                { label: 'Dashboard', href: '/golf/dashboard' },
+                                { label: 'Settings', href: '/golf/dashboard/settings' },
+                                { label: 'Coaching Intelligence' },
+                            ]}
+                        />
+                    }
                 >
                     {saving ? (
                         <span className="text-xs text-warm-400">Saving...</span>

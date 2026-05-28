@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { CoachHelmAnalyticsDashboard } from '@/components/golf/coachhelm/analytics/CoachHelmAnalyticsDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   getCoachHelmOverview,
   getInsightEffectiveness,
@@ -42,6 +43,15 @@ export default async function CoachHelmAnalyticsPage() {
         <LargeTitleHeader
           title="CoachHelm Analytics"
           subtitle="Track insight effectiveness and prediction accuracy"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Analytics', href: '/golf/dashboard/analytics/coachhelm' },
+                { label: 'CoachHelm' },
+              ]}
+            />
+          }
         />
         <div className="flex items-center justify-center p-6">
           <div className="text-center">

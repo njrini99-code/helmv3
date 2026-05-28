@@ -3,6 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { PageHeader } from '@/components/ui/page-header';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Reveal } from '@/components/ui/reveal';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { redirect, notFound } from 'next/navigation';
@@ -176,6 +177,18 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           title={qualifierData.name || 'Qualifier'}
           backHref={isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers'}
           backLabel="Qualifiers"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                {
+                  label: isCoach ? 'Qualifiers' : 'My Qualifiers',
+                  href: isCoach ? '/golf/dashboard/qualifiers' : '/golf/dashboard/my-qualifiers',
+                },
+                { label: qualifierData.name || 'Qualifier' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
 

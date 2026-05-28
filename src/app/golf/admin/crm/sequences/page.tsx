@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { IconArrowLeft } from '@/components/icons';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { SequencesList } from '../components/sequences/SequencesList';
 import { SequenceBuilder } from '../components/sequences/SequenceBuilder';
 
@@ -21,14 +21,12 @@ export default function CrmSequencesPage() {
     <div className="min-h-dvh bg-[#FFFEF8] p-6">
       <div className="mx-auto max-w-[1280px] space-y-6">
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-warm-500">
-          <a
-            href="/golf/admin/crm"
-            className="flex items-center gap-1 text-warm-500 hover:text-warm-800 transition-colors"
-          >
-            <IconArrowLeft size={14} /> Back to CRM
-          </a>
-        </div>
+        <Breadcrumb
+          items={[
+            { label: 'CRM', href: '/golf/admin/crm' },
+            { label: 'Sequences' },
+          ]}
+        />
 
         {/* Header */}
         <header>

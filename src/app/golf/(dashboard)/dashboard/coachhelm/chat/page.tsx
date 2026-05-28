@@ -13,6 +13,7 @@ import { listConversations, listMessages } from '@/lib/coachhelm/v3/chat/persist
 import { ChatHistoryClient } from './ChatHistoryClient';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { Reveal } from '@/components/ui/reveal';
 
@@ -48,6 +49,15 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
           title="Chat history"
           backHref="/golf/dashboard/coachhelm"
           backLabel="CoachHelm"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'CoachHelm', href: '/golf/dashboard/coachhelm' },
+                { label: 'Chat' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
       <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-10">

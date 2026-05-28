@@ -14,6 +14,7 @@ import { loadQualifyingWorkspace } from '@/lib/coachhelm/v3/qualifying/loader';
 import { QualifyingBoard } from '@/components/golf/coachhelm/v3/QualifyingBoard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -50,6 +51,16 @@ export default async function QualifyingWorkspacePage({ params }: PageProps) {
           title="Selection workspace"
           backHref={`/golf/dashboard/qualifiers/${id}`}
           backLabel="Back to qualifier"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Qualifiers', href: '/golf/dashboard/qualifiers' },
+                { label: 'Qualifier', href: `/golf/dashboard/qualifiers/${id}` },
+                { label: 'Selection' },
+              ]}
+            />
+          }
         />
       </AnimatedItem>
       <div className="max-w-[1536px] mx-auto px-4 md:px-6 py-6 md:py-8">

@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/sonner';
 import { RoundReviewDisplay } from '@/components/golf/coachhelm/RoundReviewDisplay';
 import { RoundStatsComparison } from '@/components/golf/coachhelm/RoundStatsComparison';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import {
   getRoundReview,
   generateAndStoreRoundReview,
@@ -455,6 +456,16 @@ export default function RoundReviewPage() {
           subtitle={round?.course_name ?? undefined}
           backHref="/golf/dashboard/rounds"
           backLabel="Rounds"
+          breadcrumb={
+            <Breadcrumb
+              items={[
+                { label: 'Dashboard', href: '/golf/dashboard' },
+                { label: 'Rounds', href: '/golf/dashboard/rounds' },
+                { label: round?.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
+                { label: 'Review' },
+              ]}
+            />
+          }
         >
           {isV2Enabled && (
             <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
@@ -586,6 +597,16 @@ export default function RoundReviewPage() {
         subtitle={round.course_name ?? undefined}
         backHref="/golf/dashboard/rounds"
         backLabel="Rounds"
+        breadcrumb={
+          <Breadcrumb
+            items={[
+              { label: 'Dashboard', href: '/golf/dashboard' },
+              { label: 'Rounds', href: '/golf/dashboard/rounds' },
+              { label: round.course_name ?? 'Round', href: `/golf/dashboard/rounds/${roundId}` },
+              { label: 'Review' },
+            ]}
+          />
+        }
       >
         {isV2Enabled && v2Review && (
           <span className="flex items-center gap-1.5 text-xs px-2 py-1 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 rounded-full font-medium">
