@@ -138,6 +138,9 @@ export default function GolfPlayerOnboarding() {
     setError('');
 
     try {
+      // Carried through from the invite link (signup → onboarding) so the
+      // player auto-joins the inviting team on completion.
+      const joinCode = searchParams.get('joinCode') ?? undefined;
       const result = await completePlayerOnboarding({
         firstName,
         lastName,
@@ -146,7 +149,7 @@ export default function GolfPlayerOnboarding() {
         hometown: hometown || undefined,
         state: state || undefined,
         gpa: gpa ? parseFloat(gpa) : undefined,
-      });
+      }, joinCode);
 
       if (!result.success) {
         setError(result.error || 'Failed to complete setup. Please try again.');

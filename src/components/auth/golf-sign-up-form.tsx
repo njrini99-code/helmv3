@@ -29,7 +29,7 @@ function getSignupErrorMessage(error: string): string {
   return error;
 }
 
-export function GolfSignUpForm() {
+export function GolfSignUpForm({ joinCode }: { joinCode?: string | null }) {
   const router = useRouter();
   const [role, setRole] = useState<Role>('player');
   const [formData, setFormData] = useState({
@@ -96,10 +96,15 @@ export function GolfSignUpForm() {
       await new Promise(resolve => setTimeout(resolve, 150));
 
       // After signup, user always needs onboarding first.
-      // Clear any stale returnTo — players join teams from dashboard after onboarding.
       sessionStorage.removeItem('golf_signup_returnTo');
 
-      const onboardingPath = result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
+      // Coach-invited players carry a team join code from the invite link —
+      // forward it to onboarding so they auto-join the inviting team. Everyone
+      // else follows the normal onboarding path.
+      const onboardingPath =
+        role === 'player' && joinCode
+          ? `/golf/player?joinCode=${encodeURIComponent(joinCode.trim().toUpperCase())}`
+          : result.redirectTo || (role === 'coach' ? '/golf/coach' : '/golf/player');
       router.push(onboardingPath);
     } catch (err) {
       setError(getSignupErrorMessage(err instanceof Error ? err.message : 'Signup failed'));
