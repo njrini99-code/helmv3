@@ -1,5 +1,5 @@
 /**
- * v3 outcome attribution (W35).
+ * v3 outcome attribution (W35 + W35 follow-up).
  *
  * For each insight surfaced ≥21 days ago without an attribution row,
  * compute baseline (14d before surfaced_at) + post (21d after) for the
@@ -10,10 +10,25 @@
  * Pure-ish: takes a Supabase client and one insight id, returns the
  * computed attribution row (or null if not enough data). The caller
  * writes the row + updates aggregates.
+ *
+ * W35 (initial ship): only `score_to_par` averaged from `golf_rounds`.
+ * Everything else returned null → 100% of insights logged as deferred.
+ *
+ * W35 follow-up: dispatch via `metric-sources.ts` so the 5 SG headline
+ * metrics + GIR + penalty rate + sand-save scrambling now produce real
+ * lifts. The 16 metrics that need shot-level data, between-cohort
+ * comparisons, or per-par breakdowns are explicitly marked
+ * `intentional-null` — the cron logs those as `intentional-no-lift`
+ * (a different observability bucket from "deferred = unknown metric").
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import {
+  lookupMetricSource,
+  type MetricSourceDef,
+  type RoundStatsCacheRatioSource,
+} from '@/lib/coachhelm/v3/causality/metric-sources';
 
 type Sb = SupabaseClient<Database>;
 
@@ -38,50 +53,162 @@ export interface AttributionRow {
   lift: number | null;
 }
 
+/**
+ * Discriminated outcome of `averageInWindow`. We separate "metric is
+ * intentionally null" (don't try again, don't log as a coverage gap)
+ * from "no rows in window" (try again tomorrow once another round lands)
+ * and from "unknown metric" (logger gap — the insight surface tagged us
+ * with a metric we've never heard of). The cron uses this to keep its
+ * deferred / intentional-no-lift / no-data counters separated.
+ */
+export type WindowResult =
+  | { ok: true; avg: number; n: number }
+  | { ok: false; reason: 'intentional-null'; reasonCode: string }
+  | { ok: false; reason: 'unknown-metric' }
+  | { ok: false; reason: 'no-data' };
+
 const PRE_WINDOW_DAYS = 14;
 const POST_WINDOW_DAYS = 21;
 
+/** Average a denormalised `golf_rounds` column across completed rounds in a window. */
+async function averageGolfRoundsColumn(
+  sb: Sb,
+  player_id: string,
+  column: string,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  const { data } = await sb
+    .from('golf_rounds')
+    .select(`${column}`)
+    .eq('player_id', player_id)
+    .eq('status', 'completed')
+    .gte('round_date', startIso.slice(0, 10))
+    .lte('round_date', endIso.slice(0, 10));
+  const values = ((data ?? []) as unknown as Array<Record<string, unknown>>)
+    .map((r) => r[column])
+    .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
+  if (values.length === 0) return { ok: false, reason: 'no-data' };
+  const sum = values.reduce((a, b) => a + b, 0);
+  return { ok: true, avg: sum / values.length, n: values.length };
+}
+
 /**
- * For a given metric, returns the player's average over rounds whose
- * date falls inside [start, end]. Source: golf_player_stats_cache
- * doesn't carry per-round time-series, so we approximate by pulling
- * golf_rounds.score_to_par (the most universally-populated metric
- * surface) when target_metric_id is 'score_to_par', else fall back to
- * an insight-evidence-mined value via a separate path.
+ * Average a per-round ratio from `golf_round_stats_cache` over a window.
  *
- * v1 limitation: only score_to_par is wired through. Other metric IDs
- * return null and the row is skipped — the cron logs "deferred" so we
- * can extend coverage as more metric-aware queries land.
+ * Aggregated as `Σ numerator / Σ denominator × scale` — equivalent to a
+ * shot-weighted average rather than a simple per-round mean. This is the
+ * statistically right way to roll up rates: a 1-round window where the
+ * player only had 2 sand attempts shouldn't get the same weight as a
+ * round with 12 attempts.
+ *
+ * Joins to `golf_rounds` on `round_id` so we can filter by `round_date`
+ * and `status` — `golf_round_stats_cache` doesn't carry either column.
  */
-async function averageInWindow(
+async function averageRoundStatsCacheRatio(
+  sb: Sb,
+  player_id: string,
+  source: RoundStatsCacheRatioSource,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  const { data } = await sb
+    .from('golf_round_stats_cache')
+    .select(
+      `round_id, ${source.numerator}, ${source.denominator}, golf_rounds!inner(round_date, status, player_id)`,
+    )
+    .eq('player_id', player_id)
+    .eq('golf_rounds.player_id', player_id)
+    .eq('golf_rounds.status', 'completed')
+    .gte('golf_rounds.round_date', startIso.slice(0, 10))
+    .lte('golf_rounds.round_date', endIso.slice(0, 10));
+  type Row = Record<string, unknown>;
+  let numSum = 0;
+  let denSum = 0;
+  let n = 0;
+  for (const row of (data ?? []) as Row[]) {
+    const num = row[source.numerator];
+    const den = row[source.denominator];
+    if (typeof num !== 'number' || typeof den !== 'number') continue;
+    if (!Number.isFinite(num) || !Number.isFinite(den)) continue;
+    if (den <= 0) continue; // skip rounds with no opportunities — would divide by zero
+    numSum += num;
+    denSum += den;
+    n += 1;
+  }
+  if (n === 0 || denSum <= 0) return { ok: false, reason: 'no-data' };
+  return { ok: true, avg: (numSum / denSum) * source.scale, n };
+}
+
+/**
+ * Pull the player's average for `target_metric_id` over rounds whose
+ * date falls inside [start, end]. Dispatches via the schema-of-truth
+ * dispatch table in `./metric-sources.ts`.
+ *
+ * Returns a discriminated {@link WindowResult} so the cron can tell
+ * unknown-metric (drift bug — insight surface vs registry) from
+ * intentional-null (we don't expect a lift signal here) from no-data
+ * (try again tomorrow).
+ *
+ * Exported for the cron route + unit tests.
+ */
+export async function averageInWindow(
   sb: Sb,
   player_id: string,
   target_metric_id: string,
   startIso: string,
   endIso: string,
-): Promise<{ avg: number; n: number } | null> {
-  if (target_metric_id === 'score_to_par') {
-    const { data } = await sb
-      .from('golf_rounds')
-      .select('score_to_par')
-      .eq('player_id', player_id)
-      .eq('status', 'completed')
-      .gte('round_date', startIso.slice(0, 10))
-      .lte('round_date', endIso.slice(0, 10));
-    const values = (data ?? [])
-      .map((r) => r.score_to_par)
-      .filter((v): v is number => typeof v === 'number');
-    if (values.length === 0) return null;
-    const sum = values.reduce((a, b) => a + b, 0);
-    return { avg: sum / values.length, n: values.length };
-  }
-  return null;
+): Promise<WindowResult> {
+  const source = lookupMetricSource(target_metric_id);
+  if (!source) return { ok: false, reason: 'unknown-metric' };
+  return dispatchWindow(sb, player_id, source, startIso, endIso);
 }
+
+async function dispatchWindow(
+  sb: Sb,
+  player_id: string,
+  source: MetricSourceDef,
+  startIso: string,
+  endIso: string,
+): Promise<WindowResult> {
+  if (source.kind === 'intentional-null') {
+    return { ok: false, reason: 'intentional-null', reasonCode: source.reason };
+  }
+  if (source.kind === 'rounds') {
+    return averageGolfRoundsColumn(sb, player_id, source.column, startIso, endIso);
+  }
+  return averageRoundStatsCacheRatio(sb, player_id, source, startIso, endIso);
+}
+
+/**
+ * Classification of why a `computeAttribution` call returned null.
+ * Lets the cron route increment the right counter without re-running
+ * the lookup.
+ */
+export interface AttributionSkip {
+  ok: false;
+  reason: 'intentional-null' | 'unknown-metric' | 'no-data';
+  /** Only set when `reason === 'intentional-null'`. */
+  reasonCode?: string;
+}
+
+export type AttributionResult =
+  | { ok: true; row: AttributionRow }
+  | AttributionSkip;
 
 export async function computeAttribution(
   sb: Sb,
   input: AttributionInput,
-): Promise<AttributionRow | null> {
+): Promise<AttributionResult> {
+  // Cheap pre-flight: bail out before any DB roundtrips for intentional-null
+  // and unknown-metric metrics. The cron route over-fetches insight
+  // candidates 3× the LIMIT, so saving 4 queries per skipped row matters.
+  const source = lookupMetricSource(input.target_metric_id);
+  if (!source) return { ok: false, reason: 'unknown-metric' };
+  if (source.kind === 'intentional-null') {
+    return { ok: false, reason: 'intentional-null', reasonCode: source.reason };
+  }
+
   const surfacedTs = new Date(input.surfaced_at).getTime();
   const preStart = new Date(surfacedTs - PRE_WINDOW_DAYS * 86400_000).toISOString();
   const preEnd = new Date(surfacedTs - 1).toISOString();
@@ -89,34 +216,41 @@ export async function computeAttribution(
   const postEnd = new Date(surfacedTs + POST_WINDOW_DAYS * 86400_000).toISOString();
 
   const [base, post] = await Promise.all([
-    averageInWindow(sb, input.player_id, input.target_metric_id, preStart, preEnd),
-    averageInWindow(sb, input.player_id, input.target_metric_id, postStart, postEnd),
+    dispatchWindow(sb, input.player_id, source, preStart, preEnd),
+    dispatchWindow(sb, input.player_id, source, postStart, postEnd),
   ]);
-  if (!base || !post) return null;
+  if (!base.ok || !post.ok) {
+    // If either window has no rows we treat the whole attribution as
+    // no-data — the cron will retry the next day.
+    return { ok: false, reason: 'no-data' };
+  }
 
   const delta = post.avg - base.avg;
 
   // Ambient trend: compare a 90-day window centered on surfaced_at
   // (excluding the immediate pre/post) so we can subtract ambient drift.
-  const ambient = await averageInWindow(
+  const ambient = await dispatchWindow(
     sb,
     input.player_id,
-    input.target_metric_id,
+    source,
     new Date(surfacedTs - 90 * 86400_000).toISOString(),
     new Date(surfacedTs + 90 * 86400_000).toISOString(),
   );
-  const lift = ambient ? delta - (ambient.avg - base.avg) : null;
+  const lift = ambient.ok ? delta - (ambient.avg - base.avg) : null;
 
   return {
-    insight_id: input.insight_id,
-    surfaced_at: input.surfaced_at,
-    target_metric_id: input.target_metric_id,
-    baseline_value: base.avg,
-    post_value: post.avg,
-    delta,
-    n_rounds_before: base.n,
-    n_rounds_after: post.n,
-    lift,
+    ok: true,
+    row: {
+      insight_id: input.insight_id,
+      surfaced_at: input.surfaced_at,
+      target_metric_id: input.target_metric_id,
+      baseline_value: base.avg,
+      post_value: post.avg,
+      delta,
+      n_rounds_before: base.n,
+      n_rounds_after: post.n,
+      lift,
+    },
   };
 }
 
