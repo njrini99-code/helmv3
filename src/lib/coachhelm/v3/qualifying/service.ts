@@ -17,6 +17,9 @@ import {
 } from './state-machine';
 import { loadQualifyingWorkspace } from './loader';
 import type { QualifierSelectionState } from './types';
+import { composeTravelBrief } from './travel-brief';
+import { pushTravelBriefToChat } from './chat-push';
+import { logServerError } from '@/lib/server-error-logger';
 
 type Sb = SupabaseClient<Database>;
 
@@ -135,7 +138,7 @@ export async function removeCoachPick(
  * top-N players + flip state to 'selected'. Coach-pick rows are
  * expected to already exist (gated by canConfirmSelection).
  *
- * Travel-brief push to chat is a TODO — wires in with W32 chat backend.
+ * After commit, pushes a travel brief into the primary coach's chat (W32).
  */
 export async function confirmSelection(
   supabase: Sb,
@@ -187,7 +190,25 @@ export async function confirmSelection(
     .eq('id', args.qualifier_id);
   if (stateErr) return { ok: false, error: stateErr.message };
 
-  // TODO(W32): push per-player travel briefs to chat once chat backend ships.
+  // W32: push travel brief to coach chat (best-effort — never blocks selection).
+  try {
+    const brief = composeTravelBrief(workspace);
+    const { data: staff } = await supabase
+      .from('golf_team_coach_staff')
+      .select('coach_id')
+      .eq('team_id', workspace.team_id)
+      .eq('is_primary', true)
+      .limit(1)
+      .maybeSingle();
+    if (staff) {
+      await pushTravelBriefToChat(supabase, staff.coach_id, brief);
+    }
+  } catch (err) {
+    await logServerError(
+      `travel-brief push failed for qualifier ${args.qualifier_id}: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'v3.qualifying.confirmSelection.travelBrief' },
+    );
+  }
 
   return { ok: true, data: undefined };
 }
