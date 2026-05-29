@@ -258,6 +258,19 @@ export async function signupAction(
       };
     }
 
+    // Supabase password-strength / leaked-password rejections are user-input
+    // validation, not server faults — surface them inline without paging Sentry.
+    const passwordRejection =
+      error.message.includes('Password is known to be weak') ||
+      error.message.includes('weak_password') ||
+      error.message.includes('Password should');
+    if (passwordRejection) {
+      return {
+        success: false,
+        error: 'That password has been found in known data breaches. Please choose a different one.',
+      };
+    }
+
     // Log unknown errors and return generic message
     await logServerError(`[Golf Auth Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'auth.signupAction' });
     return {
