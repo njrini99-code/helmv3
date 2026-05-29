@@ -13,6 +13,7 @@
  */
 
 import { ToolLoopAgent, tool } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import {
@@ -63,8 +64,14 @@ export function buildCoachChatAgent(args: {
   coach_id: string;
 }) {
   const { sb, authed_user_id, coach_id } = args;
+  // When the coach's own Anthropic key is present (ANTHROPIC_API_KEY), call Anthropic
+  // directly so it's billed to their account; otherwise fall back to the Vercel AI
+  // Gateway model string (OIDC + Vercel credits). Same Sonnet 4.6 model either way.
+  const model = process.env.ANTHROPIC_API_KEY
+    ? anthropic('claude-sonnet-4-6')
+    : MODEL_FOR_TASK.coach_chat;
   return new ToolLoopAgent({
-    model: MODEL_FOR_TASK.coach_chat,
+    model,
     instructions: COACH_CHAT_INSTRUCTIONS,
     tools: {
       get_player_context: tool({
