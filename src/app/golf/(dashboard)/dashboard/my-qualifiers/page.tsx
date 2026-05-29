@@ -32,8 +32,7 @@ export default async function MyQualifiersPage() {
         course_name,
         start_date,
         end_date,
-        status,
-        num_rounds
+        status
       )
     `)
     .eq('player_id', player.id);
@@ -73,7 +72,6 @@ export default async function MyQualifiersPage() {
       start_date: string;
       end_date: string | null;
       status: string;
-      num_rounds: number | null;
     } | null;
   };
 
@@ -88,7 +86,6 @@ export default async function MyQualifiersPage() {
         start_date: string;
         end_date: string | null;
         status: string;
-        num_rounds: number | null;
       };
 
       const qualifierRounds = (rounds || []).filter((r) => r.qualifier_id === q.id);
@@ -105,7 +102,7 @@ export default async function MyQualifiersPage() {
       const inferredNumRounds = q.status === 'completed'
         ? Math.max(roundsCompleted, 1)
         : Math.max(roundsCompleted + 1, 1);
-      const numRounds = q.num_rounds ?? inferredNumRounds;
+      const numRounds = inferredNumRounds;
 
       return {
         id: q.id,

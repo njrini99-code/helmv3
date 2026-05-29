@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useEffect, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,17 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
   const { showToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
+
+  // Resolve the absolute origin only after mount. Rendering
+  // `window.location.origin` during render produced a hydration mismatch —
+  // the server emitted a relative path ("/golf/join/CODE") while the client's
+  // first paint emitted an absolute URL ("https://…/golf/join/CODE"). Seeding
+  // empty and filling it in an effect keeps the server HTML and the first
+  // client render identical, then upgrades to the full URL post-mount.
+  const [origin, setOrigin] = useState('');
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   // Form state for creating/editing team
   const [teamName, setTeamName] = useState(team?.name || '');
@@ -238,7 +249,7 @@ export function TeamSettingsClient({ team }: TeamSettingsClientProps) {
 
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0 px-4 py-3 bg-warm-50 rounded-lg font-mono text-sm text-warm-700 truncate">
-            {`${typeof window !== 'undefined' ? window.location.origin : ''}/golf/join/${team.join_code}`}
+            {`${origin}/golf/join/${team.join_code}`}
           </div>
           <Button
             variant={copied ? 'secondary' : 'primary'}

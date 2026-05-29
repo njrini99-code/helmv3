@@ -258,6 +258,23 @@ export async function signupAction(
       };
     }
 
+    // Handle weak / leaked password — Supabase GoTrue rejects passwords that
+    // fail its strength policy or appear in the HIBP breach corpus. This is
+    // expected user-facing validation, NOT a system fault, so surface the
+    // reason directly WITHOUT paging Sentry/admin (matching the rate-limit and
+    // duplicate-email branches above). Previously these fell through to the
+    // generic logServerError below and surfaced as escalating Sentry
+    // "[Golf Auth Error]" issues that drowned out real signup failures.
+    if (
+      error.message.toLowerCase().includes('weak') ||
+      error.message.toLowerCase().includes('easy to guess')
+    ) {
+      return {
+        success: false,
+        error: 'Please choose a stronger password — this one is too common or has appeared in a data breach.',
+      };
+    }
+
     // Log unknown errors and return generic message
     await logServerError(`[Golf Auth Error]: ${error instanceof Error ? error.message : String(error)}`, { action: 'auth.signupAction' });
     return {

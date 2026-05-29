@@ -10,6 +10,7 @@ import {
   Drawer,
   DrawerContent,
   DrawerFooter,
+  DrawerTitle,
 } from '@/components/ui/drawer';
 import { useToast } from '@/components/ui/sonner';
 import { acknowledgeAnnouncement } from '@/app/golf/actions/communication';
@@ -121,6 +122,11 @@ export function NewAnnouncementsModal({ announcements, onDismiss }: NewAnnouncem
       }}
     >
       <DrawerContent>
+      {/* Accessible title for the Radix/vaul dialog — visually hidden so the
+          designed header below remains the visual title. Without a
+          Dialog.Title, Radix logs a console error on every open (Sentry
+          JAVASCRIPT-NEXTJS-2F). */}
+      <DrawerTitle className="sr-only">{title}</DrawerTitle>
       <div
         className="px-6 pb-4 overflow-y-auto overscroll-contain"
       >

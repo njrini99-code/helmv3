@@ -70,13 +70,13 @@ describe('ChatMessageList', () => {
     expect(container.textContent).not.toContain('Looked up');
   });
 
-  it('shows the "Thinking…" affordance when pending is true', () => {
+  it('shows the pending "Reading the numbers…" affordance when pending is true', () => {
     render(<ChatMessageList messages={[]} pending />);
-    expect(screen.getByText(/Thinking/)).toBeInTheDocument();
+    expect(screen.getByText(/Reading the numbers/)).toBeInTheDocument();
   });
 
-  it('does not render "Thinking…" when not pending', () => {
+  it('does not render the pending affordance when not pending', () => {
     render(<ChatMessageList messages={[]} pending={false} />);
-    expect(screen.queryByText(/Thinking/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Reading the numbers/)).not.toBeInTheDocument();
   });
 });

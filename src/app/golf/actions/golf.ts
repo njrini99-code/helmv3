@@ -1050,11 +1050,11 @@ export async function submitGolfRoundComprehensive(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: qualifierRaw, error: qualifierError } = await (supabase as any)
         .from('golf_qualifiers')
-        .select('id, status, num_rounds')
+        .select('id, status')
         .eq('id', data.qualifierId)
         .single();
 
-      const qualifier = qualifierRaw as { id: string; status: string; num_rounds: number } | null;
+      const qualifier = qualifierRaw as { id: string; status: string } | null;
 
       if (qualifierError || !qualifier) {
         return { success: false, error: 'Qualifier not found.' };
@@ -1076,10 +1076,11 @@ export async function submitGolfRoundComprehensive(
         return { success: false, error: 'You are not entered in this qualifier.' };
       }
 
-      // Validate round number doesn't exceed qualifier's num_rounds
-      if (data.qualifierRoundNumber && data.qualifierRoundNumber > qualifier.num_rounds) {
-        return { success: false, error: `Round number ${data.qualifierRoundNumber} exceeds the qualifier's ${qualifier.num_rounds} rounds.` };
-      }
+      // NOTE: golf_qualifiers.num_rounds was removed in the 2026-05-27 schema
+      // rebuild, so there is no stored per-qualifier round cap to validate
+      // against here anymore (selecting it 400'd the whole query). The
+      // duplicate-round-number guard below still prevents re-submitting the
+      // same round; round count is inferred downstream from completed rounds.
 
       // Prevent duplicate qualifier round numbers
       if (data.qualifierRoundNumber) {
@@ -4230,7 +4231,6 @@ export async function getPlayerQualifiers(): Promise<ActionResult<PlayerQualifie
           name,
           description,
           course_name,
-          num_rounds,
           start_date,
           end_date,
           status

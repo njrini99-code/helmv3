@@ -5,6 +5,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
+  DrawerTitle,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +82,11 @@ export function PushPermissionSoftAsk() {
       }}
     >
       <DrawerContent>
+      {/* Accessible title for the Radix/vaul dialog — visually hidden so the
+          designed hero heading below remains the visual title. Without a
+          Dialog.Title, Radix logs a console error on every open (Sentry
+          JAVASCRIPT-NEXTJS-2F). */}
+      <DrawerTitle className="sr-only">Stay in the loop</DrawerTitle>
       <div
         className="flex flex-col items-center text-center pt-2 pb-6 px-6 overflow-y-auto overscroll-contain"
         style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
