@@ -47,7 +47,7 @@ const faqs = [
 
 export default function SupportPage() {
   return (
-    <div className="min-h-screen bg-cream-100">
+    <div className="min-h-dvh bg-cream-100">
       {/* Header */}
       <SupportHeader />
 

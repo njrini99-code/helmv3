@@ -73,7 +73,7 @@ export default function HelmSplashAnimation() {
 
   return (
     <div
-      className="min-h-screen bg-[#060B14] flex flex-col items-center justify-center relative overflow-hidden px-4"
+      className="min-h-dvh bg-[#060B14] flex flex-col items-center justify-center relative overflow-hidden px-4"
       role="img"
       aria-label="Helm Sports Labs splash animation"
     >

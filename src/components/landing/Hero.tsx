@@ -124,7 +124,7 @@ export function Hero() {
     <LazyMotion features={domAnimation} strict>
     <section
       ref={containerRef}
-      className="relative min-h-[100svh] min-h-[-webkit-fill-available] md:min-h-screen overflow-hidden bg-stone-950"
+      className="relative min-h-[100svh] min-h-[-webkit-fill-available] md:min-h-dvh overflow-hidden bg-stone-950"
     >
       {/* Background image */}
       <div className="absolute inset-0 z-0">

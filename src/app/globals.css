@@ -2485,7 +2485,7 @@ body {
   /* Reset backgrounds for print */
   body,
   html,
-  .min-h-screen {
+  .min-h-dvh {
     background: white !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
