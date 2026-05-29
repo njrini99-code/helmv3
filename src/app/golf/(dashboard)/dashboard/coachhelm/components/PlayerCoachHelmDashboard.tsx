@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { EmptyState as EmptyStatePrimitive } from '@/components/ui/empty-state';
 import { useToast } from '@/components/ui/sonner';
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
+import { getPlayerWhatIf } from '@/app/golf/actions/coachhelm-data';
 import {
   IconSparkles,
   IconChartRadar,
@@ -566,6 +567,19 @@ export function PlayerCoachHelmDashboard({
                                   <WhatIfPanel
                                     playerId={playerId}
                                     profileData={profileData ?? undefined}
+                                    onSimulate={async (metric, amount) => {
+                                      const baseline =
+                                        (profileData?.currentPrediction as number | undefined) ?? 0;
+                                      const res = await getPlayerWhatIf(playerId, { metric, amount });
+                                      if (!res.success || !res.data) {
+                                        // Degrade gracefully (e.g. <3 rounds) — show no projected change rather than crash.
+                                        return { projectedScore: baseline, rankChange: 0 };
+                                      }
+                                      return {
+                                        projectedScore: baseline + res.data.scenario.projectedScoringChange,
+                                        rankChange: res.data.scenario.projectedRankChange,
+                                      };
+                                    }}
                                   />
                                 </m.div>
                               )}
