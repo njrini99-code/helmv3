@@ -78,3 +78,6 @@ context7.json
 # Local agent/codex tooling (machine-specific, not shared)
 .agents/
 .codex/
+
+# ignore a root node_modules SYMLINK too (the "node_modules/" dir pattern misses symlinks)
+node_modules
