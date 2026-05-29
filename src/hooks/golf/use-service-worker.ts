@@ -140,8 +140,11 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       // Check for sync support
       const syncSupported = 'sync' in registration;
 
-      // Check push notification permission
-      const pushEnabled = Notification.permission === 'granted';
+      // Check push notification permission — Notification API is missing
+      // in some iOS Safari WKWebView contexts, so guard before reading.
+      const pushEnabled =
+        typeof Notification !== 'undefined' &&
+        Notification.permission === 'granted';
 
       setState(prev => ({
         ...prev,
