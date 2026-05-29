@@ -5,6 +5,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import {
   Drawer,
   DrawerContent,
+  DrawerTitle,
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,9 +96,9 @@ export function PushPermissionSoftAsk() {
           <IconBell size={28} className="text-white" />
         </m.div>
 
-        <h2 className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
+        <DrawerTitle className="text-h3 font-medium text-warm-900 tracking-[-0.015em] tracking-tight">
           Stay in the loop
-        </h2>
+        </DrawerTitle>
         <p className="text-sm text-warm-500 mt-1.5 max-w-sm">
           Turn on notifications so you never miss what matters from your team.
         </p>
