@@ -96,7 +96,7 @@ export async function recordSpend(
   // Fetch current to compute new task_class_usage breakdown.
   const { data: cur } = await supabase
     .from('golf_coachhelm_llm_budget')
-    .select('spent_usd, task_class_usage')
+    .select('spent_usd, task_class_usage, budget_usd')
     .eq('coach_id', args.coach_id)
     .eq('date', date)
     .maybeSingle();
@@ -109,7 +109,13 @@ export async function recordSpend(
       coach_id: args.coach_id,
       date,
       spent_usd: Number(cur?.spent_usd ?? 0) + args.cost_usd,
-      budget_usd: cur ? undefined as unknown as number : budget_usd,
+      // budget_usd is NOT NULL with no default. Even on a conflicting upsert,
+      // Postgres validates the candidate INSERT tuple's NOT NULL columns
+      // BEFORE `ON CONFLICT DO UPDATE` fires — so omitting it (undefined)
+      // threw `null value in column "budget_usd" violates not-null
+      // constraint`. Always send a value: preserve the existing row's budget,
+      // or seed the team default for a brand-new (coach, day) row.
+      budget_usd: cur?.budget_usd != null ? Number(cur.budget_usd) : budget_usd,
       task_class_usage: usage,
       updated_at: new Date().toISOString(),
     },

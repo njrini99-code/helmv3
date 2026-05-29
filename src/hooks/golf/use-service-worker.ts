@@ -140,8 +140,12 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       // Check for sync support
       const syncSupported = 'sync' in registration;
 
-      // Check push notification permission
-      const pushEnabled = Notification.permission === 'granted';
+      // Check push notification permission. Guard `Notification` — it is
+      // undefined in browsers/contexts without the Notifications API (e.g.
+      // some iOS Safari versions and in-app WebViews), where a bare reference
+      // throws "ReferenceError: Can't find variable: Notification".
+      const pushEnabled =
+        typeof Notification !== 'undefined' && Notification.permission === 'granted';
 
       setState(prev => ({
         ...prev,
