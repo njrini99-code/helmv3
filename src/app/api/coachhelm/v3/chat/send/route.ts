@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       }));
 
     // --- Run agent ---
-    const agent = buildCoachChatAgent({
+    const agent = await buildCoachChatAgent({
       sb: supabase,
       authed_user_id: user.id,
       coach_id: coach.id,
