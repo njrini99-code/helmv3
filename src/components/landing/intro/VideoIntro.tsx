@@ -48,7 +48,7 @@ export function VideoIntro({
   }, [shouldPlay])
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-black">
+    <div className="relative min-h-dvh overflow-hidden bg-black">
       <video
         ref={videoRef}
         className="absolute transition-opacity duration-700 ease-out"

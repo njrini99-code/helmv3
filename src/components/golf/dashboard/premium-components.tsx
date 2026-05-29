@@ -25,7 +25,6 @@ import { m, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { IconArrowRight, IconTrendingUp, IconTrendingDown } from '@/components/icons';
 import { Avatar } from '@/components/ui/avatar';
-import { IOS_DURATION_NORMAL, IOS_EASE } from '@/lib/ios-animations';
 import { Button } from '@/components/ui/button';
 import {
     DURATION,
@@ -69,8 +68,6 @@ export const itemVariants = {
 };
 
 // Re-export so existing iOS imports keep working
-void IOS_DURATION_NORMAL;
-void IOS_EASE;
 
 // ============================================================================
 // PREMIUM GLASS CARD — removed in Wave W2B.

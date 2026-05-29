@@ -155,7 +155,7 @@ export default function HelpPage() {
   })).filter((category) => category.questions.length > 0);
 
   return (
-    <div className="min-h-screen bg-[#FAF6F1]">
+    <div className="min-h-dvh bg-[#FAF6F1]">
       {/* Header */}
       <header className="bg-white border-b border-warm-200">
         <div className="max-w-4xl mx-auto px-6 py-4">
