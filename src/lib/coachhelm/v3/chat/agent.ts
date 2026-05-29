@@ -54,16 +54,50 @@ busy.
 `.trim();
 
 /**
+ * Resolve the logged-in coach's team(s) so the agent is tailored to them and
+ * never has to ask the coach for a "team ID".
+ */
+async function resolveCoachTeamContext(
+  sb: SupabaseClient<Database>,
+  coach_id: string,
+): Promise<string> {
+  const { data: staff } = await sb
+    .from('golf_team_coach_staff')
+    .select('team_id')
+    .eq('coach_id', coach_id);
+  const teamIds = (staff ?? [])
+    .map((s) => s.team_id)
+    .filter((id): id is string => !!id);
+  if (teamIds.length === 0) return '';
+  const { data: teams } = await sb
+    .from('golf_teams')
+    .select('id, name')
+    .in('id', teamIds);
+  const list = (teams ?? []).filter((t) => !!t.id);
+  if (list.length === 0) return '';
+  if (list.length === 1) {
+    const t = list[0];
+    if (!t) return '';
+    return `\n\n## Your coach context (ALWAYS use this — never ask the coach for a team ID)\nYou are the analytics assistant for the head coach of **${t.name}** (team_id: ${t.id}). Use THIS team_id for every team-scoped tool (get_team_overview, get_team_patterns). When the coach says "the team", "my team", "who needs the most help", "the roster", etc., it means ${t.name} — call the team tools with ${t.id} directly. To resolve a player by name, call get_team_overview with ${t.id} first to get player ids. You already have the ID — never ask for it.`;
+  }
+  const lines = list.map((t) => `- ${t.name} (team_id: ${t.id})`).join('\n');
+  return `\n\n## Your coach context (use these — never ask for a raw team ID)\nYou staff multiple teams:\n${lines}\nUse the relevant team_id with the team tools directly. Only if it is genuinely ambiguous which team the coach means, ask them to pick by NAME from the list above (never ask for a raw ID).`;
+}
+
+/**
  * Build a per-request agent. We don't memoize across requests because
  * the Supabase client closure is request-scoped (RLS depends on the
- * authed user). Cheap to instantiate.
+ * authed user). Async because it injects the coach's team context (one cheap
+ * query) so the agent is tailored to whoever is logged in.
  */
-export function buildCoachChatAgent(args: {
+export async function buildCoachChatAgent(args: {
   sb: SupabaseClient<Database>;
   authed_user_id: string;
   coach_id: string;
 }) {
   const { sb, authed_user_id, coach_id } = args;
+  // Tailor the agent to the logged-in coach's team(s) so it never asks for a team ID.
+  const teamContext = await resolveCoachTeamContext(sb, coach_id);
   // When the coach's own Anthropic key is present (ANTHROPIC_API_KEY), call Anthropic
   // directly so it's billed to their account; otherwise fall back to the Vercel AI
   // Gateway model string (OIDC + Vercel credits). Same Sonnet 4.6 model either way.
@@ -72,7 +106,7 @@ export function buildCoachChatAgent(args: {
     : MODEL_FOR_TASK.coach_chat;
   return new ToolLoopAgent({
     model,
-    instructions: COACH_CHAT_INSTRUCTIONS,
+    instructions: COACH_CHAT_INSTRUCTIONS + teamContext,
     tools: {
       get_player_context: tool({
         description: 'Fetch one player\'s profile and active goal/round counts.',
