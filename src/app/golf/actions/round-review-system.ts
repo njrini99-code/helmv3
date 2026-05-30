@@ -17,6 +17,8 @@ import type { ComposedInsight, InsightEvidenceMetric, IntelligentRoundReview } f
 import type { Json } from '@/lib/types/database';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1623,5 +1625,43 @@ export async function getStatAverages(
       { action: 'round_review_system.getStatAverages', featureArea: 'round_reviews', playerId }
     );
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Season-level standing snapshot for the round-review surface.
+ *
+ * Thin auth-checked wrapper over `loadPlayerStandingMap` (v3 standing loader,
+ * which uses the admin client and so can't be called from a client component).
+ * Returns a plain `Record<metric_id, PlayerStanding>` so it serializes cleanly
+ * across the server→client boundary; the StandingBar band on the round-review
+ * page joins these season rows by canonical metric_id (gir_pct + the SG
+ * metrics this round exercised). It does NOT use round-level values — the
+ * standing `player_value` is the season figure the PGA/team markers are
+ * calibrated against.
+ *
+ * Auth mirrors `getStatAverages` exactly: the caller must be the player (self)
+ * or a coach on a team the player is an active member of
+ * (`verifyReviewAccess(..., 'player_or_coach')`). Returns `{}` on any failure
+ * or cold-start (cron hasn't populated standing yet) so the surface degrades
+ * gracefully to its existing RoundStatsComparison fallback.
+ */
+export async function getPlayerStandingForReview(
+  playerId: string,
+): Promise<Record<string, PlayerStanding>> {
+  if (!isValidUuid(playerId)) return {};
+  const supabase = await createClient();
+  try {
+    const access = await verifyReviewAccess(supabase, playerId, 'player_or_coach');
+    if (!access.authorized) return {};
+
+    const map = await loadPlayerStandingMap(playerId);
+    return Object.fromEntries(map) as Record<string, PlayerStanding>;
+  } catch (error) {
+    await logServerError(
+      `[RoundReview] getPlayerStandingForReview failed: ${error instanceof Error ? error.message : String(error)}`,
+      { action: 'round_review_system.getPlayerStandingForReview', featureArea: 'round_reviews', playerId }
+    );
+    return {};
   }
 }

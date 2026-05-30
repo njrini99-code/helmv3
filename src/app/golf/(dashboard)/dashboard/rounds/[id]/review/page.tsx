@@ -9,6 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import type { ReactElement } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
@@ -23,6 +24,7 @@ import {
   getRoundReview,
   generateAndStoreRoundReview,
   getStatAverages,
+  getPlayerStandingForReview,
   shareRoundReviewWithCoach,
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
@@ -43,6 +45,10 @@ import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLl
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { Button } from '@/components/ui/button';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 // ============================================================================
 // TYPES
@@ -162,6 +168,11 @@ export default function RoundReviewPage() {
     avgGirPct: number;
     avgFairwayPct: number;
   } | null>(null);
+  // Season-level standing (PGA + team + you) keyed by canonical metric_id.
+  // Redesign-only: feeds the StandingBar "where this sits" band below the
+  // round stats. Empty `{}` until the season standing cron has populated rows
+  // for this player — the band renders nothing in that cold-start case.
+  const [standing, setStanding] = useState<Record<string, PlayerStanding>>({});
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -300,6 +311,14 @@ export default function RoundReviewPage() {
         if (!cancelled && avgResult.success) {
           setPlayerAvg(avgResult.playerAvg ?? null);
           setTeamAvg(avgResult.teamAvg ?? null);
+        }
+
+        // Redesign-only: fetch season standing for the PGA/team/you band.
+        // Gated so flag-off does zero extra work; failure-silent (the action
+        // returns `{}` on error/cold-start, so the band simply won't render).
+        if (isRedesignEnabled()) {
+          const standingMap = await getPlayerStandingForReview(round.player_id);
+          if (!cancelled) setStanding(standingMap);
         }
       } catch {
         // Silently ignore fetch errors
@@ -668,6 +687,55 @@ export default function RoundReviewPage() {
           playerAvg={playerAvg}
           teamAvg={teamAvg}
         />
+
+        {/* Where this sits vs PGA + team — REDESIGN ONLY.
+            Season-level standing (NOT round values) for the metrics this round
+            exercised. The standing `player_value` is the season figure the
+            PGA/team markers are calibrated against; mixing a single-round value
+            onto a season scale would lie. Renders only when at least one
+            canonical standing row exists — otherwise the RoundStatsComparison
+            above is the honest fallback (cold-start: <5 rounds / cron unrun).
+            Flag-off: this whole block is byte-for-byte absent. */}
+        {isRedesignEnabled() && (() => {
+          const bandMetrics = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
+          const bars = bandMetrics
+            .map((mid) => {
+              const st = standing[mid];
+              const cfg = getMetricRenderConfig(mid);
+              if (!st || !cfg) return null; // honest-empty: no row → no bar
+              return (
+                <StandingBar
+                  key={mid}
+                  size="card"
+                  metric_id={mid}
+                  metric_label={cfg.display_label}
+                  player_value={st.player_value}
+                  team_avg={st.team_avg}
+                  team_n={st.team_n}
+                  team_pct={st.team_pct}
+                  pga_value={st.pga_value}
+                  direction={cfg.direction}
+                  unit={cfg.unit}
+                  scale={cfg.default_scale}
+                />
+              );
+            })
+            .filter((b): b is ReactElement => b !== null);
+          if (bars.length === 0) return null; // band hidden entirely when no rows
+          return (
+            <section className={fairwayScope('space-y-3')}>
+              <div>
+                <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em]">
+                  Where this sits
+                </h2>
+                <p className="text-xs text-warm-500">
+                  Your season standing vs PGA Tour and your team.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{bars}</div>
+            </section>
+          );
+        })()}
 
         {/* HERO takeaway — one insight that matters for today.
             When V2 is enabled (and `v2Review` resolved) we let V2ReviewSummary
