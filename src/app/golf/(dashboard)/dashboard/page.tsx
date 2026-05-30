@@ -15,6 +15,7 @@ import type { CalendarEvent } from '@/lib/types/calendar';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
 import { FairwayPlayerDashboard } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,16 +90,11 @@ export default async function GolfDashboardPage({
 
     // ── Coach dashboard ──
     if (coach) {
-        // Get team via organization
+        // Get team via organization (deterministic: handles orgs with >1 team)
         let teamId: string | undefined;
         if (coach.organization_id) {
             try {
-                const { data: team } = await supabase
-                    .from('golf_teams')
-                    .select('id')
-                    .eq('organization_id', coach.organization_id!)
-                    .maybeSingle();
-                teamId = team?.id;
+                teamId = (await resolveCoachTeamId(supabase, coach.organization_id, coach.id)) ?? undefined;
             } catch {
                 // Network failure — fall through to empty state
             }

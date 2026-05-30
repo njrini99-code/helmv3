@@ -3,6 +3,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerInsightClient } from './player-insight-client';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -121,16 +122,8 @@ export default async function PlayerInsightPage({
   // -----------------------------------------------------------------------
   // 1. Auth check — verify this coach's org owns the team containing this player
   // -----------------------------------------------------------------------
-  let teamId: string | null = null;
-
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
-  }
+  // Deterministic org→team resolution (handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) redirect('/golf/dashboard/roster');
 

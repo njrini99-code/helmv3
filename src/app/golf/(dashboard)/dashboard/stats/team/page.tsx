@@ -6,6 +6,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -50,17 +51,17 @@ export default async function TeamStatsPage() {
 
   const supabase = await createClient();
 
-  // Get team_id from golf_teams via organization_id
-  let teamId: string | null = null;
+  // Get team_id from golf_teams via organization_id (deterministic: handles
+  // orgs with >1 team), then load the chosen team's display name.
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
   let team: { name: string } | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
+  if (teamId) {
+    const { data: chosenTeam } = await supabase
       .from('golf_teams')
-      .select('id, name')
-      .eq('organization_id', coach.organization_id)
+      .select('name')
+      .eq('id', teamId)
       .maybeSingle();
-    teamId = orgTeam?.id || null;
-    team = orgTeam ? { name: orgTeam.name } : null;
+    team = chosenTeam ? { name: chosenTeam.name } : null;
   }
 
   if (!teamId) {

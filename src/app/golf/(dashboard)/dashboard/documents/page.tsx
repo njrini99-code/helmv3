@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { DocumentsClient } from './documents-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata: Metadata = {
   title: 'Documents | Helm Golf',
@@ -21,15 +22,11 @@ export default async function GolfDocumentsPage() {
   const isCoach = !!coach;
   const supabase = await createClient();
 
-  // Get team_id: for coaches, look up via organization; for players, look up via team_members
+  // Get team_id: for coaches, look up via organization (deterministic: handles
+  // orgs with >1 team); for players, look up via team_members
   let teamId: string | null = null;
   if (coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
+    teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
     const { data: teamMember } = await supabase
       .from('golf_team_members')

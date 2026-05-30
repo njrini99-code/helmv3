@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import { UnfinishedRoundsSection } from './unfinished-rounds-section';
 import { RoundLibraryClient, type RoundLibraryRound } from '@/components/golf/rounds/RoundLibraryClient';
 import { Button } from '@/components/ui/button';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata: Metadata = {
   title: 'Rounds | Helm Golf',
@@ -40,16 +41,12 @@ export default async function RoundsPage() {
   let rounds: RoundWithPlayer[] = [];
   let inProgressRounds: RoundWithPlayer[] = [];
 
-  // Get team_id from organization if coach
+  // Get team_id from organization if coach (deterministic: handles orgs with
+  // >1 team)
   let teamId: string | null = null;
   if (coach?.organization_id) {
     try {
-      const { data: orgTeam } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = orgTeam?.id || null;
+      teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
     } catch {
       // Network failure — proceed with null teamId
     }

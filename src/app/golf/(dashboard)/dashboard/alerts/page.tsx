@@ -21,6 +21,7 @@ import { ContainerReading } from '@/components/ui/containers';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata = {
   title: 'Alerts | CoachHelm',
@@ -46,17 +47,10 @@ export default async function AlertsPage() {
     redirect('/golf/login');
   }
 
-  // Resolve the coach's team for the alerts query.
+  // Resolve the coach's team for the alerts query (deterministic: handles
+  // orgs with >1 team).
   const supabase = await createClient();
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = team?.id ?? null;
-  }
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     return (

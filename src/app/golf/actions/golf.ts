@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
@@ -430,22 +431,15 @@ const announcementSchema = z.object({
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column)
- * Looks up via organization_id -> golf_teams
+ * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column).
+ * Looks up via organization_id -> golf_teams.
+ * Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
  */
 async function getCoachTeamId(
   supabase: SupabaseClient,
   organizationId: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
-
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-
-  return team?.id ?? null;
+  return resolveCoachTeamId(supabase, organizationId);
 }
 
 /**

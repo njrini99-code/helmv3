@@ -42,6 +42,7 @@ import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToF
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { Button } from '@/components/ui/button';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // TYPES
@@ -239,16 +240,13 @@ export default function RoundReviewPage() {
         const isOwnRound = currentPlayerId !== null && roundData.player_id === currentPlayerId;
         let isCoachOnTeam = false;
         if (!isOwnRound && coachOrgId) {
-          const { data: orgTeam } = await supabase
-            .from('golf_teams')
-            .select('id')
-            .eq('organization_id', coachOrgId)
-            .maybeSingle();
-          if (orgTeam?.id) {
+          // Deterministic org→team resolution (handles orgs with >1 team)
+          const orgTeamId = await resolveCoachTeamId(supabase, coachOrgId, coachRecord?.id ?? null);
+          if (orgTeamId) {
             const { data: teamMembership } = await supabase
               .from('golf_team_members')
               .select('id')
-              .eq('team_id', orgTeam.id)
+              .eq('team_id', orgTeamId)
               .eq('player_id', roundData.player_id)
               .maybeSingle();
             isCoachOnTeam = !!teamMembership;

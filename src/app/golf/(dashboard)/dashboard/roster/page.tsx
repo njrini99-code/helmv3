@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { ContainerGrid } from '@/components/ui/containers';
 import { Metadata } from 'next';
 
@@ -149,16 +150,8 @@ export default async function GolfRosterPage() {
     return <PlayerRosterView players={teammates} teamName={playerTeam?.name || 'Team'} />;
   }
 
-  // Get team_id from organization
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
-  }
+  // Get team_id from organization (deterministic: handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     return (

@@ -15,6 +15,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import {
   IconMessage,
   IconMapPin,
@@ -122,16 +123,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Verify player is on coach's team
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
-  }
+  // Verify player is on coach's team (deterministic: handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     notFound();

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -36,14 +37,19 @@ export default async function TeamSettingsPage() {
   const { coach, player } = session;
   const supabase = await createClient();
 
-  // Build coachData (still need team lookup via supabase)
+  // Build coachData (still need team lookup via supabase).
+  // Deterministic org→team resolution (handles orgs with >1 team), then load
+  // the chosen team's display fields by id.
   let coachData: CoachWithTeam | null = null;
   if (coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id, name, season, join_code, created_at')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    const orgTeamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+    const { data: orgTeam } = orgTeamId
+      ? await supabase
+          .from('golf_teams')
+          .select('id, name, season, join_code, created_at')
+          .eq('id', orgTeamId)
+          .maybeSingle()
+      : { data: null };
 
     coachData = {
       id: coach.id,

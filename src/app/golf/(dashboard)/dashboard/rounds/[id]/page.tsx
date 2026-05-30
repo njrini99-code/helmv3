@@ -13,6 +13,7 @@ import { PremiumRoundHeader } from '@/components/golf/rounds/PremiumRoundHeader'
 import { Reveal } from '@/components/ui/reveal';
 import { PageHeader, Eyebrow } from '@/components/ui/page-header';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export async function generateMetadata({
   params,
@@ -113,17 +114,13 @@ export default async function RoundDetailPage({
   // Check if coach has access by verifying round's player is on their team
   let isCoach = false;
   if (coach?.organization_id && roundData.player_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
-    if (orgTeam?.id) {
+    if (teamId) {
       const { data: teamMembership } = await supabase
         .from('golf_team_members')
         .select('id')
-        .eq('team_id', orgTeam.id)
+        .eq('team_id', teamId)
         .eq('player_id', roundData.player_id)
         .maybeSingle();
       isCoach = !!teamMembership;

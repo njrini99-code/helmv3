@@ -9,6 +9,7 @@ import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable'
 import { getInsightFilterOptions } from '@/app/golf/actions/insight-management';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // METADATA
@@ -75,15 +76,7 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
     // org→team lookup ONLY in the redesign branch (legacy path unchanged) so the
     // Scan-Team control prop is satisfiable; not functionally used here.
     const supabase = await createClient();
-    let teamId = '';
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? '';
-    }
+    const teamId = (await resolveCoachTeamId(supabase, coach.organization_id, coach.id)) ?? '';
     // Suppress the shell badge on the insights surface: the on-page "Urgent +
     // high" tile is the single source of truth for the pressing-signal count.
     // A shell badge (urgent+high alerts) contradicts the tile on the SAME

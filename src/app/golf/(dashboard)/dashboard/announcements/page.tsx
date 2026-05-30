@@ -11,6 +11,7 @@ import { CreateAnnouncementFlow } from '@/components/golf/announcements/CreateAn
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -35,15 +36,15 @@ export default async function GolfAnnouncementsPage() {
   // Team lookup in parallel for coach and player paths
   let teamId: string | null = null;
   try {
-    const [coachTeamResult, playerTeamResult] = await Promise.all([
+    const [coachTeamId, playerTeamResult] = await Promise.all([
       orgId
-        ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? resolveCoachTeamId(supabase, orgId, coach?.id ?? null)
+        : Promise.resolve(null),
       playerId
         ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
         : Promise.resolve({ data: null }),
     ]);
-    teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+    teamId = coachTeamId || playerTeamResult.data?.team_id || null;
   } catch {
     // Network failure — proceed with null teamId (empty state below)
   }

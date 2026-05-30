@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata: Metadata = {
   title: 'Development Plans | Helm Golf',
@@ -24,16 +25,8 @@ export default async function DevelopmentPlansPage() {
 
   const supabase = await createClient();
 
-  // Get team_id from organization
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
-  }
+  // Get team_id from organization (deterministic: handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     redirect('/golf/dashboard');

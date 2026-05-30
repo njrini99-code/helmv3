@@ -19,6 +19,7 @@ import {
 } from '@/lib/utils/golf-stats-calculator-shots';
 import { roundTypeFromDb } from '@/lib/golf/round-type-utils';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // TYPES
@@ -67,13 +68,13 @@ export async function getPlayerProfileStats(
     if (!coach.data?.organization_id) {
       return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
     }
-    const team = await supabase
-      .from('golf_teams').select('id').eq('organization_id', coach.data.organization_id).maybeSingle();
-    if (!team.data) {
+    // Deterministic org→team resolution (handles orgs with >1 team)
+    const teamId = await resolveCoachTeamId(supabase, coach.data.organization_id, coach.data.id);
+    if (!teamId) {
       return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
     }
     const membership = await supabase
-      .from('golf_team_members').select('id').eq('team_id', team.data.id).eq('player_id', playerId).eq('status', 'active').maybeSingle();
+      .from('golf_team_members').select('id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').maybeSingle();
     if (!membership.data) {
       return { success: false, error: 'Unauthorized', stats: null, rounds: [] };
     }
@@ -296,13 +297,13 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     if (!coach.data?.organization_id) {
       return { success: false, error: 'Unauthorized' };
     }
-    const team = await supabase
-      .from('golf_teams').select('id').eq('organization_id', coach.data.organization_id).maybeSingle();
-    if (!team.data) {
+    // Deterministic org→team resolution (handles orgs with >1 team)
+    const teamId = await resolveCoachTeamId(supabase, coach.data.organization_id, coach.data.id);
+    if (!teamId) {
       return { success: false, error: 'Unauthorized' };
     }
     const membership = await supabase
-      .from('golf_team_members').select('id').eq('team_id', team.data.id).eq('player_id', playerId).eq('status', 'active').maybeSingle();
+      .from('golf_team_members').select('id').eq('team_id', teamId).eq('player_id', playerId).eq('status', 'active').maybeSingle();
     if (!membership.data) {
       return { success: false, error: 'Unauthorized' };
     }

@@ -23,6 +23,7 @@ import {
     updateTeamCoachHelmSettings,
     type TeamCoachHelmSettings,
 } from '@/app/golf/actions/insights';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // camelCase -> snake_case column mapping that mirrors the one in
 // useCoachPhilosophy, kept here so we can hit the server action directly
@@ -101,14 +102,11 @@ export default function CoachingIntelligenceSettingsPage() {
                 setCoachId(coach.id);
 
                 if (coach.organization_id) {
-                    const { data: team } = await supabase
-                        .from('golf_teams')
-                        .select('id')
-                        .eq('organization_id', coach.organization_id)
-                        .maybeSingle();
-                    if (team?.id) {
-                        setTeamId(team.id);
-                        const result = await getOrCreateTeamCoachHelmSettings(team.id);
+                    // Deterministic org→team resolution (handles orgs with >1 team)
+                    const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+                    if (resolvedTeamId) {
+                        setTeamId(resolvedTeamId);
+                        const result = await getOrCreateTeamCoachHelmSettings(resolvedTeamId);
                         if (result.success && result.settings) {
                             setTeamSettings(result.settings);
                         }

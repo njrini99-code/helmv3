@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { CreateQualifierButton } from '@/components/golf/qualifiers/CreateQualifierButton';
 import type { GolfQualifier } from '@/lib/types/golf';
 import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf } from '@/components/icons';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -31,12 +32,7 @@ export default async function GolfQualifiersPage() {
   let qualifiers: GolfQualifier[] = [];
 
   if (isCoach && coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
+    teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
   } else if (player?.id) {
     const { data: teamMember } = await supabase
       .from('golf_team_members')

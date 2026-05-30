@@ -36,6 +36,7 @@ function formatTimezoneOffset(offsetMinutes: number): string {
 import { fromRRULE, type ExpandedEvent } from '@/lib/calendar/recurrence';
 import { parseISO, format, addDays, addWeeks, addMonths, isBefore } from 'date-fns';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -49,13 +50,8 @@ async function getCoachTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   organizationId: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-  return team?.id ?? null;
+  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
+  return resolveCoachTeamId(supabase, organizationId);
 }
 
 // ============================================================================

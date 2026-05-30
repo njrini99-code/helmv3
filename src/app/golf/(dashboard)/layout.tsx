@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GolfDashboardShell } from './GolfDashboardShell';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 /**
@@ -96,18 +97,22 @@ export default async function GolfDashboardLayout({
       redirect('/golf/coach');
     }
 
-    // Fetch coach's team via organization_id
+    // Fetch coach's team via organization_id (deterministic: handles orgs with
+    // >1 team), then load the chosen team's display name by id.
     let teamId: string | undefined;
     let teamName: string | undefined;
     if (coach.organization_id) {
       const supabase = await createClient();
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id, name')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id;
-      teamName = team?.name;
+      const resolvedTeamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
+      if (resolvedTeamId) {
+        const { data: team } = await supabase
+          .from('golf_teams')
+          .select('id, name')
+          .eq('id', resolvedTeamId)
+          .maybeSingle();
+        teamId = team?.id;
+        teamName = team?.name;
+      }
     }
 
     userData = {

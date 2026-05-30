@@ -5,6 +5,7 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { EditorialCalendarSurface } from '@/components/golf/calendar/editorial/EditorialCalendarSurface';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -32,10 +33,10 @@ export default async function GolfCalendarPage() {
 
   let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
   try {
-    const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
+    const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
-        ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? resolveCoachTeamId(supabase, orgId, coach?.id ?? null)
+        : Promise.resolve(null),
       playerId
         ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -44,7 +45,7 @@ export default async function GolfCalendarPage() {
         : Promise.resolve({ data: null }),
     ]);
 
-    teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+    teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
   } catch {
     // Network failure — proceed with null teamId and empty coachList
