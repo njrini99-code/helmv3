@@ -8,6 +8,9 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
 export const metadata: Metadata = {
   title: 'Development Plans | Helm Golf',
@@ -214,6 +217,24 @@ export default async function DevelopmentPlansPage() {
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
 
+    // ── v3 GOALS (read-only, redesign fork ONLY) ─────────────────────────────
+    // Surface each player's assigned/shared ACTIVE goals on the coach surface:
+    // a count in the roster table + full cards in the scoped per-player view.
+    // RLS scopes coach visibility to assigned + shared goals; we just compose
+    // each goal with its live standing snapshot (null when the cron hasn't
+    // populated a row for the metric yet). Coaches do not create/accept here.
+    const goalsByPlayer: Record<string, FairwayGoalCardData[]> = {};
+    await Promise.all(playerIds.map(async (pid) => {
+      const [g, sm] = await Promise.all([loadActiveGoals(pid), loadPlayerStandingMap(pid)]);
+      goalsByPlayer[pid] = g.map(goal => ({ goal, standing: sm.get(goal.metric_id) ?? null }));
+    }));
+
+    // Owning-player display names for the coach goal-card provenance labels.
+    const playerNameById: Record<string, string> = {};
+    for (const p of players || []) {
+      playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
+    }
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <PlayersGridView
@@ -222,6 +243,8 @@ export default async function DevelopmentPlansPage() {
           coachId={coach.id}
           playerStats={gridStats}
           signalCount={signalCount}
+          goalsByPlayer={goalsByPlayer}
+          playerNameById={playerNameById}
         />
       </div>
     );

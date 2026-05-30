@@ -59,6 +59,10 @@ import {
   FocusAreaCard,
   type FocusAreaCardData,
 } from './FocusAreaCard';
+import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
+import type { FairwayGoalCardData } from './FairwayGoalCard';
+import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 // PRESERVED WRITE ACTIONS — imported UNCHANGED (the same actions
 // LogProgressButton / MarkCompleteButton called). We re-skin the trigger UI
 // only; the server round-trip + payload are byte-for-byte the legacy behavior.
@@ -91,6 +95,19 @@ export interface FairwayMyDevelopmentProps {
   completedAreas: FocusAreaCardData[];
   /** True when the server select failed — render an error, not an empty state. */
   loadError?: boolean;
+  /**
+   * v3 Goals — active goals (each joined with its standing snapshot) the
+   * GoalsSection surfaces ABOVE the focus-areas. Independent population from
+   * focus areas: Goals render even when there are zero focus areas.
+   */
+  goals?: FairwayGoalCardData[];
+  /** v3 pending goal suggestions (enriched with display label + unit). */
+  suggestions?: GoalSuggestionView[];
+  /**
+   * Per-metric standing snapshots keyed by canonical metric_id, used to render
+   * an inline StandingStrip on a focus-area card whose target_metric matches.
+   */
+  standingByMetric?: Record<string, PlayerStanding>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -252,6 +269,9 @@ export function FairwayMyDevelopment({
   activeAreas,
   completedAreas,
   loadError = false,
+  goals = [],
+  suggestions = [],
+  standingByMetric = {},
 }: FairwayMyDevelopmentProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -318,7 +338,10 @@ export function FairwayMyDevelopment({
           }
           actions={headerActions}
         >
-          {/* ── Error state — distinct from empty (mustFix: silent fall-through) ── */}
+          {/* ── Error state — distinct from empty (mustFix: silent fall-through).
+                When the focus-area select failed, show ONLY the error — Goals
+                are a separate population but we don't want to imply the page
+                loaded cleanly. ── */}
           {loadError ? (
             <InlineNotice
               tone="danger"
@@ -332,78 +355,100 @@ export function FairwayMyDevelopment({
               Something went wrong loading your development plans. Try again in a
               moment.
             </InlineNotice>
-          ) : total === 0 ? (
-            /* ── Genuinely-empty state ── */
-            <Surface padding="lg">
-              <EmptyState
-                title="No development plans yet"
-                description="Your coach will assign focus areas to track your improvement. Reach out if you'd like to set some goals together."
-                action={
-                  <Button asChild variant="primary">
-                    <Link href="/golf/dashboard/messages">Message coach</Link>
-                  </Button>
-                }
-              />
-            </Surface>
           ) : (
             <div className="flex flex-col gap-10">
-              {/* ── The plan instrument — ONE warm-glass focal readout of the
-                    player's development progress. The dense FocusAreaCard rows
-                    below stay MATTE + legible; this is the hero summary. ── */}
-              <DevelopmentOverviewInstrument
-                activeCount={activeAreas.length}
-                completedCount={completedAreas.length}
+              {/* ── Goals — the player-owned primitive, surfaced FIRST and
+                    INDEPENDENT of the focus-area count. GoalsSection owns its own
+                    0-goal / 0-suggestion honest-empty states internally. ── */}
+              <GoalsSection
+                role="player"
+                canCreate
+                activeGoals={goals ?? []}
+                suggestions={suggestions ?? []}
               />
 
-              {/* ── Active / in-progress ── */}
-              {activeAreas.length > 0 ? (
-                <section>
-                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <Clock className="h-5 w-5 text-accent-600" aria-hidden />
-                    Active focus areas
-                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                      {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
-                    </span>
-                  </h2>
-                  <div className="flex flex-col gap-4">
-                    {activeAreas.map((fa, i) => (
-                      <FocusAreaCard
-                        key={fa.id}
-                        focusArea={fa}
-                        role="player"
-                        index={i}
-                        onLogProgress={handleLogProgress}
-                        onComplete={handleComplete}
-                        completing={completingId === fa.id}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
+              {total === 0 ? (
+                /* ── Genuinely-empty focus areas (Goals above still render) ── */
+                <Surface padding="lg">
+                  <EmptyState
+                    title="No development plans yet"
+                    description="Your coach will assign focus areas to track your improvement. Reach out if you'd like to set some goals together."
+                    action={
+                      <Button asChild variant="primary">
+                        <Link href="/golf/dashboard/messages">Message coach</Link>
+                      </Button>
+                    }
+                  />
+                </Surface>
+              ) : (
+                <>
+                  {/* ── The plan instrument — ONE warm-glass focal readout of the
+                        player's development progress. The dense FocusAreaCard rows
+                        below stay MATTE + legible; this is the hero summary. ── */}
+                  <DevelopmentOverviewInstrument
+                    activeCount={activeAreas.length}
+                    completedCount={completedAreas.length}
+                  />
 
-              {/* ── Completed ── */}
-              {completedAreas.length > 0 ? (
-                <section>
-                  <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
-                    <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
-                    Completed
-                    <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
-                      {completedAreas.length}{' '}
-                      {completedAreas.length === 1 ? 'area' : 'areas'}
-                    </span>
-                  </h2>
-                  <div className="flex flex-col gap-3">
-                    {completedAreas.map((fa, i) => (
-                      <FocusAreaCard
-                        key={fa.id}
-                        focusArea={fa}
-                        role="player"
-                        index={i}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
+                  {/* ── Active / in-progress ── */}
+                  {activeAreas.length > 0 ? (
+                    <section>
+                      <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+                        <Clock className="h-5 w-5 text-accent-600" aria-hidden />
+                        Active focus areas
+                        <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+                          {activeAreas.length} {activeAreas.length === 1 ? 'area' : 'areas'}
+                        </span>
+                      </h2>
+                      <div className="flex flex-col gap-4">
+                        {activeAreas.map((fa, i) => {
+                          // Forward the per-card standing ONLY when this focus area
+                          // targets a canonical metric with a standing snapshot.
+                          const m = fa.target_metric;
+                          const st =
+                            m && isMetricId(m) ? standingByMetric?.[m] : undefined;
+                          return (
+                            <FocusAreaCard
+                              key={fa.id}
+                              focusArea={fa}
+                              role="player"
+                              index={i}
+                              onLogProgress={handleLogProgress}
+                              onComplete={handleComplete}
+                              completing={completingId === fa.id}
+                              standing={st}
+                            />
+                          );
+                        })}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {/* ── Completed ── */}
+                  {completedAreas.length > 0 ? (
+                    <section>
+                      <h2 className="mb-4 flex items-center gap-2 font-fw-display text-h3 font-medium text-text-primary">
+                        <CheckCircle2 className="h-5 w-5 text-text-tertiary" aria-hidden />
+                        Completed
+                        <span className="ml-auto font-fw-sans text-body-sm font-normal text-text-tertiary">
+                          {completedAreas.length}{' '}
+                          {completedAreas.length === 1 ? 'area' : 'areas'}
+                        </span>
+                      </h2>
+                      <div className="flex flex-col gap-3">
+                        {completedAreas.map((fa, i) => (
+                          <FocusAreaCard
+                            key={fa.id}
+                            focusArea={fa}
+                            role="player"
+                            index={i}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
+                </>
+              )}
             </div>
           )}
         </CoachHelmShell>

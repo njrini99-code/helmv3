@@ -13,6 +13,8 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import type { Metadata } from 'next';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerCoachHelm } from '@/components/fairway';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -191,6 +193,11 @@ export default async function PlayerCoachHelmPage() {
   // chat-gate lift this wave). Flag OFF (default) → PlayerCoachHelmDashboard
   // renders EXACTLY as today. All gate states above are shared by both branches.
   if (isRedesignEnabled()) {
+    // Standing snapshots (you vs team vs PGA) — flag-gated read, lives ONLY in
+    // this fork so the flag-OFF path is byte-identical. Convert the Map to a
+    // plain Record so it serializes across the server→client boundary.
+    const standingMap = await loadPlayerStandingMap(player.id);
+    const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <FairwayPlayerCoachHelm
@@ -202,6 +209,7 @@ export default async function PlayerCoachHelmPage() {
           shotData={shotData}
           topInsight={topInsight}
           secondaryInsights={secondaryInsights}
+          standingByMetric={standingByMetric}
         />
       </div>
     );

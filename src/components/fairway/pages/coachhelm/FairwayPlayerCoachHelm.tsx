@@ -76,6 +76,14 @@ import {
   formatPercent,
 } from '@/components/fairway';
 import { CoachHelmShell } from './CoachHelmShell';
+import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
+import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
+
+// Standing wiring — sourced ONLY from golf_player_standing (the insight evidence
+// has no standing block). The insight→standing link is evidence.metric WHEN it
+// is a canonical MetricId (getMetricRenderConfig non-null).
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 // PRESERVED reused components (V3 panels) — embedded UNCHANGED. They own their
 // own inputs/handlers (what-if simulation, shot analysis, prediction render).
@@ -127,6 +135,14 @@ export interface FairwayPlayerCoachHelmProps {
   topInsight?: EvidenceInsight | null;
   /** The rest of the evidence feed (deduped against the hero below). */
   secondaryInsights?: EvidenceInsight[];
+  /**
+   * Per-metric standing snapshots (you vs team vs PGA), keyed by metric_id.
+   * A plain Record (NOT a Map) so it serializes across the server→client
+   * boundary. Sourced from golf_player_standing — NEVER from insight.evidence.
+   * Default `{}` (honest-empty: no standing → no strip, the hero falls through
+   * to its existing flat-number read).
+   */
+  standingByMetric?: Record<string, PlayerStanding>;
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -189,6 +205,7 @@ export function FairwayPlayerCoachHelm({
   shotData,
   topInsight = null,
   secondaryInsights = [],
+  standingByMetric = {},
 }: FairwayPlayerCoachHelmProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -328,6 +345,7 @@ export function FairwayPlayerCoachHelm({
                     playerId={playerId}
                     hasRounds={hasRounds}
                     heroActions={heroActions}
+                    standingByMetric={standingByMetric}
                   />
                 }
                 secondary={[
@@ -352,27 +370,53 @@ export function FairwayPlayerCoachHelm({
                     {topInsight ? 'More for you' : 'Your insights'}
                   </h3>
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {secondaryDeduped.map((insight) => (
-                      <InsightCard
-                        key={insight.id}
-                        variant="compact"
-                        priority={toInsightPriority(insight.priority)}
-                        overline={insightOverline(insight)}
-                        title={insight.title}
-                        interactive
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => setOpenInsight(insight)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            setOpenInsight(insight);
-                          }
-                        }}
-                      >
-                        {insight.content}
-                      </InsightCard>
-                    ))}
+                    {secondaryDeduped.map((insight) => {
+                      // Standing strip ONLY when the insight's metric is a
+                      // canonical MetricId AND a standing snapshot exists for it
+                      // (sourced from golf_player_standing, never the evidence).
+                      const m = insight.evidence.metric;
+                      const cfg = getMetricRenderConfig(m);
+                      const st = cfg ? standingByMetric?.[m] : undefined;
+                      return (
+                        <InsightCard
+                          key={insight.id}
+                          variant="compact"
+                          priority={toInsightPriority(insight.priority)}
+                          overline={insightOverline(insight)}
+                          title={insight.title}
+                          interactive
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => setOpenInsight(insight)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setOpenInsight(insight);
+                            }
+                          }}
+                        >
+                          {insight.content}
+                          {st && cfg ? (
+                            <div className="mt-3">
+                              <StandingStrip
+                                size="inline"
+                                metric_id={m}
+                                metric_label={cfg.display_label}
+                                player_value={st.player_value}
+                                team_avg={st.team_avg}
+                                team_n={st.team_n}
+                                team_pct={st.team_pct}
+                                pga_value={st.pga_value}
+                                direction={cfg.direction}
+                                unit={cfg.unit}
+                                scale={cfg.default_scale}
+                                show_cohort_text={false}
+                              />
+                            </div>
+                          ) : null}
+                        </InsightCard>
+                      );
+                    })}
                   </div>
                 </section>
               ) : null}
@@ -591,6 +635,10 @@ export function FairwayPlayerCoachHelm({
           }
         >
           {openInsight.content}
+          {/* Practice Rx — the prescribed drills for this insight (pre-joined
+              onto the insight by the route). Honest-empty: renders nothing when
+              no drills are attached. */}
+          <PracticeRxPanel drills={openInsight.drills ?? []} variant="sheet" />
         </InsightPanel>
       ) : null}
     </div>
@@ -612,11 +660,13 @@ function EdgeInstrument({
   playerId,
   hasRounds,
   heroActions,
+  standingByMetric,
 }: {
   insight: EvidenceInsight | null;
   playerId: string;
   hasRounds: boolean;
   heroActions?: React.ReactNode;
+  standingByMetric?: Record<string, PlayerStanding>;
 }) {
   if (!insight) {
     return (
@@ -641,6 +691,16 @@ function EdgeInstrument({
   }
 
   const ev = insight.evidence;
+
+  // Standing strip ("you vs team vs PGA") — sourced ONLY from
+  // golf_player_standing (the evidence has no standing block). It renders only
+  // when the insight's metric is a canonical MetricId AND a standing snapshot
+  // exists for it; otherwise the existing flat-number read below stands as the
+  // honest fallback (the hero already shows the LLM narrative).
+  const mId = insight.evidence.metric;
+  const cfg = getMetricRenderConfig(mId);
+  const st = cfg ? standingByMetric?.[mId] : undefined;
+
   // The key game read — the player's measured number vs the team. Prefer the
   // percentile standing (a real 0..1 reading vs the team) when present, else
   // fall back to the raw measured value. Rendered as a FLAT big number, not a
@@ -690,8 +750,27 @@ function EdgeInstrument({
           />
         </div>
 
-        {/* The key game read — a FLAT big mono number + label (no gauge, no arc). */}
-        {hasEdge ? (
+        {/* The key game read. When a real standing snapshot exists for a
+            canonical metric, the flat-matte StandingStrip (you vs team vs PGA)
+            IS the read. Otherwise we fall through to the existing FLAT big mono
+            number + label (no gauge, no arc) — the honest fallback. */}
+        {st && cfg ? (
+          <div className="w-full md:w-[320px]">
+            <StandingStrip
+              size="card"
+              metric_id={mId}
+              metric_label={cfg.display_label}
+              player_value={st.player_value}
+              team_avg={st.team_avg}
+              team_n={st.team_n}
+              team_pct={st.team_pct}
+              pga_value={st.pga_value}
+              direction={cfg.direction}
+              unit={cfg.unit}
+              scale={cfg.default_scale}
+            />
+          </div>
+        ) : hasEdge ? (
           <div className="flex flex-col gap-2 md:items-end md:text-right">
             <span className="font-fw-mono text-[56px] font-semibold leading-none tabular-nums text-text-primary">
               {edgeDisplay}
@@ -708,6 +787,13 @@ function EdgeInstrument({
           </div>
         ) : null}
       </div>
+
+      {/* Practice Rx — the prescribed drills for this insight (pre-joined onto
+          the insight by the route). Honest-empty: renders nothing when no
+          drills are attached. */}
+      {insight.drills && insight.drills.length > 0 ? (
+        <PracticeRxPanel drills={insight.drills} variant="hero" />
+      ) : null}
 
       {/* The footer — feedback + RESERVED Ask, on a recessed inset band. */}
       {heroActions ? (
