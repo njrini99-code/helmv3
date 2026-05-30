@@ -11,6 +11,7 @@ import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals } from '@/components/fairway';
 import { InlineNotice } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 /**
  * Error state component
@@ -76,15 +77,7 @@ export default async function PatternsPage() {
   // (and the bespoke ErrorState) render EXACTLY as today.
   if (isRedesignEnabled()) {
     const supabase = await createClient();
-    let teamId = '';
-    if (coach.organization_id) {
-      const { data: team } = await supabase
-        .from('golf_teams')
-        .select('id')
-        .eq('organization_id', coach.organization_id)
-        .maybeSingle();
-      teamId = team?.id ?? '';
-    }
+    const teamId = (await resolveCoachTeamId(supabase, coach.organization_id, coach.id)) ?? '';
     const countsRes = await getAlertCounts(coach.id);
     const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
     return (
