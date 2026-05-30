@@ -5,15 +5,66 @@ import {
     getCachedCoachDashboardData,
     getCachedPlayerDashboardData,
     type DashboardDateRange,
+    type CoachDashboardPayload,
+    type PlayerDashboardPayload,
 } from '@/app/golf/actions/dashboard-data';
 import { CoachDashboard, type CoachDashboardData } from './components/CoachDashboard';
 import { PlayerDashboard, type PlayerDashboardData } from './components/PlayerDashboard';
 import type { GolfCoach, GolfTeam, GolfPlayer } from '@/lib/types/golf';
 import type { CalendarEvent } from '@/lib/types/calendar';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCoachDashboard } from '@/components/fairway/pages/dashboard/FairwayCoachDashboard';
+import { FairwayPlayerDashboard } from '@/components/fairway/pages/dashboard/FairwayPlayerDashboard';
 
 export const dynamic = 'force-dynamic';
 
 const VALID_RANGES = new Set(['7d', '30d', '90d', 'season', 'all']);
+
+/**
+ * Thin flag fork (ADDITIVE): when the Fairway redesign is ON, render the
+ * rebuilt coach dashboard inside the `.fairway-ds` scope on `bg-canvas`. When
+ * OFF (default), render the existing CoachDashboard EXACTLY as today — this
+ * helper returns the identical legacy element in that path so the live app is
+ * byte-for-byte unchanged with the flag off.
+ */
+function renderCoachDashboard(props: {
+    data: CoachDashboardData;
+    enhancedData?: CoachDashboardPayload | null;
+    dateRange: DashboardDateRange;
+}) {
+    if (isRedesignEnabled()) {
+        return (
+            <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+                <FairwayCoachDashboard
+                    data={props.data}
+                    enhancedData={props.enhancedData ?? undefined}
+                    dateRange={props.dateRange}
+                />
+            </div>
+        );
+    }
+    return <CoachDashboard data={props.data} enhancedData={props.enhancedData} dateRange={props.dateRange} />;
+}
+
+/**
+ * Thin flag fork (ADDITIVE) for the PLAYER dashboard. Flag ON → the rebuilt
+ * Fairway player dashboard inside the `.fairway-ds` scope on `bg-canvas`. Flag
+ * OFF (default) → the existing PlayerDashboard EXACTLY as today, so the live app
+ * is byte-for-byte unchanged. Both branches receive the SAME data + payload.
+ */
+function renderPlayerDashboard(props: {
+    data: PlayerDashboardData;
+    enhancedData?: PlayerDashboardPayload | null;
+}) {
+    if (isRedesignEnabled()) {
+        return (
+            <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+                <FairwayPlayerDashboard data={props.data} enhancedData={props.enhancedData ?? undefined} />
+            </div>
+        );
+    }
+    return <PlayerDashboard data={props.data} enhancedData={props.enhancedData} />;
+}
 
 export default async function GolfDashboardPage({
     searchParams,
@@ -68,7 +119,7 @@ export default async function GolfDashboardPage({
                     calendarEvents: [],
                     teamScoringTrend: undefined,
                 };
-                return <CoachDashboard data={emptyData} dateRange={dateRange} />;
+                return renderCoachDashboard({ data: emptyData, dateRange });
             }
 
             const data: CoachDashboardData = {
@@ -90,7 +141,7 @@ export default async function GolfDashboardPage({
                 teamScoringTrend: payload.teamScoringTrend.length > 0 ? payload.teamScoringTrend : undefined,
             };
 
-            return <CoachDashboard data={data} enhancedData={payload} dateRange={dateRange} />;
+            return renderCoachDashboard({ data, enhancedData: payload, dateRange });
         }
 
         // Coach without team — empty state
@@ -111,7 +162,7 @@ export default async function GolfDashboardPage({
             teamScoringTrend: undefined,
         };
 
-        return <CoachDashboard data={emptyData} dateRange={dateRange} />;
+        return renderCoachDashboard({ data: emptyData, dateRange });
     }
 
     // ── Player dashboard ──
@@ -141,7 +192,7 @@ export default async function GolfDashboardPage({
                 stats: { roundsPlayed: 0, scoringAverage: null, bestRound: null, handicap: null },
                 recentRounds: [],
             };
-            return <PlayerDashboard data={emptyData} />;
+            return renderPlayerDashboard({ data: emptyData });
         }
         const nameParts = `${player.first_name} ${player.last_name}`.split(' ');
 
@@ -162,7 +213,7 @@ export default async function GolfDashboardPage({
             recentRounds: payload.recentRounds,
         };
 
-        return <PlayerDashboard data={data} enhancedData={payload} />;
+        return renderPlayerDashboard({ data, enhancedData: payload });
     }
 
     // No role found — redirect to onboarding

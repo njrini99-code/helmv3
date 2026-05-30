@@ -90,6 +90,8 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     return {
       title,
       content,
+      // Descriptive sand-save standing row — severity is read off the StandingBar.
+      priority: 'low',
       signature: `scrambling:${agg.lie}`,
       evidence: {
         metric: this.metricId,

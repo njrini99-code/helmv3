@@ -120,6 +120,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     return {
       title,
       content,
+      // Descriptive proximity standing row — severity is read off the StandingBar, not the verdict.
+      priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
       evidence: {
         metric: this.metricId,

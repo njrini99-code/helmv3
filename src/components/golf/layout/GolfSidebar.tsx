@@ -109,9 +109,13 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     const items = userRole === 'coach' ? coachNavItems : playerNavItems;
     return items.map(item => {
       if (item.name === 'Messages' && badges.messages > 0) return { ...item, badge: badges.messages };
+      // CoachHelm AI unread-signal badge — coach-only (getAlertCounts-derived).
+      // 0/undefined leaves the entry badge-less (never a fake "0"); players
+      // always read 0 here so the badge stays off on the player rail.
+      if (item.name === 'CoachHelm AI' && badges.coachhelm > 0) return { ...item, badge: badges.coachhelm };
       return item;
     });
-  }, [userRole, badges.messages]);
+  }, [userRole, badges.messages, badges.coachhelm]);
 
   // Secondary nav has no badge surfaces today — Tasks/Announcements/Travel
   // moved to Cmd+K only in the 2026-05-28 IA trim. Keep the memo shape so

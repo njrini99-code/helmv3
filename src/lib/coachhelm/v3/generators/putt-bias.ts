@@ -131,6 +131,8 @@ export class PuttBiasGenerator extends BaseGenerator<PuttBiasAggregate> {
     return {
       title,
       content,
+      // A directional bias is a mild, actionable pattern; balanced is a strength.
+      priority: agg.weakest_direction === 'straight' ? 'low' : 'medium',
       signature: `putt_bias:${agg.weakest_direction}`,
       evidence: {
         metric: this.metricId,

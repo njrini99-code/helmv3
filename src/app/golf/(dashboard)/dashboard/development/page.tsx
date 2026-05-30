@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { DevelopmentPlansClient } from './development-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'Development Plans | Helm Golf',
@@ -165,6 +168,71 @@ export default async function DevelopmentPlansPage() {
     ...fa,
     player: (players || []).find(p => p.id === fa.player_id) || null,
   }));
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm "Players" grid surface (CoachHelmShell active='players').
+  // PERF FIX (redesign branch ONLY): the per-player stat snapshot is read from
+  // golf_player_stats_cache in a single query instead of re-aggregating every
+  // completed round client-side (the legacy playerStatsMap loop). The shared
+  // loader block above (org→team, members, players, focus-areas) is reused
+  // unchanged. Flag OFF (default) → DevelopmentPlansClient renders as today.
+  if (isRedesignEnabled()) {
+    const { data: statsRows } = playerIds.length > 0
+      ? await supabase
+          .from('golf_player_stats_cache')
+          .select(
+            'player_id, rounds_played, scoring_average, putts_per_round, driving_accuracy_percentage, gir_percentage, best_round, trend_direction',
+          )
+          .in('player_id', playerIds)
+      : { data: [] };
+
+    const trendOf = (raw: string | null | undefined): PlayersGridStats['recent_trend'] => {
+      if (raw === 'improving' || raw === 'declining' || raw === 'stable') return raw;
+      return null;
+    };
+
+    const gridStats: Record<string, PlayersGridStats> = {};
+    for (const row of statsRows || []) {
+      gridStats[row.player_id] = {
+        rounds_played: row.rounds_played ?? 0,
+        avg_score: row.scoring_average ?? null,
+        avg_putts: row.putts_per_round ?? null,
+        fairway_pct: row.driving_accuracy_percentage ?? null,
+        gir_pct: row.gir_percentage ?? null,
+        best_score: row.best_round ?? null,
+        recent_trend: trendOf(row.trend_direction),
+      };
+    }
+    // Players without a cache row still render — honest empty stats, never fake 0s.
+    for (const pid of playerIds) {
+      if (!gridStats[pid]) {
+        gridStats[pid] = {
+          rounds_played: 0,
+          avg_score: null,
+          avg_putts: null,
+          fairway_pct: null,
+          gir_pct: null,
+          best_score: null,
+          recent_trend: null,
+        };
+      }
+    }
+
+    const countsRes = await getAlertCounts(coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <PlayersGridView
+          players={players || []}
+          focusAreas={focusAreasWithPlayers}
+          coachId={coach.id}
+          playerStats={gridStats}
+          signalCount={signalCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

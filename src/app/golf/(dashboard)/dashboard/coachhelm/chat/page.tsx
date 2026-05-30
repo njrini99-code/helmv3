@@ -16,6 +16,9 @@ import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { Reveal } from '@/components/ui/reveal';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { AskWorkspace } from '@/components/fairway';
 
 interface PageProps {
   searchParams: Promise<{ c?: string }>;
@@ -41,6 +44,27 @@ export default async function ChatHistoryPage({ searchParams }: PageProps) {
 
   const initialId = selectedId ?? conversations[0]?.id ?? null;
   const initialMessages = initialId ? await listMessages(sb, initialId) : [];
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm "Ask" two-pane inbox (CoachHelmShell active='ask'). The
+  // SSR conversations + resolved ?c= thread + its messages are passed UNCHANGED;
+  // sending goes through the shared useCoachChatSend → POST /chat/send (same
+  // endpoint, same optimistic stub). Coach gate above stays. Flag OFF (default)
+  // → ChatHistoryClient renders EXACTLY as today.
+  if (isRedesignEnabled()) {
+    const countsRes = await getAlertCounts(session.coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <AskWorkspace
+          conversations={conversations}
+          initialConversationId={initialId}
+          initialMessages={initialMessages}
+          signalCount={signalCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">

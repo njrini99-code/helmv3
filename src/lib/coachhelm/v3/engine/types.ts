@@ -7,7 +7,7 @@
  */
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
-import type { InsightCategory, InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
+import type { InsightCategory, InsightEvidence, InsightPriority } from '@/lib/coachhelm/v2/insights/types';
 
 /**
  * Per-generator aggregate output. Subclasses extend with their own
@@ -47,7 +47,10 @@ export interface ComposedContent {
   evidence: InsightEvidence;
   /** Generator-specific signature stable part. Base class prefixes "v3:". */
   signature: string;
+  /** Optional severity, threaded by BaseGenerator into the upsert. Absent →
+   *  the DB default 'medium' stands. A generator sets it from its verdict. */
+  priority?: InsightPriority;
 }
 
 /** Convenience re-exports for generator authors. */
-export type { MetricId, InsightCategory, InsightEvidence };
+export type { MetricId, InsightCategory, InsightEvidence, InsightPriority };

@@ -119,6 +119,8 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     return {
       title,
       content,
+      // Descriptive make-rate standing row — severity is read off the StandingBar.
+      priority: 'low',
       signature,
       evidence: {
         metric: this.metricId,

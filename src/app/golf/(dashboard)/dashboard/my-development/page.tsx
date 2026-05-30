@@ -23,6 +23,8 @@ import { Reveal } from '@/components/ui/reveal';
 import { LogProgressButton, MarkCompleteButton } from './LogProgressButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayMyDevelopment, type FocusAreaCardData } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'My Development | Helm Golf',
@@ -72,7 +74,7 @@ export default async function MyDevelopmentPage() {
   const supabase = await createClient();
 
   // Fetch focus areas for this player
-  const { data: focusAreas } = await supabase
+  const { data: focusAreas, error: focusAreasError } = await supabase
     .from('golf_player_focus_areas')
     .select(`
       id,
@@ -95,6 +97,25 @@ export default async function MyDevelopmentPage() {
 
   const activeAreas = (focusAreas || []).filter(fa => fa.status === 'active' || fa.status === 'in_progress');
   const completedAreas = (focusAreas || []).filter(fa => fa.status === 'completed');
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm player "My Development" list (player CoachHelmShell
+  // variant). It receives the SAME pre-computed active/completed partition; cards
+  // render REAL source-chip Links + a per-area Sparkline (honest InsufficientData
+  // when thin), with a real error state distinct from empty. The write actions
+  // (updateFocusAreaProgress / completeFocusArea) are reused UNCHANGED. Flag OFF
+  // (default) → the legacy AREA_TYPES/STATUS_CONFIG card markup renders as today.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayMyDevelopment
+          activeAreas={activeAreas as FocusAreaCardData[]}
+          completedAreas={completedAreas as FocusAreaCardData[]}
+          loadError={Boolean(focusAreasError)}
+        />
+      </div>
+    );
+  }
 
   const getProgressPercent = (current: number | null, target: number | null, targetMetric?: string | null) => {
     if (current == null || target == null || target === 0) return 0;

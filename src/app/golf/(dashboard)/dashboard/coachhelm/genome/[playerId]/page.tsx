@@ -27,6 +27,9 @@ import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { GenomeDetailView, type FocusAreaCardData } from '@/components/fairway';
 
 interface PageProps {
   params: Promise<{ playerId: string }>;
@@ -61,6 +64,39 @@ export default async function CoachGenomePage({ params }: PageProps) {
   const genome = await loadGenome(sb, playerId);
   const persona = genome ? derivePersona(genome.vector) : null;
   const name = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm "Players → genome detail" surface (CoachHelmShell
+  // active='players'). The SAME fork serves the concrete Nick Rini sample UUID
+  // (no separate fork) — it renders both the populated genome AND the Compute-now
+  // empty state on this one component. loadGenome + derivePersona + notFound +
+  // coach gate all ran above. Flag OFF (default) → the legacy radar/persona/grid
+  // page renders EXACTLY as today.
+  if (isRedesignEnabled()) {
+    const { data: faRows } = await sb
+      .from('golf_player_focus_areas')
+      .select(
+        'id, area_type, title, description, status, target_metric, current_value, target_value, started_at, completed_at, from_review_id, from_insight_id',
+      )
+      .eq('player_id', playerId)
+      .order('created_at', { ascending: false });
+
+    const countsRes = await getAlertCounts(session.coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <GenomeDetailView
+          playerId={playerId}
+          playerName={name}
+          genome={genome}
+          persona={persona}
+          focusAreas={(faRows ?? []) as FocusAreaCardData[]}
+          signalCount={signalCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">

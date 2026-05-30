@@ -124,6 +124,7 @@ export async function synthesizeForPlayer(playerId: string): Promise<SynthesisRe
         signature: `v3:${sig}`,
         title: composed.title,
         content: composed.content,
+        priority: rule.priority,
         evidence: evidence as typeof composed.evidence,
       });
       if (upsertResult !== GATED_OUT) {

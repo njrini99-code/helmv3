@@ -89,6 +89,8 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     return {
       title,
       content,
+      // Descriptive par-scoring standing row — severity is read off the StandingBar.
+      priority: 'low',
       signature: `par_scoring:par${agg.par}`,
       evidence: {
         metric: this.metricId,

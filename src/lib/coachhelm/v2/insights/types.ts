@@ -6,6 +6,10 @@
  * the shapes in generator files.
  */
 
+import type { InsightPriority } from '@/lib/coachhelm/insight-types';
+// Re-export so v3 callers (engine/types, synthesis) resolve InsightPriority from one place.
+export type { InsightPriority };
+
 export type InsightCategory =
   | 'putting'
   | 'tee'
@@ -146,6 +150,11 @@ export interface InsightInput {
   evidence: InsightEvidence;
   metadata?: Record<string, unknown>;
   drill_tags?: string[];
+  /** Severity hint. Absent → the DB default 'medium' stands. Composites pass
+   *  rule.priority; single-metric generators pass a computed value via
+   *  ComposedContent.priority. The existing-row UPDATE path never writes it
+   *  (coach/triage intent is preserved). */
+  priority?: InsightPriority;
 }
 
 /**

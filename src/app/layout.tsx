@@ -2,8 +2,13 @@ import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import { fraunces } from '@/lib/fonts';
+import { fraunces, frauncesDisplay, fragmentMono, generalSans } from '@/lib/fonts';
 import './globals.css';
+// Fairway design-system tokens (ADDITIVE — imported AFTER globals.css so it
+// only introduces new --fw-* custom properties; it overrides nothing). The
+// existing app's appearance is unchanged; only opted-in Fairway components and
+// the `.fairway-ds` scope consume these tokens.
+import '@/styles/design-tokens.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
 import { Toaster } from '@/components/ui/sonner';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
@@ -95,7 +100,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable} ${frauncesDisplay.variable} ${generalSans.variable} ${fragmentMono.variable}`} suppressHydrationWarning>
       <head>
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>

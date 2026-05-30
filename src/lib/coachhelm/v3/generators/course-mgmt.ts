@@ -100,6 +100,8 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
           `${valueDisp} penalty strokes per round. PGA Tour is ~0.3; top ` +
           `college teams stay under 0.5. The standing card below shows where ` +
           `you stack up — every penalty avoided is worth ~1.5 strokes per round.`,
+        // Severity from the value vs the PGA ~0.3/round baseline: >2× is high, >1× medium, at/under low.
+        priority: agg.metric_value > 0.6 ? 'high' : agg.metric_value > 0.3 ? 'medium' : 'low',
         signature: `course_management:penalty_rate`,
         evidence: {
           metric: this.metricId,
@@ -135,6 +137,8 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
         `ended in double bogey or worse. PGA Tour is ~2%. Per Research doc §4 ` +
         `this is the #1 separator between 70s and 80s rounds. The standing ` +
         `card below shows your position relative to Tour and your team.`,
+      // Severity from the value vs the PGA ~2% baseline: >2× is high, >1× medium, at/under low.
+      priority: agg.metric_value > 4 ? 'high' : agg.metric_value > 2 ? 'medium' : 'low',
       signature: `course_management:big_number`,
       evidence: {
         metric: this.metricId,

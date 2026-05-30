@@ -18,6 +18,9 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { ContainerReading } from '@/components/ui/containers';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCoachHelmSignals } from '@/components/fairway';
 
 export const metadata = {
   title: 'Alerts | CoachHelm',
@@ -63,6 +66,32 @@ export default async function AlertsPage() {
         actionHref="/golf/dashboard/team"
         actionLabel="Go to Team Settings"
       />
+    );
+  }
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the unified Signals triage workspace (alerts preset: interleaves
+  // urgent/high insights + patterns, Scan-Team control on). It renders the
+  // CoachHelmShell itself and client-fetches via the SAME preserved actions the
+  // legacy CoachAlertCenter used. Flag OFF (default) → CoachAlertCenter verbatim.
+  if (isRedesignEnabled()) {
+    const countsRes = await getAlertCounts(coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayCoachHelmSignals
+          coachId={coach.id}
+          teamId={teamId}
+          signalSource="insights"
+          defaultFilter={{
+            severity: ['urgent', 'high'],
+            status: 'active',
+            signalTypes: ['insight', 'pattern'],
+          }}
+          signalCount={signalCount}
+          showScanTeam
+        />
+      </div>
     );
   }
 

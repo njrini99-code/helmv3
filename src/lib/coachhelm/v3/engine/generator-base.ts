@@ -150,6 +150,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         signature: `${V3_SIGNATURE_PREFIX}${composed.signature}`,
         title: composed.title,
         content: composed.content,
+        priority: composed.priority,
         evidence: evidence as typeof composed.evidence,
       });
 
