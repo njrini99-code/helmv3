@@ -6,6 +6,8 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { EditorialCalendarSurface } from '@/components/golf/calendar/editorial/EditorialCalendarSurface';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCalendar } from '@/components/fairway/pages/calendar/FairwayCalendar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -166,6 +168,27 @@ export default async function GolfCalendarPage() {
   // Used by the editorial hero subtitle.
   const serverNow = new Date().toISOString();
   const upcomingCount = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
+
+  // ── Fairway redesign fork (ADDITIVE + GATED) ─────────────────────────────
+  // When NEXT_PUBLIC_REDESIGN is on, render the re-skinned Calendar shell. It
+  // reuses the SAME events/teamMembers/timezone payload and the SAME legacy
+  // engine (PremiumCalendarClient grid + DnD + realtime + EventDetailModal)
+  // UNCHANGED behind the fork. Flag OFF → the legacy branch below runs
+  // byte-for-byte unchanged.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayCalendar
+          events={events}
+          teamMembers={teamMembers}
+          isCoach={isCoach}
+          teamTimezone={teamTimezone}
+          upcomingCount={upcomingCount}
+          serverNow={serverNow}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

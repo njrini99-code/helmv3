@@ -24,8 +24,22 @@ import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview'
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
+import { FairwayMessages } from '@/components/fairway/pages/messages';
 
 export default function GolfMessagesPage() {
+  // ── Fairway redesign fork ───────────────────────────────────────────────────
+  // Build-time-inlined flag, safe at the top of this 'use client' component body
+  // (NextJS inlines NEXT_PUBLIC_REDESIGN, so the branch is statically resolved
+  // and the legacy branch below is dead-code-eliminated when off). Flag-off: the
+  // legacy implementation below renders BYTE-FOR-BYTE unchanged.
+  if (isRedesignEnabled()) {
+    return <FairwayMessages />;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // LEGACY (flag-off) — unchanged.
+  // ──────────────────────────────────────────────────────────────────────────
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
