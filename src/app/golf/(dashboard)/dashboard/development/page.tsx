@@ -9,6 +9,7 @@ import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { PlayersGridView, type PlayersGridStats } from '@/components/fairway';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { loadActiveGoals } from '@/lib/coachhelm/v3/goals/loader';
+import { getTeamCausalRelationships } from '@/app/golf/actions/causal-relationships';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 
@@ -235,6 +236,9 @@ export default async function DevelopmentPlansPage() {
       playerNameById[p.id] = `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() || 'Player';
     }
 
+    // Dedupe-aware causal "why their scores move" rows, keyed by player_id.
+    const causalByPlayer = await getTeamCausalRelationships(teamId);
+
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <PlayersGridView
@@ -245,6 +249,7 @@ export default async function DevelopmentPlansPage() {
           signalCount={signalCount}
           goalsByPlayer={goalsByPlayer}
           playerNameById={playerNameById}
+          causalByPlayer={causalByPlayer}
         />
       </div>
     );

@@ -10,7 +10,9 @@ import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerActionsMenu } from '@/components/golf/roster/PlayerActionsMenu';
 import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequests';
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
+import { RosterIntentControl } from '@/components/golf/roster/RosterIntentControl';
 import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
+import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { IconUsers, IconAlertCircle } from '@/components/icons';
@@ -307,6 +309,13 @@ export default async function GolfRosterPage() {
     (p) => p.status === 'active' || p.status === null,
   ).length;
 
+  // Coach intent (CoachHelm v3): load every intent row this coach has
+  // authored for their roster, keyed by player_id. The table is honestly
+  // EMPTY until a coach sets intent — players with no row get `null` below,
+  // which the IntentPill renders as its neutral "No intent" cold-start chip.
+  // This is the coach view only; the player roster path returned earlier.
+  const coachIntents = await loadCoachIntents(coach.id);
+
   return (
     <RosterPageClient players={playersWithStats}>
     <AnimatedPage className="min-h-full bg-transparent">
@@ -428,8 +437,17 @@ export default async function GolfRosterPage() {
                         </p>
                       )}
 
-                      <div className="mt-2">
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
                         <PlayerStatusBadge playerId={player.id} currentStatus={player.status} />
+                        {/* Coach intent (CoachHelm v3) — click opens the
+                            IntentDrawer to author narrative posture + alert
+                            sensitivity. Coach view only; the player roster
+                            view (PlayerRosterView) never renders this. */}
+                        <RosterIntentControl
+                          playerId={player.id}
+                          playerName={`${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player'}
+                          current={coachIntents.get(player.id) ?? null}
+                        />
                       </div>
                     </div>
 

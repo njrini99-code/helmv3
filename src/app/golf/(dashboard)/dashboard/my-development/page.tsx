@@ -34,6 +34,7 @@ import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config
 import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
 import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { getPlayerCausalRelationships } from '@/app/golf/actions/causal-relationships';
 
 export const metadata: Metadata = {
   title: 'My Development | Helm Golf',
@@ -117,10 +118,11 @@ export default async function MyDevelopmentPage() {
   if (isRedesignEnabled()) {
     // ── v3 data layers (Goals + Standing) — read ONLY inside the flag fork ──
     // The flag-OFF legacy branch below never touches these loaders.
-    const [activeGoals, suggestions, standingMap] = await Promise.all([
+    const [activeGoals, suggestions, standingMap, causalRelationships] = await Promise.all([
       loadActiveGoals(player.id),
       loadPendingGoalSuggestions(player.id, 5),
       loadPlayerStandingMap(player.id),
+      getPlayerCausalRelationships(player.id),
     ]);
     const goalCards: FairwayGoalCardData[] = activeGoals.map((g) => ({
       goal: g,
@@ -148,6 +150,7 @@ export default async function MyDevelopmentPage() {
           goals={goalCards}
           suggestions={suggestionViews}
           standingByMetric={standingByMetric}
+          causalRelationships={causalRelationships}
         />
       </div>
     );

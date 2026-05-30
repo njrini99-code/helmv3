@@ -188,10 +188,13 @@ export default function RoundReviewPage() {
   // longer rendered on this page (IA audit 2026-05-28 trimmed the dual V1/V2
   // surface down to V2 only — the W30 LLM round-review card lives in V2);
   // the hook still returns it for back-compat with `RoundReviewViewer.tsx`.
+  // NOTE: the hook call is retained (it drives V2 hydration side effects), but
+  // its `loading` return is intentionally NOT destructured — the page-level
+  // `isLoading` gate no longer consults it (see the umbrella below). We still
+  // pull `generating` for the Refresh-button spinner state.
   const {
     v2Review,
     isV2Enabled,
-    loading: v1Loading,
     generating: v1Generating,
   } = useRoundReviewV2(roundId);
 
@@ -454,8 +457,19 @@ export default function RoundReviewPage() {
     }
   };
 
-  // Loading state
-  const isLoading = loadingRound || loadingStoredReview || generatingReview || v1Loading || v1Generating;
+  // Loading state — gated on the page's OWN states only. The vestigial
+  // `useRoundReviewV2` hook states (v1Loading / v1Generating) were removed
+  // from this umbrella on 2026-05-30: the page no longer renders the V1
+  // review object (IA audit 2026-05-28 trimmed the surface to V2-only), and
+  // that hook performs a REDUNDANT second auth + status + golf_round_reviews
+  // round-trip whose slowness/transient generating state would hold the whole
+  // page on the skeleton even when `storedReview` is already in hand. The
+  // page now renders its body from loadingRound / loadingStoredReview /
+  // generatingReview (its own generation). `v1Generating` is still consumed
+  // by `isGenerating` below to drive the Refresh-button spinner + the
+  // "Running CoachHelm analysis..." copy when the hook generates in the
+  // background, so it remains referenced; `v1Loading` is intentionally unused.
+  const isLoading = loadingRound || loadingStoredReview || generatingReview;
   const isGenerating = generatingReview || v1Generating;
 
   if (isLoading) {

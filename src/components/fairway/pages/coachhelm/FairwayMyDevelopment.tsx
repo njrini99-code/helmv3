@@ -60,6 +60,8 @@ import {
   type FocusAreaCardData,
 } from './FocusAreaCard';
 import { GoalsSection, type GoalSuggestionView } from './GoalsSection';
+import { CausalWhyPanel } from './CausalWhyPanel';
+import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from './FairwayGoalCard';
 import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
@@ -108,6 +110,13 @@ export interface FairwayMyDevelopmentProps {
    * an inline StandingStrip on a focus-area card whose target_metric matches.
    */
   standingByMetric?: Record<string, PlayerStanding>;
+  /**
+   * Deduped + ranked causal-engine relationships for this player ("why your
+   * scores move"). Read by the route via getPlayerCausalRelationships(player.id)
+   * inside the redesign fork. Empty ⇒ CausalWhyPanel renders its honest empty
+   * state. Defaults to [] so the route may omit it during incremental wiring.
+   */
+  causalRelationships?: CausalRelationshipRow[];
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -272,6 +281,7 @@ export function FairwayMyDevelopment({
   goals = [],
   suggestions = [],
   standingByMetric = {},
+  causalRelationships = [],
 }: FairwayMyDevelopmentProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -366,6 +376,12 @@ export function FairwayMyDevelopment({
                 activeGoals={goals ?? []}
                 suggestions={suggestions ?? []}
               />
+
+              {/* ── Why your scores move — the causal-engine layer, surfaced from
+                    the genuine golf_causal_relationships output. Independent of
+                    focus areas + Goals (renders its own honest-empty state when
+                    there aren't enough rounds to map drivers). ── */}
+              <CausalWhyPanel relationships={causalRelationships} />
 
               {total === 0 ? (
                 /* ── Genuinely-empty focus areas (Goals above still render) ── */

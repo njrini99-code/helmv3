@@ -51,6 +51,8 @@ import { cn } from '@/lib/utils';
 import { CoachHelmShell } from './CoachHelmShell';
 import { FocusAreaCard, type FocusAreaCardData } from './FocusAreaCard';
 import { GoalsSection } from './GoalsSection';
+import { CausalWhyPanel } from './CausalWhyPanel';
+import type { CausalRelationshipRow } from '@/app/golf/actions/causal-relationships';
 import type { FairwayGoalCardData } from './FairwayGoalCard';
 import {
   AREA_TYPES,
@@ -152,6 +154,14 @@ export interface PlayersGridViewProps {
   goalsByPlayer?: Record<string, FairwayGoalCardData[]>;
   /** Owning-player display name keyed by player_id (coach goal-card labels). */
   playerNameById?: Record<string, string>;
+  /**
+   * Deduped + ranked causal-engine relationships keyed by player_id ("why their
+   * scores move"). Read by the route via getTeamCausalRelationships(teamId)
+   * inside the redesign fork. Surfaced in the scoped per-player Focus-areas view;
+   * a player absent from the map (or with []) renders CausalWhyPanel's honest
+   * empty state. Defaults to {} so the route may omit it during incremental wiring.
+   */
+  causalByPlayer?: Record<string, CausalRelationshipRow[]>;
   /** Load error from the route (honest error state, distinct from empty). */
   loadError?: string | null;
   className?: string;
@@ -229,6 +239,7 @@ export function PlayersGridView({
   signalCount,
   goalsByPlayer = {},
   playerNameById = {},
+  causalByPlayer = {},
   loadError,
   className,
 }: PlayersGridViewProps) {
@@ -729,6 +740,17 @@ export function PlayersGridView({
                 activeGoals={goalsByPlayer[selectedPlayerId] ?? []}
                 suggestions={[]}
                 playerNameById={playerNameById}
+              />
+            ) : null}
+
+            {/* ---- WHY THEIR SCORES MOVE — the causal-engine layer, scoped to the
+                   selected player. Genuine golf_causal_relationships output,
+                   deduped + ranked by the read action. Honest-empty (player with
+                   no rows / absent from the map) handled inside CausalWhyPanel. ---- */}
+            {selectedPlayerId ? (
+              <CausalWhyPanel
+                relationships={causalByPlayer?.[selectedPlayerId] ?? []}
+                title="Why their scores move"
               />
             ) : null}
 
