@@ -66,7 +66,27 @@ export interface PatternFilters {
   lifecycleState?: PatternLifecycleState;
   severity?: PatternSeverity;
   isActive?: boolean;
+  /**
+   * Include low-value `contextual` patterns (avg −0.33 strokes — the
+   * 99.79%-of-rows noise tier). DEFAULT false: by default `getTeamPatterns`
+   * EXCLUDES contextual patterns at the query so the ~13k-row contextual flood
+   * never transits the wire nor builds a 13k-row client list. A "Show contextual"
+   * toggle can pass `true` to request them. Honest: nothing is permanently
+   * hidden — it is one opt-in away, and `contextualHidden` reports the count.
+   * Ignored when an explicit `patternType` filter is supplied.
+   */
+  includeContextual?: boolean;
+  /**
+   * Hard cap on returned rows (perf guard). Defaults to `PATTERNS_DEFAULT_LIMIT`.
+   * Applied AFTER contextual suppression + the stroke_impact-desc order, so the
+   * cap keeps the highest-signal rows.
+   */
+  limit?: number;
 }
+
+/** Default row cap for getTeamPatterns — keeps the highest-signal patterns and
+ *  stops the contextual flood from building a multi-thousand-row client list. */
+export const PATTERNS_DEFAULT_LIMIT = 200;
 
 /**
  * Pattern with extended metadata for UI.
@@ -203,6 +223,19 @@ export async function getTeamPatterns(
   success: boolean;
   patterns?: ExtendedPattern[];
   error?: string;
+  /**
+   * Honest read-time counts so the UI can show a "Showing N high-signal
+   * patterns; X contextual hidden" banner without a second round trip.
+   *  • returned          — rows actually shipped (after suppression + cap)
+   *  • contextualHidden  — contextual rows excluded by the default suppression
+   *                        (0 when includeContextual is true)
+   *  • capped            — true when the limit clipped additional eligible rows
+   */
+  counts?: {
+    returned: number;
+    contextualHidden: number;
+    capped: boolean;
+  };
 }> {
   const supabase = await createClient();
 
@@ -247,7 +280,11 @@ export async function getTeamPatterns(
 
     const playerIds = (teamMembers || []).map(m => m.player_id);
     if (playerIds.length === 0) {
-      return { success: true, patterns: [] };
+      return {
+        success: true,
+        patterns: [],
+        counts: { returned: 0, contextualHidden: 0, capped: false },
+      };
     }
 
     // Get players for names/avatars
@@ -258,6 +295,26 @@ export async function getTeamPatterns(
 
     const playerMap = new Map(
       (players || []).map(p => [p.id, p])
+    );
+
+    // ── Read-time suppression + bound (the pattern-noise fix) ───────────────
+    // golf_patterns_v2 holds ~13.4k rows for the demo team, 99.79% of which are
+    // low-value `contextual` patterns (avg −0.33 strokes) that bury the ~27
+    // real-signal conditional/compound patterns. By DEFAULT we exclude
+    // contextual at the query and cap the result, so the flood never transits
+    // the wire nor builds a multi-thousand-row client list. A "Show contextual"
+    // toggle opts back in via `filters.includeContextual`. This is read-only —
+    // NO DB writes, no severity mutation; ranking is derived downstream from
+    // genuine stroke_impact + pattern_type.
+    //
+    // Suppression is skipped when the caller asked for a specific patternType
+    // (e.g. patternType:'contextual' explicitly wants them) or set
+    // includeContextual:true.
+    const suppressContextual =
+      !filters?.includeContextual && !filters?.patternType;
+    const limit = Math.max(
+      1,
+      filters?.limit ?? PATTERNS_DEFAULT_LIMIT,
     );
 
     // Build patterns query
@@ -282,8 +339,33 @@ export async function getTeamPatterns(
     if (filters?.isActive !== undefined) {
       query = query.eq('is_active', filters.isActive);
     }
+    if (suppressContextual) {
+      query = query.neq('pattern_type', 'contextual');
+    }
 
-    query = query.order('stroke_impact', { ascending: false });
+    // Highest stroke_impact first, then cap. The cap is applied AFTER the order
+    // so the rows we keep are the most-impactful eligible patterns.
+    query = query
+      .order('stroke_impact', { ascending: false })
+      .limit(limit);
+
+    // Honest count of the contextual rows the default suppression is hiding —
+    // a head-only count query (no rows fetched). Only meaningful while we are
+    // actually suppressing; otherwise 0.
+    let contextualHidden = 0;
+    if (suppressContextual) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let countQuery = (supabase.from('golf_patterns_v2' as any) as any)
+        .select('id', { count: 'exact', head: true })
+        .in('player_id', playerIds)
+        .eq('pattern_type', 'contextual');
+      if (filters?.playerId) countQuery = countQuery.eq('player_id', filters.playerId);
+      if (filters?.lifecycleState) countQuery = countQuery.eq('lifecycle_state', filters.lifecycleState);
+      if (filters?.severity) countQuery = countQuery.eq('severity', filters.severity);
+      if (filters?.isActive !== undefined) countQuery = countQuery.eq('is_active', filters.isActive);
+      const { count } = await countQuery;
+      contextualHidden = count ?? 0;
+    }
 
     const { data: patterns, error } = await query;
 
@@ -293,14 +375,28 @@ export async function getTeamPatterns(
         featureArea: 'pattern_management',
         extra: { errorCode: error.code },
       });
-      return { success: true, patterns: [] };
+      return {
+        success: true,
+        patterns: [],
+        counts: { returned: 0, contextualHidden: 0, capped: false },
+      };
     }
 
     const transformedPatterns = (patterns || []).map((row: PatternDbRow) =>
       transformPatternRow(row, playerMap.get(row.player_id))
     );
 
-    return { success: true, patterns: transformedPatterns };
+    return {
+      success: true,
+      patterns: transformedPatterns,
+      counts: {
+        returned: transformedPatterns.length,
+        contextualHidden,
+        // We over-fetched the cap by exactly the cap; if we hit it, more
+        // non-contextual rows were eligible than shipped.
+        capped: transformedPatterns.length >= limit,
+      },
+    };
   } catch (error) {
     await logServerError(`getTeamPatterns failed: ${error instanceof Error ? error.message : String(error)}`, {
       action: 'getTeamPatterns',

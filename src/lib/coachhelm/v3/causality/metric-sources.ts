@@ -76,8 +76,8 @@ export const ALL_SCORING_COLUMNS: ScoringDistributionColumn[] = [
 /** Two-column ratios we sum-of-numerator over sum-of-denominator across the window. */
 export interface RoundStatsCacheRatioSource {
   kind: 'round_stats_cache_ratio';
-  numerator: 'greens_hit' | 'sand_saves' | 'scrambles_converted';
-  denominator: 'greens_total' | 'sand_attempts' | 'scramble_attempts';
+  numerator: 'greens_hit' | 'sand_saves' | 'scrambles_converted' | 'fairways_hit';
+  denominator: 'greens_total' | 'sand_attempts' | 'scramble_attempts' | 'fairways_total';
   /** Multiplier applied after the ratio (e.g. ×100 for percentages). */
   scale: number;
 }
@@ -232,6 +232,49 @@ export const METRIC_SOURCE: Record<MetricId, MetricSourceDef> = {
  */
 export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   score_to_par: { kind: 'rounds', column: 'score_to_par' },
+
+  // ── Insight-surface metric-id drift reconciliation ──────────────────────
+  // The v3 insight surface tags some `evidence.metric` ids with a non-canonical
+  // spelling. Each alias below points at the source def for the SAME underlying
+  // per-round metric the canonical id resolves to — so attribution computes lift
+  // on the right data, never a near-miss substitute.
+
+  // Drift: `putt_make_pct_5_10` is the insight-surface spelling of the canonical
+  // 5–10 ft putt-make metric `putts_made_5_10ft_pct`. We reuse that canonical
+  // def verbatim — which is `intentional-null` because per-distance putt make-rate
+  // has no per-round time-series (the cache aggregates putts by count, not by
+  // distance bucket; the bucketed rate lives only in the player-aggregate
+  // golf_player_stats_cache). Aliasing it reclassifies the insight from
+  // "unknown-metric drift" to the honest "intentional-no-lift" bucket — it does
+  // NOT manufacture a lift.
+  putt_make_pct_5_10: METRIC_SOURCE.putts_made_5_10ft_pct,
+
+  // Drift: `fairways_hit_pct` is fairways-in-regulation / driving accuracy. This
+  // IS genuinely per-round measurable: golf_round_stats_cache carries per-round
+  // `fairways_hit` / `fairways_total` (total = holes where fairway_hit is tracked,
+  // i.e. fairway-eligible holes), exactly mirroring how `gir_pct` rebuilds GIR
+  // from greens_hit/greens_total. Aggregated as Σnum/Σden × 100 (shot-weighted),
+  // same as the other ratio sources.
+  fairways_hit_pct: {
+    kind: 'round_stats_cache_ratio',
+    numerator: 'fairways_hit',
+    denominator: 'fairways_total',
+    scale: 100,
+  },
+
+  // DEFERRED (no honest per-round source — intentionally NOT aliased):
+  //  - `shortside_scrambling_pct`: "short-side" is a positional concept, not a
+  //    lie. The cache only stores aggregate sand (sand_saves/sand_attempts) and
+  //    generic scramble counts; there is no short-side split. Aliasing to
+  //    scrambling_pct_sand or the generic scramble ratio would attribute lift on
+  //    the WRONG population (sand-only / all-scrambling, not short-side).
+  //  - `approach_proximity_ft_150_180`: no per-round proximity time-series exists
+  //    (all canonical approach_proximity_* metrics are intentional-null,
+  //    needs-shot-level-join). The 150–180 yd band also straddles the canonical
+  //    125_175 / 175_plus bucket boundary, so no single bucket is even a candidate.
+  //  - `closing_holes_score_to_par`: a hole-position-filtered aggregate. The only
+  //    hole-level source (`hole_level_avg`) filters golf_holes by par value, not by
+  //    hole number/position — there is no closing-holes source kind.
 };
 
 /**

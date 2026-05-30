@@ -240,6 +240,18 @@ export function FairwayCoachHelmSignals({
   const [insights, setInsights] = useState<EvidenceInsight[]>(initialInsights);
   const [patterns, setPatterns] = useState<ExtendedPattern[]>(initialPatterns);
 
+  /* -- patterns-only: contextual suppression state (the noise fix) ---------
+     By default getTeamPatterns hides the ~13k low-value `contextual` rows; the
+     coach can opt them back in. We keep the count it reports so the banner can
+     honestly say "X contextual hidden". `showContextual` re-reads with the
+     opt-in flag. Both are inert on the insights/alerts surfaces. */
+  const [showContextual, setShowContextual] = useState(false);
+  const [patternCounts, setPatternCounts] = useState<{
+    returned: number;
+    contextualHidden: number;
+    capped: boolean;
+  } | null>(null);
+
   const [loading, setLoading] = useState(
     isPatterns ? initialPatterns.length === 0 : initialInsights.length === 0,
   );
@@ -364,31 +376,52 @@ export function FairwayCoachHelmSignals({
   );
 
   const loadPatterns = useCallback(
-    async (showLoading = true) => {
+    async (showLoading = true, includeContextualOverride?: boolean) => {
       if (showLoading) setLoading(true);
       setError(null);
       try {
-        const res = await getTeamPatterns();
-        if (res.success) setPatterns(res.patterns ?? []);
-        else setError(res.error ?? 'Could not load patterns.');
+        // Patterns-only: respect the contextual toggle. Default hides the
+        // ~13k-row contextual noise; the override lets the toggle re-read.
+        const res = await getTeamPatterns({
+          includeContextual: includeContextualOverride ?? showContextual,
+        });
+        if (res.success) {
+          setPatterns(res.patterns ?? []);
+          setPatternCounts(res.counts ?? null);
+        } else setError(res.error ?? 'Could not load patterns.');
       } catch {
         setError('Could not load patterns. Try refreshing.');
       } finally {
         setLoading(false);
       }
     },
-    [],
+    [showContextual],
   );
 
   // Initial client fetch only when the route did NOT pre-seed data.
+  // Patterns: when the route DID pre-seed (the common SSR path), the seeded
+  // rows already reflect the default contextual suppression, but the counts
+  // (returned / contextualHidden) are not passed through props — so we do a
+  // quiet background refresh (no skeleton) ONLY to populate `patternCounts` for
+  // the honest "X contextual hidden" banner. Insights/alerts are untouched.
   useEffect(() => {
     if (isPatterns) {
       if (initialPatterns.length === 0) void loadPatterns();
+      else void loadPatterns(false);
     } else if (initialInsights.length === 0) {
       void loadInsights();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /* -- patterns-only: flip the contextual toggle and re-read with the opt-in
+        flag. Pass the next value explicitly so we don't race the state set. -- */
+  const toggleContextual = useCallback(() => {
+    const next = !showContextual;
+    setShowContextual(next);
+    setSelectedIds(new Set());
+    void loadPatterns(true, next);
+  }, [showContextual, loadPatterns]);
 
   /* ── project both sources into the ONE row vocabulary ──────────────────── */
   const allRows: SignalRow[] = useMemo(() => {
@@ -405,11 +438,32 @@ export function FairwayCoachHelmSignals({
   const sortByUrgency = useCallback(
     (list: SignalRow[]) =>
       [...list].sort((a, b) => {
+        // ── PATTERNS-ONLY ordering (GUARDED by signalSource === 'patterns' via
+        //    isPatterns) ──────────────────────────────────────────────────────
+        // For /dashboard/patterns the all-'medium' severity column made the
+        // existing priority-then-recency sort float the NOISIEST player up, not
+        // the most-impactful pattern. Order instead by:
+        //   1. pattern_type rank desc (compound > conditional > temporal > contextual)
+        //   2. priority desc (derived in the adapter from type + |impact|)
+        //   3. |stroke_impact| desc
+        //   4. recency desc
+        // This branch NEVER runs for insights/alerts (isPatterns === false),
+        // so their existing sort below is byte-for-byte unchanged.
+        if (isPatterns) {
+          const tr = (b.patternTypeRank ?? 0) - (a.patternTypeRank ?? 0);
+          if (tr !== 0) return tr;
+          const pw = (weight[b.priority] ?? 0) - (weight[a.priority] ?? 0);
+          if (pw !== 0) return pw;
+          const im = Math.abs(b.strokeImpact ?? 0) - Math.abs(a.strokeImpact ?? 0);
+          if (im !== 0) return im;
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        }
+        // ── EXISTING insights/alerts ordering (UNCHANGED) ────────────────────
         const pw = (weight[b.priority] ?? 0) - (weight[a.priority] ?? 0);
         if (pw !== 0) return pw;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }),
-    [weight],
+    [weight, isPatterns],
   );
 
   /* The explicit-filter result — what the coach's own filters/search select. */
@@ -733,12 +787,32 @@ export function FairwayCoachHelmSignals({
     // Order groups by their most-urgent member, then by size — the athlete /
     // category that needs attention first sits at the top of the workspace.
     return Array.from(map.entries()).sort((a, b) => {
+      // ── PATTERNS-ONLY group ordering (GUARDED by isPatterns) ─────────────
+      // With the all-'medium' severity column, "max priority weight" was the
+      // SAME for every group, so groups fell back to size — i.e. the player
+      // with the MOST (contextual-noise) patterns floated to the top instead
+      // of the player with the most-impactful real signal. Rank groups by
+      // their best pattern-type member first, then max priority, then max
+      // |stroke_impact|, then size. Never runs for insights/alerts.
+      if (isPatterns) {
+        const atr = Math.max(...a[1].map((r) => r.patternTypeRank ?? 0));
+        const btr = Math.max(...b[1].map((r) => r.patternTypeRank ?? 0));
+        if (btr !== atr) return btr - atr;
+        const apw = Math.max(...a[1].map((r) => weight[r.priority] ?? 0));
+        const bpw = Math.max(...b[1].map((r) => weight[r.priority] ?? 0));
+        if (bpw !== apw) return bpw - apw;
+        const aim = Math.max(...a[1].map((r) => Math.abs(r.strokeImpact ?? 0)));
+        const bim = Math.max(...b[1].map((r) => Math.abs(r.strokeImpact ?? 0)));
+        if (bim !== aim) return bim - aim;
+        return b[1].length - a[1].length;
+      }
+      // ── EXISTING insights/alerts group ordering (UNCHANGED) ──────────────
       const aw = Math.max(...a[1].map((r) => weight[r.priority] ?? 0));
       const bw = Math.max(...b[1].map((r) => weight[r.priority] ?? 0));
       if (bw !== aw) return bw - aw;
       return b[1].length - a[1].length;
     });
-  }, [rows, groupBy, grouped, weight]);
+  }, [rows, groupBy, grouped, weight, isPatterns]);
 
   /* ── the shared row → action set (ONE vocabulary; per-source actions) ──── */
   const rowActions = useCallback(
@@ -1059,6 +1133,55 @@ export function FairwayCoachHelmSignals({
           <InlineNotice tone="success" dismissible onDismiss={() => setNotice(null)}>
             {notice}
           </InlineNotice>
+        ) : null}
+
+        {/* patterns-only: honest contextual-suppression banner (GUARDED by
+            isPatterns). States how many high-signal patterns are shown and how
+            many low-value contextual patterns are hidden, with a one-tap toggle
+            to opt them in/out. Nothing is permanently hidden — it is one click
+            away, and the count is exact. Never renders on insights/alerts. */}
+        {isPatterns &&
+        patternCounts &&
+        (patternCounts.contextualHidden > 0 || showContextual) ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-card border border-border-subtle bg-surface-raised/60 px-4 py-3"
+          >
+            <span className="flex items-center gap-2">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-accent-600" aria-hidden />
+              <span className="font-fw-sans text-body-sm text-text-secondary">
+                {showContextual ? (
+                  <>
+                    Showing all{' '}
+                    <span className="font-fw-mono tabular-nums text-text-primary">
+                      {patternCounts.returned}
+                    </span>{' '}
+                    patterns, including low-value contextual ones
+                  </>
+                ) : (
+                  <>
+                    Showing{' '}
+                    <span className="font-fw-mono tabular-nums text-text-primary">
+                      {patternCounts.returned}
+                    </span>{' '}
+                    high-signal pattern{patternCounts.returned === 1 ? '' : 's'};{' '}
+                    <span className="font-fw-mono tabular-nums text-text-secondary">
+                      {patternCounts.contextualHidden}
+                    </span>{' '}
+                    low-value contextual hidden
+                  </>
+                )}
+              </span>
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={toggleContextual}
+            >
+              {showContextual ? 'Hide contextual' : `Show contextual (${patternCounts.contextualHidden})`}
+            </Button>
+          </div>
         ) : null}
 
         {/* smart-default banner — the curated triage default, DISMISSIBLE so

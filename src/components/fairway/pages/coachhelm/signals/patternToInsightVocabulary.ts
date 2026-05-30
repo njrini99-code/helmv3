@@ -28,7 +28,6 @@ import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type {
   ExtendedPattern,
   PatternLifecycleState,
-  PatternSeverity,
 } from '@/app/golf/actions/pattern-management';
 import type { InsightPriority } from '@/components/fairway/cards-insight/InsightCard';
 
@@ -78,6 +77,19 @@ export interface SignalRow {
   confidenceWord: 'High confidence' | 'Moderate confidence' | 'Early signal' | null;
   /** The demoted statistician fields, already humanized. */
   evidence: SignalEvidenceLine[];
+  /**
+   * Pattern-type sort rank — compound=3, conditional=2, temporal=1, contextual=0
+   * (unknown/other → 0). Set ONLY by `patternToSignalRow`; insights leave it
+   * undefined. ADDITIVE/OPTIONAL so the patterns-only sort can read it without
+   * affecting the insights/alerts surfaces (which never set it). Read-time only —
+   * derived from genuine `pattern_type`, never persisted.
+   */
+  patternTypeRank?: number;
+  /**
+   * The signed stroke_impact carried through for the patterns-only sort
+   * tiebreak (magnitude-desc). Undefined for insights. Additive/optional.
+   */
+  strokeImpact?: number | null;
   /** The original row, kept so action handlers can read whatever they need. */
   raw: EvidenceInsight | ExtendedPattern;
 }
@@ -93,12 +105,66 @@ const INSIGHT_PRIORITY_MAP: Record<EvidenceInsight['priority'], InsightPriority>
   low: 'low',
 };
 
-const PATTERN_SEVERITY_MAP: Record<PatternSeverity, InsightPriority> = {
-  critical: 'critical',
-  high: 'high',
-  medium: 'medium',
-  low: 'low',
-};
+/**
+ * NOTE (pattern-noise fix): the `golf_patterns_v2.severity` column defaults to
+ * 'medium' and is effectively 'medium' for ~all rows, so mapping it 1:1 (the
+ * removed `PATTERN_SEVERITY_MAP[pattern.severity]` path) collapsed every pattern
+ * into the SAME priority bucket and buried the few real-signal
+ * conditional/compound patterns under the contextual flood. We now DERIVE a
+ * pattern's priority from `pattern_type` + |stroke_impact| (see
+ * `derivePatternPriority`) at read/adapter time — NO DB write, no severity
+ * fabrication.
+ *
+ * Local replica of the `calculateSeverity` thresholds in
+ * pattern-management.ts (which is a server-only 'use server' module — must NOT
+ * be imported into this client adapter). Read-time only; fabricates nothing —
+ * it maps a GENUINE |stroke_impact| onto the shared InsightPriority tiers.
+ *   |impact| >= 2.5 → critical, >= 1.5 → high, >= 0.8 → medium, else low.
+ */
+function impactToPriority(strokeImpact: number): InsightPriority {
+  const absImpact = Math.abs(strokeImpact);
+  if (absImpact >= 2.5) return 'critical';
+  if (absImpact >= 1.5) return 'high';
+  if (absImpact >= 0.8) return 'medium';
+  return 'low';
+}
+
+/**
+ * The pattern-type sort rank — drives the patterns-only [type rank desc] sort
+ * so compound/conditional real-signal patterns float above the contextual
+ * noise. compound=3, conditional=2, temporal=1, contextual & everything else=0.
+ */
+function patternTypeRank(patternType: string | null | undefined): number {
+  switch (patternType) {
+    case 'compound':
+      return 3;
+    case 'conditional':
+      return 2;
+    case 'temporal':
+      return 1;
+    default:
+      // contextual + anomaly/regression/sequence/cluster + unknown → lowest.
+      return 0;
+  }
+}
+
+/**
+ * Derive a pattern's SignalRow priority from its TYPE + genuine stroke_impact,
+ * NOT from the all-'medium' severity column.
+ *  • contextual → capped at 'low' regardless of impact (it is the low-value
+ *    noise tier — −0.33 avg — that must not crowd the priority lanes).
+ *  • conditional / compound / temporal (and any other non-contextual type) →
+ *    the calculateSeverity tiers applied to |stroke_impact|.
+ *  • no usable stroke_impact → 'low' (never fabricate a higher tier).
+ */
+function derivePatternPriority(
+  patternType: string | null | undefined,
+  strokeImpact: number | null | undefined,
+): InsightPriority {
+  if (patternType === 'contextual') return 'low';
+  if (typeof strokeImpact !== 'number' || Number.isNaN(strokeImpact)) return 'low';
+  return impactToPriority(strokeImpact);
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Confidence translation — the Patterns mustFix "confidence translation".
@@ -200,9 +266,15 @@ function patternBody(pattern: ExtendedPattern): string {
   if (pattern.recommendation && pattern.recommendation.trim().length > 0) {
     return pattern.recommendation.trim();
   }
-  const impact = Math.abs(pattern.strokeImpact ?? 0);
-  if (impact > 0) {
-    return `Worth about ${impact.toFixed(1)} stroke${impact === 1 ? '' : 's'} per round — review the evidence and decide whether to address it.`;
+  // Preserve the SIGN of stroke_impact: a negative value is strokes LOST
+  // (harmful), a positive value is strokes GAINED (helpful). Math.abs would
+  // erase that distinction and read a −0.33 contextual identically to a
+  // helpful +0.33. We keep magnitude in the copy but make the direction explicit.
+  const impact = pattern.strokeImpact ?? 0;
+  const magnitude = Math.abs(impact);
+  if (magnitude > 0) {
+    const direction = impact > 0 ? 'gained' : 'lost';
+    return `Worth about ${magnitude.toFixed(1)} stroke${magnitude === 1 ? '' : 's'} ${direction} per round — review the evidence and decide whether to address it.`;
   }
   return 'Review the supporting evidence and decide whether this is worth a focus area.';
 }
@@ -217,11 +289,18 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
 
   const evidence: SignalEvidenceLine[] = [];
   if (typeof pattern.strokeImpact === 'number') {
-    const impact = Math.abs(pattern.strokeImpact);
+    // Preserve the SIGN: a positive value is strokes GAINED (helpful), a
+    // negative value is strokes LOST (harmful). Dropping Math.abs here is what
+    // lets a coach distinguish a +1.46 conditional signal from a −0.33
+    // contextual one — they previously read identically.
+    const impact = pattern.strokeImpact;
+    const magnitude = Math.abs(impact);
+    const signed = `${impact > 0 ? '+' : ''}${impact.toFixed(2)}`;
+    const tier = magnitude >= 1.5 ? 'meaningful' : magnitude >= 0.8 ? 'moderate' : 'small';
     evidence.push({
       label: 'Stroke impact',
-      value: `${impact.toFixed(2)}/round`,
-      gloss: impact >= 1.5 ? 'meaningful' : impact >= 0.8 ? 'moderate' : 'small',
+      value: `${signed}/round`,
+      gloss: `${tier} · ${impact > 0 ? 'gained' : impact < 0 ? 'lost' : 'neutral'}`,
     });
   }
   if (typeof pattern.confidence === 'number') {
@@ -253,7 +332,10 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
   return {
     id: pattern.id,
     source: 'patterns',
-    priority: PATTERN_SEVERITY_MAP[pattern.severity] ?? 'medium',
+    // Priority is DERIVED from pattern_type + genuine stroke_impact — NOT the
+    // all-'medium' severity column (which would bucket every pattern the same
+    // and bury the real signal). contextual is capped at 'low'.
+    priority: derivePatternPriority(pattern.patternType, pattern.strokeImpact),
     title: patternHeadline(pattern),
     body: patternBody(pattern),
     overline: `${categoryLabel} · Pattern`,
@@ -264,6 +346,10 @@ export function patternToSignalRow(pattern: ExtendedPattern): SignalRow {
     createdAt: pattern.firstDetected ?? pattern.lastOccurrence ?? new Date().toISOString(),
     confidenceWord: translateConfidence(pattern.confidence, pattern.sampleSize),
     evidence,
+    // Additive sort keys for the patterns-only ordering (compound > conditional
+    // > temporal > contextual, then magnitude). Insights never set these.
+    patternTypeRank: patternTypeRank(pattern.patternType),
+    strokeImpact: typeof pattern.strokeImpact === 'number' ? pattern.strokeImpact : null,
     raw: pattern,
   };
 }
