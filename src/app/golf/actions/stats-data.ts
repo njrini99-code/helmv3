@@ -62,7 +62,7 @@ async function requireAuth() {
  * Verify the authenticated user has access to the given player's stats.
  * Access is granted if the user IS the player, or is a coach on their team.
  */
-async function verifyPlayerAccess(
+export async function verifyPlayerAccess(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   playerId: string
