@@ -315,10 +315,10 @@ describe('getPlayerFingerprint', () => {
 
   it('falls back to recent rounds when stats cache is empty', async () => {
     const rounds = [
-      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r3', round_date: '2026-04-10', total_score: 74, course_par: 72, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'practice' },
-      { id: 'r4', round_date: '2026-04-05', total_score: 80, course_par: 72, score_to_par: 8, course_name: null, holes_played: 18, round_type: 'practice' },
+      { id: 'r1', round_date: '2026-04-20', total_score: 76, score_to_par: 4, course_name: null, holes_played: 18, round_type: 'practice' },
+      { id: 'r2', round_date: '2026-04-15', total_score: 78, score_to_par: 6, course_name: null, holes_played: 18, round_type: 'practice' },
+      { id: 'r3', round_date: '2026-04-10', total_score: 74, score_to_par: 2, course_name: null, holes_played: 18, round_type: 'practice' },
+      { id: 'r4', round_date: '2026-04-05', total_score: 80, score_to_par: 8, course_name: null, holes_played: 18, round_type: 'practice' },
     ];
     const sb = makeSupabaseMock({
       userId: 'u-1',
@@ -372,8 +372,8 @@ describe('getPlayerFingerprint', () => {
       makeInsight({ id: 'i-1', category: 'putting', updated_at: '2026-04-15T12:00:00.000Z' }),
     ]);
     const rounds = [
-      { id: 'r1', round_date: '2026-04-20', total_score: 76, course_par: 72, score_to_par: 4, course_name: 'A', holes_played: 18, round_type: 'practice' },
-      { id: 'r2', round_date: '2026-04-15', total_score: 78, course_par: 72, score_to_par: 6, course_name: 'B', holes_played: 18, round_type: 'practice' },
+      { id: 'r1', round_date: '2026-04-20', total_score: 76, score_to_par: 4, course_name: 'A', holes_played: 18, round_type: 'practice' },
+      { id: 'r2', round_date: '2026-04-15', total_score: 78, score_to_par: 6, course_name: 'B', holes_played: 18, round_type: 'practice' },
     ];
     const sb = makeSupabaseMock({
       userId: 'u-1',
