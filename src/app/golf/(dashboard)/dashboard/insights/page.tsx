@@ -7,7 +7,6 @@ import { PageLoading } from '@/components/ui/loading';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { getInsightFilterOptions } from '@/app/golf/actions/insight-management';
-import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayCoachHelmSignals } from '@/components/fairway';
 
@@ -85,8 +84,13 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
         .maybeSingle();
       teamId = team?.id ?? '';
     }
-    const countsRes = await getAlertCounts(coach.id);
-    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    // Suppress the shell badge on the insights surface: the on-page "Urgent +
+    // high" tile is the single source of truth for the pressing-signal count.
+    // A shell badge (urgent+high alerts) contradicts the tile on the SAME
+    // screen (e.g. badge "13" vs tile "8"), so we pass null here. The
+    // getAlertCounts read is kept off this path entirely — it was only ever
+    // feeding the now-suppressed badge.
+    const signalCount = null;
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <FairwayCoachHelmSignals
