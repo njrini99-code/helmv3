@@ -1,0 +1,110 @@
+/* ============================================================================
+ * Fairway · instrument · InstrumentPanel — frosted-glass instrument bezel
+ * ----------------------------------------------------------------------------
+ * Co-located CSS module for the parts of the warm Liquid Glass instrument
+ * recipe Tailwind cannot express cleanly:
+ *   1. the prefixed `backdrop-filter` (blur + saturate),
+ *   2. the layered specular top/LEFT edge + a faint inner glow (the lit
+ *      interior of a cockpit dial bezel),
+ *   3. the three depth treatments (base / raised / inset),
+ *   4. the `prefers-reduced-transparency` / `forced-colors` OPAQUE fallback.
+ *
+ * Reads the locked `--fw-*` Liquid Glass tokens (design-tokens.css §4.3 / the
+ * instrument-cluster direction). CSS-Module-scoped, so it cannot collide with
+ * the app's global `.glass` utilities or the sibling glass-surface module.
+ * NOTHING global is touched — purely additive, opt-in.
+ * ========================================================================== */
+
+/* ── Base panel — a clean, calm matte CARD (flat & clean Apple; NOT glass).
+ * Content-first restraint: a quiet surface + a single hairline. No blur, no
+ * specular, no interior glow. Glass is reserved for true overlays elsewhere. ── */
+.panel {
+  isolation: isolate;
+  background: var(--fw-color-surface);
+  border: 1px solid var(--fw-color-border-subtle);
+}
+
+/* No interior glow / sheen on flat cards. */
+.panel::before {
+  display: none;
+}
+
+/* ── Accent tone — a quiet green hairline. Nothing more (no ring, no glow). ── */
+.panelAccent {
+  border-color: rgb(22 163 74 / 0.35);
+}
+
+/* ── Raised — a cleanly ELEVATED card: a soft warm shadow lifts it off the
+ * page. No blur, no bezel speculars — just a calm lifted surface. ── */
+.panelRaised {
+  background: var(--fw-color-surface);
+  border-color: transparent;
+  box-shadow: var(--fw-shadow-raise);
+}
+
+.panelRaised.panelAccent {
+  border-color: rgb(22 163 74 / 0.28);
+  box-shadow: var(--fw-shadow-raise);
+}
+
+/* ── Inset — a clean recessed well (a calm sunken surface, faint inner line). ── */
+.panelInset {
+  background: var(--fw-color-surface-sunken);
+  border-color: transparent;
+  box-shadow: inset 0 1px 2px 0 oklch(0.22 0.02 60 / 0.05);
+}
+
+.panelInset::before {
+  display: none;
+}
+
+/* (Panels are flat matte cards now — no blur to downshift on small screens.) */
+
+/* ── Apple's a11y lesson — collapse to an OPAQUE matte surface. Depth then ──
+ * comes from a soft warm shadow, never from translucency. Text stays legible. */
+@media (prefers-reduced-transparency: reduce) {
+  .panel,
+  .panelRaised {
+    background: var(--fw-color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--fw-color-border-subtle);
+    box-shadow: var(--fw-shadow-soft);
+  }
+  .panelRaised {
+    box-shadow: var(--fw-shadow-raise);
+  }
+  .panelAccent {
+    box-shadow: var(--fw-shadow-soft), 0 0 0 1px var(--fw-glass-accent-ring);
+  }
+  .panelRaised.panelAccent {
+    box-shadow: var(--fw-shadow-raise), 0 0 0 1px var(--fw-glass-accent-ring);
+  }
+  /* inset stays a recessed sunken well, just opaque */
+  .panelInset {
+    background: var(--fw-color-surface-sunken);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--fw-color-border-subtle);
+    box-shadow: inset 0 1px 2px 0 oklch(0.18 0.01 60 / 0.06);
+  }
+  .panel::before {
+    display: none;
+  }
+}
+
+/* ── Windows High Contrast / forced colors — fall back to system Canvas. ──── */
+@media (forced-colors: active) {
+  .panel,
+  .panelRaised,
+  .panelInset {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid CanvasText;
+    box-shadow: none;
+  }
+  .panel::before {
+    display: none;
+  }
+}

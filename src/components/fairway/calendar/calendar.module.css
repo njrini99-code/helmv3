@@ -1,0 +1,141 @@
+/* ============================================================================
+ * Fairway · calendar · CalendarSurface — co-located CSS module
+ * ----------------------------------------------------------------------------
+ * The warm month-grid styling that Tailwind utilities cannot express cleanly on
+ * react-day-picker's internal slots:
+ *   1. temporal-direction slide/fade of the month grid (motion reflects time),
+ *   2. the range "connective tissue" so the highlight reads as one continuous
+ *      band across a week (left/right cap rounding on a sunken accent track),
+ *   3. the green focus-visible ring that survives BOTH cream and the dark
+ *      popover scrim (mirrors DESIGN-SYSTEM.md §7.2),
+ *   4. prefers-reduced-motion / reduced-transparency / forced-colors fallbacks.
+ *
+ * Everything reads the locked `--fw-*` tokens from src/styles/design-tokens.css
+ * (DESIGN-SYSTEM.md §1/§4/§7). Class names are locally scoped by CSS Modules so
+ * they cannot collide with the app's global `.rdp-*` or `.glass` utilities.
+ * Purely additive, opt-in — NOTHING global is touched.
+ * ========================================================================== */
+
+/* ---- The grid wrapper: animates direction-aware on month change ---------- */
+.grid {
+  /* Slow, cinematic settle (DESIGN-SYSTEM.md §7.1 — ease-glide / dur-medium). */
+  animation-duration: var(--fw-dur-medium, 380ms);
+  animation-timing-function: var(--fw-ease-glide, cubic-bezier(0.16, 1, 0.3, 1));
+  animation-fill-mode: both;
+}
+/* "next" => the future arrives from the right. */
+.enterNext {
+  animation-name: fwCalEnterNext;
+}
+/* "prev" => the past returns from the left. */
+.enterPrev {
+  animation-name: fwCalEnterPrev;
+}
+
+@keyframes fwCalEnterNext {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes fwCalEnterPrev {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ---- Range connective tissue --------------------------------------------- */
+/* The day CELL (not the button) carries the sunken accent track so adjacent
+ * days read as one continuous band. Caps round only at the range ends. */
+.rangeMiddle {
+  background-color: var(--fw-color-accent-50);
+}
+.rangeStart {
+  background-color: var(--fw-color-accent-50);
+  border-top-left-radius: var(--fw-radius-full, 9999px);
+  border-bottom-left-radius: var(--fw-radius-full, 9999px);
+}
+.rangeEnd {
+  background-color: var(--fw-color-accent-50);
+  border-top-right-radius: var(--fw-radius-full, 9999px);
+  border-bottom-right-radius: var(--fw-radius-full, 9999px);
+}
+
+/* ---- Focus ring that survives cream AND the dark popover scrim ------------ */
+/* react-day-picker drives keyboard nav by focusing the day <button>. The
+ * Tailwind focus-visible utilities live in the TSX; this adds the cream halo so
+ * the green ring never disappears on a dark/glass backdrop (the .on-dark idea
+ * from §7.2, applied here as a self-contained always-on dual ring). */
+.dayButton:focus-visible {
+  outline: 2px solid var(--fw-color-accent-500);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--fw-color-canvas, oklch(0.994 0.006 95 / 1));
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Event dot ----------------------------------------------------------- */
+.eventDay {
+  position: relative;
+}
+.eventDay::after {
+  content: '';
+  position: absolute;
+  bottom: 0.28rem;
+  left: 50%;
+  width: 0.3rem;
+  height: 0.3rem;
+  transform: translateX(-50%);
+  border-radius: var(--fw-radius-full, 9999px);
+  background-color: var(--fw-color-accent-500);
+  pointer-events: none;
+}
+/* On a selected / range-end day the dot flips to cream so it stays visible on
+ * the solid green button. */
+.eventDay[aria-selected='true']::after,
+.eventDay[data-selected='true']::after {
+  background-color: var(--fw-color-text-on-accent);
+}
+
+/* ---- Reduced motion: collapse to opacity-only at fast duration ----------- */
+@media (prefers-reduced-motion: reduce) {
+  .grid,
+  .enterNext,
+  .enterPrev {
+    animation-name: fwCalFade;
+    animation-duration: var(--fw-dur-fast, 180ms);
+    animation-timing-function: var(--fw-ease-soft, ease-out);
+  }
+  @keyframes fwCalFade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* ---- Forced colors: keep selection legible ------------------------------- */
+@media (forced-colors: active) {
+  .rangeMiddle,
+  .rangeStart,
+  .rangeEnd {
+    background-color: Highlight;
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
+  .dayButton:focus-visible {
+    outline-color: Highlight;
+    box-shadow: none;
+  }
+}

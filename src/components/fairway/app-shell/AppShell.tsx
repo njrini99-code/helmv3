@@ -1,0 +1,236 @@
+'use client';
+
+/**
+ * ============================================================================
+ * Fairway · AppShell (Wave 1, ADDITIVE)
+ * ----------------------------------------------------------------------------
+ * The app frame (DESIGN-SYSTEM §6 "AppShell"): the warm-black recessive sidebar
+ * + a cream-side glass top bar (content scrolls UNDER it) + a content region
+ * with generous gutters, a breadcrumbs slot, a persistent search/command entry,
+ * and a route-transition wrapper. The structural backbone reorganized pages
+ * mount their content into.
+ *
+ * Composition (all from this group's own files):
+ *   FairwaySidebar  → the rail (fixed on desktop; a slide-in glass drawer on mobile)
+ *   FairwayTopBar   → the ONE glass surface (breadcrumbs + ⌘K + actions)
+ *   RouteTransition → slow cinematic content reveal on navigation
+ *
+ * Layout / spacing (§A "light & airy"): page gutters 48–56px, the content column
+ * sits on `bg-canvas` and is the brightest, warmest thing; the rail recedes.
+ *
+ * Scope: renders inside `.fairway-ds` on a `bg-canvas` page (the Fairway tokens
+ * resolve here). Pages gate mounting on the redesign flag; the shell itself is
+ * presentation-only and owns no data.
+ * ========================================================================== */
+
+import { forwardRef, useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
+import { IconX } from '@/components/icons';
+import { FairwaySidebar, type FairwaySidebarProps } from './FairwaySidebar';
+import { FairwayTopBar, type FairwayTopBarProps } from './FairwayTopBar';
+import { RouteTransition } from './RouteTransition';
+import type { Breadcrumb, NavSection, ShellLinkComponent, ShellUser } from './types';
+
+export interface AppShellProps {
+  /** Grouped nav for the rail (primary + secondary + …). */
+  sections: readonly NavSection[];
+  /** Identity block at the top of the rail. */
+  user?: ShellUser;
+  /** Brand wordmark slot for the rail. */
+  brand?: React.ReactNode;
+  /** Pinned rail footer (settings / sign-out). */
+  sidebarFooter?: React.ReactNode;
+
+  /** Breadcrumb trail for the top bar. */
+  breadcrumbs?: readonly Breadcrumb[];
+  /** Opens the command menu (⌘K). Renders the persistent command entry. */
+  onSearchOpen?: () => void;
+  /** Placeholder for the command entry. */
+  searchPlaceholder?: string;
+  /** Replace the built-in command entry. */
+  searchSlot?: React.ReactNode;
+  /** Top-bar right action cluster. */
+  topBarActions?: React.ReactNode;
+
+  /** Current pathname — drives nav active-state AND the route reveal key. */
+  pathname?: string;
+  /** Link element (pass Next's `<Link>` in the app; defaults to `<a>`). */
+  linkComponent?: ShellLinkComponent;
+
+  /** Controlled collapse. When omitted, the shell manages it internally. */
+  collapsed?: boolean;
+  onCollapsedChange?: (next: boolean) => void;
+  /** Hide the collapse affordance entirely. */
+  collapsible?: boolean;
+
+  /** The page content. */
+  children: React.ReactNode;
+  /** Disable the route-transition reveal (e.g. if a page owns its own motion). */
+  disableRouteTransition?: boolean;
+  /** Width-cap + center the content column. Default true (premium reading width). */
+  constrainContent?: boolean;
+  className?: string;
+}
+
+const DEFAULT_PLACEHOLDER = 'Search or jump to…';
+
+export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppShell(
+  {
+    sections,
+    user,
+    brand,
+    sidebarFooter,
+    breadcrumbs,
+    onSearchOpen,
+    searchPlaceholder = DEFAULT_PLACEHOLDER,
+    searchSlot,
+    topBarActions,
+    pathname,
+    linkComponent,
+    collapsed: collapsedProp,
+    onCollapsedChange,
+    collapsible = true,
+    children,
+    disableRouteTransition = false,
+    constrainContent = true,
+    className,
+  },
+  ref,
+) {
+  const reduceMotion = useReducedMotion();
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isControlled = collapsedProp !== undefined;
+  const collapsed = isControlled ? collapsedProp : internalCollapsed;
+
+  const toggleCollapsed = useCallback(() => {
+    const next = !collapsed;
+    if (!isControlled) setInternalCollapsed(next);
+    onCollapsedChange?.(next);
+  }, [collapsed, isControlled, onCollapsedChange]);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+  const openMobile = useCallback(() => setMobileOpen(true), []);
+
+  // Close the mobile drawer on route change.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Escape closes the mobile drawer.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
+
+  const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> = {
+    sections,
+    user,
+    brand,
+    footer: sidebarFooter,
+    pathname,
+    linkComponent,
+  };
+
+  const topBarProps: FairwayTopBarProps = {
+    breadcrumbs,
+    onSearchOpen,
+    searchPlaceholder,
+    searchSlot,
+    actions: topBarActions,
+    onMenuOpen: openMobile,
+    linkComponent,
+  };
+
+  // Desktop content column offset by the (collapsed) rail width.
+  const railOffset = collapsed ? 'md:pl-[76px]' : 'md:pl-[260px]';
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        FAIRWAY_SCOPE,
+        'relative min-h-dvh w-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary antialiased',
+        className,
+      )}
+    >
+      {/* ── Desktop rail (fixed) ── */}
+      <div className="hidden md:block">
+        <FairwaySidebar
+          {...sidebarProps}
+          collapsed={collapsed}
+          onToggleCollapsed={collapsible ? toggleCollapsed : undefined}
+        />
+      </div>
+
+      {/* ── Mobile drawer ── */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-[var(--fw-z-modal)] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+            {/* Dim scrim (cheap, not blurred — §4.3) */}
+            <motion.button
+              type="button"
+              aria-label="Close navigation"
+              onClick={closeMobile}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0.18 : 0.28 }}
+              className="absolute inset-0 bg-[rgb(28_25_23_/_0.28)]"
+            />
+            <motion.div
+              initial={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
+              animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
+              transition={{ duration: reduceMotion ? 0.18 : 0.52, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute left-0 top-0 h-full w-[280px] max-w-[85vw] shadow-fw-modal"
+            >
+              <FairwaySidebar {...sidebarProps} isMobile onNavigate={closeMobile} />
+              {/* In-drawer close affordance */}
+              <button
+                type="button"
+                onClick={closeMobile}
+                aria-label="Close navigation"
+                className={cn(
+                  'on-dark absolute right-3 top-4 flex h-9 w-9 items-center justify-center rounded-fw-md',
+                  'text-nav-text-dim transition-colors duration-[var(--fw-dur-fast)]',
+                  'hover:bg-nav-surface hover:text-nav-text active:translate-y-[0.5px]',
+                )}
+              >
+                <IconX size={18} aria-hidden />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Content column (offset by the rail) ── */}
+      <div className={cn('flex min-h-dvh flex-col transition-[padding] duration-[var(--fw-dur-slow)] ease-[var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}>
+        <FairwayTopBar {...topBarProps} />
+
+        <main className="flex-1">
+          <div
+            className={cn(
+              // Generous gutters (§A: 48–56px page gutters), roomy vertical rhythm.
+              'px-6 py-8 sm:px-8 lg:px-12 lg:py-10',
+              constrainContent && 'mx-auto w-full max-w-[1280px]',
+            )}
+          >
+            {disableRouteTransition ? (
+              children
+            ) : (
+              <RouteTransition routeKey={pathname}>{children}</RouteTransition>
+            )}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+});
