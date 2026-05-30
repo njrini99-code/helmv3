@@ -14,6 +14,8 @@ import { Reveal } from '@/components/ui/reveal';
 import { PageHeader, Eyebrow } from '@/components/ui/page-header';
 import { generateRoundRecap } from '@/app/golf/actions/round-recap';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayRoundDetail } from '@/components/fairway/pages/rounds/FairwayRoundDetail';
 
 export async function generateMetadata({
   params,
@@ -179,6 +181,62 @@ export default async function RoundDetailPage({
     if (process.env.NODE_ENV === 'development') {
       console.warn('[round-detail] recap generation failed:', err);
     }
+  }
+
+  // ── Fairway redesign fork (ADDITIVE, flag-gated) ───────────────────────────
+  // With the flag OFF this branch is never taken and the legacy return below is
+  // byte-for-byte unchanged. With it ON we re-skin the SAME resolved data: the
+  // round + aiRecap above, plus a read-only fetch of the honest golf_holes layer
+  // and the persisted golf_round_reviews.round_stats. No writes.
+  if (isRedesignEnabled()) {
+    const { data: holesRows } = await supabase
+      .from('golf_holes')
+      .select('hole_number, par, score, putts, fairway_hit, gir, penalty_strokes, yardage')
+      .eq('round_id', id)
+      .order('hole_number', { ascending: true });
+
+    const { data: reviewRow } = await supabase
+      .from('golf_round_reviews')
+      .select('round_stats')
+      .eq('round_id', id)
+      .maybeSingle();
+
+    const reviewStats = (reviewRow?.round_stats ?? null) as
+      | {
+          areasForImprovement?: Array<{ area: string; recommendation: string }> | null;
+          recommendations?: string[] | null;
+          momentumData?: Array<{ hole: number; rollingScoreToPar: number }> | null;
+        }
+      | null;
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayRoundDetail
+          round={{
+            id: roundData.id,
+            course_name: roundData.course_name,
+            round_date: roundData.round_date,
+            round_type: roundData.round_type,
+            total_score: roundData.total_score,
+            score_to_par: roundData.score_to_par,
+            total_putts: roundData.total_putts,
+            total_fairways: roundData.total_fairways,
+            total_fairways_hit: roundData.total_fairways_hit,
+            total_gir: roundData.total_gir,
+            total_gir_possible: roundData.total_gir_possible,
+            front_nine: roundData.front_nine,
+            back_nine: roundData.back_nine,
+            holes_played: (roundData as { holes_played?: number | null }).holes_played ?? null,
+          }}
+          holes={holesRows ?? []}
+          aiRecap={aiRecap}
+          reviewStats={reviewStats}
+          playerName={playerName}
+          isCoach={isCoach}
+          viewerIsOwner={!!isOwnRound}
+        />
+      </div>
+    );
   }
 
   return (

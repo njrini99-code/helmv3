@@ -11,6 +11,8 @@ import type { GolfQualifier } from '@/lib/types/golf';
 import { IconFlag, IconCalendar, IconMapPin, IconChevronRight, IconGolf } from '@/components/icons';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { Metadata } from 'next';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayQualifiers } from '@/components/fairway/pages/qualifiers/FairwayQualifiers';
 
 export const metadata: Metadata = {
   title: 'Qualifiers | Helm Sports',
@@ -50,6 +52,17 @@ export default async function GolfQualifiersPage() {
       .order('start_date', { ascending: false });
 
     qualifiers = qualifiersData || [];
+  }
+
+  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
+  // Reuses the SAME role + golf_qualifiers list resolved above; re-skins onto
+  // the warm-matte Fairway system. Legacy branch below is unchanged when off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayQualifiers isCoach={isCoach} qualifiers={qualifiers} />
+      </div>
+    );
   }
 
   const getStatusConfig = (status: string) => {

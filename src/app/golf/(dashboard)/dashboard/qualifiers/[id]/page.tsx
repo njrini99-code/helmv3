@@ -13,6 +13,8 @@ import type { GolfQualifier, GolfQualifierEntry } from '@/lib/types/golf';
 import type { Metadata } from 'next';
 import { QualifierLeaderboardRealtime } from '@/components/golf/qualifiers/QualifierLeaderboardRealtime';
 import { QualifierRoundBreakdown } from './QualifierRoundBreakdown';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayQualifierDetail } from '@/components/fairway/pages/qualifiers/FairwayQualifierDetail';
 
 interface QualifierEntryWithPlayer extends GolfQualifierEntry {
   player: {
@@ -169,6 +171,41 @@ export default async function QualifierDetailPage({ params }: PageProps) {
     : null;
   const qualifierIsActive = qualifierData.status === 'in_progress' || qualifierData.status === 'upcoming';
   const canPlayRound = !!playerEntry && qualifierIsActive;
+
+  // ── Fairway redesign fork (flag-gated; legacy branch below is unchanged) ──
+  if (isRedesignEnabled()) {
+    // Honest W29 datum the legacy hides: how many selections are actually made.
+    const { count: selectionsCount } = await supabase
+      .from('golf_qualifier_selections')
+      .select('*', { count: 'exact', head: true })
+      .eq('qualifier_id', id);
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayQualifierDetail
+          qualifierId={id}
+          isCoach={isCoach}
+          isPlayer={isPlayer}
+          name={qualifierData.name || 'Qualifier'}
+          status={qualifierData.status || 'upcoming'}
+          startDate={qualifierData.start_date}
+          endDate={qualifierData.end_date ?? null}
+          entryDeadline={qualifierData.entry_deadline ?? null}
+          courseName={qualifierData.course_name ?? null}
+          spotsAvailable={qualifierData.spots_available ?? null}
+          rules={qualifierData.rules ?? null}
+          entrantCount={qualifierData.entries.length}
+          roundsSubmitted={totalRoundsSubmitted}
+          canPlayRound={canPlayRound}
+          breakdown={sortedBreakdown}
+          maxRoundNumber={maxRoundNumber}
+          selectionState={qualifierData.selection_state ?? 'open'}
+          selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
+          selectionsCount={selectionsCount ?? 0}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">

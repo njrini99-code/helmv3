@@ -1,11 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { Metadata } from 'next';
 import { PlayerHubWrapper } from '@/components/golf/player-hub/PlayerHubWrapper';
 import { HubInsightSignalCard } from '@/components/golf/player-hub/HubInsightSignalCard';
 import { getPlayerHubAnnouncements } from '@/app/golf/actions/player-notifications';
 import { getTopInsightForPlayer } from '@/app/golf/actions/insight-delivery';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerHubWrapper } from '@/components/fairway/pages/hub';
+import { EmptyState, Button } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'My Hub | Helm Golf',
@@ -52,6 +56,26 @@ export default async function PlayerHubPage() {
   const teamId = teamMember?.team_id;
 
   if (!teamId) {
+    // ── Fairway fork (ADDITIVE): teamless player → a Fairway EmptyState inside
+    // the `.fairway-ds` scope on bg-canvas. Flag OFF → the legacy block below,
+    // byte-for-byte unchanged. (b) player-no-team state.
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <div className="mx-auto flex min-h-full w-full max-w-3xl items-center justify-center px-4 py-16 md:px-6">
+            <EmptyState
+              title="No team found"
+              description="Join a team to see your travel, tasks, and event RSVPs in one place."
+              action={
+                <Button asChild variant="primary">
+                  <Link href="/golf/dashboard/settings">Enter team code</Link>
+                </Button>
+              }
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-full bg-transparent flex items-center justify-center">
         <div className="text-center">
@@ -188,6 +212,36 @@ export default async function PlayerHubPage() {
   }));
 
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
+
+  // ── Fairway fork (ADDITIVE): flag ON → the rebuilt Hub inside the `.fairway-ds`
+  // scope on bg-canvas. The optimistic write paths (completeTask / respondToEvent)
+  // stay in FairwayPlayerHubWrapper — the SAME logic as PlayerHubWrapper — so no
+  // mutation moves into this server page; the data + the rendered signalCard are
+  // passed down VERBATIM. Flag OFF (default) → the legacy <PlayerHubWrapper/>
+  // below, byte-for-byte unchanged. (c) player-with-team state.
+  if (isRedesignEnabled()) {
+    // Team name for the masthead eyebrow — additive lookup, redesign branch only.
+    const { data: teamRow } = await supabase
+      .from('golf_teams')
+      .select('name')
+      .eq('id', teamId)
+      .maybeSingle();
+    const teamName = teamRow?.name || 'Your team';
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayPlayerHubWrapper
+          trips={trips}
+          tasks={tasks}
+          events={events}
+          announcements={announcements}
+          playerName={playerName}
+          teamName={teamName}
+          signalCard={<HubInsightSignalCard insight={topInsight} />}
+        />
+      </div>
+    );
+  }
 
   return (
     <PlayerHubWrapper
