@@ -44,7 +44,7 @@ const TYPE_META: Record<string, { label: string; tone: FwStatusTone }> = {
 // noUncheckedIndexedAccess, so it can't guarantee a non-undefined return).
 const TYPE_META_FALLBACK: { label: string; tone: FwStatusTone } = { label: 'Event', tone: 'neutral' };
 
-function typeMeta(eventType: string | null | undefined): { label: string; tone: FwStatusTone } {
+export function typeMeta(eventType: string | null | undefined): { label: string; tone: FwStatusTone } {
   return TYPE_META[(eventType || 'other').toLowerCase()] ?? TYPE_META_FALLBACK;
 }
 

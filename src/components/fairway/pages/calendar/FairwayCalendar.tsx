@@ -65,6 +65,7 @@ import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClien
 import type { RSVPStatus } from '@/hooks/useRSVP';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import { FairwayAgendaView } from './FairwayAgendaView';
+import { FairwayMonthGrid } from './FairwayMonthGrid';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
@@ -378,13 +379,45 @@ export function FairwayCalendar({
           onCreateEvent={isCoach ? handlePrimaryAction : undefined}
           nowRef={nowRef}
         />
+      ) : !isCoach ? (
+        // ── PLAYER Week / Month → fully-native Fairway (no legacy grid chrome).
+        //    The legacy PremiumCalendarClient brought a member-filter rail, an
+        //    "+ Add Event" button, and a duplicate Day/Week/Month toggle — coach
+        //    tooling a read-only player neither needs nor should see, doubling the
+        //    Fairway hero + segmented. Month → native FairwayMonthGrid; Week →
+        //    a week-scoped agenda (sparse golf calendars read better as a list
+        //    than a time-grid). Both open the same Fairway drawer. ─────────────
+        view === 'month' ? (
+          <FairwayMonthGrid
+            events={events}
+            focusDate={focusDate}
+            nowRef={nowRef}
+            onEventClick={openDrawerForEvent}
+            onSelectDate={(d) => {
+              setFocusDate(d);
+              setView('day');
+            }}
+          />
+        ) : (
+          <FairwayAgendaView
+            events={events}
+            mode="range"
+            focusDate={focusDate}
+            rangeStart={visibleWindow.start}
+            rangeEnd={visibleWindow.end}
+            isCoach={isCoach}
+            userRsvpStatuses={userRsvpStatuses}
+            onEventClick={openDrawerForEvent}
+            nowRef={nowRef}
+          />
+        )
       ) : (
-        // ── Week / Month → REUSE the legacy PremiumCalendarClient grid UNCHANGED
-        //    via its existing GolfCalendarWrapper. Keyed on `${view}:${date}` so
-        //    a view switch remounts it seeded off the focused date — same as the
-        //    legacy editorial LegacyGridShell. Wrapped in a neutral Fairway
-        //    container (rounded-card + clip) — we do NOT touch the grid/DnD/
-        //    realtime/recurring inside. ──────────────────────────────────────
+        // ── COACH Week / Month → REUSE the legacy PremiumCalendarClient grid
+        //    UNCHANGED via its existing GolfCalendarWrapper. Coaches need its
+        //    create flow (EventDetailModal via FAB / grid "+" / N), drag-to-
+        //    reschedule, recurring-series, and realtime — the engine the shell
+        //    deliberately reuses. Keyed on `${view}:${date}` so a view switch
+        //    remounts it seeded off the focused date. We do NOT touch the grid. ─
         <div className="overflow-hidden rounded-card">
           <GolfCalendarWrapper
             key={`${view}:${dateKey}`}

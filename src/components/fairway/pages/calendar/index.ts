@@ -21,6 +21,9 @@ export type { FairwayDayStripProps } from './FairwayDayStrip';
 export { FairwayAgendaView } from './FairwayAgendaView';
 export type { FairwayAgendaViewProps } from './FairwayAgendaView';
 
+export { FairwayMonthGrid } from './FairwayMonthGrid';
+export type { FairwayMonthGridProps } from './FairwayMonthGrid';
+
 export { FairwayEventCard } from './FairwayEventCard';
 export type { FairwayEventCardProps } from './FairwayEventCard';
 
