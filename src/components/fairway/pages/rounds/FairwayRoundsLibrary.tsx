@@ -43,7 +43,7 @@ import * as React from 'react';
 import Link from 'next/link';
 
 import { ViewHeader } from '@/components/fairway/view-header/view-header';
-import { Surface, Inset } from '@/components/fairway/surfaces/surface';
+import { Surface } from '@/components/fairway/surfaces/surface';
 import { Button } from '@/components/fairway/controls/button';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { FilterPill } from '@/components/fairway/controls/filter-pill';
@@ -51,7 +51,7 @@ import { Segmented } from '@/components/fairway/controls/segmented';
 import { StatTile } from '@/components/fairway/charts/StatTile';
 import { Sparkline } from '@/components/fairway/charts/Sparkline';
 import { EmptyState } from '@/components/fairway/feedback/EmptyState';
-import { FairwayRoundCard } from './FairwayRoundCard';
+import { FairwayRoundRow } from './FairwayRoundRow';
 import { FairwayUnfinishedBanner } from './FairwayUnfinishedBanner';
 
 // ── Types ────────────────────────────────────────────────────────────────--
@@ -167,60 +167,20 @@ function honestRange(rounds: RoundLibraryRound[]): string | null {
     : `${first.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – ${lastLabel}`;
 }
 
-// ── Period header (label + Sparkline + honest mini-stats) ───────────────────
+// ── Per-month summary (label + honest mini-stats + Sparkline) ───────────────
 
-function PeriodHeader({ label, rounds }: { label: string; rounds: RoundLibraryRound[] }) {
+/** Compute a month group's honest summary: scored count, 18-equiv avg/best,
+ *  and the oldest→newest spark series. */
+function monthSummary(rounds: RoundLibraryRound[]) {
   const scored = rounds.filter((r) => r.total_score !== null && r.total_score > 0);
-  // oldest → newest, left to right
-  const sparkValues = scored
+  const spark = scored
     .slice()
     .reverse()
     .map((r) => normalizedScore(r))
     .filter((v): v is number => v !== null);
-
-  const avg =
-    sparkValues.length > 0
-      ? sparkValues.reduce((s, v) => s + v, 0) / sparkValues.length
-      : null;
-  const best = sparkValues.length > 0 ? Math.min(...sparkValues) : null;
-
-  return (
-    <div className="mb-3 flex items-end justify-between gap-4 pl-1">
-      <div className="flex min-w-0 items-baseline gap-3">
-        <h3 className="whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.12em] text-text-tertiary">
-          {label}
-        </h3>
-        <div className="hidden min-w-0 items-baseline gap-2 truncate font-fw-sans text-caption text-text-tertiary sm:flex">
-          <span className="tabular-nums">
-            {scored.length} round{scored.length === 1 ? '' : 's'}
-          </span>
-          {avg !== null && (
-            <>
-              <span className="text-border-strong">·</span>
-              <span className="tabular-nums">avg {avg.toFixed(1)}</span>
-            </>
-          )}
-          {best !== null && (
-            <>
-              <span className="text-border-strong">·</span>
-              <span className="tabular-nums text-accent-700">best {best}</span>
-            </>
-          )}
-        </div>
-      </div>
-      {/* Omit the sparkline when there are fewer than 2 scores (honest). */}
-      {sparkValues.length >= 2 && (
-        <Sparkline
-          data={sparkValues}
-          goodDirection="down"
-          width={120}
-          height={24}
-          label={`${label} scores`}
-          className="flex-shrink-0"
-        />
-      )}
-    </div>
-  );
+  const avg = spark.length > 0 ? spark.reduce((s, v) => s + v, 0) / spark.length : null;
+  const best = spark.length > 0 ? Math.min(...spark) : null;
+  return { scoredCount: scored.length, spark, avg, best };
 }
 
 // ── Main ────────────────────────────────────────────────────────────────---
@@ -281,6 +241,26 @@ export function FairwayRoundsLibrary({
       .map(([, v]) => v);
   }, [filteredRounds, grouping]);
 
+  // Chronological (oldest → newest) scoring series for the hero sparklines.
+  // HONEST: real scored rounds only — drives the Avg-score / Avg-to-par tile
+  // trends (green improving / amber declining), never a fabricated line.
+  const chronoScored = React.useMemo(
+    () =>
+      rounds
+        .filter((r) => r.total_score !== null && r.total_score > 0)
+        .slice()
+        .sort((a, b) => new Date(a.round_date).getTime() - new Date(b.round_date).getTime()),
+    [rounds],
+  );
+  const scoreSeries = React.useMemo(
+    () => chronoScored.map((r) => normalizedScore(r)).filter((v): v is number => v !== null),
+    [chronoScored],
+  );
+  const toParSeries = React.useMemo(
+    () => chronoScored.map((r) => r.score_to_par).filter((v): v is number => v !== null),
+    [chronoScored],
+  );
+
   // ── Masthead copy + honest meta ────────────────────────────────────────--
   const eyebrow = isCoach ? 'Team Rounds' : 'Your Rounds';
   const title = isCoach ? 'The library.' : 'Your rounds.';
@@ -315,66 +295,76 @@ export function FairwayRoundsLibrary({
         primaryAction={primaryAction}
       />
 
-      {/* ── ONE HERO — compact KPI strip on Inset wells ───────────────────--*/}
-      <Inset padding="none" className="p-2">
-        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
-          <StatTile
-            label="Rounds"
-            value={starved ? undefined : stats!.totalRounds}
-            format={{ maximumFractionDigits: 0 }}
-            starved={starved}
-            unit="rounds"
-            current={stats?.totalRounds ?? 0}
-            required={3}
-            starvedTitle="Awaiting rounds"
-          />
-          <StatTile
-            label="Avg score"
-            value={starved ? undefined : stats!.avg}
-            format={{ maximumFractionDigits: 1 }}
-            goodDirection="down"
-            starved={starved}
-            unit="rounds"
-            current={stats?.totalRounds ?? 0}
-            required={3}
-          />
-          <StatTile
-            label="Best round"
-            value={starved ? undefined : stats!.best}
-            format={{ maximumFractionDigits: 0 }}
-            goodDirection="down"
-            starved={starved}
-            unit="rounds"
-            current={stats?.totalRounds ?? 0}
-            required={3}
-          />
-          <StatTile
-            label="Avg to par"
-            // avgToPar can be null even with enough rounds → honest starve.
-            value={starved || stats!.avgToPar === null ? undefined : stats!.avgToPar}
-            format={{ maximumFractionDigits: 1, signDisplay: 'exceptZero' }}
-            goodDirection="down"
-            starved={starved || (stats?.avgToPar ?? null) === null}
-            unit="rounds"
-            current={stats?.totalRounds ?? 0}
-            required={3}
-          />
-          <StatTile
-            label="% under par"
-            value={starved ? undefined : stats!.underParPct}
-            format={{ maximumFractionDigits: 0 }}
-            suffix="%"
-            // The categorical scoring trend ('improving'/'declining'/'stable',
-            // null until 6+ scored rounds) is surfaced honestly as a separate
-            // StatusPill below — never faked into a numeric delta chip here.
-            hideTrend
-            starved={starved}
-            unit="rounds"
-            current={stats?.totalRounds ?? 0}
-            required={3}
-          />
-        </div>
-      </Inset>
+      {/* ── ONE HERO — an elevated KPI band. Each tile is LIFTED onto bg-surface
+          with a defined edge + resting shadow (NOT the old sunken-in-sunken
+          well), and the two scoring tiles carry their real chronological series
+          so a green/amber sparkline + delta reads at a glance. ─────────────--*/}
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <StatTile
+          label="Rounds"
+          value={starved ? undefined : stats!.totalRounds}
+          format={{ maximumFractionDigits: 0 }}
+          starved={starved}
+          unit="rounds"
+          current={stats?.totalRounds ?? 0}
+          required={3}
+          starvedTitle="Awaiting rounds"
+          className="bg-surface border border-border-subtle shadow-flat"
+        />
+        <StatTile
+          label="Avg score"
+          value={starved ? undefined : stats!.avg}
+          format={{ maximumFractionDigits: 1 }}
+          goodDirection="down"
+          trendData={!starved && scoreSeries.length >= 2 ? scoreSeries : undefined}
+          starved={starved}
+          unit="rounds"
+          current={stats?.totalRounds ?? 0}
+          required={3}
+          className="bg-surface border border-border-subtle shadow-flat"
+        />
+        <StatTile
+          label="Best round"
+          value={starved ? undefined : stats!.best}
+          format={{ maximumFractionDigits: 0 }}
+          goodDirection="down"
+          starved={starved}
+          unit="rounds"
+          current={stats?.totalRounds ?? 0}
+          required={3}
+          className="bg-surface border border-border-subtle shadow-flat"
+        />
+        <StatTile
+          label="Avg to par"
+          // avgToPar can be null even with enough rounds → honest starve.
+          value={starved || stats!.avgToPar === null ? undefined : stats!.avgToPar}
+          format={{ maximumFractionDigits: 1, signDisplay: 'exceptZero' }}
+          goodDirection="down"
+          trendData={
+            !starved && stats!.avgToPar !== null && toParSeries.length >= 2 ? toParSeries : undefined
+          }
+          starved={starved || (stats?.avgToPar ?? null) === null}
+          unit="rounds"
+          current={stats?.totalRounds ?? 0}
+          required={3}
+          className="bg-surface border border-border-subtle shadow-flat"
+        />
+        <StatTile
+          label="% under par"
+          value={starved ? undefined : stats!.underParPct}
+          format={{ maximumFractionDigits: 0 }}
+          suffix="%"
+          // The categorical scoring trend ('improving'/'declining'/'stable',
+          // null until 6+ scored rounds) is surfaced honestly as a separate
+          // StatusPill below — never faked into a numeric delta chip here.
+          hideTrend
+          starved={starved}
+          unit="rounds"
+          current={stats?.totalRounds ?? 0}
+          required={3}
+          className="bg-surface border border-border-subtle shadow-flat"
+        />
+      </div>
 
       {/* Scoring-trend read — honest categorical pill, shown only when the
           server could classify a trend (needs 6+ scored rounds). */}
@@ -468,9 +458,9 @@ export function FairwayRoundsLibrary({
               />
             </Surface>
           ) : (
-            <div className="flex flex-col gap-8">
+            <div className="flex flex-col gap-5">
               {grouped.map((group, gi) => {
-                // Best (lowest score-to-par) of the period → accent rail.
+                // Best (lowest score-to-par) of the month → accent rail + badge.
                 let bestId: string | null = null;
                 let bestScore = Infinity;
                 for (const r of group.rounds) {
@@ -479,12 +469,50 @@ export function FairwayRoundsLibrary({
                     bestId = r.id;
                   }
                 }
+                const { scoredCount, spark, avg, best } = monthSummary(group.rounds);
                 return (
-                  <section key={`${group.label}-${gi}`}>
-                    <PeriodHeader label={group.label} rounds={group.rounds} />
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  // Each month is ONE premium block (a ledger), not a wall of
+                  // cards: a summary header + a divided list of clickable rows.
+                  <Surface key={`${group.label}-${gi}`} padding="none" className="overflow-hidden">
+                    <div className="flex items-end justify-between gap-4 border-b border-border-subtle px-4 py-3">
+                      <div className="flex min-w-0 items-baseline gap-3">
+                        <h3 className="whitespace-nowrap font-fw-display text-body-lg font-semibold tracking-[-0.01em] text-text-primary">
+                          {group.label}
+                        </h3>
+                        <div className="hidden items-baseline gap-2 font-fw-sans text-caption text-text-tertiary sm:flex">
+                          <span className="tabular-nums">
+                            {scoredCount} round{scoredCount === 1 ? '' : 's'}
+                          </span>
+                          {avg !== null && (
+                            <>
+                              <span className="text-border-strong">·</span>
+                              <span className="tabular-nums">avg {avg.toFixed(1)}</span>
+                            </>
+                          )}
+                          {best !== null && (
+                            <>
+                              <span className="text-border-strong">·</span>
+                              <span className="tabular-nums text-accent-700">best {best}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      {/* Omit the sparkline when there are fewer than 2 scores. */}
+                      {spark.length >= 2 && (
+                        <Sparkline
+                          data={spark}
+                          goodDirection="down"
+                          width={120}
+                          height={24}
+                          label={`${group.label} scores`}
+                          className="flex-shrink-0"
+                        />
+                      )}
+                    </div>
+
+                    <div className="divide-y divide-border-subtle">
                       {group.rounds.map((round) => (
-                        <FairwayRoundCard
+                        <FairwayRoundRow
                           key={round.id}
                           round={round}
                           isBestOfPeriod={round.id === bestId && group.rounds.length > 1}
@@ -492,7 +520,7 @@ export function FairwayRoundsLibrary({
                         />
                       ))}
                     </div>
-                  </section>
+                  </Surface>
                 );
               })}
             </div>

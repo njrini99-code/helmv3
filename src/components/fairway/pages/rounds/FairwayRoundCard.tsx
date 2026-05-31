@@ -36,19 +36,19 @@ import type { RoundLibraryRound } from './FairwayRoundsLibrary';
 /** Score-to-par tone: under par = accent, level = neutral, over par = amber. */
 type ScoreTone = 'under' | 'par' | 'over';
 
-function scoreToParTone(stp: number): ScoreTone {
+export function scoreToParTone(stp: number): ScoreTone {
   if (stp < 0) return 'under';
   if (stp === 0) return 'par';
   return 'over';
 }
 
 /** "E" at level, signed otherwise. */
-function formatToPar(stp: number): string {
+export function formatToPar(stp: number): string {
   if (stp === 0) return 'E';
   return stp > 0 ? `+${stp}` : `${stp}`;
 }
 
-function getRoundTypeLabel(type: string | null): string {
+export function getRoundTypeLabel(type: string | null): string {
   switch (type) {
     case 'tournament':
       return 'Tournament';
