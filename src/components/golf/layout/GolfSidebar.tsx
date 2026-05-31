@@ -29,7 +29,9 @@ import {
   IconTarget,
   IconSparkles,
   IconUserPlus,
+  IconLayoutGrid,
 } from '@/components/icons';
+import { useRedesign } from '@/lib/redesign/flag';
 
 interface NavItem {
   name: string;
@@ -87,6 +89,17 @@ const playerSecondaryNav: NavItem[] = [
   { name: 'Classes', href: '/golf/dashboard/classes', icon: IconBook },
 ];
 
+// Player secondary, REDESIGN (Fairway) variant — the Team Hub consolidates
+// Tasks/Announcements/Travel/Classes into one destination, so the standalone
+// "Classes" rail item is replaced by "Team Hub". Calendar + Messages stay in
+// the primary rail (separate). Gated on the redesign flag so the flag-OFF rail
+// is byte-for-byte unchanged.
+const playerSecondaryNavRedesign: NavItem[] = [
+  { name: 'My Qualifiers', href: '/golf/dashboard/my-qualifiers', icon: IconTrophy },
+  { name: 'Roster', href: '/golf/dashboard/roster', icon: IconUsers },
+  { name: 'Team Hub', href: '/golf/dashboard/team-hub', icon: IconLayoutGrid },
+];
+
 interface GolfSidebarProps {
   userRole: 'coach' | 'player';
   userName?: string;
@@ -103,6 +116,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   const [isSigningOut, setIsSigningOut] = useState(false);
 
   const badges = useNotificationBadges();
+  const redesign = useRedesign();
 
   // Inject badge counts into nav items
   const primaryNav = useMemo(() => {
@@ -121,8 +135,11 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
   // moved to Cmd+K only in the 2026-05-28 IA trim. Keep the memo shape so
   // adding a badge later is a one-line change.
   const secondaryNav = useMemo(() => {
-    return userRole === 'coach' ? coachSecondaryNav : playerSecondaryNav;
-  }, [userRole]);
+    if (userRole === 'coach') return coachSecondaryNav;
+    // Player: the Fairway redesign swaps the standalone "Classes" rail item for
+    // the consolidated "Team Hub". Flag OFF → unchanged legacy secondary nav.
+    return redesign ? playerSecondaryNavRedesign : playerSecondaryNav;
+  }, [userRole, redesign]);
 
   // For mobile, always show expanded
   const isCollapsed = isMobile ? false : collapsed;
