@@ -32,6 +32,25 @@ function fullName(m: TeamMember): string {
   return `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || 'Team member';
 }
 
+// Soft, warm-friendly tints for the initials fallback so unselected avatars
+// read like real profile avatars (not flat gray) when a member has no photo.
+// Deterministic per member id, so a person keeps the same color every render.
+const AVATAR_TINTS: ReadonlyArray<{ bg: string; text: string }> = [
+  { bg: '#E7F0E7', text: '#3C6B4B' }, // sage
+  { bg: '#E6EEF7', text: '#3A5B7C' }, // blue
+  { bg: '#F6EEDF', text: '#876733' }, // tan
+  { bg: '#F4E7EC', text: '#8A3B5C' }, // rose
+  { bg: '#ECE6F3', text: '#5B3B7C' }, // violet
+  { bg: '#DFF0EE', text: '#2E6A65' }, // teal
+  { bg: '#F7E9DF', text: '#8A4E2D' }, // clay
+  { bg: '#E5F1F4', text: '#2E6377' }, // cyan
+];
+function tintFor(seed: string): { bg: string; text: string } {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return AVATAR_TINTS[h % AVATAR_TINTS.length]!;
+}
+
 export function FairwayCalendarMemberRail({
   teamMembers,
   selectedPlayerIds,
@@ -73,6 +92,7 @@ export function FairwayCalendarMemberRail({
           const idx = selectedPlayerIds.indexOf(m.id);
           const selected = idx !== -1;
           const color = selected ? PLAYER_COLORS[idx % PLAYER_COLORS.length]! : null;
+          const tint = tintFor(m.id);
           return (
             <button
               key={m.id}
@@ -82,15 +102,15 @@ export function FairwayCalendarMemberRail({
               aria-label={selected ? `${fullName(m)} (viewing schedule)` : `View ${fullName(m)}'s schedule`}
               title={fullName(m)}
               className={cn(
-                'relative grid h-9 w-9 flex-shrink-0 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold transition-transform',
-                !selected &&
-                  'bg-surface-sunken text-text-secondary ring-1 ring-border-subtle hover:bg-surface-tint',
-                selected && 'scale-[1.06] text-white',
+                'relative grid h-9 w-9 flex-shrink-0 place-items-center overflow-visible rounded-full font-fw-sans text-caption font-semibold ring-1 ring-border-subtle transition-transform hover:ring-border-strong',
+                selected && 'scale-[1.06] text-white ring-0',
               )}
               style={
                 selected && color
-                  ? { backgroundColor: color.bg, boxShadow: `0 0 0 2px ${color.border}` }
-                  : undefined
+                  ? { backgroundColor: color.bg, color: '#fff', boxShadow: `0 0 0 2px ${color.border}` }
+                  : m.avatar_url
+                    ? undefined
+                    : { backgroundColor: tint.bg, color: tint.text }
               }
             >
               {m.avatar_url ? (
