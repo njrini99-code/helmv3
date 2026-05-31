@@ -772,10 +772,10 @@ function EdgeInstrument({
           </div>
         ) : hasEdge ? (
           <div className="flex flex-col gap-2 md:items-end md:text-right">
-            <span className="font-fw-mono text-[56px] font-semibold leading-none tabular-nums text-text-primary">
+            <span className="font-fw-mono text-[64px] font-bold leading-none tabular-nums text-accent-600">
               {edgeDisplay}
             </span>
-            <span className="font-fw-sans text-caption uppercase tracking-[0.1em] text-text-tertiary">
+            <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-secondary">
               {edgeLabel}
             </span>
             {bestOnTeam ? (
