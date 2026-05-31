@@ -264,6 +264,9 @@ export class PatternMiner {
               roundCount: this.rounds.length,
               thresholds: { ...THRESHOLDS, scaledMinSampleSize: scaledMinSample },
             },
+            // Routine pipeline signal — keep the admin-table audit trail and the
+            // console line above, but don't open a recurring Sentry issue.
+            skipSentry: true,
           },
           severity,
         );
