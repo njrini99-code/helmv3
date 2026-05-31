@@ -63,13 +63,16 @@ import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrap
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { useRouter } from 'next/navigation';
 import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
+import type { GolfEventFormData, RecurringEditScope } from '@/components/golf/calendar/EventDetailModal';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import { FairwayAgendaView } from './FairwayAgendaView';
 import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
 import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
 import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
+import { FairwayEventEditor } from './FairwayEventEditor';
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
 
@@ -82,6 +85,8 @@ export interface FairwayCalendarProps {
   upcomingCount: number;
   /** ISO timestamp captured on the server — seeds the deferred `nowRef`. */
   serverNow: string;
+  /** Current coach/player id — excluded from the attendee picker. */
+  currentUserId?: string;
 }
 
 /** Local midnight of the day represented by the given Date. */
@@ -103,7 +108,9 @@ export function FairwayCalendar({
   teamTimezone,
   upcomingCount,
   serverNow,
+  currentUserId,
 }: FairwayCalendarProps) {
+  const router = useRouter();
   // ── serverNow → nowRef deferred hydration (mirrors the legacy surface) ──────
   const initialFocus = React.useMemo(() => toLocalMidnight(new Date(serverNow)), [serverNow]);
   const [focusDate, setFocusDate] = React.useState<Date>(initialFocus);
@@ -202,6 +209,159 @@ export function FairwayCalendar({
     });
     return out;
   }, [availabilityMode, selectedPlayerIds, availByPlayer, teamMembers]);
+
+  // ── Coach create/edit event (Fairway editor) ───────────────────────────────
+  // The editor only GATHERS form data; these handlers replicate
+  // PremiumCalendarClient's payload mapping VERBATIM and call the EXACT same
+  // server actions. They throw on failure so the editor surfaces the error.
+  const [editorOpen, setEditorOpen] = React.useState(false);
+  const [editorEvent, setEditorEvent] = React.useState<CalendarEvent | null>(null);
+  const [isSavingEvent, setIsSavingEvent] = React.useState(false);
+
+  const openCreate = React.useCallback(() => {
+    setEditorEvent(null);
+    setEditorOpen(true);
+  }, []);
+  const openEdit = React.useCallback((ev: CalendarEvent) => {
+    setEditorEvent(ev);
+    setEditorOpen(true);
+  }, []);
+
+  const handleSaveEvent = React.useCallback(
+    async (data: GolfEventFormData) => {
+      setIsSavingEvent(true);
+      const timezoneOffset = new Date().getTimezoneOffset();
+      try {
+        if (!editorEvent) {
+          if (data.recurrence && data.recurrence !== 'none') {
+            const freq = data.recurrence.toUpperCase();
+            const recurrenceRule = `RRULE:FREQ=${freq};INTERVAL=1;COUNT=${data.recurrenceCount}`;
+            const { createRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+            const result = await createRecurringEvent({
+              title: data.title,
+              eventType: data.eventType,
+              startDate: data.startDate,
+              endDate: data.endDate || undefined,
+              startTime: data.allDay ? undefined : data.startTime || undefined,
+              endTime: data.allDay ? undefined : data.endTime || undefined,
+              location: data.location || undefined,
+              description: data.description || undefined,
+              recurrenceRule,
+              requiresRsvp: data.requiresRsvp,
+              rsvpDeadline: data.rsvpDeadline || undefined,
+              maxAttendees: data.maxAttendees || undefined,
+              timezoneOffset,
+            });
+            if (!result.success) throw new Error(result.error || 'Failed to create recurring event');
+          } else {
+            const { createGolfEvent } = await import('@/app/golf/actions/golf');
+            const result = await createGolfEvent({
+              title: data.title,
+              eventType: data.eventType,
+              startDate: data.startDate,
+              endDate: data.endDate || undefined,
+              startTime: data.allDay ? undefined : data.startTime || undefined,
+              endTime: data.allDay ? undefined : data.endTime || undefined,
+              allDay: data.allDay,
+              location: data.location || undefined,
+              courseName: data.courseName || undefined,
+              description: data.description || undefined,
+              isMandatory: data.isMandatory,
+              requiresRsvp: data.requiresRsvp,
+              rsvpDeadline: data.rsvpDeadline || undefined,
+              maxAttendees: data.maxAttendees || undefined,
+              attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+              timezoneOffset,
+            } as never);
+            if (!result.success) throw new Error(result.error || 'Failed to create event');
+          }
+        } else if (data.editScope && data.editScope !== 'this') {
+          const { editRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+          const result = await editRecurringEvent({
+            eventId: editorEvent.id,
+            originalStartDate: editorEvent.start_date,
+            scope: data.editScope,
+            timezoneOffset,
+            updates: {
+              title: data.title,
+              description: data.description || undefined,
+              startDate: data.startDate,
+              endDate: data.endDate || data.startDate,
+              startTime: data.allDay ? undefined : data.startTime || undefined,
+              endTime: data.allDay ? undefined : data.endTime || undefined,
+              location: data.location || undefined,
+            },
+          });
+          if (!result.success) throw new Error(result.error || 'Failed to update recurring event');
+        } else {
+          const { updateGolfEvent } = await import('@/app/golf/actions/golf');
+          const result = await updateGolfEvent(editorEvent.id, {
+            title: data.title,
+            eventType: data.eventType,
+            startDate: data.startDate,
+            endDate: data.endDate || data.startDate,
+            startTime: data.allDay ? undefined : data.startTime || undefined,
+            endTime: data.allDay ? undefined : data.endTime || undefined,
+            allDay: data.allDay,
+            location: data.location || undefined,
+            courseName: data.courseName || undefined,
+            description: data.description || undefined,
+            isMandatory: data.isMandatory,
+            requiresRsvp: data.requiresRsvp,
+            rsvpDeadline: data.rsvpDeadline || undefined,
+            maxAttendees: data.maxAttendees || undefined,
+            attendeeIds: data.attendeeIds.length > 0 ? data.attendeeIds : undefined,
+            timezoneOffset,
+          } as never);
+          if (!result.success) throw new Error(result.error || 'Failed to update event');
+        }
+        setEditorOpen(false);
+        setEditorEvent(null);
+        router.refresh();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+          window.location.reload();
+          return;
+        }
+        throw err;
+      } finally {
+        setIsSavingEvent(false);
+      }
+    },
+    [editorEvent, router],
+  );
+
+  const handleDeleteEvent = React.useCallback(
+    async (scope?: RecurringEditScope) => {
+      if (!editorEvent) return;
+      setIsSavingEvent(true);
+      try {
+        if (scope && scope !== 'this') {
+          const { deleteRecurringEvent } = await import('@/app/golf/actions/recurring-events');
+          const result = await deleteRecurringEvent(editorEvent.id, editorEvent.start_date, scope);
+          if (!result.success) throw new Error(result.error || 'Failed to delete recurring event');
+        } else {
+          const { deleteGolfEvent } = await import('@/app/golf/actions/golf');
+          const result = await deleteGolfEvent(editorEvent.id);
+          if (!result.success) throw new Error(result.error || 'Failed to delete event');
+        }
+        setEditorOpen(false);
+        setEditorEvent(null);
+        router.refresh();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.toLowerCase().includes('server action') && msg.toLowerCase().includes('not found')) {
+          window.location.reload();
+          return;
+        }
+        throw err;
+      } finally {
+        setIsSavingEvent(false);
+      }
+    },
+    [editorEvent, router],
+  );
 
   // ── Drawer + RSVP state (Agenda taps open the Fairway drawer; the Week/Month
   //    grid keeps opening the legacy EventDetailModal inside the wrapper). ─────
@@ -388,14 +548,14 @@ export function FairwayCalendar({
 
   const handlePrimaryAction = React.useCallback(() => {
     if (isCoach) {
-      // Land on the Week grid — the legacy create surface (FAB + grid "+" + N).
-      setView('week');
+      // Open the native Fairway create-event editor.
+      openCreate();
       return;
     }
     if (mostImminentUnrsvpd) {
       void openDrawerForEvent(mostImminentUnrsvpd);
     }
-  }, [isCoach, mostImminentUnrsvpd, openDrawerForEvent]);
+  }, [isCoach, mostImminentUnrsvpd, openDrawerForEvent, openCreate]);
 
   // Player "Respond" only renders when there is something to respond to; on the
   // all-past demo (0 future events) it degrades to calm browse (no fake CTA).
@@ -559,7 +719,31 @@ export function FairwayCalendar({
         rsvpStatus={drawerEvent ? userRsvpStatuses.get(drawerEvent.id) ?? null : null}
         rsvpSummary={drawerRsvpSummary}
         onRespond={!isCoach ? handleRespond : undefined}
+        onEdit={
+          isCoach
+            ? (ev) => {
+                setDrawerOpen(false);
+                openEdit(ev);
+              }
+            : undefined
+        }
       />
+
+      {/* ── Coach create / edit event editor (native Fairway) ─────────────────── */}
+      {isCoach ? (
+        <FairwayEventEditor
+          open={editorOpen}
+          onClose={() => setEditorOpen(false)}
+          event={editorEvent}
+          isCoach={isCoach}
+          onSave={handleSaveEvent}
+          onDelete={handleDeleteEvent}
+          isSaving={isSavingEvent}
+          teamPlayers={teamMembers}
+          currentUserId={currentUserId}
+          timezone={teamTimezone}
+        />
+      ) : null}
     </div>
   );
 }

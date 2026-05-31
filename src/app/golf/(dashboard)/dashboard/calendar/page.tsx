@@ -185,6 +185,7 @@ export default async function GolfCalendarPage() {
           teamTimezone={teamTimezone}
           upcomingCount={upcomingCount}
           serverNow={serverNow}
+          currentUserId={coach?.id ?? playerId ?? undefined}
         />
       </div>
     );

@@ -35,3 +35,6 @@ export type { FairwayEventCardProps } from './FairwayEventCard';
 
 export { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 export type { FairwayEventDetailDrawerProps } from './FairwayEventDetailDrawer';
+
+export { FairwayEventEditor } from './FairwayEventEditor';
+export type { FairwayEventEditorProps } from './FairwayEventEditor';

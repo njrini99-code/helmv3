@@ -22,7 +22,7 @@
 
 import * as React from 'react';
 import { format } from 'date-fns';
-import { Check, X, MapPin, Clock, ExternalLink } from 'lucide-react';
+import { Check, X, MapPin, Clock, ExternalLink, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, Inset, Readout, Button, StatusPill } from '@/components/fairway';
 import type { FwStatusTone } from '@/components/fairway';
@@ -70,6 +70,8 @@ export interface FairwayEventDetailDrawerProps {
   } | null;
   /** Player RSVP submit (the EXISTING respondToEvent action, via the parent). */
   onRespond?: (eventId: string, status: RSVPStatus) => Promise<{ success: boolean; error?: string }>;
+  /** Coach view: opens the Fairway create/edit editor for this event. */
+  onEdit?: (event: CalendarEvent) => void;
 }
 
 function mapsHref(location: string): string {
@@ -96,6 +98,7 @@ export function FairwayEventDetailDrawer({
   rsvpStatus,
   rsvpSummary,
   onRespond,
+  onEdit,
 }: FairwayEventDetailDrawerProps) {
   const [pendingStatus, setPendingStatus] = React.useState<RSVPStatus | null>(null);
   const [error, setError] = React.useState<string | null>(null);
@@ -208,6 +211,19 @@ export function FairwayEventDetailDrawer({
                 ))}
               </div>
             </div>
+          ) : null}
+
+          {/* Coach: edit this event in the native Fairway editor. */}
+          {isCoach && onEdit && event ? (
+            <Button
+              variant="secondary"
+              size="md"
+              fullWidth
+              leftIcon={<Pencil className="h-4 w-4" aria-hidden />}
+              onClick={() => onEdit(event)}
+            >
+              Edit event
+            </Button>
           ) : null}
 
           {/* Player RSVP — 3 Fairway Buttons wired to the existing respondToEvent. */}

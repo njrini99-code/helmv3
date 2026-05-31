@@ -45,7 +45,7 @@ const AVATAR_TINTS: ReadonlyArray<{ bg: string; text: string }> = [
   { bg: '#F7E9DF', text: '#8A4E2D' }, // clay
   { bg: '#E5F1F4', text: '#2E6377' }, // cyan
 ];
-function tintFor(seed: string): { bg: string; text: string } {
+export function tintFor(seed: string): { bg: string; text: string } {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
   return AVATAR_TINTS[h % AVATAR_TINTS.length]!;
