@@ -64,45 +64,51 @@ export function StandingStrip(props: StandingStripProps) {
       aria-label={ariaLabel}
       data-slot="standing-strip"
       data-state={state}
-      className="rounded-card border border-border-subtle bg-surface p-4"
+      className="rounded-card border border-border-subtle bg-surface p-4 shadow-soft"
     >
-      {/* Header: label + vs-team delta */}
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <h4 className="truncate font-fw-sans text-body-sm font-medium text-text-primary">
+      {/* Header: label + vs-team delta as a colored pill (green = better) */}
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <h4 className="truncate font-fw-display text-body font-semibold tracking-[-0.01em] text-text-primary">
           {props.metric_label}
         </h4>
         {showTeam ? (
-          <span className={cn('font-fw-mono text-caption tabular-nums', deltaToneClass)}>
+          <span
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-fw-mono text-caption font-bold tabular-nums',
+              delta.tone === 'good'
+                ? 'bg-accent-500 text-text-on-accent'
+                : delta.tone === 'bad'
+                  ? 'bg-fw-danger-bg text-fw-danger'
+                  : 'bg-inset text-text-secondary',
+            )}
+          >
             {delta.arrow} vs team
           </span>
         ) : null}
       </div>
 
-      {/* Value row: Team / You / PGA */}
-      <div className="mb-2 flex items-baseline justify-between font-fw-mono text-caption tabular-nums text-text-tertiary">
+      {/* Premium meter — green "You" hero, black PGA tick, grey Team tick */}
+      <StripTrack
+        youPct={youPct}
+        teamPct={teamPct}
+        pgaPct={pgaPct}
+        youValue={formatValue(props.player_value, props.unit)}
+      />
+
+      {/* High-contrast 3-up readouts (You is the green hero figure) */}
+      <div className="grid grid-cols-3 gap-2">
+        <Readout label="You" value={formatValue(props.player_value, props.unit)} tone="accent" align="start" />
         {showTeam && props.team_avg !== null ? (
-          <span>Team {formatValue(props.team_avg, props.unit)}</span>
+          <Readout label="Team" value={formatValue(props.team_avg, props.unit)} align="center" />
         ) : (
-          <span className="opacity-0">·</span>
+          <Readout label="Team" value="—" tone="muted" align="center" />
         )}
-        <span className="font-fw-sans text-body-sm font-medium text-text-primary">
-          You {formatValue(props.player_value, props.unit)}
-        </span>
-        <span>PGA {formatValue(props.pga_value, props.unit)}</span>
-      </div>
-
-      {/* Track + three markers */}
-      <StripTrack youPct={youPct} teamPct={teamPct} pgaPct={pgaPct} />
-
-      {/* Scale endpoints */}
-      <div className="mt-1 flex items-baseline justify-between font-fw-mono text-eyebrow tabular-nums text-text-tertiary">
-        <span>{formatValue(props.scale.min, props.unit)}</span>
-        <span>{formatValue(props.scale.max, props.unit)}</span>
+        <Readout label="PGA" value={formatValue(props.pga_value, props.unit)} align="end" />
       </div>
 
       {/* Cohort text */}
       {cohortText ? (
-        <p className={cn('mt-2 font-fw-sans text-caption', deltaToneClass)}>{cohortText}</p>
+        <p className={cn('mt-3 font-fw-sans text-caption font-medium', deltaToneClass)}>{cohortText}</p>
       ) : null}
 
       {state === 'cold-start' ? (
@@ -115,57 +121,113 @@ export function StandingStrip(props: StandingStripProps) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Track + markers (flat, matte — no glass)                                   */
+/* Premium meter — green "you" hero on a defined track, dark field ticks      */
 /* -------------------------------------------------------------------------- */
+
+/** Keep markers + the floating badge clear of the very edge so nothing clips. */
+const clampPct = (n: number) => Math.max(5, Math.min(95, n));
 
 function StripTrack({
   youPct,
   teamPct,
   pgaPct,
+  youValue,
 }: {
   youPct: number;
   teamPct: number | null;
   pgaPct: number;
+  youValue: string;
 }) {
+  const you = clampPct(youPct);
+  const pga = clampPct(pgaPct);
+  const team = teamPct !== null ? clampPct(teamPct) : null;
   return (
-    <div className="relative h-2 w-full overflow-visible rounded-full bg-inset">
-      {/* PGA reference marker (calm) */}
-      <Marker leftPct={pgaPct} label="P" toneClass="bg-text-tertiary text-surface" />
-      {/* Team marker — omitted in cold-start */}
-      {teamPct !== null ? (
-        <Marker leftPct={teamPct} label="T" toneClass="bg-text-secondary text-surface" />
-      ) : null}
-      {/* You marker — the hero, drawn last so it sits on top */}
-      <Marker
-        leftPct={youPct}
-        label="●"
-        toneClass="bg-accent-500 text-text-on-accent ring-2 ring-accent-200"
-      />
+    <div className="relative px-1 pt-8 pb-7">
+      {/* Floating green "You" value badge above the hero marker */}
+      <div
+        className="absolute top-1 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-500 px-2.5 py-1 font-fw-mono text-caption font-bold tabular-nums text-text-on-accent shadow-soft"
+        style={{ left: `${you}%` }}
+      >
+        {youValue}
+      </div>
+
+      {/* The track — defined ring so it reads against the card */}
+      <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
+        {/* PGA reference tick — black, high contrast */}
+        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label="PGA" />
+        {/* Team tick — mid grey (omitted in cold-start) */}
+        {team !== null ? (
+          <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" />
+        ) : null}
+        {/* You — the green hero dot, drawn last so it sits on top */}
+        <span
+          className="absolute top-1/2 z-10 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-500 shadow-soft ring-[3px] ring-surface"
+          style={{ left: `${you}%` }}
+          aria-hidden="true"
+        />
+      </div>
     </div>
   );
 }
 
-function Marker({
+function Tick({
   leftPct,
+  barClass,
+  labelClass,
   label,
-  toneClass,
 }: {
   leftPct: number;
+  barClass: string;
+  labelClass: string;
   label: string;
-  toneClass: string;
 }) {
   return (
     <span
-      className={cn(
-        'absolute top-1/2 flex h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center',
-        'rounded-full text-eyebrow font-semibold',
-        toneClass,
-      )}
+      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
       style={{ left: `${leftPct}%` }}
       aria-hidden="true"
     >
-      {label}
+      <span className={cn('block h-4 w-[2.5px] rounded-full', barClass)} />
+      <span
+        className={cn(
+          'absolute left-1/2 top-[calc(100%+5px)] -translate-x-1/2 font-fw-mono text-eyebrow font-semibold uppercase tracking-wide',
+          labelClass,
+        )}
+      >
+        {label}
+      </span>
     </span>
+  );
+}
+
+function Readout({
+  label,
+  value,
+  tone = 'default',
+  align = 'start',
+}: {
+  label: string;
+  value: string;
+  tone?: 'accent' | 'default' | 'muted';
+  align?: 'start' | 'center' | 'end';
+}) {
+  return (
+    <div
+      className={cn(
+        'flex flex-col gap-0.5',
+        align === 'center' ? 'items-center text-center' : align === 'end' ? 'items-end text-right' : 'items-start',
+      )}
+    >
+      <span className="font-fw-mono text-eyebrow uppercase tracking-wide text-text-tertiary">{label}</span>
+      <span
+        className={cn(
+          'font-fw-display text-body font-semibold tabular-nums',
+          tone === 'accent' ? 'text-accent-600' : tone === 'muted' ? 'text-text-tertiary' : 'text-text-primary',
+        )}
+      >
+        {value}
+      </span>
+    </div>
   );
 }
 

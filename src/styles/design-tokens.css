@@ -1,0 +1,190 @@
+/* ============================================================================
+ * Fairway Design System — design tokens (ADDITIVE / FOUNDATION)
+ * ----------------------------------------------------------------------------
+ * The single source of truth for the "Fairway" warm-premium design system
+ * (see ui-intelligence/DESIGN-SYSTEM.md + .atlas-parts-remediation/_designsystem.json).
+ *
+ * IMPORTANT — THIS FILE IS PURELY ADDITIVE. It introduces NEW, namespaced
+ * custom properties only. It does NOT redefine or override any existing token
+ * (no `--font-sans`, `--font-geist-*`, `--font-fraunces`, `--color-primary-*`,
+ * `--radius-*`, `--warm-*`, etc.). The current app's appearance is 100%
+ * unchanged: nothing here is consumed unless a component opts in via the
+ * Fairway Tailwind utilities (bg-canvas, text-text-primary, rounded-card,
+ * shadow-soft, font-fw-display …) or the `.fairway-ds` scope class.
+ *
+ * The spec writes these tokens as a Tailwind v4 `@theme` block, but THIS REPO
+ * STAYS ON TAILWIND v3.4. So the canonical token values below are expressed as
+ * plain CSS custom properties on :root and bridged to Tailwind via
+ * theme.extend in tailwind.config.ts. Names/values match the locked spec.
+ *
+ * All design-system properties are prefixed `--fw-` so they can NEVER collide
+ * with the existing token set in src/styles/tokens.css or src/app/globals.css.
+ * ========================================================================== */
+
+:root {
+  /* ---- Brand / accent scale (helm green — recolor never to blue/violet) ---- */
+  --fw-color-accent-50:  oklch(0.971 0.024 150);   /* success / selection wash */
+  --fw-color-accent-100: oklch(0.939 0.045 150);
+  --fw-color-accent-200: oklch(0.885 0.075 150);
+  --fw-color-accent-300: oklch(0.806 0.105 150);
+  --fw-color-accent-400: oklch(0.724 0.132 150);   /* active marker on black sidebar */
+  --fw-color-accent-500: oklch(0.648 0.149 149.6); /* #16A34A — helm green, locked */
+  --fw-color-accent-600: oklch(0.567 0.142 149.6); /* hover / pressed */
+  --fw-color-accent-700: oklch(0.488 0.124 150);
+  --fw-color-accent-800: oklch(0.415 0.103 150);
+  --fw-color-accent-900: oklch(0.357 0.083 150);
+
+  /* ---- Warm neutrals (STONE family ONLY — yellow/red cast, never slate/zinc) ---- */
+  --fw-color-warm-50:  oklch(0.985 0.004 95);
+  --fw-color-warm-100: oklch(0.967 0.005 90);
+  --fw-color-warm-200: oklch(0.927 0.007 85);
+  --fw-color-warm-300: oklch(0.872 0.009 80);
+  --fw-color-warm-400: oklch(0.717 0.013 75);   /* text tertiary / meta */
+  --fw-color-warm-500: oklch(0.566 0.015 70);
+  --fw-color-warm-600: oklch(0.444 0.014 65);   /* text secondary */
+  --fw-color-warm-700: oklch(0.374 0.012 60);
+  --fw-color-warm-800: oklch(0.268 0.009 55);
+  --fw-color-warm-900: oklch(0.216 0.007 49);   /* text primary #1c1917 */
+  --fw-color-warm-950: oklch(0.147 0.005 49);   /* sidebar warm-black #0c0a09 (NOT #000) */
+
+  /* ---- Semantic surfaces (warm, matte, OPAQUE at rest — not translucent) ---- */
+  --fw-color-canvas:         oklch(0.953 0.022 83);  /* deeper warm champagne page base — cards now clearly LIFT off it (was 0.978, near-identical to the 0.984 card; the ~0.03 gap is the premium card/page separation the flat-cream look lacked) */
+  --fw-color-surface:        oklch(0.984 0.016 86);  /* THE card: warm CREAM, not white. It lifts off the deeper champagne page via its hairline + soft shadow — never by being a cold white sheet (we keep coming back to this: no white cards). */
+  --fw-color-surface-tint:   oklch(0.974 0.019 85);  /* a degree warmer — hero plinths / warm bands */
+  --fw-color-surface-sunken: oklch(0.963 0.021 84);  /* wells, insets, input tracks */
+  --fw-color-elevated:       oklch(0.990 0.012 88);  /* menus / popovers / modal body — brightest warm cream */
+
+  /* ---- The sunlit page wash: a WARM CREAM gradient for the canvas, not a flat
+          fill. A faint near-white highlight at the top reads as afternoon light;
+          the column deepens gently into a warmer, creamier "parchment" toward the
+          foot (chroma + warmth rise, lightness drops ~2%). Restrained — light &
+          airy, never a colored gradient. Consumed via `bg-canvas-gradient`
+          (layer it over the `bg-canvas` color so any overscroll stays warm). ---- */
+  --fw-gradient-canvas:
+    radial-gradient(132% 92% at 50% -15%,
+      oklch(0.982 0.014 86) 0%,
+      oklch(0.970 0.020 84) 44%,
+      transparent 78%),
+    linear-gradient(180deg,
+      oklch(0.973 0.018 85) 0%,   /* ≈ #F6EEDF — warm cream even at the top (no white) */
+      oklch(0.955 0.026 83) 52%,  /* ≈ #F1E7D6 — champagne linen, the body of the page */
+      oklch(0.934 0.034 81) 100%); /* ≈ #EBDFCD — soft champagne/sand at the foot (golden-undertone cream) */
+
+  /* ---- Semantic text ---- */
+  --fw-color-text-primary:   var(--fw-color-warm-900);
+  --fw-color-text-secondary: var(--fw-color-warm-600);
+  --fw-color-text-tertiary:  oklch(0.585 0.014 70);  /* readable warm meta text (was warm-400 0.717 — too washed out for labels/values; this clears WCAG AA on cream) */
+  --fw-color-text-on-accent: oklch(0.994 0.006 95); /* cream text on green */
+  --fw-color-text-on-dark:   oklch(0.96 0.005 95);  /* sidebar text */
+
+  /* ---- Borders / warm hairlines (NOT cool gray) ---- */
+  --fw-color-border-subtle: oklch(0.862 0.013 82 / 0.95); /* a VISIBLE warm hairline — card edges read against the deeper canvas (was 0.90/0.8, invisible) */
+  --fw-color-border-strong: oklch(0.872 0.009 80);      /* emphasis / table head */
+  --fw-color-border-focus:  var(--fw-color-accent-500);
+
+  /* ---- Status (green-forward; amber + red are the only off-green hues) ---- */
+  --fw-color-success:    var(--fw-color-accent-500);
+  --fw-color-success-bg: var(--fw-color-accent-50);
+  --fw-color-warning:    oklch(0.74 0.15 70);    /* warm amber */
+  --fw-color-warning-bg: oklch(0.96 0.05 80);
+  --fw-color-danger:     oklch(0.586 0.222 27);  /* #DC2626 */
+  --fw-color-danger-bg:  oklch(0.955 0.03 25);
+
+  /* ---- Dark chrome (sidebar) semantic aliases — warm, recessive ---- */
+  --fw-color-nav-bg:       var(--fw-color-warm-950);
+  --fw-color-nav-surface:  oklch(0.20 0.007 49);   /* hovered/active nav row */
+  --fw-color-nav-text:     var(--fw-color-text-on-dark);
+  --fw-color-nav-text-dim: oklch(0.62 0.007 60);   /* recessive warm nav labels */
+  --fw-color-nav-accent:   var(--fw-color-accent-400); /* active marker on black */
+
+  /* ---- Radius scale (generous & soft — kind, tactile) ---- */
+  --fw-radius-sm:   0.625rem;  /* 10px — inputs, chips */
+  --fw-radius-md:   0.875rem;  /* 14px — list rows, insets */
+  --fw-radius-card: 1.25rem;   /* 20px — THE card radius */
+  --fw-radius-lg:   1.75rem;   /* 28px — modals, sheets, hero plinths, glass bars */
+  --fw-radius-full: 9999px;    /* pills, avatars, primary CTAs */
+
+  /* ---- Elevation — soft, layered, WARM-TINTED (hue ~60), low alpha, two layers.
+          Reads as afternoon light on a matte surface, never hard UI elevation.
+          NEVER pure-black shadow. Resting cards now carry a WHISPER shadow so
+          they float off the deeper canvas (premium, per the inspiration) — still
+          soft afternoon-light, not hard elevation. ---- */
+  --fw-shadow-flat:  0 1px 2px oklch(0.18 0.01 60 / 0.05),
+                     0 2px 6px oklch(0.18 0.01 60 / 0.05);   /* resting card whisper (was none) */
+  --fw-shadow-soft:  0 1px 2px   oklch(0.18 0.01 60 / 0.06),
+                     0 8px 24px  oklch(0.18 0.01 60 / 0.10);   /* hover / raised cards — deeper, premium */
+  --fw-shadow-raise: 0 2px 4px   oklch(0.18 0.01 60 / 0.06),
+                     0 12px 32px oklch(0.18 0.01 60 / 0.10);   /* popovers / floating glass (a.k.a. lift) */
+  --fw-shadow-pop:   0 2px 4px   oklch(0.18 0.01 60 / 0.06),
+                     0 12px 32px oklch(0.18 0.01 60 / 0.10);   /* alias of raise — anchored panels */
+  --fw-shadow-modal: 0 8px 16px  oklch(0.15 0.01 55 / 0.10),
+                     0 24px 64px oklch(0.15 0.01 55 / 0.16);   /* sheets / modals */
+  --fw-glow-accent:  0 0 0 1px var(--fw-color-accent-500),
+                     0 2px 8px oklch(0.648 0.149 149.6 / 0.18); /* accent emphasis */
+
+  /* ---- Spacing rhythm (4px base) — roomier than Linear density ---- */
+  --fw-space-1: 0.25rem; --fw-space-2: 0.5rem;  --fw-space-3: 0.75rem; --fw-space-4: 1rem;
+  --fw-space-5: 1.25rem; --fw-space-6: 1.5rem;  --fw-space-8: 2rem;    --fw-space-10: 2.5rem;
+  --fw-space-12: 3rem;   --fw-space-16: 4rem;
+
+  /* ---- Motion — slow, cinematic, fluid (the 1X tendon-drive tell) ---- */
+  --fw-ease-soft:   cubic-bezier(0.22, 0.61, 0.36, 1);  /* gentle decelerate — default reveal */
+  --fw-ease-glide:  cubic-bezier(0.16, 1, 0.3, 1);      /* cinematic settle — hero/route/sheet */
+  --fw-ease-emph:   cubic-bezier(0.32, 0.72, 0, 1);     /* Apple "emphasized" — glass morph/overlay */
+  --fw-ease-spring: cubic-bezier(0.34, 1.3, 0.5, 1);    /* soft tactile pop — tap/toggle (gentle) */
+  --fw-dur-fast:    180ms;  /* hover / color / tap */
+  --fw-dur-base:    280ms;  /* default UI reveal / crossfade */
+  --fw-dur-medium:  380ms;  /* popover / disclosure */
+  --fw-dur-slow:    520ms;  /* sheet / modal / route — cinematic */
+
+  /* ---- Blur (Liquid Glass material). Deeper now that glass is a signature
+          material on the CoachHelm instrument surfaces (more glass, more depth). ---- */
+  --fw-blur-glass:  22px;  /* desktop Regular glass: top bar, hero card, instrument bezel */
+  --fw-blur-strong: 36px;  /* command palette / modal sheet / raised instrument */
+  --fw-blur-mobile: 16px;  /* low-power downshift (<=768px) */
+
+  /* ---- Z-index contract (one ladder, app-wide) ---- */
+  --fw-z-base: 0; --fw-z-sticky: 10; --fw-z-nav: 20; --fw-z-dropdown: 30;
+  --fw-z-overlay: 40; --fw-z-modal: 50; --fw-z-toast: 60; --fw-z-command: 70;
+
+  /* ---- Liquid Glass tokens — WARM CHAMPAGNE CREAM, not white. The tint is the
+          actual material color you see through the blur, so it must read cream
+          (was #FFFEFA ≈ white, which made every glass panel a cold white sheet).
+          Higher opacity + saturation so the warmth dominates; speculars are warm
+          cream, not pure white. ---- */
+  --fw-glass-tint:        244 232 210;                       /* ≈ #F4E8D2 warm champagne cream (NOT white) */
+  --fw-glass-bg:          rgb(var(--fw-glass-tint) / 0.74);  /* Regular: cream reads through, still glassy */
+  --fw-glass-bg-strong:   rgb(var(--fw-glass-tint) / 0.88);  /* modals / command palette / inset readouts */
+  --fw-glass-saturate:    190%;                              /* richer warm refraction of the champagne wash */
+  --fw-glass-border:      rgb(255 248 233 / 0.5);            /* WARM cream specular rim (not pure white) */
+  --fw-glass-border-bot:  oklch(0.32 0.045 68 / 0.12);       /* deeper warm bottom edge → more depth */
+  --fw-glass-highlight:   rgb(255 249 235 / 0.55);           /* WARM cream inner specular line (not white) */
+  --fw-glass-accent-ring: oklch(0.648 0.149 149.6 / 0.16);   /* green breath on the focal instrument */
+
+  /* ---- Viz scales (tokenized once) ---- */
+  --fw-viz-seq-0: oklch(0.985 0.01 95);     /* sequential: near-cream, coldest */
+  --fw-viz-seq-1: oklch(0.92 0.05 140);
+  --fw-viz-seq-2: oklch(0.80 0.10 145);
+  --fw-viz-seq-3: oklch(0.648 0.149 149.6); /* = helm green */
+  --fw-viz-seq-4: oklch(0.62 0.16 120);     /* green-gold transition */
+  --fw-viz-seq-5: oklch(0.70 0.17 70);      /* warm amber = hottest */
+  --fw-viz-div-neg: oklch(0.66 0.16 55);    /* diverging: warm amber = "strokes lost" */
+  --fw-viz-div-mid: oklch(0.985 0.01 95);   /* cream baseline */
+  --fw-viz-div-pos: oklch(0.648 0.149 149.6); /* helm green = "strokes gained" */
+  --fw-viz-grid:   color-mix(in oklch, var(--fw-color-text-tertiary) 14%, transparent);
+  --fw-viz-axis:   var(--fw-color-text-tertiary);
+  --fw-viz-benchmark: color-mix(in oklch, var(--fw-color-text-secondary) 40%, transparent);
+
+  /* ---- Type — the three Fairway roles.
+          These reference the next/font variables attached in src/app/layout.tsx
+          (--font-fairway-display / --font-fairway-sans / --font-fairway-mono).
+          They are AVAILABLE app-wide but the current body font is unchanged:
+          only Fairway components/scopes opt into them. ---- */
+  /* Apple system sans — the real "built by Steve Jobs" type. SF Pro renders
+     natively on Apple devices via -apple-system / BlinkMacSystemFont; clean
+     system fallbacks elsewhere. NO serif (Fraunces dropped). Numbers stay mono. */
+  --fw-font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --fw-font-sans:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --fw-font-mono:    var(--font-fairway-mono), ui-monospace, "SF Mono", monospace;
+  --fw-numeric-features: "tnum" 1, "lnum" 1;
+}
