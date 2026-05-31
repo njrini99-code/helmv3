@@ -3312,8 +3312,11 @@ export async function triggerPlayerInsightsAfterRound(
     // to console.info instead of the Sentry-instrumented logger that
     // grouped these as warning issues.
     if (analysis.tier1GateMetrics && analysis.tier1GateMetrics.gatedCount > 0) {
+      // playerId is intentionally NOT interpolated — it traces back to
+      // request input and would trip CodeQL js/log-injection. The cron's
+      // outer trace context identifies the player for this run.
       console.info(
-        `[insights.triggerPlayerInsightsAfterRound.gateMetrics] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s) for player ${playerId}`,
+        `[insights.triggerPlayerInsightsAfterRound.gateMetrics] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s)`,
       );
     }
 
@@ -3431,8 +3434,9 @@ export async function triggerPlayerInsightsAfterRound(
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const skipped = cleanInsights.length - inputs.length;
       if (skipped > 0) {
+        // playerId is intentionally NOT interpolated — see gateMetrics note above.
         console.info(
-          `[triggerPlayerInsightsAfterRound.skip-insufficient] skipped ${skipped} legacy records (insufficient sample_n) for player ${playerId}`,
+          `[triggerPlayerInsightsAfterRound.skip-insufficient] skipped ${skipped} legacy records (insufficient sample_n)`,
         );
       }
       await Promise.all(
