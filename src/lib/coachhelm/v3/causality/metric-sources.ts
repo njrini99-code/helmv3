@@ -229,9 +229,43 @@ export const METRIC_SOURCE: Record<MetricId, MetricSourceDef> = {
  *
  * Anything in this map is *not* a canonical MetricId and bypasses the
  * registry coverage test — handled in `lookupMetricSource()`.
+ *
+ * Also includes generator-emitted metric strings that don't have a
+ * canonical MetricId but are surfaced by tier-1 generators as evidence.
+ * Classifying them as `intentional-null` (with a reason) lets the
+ * causality cron bucket them correctly and stops the `unknown-metric`
+ * Sentry warning from firing once per insight per nightly run.
  */
 export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
   score_to_par: { kind: 'rounds', column: 'score_to_par' },
+
+  // PuttDistanceGenerator buckets — putt make-rate by distance.
+  // Same rationale as the canonical `putts_made_*_pct` family:
+  // golf_round_stats_cache aggregates putts by count, not by distance.
+  putt_make_rate_0_3ft:   { kind: 'intentional-null', reason: 'no-per-round-putt-distance-cache' },
+  putt_make_rate_3_6ft:   { kind: 'intentional-null', reason: 'no-per-round-putt-distance-cache' },
+  putt_make_rate_6_10ft:  { kind: 'intentional-null', reason: 'no-per-round-putt-distance-cache' },
+  putt_make_rate_10_15ft: { kind: 'intentional-null', reason: 'no-per-round-putt-distance-cache' },
+  'putt_make_rate_20+ft': { kind: 'intentional-null', reason: 'no-per-round-putt-distance-cache' },
+
+  // ScramblingGenerator — short-side scrambling needs shot-level lie data.
+  shortside_scrambling_pct: { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+
+  // TeeStrategyGenerator — between-cohort comparison (driver vs layback rounds),
+  // not a per-round time-series measurement.
+  tee_strategy_driver_vs_layback: { kind: 'intentional-null', reason: 'between-cohort-not-per-round' },
+
+  // ApproachMissGenerator — severity / direction / miss-lie are diagnostic
+  // breakdowns. round_stats_cache stores aggregate proximity only; the
+  // per-distance and per-direction splits require shot-level data.
+  'approach_severity_<150':           { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_severity_150_175:          { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_severity_175_200:          { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  'approach_severity_200+':           { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_direction_175_200_right:   { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  'approach_direction_200+_right':    { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_miss_lie_150_175_fairway:  { kind: 'intentional-null', reason: 'needs-shot-level-join' },
+  approach_miss_lie_175_200_fairway:  { kind: 'intentional-null', reason: 'needs-shot-level-join' },
 };
 
 /**

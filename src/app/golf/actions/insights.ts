@@ -1004,12 +1004,13 @@ export async function generateTeamInsights() {
 
         // 2026-05-17: toInsightInput now returns null when the legacy record
         // lacks enough sample_n (audit Q-NEW-1). Log + skip rather than throw.
+        // Counter is informational — sample_n starvation is expected for legacy
+        // rows, so use console.info rather than the Sentry-instrumented logger.
         const skipped = cleanInsights.length - inputs.length;
         if (skipped > 0) {
-          await logServerError(`generateInsightsForTeam skipped ${skipped} legacy records with insufficient sample_n`, {
-            action: 'generateInsightsForTeam.skip-insufficient',
-            featureArea: 'insights',
-          }, 'warning');
+          console.info(
+            `[generateInsightsForTeam.skip-insufficient] skipped ${skipped} legacy records (insufficient sample_n)`,
+          );
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
@@ -3306,19 +3307,13 @@ export async function triggerPlayerInsightsAfterRound(
     }
 
     // 2026-05-24 Wave 8 — surface philosophy-gate filter count for
-    // post-deploy verification. Logged at info via warning level only
-    // when non-zero so log noise stays low; the count tells us how much
-    // upstream filtering replaced the Wave 6 post-write archive sweep.
+    // post-deploy verification. The count is operational, not a bug:
+    // the gate doing its job filters expected volumes per run, so emit
+    // to console.info instead of the Sentry-instrumented logger that
+    // grouped these as warning issues.
     if (analysis.tier1GateMetrics && analysis.tier1GateMetrics.gatedCount > 0) {
-      await logServerError(
-        `[insights.triggerPlayerInsightsAfterRound] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s)`,
-        {
-          action: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
-          featureArea: 'coachhelm',
-          playerId,
-          extra: { gatedCount: analysis.tier1GateMetrics.gatedCount },
-        },
-        'warning',
+      console.info(
+        `[insights.triggerPlayerInsightsAfterRound.gateMetrics] philosophy gate filtered ${analysis.tier1GateMetrics.gatedCount} tier-1 insight(s) for player ${playerId}`,
       );
     }
 
@@ -3429,15 +3424,16 @@ export async function triggerPlayerInsightsAfterRound(
 
       // 2026-05-17: toInsightInput now returns null when sample_n < MIN_SAMPLE_N.
       // Filter + log skipped legacy records rather than upsert inflated values.
+      // Counter is informational — sample_n starvation on legacy rows is
+      // expected, so emit to console.info rather than the Sentry logger.
       const inputs = cleanInsights
         .map((record) => toInsightInput(record))
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const skipped = cleanInsights.length - inputs.length;
       if (skipped > 0) {
-        await logServerError(`triggerPlayerInsightsAfterRound skipped ${skipped} legacy records (insufficient sample_n)`, {
-          action: 'triggerPlayerInsightsAfterRound.skip-insufficient',
-          featureArea: 'insights',
-        }, 'warning');
+        console.info(
+          `[triggerPlayerInsightsAfterRound.skip-insufficient] skipped ${skipped} legacy records (insufficient sample_n) for player ${playerId}`,
+        );
       }
       await Promise.all(
         inputs.map((input) => upsertInsight(admin, input)),
