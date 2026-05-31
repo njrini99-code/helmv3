@@ -373,17 +373,20 @@ export function FairwayEventEditor({
               </div>
             ) : null}
 
-            {/* Title */}
-            <input
-              type="text"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              disabled={isSaving}
-              placeholder="Event name…"
-              aria-label="Event title"
-              className="w-full border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary"
-              required
-            />
+            {/* Title — with a green editorial spine */}
+            <div className="flex items-center gap-3">
+              <span aria-hidden className="h-7 w-1 flex-shrink-0 rounded-full bg-accent-500" />
+              <input
+                type="text"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                disabled={isSaving}
+                placeholder="Event name…"
+                aria-label="Event title"
+                className="w-full flex-1 border-none bg-transparent px-0 py-1 font-fw-display text-h3 font-semibold tracking-[-0.01em] text-text-primary outline-none placeholder:text-text-tertiary"
+                required
+              />
+            </div>
 
             {/* Event type */}
             <div className="flex flex-wrap gap-2">
@@ -411,9 +414,9 @@ export function FairwayEventEditor({
             </div>
 
             {/* Date & time well */}
-            <div className="flex flex-col gap-3 rounded-fw-md bg-surface-sunken p-4">
+            <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
               <div className="flex items-center gap-3">
-                <CalendarIcon className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
+                <CalendarIcon className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
                 <div className="grid flex-1 grid-cols-2 gap-3">
                   <div>
                     <label htmlFor="ev-start-date" className={labelCls}>Start date</label>
@@ -443,7 +446,7 @@ export function FairwayEventEditor({
 
               {!formData.allDay && (
                 <div className="flex items-center gap-3">
-                  <Clock className="h-4 w-4 flex-shrink-0 text-text-tertiary" aria-hidden />
+                  <Clock className="h-4 w-4 flex-shrink-0 text-accent-700" aria-hidden />
                   <div className="grid flex-1 grid-cols-2 gap-3">
                     <div>
                       <label htmlFor="ev-start-time" className={labelCls}>Start time</label>
@@ -489,7 +492,7 @@ export function FairwayEventEditor({
             <div>
               <label htmlFor="ev-location" className={labelCls}>
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5" /> Location
+                  <MapPin className="h-3.5 w-3.5 text-accent-700" /> Location
                 </span>
               </label>
               <input
@@ -507,7 +510,7 @@ export function FairwayEventEditor({
             <div>
               <label htmlFor="ev-desc" className={labelCls}>
                 <span className="inline-flex items-center gap-1.5">
-                  <AlignLeft className="h-3.5 w-3.5" /> Notes
+                  <AlignLeft className="h-3.5 w-3.5 text-accent-700" /> Notes
                 </span>
               </label>
               <textarea
@@ -522,7 +525,7 @@ export function FairwayEventEditor({
             </div>
 
             {/* RSVP */}
-            <div className="flex flex-col gap-3 rounded-fw-md bg-surface-sunken p-4">
+            <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
               <Switch
                 label="Require RSVP"
                 description="Players respond Going / Maybe / Decline"
@@ -570,11 +573,11 @@ export function FairwayEventEditor({
                 <div className="mb-2 flex items-center justify-between">
                   <span className={cn(labelCls, 'mb-0')}>
                     <span className="inline-flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5" /> Invite players
+                      <Users className="h-3.5 w-3.5 text-accent-700" /> Invite players
                     </span>
                   </span>
                   {formData.attendeeIds.length > 0 ? (
-                    <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+                    <span className="font-fw-mono text-caption font-semibold tabular-nums text-accent-700">
                       {formData.attendeeIds.length} selected
                     </span>
                   ) : null}
@@ -656,10 +659,10 @@ export function FairwayEventEditor({
 
             {/* Recurrence (create only) */}
             {isCreating && (
-              <div className="flex flex-col gap-3 rounded-fw-md bg-surface-sunken p-4">
+              <div className="flex flex-col gap-3 rounded-fw-md border border-accent-100 bg-accent-50/60 p-4">
                 <span className={cn(labelCls, 'mb-0')}>
                   <span className="inline-flex items-center gap-1.5">
-                    <Repeat className="h-3.5 w-3.5" /> Repeat
+                    <Repeat className="h-3.5 w-3.5 text-accent-700" /> Repeat
                   </span>
                 </span>
                 <div className="grid grid-cols-2 gap-3">
