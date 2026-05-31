@@ -42,6 +42,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
+import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
+import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
 import { useToast } from '@/components/ui/sonner';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
@@ -85,6 +87,10 @@ interface NewRoundClientProps {
 export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
   const prefersReducedMotion = useReducedMotion();
   const redesign = useRedesign();
+  // Flag-gated overlay swaps — Fairway versions share the legacy prop contracts
+  // exactly, so flag-off renders the legacy components byte-for-byte.
+  const ExitRoundModal = redesign ? FairwaySaveRoundModal : SaveRoundModal;
+  const SubmitOverlay = redesign ? FairwayRoundSubmitOverlay : RoundSubmitOverlay;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -2474,7 +2480,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       </Drawer>
 
       {/* Save Round Modal */}
-      <SaveRoundModal
+      <ExitRoundModal
         isOpen={showExitModal}
         onClose={() => setShowExitModal(false)}
         onSaveForLater={handleSaveForLater}
@@ -2727,7 +2733,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       </LazyMotion>
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
-      <RoundSubmitOverlay
+      <SubmitOverlay
         isVisible={step === 'submitting'}
         totalScore={submittingTotalScore}
         toPar={submittingToPar}
