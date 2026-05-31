@@ -56,6 +56,8 @@ import {
   isRecoverableRoundSubmitError,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
+import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
 
 type Hole = RoundHole;
 
@@ -82,6 +84,7 @@ interface NewRoundClientProps {
 
 export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
   const prefersReducedMotion = useReducedMotion();
+  const redesign = useRedesign();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -1491,6 +1494,108 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       })}
     </div>
   );
+
+  // ============================================================================
+  // FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned ENTRY screens
+  // (resume gate + setup + holes) from the SAME state + handlers. The tracking
+  // and submitting steps still fall through to the legacy render below (a later
+  // phase). Flag OFF → every legacy branch below is byte-for-byte unchanged. No
+  // mutation/autosave/optimistic-lock logic moves; this is presentation only.
+  // ============================================================================
+  if (redesign && (showResumePrompt || step === 'setup' || step === 'holes')) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayNewRoundEntry
+          step={step}
+          showResumePrompt={showResumePrompt}
+          existingInProgressRound={existingInProgressRound}
+          onContinueResume={() =>
+            existingInProgressRound &&
+            router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)
+          }
+          onStartFresh={() => setShowResumePrompt(false)}
+          recentCourses={recentCourses}
+          onQuickPickConfirm={handleQuickPickConfirm}
+          isOnline={connectionStatus.isOnline}
+          loadingSavedCourses={loadingSavedCourses}
+          savedCourses={savedCourses}
+          filteredSavedCourses={filteredSavedCourses}
+          courseMode={courseMode}
+          onCourseModeChange={(next) => {
+            if (next === 'saved') {
+              setCourseMode('saved');
+              setCourseSearchQuery('');
+              if (!selectedCourseId && savedCourses.length > 0) {
+                handleSavedCourseSelect(savedCourses[0]!.id);
+              }
+            } else {
+              setCourseMode('new');
+              setSelectedCourseId(null);
+              resolvedCourseIdRef.current = null;
+              setPreloadedHoleConfigs(null);
+              setCourseSearchQuery('');
+              setSetupData((prev) => ({
+                ...prev,
+                courseName: '',
+                courseCity: '',
+                courseState: '',
+                courseRating: '',
+                courseSlope: '',
+                teesPlayed: 'White',
+              }));
+            }
+          }}
+          courseSearchQuery={courseSearchQuery}
+          setCourseSearchQuery={setCourseSearchQuery}
+          selectedCourseId={selectedCourseId}
+          onSavedCourseSelect={handleSavedCourseSelect}
+          selectedCourse={selectedCourse}
+          onClearSelectedCourse={() => {
+            setSelectedCourseId(null);
+            setPreloadedHoleConfigs(null);
+            setSetupData((prev) => ({
+              ...prev,
+              courseName: '',
+              courseCity: '',
+              courseState: '',
+              courseRating: '',
+              courseSlope: '',
+              teesPlayed: 'White',
+            }));
+          }}
+          setupData={setupData}
+          setSetupData={setSetupData}
+          saveCourseChecked={saveCourseChecked}
+          onToggleSaveCourse={() => setSaveCourseChecked(!saveCourseChecked)}
+          holesPerRound={holesPerRound}
+          setHolesPerRound={setHolesPerRound}
+          preloadedHoleConfigs={preloadedHoleConfigs}
+          nineSelection={nineSelection}
+          setNineSelection={setNineSelection}
+          allActiveQualifiers={allActiveQualifiers}
+          loadingActiveQualifiers={loadingActiveQualifiers}
+          onPickActiveQualifier={(q) => {
+            setSetupData((prev) => ({ ...prev, roundType: 'qualifier' }));
+            setSelectedQualifierId(q.id);
+          }}
+          qualifiers={qualifiers}
+          loadingQualifiers={loadingQualifiers}
+          qualifierError={qualifierError}
+          selectedQualifierId={selectedQualifierId}
+          setSelectedQualifierId={setSelectedQualifierId}
+          availableRounds={availableRounds}
+          selectedRoundNumber={selectedRoundNumber}
+          setSelectedRoundNumber={setSelectedRoundNumber}
+          error={error}
+          isStartingRound={isStartingRound}
+          onSubmit={handleSetupSubmit}
+          onCancel={() => router.back()}
+          onHolesSave={handleHolesSave}
+          onHolesBack={() => setStep('setup')}
+        />
+      </div>
+    );
+  }
 
   // ============================================================================
   // RESUME IN-PROGRESS ROUND PROMPT
