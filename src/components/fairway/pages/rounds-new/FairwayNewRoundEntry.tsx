@@ -35,7 +35,8 @@ import { Chip } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
 import { FairwayRecentCourses } from './FairwayRecentCourses';
 import { OfflineWarningBanner } from '@/components/golf';
-import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
+import { FairwayHoleConfig } from './FairwayHoleConfig';
+import type { HoleConfig } from '@/lib/types/golf-course';
 import type {
   SavedCourse,
   SavedCourseHoleConfig,
@@ -112,7 +113,7 @@ export interface FairwayNewRoundEntryProps {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
 
-  onHolesSave: Parameters<typeof HoleConfigurationForm>[0]['onSave'];
+  onHolesSave: (holes: HoleConfig[]) => void;
   onHolesBack: () => void;
 }
 
@@ -263,18 +264,19 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6 md:py-10">
         <m.div {...enter(0)}>
-          <CockpitBand step="holes" eyebrow="New round" title="Configure the holes." description="Set par and yardage for each hole." />
+          <CockpitBand
+            step="holes"
+            eyebrow={`New round${props.setupData.courseName ? ` · ${props.setupData.courseName}` : ''}`}
+            title="Configure the holes."
+            description="Set par and yardage for each hole, then start tracking."
+          />
         </m.div>
-        <m.div {...enter(1)}>
-          <Surface elevation="shadow" padding="lg">
-            <HoleConfigurationForm
-              courseName={props.setupData.courseName}
-              onSave={props.onHolesSave}
-              onBack={props.onHolesBack}
-              holesPerRound={props.holesPerRound}
-            />
-          </Surface>
-        </m.div>
+        <FairwayHoleConfig
+          courseName={props.setupData.courseName}
+          onSave={props.onHolesSave}
+          onBack={props.onHolesBack}
+          holesPerRound={props.holesPerRound}
+        />
       </div>
     );
   }
