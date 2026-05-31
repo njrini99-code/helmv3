@@ -78,6 +78,7 @@ import {
 import { CoachHelmShell } from './CoachHelmShell';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
+import { m, useReducedMotion } from 'framer-motion';
 
 // Standing wiring — sourced ONLY from golf_player_standing (the insight evidence
 // has no standing block). The insight→standing link is evidence.metric WHEN it
@@ -655,6 +656,16 @@ export function FairwayPlayerCoachHelm({
  * actions sit in the footer. No insight yet → an honest "awaiting standout
  * signal" panel (never a fake 0).
  * ══════════════════════════════════════════════════════════════════════════ */
+/** Staggered cinematic reveal for the dark spotlight hero's elements. */
+const HERO_STAGGER = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
+};
+const HERO_ITEM = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const } },
+};
+
 function EdgeInstrument({
   insight,
   playerId,
@@ -668,6 +679,8 @@ function EdgeInstrument({
   heroActions?: React.ReactNode;
   standingByMetric?: Record<string, PlayerStanding>;
 }) {
+  const prefersReducedMotion = useReducedMotion();
+
   if (!insight) {
     return (
       <InstrumentPanel
@@ -729,82 +742,105 @@ function EdgeInstrument({
   // that threshold we show no chip rather than overclaiming.
   const bestOnTeam = teamPct != null && teamPct >= 90;
 
+  // BESPOKE DARK SPOTLIGHT — this page's job is "here's the ONE thing to fix",
+  // so the focal hero is cut from the SAME black + glass as the sidebar rail:
+  // solid warm-black `bg-nav-bg` (#0C0A09), the `.on-dark` scope, nav text
+  // tokens, the green `nav-accent`, and the rail's glass-sheen recipe on its
+  // lifted sub-panel. The diagnosis blazes in green; the LLM read sits in light
+  // prose. Cinematic staggered reveal (HERO_STAGGER/HERO_ITEM), reduced-motion safe.
   return (
-    <InstrumentPanel
-      depth="raised"
-      tone="accent"
-      padding="lg"
-      header={insight.title}
-      as="section"
-      className="flex h-full flex-col gap-6"
+    <m.section
+      initial={prefersReducedMotion ? false : 'hidden'}
+      animate="visible"
+      variants={HERO_STAGGER}
+      className="on-dark relative flex h-full flex-col gap-6 overflow-hidden rounded-card bg-nav-bg p-7 text-nav-text shadow-soft md:p-8"
     >
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-        {/* The narrative body — LLM grounding PRESERVED, falls back to content. */}
-        <div className="min-w-0">
+      {/* Same black + glass as the rail: solid warm-black, a faint green halo
+          behind the figure, and a specular top rim (the sidebar's sheen). */}
+      <div aria-hidden className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent-500/20 blur-[80px]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/[0.06]" />
+
+      {/* Diagnosis headline */}
+      <m.div variants={HERO_ITEM} className="relative">
+        <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.18em] text-nav-accent">
+          Your edge this week
+        </p>
+        <h2 className="mt-2 font-fw-display text-h3 font-semibold leading-tight tracking-[-0.01em] text-nav-text">
+          {insight.title}
+        </h2>
+      </m.div>
+
+      <div className="relative grid grid-cols-1 gap-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        {/* Narrative body — inverted (luminous on dark), LLM grounding PRESERVED. */}
+        <m.div variants={HERO_ITEM} className="min-w-0">
           <HeroNarrativeCard
+            inverted
             playerId={playerId}
             metricLabel={ev.metric_label}
             yourValueDisplay={ev.your_value_display || String(ev.your_value ?? '')}
             teamPct={teamPct}
             fallbackText={insight.content || insight.title}
           />
-        </div>
+        </m.div>
 
-        {/* The key game read. When a real standing snapshot exists for a
-            canonical metric, the flat-matte StandingStrip (you vs team vs PGA)
-            IS the read. Otherwise we fall through to the existing FLAT big mono
-            number + label (no gauge, no arc) — the honest fallback. */}
-        {st && cfg ? (
-          <div className="w-full md:w-[320px]">
-            <StandingStrip
-              size="card"
-              metric_id={mId}
-              metric_label={cfg.display_label}
-              player_value={st.player_value}
-              team_avg={st.team_avg}
-              team_n={st.team_n}
-              team_pct={st.team_pct}
-              pga_value={st.pga_value}
-              direction={cfg.direction}
-              unit={cfg.unit}
-              scale={cfg.default_scale}
-            />
-          </div>
-        ) : hasEdge ? (
-          <div className="flex flex-col gap-2 md:items-end md:text-right">
-            <span className="font-fw-mono text-[64px] font-bold leading-none tabular-nums text-accent-600">
-              {edgeDisplay}
-            </span>
-            <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.1em] text-text-secondary">
-              {edgeLabel}
-            </span>
-            {bestOnTeam ? (
-              <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-fw-success-bg px-2.5 py-1 font-fw-sans text-caption font-semibold text-fw-success md:self-end">
-                <span aria-hidden>↗</span>
-                Best on the team
+        {/* The key game read. A canonical standing snapshot → the StandingStrip
+            (a bright card on the dark band). Otherwise the big number BLAZES in
+            luminous green on near-black — the honest fallback. */}
+        <m.div variants={HERO_ITEM}>
+          {st && cfg ? (
+            <div className="w-full md:w-[320px]">
+              <StandingStrip
+                size="card"
+                metric_id={mId}
+                metric_label={cfg.display_label}
+                player_value={st.player_value}
+                team_avg={st.team_avg}
+                team_n={st.team_n}
+                team_pct={st.team_pct}
+                pga_value={st.pga_value}
+                direction={cfg.direction}
+                unit={cfg.unit}
+                scale={cfg.default_scale}
+              />
+            </div>
+          ) : hasEdge ? (
+            <div className="flex flex-col gap-2 md:items-end md:text-right">
+              <span className="font-fw-mono text-[72px] font-bold leading-none tabular-nums text-nav-accent">
+                {edgeDisplay}
               </span>
-            ) : null}
-          </div>
-        ) : null}
+              <span className="font-fw-sans text-caption font-semibold uppercase tracking-[0.12em] text-nav-text-dim">
+                {edgeLabel}
+              </span>
+              {bestOnTeam ? (
+                <span className="inline-flex items-center gap-1.5 self-start rounded-full bg-accent-500/15 px-2.5 py-1 font-fw-sans text-caption font-semibold text-nav-accent md:self-end">
+                  <span aria-hidden>↗</span>
+                  Best on the team
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </m.div>
       </div>
 
-      {/* Practice Rx — the prescribed drills for this insight (pre-joined onto
-          the insight by the route). Honest-empty: renders nothing when no
-          drills are attached. */}
+      {/* Practice Rx — prescribed drills (honest-empty: renders nothing if none). */}
       {insight.drills && insight.drills.length > 0 ? (
-        <PracticeRxPanel drills={insight.drills} variant="hero" />
+        <m.div variants={HERO_ITEM}>
+          <PracticeRxPanel drills={insight.drills} variant="hero" />
+        </m.div>
       ) : null}
 
-      {/* The footer — feedback + RESERVED Ask, on a recessed inset band. */}
+      {/* Feedback footer — the rail's glass-sheen recipe: a nav-surface lift with
+          an inset white top-hairline, so it reads as the same glass as the rail. */}
       {heroActions ? (
-        <InstrumentPanel depth="inset" padding="sm" className="flex items-center justify-between gap-3">
-          <span className="font-fw-sans text-caption text-text-tertiary">
-            Was this useful?
-          </span>
+        <m.div
+          variants={HERO_ITEM}
+          className="flex items-center justify-between gap-3 rounded-fw-md bg-nav-surface px-4 py-3 ring-1 ring-inset ring-white/[0.06] [box-shadow:inset_0_1px_0_0_rgba(255,255,255,0.05)]"
+        >
+          <span className="font-fw-sans text-caption text-nav-text-dim">Was this useful?</span>
           {heroActions}
-        </InstrumentPanel>
+        </m.div>
       ) : null}
-    </InstrumentPanel>
+    </m.section>
   );
 }
 
