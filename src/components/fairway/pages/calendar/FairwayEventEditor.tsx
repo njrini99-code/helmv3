@@ -9,10 +9,9 @@
  * edit-mode prefill, the debounced conflict check (checkScheduleConflicts), the
  * recurring-series detection + scope picker, attendee toggling, and the
  * onSave/onDelete contract are byte-for-byte the same. Only the presentation
- * changes: a Fairway bottom Sheet (consistent with the event detail drawer) +
- * native inputs styled with Fairway tokens (the proven-safe pattern — no Base UI
- * control rewrite), a colored-avatar attendee picker (same tints as the member
- * rail), and a Fairway conflict notice.
+ * changes: a centered Fairway ModalShell + native inputs styled with Fairway
+ * tokens (the proven-safe pattern — no Base UI control rewrite), a colored-avatar
+ * attendee picker (same tints as the member rail), and a Fairway conflict notice.
  *
  * Wiring lives in FairwayCalendar (handleSaveEvent / handleDeleteEvent), which
  * replicates PremiumCalendarClient's payload mapping and calls the EXACT same
@@ -42,7 +41,7 @@ import {
 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
-import { Sheet } from '@/components/fairway/overlays/Sheet';
+import { ModalShell } from '@/components/fairway/overlays/ModalShell';
 import { Button } from '@/components/fairway/controls/button';
 import { Switch } from '@/components/fairway/forms/Switch';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -323,19 +322,18 @@ export function FairwayEventEditor({
   const initials = (p: TeamPlayer) => `${p.first_name?.[0] ?? ''}${p.last_name?.[0] ?? ''}`.toUpperCase() || '—';
 
   return (
-    <Sheet
+    <ModalShell
       open={open}
       onOpenChange={(o) => {
         if (!o) onClose();
       }}
-      side="bottom"
+      size="xl"
       title={isCreating ? 'New event' : 'Edit event'}
-      className="sm:mx-auto sm:max-w-2xl"
       data-slot="event-editor"
     >
       {/* Recurring-series scope picker (edit/delete) — overrides the body */}
       {pendingScopeAction ? (
-        <Sheet.Body className="flex flex-col gap-3">
+        <ModalShell.Body className="flex flex-col gap-3">
           <p className="font-fw-display text-body-lg font-semibold text-text-primary">
             {pendingScopeAction === 'delete' ? 'Delete recurring event' : 'Edit recurring event'}
           </p>
@@ -362,10 +360,10 @@ export function FairwayEventEditor({
               Cancel
             </Button>
           </div>
-        </Sheet.Body>
+        </ModalShell.Body>
       ) : (
         <>
-          <Sheet.Body className="flex flex-col gap-5">
+          <ModalShell.Body className="flex flex-col gap-5">
             {error ? (
               <div className="flex items-center gap-2 rounded-fw-md border border-fw-danger/25 bg-fw-danger-bg px-4 py-3 font-fw-sans text-body-sm text-fw-danger">
                 <AlertTriangle className="h-4 w-4 flex-shrink-0" aria-hidden />
@@ -705,9 +703,9 @@ export function FairwayEventEditor({
                 ) : null}
               </div>
             )}
-          </Sheet.Body>
+          </ModalShell.Body>
 
-          <Sheet.Footer>
+          <ModalShell.Footer>
             {!isCreating && onDelete ? (
               <Button
                 variant={confirmingDelete ? 'danger' : 'ghost'}
@@ -726,10 +724,10 @@ export function FairwayEventEditor({
             <Button variant="primary" type="button" onClick={handleSubmit} busy={isSaving} disabled={isSaving}>
               {isCreating ? 'Create event' : 'Save changes'}
             </Button>
-          </Sheet.Footer>
+          </ModalShell.Footer>
         </>
       )}
-    </Sheet>
+    </ModalShell>
   );
 }
 
