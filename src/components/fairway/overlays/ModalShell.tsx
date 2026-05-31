@@ -151,10 +151,14 @@ function ModalShellRoot({
               <motion.div
                 data-slot={dataSlot}
                 role="dialog"
-                style={{ zIndex: FW_Z.modal }}
+                // `position: fixed` is set inline because `.fw-glass-strong` is an
+                // UNLAYERED rule that sets `position: relative` — and unlayered CSS
+                // wins over Tailwind's `@layer utilities` `.fixed`. Centering uses
+                // `inset-0 m-auto` (auto-margin) instead of `-translate-*` so the
+                // framer-motion enter transform (scale/y) can't clobber it.
+                style={{ zIndex: FW_Z.modal, position: 'fixed' }}
                 className={cn(
-                  'fixed left-1/2 top-1/2 w-[calc(100vw-2rem)]',
-                  '-translate-x-1/2 -translate-y-1/2',
+                  'fixed inset-0 m-auto h-fit w-[calc(100vw-2rem)]',
                   'max-h-[calc(100dvh-4rem)] overflow-hidden',
                   'rounded-fw-lg text-text-primary',
                   'flex flex-col',
