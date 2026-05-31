@@ -33,7 +33,7 @@ import { Button } from '@/components/fairway/controls/button';
 import { Segmented } from '@/components/fairway/controls/segmented';
 import { Chip } from '@/components/fairway/controls/badge';
 import { StatusPill } from '@/components/fairway/controls/status-pill';
-import { RecentCoursesQuickPick } from '@/components/golf/rounds/new/RecentCoursesQuickPick';
+import { FairwayRecentCourses } from './FairwayRecentCourses';
 import { OfflineWarningBanner } from '@/components/golf';
 import { HoleConfigurationForm } from '@/components/golf/HoleConfigurationForm';
 import type {
@@ -70,7 +70,7 @@ export interface FairwayNewRoundEntryProps {
   onStartFresh: () => void;
 
   recentCourses: RecentPlayedCourse[];
-  onQuickPickConfirm: Parameters<typeof RecentCoursesQuickPick>[0]['onConfirmCourse'];
+  onQuickPickConfirm: (course: RecentPlayedCourse) => void;
   isOnline: boolean;
   loadingSavedCourses: boolean;
   savedCourses: SavedCourse[];
@@ -319,7 +319,7 @@ export function FairwayNewRoundEntry(props: FairwayNewRoundEntryProps) {
 
         {props.recentCourses.length > 0 && !showResumePrompt && (
           <m.div {...enter(i++)}>
-            <RecentCoursesQuickPick courses={props.recentCourses} onConfirmCourse={props.onQuickPickConfirm} />
+            <FairwayRecentCourses courses={props.recentCourses} onConfirmCourse={props.onQuickPickConfirm} />
           </m.div>
         )}
 
