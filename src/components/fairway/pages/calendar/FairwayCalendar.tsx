@@ -63,9 +63,12 @@ import { GolfCalendarWrapper } from '@/components/golf/calendar/GolfCalendarWrap
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
 import type { TeamMember } from '@/components/golf/calendar/PremiumCalendarClient';
 import type { RSVPStatus } from '@/hooks/useRSVP';
+import { PLAYER_COLORS } from '@/components/golf/calendar/CalendarAvatarSidebar';
 import { FairwayCalendarHero } from './FairwayCalendarHero';
 import { FairwayAgendaView } from './FairwayAgendaView';
-import { FairwayMonthGrid } from './FairwayMonthGrid';
+import { FairwayMonthGrid, type ScheduleOverlay } from './FairwayMonthGrid';
+import { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
+import { FairwayAvailabilityList } from './FairwayAvailabilityList';
 import { FairwayEventDetailDrawer } from './FairwayEventDetailDrawer';
 
 type ViewId = 'day' | 'week' | 'month' | 'agenda';
@@ -123,6 +126,82 @@ export function FairwayCalendar({
   // DEFAULT AGENDA — on the all-past demo the current week is empty; Agenda
   // surfaces the real Feb–Apr events immediately. Week stays one tap away.
   const [view, setView] = React.useState<ViewId>('agenda');
+
+  // ── Coach availability filter (avatar rail → overlay player schedules) ──────
+  // Multi-select up to 8 (color-coded). Empty = "All" (team calendar). When
+  // players are picked the body switches to a native availability overlay built
+  // from getPlayerAvailability (their events + classes + blocked time).
+  const [selectedPlayerIds, setSelectedPlayerIds] = React.useState<string[]>([]);
+  const [availByPlayer, setAvailByPlayer] = React.useState<
+    Map<string, { start: string; end: string; type: 'event' | 'class' | 'blocked'; title?: string }[]>
+  >(new Map());
+  const availabilityMode = isCoach && selectedPlayerIds.length > 0;
+
+  // Availability fetch window — tight by view (month grid span / week / day).
+  const availWindow = React.useMemo(() => {
+    if (view === 'month') {
+      return {
+        start: startOfWeekFn(startOfMonth(focusDate), { weekStartsOn: 0 }),
+        end: endOfWeekFn(endOfMonth(focusDate), { weekStartsOn: 0 }),
+      };
+    }
+    if (view === 'day') return { start: focusDate, end: focusDate };
+    return {
+      start: startOfWeekFn(focusDate, { weekStartsOn: 0 }),
+      end: endOfWeekFn(focusDate, { weekStartsOn: 0 }),
+    };
+  }, [view, focusDate]);
+
+  React.useEffect(() => {
+    if (!isCoach || selectedPlayerIds.length === 0) {
+      setAvailByPlayer(new Map());
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { getPlayerAvailability } = await import('@/app/golf/actions/golf');
+      const s = format(availWindow.start, 'yyyy-MM-dd');
+      const e = format(availWindow.end, 'yyyy-MM-dd');
+      const results = await Promise.all(
+        selectedPlayerIds.map(async (id) => {
+          try {
+            const r = await getPlayerAvailability(id, s, e);
+            return [id, r.success && r.data ? r.data : []] as const;
+          } catch {
+            return [id, [] as { start: string; end: string; type: 'event' | 'class' | 'blocked'; title?: string }[]] as const;
+          }
+        }),
+      );
+      if (!cancelled) setAvailByPlayer(new Map(results));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isCoach, selectedPlayerIds, availWindow]);
+
+  // Flatten the fetched periods into color-coded overlays (color by selection idx).
+  const overlays = React.useMemo<ScheduleOverlay[]>(() => {
+    if (!availabilityMode) return [];
+    const out: ScheduleOverlay[] = [];
+    selectedPlayerIds.forEach((id, idx) => {
+      const color = PLAYER_COLORS[idx % PLAYER_COLORS.length]!;
+      const member = teamMembers.find((m) => m.id === id);
+      const name = member ? `${member.first_name ?? ''} ${member.last_name ?? ''}`.trim() || 'Player' : 'Player';
+      const periods = availByPlayer.get(id) ?? [];
+      periods.forEach((p, i) => {
+        out.push({
+          id: `${id}:${i}`,
+          start: p.start,
+          end: p.end,
+          title: p.title || (p.type === 'class' ? 'Class' : p.type === 'blocked' ? 'Busy' : 'Event'),
+          kind: p.type,
+          playerName: name,
+          color,
+        });
+      });
+    });
+    return out;
+  }, [availabilityMode, selectedPlayerIds, availByPlayer, teamMembers]);
 
   // ── Drawer + RSVP state (Agenda taps open the Fairway drawer; the Week/Month
   //    grid keeps opening the legacy EventDetailModal inside the wrapper). ─────
@@ -354,8 +433,42 @@ export function FairwayCalendar({
         aria-label="Calendar view"
       />
 
+      {/* ── Coach member rail (avatar filter → availability overlay) ──────────── */}
+      {/* Shown where the body is native (agenda/day) or while comparing — NOT over
+          the legacy grid (All-mode Week/Month), which keeps its own sidebar. */}
+      {isCoach && (isAgenda || isDay || availabilityMode) ? (
+        <FairwayCalendarMemberRail
+          teamMembers={teamMembers}
+          selectedPlayerIds={selectedPlayerIds}
+          onSelect={setSelectedPlayerIds}
+        />
+      ) : null}
+
       {/* ── BODY ─────────────────────────────────────────────────────────────── */}
-      {isAgenda ? (
+      {availabilityMode ? (
+        // ── Coach availability overlay — selected players' schedules, color-coded
+        //    (their team events + classes + blocked). Month → grid overlay; other
+        //    lenses → grouped-by-day list. Built from getPlayerAvailability. ─────
+        view === 'month' ? (
+          <FairwayMonthGrid
+            events={[]}
+            overlays={overlays}
+            focusDate={focusDate}
+            nowRef={nowRef}
+            onSelectDate={(d) => {
+              setFocusDate(d);
+              setView('day');
+            }}
+          />
+        ) : (
+          <FairwayAvailabilityList
+            overlays={overlays}
+            rangeStart={availWindow.start}
+            rangeEnd={availWindow.end}
+            nowRef={nowRef}
+          />
+        )
+      ) : isAgenda ? (
         <FairwayAgendaView
           events={events}
           mode="range"

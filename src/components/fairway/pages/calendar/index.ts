@@ -22,7 +22,13 @@ export { FairwayAgendaView } from './FairwayAgendaView';
 export type { FairwayAgendaViewProps } from './FairwayAgendaView';
 
 export { FairwayMonthGrid } from './FairwayMonthGrid';
-export type { FairwayMonthGridProps } from './FairwayMonthGrid';
+export type { FairwayMonthGridProps, ScheduleOverlay } from './FairwayMonthGrid';
+
+export { FairwayCalendarMemberRail } from './FairwayCalendarMemberRail';
+export type { FairwayCalendarMemberRailProps } from './FairwayCalendarMemberRail';
+
+export { FairwayAvailabilityList } from './FairwayAvailabilityList';
+export type { FairwayAvailabilityListProps } from './FairwayAvailabilityList';
 
 export { FairwayEventCard } from './FairwayEventCard';
 export type { FairwayEventCardProps } from './FairwayEventCard';
