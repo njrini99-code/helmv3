@@ -180,6 +180,65 @@ function fmtComposite(value: number | null): string {
   return `${Math.round(value)}/100`;
 }
 
+/** Percent to 1 decimal, em-dash when null/NaN (never a fabricated 0%). */
+function fmtPct(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return '—';
+  return `${value.toFixed(1)}%`;
+}
+
+/** Whole-number score (best round), em-dash when null. */
+function fmtScore(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return '—';
+  return `${Math.round(value)}`;
+}
+
+/** Handicap with golf-convention sign (+ for over-par index), em-dash when null. */
+function fmtHandicap(value: number | null): string {
+  if (value === null || Number.isNaN(value)) return '—';
+  return value > 0 ? `+${value.toFixed(1)}` : value.toFixed(1);
+}
+
+// ── Scoring-trend classification (matches legacy TeamStatsTable) ──────────────
+// scoring_trend is recent-avg minus prior-avg of normalized scores, so a
+// NEGATIVE value = lower scores = improving. |trend| < 0.3 reads as steady.
+type TrendVerdict = 'improving' | 'declining' | 'steady';
+
+interface TrendDisplay {
+  verdict: TrendVerdict;
+  label: string;
+  cls: string;
+  arrow: string;
+  magnitude: string | null;
+}
+
+function classifyScoringTrend(trend: number | null): TrendDisplay | null {
+  if (trend === null || Number.isNaN(trend)) return null;
+  if (Math.abs(trend) < 0.3) {
+    return { verdict: 'steady', label: 'Steady', cls: 'text-text-tertiary', arrow: '→', magnitude: null };
+  }
+  const magnitude = Math.abs(trend).toFixed(1);
+  return trend < 0
+    ? { verdict: 'improving', label: 'Improving', cls: 'text-fw-success', arrow: '↘', magnitude }
+    : { verdict: 'declining', label: 'Declining', cls: 'text-fw-warning', arrow: '↗', magnitude };
+}
+
+/** Team average of a metric across players that carry it; null when no samples. */
+function teamAvg(
+  players: TeamPlayerStats[],
+  pick: (p: TeamPlayerStats) => number | null,
+): number | null {
+  let sum = 0;
+  let n = 0;
+  for (const p of players) {
+    const v = pick(p);
+    if (v !== null && !Number.isNaN(v)) {
+      sum += v;
+      n += 1;
+    }
+  }
+  return n > 0 ? sum / n : null;
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -322,16 +381,19 @@ export function FairwayTeamStats({
             </p>
           </InstrumentPanel>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {players.map((player) => (
-              <PlayerTile
-                key={player.id}
-                player={player}
-                intelligence={intelligenceByPlayer[player.id] ?? null}
-                standing={standingByPlayer.get(player.id)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {players.map((player) => (
+                <PlayerTile
+                  key={player.id}
+                  player={player}
+                  intelligence={intelligenceByPlayer[player.id] ?? null}
+                  standing={standingByPlayer.get(player.id)}
+                />
+              ))}
+            </div>
+            <TeamAverageFooter players={players} />
+          </>
         )}
       </section>
     </div>
@@ -341,6 +403,41 @@ export function FairwayTeamStats({
 // ============================================================================
 // PER-PLAYER TILE
 // ============================================================================
+
+/** One labeled micro-stat (value + uppercase caption). Em-dash when null. */
+function MetricCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">{value}</span>
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Scoring-trend chip — arrow + verdict, colored by improving/declining/steady. */
+function TrendCell({ trend }: { trend: number | null }) {
+  const t = classifyScoringTrend(trend);
+  return (
+    <div className="flex flex-col gap-0.5">
+      {t ? (
+        <span className={`inline-flex items-center gap-1 font-fw-sans text-body-sm font-medium ${t.cls}`}>
+          <span aria-hidden>{t.arrow}</span>
+          {t.label}
+          {t.magnitude ? (
+            <span className="font-fw-mono tabular-nums">{t.magnitude}</span>
+          ) : null}
+        </span>
+      ) : (
+        <span className="font-fw-mono text-body-sm tabular-nums text-text-tertiary">—</span>
+      )}
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        Trend
+      </span>
+    </div>
+  );
+}
 
 function PlayerTile({
   player,
@@ -380,18 +477,17 @@ function PlayerTile({
         </div>
       </div>
 
-      {/* Scoring avg / rounds */}
-      <div className="mb-4 flex items-baseline gap-4 font-fw-mono text-caption tabular-nums text-text-secondary">
-        <span>
-          {fmtNumber(player.scoring_average, 1)}
-          <span className="ml-1 font-fw-sans text-text-tertiary">avg</span>
-        </span>
-        <span>
-          {player.rounds_played}
-          <span className="ml-1 font-fw-sans text-text-tertiary">
-            round{player.rounds_played !== 1 ? 's' : ''}
-          </span>
-        </span>
+      {/* Per-player detail grid — the full legacy column set, honest dashes when
+          a metric has no samples (never a fabricated 0 / 0%). */}
+      <div className="mb-4 grid grid-cols-4 gap-x-3 gap-y-3 rounded-card bg-surface-sunken p-3">
+        <MetricCell label="Rounds" value={`${player.rounds_played}`} />
+        <MetricCell label="Avg" value={fmtNumber(player.scoring_average, 1)} />
+        <MetricCell label="Best" value={fmtScore(player.best_round)} />
+        <MetricCell label="HCP" value={fmtHandicap(player.handicap)} />
+        <MetricCell label="FW%" value={fmtPct(player.fairway_pct)} />
+        <MetricCell label="GIR%" value={fmtPct(player.gir_pct)} />
+        <MetricCell label="Putts" value={fmtNumber(player.putts_per_round, 1)} />
+        <TrendCell trend={player.scoring_trend} />
       </div>
 
       {/* Headline standing strip */}
@@ -434,6 +530,47 @@ function PlayerTile({
           {intelligence.topInsightTitle}
         </Link>
       ) : null}
+    </InstrumentPanel>
+  );
+}
+
+// ============================================================================
+// TEAM-AVERAGE FOOTER — mirrors the legacy table's summary row, enriched to the
+// full metric set. Every figure is an honest mean over players that carry the
+// metric (em-dash when none do — never a fabricated 0).
+// ============================================================================
+
+function TeamAverageFooter({ players }: { players: TeamPlayerStats[] }) {
+  const avgScoring = teamAvg(players, (p) => p.scoring_average);
+  const bestOverall = (() => {
+    const bests = players
+      .map((p) => p.best_round)
+      .filter((v): v is number => v !== null && !Number.isNaN(v));
+    return bests.length > 0 ? Math.min(...bests) : null;
+  })();
+  const avgHandicap = teamAvg(players, (p) => p.handicap);
+  const avgFw = teamAvg(players, (p) => p.fairway_pct);
+  const avgGir = teamAvg(players, (p) => p.gir_pct);
+  const avgPutts = teamAvg(players, (p) => p.putts_per_round);
+
+  return (
+    <InstrumentPanel depth="base" padding="md" className="mt-4">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+          Team average
+        </span>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          {players.length} player{players.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="grid grid-cols-3 gap-x-3 gap-y-3 sm:grid-cols-6">
+        <MetricCell label="Avg" value={fmtNumber(avgScoring, 1)} />
+        <MetricCell label="Best" value={fmtScore(bestOverall)} />
+        <MetricCell label="HCP" value={fmtHandicap(avgHandicap)} />
+        <MetricCell label="FW%" value={fmtPct(avgFw)} />
+        <MetricCell label="GIR%" value={fmtPct(avgGir)} />
+        <MetricCell label="Putts" value={fmtNumber(avgPutts, 1)} />
+      </div>
     </InstrumentPanel>
   );
 }

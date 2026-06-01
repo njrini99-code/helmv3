@@ -28,7 +28,14 @@
  * ============================================================================
  */
 
-import { forwardRef, useId, useInsertionEffect, type ReactNode } from 'react';
+import {
+  forwardRef,
+  memo,
+  useId,
+  useInsertionEffect,
+  type HTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { motion, useReducedMotion, type HTMLMotionProps } from 'framer-motion';
 import {
   AlertTriangle,
@@ -156,7 +163,7 @@ export const PRIORITY: Record<InsightPriority, PriorityTone> = {
 
 /* -- component -------------------------------------------------------------- */
 
-export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(
+const InsightCardImpl = forwardRef<HTMLDivElement, InsightCardProps>(
   function InsightCard(
     {
       variant = 'default',
@@ -213,15 +220,22 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(
       className,
     );
 
-    /* -- reveal motion (drift + opacity; collapses under reduced-motion) -- */
+    /* -- reveal motion (drift + opacity; collapses under reduced-motion) --
+     * PERF: per-row framer-motion is the dominant scroll/jank cost on the long
+     * Signals "By player" list — every default/compact card was a `motion.article`
+     * keeping animation machinery + an entrance tween alive across hundreds of
+     * rows (and re-running on every parent filter/URL/transition re-render).
+     * Only the ONE hero glass card (one per view) keeps the framer-motion
+     * entrance; default/compact list rows render a plain `<article>` with no
+     * motion runtime. The hero entrance also collapses under reduced-motion. */
     const reveal = prefersReduced
       ? {}
       : {
-          initial: { opacity: 0, y: isHero ? 8 : 4 },
+          initial: { opacity: 0, y: 8 },
           animate: { opacity: 1, y: 0 },
           transition: {
-            duration: isHero ? 0.52 : 0.28,
-            ease: isHero ? ([0.16, 1, 0.3, 1] as const) : ([0.22, 0.61, 0.36, 1] as const),
+            duration: 0.52,
+            ease: [0.16, 1, 0.3, 1] as const,
           },
         };
 
@@ -270,16 +284,10 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(
       );
     }
 
-    return (
-      <motion.article
-        ref={ref}
-        aria-labelledby={titleId}
-        className={shell}
-        style={isHero ? heroGlassStyle : undefined}
-        {...reveal}
-        {...interactiveProps}
-        {...rest}
-      >
+    /* -- card body (variant-agnostic) — rendered inside either the hero's
+     *    framer-motion shell or the plain matte list-card shell below. -- */
+    const body = (
+      <>
         {tintBar}
 
         {/* lead icon */}
@@ -358,7 +366,54 @@ export const InsightCard = forwardRef<HTMLDivElement, InsightCardProps>(
         {actions && isCompact ? (
           <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
         ) : null}
-      </motion.article>
+      </>
+    );
+
+    // HERO: the ONE glass card per view keeps the framer-motion entrance + the
+    // glass material. This is bounded to a single instance, so its motion
+    // runtime cost never scales with list length.
+    if (isHero) {
+      return (
+        <motion.article
+          ref={ref}
+          aria-labelledby={titleId}
+          className={shell}
+          style={heroGlassStyle}
+          {...reveal}
+          {...interactiveProps}
+          {...rest}
+        >
+          {body}
+        </motion.article>
+      );
+    }
+
+    // DEFAULT / COMPACT (the list rows): a plain matte <article> with NO
+    // framer-motion runtime — this is what fixes the slow scroll on the long
+    // "By player" Signals list. `rest` is typed as HTMLMotionProps; the
+    // non-motion subset is what callers pass here (onClick, data-*, aria-*),
+    // so we cast it onto the native article element.
+    const nativeRest = rest as unknown as HTMLAttributes<HTMLElement>;
+    return (
+      <article
+        ref={ref as React.Ref<HTMLElement>}
+        aria-labelledby={titleId}
+        className={shell}
+        {...interactiveProps}
+        {...nativeRest}
+      >
+        {body}
+      </article>
     );
   },
 );
+
+/**
+ * PERF: memoized so a parent re-render (the Signals workspace churns state on
+ * every filter toggle, URL sync, useTransition, and expand/collapse) does NOT
+ * re-render every card in the long "By player" list — only cards whose props
+ * actually change. Combined with dropping per-row framer-motion above, this is
+ * what makes the dense Signals list scroll smoothly.
+ */
+export const InsightCard = memo(InsightCardImpl);
+InsightCard.displayName = 'InsightCard';
