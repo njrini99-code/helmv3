@@ -43,6 +43,54 @@ import type {
 /** Strokes-per-round floor below which a theme has no material leak cause. */
 const LEAK_FLOOR = 0.3;
 
+/**
+ * COLLEGE-REALISM RE-SCALE FACTORS — the fraction of the raw vs-PGA-Tour gap a
+ * college player can realistically close, applied at READ TIME per category.
+ *
+ * WHY this exists: every upstream `counterfactual.strokes_saved_per_round` is
+ * computed against the raw PGA-Tour ceiling. For a college player that gap
+ * overstates realistically-closable strokes ~1.5–3×: a D1/D2 player who "fixes"
+ * a leak lands at a college-good level, not Tour level. Showing the full Tour
+ * gap as "strokes to gain" is quantitatively untrustworthy.
+ *
+ * EMPIRICAL ANCHOR: `baseline-registry.ts` carries REAL D2-vs-PGA putting
+ * make-% ratios (e.g. 6–10ft D2 0.48 / PGA 0.55 ≈ 0.87; 10–15ft 0.28 / 0.31 ≈
+ * 0.90). Those make-% RATIOS, however, UNDERSTATE the stroke realism: a college
+ * player only closes PART of the Tour stroke gap even where the make-% gap is
+ * narrow, because (a) the make-% ratio is not a stroke ratio, and (b) realistic
+ * coachable improvement over a season is partial, not full convergence to the
+ * better population. We therefore use CONSERVATIVE fractions BELOW the raw
+ * make-% ratios — putting anchored a touch lower than its ~0.87–0.90 make-%
+ * ratio to reflect that stroke convergence lags make-% convergence, and the
+ * non-putting categories (no registry ratio yet) set to a uniform conservative
+ * 0.6.
+ *
+ * This is a TRANSPARENT read-time approximation. It is explicitly a placeholder
+ * pending the upstream DIVISION-baseline wiring (compute the counterfactual
+ * against the player's actual division ceiling, not PGA) — that work is
+ * deferred. Until then this constant is the single, documented knob, and the
+ * honest raw Tour gap is preserved alongside every realistic value
+ * (`tourGapPerRound`) so nothing is hidden.
+ */
+const COLLEGE_REALISM_FACTOR: Record<InsightCategory, number> = {
+  putting: 0.55,
+  approach: 0.6,
+  short_game: 0.6,
+  tee: 0.6,
+  scoring: 0.6,
+  course_management: 0.6,
+  pressure: 0.6,
+};
+
+/**
+ * Safe lookup of the realism factor (strict `noUncheckedIndexedAccess`). An
+ * unexpected category falls back to the most conservative table value so we
+ * never over-state, and never read `undefined`.
+ */
+function realismFactor(category: InsightCategory): number {
+  return COLLEGE_REALISM_FACTOR[category] ?? 0.55;
+}
+
 export interface AssembleThemesInput {
   playerId: string;
   rows: EvidenceInsight[];
@@ -84,7 +132,7 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     if (!row.category) continue; // null/unknown category → skip (don't invent a theme)
     if (!getThemeDef(row.category)) continue; // unknown category → skip
 
-    const cause = buildCause(row, byId);
+    const cause = buildCause(row, byId, row.category);
     const bucket = causesByCategory.get(row.category);
     if (bucket) bucket.push(cause);
     else causesByCategory.set(row.category, [cause]);
@@ -99,31 +147,60 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     impactById.set(row.id, Math.abs(Number(ev.strokes_impact ?? 0)));
   }
 
-  // 4-7. Build one ThemeNode per taxonomy entry (ALWAYS all 7).
-  const themes: ThemeNode[] = THEME_TAXONOMY.map((def) => {
+  // 4-7. Build one ThemeNode per taxonomy entry, then gate empty outcome themes.
+  const themes: ThemeNode[] = THEME_TAXONOMY.flatMap((def): ThemeNode[] => {
     const causes = (causesByCategory.get(def.category) ?? []).slice();
 
-    // 5. Rank causes: strokesSavedPerRound desc → |strokes_impact| desc → title.
+    // 5. Rank causes: strokesSavedPerRound (realistic) desc → |strokes_impact| desc → title.
     causes.sort((a, b) => rankCauses(a, b, impactById));
 
-    // 6. Theme sizing.
+    // 6. SIGN-AWARE, SINGLE-SOURCE theme sizing on the REALISTIC cause values.
+    //    `themeStrokesPerRound` is a college-realistic LEAK magnitude — 0 for a
+    //    strength (positive SG is never a "cost"); when SG is a real loss it is
+    //    the authoritative ceiling causes enumerate WITHIN (never exceed); when
+    //    SG is unknown we take the DOMINANT single cause rather than free-summing
+    //    overlapping sub-metric counterfactuals (which double-counts).
     const sgPerRound = sgByCategory[def.category] ?? null;
-    const childSum = causes.reduce((acc, c) => acc + c.strokesSavedPerRound, 0);
-    const themeStrokesPerRound = Math.max(Math.abs(sgPerRound ?? 0), childSum);
+    const realisticChildSum = causes.reduce((acc, c) => acc + c.strokesSavedPerRound, 0);
+    const dominantCause = causes.reduce((max, c) => Math.max(max, c.strokesSavedPerRound), 0);
 
-    // 7. Theme state.
+    let themeStrokesPerRound: number;
+    if (sgPerRound != null && sgPerRound > 0) {
+      // STRENGTH — gaining vs baseline; never a cost.
+      themeStrokesPerRound = 0;
+    } else if (sgPerRound != null) {
+      // Real category loss (sg ≤ 0): SG/round is the authoritative ceiling.
+      themeStrokesPerRound = Math.min(realisticChildSum, Math.abs(sgPerRound));
+    } else {
+      // SG unknown (outcome themes, or SG theme with no SG data): the dominant
+      // single cause, not the sum, to avoid over-summing overlapping metrics.
+      themeStrokesPerRound = dominantCause;
+    }
+
+    // Theme-level honest "gap to Tour ceiling" = Σ causes' raw Tour gaps.
+    const tourGapPerRound = causes.reduce((acc, c) => acc + (c.tourGapPerRound ?? 0), 0);
+
+    // 7. Theme state (reconciled to the same realistic basis).
     const state = deriveState(causes, sgPerRound);
 
-    return {
+    const theme: ThemeNode = {
       category: def.category,
       sgMetricId: def.sgMetricId,
       displayLabel: def.displayLabel,
       isOutcomeTheme: def.isOutcomeTheme,
       themeStrokesPerRound,
+      tourGapPerRound,
       sgPerRound,
       causes,
       state,
     };
+
+    // ITEM 5 — gate empty outcome themes. The 3 outcome themes (scoring /
+    // course_management / pressure) have no SG metric and would otherwise be
+    // permanent thin stubs; only emit them when they carry ≥1 cause. The 4 SG
+    // themes are ALWAYS emitted (they carry SG context even with no causes).
+    if (def.isOutcomeTheme && causes.length === 0) return [];
+    return [theme];
   });
 
   // 8. Sort themes by magnitude desc, tiebreak by stable scaffold index asc.
@@ -160,14 +237,19 @@ function isComposite(ev: AssembledEvidence): boolean {
   return hasLeaves || hasRule;
 }
 
-/** Strokes-saved for a cause: 0 unless a non-suppressed counterfactual exists. */
-function strokesSavedOf(ev: AssembledEvidence): number {
+/**
+ * RAW vs-Tour gap for a cause: the un-discounted upstream
+ * `counterfactual.strokes_saved_per_round` (gap to the PGA-Tour ceiling), or
+ * null when there is no usable counterfactual (suppressed / absent / NaN). This
+ * is the honest "gap to Tour ceiling" number — NEVER framed as strokes lost.
+ */
+function tourGapOf(ev: AssembledEvidence): number | null {
   const cf = ev.counterfactual;
   if (cf && cf.suppressed !== true) {
     const v = cf.strokes_saved_per_round;
-    return Number.isFinite(v) ? v : 0;
+    return Number.isFinite(v) ? v : null;
   }
-  return 0;
+  return null;
 }
 
 /** Map an insight's attached drills to plan-leaf shape (already ≤3 from delivery). */
@@ -180,12 +262,19 @@ function toDriverLeaves(row: EvidenceInsight | undefined): DriverLeaf[] {
 function buildCause(
   row: EvidenceInsight,
   byId: Map<string, EvidenceInsight>,
+  category: InsightCategory,
 ): CauseNode {
   const ev = readEvidence(row);
   const metric = typeof ev.metric === 'string' ? ev.metric : null;
 
   const counterfactualSuppressed = !ev.counterfactual || ev.counterfactual.suppressed === true;
-  const strokesSavedPerRound = strokesSavedOf(ev);
+  // Honest raw gap to the PGA-Tour ceiling (null when suppressed/absent), and
+  // the college-realistic re-scale used for ranking/sizing/display. We do NOT
+  // re-apply the 0.3 stat-noise floor here — upstream already applied it on the
+  // raw Tour value; re-suppressing the (smaller) realistic value would over-thin.
+  const tourGapPerRound = tourGapOf(ev);
+  const strokesSavedPerRound =
+    tourGapPerRound != null ? tourGapPerRound * realismFactor(category) : 0;
 
   // Composite drivers: resolve each claimed leaf via byId; tolerate dangling refs.
   let drivers: RootDriver[] = [];
@@ -213,6 +302,7 @@ function buildCause(
     title: row.title,
     content: row.content,
     strokesSavedPerRound,
+    tourGapPerRound,
     counterfactualSuppressed,
     standingPlayerValue: ev.standing?.player_value ?? null,
     standingPgaValue: ev.standing?.pga_value ?? null,
@@ -222,7 +312,7 @@ function buildCause(
   };
 }
 
-/** Cause comparator: strokes desc → |strokes_impact| desc → title asc. */
+/** Cause comparator: realistic strokesSavedPerRound desc → |strokes_impact| desc → title asc. */
 function rankCauses(
   a: CauseNode,
   b: CauseNode,
@@ -240,20 +330,40 @@ function rankCauses(
 }
 
 /**
- * Theme state (honest, never-blank):
- *   - `thin`     : no causes AND (sg null OR |sg| < 0.3)
- *   - `strength` : sg != null && sg > 0.3 (green, gaining vs baseline) AND no
- *                  cause with strokesSavedPerRound >= 0.3
- *   - `leak`     : otherwise (a material cause or a negative/large sg)
+ * Theme state (honest, never-blank), reconciled to the SAME realistic basis as
+ * `themeStrokesPerRound`. `LEAK_FLOOR` (0.3 strokes/round) is the materiality
+ * threshold throughout: signals below it are real-but-immaterial, so we don't
+ * shout about them, but we also don't mislabel them as a strength.
+ *
+ *   - `strength` : positive SG (> LEAK_FLOOR, a real gain vs baseline) AND no
+ *                  realistic leak cause. A positive-SG category NEVER reads as a
+ *                  leak. (`themeStrokesPerRound` is 0 in this branch.)
+ *   - `leak`     : a material realistic magnitude (`themeStrokesPerRound >=
+ *                  LEAK_FLOOR`) OR a material SG loss (`sgPerRound < -LEAK_FLOOR`).
+ *   - `thin`     : everything else — no material signal either way (incl. a
+ *                  small-but-real <LEAK_FLOOR signal, which is shown as a stub
+ *                  rather than over-claimed as a strength or a leak).
  */
 function deriveState(causes: CauseNode[], sgPerRound: number | null): ThemeState {
-  const hasLeakCause = causes.some((c) => c.strokesSavedPerRound >= LEAK_FLOOR);
+  const hasCauses = causes.length > 0;
 
-  if (causes.length === 0 && (sgPerRound == null || Math.abs(sgPerRound) < LEAK_FLOOR)) {
+  // `thin` ONLY when there is genuinely nothing to show: NO surfaced cause AND no
+  // material SG signal. A theme that HAS causes is NEVER thin — the thin branch
+  // hides the cause cascade, so a surfaced cause must never be routed here. (This
+  // was the conflicting-signal bug: a net-positive-SG category with a real
+  // sub-leak cause, and any causes-bearing theme whose realistic magnitude fell
+  // below the floor, dropped to `thin` and its causes vanished.)
+  if (!hasCauses && (sgPerRound == null || Math.abs(sgPerRound) < LEAK_FLOOR)) {
     return 'thin';
   }
-  if (sgPerRound != null && sgPerRound > LEAK_FLOOR && !hasLeakCause) {
+  // A material net gain → `strength`. Positive SG never renders as a cost; any
+  // causes still render beneath as "sharpen-further" items (ThemeCard shows the
+  // cascade in EVERY non-thin state) — they are simply not framed as leaks.
+  if (sgPerRound != null && sgPerRound > LEAK_FLOOR) {
     return 'strength';
   }
+  // Otherwise — a material SG loss, or a surfaced cause to address → `leak`.
+  // Causes are always visible; the ThemeCard headline stays neutral (no "to
+  // gain" claim) when themeStrokesPerRound is 0.
   return 'leak';
 }

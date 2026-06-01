@@ -98,12 +98,15 @@ function themeOf(result: ReturnType<typeof assembleThemes>, category: InsightCat
  * ────────────────────────────────────────────────────────────────────────── */
 
 describe('assembleThemes — grouping & scaffold', () => {
-  test('all 7 themes always present even with zero rows', () => {
+  test('the 4 SG themes always present even with zero rows; empty outcome themes omitted', () => {
     const result = assembleThemes({ playerId: 'p1', rows: [], sgByCategory: {} });
-    expect(result.themes).toHaveLength(THEME_TAXONOMY.length);
-    expect(result.themes).toHaveLength(7);
+    // Only the 4 SG themes survive when every outcome theme is empty.
+    expect(result.themes).toHaveLength(4);
     const cats = new Set(result.themes.map((t) => t.category));
-    for (const def of THEME_TAXONOMY) expect(cats.has(def.category)).toBe(true);
+    for (const def of THEME_TAXONOMY) {
+      if (def.isOutcomeTheme) expect(cats.has(def.category)).toBe(false);
+      else expect(cats.has(def.category)).toBe(true);
+    }
   });
 
   test('causes land under their category theme', () => {
@@ -210,11 +213,67 @@ describe('assembleThemes — composite threading', () => {
 });
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * College-realism re-scale + honest Tour-gap labeling
+ * ────────────────────────────────────────────────────────────────────────── */
+
+// Mirror of the documented constant in assemble.ts (kept in-test so a drift in
+// the factor breaks loudly here).
+const REALISM: Record<InsightCategory, number> = {
+  putting: 0.55,
+  approach: 0.6,
+  short_game: 0.6,
+  tee: 0.6,
+  scoring: 0.6,
+  course_management: 0.6,
+  pressure: 0.6,
+};
+
+describe('assembleThemes — college-realism re-scale', () => {
+  test('strokesSavedPerRound = raw × factor; tourGapPerRound = raw (putting)', () => {
+    const R = 1.4;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: R })],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'putting').causes[0]!;
+    expect(c.tourGapPerRound).toBe(R);
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.putting, 10);
+  });
+
+  test('strokesSavedPerRound = raw × factor; tourGapPerRound = raw (approach)', () => {
+    const R = 2.0;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'approach', strokesSaved: R })],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    expect(c.tourGapPerRound).toBe(R);
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.approach, 10);
+  });
+
+  test('no re-suppression below 0.3: a small realistic value is kept (not floored to 0)', () => {
+    // raw 0.45 (above the upstream 0.3 floor) → realistic 0.45*0.55 ≈ 0.2475,
+    // which is below 0.3 but must NOT be re-suppressed to 0.
+    const R = 0.45;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: R })],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'putting').causes[0]!;
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.putting, 10);
+    expect(c.strokesSavedPerRound).toBeGreaterThan(0);
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
  * Ranking + counterfactual honesty
  * ────────────────────────────────────────────────────────────────────────── */
 
 describe('assembleThemes — ranking', () => {
-  test('causes ordered by counterfactual strokes desc', () => {
+  test('causes ordered by realistic strokesSavedPerRound desc', () => {
     const result = assembleThemes({
       playerId: 'p1',
       rows: [
@@ -231,7 +290,7 @@ describe('assembleThemes — ranking', () => {
     ]);
   });
 
-  test('suppressed counterfactual → 0 → ranks last & flags counterfactualSuppressed', () => {
+  test('suppressed counterfactual → 0 / null → ranks last & flags counterfactualSuppressed', () => {
     const result = assembleThemes({
       playerId: 'p1',
       rows: [
@@ -244,10 +303,11 @@ describe('assembleThemes — ranking', () => {
     expect(causes.map((c) => c.insight_id)).toEqual(['real', 'sup']);
     const sup = causes.find((c) => c.insight_id === 'sup')!;
     expect(sup.strokesSavedPerRound).toBe(0);
+    expect(sup.tourGapPerRound).toBeNull();
     expect(sup.counterfactualSuppressed).toBe(true);
   });
 
-  test('absent counterfactual → 0 strokes & counterfactualSuppressed true', () => {
+  test('absent counterfactual → 0 strokes, null Tour gap & counterfactualSuppressed true', () => {
     const result = assembleThemes({
       playerId: 'p1',
       rows: [row({ id: 'none', category: 'approach', noCounterfactual: true })],
@@ -255,6 +315,7 @@ describe('assembleThemes — ranking', () => {
     });
     const c = themeOf(result, 'approach').causes[0]!;
     expect(c.strokesSavedPerRound).toBe(0);
+    expect(c.tourGapPerRound).toBeNull();
     expect(c.counterfactualSuppressed).toBe(true);
   });
 
@@ -317,26 +378,76 @@ describe('assembleThemes — cause fields', () => {
  * Magnitude precedence + states
  * ────────────────────────────────────────────────────────────────────────── */
 
-describe('assembleThemes — magnitude & states', () => {
-  test('themeStrokesPerRound === max(|sgPerRound|, childSum)', () => {
-    // childSum (0.4 + 0.5 = 0.9) dominates a small sg
-    const r1 = assembleThemes({
+describe('assembleThemes — sign-aware sizing & states', () => {
+  test('positive sgPerRound → themeStrokesPerRound 0 and state strength (never a cost)', () => {
+    // Positive SG with no MATERIAL realistic leak cause → a clean STRENGTH; the
+    // cost magnitude is 0 (a strength is never a cost). The cause here is
+    // immaterial after re-scale (raw 0.4 → realistic 0.24 < LEAK_FLOOR).
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.4 })],
+      sgByCategory: { putting: 0.8 },
+    });
+    const t = themeOf(result, 'putting');
+    expect(t.themeStrokesPerRound).toBe(0);
+    expect(t.state).toBe('strength');
+  });
+
+  test('negative sg caps the realistic child sum at |sg| (causes never exceed the loss)', () => {
+    // realisticChildSum = (1.4 + 1.0) * 0.55 = 1.32, |sg| = 0.9 → capped to 0.9
+    const result = assembleThemes({
       playerId: 'p1',
       rows: [
-        row({ id: 'a', category: 'putting', strokesSaved: 0.4 }),
-        row({ id: 'b', category: 'putting', strokesSaved: 0.5 }),
+        row({ id: 'a', category: 'putting', strokesSaved: 1.4 }),
+        row({ id: 'b', category: 'putting', strokesSaved: 1.0 }),
       ],
-      sgByCategory: { putting: -0.2 },
+      sgByCategory: { putting: -0.9 },
     });
-    expect(themeOf(r1, 'putting').themeStrokesPerRound).toBeCloseTo(0.9, 10);
+    const t = themeOf(result, 'putting');
+    expect(t.themeStrokesPerRound).toBeCloseTo(0.9, 10);
+    expect(t.state).toBe('leak');
+  });
 
-    // |sg| (1.4) dominates a small childSum
-    const r2 = assembleThemes({
+  test('negative sg larger than child sum → uses the (smaller) realistic child sum', () => {
+    // realisticChildSum = 0.5 * 0.55 = 0.275, |sg| = 1.4 → min = 0.275
+    const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.3 })],
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.5 })],
       sgByCategory: { putting: -1.4 },
     });
-    expect(themeOf(r2, 'putting').themeStrokesPerRound).toBeCloseTo(1.4, 10);
+    const t = themeOf(result, 'putting');
+    expect(t.themeStrokesPerRound).toBeCloseTo(0.5 * REALISM.putting, 10);
+    // sg is a material loss (< -0.3) → still a leak even though the realistic
+    // magnitude is below the floor.
+    expect(t.state).toBe('leak');
+  });
+
+  test('null sg → DOMINANT single cause, not the sum (no double-count)', () => {
+    // realistic values: 0.4*0.6=0.24, 0.5*0.6=0.30 → dominant 0.30, NOT 0.54
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'a', category: 'approach', strokesSaved: 0.4 }),
+        row({ id: 'b', category: 'approach', strokesSaved: 0.5 }),
+      ],
+      sgByCategory: {},
+    });
+    const t = themeOf(result, 'approach');
+    expect(t.themeStrokesPerRound).toBeCloseTo(0.5 * REALISM.approach, 10);
+  });
+
+  test('theme tourGapPerRound = Σ causes raw Tour gaps', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'a', category: 'approach', strokesSaved: 1.0 }),
+        row({ id: 'b', category: 'approach', strokesSaved: 2.0 }),
+        row({ id: 'c', category: 'approach', suppressed: true, strokesSaved: 9 }),
+      ],
+      sgByCategory: {},
+    });
+    // suppressed cause contributes 0 to the Tour gap sum
+    expect(themeOf(result, 'approach').tourGapPerRound).toBeCloseTo(3.0, 10);
   });
 
   test('empty theme + null sg → thin', () => {
@@ -353,16 +464,39 @@ describe('assembleThemes — magnitude & states', () => {
     expect(themeOf(result, 'putting').state).toBe('strength');
   });
 
-  test('leak cause present → leak (even with positive sg)', () => {
+  test('positive sg + a material leak cause → strength, but the cause stays VISIBLE (never hidden)', () => {
+    // Conflicting signal: a net-positive-SG category (a strength) that also has a
+    // real sub-leak cause. A positive-SG category NEVER renders as a cost
+    // (themeStrokesPerRound is 0), so it is labeled `strength` — but it must NOT
+    // be `thin`, because `thin` hides the cause cascade and the surfaced cause
+    // would vanish. The cause is shown beneath the strength as a "sharpen" item.
     const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.6 })],
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 1.0 })],
       sgByCategory: { putting: 0.8 },
     });
-    expect(themeOf(result, 'putting').state).toBe('leak');
+    const t = themeOf(result, 'putting');
+    expect(t.themeStrokesPerRound).toBe(0);
+    expect(t.state).toBe('strength');
+    // The key guarantee: the surfaced cause is NOT lost.
+    expect(t.causes).toHaveLength(1);
+    expect(t.causes[0]?.insight_id).toBe('a');
   });
 
-  test('negative sg with no causes → leak (not thin once |sg| >= 0.3)', () => {
+  test('null sg + a sub-floor cause → leak (not thin), so the cause stays visible', () => {
+    // A causes-bearing theme with no SG context and a small realistic magnitude
+    // must NOT be `thin` — the upstream surfaced the cause, so we show it.
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'approach', strokesSaved: 0.2 })],
+      sgByCategory: {},
+    });
+    const t = themeOf(result, 'approach');
+    expect(t.state).not.toBe('thin');
+    expect(t.causes).toHaveLength(1);
+  });
+
+  test('negative sg with no causes → leak (not thin once sg < -0.3)', () => {
     const result = assembleThemes({
       playerId: 'p1',
       rows: [],
@@ -372,16 +506,65 @@ describe('assembleThemes — magnitude & states', () => {
   });
 
   test('themes sorted by magnitude desc, scaffold index tiebreak', () => {
+    // approach raw 4.0 → realistic 4.0*0.6 = 2.4 (null sg → dominant cause).
     const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'approach', strokesSaved: 2 })],
-      sgByCategory: { putting: 0.5 },
+      rows: [row({ id: 'a', category: 'approach', strokesSaved: 4 })],
+      sgByCategory: { putting: -0.5 },
     });
-    // approach (2.0) floats above putting (0.5) above the rest (0)
+    // approach (2.4) floats above putting (0.5 cap) above the rest (0)
     expect(result.themes[0]!.category).toBe('approach');
     expect(result.themes[1]!.category).toBe('putting');
-    // total = sum of theme magnitudes
-    expect(result.totalStrokesPerRound).toBeCloseTo(2.5, 10);
+    expect(themeOf(result, 'approach').themeStrokesPerRound).toBeCloseTo(2.4, 10);
+    // putting: |sg| 0.5, no causes → min(0, 0.5) = 0... but child sum is 0, so
+    // themeStrokesPerRound = min(0, 0.5) = 0; state leak (sg < -0.3).
+    expect(themeOf(result, 'putting').themeStrokesPerRound).toBe(0);
+    // total = sum of emitted theme magnitudes (outcome themes with 0 causes omitted)
+    expect(result.totalStrokesPerRound).toBeCloseTo(2.4, 10);
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Outcome-theme gating (Item 5)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+describe('assembleThemes — outcome theme gating', () => {
+  test('empty outcome themes are omitted; the 4 SG themes always present', () => {
+    const result = assembleThemes({ playerId: 'p1', rows: [], sgByCategory: {} });
+    const cats = new Set(result.themes.map((t) => t.category));
+    // SG themes always present
+    for (const sg of ['putting', 'approach', 'tee', 'short_game'] as const) {
+      expect(cats.has(sg)).toBe(true);
+    }
+    // outcome themes omitted when empty
+    for (const out of ['scoring', 'course_management', 'pressure'] as const) {
+      expect(cats.has(out)).toBe(false);
+    }
+    expect(result.themes).toHaveLength(4);
+  });
+
+  test('outcome theme WITH a cause is included', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'scoring', strokesSaved: 1.0 })],
+      sgByCategory: {},
+    });
+    const cats = new Set(result.themes.map((t) => t.category));
+    expect(cats.has('scoring')).toBe(true);
+    // the other two empty outcome themes are still omitted
+    expect(cats.has('course_management')).toBe(false);
+    expect(cats.has('pressure')).toBe(false);
+    expect(result.themes).toHaveLength(5); // 4 SG + scoring
+  });
+
+  test('empty SG theme is still present even with no cause', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [],
+      sgByCategory: { tee: -0.7 },
+    });
+    expect(themeOf(result, 'tee')).toBeDefined();
+    expect(themeOf(result, 'tee').causes).toHaveLength(0);
   });
 });
 
@@ -518,11 +701,22 @@ describe('assembleThemes — properties', () => {
     );
   });
 
-  test('always emits exactly 7 themes for any input', () => {
+  test('always emits the 4 SG themes; outcome themes only when they have a cause', () => {
     fc.assert(
       fc.property(rowsArb, (rows) => {
         const result = assembleThemes({ playerId: 'p1', rows, sgByCategory: {} });
-        expect(result.themes).toHaveLength(7);
+        const cats = new Set(result.themes.map((t) => t.category));
+        // 4 SG themes are unconditional.
+        for (const sg of ['putting', 'approach', 'tee', 'short_game'] as const) {
+          expect(cats.has(sg)).toBe(true);
+        }
+        // Every outcome theme present iff it has ≥1 cause.
+        for (const t of result.themes) {
+          if (t.isOutcomeTheme) expect(t.causes.length).toBeGreaterThan(0);
+        }
+        // Bounds: between 4 (all outcome empty) and 7 (all outcome non-empty).
+        expect(result.themes.length).toBeGreaterThanOrEqual(4);
+        expect(result.themes.length).toBeLessThanOrEqual(7);
       }),
     );
   });

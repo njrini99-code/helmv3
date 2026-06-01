@@ -97,8 +97,20 @@ export interface CauseNode {
   metric: string | null;
   title: string;
   content: string;
-  /** ranking key = `counterfactual.strokes_saved_per_round ?? 0`; tiebreak on |strokes_impact|. */
+  /**
+   * COLLEGE-REALISTIC per-round strokes to gain — the ranking/sizing/display
+   * value. Derived from the upstream counterfactual (which measures the gap to
+   * the PGA-Tour ceiling) re-scaled by a documented per-category college-realism
+   * factor, because a college player cannot realistically close the full Tour
+   * gap. 0 when the counterfactual is suppressed/absent (diagnostic-only).
+   */
   strokesSavedPerRound: number;
+  /**
+   * The RAW gap to the PGA-Tour ceiling (the un-discounted upstream
+   * `counterfactual.strokes_saved_per_round`), for honest "gap to Tour ceiling"
+   * labeling. null when no counterfactual. NEVER framed as "strokes you're losing."
+   */
+  tourGapPerRound: number | null;
   /** counterfactual suppressed (stat noise / no baseline / bias metric) → diagnostic-only, no headline number. */
   counterfactualSuppressed: boolean;
   /** `standing.player_value` → `current_value` for the focus-area CTA. */
@@ -128,8 +140,16 @@ export interface ThemeNode {
   sgMetricId: MetricId | null;
   displayLabel: string;
   isOutcomeTheme: boolean;
-  /** themeStrokes = max(|sgPerRound|, SUM child `strokes_saved_per_round`). Drives card order. */
+  /**
+   * COLLEGE-REALISTIC theme magnitude (sign-aware): the realistically-closable
+   * strokes/round for a LEAK theme, and 0 for a strength (positive SG never
+   * renders as a "cost"). SG/round, when known, is the authoritative category
+   * ceiling — identified causes enumerate within it and never exceed it. Drives
+   * card order.
+   */
   themeStrokesPerRound: number;
+  /** Sum of the causes' raw vs-Tour gaps, for the "gap to Tour ceiling" label. */
+  tourGapPerRound: number;
   /** raw SG/round when known (GolfStats.sg*PerRound or golf_rounds.strokes_gained_*); null when unknown. */
   sgPerRound: number | null;
   /** direct causes, ranked by `strokesSavedPerRound` desc. */

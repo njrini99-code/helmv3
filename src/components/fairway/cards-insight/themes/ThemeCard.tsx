@@ -7,9 +7,13 @@
  * One THEME (an SG category or an outcome theme). Honest by `state`:
  *
  *   • leak     — warning-toned magnitude pill + a headline that quantifies the
- *                cost ("{label} is costing ~{x} strokes/round") when
- *                themeStrokesPerRound > 0; otherwise a neutral "{label}" header
- *                (NEVER a fabricated 0). Below: the cause cascade (CauseRow[]).
+ *                COLLEGE-REALISTIC strokes to gain ("{label} — ~{x}
+ *                strokes/round to gain") when themeStrokesPerRound > 0;
+ *                otherwise a neutral "{label}" header (NEVER a fabricated 0). A
+ *                secondary, smaller line surfaces the raw vs-Tour ceiling
+ *                ("{g} to Tour ceiling") only when the Tour gap exceeds the
+ *                realistic gain — NEVER framed as "strokes you're losing." Below:
+ *                the cause cascade (CauseRow[]).
  *   • strength — green success-toned pill + "Strength — gaining ~{x}
  *                strokes/round vs your baseline". No leak framing.
  *   • thin     — muted stub: "Not enough data yet — log more rounds (or tag
@@ -55,7 +59,7 @@ export function ThemeCard({
   onMakePlan,
   makePlanPendingId,
 }: ThemeCardProps) {
-  const { displayLabel, state, themeStrokesPerRound, causes } = theme;
+  const { displayLabel, state, themeStrokesPerRound, tourGapPerRound, causes } = theme;
   const magnitude = themeStrokesPerRound.toFixed(1);
   const hasMagnitude = themeStrokesPerRound > 0;
 
@@ -70,8 +74,14 @@ export function ThemeCard({
       ? `Strength — gaining ~${magnitude} strokes/round vs your baseline`
       : `${displayLabel} — a strength`
     : isLeak && hasMagnitude
-      ? `${displayLabel} is costing ~${magnitude} strokes/round`
+      ? `${displayLabel} — ~${magnitude} strokes/round to gain`
       : displayLabel;
+
+  // Secondary, smaller honest line: the raw vs-Tour ceiling. Only shown for a
+  // quantified leak where the Tour gap is materially larger than the realistic
+  // gain — context for "how far the very top is," NEVER a "losing X" framing.
+  const showTourCeiling =
+    isLeak && hasMagnitude && tourGapPerRound > themeStrokesPerRound;
 
   return (
     <Surface
@@ -91,6 +101,11 @@ export function ThemeCard({
           <h3 className="font-fw-display text-body-lg font-medium leading-snug text-text-primary">
             {headline}
           </h3>
+          {showTourCeiling ? (
+            <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
+              {tourGapPerRound.toFixed(1)} to Tour ceiling
+            </span>
+          ) : null}
         </div>
 
         {/* Magnitude pill — same chrome as the cockpit CauseEffectCard pill. */}

@@ -10,17 +10,23 @@
  * `FairwayStatsCockpit.tsx`). Plain CSS transition only — NO per-row
  * framer-motion (the Signals scroll-perf lesson).
  *
- * Collapsed: cause.title + a small strokes pill (`+{x}/round`) UNLESS the
- * counterfactual is suppressed (then a neutral "Diagnostic" chip, NO number).
+ * Collapsed: cause.title + an honest strokes pill (`≈{realistic}/rd to gain`,
+ * with a smaller `({tour} to Tour)` ceiling note when the Tour gap is larger)
+ * UNLESS the counterfactual is suppressed — then a neutral, player-legible
+ * "Tendency" chip with NO fabricated number (a directional read, not a leak).
  *
  * Expanded:
+ *   • for a suppressed/Tendency cause, a short caption explaining it's a
+ *     directional read with no reliable stroke estimate yet
  *   • cause.content as prose
  *   • ROOT DRIVERS — each driver's title + prose as a nested matte sub-row
  *     ('composite' source labelled as the synthesized root driver)
  *   • DEVELOPMENT PLAN LEAF — the drills as simple Fairway chips (drills from
  *     the cause + any collected from drivers, de-duped by drill_id)
  *   • "Make it a plan" CTA — a Fairway Button (sm), enabled per the role rules
- *     below; honest caption when the player has no drill yet.
+ *     below; honest caption when the player has no drill yet. SUPPRESSED causes
+ *     never get the primary CTA (no quantified target) — they get a soft
+ *     "talk to your coach" caption instead.
  *
  * PRESENTATION ONLY — no data fetch, no server action import. The "make it a
  * plan" handler is INJECTED (`onMakePlan`) so this surface stays decoupled.
@@ -113,16 +119,27 @@ export function CauseRow({
   const drills = collectDrills(cause);
   const hasDrill = drills.length > 0;
 
-  // Enablement: coach → canMakePlan; player → canMakePlan AND a drill exists
-  // (Practice-Rx hard-errors with no matching drill). Player with no drill sees
-  // the honest caption instead of a button.
-  const planEnabled =
-    role === 'coach' ? cause.canMakePlan : cause.canMakePlan && hasDrill;
-  const playerNeedsDrill = role === 'player' && cause.canMakePlan && !hasDrill;
+  // Suppressed counterfactual → no reliable stroke estimate. We surface it as a
+  // legible "Tendency" (directional read), never a fabricated number, and we
+  // gate the plan CTA off entirely (a plan needs a quantified target).
+  const suppressed = cause.counterfactualSuppressed;
 
-  // Strokes pill: only when NOT suppressed. Suppressed → neutral diagnostic chip.
+  // Enablement (NON-suppressed only): coach → canMakePlan; player → canMakePlan
+  // AND a drill exists (Practice-Rx hard-errors with no matching drill). Player
+  // with no drill sees the honest caption instead of a button.
+  const planEnabled =
+    !suppressed &&
+    (role === 'coach' ? cause.canMakePlan : cause.canMakePlan && hasDrill);
+  const playerNeedsDrill =
+    !suppressed && role === 'player' && cause.canMakePlan && !hasDrill;
+
+  // Strokes pill: only when NOT suppressed. Show the COLLEGE-REALISTIC value as
+  // the primary number; when the raw Tour gap is larger, append it as a smaller
+  // ceiling note (never framed as "strokes you're losing").
   const strokes = cause.strokesSavedPerRound;
-  const showStrokesPill = !cause.counterfactualSuppressed && strokes > 0;
+  const tourGap = cause.tourGapPerRound;
+  const showStrokesPill = !suppressed && strokes > 0;
+  const showTourCeiling = tourGap != null && tourGap > strokes;
 
   return (
     <div
@@ -144,11 +161,16 @@ export function CauseRow({
           </span>
           {showStrokesPill ? (
             <span className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-mono text-eyebrow font-medium tabular-nums text-fw-warning">
-              +{strokes.toFixed(1)}/round
+              ≈{strokes.toFixed(1)}/rd to gain
+              {showTourCeiling && tourGap != null ? (
+                <span className="font-normal text-fw-warning/70">
+                  ({tourGap.toFixed(1)} to Tour)
+                </span>
+              ) : null}
             </span>
           ) : (
             <span className="inline-flex w-fit flex-shrink-0 items-center rounded-full bg-inset px-2 py-0.5 font-fw-sans text-eyebrow font-medium uppercase tracking-[0.08em] text-text-tertiary">
-              Diagnostic
+              Tendency
             </span>
           )}
         </span>
@@ -163,6 +185,16 @@ export function CauseRow({
 
       {open ? (
         <div id={panelId} className="flex flex-col gap-4 px-1 pb-1">
+          {/* Tendency caption — frames a suppressed cause as an intentional
+              directional read, not an engine failure. No fabricated number. */}
+          {suppressed ? (
+            <p className="font-fw-sans text-caption leading-relaxed text-text-tertiary">
+              A directional read from your pattern — there isn&rsquo;t a reliable
+              stroke estimate for this yet, so treat it as a tendency to watch
+              rather than a measured leak.
+            </p>
+          ) : null}
+
           {/* Cause prose */}
           {cause.content ? (
             <p className="font-fw-sans text-body-sm leading-relaxed text-text-secondary">
@@ -218,8 +250,16 @@ export function CauseRow({
             </div>
           ) : null}
 
-          {/* "Make it a plan" CTA — or the honest player caption. */}
-          {planEnabled ? (
+          {/* "Make it a plan" CTA — or an honest caption. Suppressed causes
+              never get the primary CTA (no quantified target): a plan can't be
+              built around an unmeasured tendency, so we point to a coach chat. */}
+          {suppressed ? (
+            <p className="font-fw-sans text-caption text-text-tertiary">
+              {role === 'coach'
+                ? 'Discuss with your coach'
+                : 'Talk to your coach about this'}
+            </p>
+          ) : planEnabled ? (
             <div>
               <Button
                 variant="primary"
