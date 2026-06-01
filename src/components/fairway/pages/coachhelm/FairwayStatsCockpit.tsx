@@ -949,7 +949,10 @@ function ScoringByPar({ data }: { data: GolfStats['scoringByPar'] }) {
  * each readout reads `awaiting` when its sample is 0; the whole section hides
  * when there is no short-game data at all (never a grid of zeros).
  * ══════════════════════════════════════════════════════════════════════════ */
+type ScrambleCut = 'lie' | 'distance';
+
 function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }) {
+  const [scrambleCut, setScrambleCut] = useState<ScrambleCut>('lie');
   if (!detailedStats) return null;
   const scramblePct = finite(detailedStats.scramblingPercentage);
   const scrambleAtt = detailedStats.scrambleAttempts ?? 0;
@@ -973,6 +976,10 @@ function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }
   const hasHeadline = scrambleAtt > 0 || sandAtt > 0 || (penPerRound != null && rounds > 0);
   const hasDrill = !allDash(byLie) || !allDash(byDistance);
   if (!hasHeadline && !hasDrill) return null;
+
+  // One breakdown, switched by the cut toggle (reuses the cockpit ToggleChip).
+  const activeRows = scrambleCut === 'lie' ? byLie : byDistance;
+  const activeTitle = scrambleCut === 'lie' ? 'Scrambling by lie' : 'Scrambling by distance';
 
   return (
     <section className="flex flex-col gap-3">
@@ -1019,13 +1026,25 @@ function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }
         />
       </div>
       {hasDrill ? (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {!allDash(byLie) ? (
-            <DetailGrid title="Scrambling by lie" rows={byLie} columns={3} />
-          ) : null}
-          {!allDash(byDistance) ? (
-            <DetailGrid title="Scrambling by distance" rows={byDistance} columns={3} />
-          ) : null}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2 px-1" aria-label="Scrambling cut filter">
+            <ToggleChip active={scrambleCut === 'lie'} value="lie" label="By lie" onSelect={setScrambleCut} />
+            <ToggleChip
+              active={scrambleCut === 'distance'}
+              value="distance"
+              label="By distance"
+              onSelect={setScrambleCut}
+            />
+          </div>
+          {!allDash(activeRows) ? (
+            <DetailGrid title={activeTitle} rows={activeRows} columns={3} />
+          ) : (
+            <Surface elevation="border" padding="md">
+              <p className="font-fw-sans text-caption text-text-tertiary">
+                No {scrambleCut === 'lie' ? 'lie' : 'distance'} data yet.
+              </p>
+            </Surface>
+          )}
         </div>
       ) : null}
     </section>
@@ -1339,6 +1358,7 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
 
   const headline: DetailRow[] = [
     { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
+    { label: 'Putts / hole', value: fmtNum(s.puttsPerHole, 2) },
     { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
     { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
     { label: '1-putts total', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
@@ -1558,6 +1578,7 @@ function ComprehensiveDetail({
   // ── Putting detail ─────────────────────────────────────────────────────────
   const puttHeadline: DetailRow[] = [
     { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
+    { label: 'Putts / hole', value: fmtNum(s.puttsPerHole, 2) },
     { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
     { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
     { label: '1-putts (total)', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
