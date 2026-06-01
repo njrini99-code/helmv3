@@ -11,7 +11,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { logServerError } from '@/lib/server-error-logger';
+import { logServerError, logServerEvent } from '@/lib/server-error-logger';
 import { requireCronAuth } from '@/lib/cron/auth';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { computeAttribution, nextWeight } from '@/lib/coachhelm/v3/causality/attribute';
@@ -104,6 +104,12 @@ async function handle(): Promise<NextResponse> {
     .slice(0, LIMIT);
   summary.considered = todo.length;
 
+  // Per-run roll-up of unknown metrics. Per-insight Sentry events were
+  // re-firing on the same registry gaps every cron run (one Sentry issue
+  // with 50 events/24h). We now console.warn per insight for traceability
+  // and emit a single end-of-run summary event at info severity.
+  const unknownMetricSamples: Array<{ insight_id: string; metric: string }> = [];
+
   for (const c of todo) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -123,12 +129,12 @@ async function handle(): Promise<NextResponse> {
           summary.intentional_no_lift += 1;
         } else if (result.reason === 'unknown-metric') {
           summary.unknown_metric += 1;
-          // Structured log so we can spot insight surface ↔ metric registry drift.
-          await logServerError(
-            `causality unknown metric '${metric}' on insight ${c.id}`,
-            { action: 'cron.v3.causality.unknown-metric' },
-            'warning',
+          console.warn(
+            `[cron.v3.causality] unknown metric '${metric}' on insight ${c.id}`,
           );
+          if (unknownMetricSamples.length < 10) {
+            unknownMetricSamples.push({ insight_id: c.id, metric });
+          }
         } else {
           summary.no_data += 1;
         }
@@ -171,6 +177,27 @@ async function handle(): Promise<NextResponse> {
       );
       summary.errors += 1;
     }
+  }
+
+  // One end-of-run roll-up for registry drift, surfaced at info severity so
+  // it stops drowning real bugs but stays visible in admin_events.
+  if (summary.unknown_metric > 0) {
+    const distinctMetrics = Array.from(
+      new Set(unknownMetricSamples.map((s) => s.metric)),
+    );
+    await logServerEvent(
+      `causality cron skipped ${summary.unknown_metric} insight(s) with unknown metric`,
+      {
+        action: 'cron.v3.causality.unknown-metric-summary',
+        featureArea: 'coachhelm.causality',
+        metadata: {
+          unknown_metric_count: summary.unknown_metric,
+          distinct_metrics: distinctMetrics,
+          sample_insights: unknownMetricSamples,
+        },
+      },
+      'info',
+    );
   }
 
   summary.duration_ms = Date.now() - startedAt;

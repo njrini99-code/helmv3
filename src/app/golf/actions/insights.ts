@@ -1004,12 +1004,13 @@ export async function generateTeamInsights() {
 
         // 2026-05-17: toInsightInput now returns null when the legacy record
         // lacks enough sample_n (audit Q-NEW-1). Log + skip rather than throw.
+        // Console-only — this fires per call and was generating ~18 Sentry
+        // events/day on operational telemetry, not real errors.
         const skipped = cleanInsights.length - inputs.length;
         if (skipped > 0) {
-          await logServerError(`generateInsightsForTeam skipped ${skipped} legacy records with insufficient sample_n`, {
-            action: 'generateInsightsForTeam.skip-insufficient',
-            featureArea: 'insights',
-          }, 'warning');
+          console.warn(
+            `[insights.generateInsightsForTeam] skipped ${skipped} legacy records with insufficient sample_n`,
+          );
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
       } catch (insertError) {
@@ -3429,15 +3430,16 @@ export async function triggerPlayerInsightsAfterRound(
 
       // 2026-05-17: toInsightInput now returns null when sample_n < MIN_SAMPLE_N.
       // Filter + log skipped legacy records rather than upsert inflated values.
+      // Console-only — fires per round and was generating ~18 Sentry
+      // events/day on operational telemetry, not real errors.
       const inputs = cleanInsights
         .map((record) => toInsightInput(record))
         .filter((x): x is NonNullable<typeof x> => x !== null);
       const skipped = cleanInsights.length - inputs.length;
       if (skipped > 0) {
-        await logServerError(`triggerPlayerInsightsAfterRound skipped ${skipped} legacy records (insufficient sample_n)`, {
-          action: 'triggerPlayerInsightsAfterRound.skip-insufficient',
-          featureArea: 'insights',
-        }, 'warning');
+        console.warn(
+          `[insights.triggerPlayerInsightsAfterRound] skipped ${skipped} legacy records (insufficient sample_n)`,
+        );
       }
       await Promise.all(
         inputs.map((input) => upsertInsight(admin, input)),
