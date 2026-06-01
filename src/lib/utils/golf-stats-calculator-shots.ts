@@ -139,6 +139,9 @@ export interface GolfStats {
   // Driving
   drivingDistanceAvg: number | null;
   drivingDistanceDriverOnly: number | null;
+  // ADDITIVE (Fairway redesign Phase A): avg tee-shot distance (yards) for holes where
+  // a non-driver was used off the tee (usedDriver === false). null when no such holes.
+  drivingDistanceNonDriverOnly: number | null;
   fairwaysHit: number;
   fairwayOpportunities: number;
   fairwayPercentage: number | null;
@@ -151,6 +154,14 @@ export interface GolfStats {
   missRightCount: number;
   missLeftPct: number | null;
   missRightPct: number | null;
+  // ADDITIVE (Fairway redesign Phase A): tee-miss left/right tendency split by club class
+  // off the tee. Same idea as overall missLeft/RightPct (% of that class's L/R misses)
+  // but keyed on usedDriver. Denominator = (left+right) misses for that class on par 4/5.
+  // null when that club class has no L/R misses recorded.
+  missLeftPctDriver: number | null;
+  missRightPctDriver: number | null;
+  missLeftPctNonDriver: number | null;
+  missRightPctNonDriver: number | null;
 
   // GIR
   girTotal: number;
@@ -188,6 +199,15 @@ export interface GolfStats {
   approachMissLongLeftPct: number | null;
   approachMissLongRightPct: number | null;
   approachMissTotal: number;
+  // ADDITIVE (Fairway redesign Phase A): the overall approachMiss*Pct above are
+  // aggregated across ALL distances. This bucket the SAME approach-miss-direction data
+  // by approach distance band (keyed by getApproachDistanceBucket: '30_75','75_100',
+  // '100_125','125_150','150_175','175_200','200_225','225_plus'). For each band, the %
+  // distribution of missed-green approaches by direction. Compound misses count toward
+  // both axes (e.g. short_left → short and left), matching the overall aggregate's logic.
+  // Bands with no missed approaches are omitted. Each component is null when no misses
+  // landed in that band (record key absent rather than a zeroed entry).
+  approachMissByBand: Record<string, { short: number | null; long: number | null; left: number | null; right: number | null }>;
 
   // Putting
   totalPutts: number;
@@ -215,6 +235,19 @@ export interface GolfStats {
   puttMakeCount5_10: number;
   puttMakeCount10_15: number;
   puttMakeCount15_20: number;
+
+  // --- ADDITIVE (Fairway redesign Phase A) ---
+  // Putting approach distance: how far away first putts are, on average (in FEET,
+  // matching per-hole `firstPuttDistance` which is normalized to feet). null when
+  // no holes have a first-putt distance recorded.
+  firstPuttDistanceAvg: number | null;
+  // Putting approach distance — COUNT DISTRIBUTION by distance band: for each band
+  // (keyed by getPuttDistanceBucket: '0_3','3_5','5_10','10_15','15_20','20_25',
+  // '25_30','30_35','35_plus'), the % of all first putts whose approach distance fell
+  // in that band. Bands with no first putts are omitted from the record. null overall
+  // when there are no first putts. This describes where a player tends to leave their
+  // first putt FROM (their lag/approach proximity to the green), not make rate.
+  firstPuttDistanceByBand: Record<string, number | null>;
 
   // Putting proximity (average distance left after first putt)
   puttProximity0_5: number | null;
@@ -1026,6 +1059,7 @@ function aggregateRoundStats(rounds: Array<{
     longestHoleOut: null,
     drivingDistanceAvg: null,
     drivingDistanceDriverOnly: null,
+    drivingDistanceNonDriverOnly: null,
     fairwaysHit: 0,
     fairwayOpportunities: 0,
     fairwayPercentage: null,
@@ -1038,6 +1072,10 @@ function aggregateRoundStats(rounds: Array<{
     missRightCount: 0,
     missLeftPct: null,
     missRightPct: null,
+    missLeftPctDriver: null,
+    missRightPctDriver: null,
+    missLeftPctNonDriver: null,
+    missRightPctNonDriver: null,
     girTotal: 0,
     girOpportunities: 0,
     girPercentage: null,
@@ -1067,6 +1105,7 @@ function aggregateRoundStats(rounds: Array<{
     approachMissLongLeftPct: null,
     approachMissLongRightPct: null,
     approachMissTotal: 0,
+    approachMissByBand: {},
     totalPutts: 0,
     puttsPerRound: null,
     puttsPerHole: null,
@@ -1088,6 +1127,8 @@ function aggregateRoundStats(rounds: Array<{
     puttMakeCount5_10: 0,
     puttMakeCount10_15: 0,
     puttMakeCount15_20: 0,
+    firstPuttDistanceAvg: null,
+    firstPuttDistanceByBand: {},
     puttProximity0_5: null,
     puttProximity5_10: null,
     puttProximity10_15: null,
@@ -1251,6 +1292,7 @@ function aggregateRoundStats(rounds: Array<{
 
   const drivingDistances: number[] = [];
   const drivingDistancesDriverOnly: number[] = [];
+  const drivingDistancesNonDriverOnly: number[] = [];
   const fairwaysPar4 = { hit: 0, total: 0 };
   const fairwaysPar5 = { hit: 0, total: 0 };
   const fairwaysDriver = { hit: 0, total: 0 };
@@ -1321,6 +1363,22 @@ function aggregateRoundStats(rounds: Array<{
   let approachMissLongLeft = 0;
   let approachMissLongRight = 0;
   let approachMissTotal = 0;
+
+  // ADDITIVE: tee-miss left/right split by club class off the tee (usedDriver).
+  const teeMissDriver = { left: 0, right: 0 };
+  const teeMissNonDriver = { left: 0, right: 0 };
+
+  // ADDITIVE: approach-miss direction distribution bucketed by approach distance band.
+  // Per band: counts of missed-green approaches by direction (compound misses count to
+  // both axes) plus the band's total missed approaches for the percentage denominator.
+  const approachMissByBand: Record<
+    string,
+    { short: number; long: number; left: number; right: number; total: number }
+  > = {};
+
+  // ADDITIVE: first-putt approach distance (feet) — total list + per-band counts.
+  const firstPuttDistances: number[] = [];
+  const firstPuttDistanceBandCounts: Record<string, number> = {};
 
   const approachProximities: number[] = [];
   const greenHitProximities: number[] = [];  // Proximity when hit green
@@ -1466,6 +1524,9 @@ function aggregateRoundStats(rounds: Array<{
         drivingDistances.push(hole.drivingDistance);
         if (hole.usedDriver) {
           drivingDistancesDriverOnly.push(hole.drivingDistance);
+        } else if (hole.usedDriver === false) {
+          // ADDITIVE: parallel non-driver accumulator (opposite usedDriver branch).
+          drivingDistancesNonDriverOnly.push(hole.drivingDistance);
         }
       }
 
@@ -1494,8 +1555,18 @@ function aggregateRoundStats(rounds: Array<{
 
         if (!hole.fairwayHit && hole.driveMissDirection) {
           const dm = hole.driveMissDirection;
-          if (dm === 'left' || dm.startsWith('left_') || dm.endsWith('_left')) stats.missLeftCount++;
-          if (dm === 'right' || dm.startsWith('right_') || dm.endsWith('_right')) stats.missRightCount++;
+          const isLeft = dm === 'left' || dm.startsWith('left_') || dm.endsWith('_left');
+          const isRight = dm === 'right' || dm.startsWith('right_') || dm.endsWith('_right');
+          if (isLeft) stats.missLeftCount++;
+          if (isRight) stats.missRightCount++;
+          // ADDITIVE: same L/R miss detection, split by club class off the tee.
+          if (hole.usedDriver === true) {
+            if (isLeft) teeMissDriver.left++;
+            if (isRight) teeMissDriver.right++;
+          } else if (hole.usedDriver === false) {
+            if (isLeft) teeMissNonDriver.left++;
+            if (isRight) teeMissNonDriver.right++;
+          }
         }
       }
 
@@ -1565,6 +1636,24 @@ function aggregateRoundStats(rounds: Array<{
         else if (missDir === 'long') approachMissLong++;
         else if (missDir === 'left') approachMissLeft++;
         else if (missDir === 'right') approachMissRight++;
+
+        // ADDITIVE: same missed-approach direction data bucketed by approach distance.
+        // Compound misses count toward both axes (short_left → short and left), matching
+        // the overall aggregate. Requires a known approach distance to assign a band.
+        if (hole.approachDistance !== null) {
+          const band = getApproachDistanceBucket(hole.approachDistance);
+          if (band) {
+            if (!approachMissByBand[band]) {
+              approachMissByBand[band] = { short: 0, long: 0, left: 0, right: 0, total: 0 };
+            }
+            const acc = approachMissByBand[band]!;
+            acc.total++;
+            if (missDir.includes('short')) acc.short++;
+            if (missDir.includes('long')) acc.long++;
+            if (missDir.includes('left')) acc.left++;
+            if (missDir.includes('right')) acc.right++;
+          }
+        }
       }
 
       // Putts
@@ -1575,6 +1664,10 @@ function aggregateRoundStats(rounds: Array<{
       // First putt stats
       if (hole.firstPuttDistance !== null) {
         const bucket = getPuttDistanceBucket(hole.firstPuttDistance);
+
+        // ADDITIVE: first-putt approach distance — overall list + per-band count.
+        firstPuttDistances.push(hole.firstPuttDistance);
+        firstPuttDistanceBandCounts[bucket] = (firstPuttDistanceBandCounts[bucket] ?? 0) + 1;
 
         // Make %
         if (!puttMake[bucket]) puttMake[bucket] = { made: 0, total: 0 };
@@ -1870,6 +1963,11 @@ function aggregateRoundStats(rounds: Array<{
     drivingDistancesDriverOnly.reduce((a, b) => a + b, 0),
     drivingDistancesDriverOnly.length
   );
+  // ADDITIVE: parallel non-driver tee-shot distance average.
+  stats.drivingDistanceNonDriverOnly = safeAverage(
+    drivingDistancesNonDriverOnly.reduce((a, b) => a + b, 0),
+    drivingDistancesNonDriverOnly.length
+  );
 
   stats.fairwayPercentage = safePercent(stats.fairwaysHit, stats.fairwayOpportunities);
   stats.fairwayPctPar4 = safePercent(fairwaysPar4.hit, fairwaysPar4.total);
@@ -1881,6 +1979,14 @@ function aggregateRoundStats(rounds: Array<{
   const totalMisses = stats.missLeftCount + stats.missRightCount;
   stats.missLeftPct = safePercent(stats.missLeftCount, totalMisses);
   stats.missRightPct = safePercent(stats.missRightCount, totalMisses);
+
+  // ADDITIVE: same L/R miss tendency, split by club class off the tee.
+  const driverMisses = teeMissDriver.left + teeMissDriver.right;
+  stats.missLeftPctDriver = safePercent(teeMissDriver.left, driverMisses);
+  stats.missRightPctDriver = safePercent(teeMissDriver.right, driverMisses);
+  const nonDriverMisses = teeMissNonDriver.left + teeMissNonDriver.right;
+  stats.missLeftPctNonDriver = safePercent(teeMissNonDriver.left, nonDriverMisses);
+  stats.missRightPctNonDriver = safePercent(teeMissNonDriver.right, nonDriverMisses);
 
   stats.girPercentage = safePercent(stats.girTotal, stats.girOpportunities);
   stats.girPerRound = safeAverage(stats.girTotal, rounds.length);
@@ -1929,6 +2035,17 @@ function aggregateRoundStats(rounds: Array<{
   stats.puttMakePct25_30 = safePercent(puttMake['25_30']?.made || 0, puttMake['25_30']?.total || 0);
   stats.puttMakePct30_35 = safePercent(puttMake['30_35']?.made || 0, puttMake['30_35']?.total || 0);
   stats.puttMakePct35Plus = safePercent(puttMake['35_plus']?.made || 0, puttMake['35_plus']?.total || 0);
+
+  // ADDITIVE: first-putt approach distance — overall average (feet) + count distribution
+  // by distance band (% of first putts that originated in each band).
+  stats.firstPuttDistanceAvg = safeAverage(
+    firstPuttDistances.reduce((a, b) => a + b, 0),
+    firstPuttDistances.length
+  );
+  const firstPuttTotal = firstPuttDistances.length;
+  for (const [band, count] of Object.entries(firstPuttDistanceBandCounts)) {
+    stats.firstPuttDistanceByBand[band] = safePercent(count, firstPuttTotal);
+  }
 
   // Putt proximity
   stats.puttProximity0_5 = safeAverage(
@@ -2025,6 +2142,17 @@ function aggregateRoundStats(rounds: Array<{
   stats.approachMissShortRightPct = safePercent(approachMissShortRight, approachMissTotal);
   stats.approachMissLongLeftPct = safePercent(approachMissLongLeft, approachMissTotal);
   stats.approachMissLongRightPct = safePercent(approachMissLongRight, approachMissTotal);
+
+  // ADDITIVE: approach-miss direction distribution bucketed by approach distance band.
+  // Bands with no missed approaches are omitted (record key absent).
+  for (const [band, acc] of Object.entries(approachMissByBand)) {
+    stats.approachMissByBand[band] = {
+      short: safePercent(acc.short, acc.total),
+      long: safePercent(acc.long, acc.total),
+      left: safePercent(acc.left, acc.total),
+      right: safePercent(acc.right, acc.total),
+    };
+  }
 
   // Proximity split (hit vs miss)
   stats.approachProximityWhenHitGreen = safeAverage(

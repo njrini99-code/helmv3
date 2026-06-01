@@ -901,6 +901,23 @@ const PAR_KEYS = [
 ] as const;
 
 /**
+ * Putt-distance band keys (from getPuttDistanceBucket) → display labels, in
+ * ascending order. The SAME label set/order the file already uses for putt
+ * make-% bands — reused for the first-putt (approach putt) distance distribution.
+ */
+const PUTT_BAND_LABELS: ReadonlyArray<{ key: string; label: string }> = [
+  { key: '0_3', label: '0-3 ft' },
+  { key: '3_5', label: '3-5 ft' },
+  { key: '5_10', label: '5-10 ft' },
+  { key: '10_15', label: '10-15 ft' },
+  { key: '15_20', label: '15-20 ft' },
+  { key: '20_25', label: '20-25 ft' },
+  { key: '25_30', label: '25-30 ft' },
+  { key: '30_35', label: '30-35 ft' },
+  { key: '35_plus', label: '35+ ft' },
+];
+
+/**
  * One small-multiple distribution chart per par type. Each is a horizontal
  * BarCompare of the outcome mix (% of holes) — Birdie+ · Par · Bogey · Double+ —
  * with the modal outcome highlighted, and the avg-to-par/hole in the subtitle.
@@ -1062,6 +1079,7 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
   if (!detailedStats) return null;
   const distAvg = finite(detailedStats.drivingDistanceAvg);
   const distDriver = finite(detailedStats.drivingDistanceDriverOnly);
+  const distNonDriver = finite(detailedStats.drivingDistanceNonDriverOnly);
   const fwPct = finite(detailedStats.fairwayPercentage);
   const fwOpps = detailedStats.fairwayOpportunities ?? 0;
   const missLeft = finite(detailedStats.missLeftPct);
@@ -1075,6 +1093,13 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
   const byClub: DetailRow[] = [
     { label: 'With driver', value: fmtPct(detailedStats.fairwayPctDriver) },
     { label: 'Without driver', value: fmtPct(detailedStats.fairwayPctNonDriver) },
+  ];
+  // Distance rows beside the headline driving readouts — all + driver-only +
+  // (new) non-driver-only carry distance, honest em-dash when no measured shots.
+  const distanceRows: DetailRow[] = [
+    { label: 'All tee shots', value: fmtYds(distAvg) },
+    { label: 'Driver only', value: fmtYds(distDriver) },
+    { label: 'Non-driver', value: fmtYds(distNonDriver) },
   ];
   const missRows: DetailRow[] = [
     {
@@ -1093,8 +1118,29 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
     },
   ];
 
+  // Tee-miss L/R split by club — rows Driver / Non-driver, columns Left % /
+  // Right %. Each cell em-dashes independently when that club's split is null.
+  const missByClub: Array<{
+    club: string;
+    left: number | null;
+    right: number | null;
+  }> = [
+    {
+      club: 'Driver',
+      left: finite(detailedStats.missLeftPctDriver),
+      right: finite(detailedStats.missRightPctDriver),
+    },
+    {
+      club: 'Non-driver',
+      left: finite(detailedStats.missLeftPctNonDriver),
+      right: finite(detailedStats.missRightPctNonDriver),
+    },
+  ];
+  const hasMissByClub = missByClub.some((r) => r.left != null || r.right != null);
+
   const hasHeadline = distAvg != null || (fwPct != null && fwOpps > 0);
-  const hasDrill = !allDash(byHoleType) || !allDash(byClub) || missTotal > 0;
+  const hasDrill =
+    !allDash(byHoleType) || !allDash(byClub) || !allDash(distanceRows) || missTotal > 0;
   if (!hasHeadline && !hasDrill) return null;
 
   return (
@@ -1141,6 +1187,13 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
       </div>
       {hasDrill ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {!allDash(distanceRows) ? (
+            <DetailGrid
+              title="Distance by club"
+              hint="Average measured carry"
+              rows={distanceRows}
+            />
+          ) : null}
           {!allDash(byHoleType) ? (
             <DetailGrid title="Fairways by hole type" rows={byHoleType} />
           ) : null}
@@ -1156,7 +1209,69 @@ function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) 
           ) : null}
         </div>
       ) : null}
+      {hasMissByClub ? <TeeMissByClub rows={missByClub} /> : null}
     </section>
+  );
+}
+
+/* ── Tee-miss L/R split, by club — a small 2×2 matrix (Driver / Non-driver ×
+ * Miss left % / Miss right %). Sits beside the overall miss-direction grid so
+ * the per-club bias reads at a glance. Each cell em-dashes independently. ──── */
+function TeeMissByClub({
+  rows,
+}: {
+  rows: Array<{ club: string; left: number | null; right: number | null }>;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-0.5 px-1">
+        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
+          Tee miss by club
+        </h4>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Left / right miss split among missed fairways, by club.
+        </span>
+      </div>
+      <Surface elevation="border" padding="md">
+        <div className="grid grid-cols-[1fr_auto_auto] items-baseline gap-x-6 gap-y-2.5">
+          <span aria-hidden />
+          <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+            Miss left
+          </span>
+          <span className="text-right font-fw-sans text-eyebrow font-medium uppercase tracking-[0.1em] text-text-tertiary">
+            Miss right
+          </span>
+          {rows.map((r, i) => {
+            const edge = i < rows.length - 1 ? 'border-b border-border-subtle/60 pb-2' : '';
+            return (
+              <div key={r.club} className="contents">
+                <span className={cn('font-fw-sans text-caption text-text-secondary', edge)}>
+                  {r.club}
+                </span>
+                <span
+                  className={cn(
+                    'text-right font-fw-mono text-body-sm font-medium tabular-nums',
+                    edge,
+                    r.left == null ? 'text-text-tertiary' : 'text-text-primary',
+                  )}
+                >
+                  {fmtPct(r.left)}
+                </span>
+                <span
+                  className={cn(
+                    'text-right font-fw-mono text-body-sm font-medium tabular-nums',
+                    edge,
+                    r.right == null ? 'text-text-tertiary' : 'text-text-primary',
+                  )}
+                >
+                  {fmtPct(r.right)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </Surface>
+    </div>
   );
 }
 
@@ -1256,21 +1371,114 @@ function ToggleChip<T extends string>({
   );
 }
 
+/* ════════════════════════════════════════════════════════════════════════════
+ * GIR BY DISTANCE + MISS TENDENCY — the premium approach board. Per distance
+ * band: a GIR% conversion bar (helm-green accent fill) plus the DOMINANT miss
+ * direction among that band's missed greens ("miss: Short 60%"). The miss tag
+ * is honest — it only appears when approachMissByBand has data for that band;
+ * a band with GIR but no miss data shows the GIR conversion alone.
+ * ══════════════════════════════════════════════════════════════════════════ */
+type GirBand = { label: string; gir: number | null; missKey: string };
+
+type ApproachMissDir = { short: number | null; long: number | null; left: number | null; right: number | null };
+
+const MISS_DIR_LABELS: ReadonlyArray<{ key: keyof ApproachMissDir; label: string }> = [
+  { key: 'short', label: 'Short' },
+  { key: 'long', label: 'Long' },
+  { key: 'left', label: 'Left' },
+  { key: 'right', label: 'Right' },
+];
+
+/** The single largest miss direction for a band, or null when no miss data. */
+function dominantMiss(dir: ApproachMissDir | undefined): { label: string; pct: number } | null {
+  if (!dir) return null;
+  let best: { label: string; pct: number } | null = null;
+  for (const { key, label } of MISS_DIR_LABELS) {
+    const v = finite(dir[key]);
+    if (v === null) continue;
+    if (best === null || v > best.pct) best = { label, pct: v };
+  }
+  return best;
+}
+
+function GirByDistanceBoard({
+  bands,
+  missByBand,
+}: {
+  bands: GirBand[];
+  missByBand: GolfStats['approachMissByBand'];
+}) {
+  const rows = bands.filter((b) => b.gir != null);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-0.5 px-1">
+        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">
+          GIR by approach distance
+        </h4>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Greens hit by distance, with where the misses tend to leak.
+        </span>
+      </div>
+      <Surface elevation="border" padding="md">
+        <ul className="flex flex-col gap-3.5">
+          {rows.map((b) => {
+            const pct = b.gir ?? 0;
+            const miss = dominantMiss(missByBand[b.missKey]);
+            return (
+              <li key={b.label} className="flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="font-fw-sans text-caption text-text-secondary">{b.label}</span>
+                  <span className="flex items-baseline gap-2.5">
+                    {miss ? (
+                      <span className="font-fw-sans text-caption text-text-tertiary">
+                        miss: {miss.label} {Math.round(miss.pct)}%
+                      </span>
+                    ) : null}
+                    <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
+                      {fmtPct(b.gir)}
+                    </span>
+                  </span>
+                </div>
+                <div
+                  className="h-2 w-full overflow-hidden rounded-full bg-surface-sunken"
+                  role="presentation"
+                >
+                  <div
+                    className="h-full rounded-full bg-accent-500"
+                    style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </Surface>
+    </div>
+  );
+}
+
 function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | null }) {
   const [selectedLie, setSelectedLie] = useState<ApproachLie>('fairway');
   if (!detailedStats) return null;
   const s = detailedStats;
 
-  const girByDistance: DetailRow[] = [
-    { label: '50-75 yds', value: fmtPct(s.girPct50_75) },
-    { label: '75-100 yds', value: fmtPct(s.girPct75_100) },
-    { label: '100-125 yds', value: fmtPct(s.girPct100_125) },
-    { label: '125-150 yds', value: fmtPct(s.girPct125_150) },
-    { label: '150-175 yds', value: fmtPct(s.girPct150_175) },
-    { label: '175-200 yds', value: fmtPct(s.girPct175_200) },
-    { label: '200-225 yds', value: fmtPct(s.girPct200_225) },
-    { label: '225+ yds', value: fmtPct(s.girPct225Plus) },
+  // GIR-by-distance, enriched with each band's dominant miss tendency from
+  // approachMissByBand. Each row ties the GIR% (conversion) to its miss-band key
+  // (bucket from getApproachDistanceBucket) so the premium board can show
+  // "from 150–175 yds you miss short 60%" alongside the conversion bar.
+  const girBands: GirBand[] = [
+    { label: '50-75 yds', gir: finite(s.girPct50_75), missKey: '30_75' },
+    { label: '75-100 yds', gir: finite(s.girPct75_100), missKey: '75_100' },
+    { label: '100-125 yds', gir: finite(s.girPct100_125), missKey: '100_125' },
+    { label: '125-150 yds', gir: finite(s.girPct125_150), missKey: '125_150' },
+    { label: '150-175 yds', gir: finite(s.girPct150_175), missKey: '150_175' },
+    { label: '175-200 yds', gir: finite(s.girPct175_200), missKey: '175_200' },
+    { label: '200-225 yds', gir: finite(s.girPct200_225), missKey: '200_225' },
+    { label: '225+ yds', gir: finite(s.girPct225Plus), missKey: '225_plus' },
   ];
+  const hasGirBands = girBands.some((b) => b.gir != null);
   const girByPar: DetailRow[] = [
     { label: 'Par 3s', value: fmtPct(s.girPctPar3) },
     { label: 'Par 4s', value: fmtPct(s.girPctPar4) },
@@ -1301,7 +1509,7 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
     { label: '225+ yds', value: fmtNum(s.approachEff225Plus[selectedLie], 2) },
   ];
 
-  const hasAny = !allDash(girByDistance) || !allDash(girByPar) || !allDash(lieRows[selectedLie]);
+  const hasAny = hasGirBands || !allDash(girByPar) || !allDash(lieRows[selectedLie]);
   if (!hasAny) return null;
 
   return (
@@ -1319,10 +1527,14 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
         <ToggleChip active={selectedLie === 'sand'} value="sand" label="Sand" onSelect={setSelectedLie} />
       </div>
 
+      {hasGirBands ? (
+        <GirByDistanceBoard
+          bands={girBands}
+          missByBand={detailedStats.approachMissByBand}
+        />
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {!allDash(girByDistance) ? (
-          <DetailGrid title="GIR by approach distance" rows={girByDistance} columns={4} />
-        ) : null}
         {!allDash(girByPar) ? (
           <DetailGrid title="GIR by hole type" rows={girByPar} columns={3} />
         ) : null}
@@ -1362,6 +1574,8 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
     { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
     { label: '1-putts total', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
+    // Avg distance of the first putt — how close approaches leave the ball (feet).
+    { label: 'Approach putt distance', value: fmtFeet(s.firstPuttDistanceAvg) },
   ];
   const makeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(s.puttMakePct0_3) },
@@ -1374,6 +1588,12 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
     { label: '30-35 ft', value: fmtPct(s.puttMakePct30_35) },
     { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
   ];
+  // First-putt (approach putt) distance distribution — % of first putts that
+  // originated in each distance band. Same band label set/order as make %.
+  const approachPuttBands: DetailRow[] = PUTT_BAND_LABELS.map(({ key, label }) => ({
+    label,
+    value: fmtPct(s.firstPuttDistanceByBand[key]),
+  }));
   const breakMakeBands: DetailRow[] = [
     { label: '0-3 ft', value: fmtPct(breakStats.makePct0_3) },
     { label: '3-5 ft', value: fmtPct(breakStats.makePct3_5) },
@@ -1404,6 +1624,14 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {!allDash(headline) ? <DetailGrid title="Putting efficiency" rows={headline} columns={4} /> : null}
         {!allDash(makeBands) ? <DetailGrid title="Make % by distance" rows={makeBands} columns={3} /> : null}
+        {!allDash(approachPuttBands) ? (
+          <DetailGrid
+            title="Approach putt distance by band"
+            hint="Share of first putts that started in each band"
+            rows={approachPuttBands}
+            columns={3}
+          />
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2 px-1" aria-label="Putt break filter">
