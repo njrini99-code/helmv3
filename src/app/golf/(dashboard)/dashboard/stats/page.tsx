@@ -1,7 +1,9 @@
+import { redirect } from 'next/navigation';
 import StatsClient from './stats-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { isRedesignEnabled } from '@/lib/redesign/flag';
 import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/FairwayPlayerStats';
+import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -31,6 +33,17 @@ interface GolfStatsPageProps {
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
   const params = await searchParams;
   const playerId = params.player ?? null;
+
+  // A coach has no personal player stats. Hitting /stats with no `?player=`
+  // would dead-end on the "no player selected" empty state, so send coaches to
+  // the team-stats roster (their natural landing). A coach viewing a specific
+  // teammate (`?player=`) still falls through to the single-player surface.
+  if (!playerId) {
+    const session = await getGolfSessionProfile();
+    if (session?.coach && !session.player) {
+      redirect('/golf/dashboard/stats/team');
+    }
+  }
 
   // Flag-on: the data-rich Fairway player stats surface (single-player view).
   // It resolves the same player id the route resolves — `?player=` for a coach
