@@ -28,6 +28,9 @@ import type {
   InsightMovement,
 } from '@/lib/coachhelm/v2/insights/types';
 import type { Database } from '@/lib/types/database';
+import { assembleThemes } from '@/lib/coachhelm/v3/themes/assemble';
+import type { AssembledThemes, AssembledEvidence } from '@/lib/coachhelm/v3/themes/types';
+import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -563,6 +566,191 @@ export async function getRoundTakeawayInsight(
     .sort((a, b) => rankScore(b) - rankScore(a));
 
   return ranked[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// v3 THEMES — hierarchical insight scaffold (THEME → CAUSE → DRIVER)
+// ---------------------------------------------------------------------------
+//
+// Unlike the flat fetchers above, the themes fetchers DO NOT dedupe (the
+// assembler re-expands the sibling structure the flat path collapses) and use
+// a LOOSER keep than `mapRowToEvidenceInsight`: a row survives if it carries a
+// usable `evidence.metric` OR a non-suppressed `evidence.counterfactual`. They
+// never drop a row purely for a missing `strokes_impact` — counterfactual is
+// the ranking key, not the base impact.
+
+/** High cap for the themes query — no per-card limit; we want the full set. */
+const THEMES_FETCH_CAP = 200;
+
+/**
+ * Per-player query + assemble. Shared by both the player and coach paths
+ * (themes are inherently per-player — the SG cascade is per-player). The
+ * caller is responsible for auth BEFORE invoking this.
+ */
+async function assembleForPlayer(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<AssembledThemes> {
+  const runQuery = () =>
+    supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(THEMES_FETCH_CAP);
+
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  try {
+    const result = await runQuery();
+    data = result.data;
+    error = result.error;
+  } catch (err) {
+    // Mirror the player fetcher's single transient retry.
+    if (isTransientFetchError(err)) {
+      await delay(500);
+      const result = await runQuery();
+      data = result.data;
+      error = result.error;
+    } else {
+      throw err;
+    }
+  }
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rawRows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  const rows = rawRows
+    .map(mapRowLoose)
+    .filter((r): r is EvidenceInsight => r !== null);
+
+  // SG fetch is best-effort: a failure must NOT fail the themes scaffold.
+  let sgByCategory: Partial<Record<InsightCategory, number | null>> = {};
+  try {
+    const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
+    sgByCategory = {
+      putting: stats.sgPuttingPerRound,
+      approach: stats.sgApproachPerRound,
+      tee: stats.sgTeePerRound,
+      short_game: stats.sgAroundGreenPerRound,
+    };
+  } catch (sgErr) {
+    await logServerError(
+      `assembleForPlayer SG fetch failed (continuing): ${sgErr instanceof Error ? sgErr.message : String(sgErr)}`,
+      { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
+    );
+    sgByCategory = {};
+  }
+
+  return assembleThemes({ playerId, rows, sgByCategory });
+}
+
+/**
+ * Looser row→EvidenceInsight mapper for the themes path. Keeps a row when it
+ * has a usable `evidence.metric` OR a non-suppressed `evidence.counterfactual`;
+ * does NOT drop on missing `strokes_impact`/`confidence`. Normalizes drills
+ * with the same logic as `extractDrills`.
+ */
+function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
+  if (!row) return null;
+  if (!row.evidence || typeof row.evidence !== 'object') return null;
+  if (!row.id || !row.player_id || !row.title) return null;
+
+  const evidence = row.evidence as unknown as InsightEvidence;
+  const assembled = row.evidence as unknown as AssembledEvidence;
+
+  const hasMetric = typeof assembled.metric === 'string' && assembled.metric.length > 0;
+  const hasLiveCounterfactual =
+    !!assembled.counterfactual && assembled.counterfactual.suppressed !== true;
+  if (!hasMetric && !hasLiveCounterfactual) return null;
+
+  const drills = extractDrills(row.drill_attachments ?? null);
+
+  return {
+    id: row.id,
+    player_id: row.player_id,
+    category: (row.category as InsightCategory | null) ?? null,
+    title: row.title,
+    content: row.content ?? '',
+    signature: row.signature ?? null,
+    evidence,
+    metadata: normalizeMetadata(row.metadata),
+    lifecycle_state: (row.lifecycle_state as EvidenceInsight['lifecycle_state']) ?? 'detected',
+    status: (row.status as EvidenceInsight['status']) ?? 'active',
+    priority: (row.priority as EvidenceInsight['priority']) ?? 'medium',
+    acknowledged_at: row.acknowledged_at ?? null,
+    resolved_at: row.resolved_at ?? null,
+    created_at: row.created_at ?? '',
+    updated_at: row.updated_at ?? '',
+    drills,
+  };
+}
+
+/**
+ * Returns the full hierarchical theme scaffold for a player (always all 7
+ * themes; honest `thin`/`strength`/`leak` states). Self or coach-staffing-team
+ * access via `verifyPlayerAccess`, mirroring the existing player fetchers.
+ */
+export async function getThemesForPlayer(
+  playerId: string,
+  _opts: { window_days?: number } = {},
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  if (!playerId) return { success: false, error: 'playerId required' };
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: 'Unauthorized' };
+
+    const access = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) return { success: false, error: 'Forbidden' };
+
+    const data = await assembleForPlayer(supabase, playerId);
+    return { success: true, data };
+  } catch (err) {
+    await logServerError(
+      `getThemesForPlayer failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getThemesForPlayer', featureArea: 'insights', playerId },
+    );
+    return { success: false, error: 'Failed to assemble themes' };
+  }
+}
+
+/**
+ * Coach-side variant. Themes are inherently per-player, so a `player_id` is
+ * required. Authorizes the coach exactly as `getInsightsForCoach` does when a
+ * specific player is requested (`verifyPlayerAccess`), then delegates to the
+ * same per-player query + assemble.
+ */
+export async function getThemesForCoach(
+  opts: { player_id: string; window_days?: number },
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  const playerId = opts?.player_id;
+  if (!playerId) return { success: false, error: 'player_id required' };
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: 'Unauthorized' };
+
+    // Same authorization path getInsightsForCoach uses for a specific player.
+    const access = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) return { success: false, error: 'Forbidden' };
+
+    const data = await assembleForPlayer(supabase, playerId);
+    return { success: true, data };
+  } catch (err) {
+    await logServerError(
+      `getThemesForCoach failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getThemesForCoach', featureArea: 'insights', extra: { playerId } },
+    );
+    return { success: false, error: 'Failed to assemble themes' };
+  }
 }
 
 // ---------------------------------------------------------------------------
