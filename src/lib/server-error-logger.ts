@@ -23,6 +23,16 @@ interface RoundErrorContext {
   requestId?: string | null;
   runtime?: 'nodejs' | 'edge' | 'unknown';
   handled?: boolean;
+  /**
+   * When true, the trace is written to the admin tables (`error_logs` /
+   * `admin_events`) for the admin trace dashboard but is NOT sent to Sentry.
+   * Use for routine, high-frequency operational signals (skipped-record
+   * counters, threshold-starvation notices, gate-filter counts) that are
+   * useful as a local audit trail but create non-actionable, recurring
+   * Sentry issues that drown out real bugs. Defaults to false — every
+   * existing caller is unchanged and still reaches Sentry.
+   */
+  skipSentry?: boolean;
   roundId?: string | null;
   playerId?: string | null;
   userId?: string | null;
@@ -205,10 +215,12 @@ async function captureServerTrace(
 ): Promise<void> {
   const normalizedError = error ?? new Error(message);
 
-  try {
-    captureSentryTrace(message, normalizedError, context, severity, forceException);
-  } catch {
-    // Sentry should never block request handling.
+  if (!context.skipSentry) {
+    try {
+      captureSentryTrace(message, normalizedError, context, severity, forceException);
+    } catch {
+      // Sentry should never block request handling.
+    }
   }
 
   try {
