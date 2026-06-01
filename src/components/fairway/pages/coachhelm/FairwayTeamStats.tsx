@@ -475,9 +475,19 @@ export function FairwayTeamStats({
 
 /** One labeled micro-stat (value + uppercase caption). Em-dash when null. */
 function MetricCell({ label, value }: { label: string; value: string }) {
+  // A missing reading renders as an em-dash — tone it to text-tertiary so it
+  // never reads with the same authority as a real value (matches TrendCell's
+  // dash treatment and the honest-dash intent of the formatters).
+  const isMissing = value === '—';
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">{value}</span>
+      <span
+        className={`font-fw-mono text-body-sm tabular-nums ${
+          isMissing ? 'text-text-tertiary' : 'text-text-primary'
+        }`}
+      >
+        {value}
+      </span>
       <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
         {label}
       </span>

@@ -191,8 +191,8 @@ export function ThemeCard({
       {/* Body */}
       {isThin ? (
         <p className="font-fw-sans text-body-sm leading-relaxed text-text-tertiary">
-          Not enough data yet — log more rounds (or tag your putt misses) to
-          unlock this.
+          Not enough rounds yet — log a few with shot detail (and tag your putt
+          misses) and this theme will light up.
         </p>
       ) : causes.length > 0 ? (
         <div className="flex flex-col gap-3">

@@ -27,7 +27,7 @@
 
 import { Sparkles } from 'lucide-react';
 
-import { EmptyState, InsufficientData, Surface } from '@/components/fairway';
+import { EmptyState, InsufficientData, Inset } from '@/components/fairway';
 import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 import { ThemeCard } from './ThemeCard';
 
@@ -96,8 +96,10 @@ export function ThemesPanel({
       ))}
 
       {thin.length > 0 ? (
-        <Surface
-          elevation="border"
+        // A recessive sunken well (no border, tint step down) so the awaiting-
+        // data tail reads as secondary scaffolding, never as another full theme
+        // card sitting at the same visual weight as the substantive ones above.
+        <Inset
           padding="sm"
           className="flex items-center gap-2"
           data-slot="fairway-themes-thin-footer"
@@ -111,7 +113,7 @@ export function ThemesPanel({
           <span className="min-w-0 flex-1 truncate font-fw-sans text-caption text-text-tertiary">
             {thin.map((t) => t.displayLabel).join(', ')}
           </span>
-        </Surface>
+        </Inset>
       ) : null}
     </div>
   );
