@@ -100,6 +100,30 @@ const STATE_PILL: Record<GoalState, { label: string; tone: StatusPillProps['tone
  * Pure helpers — copied verbatim from the legacy GoalCard (no behavior change).
  * ────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * Humanize an unknown snake_case metric key ("sg_putting" → "Sg Putting") so a
+ * raw key with underscores is NEVER shown. Mirrors the CausalWhyPanel helper,
+ * title-casing each token rather than only the first word.
+ */
+function humanizeMetricKey(key: string): string {
+  const spaced = key.replace(/_/g, ' ').trim();
+  if (!spaced) return key;
+  return spaced.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * The clean, human goal title. The stored `goal.title` can carry a raw
+ * snake_case metric key (engine-suggested goals are created as
+ * `Goal — <metric_id>`), which must never reach the user. This card targets a
+ * single metric, so we resolve the title from the canonical metric label
+ * (`getMetricRenderConfig`, the SAME map the sub-line + standing already use),
+ * falling back to a humanized key for any metric not in the registry.
+ * Render-only — the stored value is untouched.
+ */
+function goalDisplayTitle(goal: Goal, cfg: ReturnType<typeof getMetricRenderConfig>): string {
+  return cfg?.display_label ?? humanizeMetricKey(goal.metric_id);
+}
+
 function daysRemaining(endsAt: string): number {
   const ms = new Date(endsAt).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / 86400_000));
@@ -169,7 +193,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
       {/* Header — title + state pill */}
       <div className="mb-2 flex items-start justify-between gap-3">
         <h3 className="min-w-0 truncate font-fw-display text-body-lg font-medium text-text-primary">
-          {goal.title}
+          {goalDisplayTitle(goal, cfg)}
         </h3>
         <StatusPill tone={pill.tone} size="sm" className="shrink-0">
           {pill.label}
@@ -213,7 +237,7 @@ export function FairwayGoalCard({ data, role, playerName }: FairwayGoalCardProps
             aria-valuenow={pct}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label={`${goal.title} progress`}
+            aria-label={`${goalDisplayTitle(goal, cfg)} progress`}
           >
             <div
               className="absolute left-0 top-0 h-full rounded-full bg-accent-600"

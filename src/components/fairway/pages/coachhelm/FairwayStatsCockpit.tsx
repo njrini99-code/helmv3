@@ -160,6 +160,140 @@ function formatSg(value: number | null): string {
   return value > 0 ? `+${fixed}` : `−${fixed}`;
 }
 
+/* ── Honest display formatters (em-dash for null, never a fabricated 0) ─────── */
+
+/** Percent to 0 dp, e.g. "62%". Null/non-finite → em-dash. */
+function fmtPct(value: number | null | undefined): string {
+  const n = finite(value);
+  return n === null ? '—' : `${Math.round(n)}%`;
+}
+
+/** Feet to 0 dp with a prime mark, e.g. "23′". Null → em-dash. */
+function fmtFeet(value: number | null | undefined): string {
+  const n = finite(value);
+  return n === null ? '—' : `${Math.round(n)}′`;
+}
+
+/** Yards to 0 dp, e.g. "248 yds". Null → em-dash. */
+function fmtYds(value: number | null | undefined): string {
+  const n = finite(value);
+  return n === null ? '—' : `${Math.round(n)} yds`;
+}
+
+/** Decimal to N dp, e.g. "71.4". Null → em-dash. */
+function fmtNum(value: number | null | undefined, digits = 2): string {
+  const n = finite(value);
+  return n === null ? '—' : n.toFixed(digits);
+}
+
+/** Plain integer, e.g. "42". Null → em-dash. */
+function fmtInt(value: number | null | undefined): string {
+  const n = finite(value);
+  return n === null ? '—' : String(Math.round(n));
+}
+
+/** A single label → honest value row inside a detail grid. */
+interface DetailRow {
+  label: string;
+  /** Preformatted, already null-guarded display string ("—" when no data). */
+  value: string;
+}
+
+/** True when every row in a detail block is the honest em-dash (no real data). */
+function allDash(rows: DetailRow[]): boolean {
+  return rows.every((r) => r.value === '—');
+}
+
+/**
+ * Compact honest readout grid on a sunken Surface — the Fairway-native
+ * replacement for the legacy StatRow list. Each row is a label + tabular value;
+ * a row with no data reads em-dash, never a fabricated 0. The whole block is
+ * only rendered by callers when at least one row has data (allDash guard).
+ */
+function DetailGrid({
+  title,
+  hint,
+  rows,
+  columns = 2,
+}: {
+  title: string;
+  hint?: string;
+  rows: DetailRow[];
+  columns?: 2 | 3 | 4;
+}) {
+  const colClass =
+    columns === 4
+      ? 'sm:grid-cols-2 lg:grid-cols-4'
+      : columns === 3
+        ? 'sm:grid-cols-3'
+        : 'sm:grid-cols-2';
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-0.5 px-1">
+        <h4 className="font-fw-sans text-body-sm font-medium text-text-primary">{title}</h4>
+        {hint ? (
+          <span className="font-fw-sans text-caption text-text-tertiary">{hint}</span>
+        ) : null}
+      </div>
+      <Surface elevation="border" padding="md">
+        <dl className={cn('grid grid-cols-1 gap-x-6 gap-y-2.5', colClass)}>
+          {rows.map((r) => (
+            <div
+              key={r.label}
+              className="flex items-baseline justify-between gap-3 border-b border-border-subtle/60 pb-2 last:border-0 last:pb-0"
+            >
+              <dt className="font-fw-sans text-caption text-text-secondary">{r.label}</dt>
+              <dd
+                className={cn(
+                  'font-fw-mono text-body-sm font-medium tabular-nums',
+                  r.value === '—' ? 'text-text-tertiary' : 'text-text-primary',
+                )}
+              >
+                {r.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </Surface>
+    </div>
+  );
+}
+
+/** Headline micro-readout (mirrors the Vitals readouts' exact guard pattern). */
+function HeadlineReadout({
+  value,
+  format,
+  unit,
+  label,
+  hasSample,
+  awaitingLabel,
+  haveSamples,
+}: {
+  value: number | null;
+  format?: { maximumFractionDigits?: number; minimumFractionDigits?: number };
+  unit?: string;
+  label: string;
+  hasSample: boolean;
+  awaitingLabel: string;
+  haveSamples?: number;
+}) {
+  const live = value != null && hasSample;
+  return (
+    <InstrumentPanel depth="base" padding="md" className="h-full">
+      <Readout
+        value={live ? value : undefined}
+        format={format}
+        unit={unit}
+        label={label}
+        size="md"
+        state={live ? 'live' : 'awaiting'}
+        samples={live ? undefined : { have: haveSamples ?? 0, need: 1 }}
+        awaitingLabel={awaitingLabel}
+      />
+    </InstrumentPanel>
+  );
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Component
  * ────────────────────────────────────────────────────────────────────────── */
@@ -173,6 +307,7 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showDetailed, setShowDetailed] = useState(false);
+  const [showComprehensive, setShowComprehensive] = useState(false);
 
   const loadAll = useCallback(async (id: string) => {
     setLoading(true);
@@ -429,6 +564,15 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
         </section>
       ) : null}
 
+      {/* ════════════════ 3c · SHORT GAME — scrambling + sand saves + penalties ═ */}
+      <ShortGameSection detailedStats={detailedStats} />
+
+      {/* ════════════════ 3d · OFF THE TEE — distance + accuracy + miss bias ════ */}
+      <DrivingSection detailedStats={detailedStats} />
+
+      {/* ════════════════ 3e · APPROACH & GIR — headline proximity + GIR ═══════ */}
+      <ApproachHeadlineSection detailedStats={detailedStats} />
+
       {/* ════════════════ 4 · WHERE THE STROKES LEAK ══════════════════════════ */}
       <section className="flex flex-col gap-3">
         <SectionHeading>Where the strokes leak</SectionHeading>
@@ -558,6 +702,14 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
           ) : null}
         </section>
       ) : null}
+
+      {/* ════════════════ 6b · FULL SHOT DETAIL — collapsed disclosure ═════════ */}
+      <ComprehensiveDetail
+        detailedStats={detailedStats}
+        trendData={trendData}
+        open={showComprehensive}
+        onToggle={() => setShowComprehensive((v) => !v)}
+      />
 
       {/* ════════════════ 7 · RECENT ROUNDS ═══════════════════════════════════ */}
       {trendData && trendData.rounds.length > 0 ? (
@@ -809,6 +961,543 @@ function ScoringByPar({ data }: { data: GolfStats['scoringByPar'] }) {
         );
       })}
     </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 3c · SHORT GAME — scrambling %, sand-save %, penalties/round headline readouts.
+ * Reads: scramblingPercentage, scrambleAttempts, sandSavePercentage,
+ * sandSavesMade/sandSaveAttempts, penaltiesPerRound, totalPenalties. Honest:
+ * each readout reads `awaiting` when its sample is 0; the whole section hides
+ * when there is no short-game data at all (never a grid of zeros).
+ * ══════════════════════════════════════════════════════════════════════════ */
+function ShortGameSection({ detailedStats }: { detailedStats: GolfStats | null }) {
+  if (!detailedStats) return null;
+  const scramblePct = finite(detailedStats.scramblingPercentage);
+  const scrambleAtt = detailedStats.scrambleAttempts ?? 0;
+  const sandPct = finite(detailedStats.sandSavePercentage);
+  const sandAtt = detailedStats.sandSaveAttempts ?? 0;
+  const penPerRound = finite(detailedStats.penaltiesPerRound);
+  const rounds = detailedStats.roundsPlayed ?? 0;
+
+  // By-lie + by-distance scrambling drill-in (only rows with data shown honest).
+  const byLie: DetailRow[] = [
+    { label: 'From fairway', value: fmtPct(detailedStats.scramblingPctFairway) },
+    { label: 'From rough', value: fmtPct(detailedStats.scramblingPctRough) },
+    { label: 'From sand', value: fmtPct(detailedStats.scramblingPctSand) },
+  ];
+  const byDistance: DetailRow[] = [
+    { label: '0–10 yds', value: fmtPct(detailedStats.scramblingPct0_10) },
+    { label: '10–20 yds', value: fmtPct(detailedStats.scramblingPct10_20) },
+    { label: '20–30 yds', value: fmtPct(detailedStats.scramblingPct20_30) },
+  ];
+
+  const hasHeadline = scrambleAtt > 0 || sandAtt > 0 || (penPerRound != null && rounds > 0);
+  const hasDrill = !allDash(byLie) || !allDash(byDistance);
+  if (!hasHeadline && !hasDrill) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Short game &amp; scrambling</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Up-and-down conversion, bunker recovery, and the penalty tax per round.
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <HeadlineReadout
+          value={scramblePct}
+          format={{ maximumFractionDigits: 0 }}
+          unit="%"
+          label="Scrambling"
+          hasSample={scrambleAtt > 0}
+          awaitingLabel="No misses yet"
+        />
+        <HeadlineReadout
+          value={sandPct}
+          format={{ maximumFractionDigits: 0 }}
+          unit="%"
+          label="Sand saves"
+          hasSample={sandAtt > 0}
+          awaitingLabel="No bunkers"
+        />
+        <InstrumentPanel depth="base" padding="md" className="h-full">
+          <Readout
+            display={sandAtt > 0 ? `${detailedStats.sandSavesMade}/${sandAtt}` : undefined}
+            label="Saves / bunkers"
+            size="md"
+            state={sandAtt > 0 ? 'live' : 'awaiting'}
+            samples={sandAtt > 0 ? undefined : { have: 0, need: 1 }}
+            awaitingLabel="No bunkers"
+          />
+        </InstrumentPanel>
+        <HeadlineReadout
+          value={penPerRound}
+          format={{ maximumFractionDigits: 2 }}
+          label="Penalties / round"
+          hasSample={rounds > 0}
+          awaitingLabel="No rounds"
+          haveSamples={rounds}
+        />
+      </div>
+      {hasDrill ? (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {!allDash(byLie) ? (
+            <DetailGrid title="Scrambling by lie" rows={byLie} columns={3} />
+          ) : null}
+          {!allDash(byDistance) ? (
+            <DetailGrid title="Scrambling by distance" rows={byDistance} columns={3} />
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 3d · OFF THE TEE — driving distance (all + driver-only), fairway accuracy,
+ * and the left/right miss bias. Reads: drivingDistanceAvg,
+ * drivingDistanceDriverOnly, fairwayPercentage, fairwayPctPar4/5,
+ * fairwayPctDriver/NonDriver, missLeftPct/missRightPct + missLeftCount/Right.
+ * Honest: distance reads awaiting until a tee shot has a measured distance.
+ * ══════════════════════════════════════════════════════════════════════════ */
+function DrivingSection({ detailedStats }: { detailedStats: GolfStats | null }) {
+  if (!detailedStats) return null;
+  const distAvg = finite(detailedStats.drivingDistanceAvg);
+  const distDriver = finite(detailedStats.drivingDistanceDriverOnly);
+  const fwPct = finite(detailedStats.fairwayPercentage);
+  const fwOpps = detailedStats.fairwayOpportunities ?? 0;
+  const missLeft = finite(detailedStats.missLeftPct);
+  const missRight = finite(detailedStats.missRightPct);
+  const missTotal = (detailedStats.missLeftCount ?? 0) + (detailedStats.missRightCount ?? 0);
+
+  const byHoleType: DetailRow[] = [
+    { label: 'Par 4s', value: fmtPct(detailedStats.fairwayPctPar4) },
+    { label: 'Par 5s', value: fmtPct(detailedStats.fairwayPctPar5) },
+  ];
+  const byClub: DetailRow[] = [
+    { label: 'With driver', value: fmtPct(detailedStats.fairwayPctDriver) },
+    { label: 'Without driver', value: fmtPct(detailedStats.fairwayPctNonDriver) },
+  ];
+  const missRows: DetailRow[] = [
+    {
+      label: 'Miss left',
+      value:
+        missLeft != null
+          ? `${fmtPct(missLeft)} · ${detailedStats.missLeftCount}`
+          : '—',
+    },
+    {
+      label: 'Miss right',
+      value:
+        missRight != null
+          ? `${fmtPct(missRight)} · ${detailedStats.missRightCount}`
+          : '—',
+    },
+  ];
+
+  const hasHeadline = distAvg != null || (fwPct != null && fwOpps > 0);
+  const hasDrill = !allDash(byHoleType) || !allDash(byClub) || missTotal > 0;
+  if (!hasHeadline && !hasDrill) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Off the tee</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Carry distance and fairway accuracy — plus where the misses leak.
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <HeadlineReadout
+          value={distAvg}
+          format={{ maximumFractionDigits: 0 }}
+          unit="yds"
+          label="Driving distance"
+          hasSample={distAvg != null}
+          awaitingLabel="No tracked tee shots"
+        />
+        <HeadlineReadout
+          value={distDriver}
+          format={{ maximumFractionDigits: 0 }}
+          unit="yds"
+          label="Driver only"
+          hasSample={distDriver != null}
+          awaitingLabel="No driver shots"
+        />
+        <HeadlineReadout
+          value={fwPct}
+          format={{ maximumFractionDigits: 0 }}
+          unit="%"
+          label="Fairways hit"
+          hasSample={fwPct != null && fwOpps > 0}
+          awaitingLabel="No tee shots"
+        />
+        <HeadlineReadout
+          value={missTotal > 0 ? missLeft : null}
+          format={{ maximumFractionDigits: 0 }}
+          unit="%"
+          label="Miss bias · left"
+          hasSample={missTotal > 0 && missLeft != null}
+          awaitingLabel="No misses"
+        />
+      </div>
+      {hasDrill ? (
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          {!allDash(byHoleType) ? (
+            <DetailGrid title="Fairways by hole type" rows={byHoleType} />
+          ) : null}
+          {!allDash(byClub) ? (
+            <DetailGrid title="Fairways by club" rows={byClub} />
+          ) : null}
+          {missTotal > 0 ? (
+            <DetailGrid
+              title="Tee miss direction"
+              hint={`${detailedStats.missLeftCount} left · ${detailedStats.missRightCount} right`}
+              rows={missRows}
+            />
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 3e · APPROACH & GIR — headline GIR % + the three proximity readouts (all /
+ * when-hit-green / when-missed-green). Reads: girPercentage, girOpportunities,
+ * approachProximityAvg / WhenHitGreen / WhenMissedGreen. Deep by-distance /
+ * by-lie / by-par breakdowns live in the Full shot detail disclosure below.
+ * Honest: each readout reads awaiting on a 0 sample.
+ * ══════════════════════════════════════════════════════════════════════════ */
+function ApproachHeadlineSection({ detailedStats }: { detailedStats: GolfStats | null }) {
+  if (!detailedStats) return null;
+  const girPct = finite(detailedStats.girPercentage);
+  const girOpps = detailedStats.girOpportunities ?? 0;
+  const proxAll = finite(detailedStats.approachProximityAvg);
+  const proxHit = finite(detailedStats.approachProximityWhenHitGreen);
+  const proxMiss = finite(detailedStats.approachProximityWhenMissedGreen);
+
+  const hasHeadline = (girPct != null && girOpps > 0) || proxAll != null;
+  if (!hasHeadline) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Approach &amp; greens</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Greens in regulation and how close the approaches finish.
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <HeadlineReadout
+          value={girPct}
+          format={{ maximumFractionDigits: 0 }}
+          unit="%"
+          label="GIR"
+          hasSample={girPct != null && girOpps > 0}
+          awaitingLabel="No approaches"
+        />
+        <HeadlineReadout
+          value={proxAll}
+          format={{ maximumFractionDigits: 0 }}
+          unit="ft"
+          label="Proximity (all)"
+          hasSample={proxAll != null}
+          awaitingLabel="No approaches"
+        />
+        <HeadlineReadout
+          value={proxHit}
+          format={{ maximumFractionDigits: 0 }}
+          unit="ft"
+          label="When hit green"
+          hasSample={proxHit != null}
+          awaitingLabel="No greens hit"
+        />
+        <HeadlineReadout
+          value={proxMiss}
+          format={{ maximumFractionDigits: 0 }}
+          unit="ft"
+          label="When missed green"
+          hasSample={proxMiss != null}
+          awaitingLabel="No greens missed"
+        />
+      </div>
+    </section>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+ * 6b · FULL SHOT DETAIL — one collapsed disclosure holding the heavy drill-in
+ * grids that don't belong in the always-on flow: GIR by par / distance / lie,
+ * approach proximity by par / lie / distance, putting make-% bands + miss
+ * direction + by-break, scoring per-round / career / by-type + streaks, and the
+ * personal-bests + 30-day comparison analysis readouts. Mirrors the existing
+ * "Detailed standings" disclosure chrome exactly. Every grid is null-honest and
+ * self-hides when its block has no data (allDash); the whole disclosure hides
+ * when there is nothing to show.
+ * ══════════════════════════════════════════════════════════════════════════ */
+function ComprehensiveDetail({
+  detailedStats,
+  trendData,
+  open,
+  onToggle,
+}: {
+  detailedStats: GolfStats | null;
+  trendData: TrendAnalysisResponse | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (!detailedStats) return null;
+  const s = detailedStats;
+
+  // ── GIR detail ─────────────────────────────────────────────────────────────
+  const girByPar: DetailRow[] = [
+    { label: 'Par 3s', value: fmtPct(s.girPctPar3) },
+    { label: 'Par 4s', value: fmtPct(s.girPctPar4) },
+    { label: 'Par 5s', value: fmtPct(s.girPctPar5) },
+  ];
+  const girByDistance: DetailRow[] = [
+    { label: '50–75 yds', value: fmtPct(s.girPct50_75) },
+    { label: '75–100 yds', value: fmtPct(s.girPct75_100) },
+    { label: '100–125 yds', value: fmtPct(s.girPct100_125) },
+    { label: '125–150 yds', value: fmtPct(s.girPct125_150) },
+    { label: '150–175 yds', value: fmtPct(s.girPct150_175) },
+    { label: '175–200 yds', value: fmtPct(s.girPct175_200) },
+    { label: '200–225 yds', value: fmtPct(s.girPct200_225) },
+    { label: '225+ yds', value: fmtPct(s.girPct225Plus) },
+  ];
+  const girByLie: DetailRow[] = [
+    { label: 'From fairway', value: fmtPct(s.girPctFromFairway) },
+    { label: 'From rough', value: fmtPct(s.girPctFromRough) },
+    { label: 'From sand', value: fmtPct(s.girPctFromSand) },
+  ];
+
+  // ── Approach proximity detail (feet) ─────────────────────────────────────--
+  const approachByPar: DetailRow[] = [
+    { label: 'Par 3s', value: fmtFeet(s.approachProximityPar3) },
+    { label: 'Par 4s', value: fmtFeet(s.approachProximityPar4) },
+    { label: 'Par 5s', value: fmtFeet(s.approachProximityPar5) },
+  ];
+  const approachByLie: DetailRow[] = [
+    { label: 'From fairway', value: fmtFeet(s.approachProximityFairway) },
+    { label: 'From rough', value: fmtFeet(s.approachProximityRough) },
+    { label: 'From sand', value: fmtFeet(s.approachProximitySand) },
+  ];
+  const approachByDistance: DetailRow[] = [
+    { label: '30–75 yds', value: fmtFeet(s.approachProx30_75) },
+    { label: '75–100 yds', value: fmtFeet(s.approachProx75_100) },
+    { label: '100–125 yds', value: fmtFeet(s.approachProx100_125) },
+    { label: '125–150 yds', value: fmtFeet(s.approachProx125_150) },
+    { label: '150–175 yds', value: fmtFeet(s.approachProx150_175) },
+    { label: '175–200 yds', value: fmtFeet(s.approachProx175_200) },
+    { label: '200–225 yds', value: fmtFeet(s.approachProx200_225) },
+    { label: '225+ yds', value: fmtFeet(s.approachProx225Plus) },
+  ];
+
+  // ── Putting detail ─────────────────────────────────────────────────────────
+  const puttHeadline: DetailRow[] = [
+    { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
+    { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
+    { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
+    { label: '1-putts (total)', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
+  ];
+  const puttMakeBands: DetailRow[] = [
+    { label: '0–3 ft', value: fmtPct(s.puttMakePct0_3) },
+    { label: '3–5 ft', value: fmtPct(s.puttMakePct3_5) },
+    { label: '5–10 ft', value: fmtPct(s.puttMakePct5_10) },
+    { label: '10–15 ft', value: fmtPct(s.puttMakePct10_15) },
+    { label: '15–20 ft', value: fmtPct(s.puttMakePct15_20) },
+    { label: '20–25 ft', value: fmtPct(s.puttMakePct20_25) },
+    { label: '25–30 ft', value: fmtPct(s.puttMakePct25_30) },
+    { label: '30–35 ft', value: fmtPct(s.puttMakePct30_35) },
+    { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
+  ];
+  const puttMissDir: DetailRow[] = [
+    { label: 'Miss left', value: fmtPct(s.puttMissLeftPct) },
+    { label: 'Miss right', value: fmtPct(s.puttMissRightPct) },
+    { label: 'Miss short', value: fmtPct(s.puttMissShortPct) },
+    { label: 'Miss long', value: fmtPct(s.puttMissLongPct) },
+    { label: 'Under-read (low)', value: fmtPct(s.puttMissLowPct) },
+    { label: 'Over-read (high)', value: fmtPct(s.puttMissHighPct) },
+  ];
+  const breakMakeRows = (label: string, b: GolfStats['puttingByBreak'][keyof GolfStats['puttingByBreak']]): DetailRow => ({
+    label,
+    value: fmtPct(b.overallMakePct),
+  });
+  const puttByBreak: DetailRow[] = [
+    breakMakeRows('Left-to-right', s.puttingByBreak.left_to_right),
+    breakMakeRows('Straight', s.puttingByBreak.straight),
+    breakMakeRows('Right-to-left', s.puttingByBreak.right_to_left),
+    breakMakeRows('Multiple breaks', s.puttingByBreak.multiple),
+  ];
+
+  // ── Scoring detail ─────────────────────────────────────────────────────────
+  const scoringBestWorst: DetailRow[] = [
+    { label: 'Best round', value: fmtInt(s.bestRound) },
+    { label: 'Worst round', value: fmtInt(s.worstRound) },
+    { label: 'Scoring average', value: fmtNum(s.scoringAverage, 1) },
+    { label: 'Avg to par', value: s.avgScoreToPar != null ? formatToParPerHole(s.avgScoreToPar) : '—' },
+  ];
+  const perRound: DetailRow[] = [
+    { label: 'Eagles / round', value: fmtNum(s.eaglesPerRound, 2) },
+    { label: 'Birdies / round', value: fmtNum(s.birdiesPerRound, 2) },
+    { label: 'Pars / round', value: fmtNum(s.parsPerRound, 2) },
+    { label: 'Bogeys / round', value: fmtNum(s.bogeysPerRound, 2) },
+    { label: 'Double+ / round', value: fmtNum(s.doublePlusPerRound, 2) },
+  ];
+  const careerTotals: DetailRow[] = [
+    { label: 'Total eagles', value: s.roundsPlayed > 0 ? fmtInt(s.totalEagles) : '—' },
+    { label: 'Total birdies', value: s.roundsPlayed > 0 ? fmtInt(s.totalBirdies) : '—' },
+    { label: 'Total pars', value: s.roundsPlayed > 0 ? fmtInt(s.totalPars) : '—' },
+    { label: 'Total bogeys', value: s.roundsPlayed > 0 ? fmtInt(s.totalBogeys) : '—' },
+    { label: 'Total double+', value: s.roundsPlayed > 0 ? fmtInt(s.totalDoublePlus) : '—' },
+  ];
+  const byRoundType: DetailRow[] = [
+    {
+      label: 'Practice',
+      value: s.practiceRounds > 0 ? `${fmtNum(s.practiceScoringAvg, 1)} · ${s.practiceRounds}` : '—',
+    },
+    {
+      label: 'Qualifying',
+      value: s.qualifyingRounds > 0 ? `${fmtNum(s.qualifyingScoringAvg, 1)} · ${s.qualifyingRounds}` : '—',
+    },
+    {
+      label: 'Tournament',
+      value: s.tournamentRounds > 0 ? `${fmtNum(s.tournamentScoringAvg, 1)} · ${s.tournamentRounds}` : '—',
+    },
+  ];
+  const streaks: DetailRow[] = [
+    { label: 'Most birdies / round', value: s.roundsPlayed > 0 ? fmtInt(s.mostBirdiesRound) : '—' },
+    { label: 'Most birdies in a row', value: s.roundsPlayed > 0 ? fmtInt(s.mostBirdiesRow) : '—' },
+    { label: 'Most pars in a row', value: s.roundsPlayed > 0 ? fmtInt(s.mostParsRow) : '—' },
+    {
+      label: 'Longest no-3-putt streak',
+      value: s.roundsPlayed > 0 ? `${fmtInt(s.longestNo3PuttStreak)} holes` : '—',
+    },
+    { label: 'Longest hole-out', value: s.longestHoleOut != null ? fmtYds(s.longestHoleOut) : '—' },
+  ];
+
+  // ── Analysis (from the already-fetched trendData) ────────────────────────--
+  const pb = trendData?.personalBests ?? null;
+  const personalBests: DetailRow[] = [
+    { label: 'Best score', value: pb?.bestScore ? fmtInt(pb.bestScore.value) : '—' },
+    {
+      label: 'Best vs par',
+      value: pb?.bestToPar ? formatToParPerHole(pb.bestToPar.value) : '—',
+    },
+    { label: 'Best GIR', value: pb?.bestGir ? fmtPct(pb.bestGir.value) : '—' },
+    { label: 'Fewest putts', value: pb?.lowestPutts ? fmtInt(pb.lowestPutts.value) : '—' },
+  ];
+  const cmp = trendData?.periodComparison ?? null;
+  const periodCompare: DetailRow[] = cmp
+    ? [
+        {
+          label: 'Scoring avg (30d / prev)',
+          value:
+            cmp.last30Days.roundCount > 0
+              ? `${fmtNum(cmp.last30Days.scoringAvg, 1)} / ${cmp.previous30Days.roundCount > 0 ? fmtNum(cmp.previous30Days.scoringAvg, 1) : '—'}`
+              : '—',
+        },
+        {
+          label: 'GIR % (30d / prev)',
+          value:
+            cmp.last30Days.roundCount > 0
+              ? `${fmtPct(cmp.last30Days.girPct)} / ${cmp.previous30Days.roundCount > 0 ? fmtPct(cmp.previous30Days.girPct) : '—'}`
+              : '—',
+        },
+        {
+          label: 'Fairway % (30d / prev)',
+          value:
+            cmp.last30Days.roundCount > 0
+              ? `${fmtPct(cmp.last30Days.fairwayPct)} / ${cmp.previous30Days.roundCount > 0 ? fmtPct(cmp.previous30Days.fairwayPct) : '—'}`
+              : '—',
+        },
+        {
+          label: 'Putts / rd (30d / prev)',
+          value:
+            cmp.last30Days.roundCount > 0
+              ? `${fmtNum(cmp.last30Days.puttsPerRound, 1)} / ${cmp.previous30Days.roundCount > 0 ? fmtNum(cmp.previous30Days.puttsPerRound, 1) : '—'}`
+              : '—',
+        },
+      ]
+    : [];
+
+  // Assemble the blocks that actually carry data (allDash → omit).
+  const blocks: Array<{ heading: string; grids: React.ReactNode[] }> = [];
+
+  const girGrids: React.ReactNode[] = [];
+  if (!allDash(girByPar)) girGrids.push(<DetailGrid key="gir-par" title="GIR by hole type" rows={girByPar} columns={3} />);
+  if (!allDash(girByLie)) girGrids.push(<DetailGrid key="gir-lie" title="GIR by lie" rows={girByLie} columns={3} />);
+  if (!allDash(girByDistance)) girGrids.push(<DetailGrid key="gir-dist" title="GIR by approach distance" rows={girByDistance} columns={4} />);
+  if (girGrids.length) blocks.push({ heading: 'Greens in regulation', grids: girGrids });
+
+  const approachGrids: React.ReactNode[] = [];
+  if (!allDash(approachByPar)) approachGrids.push(<DetailGrid key="ap-par" title="Proximity by hole type" rows={approachByPar} columns={3} />);
+  if (!allDash(approachByLie)) approachGrids.push(<DetailGrid key="ap-lie" title="Proximity by lie" rows={approachByLie} columns={3} />);
+  if (!allDash(approachByDistance)) approachGrids.push(<DetailGrid key="ap-dist" title="Proximity by approach distance" rows={approachByDistance} columns={4} />);
+  if (approachGrids.length) blocks.push({ heading: 'Approach proximity', grids: approachGrids });
+
+  const puttGrids: React.ReactNode[] = [];
+  if (!allDash(puttHeadline)) puttGrids.push(<DetailGrid key="pt-head" title="Putting efficiency" rows={puttHeadline} columns={4} />);
+  if (!allDash(puttMakeBands)) puttGrids.push(<DetailGrid key="pt-make" title="Make % by distance" rows={puttMakeBands} columns={3} />);
+  if (!allDash(puttMissDir)) puttGrids.push(<DetailGrid key="pt-miss" title="Miss direction" rows={puttMissDir} columns={3} />);
+  if (!allDash(puttByBreak)) puttGrids.push(<DetailGrid key="pt-break" title="Make % by break" rows={puttByBreak} columns={4} />);
+  if (puttGrids.length) blocks.push({ heading: 'Putting', grids: puttGrids });
+
+  const scoringGrids: React.ReactNode[] = [];
+  if (!allDash(scoringBestWorst)) scoringGrids.push(<DetailGrid key="sc-bw" title="Round scoring" rows={scoringBestWorst} columns={4} />);
+  if (!allDash(perRound)) scoringGrids.push(<DetailGrid key="sc-pr" title="Per round" rows={perRound} columns={3} />);
+  if (!allDash(careerTotals)) scoringGrids.push(<DetailGrid key="sc-ct" title="Career totals" rows={careerTotals} columns={3} />);
+  if (!allDash(byRoundType)) scoringGrids.push(<DetailGrid key="sc-rt" title="Scoring by round type" hint="Average · rounds" rows={byRoundType} columns={3} />);
+  if (!allDash(streaks)) scoringGrids.push(<DetailGrid key="sc-st" title="Streaks & records" rows={streaks} columns={3} />);
+  if (scoringGrids.length) blocks.push({ heading: 'Scoring', grids: scoringGrids });
+
+  const analysisGrids: React.ReactNode[] = [];
+  if (!allDash(personalBests)) analysisGrids.push(<DetailGrid key="an-pb" title="Personal bests" rows={personalBests} columns={4} />);
+  if (periodCompare.length && !allDash(periodCompare)) analysisGrids.push(<DetailGrid key="an-cmp" title="Last 30 days vs previous 30" rows={periodCompare} columns={2} />);
+  if (analysisGrids.length) blocks.push({ heading: 'Trends & bests', grids: analysisGrids });
+
+  if (blocks.length === 0) return null;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="font-fw-display text-body font-medium text-text-primary">
+            Full shot detail
+          </span>
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            {blocks.length} {blocks.length === 1 ? 'category' : 'categories'} · GIR &amp;
+            approach by distance/lie, putting bands, scoring &amp; trends
+          </span>
+        </span>
+        <ChevronDown
+          className={cn(
+            'h-5 w-5 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+
+      {open ? (
+        <div className="flex flex-col gap-6 pt-1">
+          {blocks.map((block) => (
+            <div key={block.heading} className="flex flex-col gap-3">
+              <h4 className="px-1 font-fw-sans text-body font-medium text-text-primary">
+                {block.heading}
+              </h4>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{block.grids}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
   );
 }
 

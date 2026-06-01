@@ -770,10 +770,14 @@ export function FairwayCoachHelmSignals({
     for (const r of rows) {
       const key =
         groupBy === 'player'
-          ? // Defensive header fallback: insights don't carry a resolved
-            // playerName and a row may lack a playerId too — never render an
-            // empty/blank player section header.
-            (r.playerName?.trim() || r.playerId?.trim() || 'Unassigned player')
+          ? // Header is the player's display NAME. The pattern read
+            // (getTeamPatterns) already resolves playerName from golf_players;
+            // when it's absent (a row for a player no longer on the active
+            // roster, or null name fields), we fall back to a humane label —
+            // NEVER the raw player_id UUID, which is meaningless to a coach and
+            // was the bug here. The UUID stays available on the row (r.playerId)
+            // for focus-area conversion; it is just never the visible heading.
+            (r.playerName?.trim() || 'Unknown player')
           : r.category
             ? r.category
                 .split(/[_\s]+/)
