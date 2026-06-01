@@ -46,7 +46,9 @@ describe('TeeStrategyGenerator', () => {
     const g = new TeeStrategyGenerator(PLAYER_ID);
     expect(g.name).toBe('TeeStrategyGenerator');
     expect(g.insightType).toBe('tee_strategy');
-    expect(g.category).toBe('course_management');
+    // Files under 'tee' so it feeds the "Off the Tee" theme (was
+    // 'course_management', which left the tee theme permanently empty).
+    expect(g.category).toBe('tee');
     expect(g.metricId).toBe('sg_ott');
     expect(g.minSampleN).toBe(15);
   });

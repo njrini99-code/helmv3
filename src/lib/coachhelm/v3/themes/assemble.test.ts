@@ -93,6 +93,33 @@ function themeOf(result: ReturnType<typeof assembleThemes>, category: InsightCat
   return t;
 }
 
+/**
+ * A row carrying a FULL standing (player_value + team_avg + pga_value) so the
+ * team-fraction math has all three anchors. The base `row` helper leaves
+ * `team_avg` null (→ teamFraction falls back to 1); this overrides it.
+ */
+function rowWithTeam(o: {
+  id: string;
+  category: InsightCategory;
+  strokesSaved: number;
+  player: number;
+  team: number;
+  pga: number;
+  metric?: string | null;
+}): EvidenceInsight {
+  const r = row({
+    id: o.id,
+    category: o.category,
+    strokesSaved: o.strokesSaved,
+    metric: o.metric,
+    standingPlayer: o.player,
+    standingPga: o.pga,
+  });
+  const ev = r.evidence as unknown as AssembledEvidence;
+  if (ev.standing) ev.standing.team_avg = o.team;
+  return r;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
  * Grouping + scaffold
  * ────────────────────────────────────────────────────────────────────────── */
@@ -213,23 +240,185 @@ describe('assembleThemes — composite threading', () => {
 });
 
 /* ───────────────────────────────────────────────────────────────────────────
- * College-realism re-scale + honest Tour-gap labeling
+ * Composite weight + per-category stroke conservation (Change 2)
+ *
+ * - A composite carries REAL weight = Σ realistic strokes of the SAME-CATEGORY
+ *   leaves it demoted (so the cascade no longer ranks dead-last on a hardcoded 0).
+ * - A CROSS-category claimed leaf is NOT demoted: it stays a top-level cause in
+ *   its OWN theme (its strokes conserved there), and is only referenced by the
+ *   composite as a driver link — its strokes are never added to the composite's
+ *   category and never deleted from its own.
  * ────────────────────────────────────────────────────────────────────────── */
 
-// Mirror of the documented constant in assemble.ts (kept in-test so a drift in
-// the factor breaks loudly here).
-const REALISM: Record<InsightCategory, number> = {
-  putting: 0.55,
-  approach: 0.6,
-  short_game: 0.6,
-  tee: 0.6,
-  scoring: 0.6,
-  course_management: 0.6,
-  pressure: 0.6,
-};
+describe('assembleThemes — composite weight + conservation', () => {
+  test('composite weight = Σ same-category demoted leaves realistic strokes (no team data → raw)', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        // composite's OWN counterfactual is small/irrelevant; weight comes from leaves.
+        row({
+          id: 'comp',
+          category: 'putting',
+          strokesSaved: 0.0,
+          compositeRuleId: 'lag_3putt',
+          sourceInsightIds: ['leaf1', 'leaf2'],
+        }),
+        row({ id: 'leaf1', category: 'putting', strokesSaved: 0.5 }),
+        row({ id: 'leaf2', category: 'putting', strokesSaved: 0.4 }),
+      ],
+      sgByCategory: {},
+    });
+    const putting = themeOf(result, 'putting');
+    expect(putting.causes.map((c) => c.insight_id)).toEqual(['comp']);
+    const comp = putting.causes[0]!;
+    // weight = 0.5 + 0.4 (no team data → realistic == raw)
+    expect(comp.strokesSavedPerRound).toBeCloseTo(0.9, 10);
+    // tourGap is the conserved Σ of the SAME leaves' Tour gaps (NOT the composite's
+    // own absent counterfactual) — so realistic ≤ Tour holds at the composite too.
+    expect(comp.tourGapPerRound).toBeCloseTo(0.9, 10);
+    expect(comp.drivers).toHaveLength(2);
+  });
 
-describe('assembleThemes — college-realism re-scale', () => {
-  test('strokesSavedPerRound = raw × factor; tourGapPerRound = raw (putting)', () => {
+  test('INVARIANT: realistic strokesSavedPerRound never exceeds tourGapPerRound (incl. composites)', () => {
+    // Composite + leaves WITH team standing so realistic < raw, plus a cross-category
+    // leaf and a lone cause — every cause must satisfy realistic ≤ Tour gap.
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({
+          id: 'comp',
+          category: 'putting',
+          strokesSaved: 0.0,
+          compositeRuleId: 'lag_3putt',
+          sourceInsightIds: ['l1', 'l2'],
+        }),
+        rowWithTeam({ id: 'l1', category: 'putting', strokesSaved: 1.0, player: 8, team: 6, pga: 3 }),
+        rowWithTeam({ id: 'l2', category: 'putting', strokesSaved: 0.8, player: 8, team: 6, pga: 3 }),
+        rowWithTeam({ id: 'lone', category: 'approach', strokesSaved: 1.2, player: 9, team: 5, pga: 4 }),
+      ],
+      sgByCategory: {},
+    });
+    for (const theme of result.themes) {
+      for (const c of theme.causes) {
+        if (c.tourGapPerRound != null) {
+          expect(c.strokesSavedPerRound).toBeLessThanOrEqual(c.tourGapPerRound + 1e-9);
+        }
+      }
+      // theme-level too: realistic magnitude never exceeds the Tour-ceiling sum.
+      expect(theme.themeStrokesPerRound).toBeLessThanOrEqual(theme.tourGapPerRound + 1e-9);
+    }
+  });
+
+  test('cross-category claimed leaf stays top-level in its OWN theme; not added to composite', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        // approach composite claims a putting leaf (cross-category) + an approach leaf.
+        row({
+          id: 'comp',
+          category: 'approach',
+          strokesSaved: 0.0,
+          compositeRuleId: 'mixed',
+          sourceInsightIds: ['p_leaf', 'a_leaf'],
+        }),
+        row({ id: 'p_leaf', category: 'putting', strokesSaved: 0.7 }),
+        row({ id: 'a_leaf', category: 'approach', strokesSaved: 0.3 }),
+      ],
+      sgByCategory: {},
+    });
+
+    // The putting leaf is NOT demoted — it stays a top-level cause in putting,
+    // keeping its strokes there (conserved, not deleted).
+    const putting = themeOf(result, 'putting');
+    expect(putting.causes.map((c) => c.insight_id)).toEqual(['p_leaf']);
+    expect(putting.causes[0]!.strokesSavedPerRound).toBeCloseTo(0.7, 10);
+
+    // The approach composite carries ONLY the same-category (approach) leaf's
+    // strokes — the cross-category putting leaf's strokes are NOT added here.
+    const approach = themeOf(result, 'approach');
+    expect(approach.causes.map((c) => c.insight_id)).toEqual(['comp']);
+    const comp = approach.causes[0]!;
+    expect(comp.strokesSavedPerRound).toBeCloseTo(0.3, 10);
+    // Both leaves are still threaded as driver links (cascade stays visible).
+    expect(comp.drivers.map((d) => d.source_insight_ids[0]).sort()).toEqual([
+      'a_leaf',
+      'p_leaf',
+    ]);
+    // The cross-category leaf is referenced as a driver but NOT removed from putting:
+    // it is BOTH a driver here and a top-level cause in putting (cross-theme link).
+    expect(approach.causes[0]!.drivers.some((d) => d.source_insight_ids[0] === 'p_leaf')).toBe(true);
+  });
+
+  test('composite with no same-category leaves carries 0 (pure narrative link, no fabricated weight)', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({
+          id: 'comp',
+          category: 'approach',
+          strokesSaved: 0.0,
+          compositeRuleId: 'cross_only',
+          sourceInsightIds: ['p_leaf'],
+        }),
+        row({ id: 'p_leaf', category: 'putting', strokesSaved: 0.7 }),
+      ],
+      sgByCategory: {},
+    });
+    const comp = themeOf(result, 'approach').causes[0]!;
+    expect(comp.strokesSavedPerRound).toBe(0);
+    expect(comp.drivers).toHaveLength(1); // still renders the cross-theme link
+    // putting leaf preserved at top level with its strokes.
+    expect(themeOf(result, 'putting').causes[0]!.strokesSavedPerRound).toBeCloseTo(0.7, 10);
+  });
+
+  test('a leaf claimed by two same-category composites contributes its strokes once', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'compA', category: 'putting', strokesSaved: 0, compositeRuleId: 'a', sourceInsightIds: ['shared'] }),
+        row({ id: 'compB', category: 'putting', strokesSaved: 0, compositeRuleId: 'b', sourceInsightIds: ['shared'] }),
+        row({ id: 'shared', category: 'putting', strokesSaved: 0.6 }),
+      ],
+      sgByCategory: {},
+    });
+    const putting = themeOf(result, 'putting');
+    const ids = putting.causes.map((c) => c.insight_id).sort();
+    expect(ids).toEqual(['compA', 'compB']); // shared demoted out of top level
+    // Exactly one composite (the first claimant) owns the shared leaf's strokes.
+    const weights = putting.causes.map((c) => c.strokesSavedPerRound).sort();
+    expect(weights).toEqual([0, 0.6]);
+    const total = putting.causes.reduce((s, c) => s + c.strokesSavedPerRound, 0);
+    expect(total).toBeCloseTo(0.6, 10); // NOT 1.2 — no double-count
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Team-average framing — teamFraction math + honest Tour-gap labeling
+ *
+ * realistic = tourGap * clamp((player_value - team_avg) / (player_value - pga_value), 0, 1)
+ * No team reference (any of the three null, or player≈PGA) → teamFraction = 1 →
+ * realistic == tourGap (framed "to Tour"). Already at/better than team → 0.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Compute the expected team fraction the same way the assembler does — kept
+ * in-test so any drift in the formula breaks loudly here.
+ */
+function teamFraction(
+  player: number | null,
+  team: number | null,
+  pga: number | null,
+): number {
+  if (player == null || team == null || pga == null) return 1;
+  const denom = player - pga;
+  if (Math.abs(denom) < 1e-6) return 1;
+  const f = (player - team) / denom;
+  if (!Number.isFinite(f)) return 0;
+  return Math.min(1, Math.max(0, f));
+}
+
+describe('assembleThemes — team-average framing', () => {
+  test('no standing → teamFraction falls back to 1 → realistic == tourGap (putting)', () => {
     const R = 1.4;
     const result = assembleThemes({
       playerId: 'p1',
@@ -238,32 +427,119 @@ describe('assembleThemes — college-realism re-scale', () => {
     });
     const c = themeOf(result, 'putting').causes[0]!;
     expect(c.tourGapPerRound).toBe(R);
-    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.putting, 10);
+    // No team_avg on the fixture standing (it's null) → fall back to full Tour gap.
+    expect(c.strokesSavedPerRound).toBeCloseTo(R, 10);
+    expect(c.standingTeamAvgValue).toBeNull();
   });
 
-  test('strokesSavedPerRound = raw × factor; tourGapPerRound = raw (approach)', () => {
+  test('team_avg between player and PGA → realistic = tourGap * teamFraction', () => {
+    // "lower is better" metric (e.g. 3-putts): player 8, team 6, pga 3.
+    // fraction = (8-6)/(8-3) = 2/5 = 0.4.
     const R = 2.0;
+    const player = 8, team = 6, pga = 3;
     const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'approach', strokesSaved: R })],
+      rows: [
+        rowWithTeam({ id: 'a', category: 'approach', strokesSaved: R, player, team, pga }),
+      ],
       sgByCategory: {},
     });
     const c = themeOf(result, 'approach').causes[0]!;
     expect(c.tourGapPerRound).toBe(R);
-    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.approach, 10);
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * teamFraction(player, team, pga), 10);
+    expect(c.strokesSavedPerRound).toBeCloseTo(0.8, 10);
+    expect(c.standingTeamAvgValue).toBe(team);
+  });
+
+  test('direction-agnostic: "higher is better" metric gives the same fraction', () => {
+    // GIR% style (higher better): player 50, team 60, pga 75.
+    // fraction = (50-60)/(50-75) = (-10)/(-25) = 0.4 — same as the inverse case.
+    const R = 2.0;
+    const player = 50, team = 60, pga = 75;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'a', category: 'approach', strokesSaved: R, player, team, pga }),
+      ],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * teamFraction(player, team, pga), 10);
+    expect(c.strokesSavedPerRound).toBeCloseTo(0.8, 10);
+  });
+
+  test('already at/better than team avg → numerator flips sign → clamp to 0', () => {
+    // player 5, team 6, pga 3 (lower better): player is BETTER than the team avg.
+    // fraction = (5-6)/(5-3) = -0.5 → clamped to 0. No realistic gain vs peers.
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'a', category: 'approach', strokesSaved: 2.0, player: 5, team: 6, pga: 3 }),
+      ],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    expect(c.strokesSavedPerRound).toBe(0);
+    // The Tour ceiling is still honestly carried.
+    expect(c.tourGapPerRound).toBe(2.0);
+  });
+
+  test('worse than team but past PGA → fraction > 1 → clamp to 1 (full Tour gap)', () => {
+    // player 9, team 4, pga 6 (degenerate: player past PGA on the wrong side).
+    // fraction = (9-4)/(9-6) = 5/3 > 1 → clamp to 1.
+    const R = 1.5;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'a', category: 'approach', strokesSaved: R, player: 9, team: 4, pga: 6 }),
+      ],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    expect(c.strokesSavedPerRound).toBeCloseTo(R, 10);
+  });
+
+  test('player ≈ PGA (zero span) → teamFraction falls back to 1', () => {
+    // |player - pga| < 1e-6 → no usable orientation → full Tour gap.
+    const R = 1.0;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'a', category: 'approach', strokesSaved: R, player: 4, team: 5, pga: 4 }),
+      ],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    expect(c.strokesSavedPerRound).toBeCloseTo(R, 10);
+  });
+
+  test('team_avg null but player+pga present → fall back to 1 (full Tour gap)', () => {
+    const R = 1.2;
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'a', category: 'approach', strokesSaved: R, standingPlayer: 8, standingPga: 3 }),
+      ],
+      sgByCategory: {},
+    });
+    const c = themeOf(result, 'approach').causes[0]!;
+    // team_avg is null on this fixture → no team reference → full Tour gap.
+    expect(c.strokesSavedPerRound).toBeCloseTo(R, 10);
   });
 
   test('no re-suppression below 0.3: a small realistic value is kept (not floored to 0)', () => {
-    // raw 0.45 (above the upstream 0.3 floor) → realistic 0.45*0.55 ≈ 0.2475,
-    // which is below 0.3 but must NOT be re-suppressed to 0.
+    // raw 0.45 (above the upstream 0.3 floor), team fraction 0.4 → realistic 0.18,
+    // below 0.3 but must NOT be re-suppressed to 0.
     const R = 0.45;
     const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'putting', strokesSaved: R })],
+      rows: [
+        rowWithTeam({ id: 'a', category: 'putting', strokesSaved: R, player: 8, team: 6, pga: 3 }),
+      ],
       sgByCategory: {},
     });
     const c = themeOf(result, 'putting').causes[0]!;
-    expect(c.strokesSavedPerRound).toBeCloseTo(R * REALISM.putting, 10);
+    expect(c.strokesSavedPerRound).toBeCloseTo(R * 0.4, 10);
     expect(c.strokesSavedPerRound).toBeGreaterThan(0);
   });
 });
@@ -382,10 +658,10 @@ describe('assembleThemes — sign-aware sizing & states', () => {
   test('positive sgPerRound → themeStrokesPerRound 0 and state strength (never a cost)', () => {
     // Positive SG with no MATERIAL realistic leak cause → a clean STRENGTH; the
     // cost magnitude is 0 (a strength is never a cost). The cause here is
-    // immaterial after re-scale (raw 0.4 → realistic 0.24 < LEAK_FLOOR).
+    // immaterial (raw 0.2, no team data → realistic 0.2 < LEAK_FLOOR).
     const result = assembleThemes({
       playerId: 'p1',
-      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.4 })],
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.2 })],
       sgByCategory: { putting: 0.8 },
     });
     const t = themeOf(result, 'putting');
@@ -394,7 +670,8 @@ describe('assembleThemes — sign-aware sizing & states', () => {
   });
 
   test('negative sg caps the realistic child sum at |sg| (causes never exceed the loss)', () => {
-    // realisticChildSum = (1.4 + 1.0) * 0.55 = 1.32, |sg| = 0.9 → capped to 0.9
+    // No team data → realistic == raw. realisticChildSum = 1.4 + 1.0 = 2.4,
+    // |sg| = 0.9 → capped to 0.9
     const result = assembleThemes({
       playerId: 'p1',
       rows: [
@@ -409,21 +686,21 @@ describe('assembleThemes — sign-aware sizing & states', () => {
   });
 
   test('negative sg larger than child sum → uses the (smaller) realistic child sum', () => {
-    // realisticChildSum = 0.5 * 0.55 = 0.275, |sg| = 1.4 → min = 0.275
+    // No team data → realistic == raw. dominant cause 0.5, |sg| = 1.4 → min(0.5, 1.4)
     const result = assembleThemes({
       playerId: 'p1',
       rows: [row({ id: 'a', category: 'putting', strokesSaved: 0.5 })],
       sgByCategory: { putting: -1.4 },
     });
     const t = themeOf(result, 'putting');
-    expect(t.themeStrokesPerRound).toBeCloseTo(0.5 * REALISM.putting, 10);
+    expect(t.themeStrokesPerRound).toBeCloseTo(0.5, 10);
     // sg is a material loss (< -0.3) → still a leak even though the realistic
     // magnitude is below the floor.
     expect(t.state).toBe('leak');
   });
 
   test('null sg → DOMINANT single cause, not the sum (no double-count)', () => {
-    // realistic values: 0.4*0.6=0.24, 0.5*0.6=0.30 → dominant 0.30, NOT 0.54
+    // No team data → realistic == raw: 0.4 and 0.5 → dominant 0.5, NOT 0.9
     const result = assembleThemes({
       playerId: 'p1',
       rows: [
@@ -433,7 +710,7 @@ describe('assembleThemes — sign-aware sizing & states', () => {
       sgByCategory: {},
     });
     const t = themeOf(result, 'approach');
-    expect(t.themeStrokesPerRound).toBeCloseTo(0.5 * REALISM.approach, 10);
+    expect(t.themeStrokesPerRound).toBeCloseTo(0.5, 10);
   });
 
   test('theme tourGapPerRound = Σ causes raw Tour gaps', () => {
@@ -506,21 +783,21 @@ describe('assembleThemes — sign-aware sizing & states', () => {
   });
 
   test('themes sorted by magnitude desc, scaffold index tiebreak', () => {
-    // approach raw 4.0 → realistic 4.0*0.6 = 2.4 (null sg → dominant cause).
+    // approach raw 4.0, no team data → realistic 4.0 (null sg → dominant cause).
     const result = assembleThemes({
       playerId: 'p1',
       rows: [row({ id: 'a', category: 'approach', strokesSaved: 4 })],
       sgByCategory: { putting: -0.5 },
     });
-    // approach (2.4) floats above putting (0.5 cap) above the rest (0)
+    // approach (4.0) floats above putting (0.5 cap) above the rest (0)
     expect(result.themes[0]!.category).toBe('approach');
     expect(result.themes[1]!.category).toBe('putting');
-    expect(themeOf(result, 'approach').themeStrokesPerRound).toBeCloseTo(2.4, 10);
+    expect(themeOf(result, 'approach').themeStrokesPerRound).toBeCloseTo(4.0, 10);
     // putting: |sg| 0.5, no causes → min(0, 0.5) = 0... but child sum is 0, so
     // themeStrokesPerRound = min(0, 0.5) = 0; state leak (sg < -0.3).
     expect(themeOf(result, 'putting').themeStrokesPerRound).toBe(0);
     // total = sum of emitted theme magnitudes (outcome themes with 0 causes omitted)
-    expect(result.totalStrokesPerRound).toBeCloseTo(2.4, 10);
+    expect(result.totalStrokesPerRound).toBeCloseTo(4.0, 10);
   });
 });
 
@@ -648,19 +925,62 @@ describe('assembleThemes — properties', () => {
     );
   });
 
-  test('no insight id is both a top-level cause and a driver', () => {
+  test('category-aware disjointness: a SAME-category driver leaf is never also a top-level cause in that category; CROSS-category leaves may be', () => {
+    // Change 2 redefines the invariant. A composite DEMOTES only its same-category
+    // leaves — those must NOT appear as top-level causes in the composite's
+    // category. A CROSS-category leaf is intentionally NOT demoted: it stays a
+    // top-level cause in its OWN theme AND is referenced as a driver link. So the
+    // old blanket "never both" no longer holds; the precise invariant is:
+    //   for every cause C in theme T, for every driver leaf L of C,
+    //     if L's category == T.category  →  L is NOT a top-level cause in T.
     fc.assert(
       fc.property(rowsArb, (rows) => {
         const result = assembleThemes({ playerId: 'p1', rows, sgByCategory: {} });
-        const causeIds = new Set<string>();
-        const driverIds = new Set<string>();
+        // Map: category → set of top-level cause ids in that category.
+        const topByCategory = new Map<InsightCategory, Set<string>>();
         for (const t of result.themes) {
+          topByCategory.set(t.category, new Set(t.causes.map((c) => c.insight_id)));
+        }
+        // Index input rows by id → category for resolving each driver leaf's home.
+        const catById = new Map<string, InsightCategory | null>();
+        for (const r of rows) if (r.id) catById.set(r.id, r.category);
+
+        for (const t of result.themes) {
+          const topHere = topByCategory.get(t.category) ?? new Set<string>();
           for (const c of t.causes) {
-            causeIds.add(c.insight_id);
-            for (const d of c.drivers) for (const id of d.source_insight_ids) driverIds.add(id);
+            for (const d of c.drivers) {
+              for (const leafId of d.source_insight_ids) {
+                const leafCat = catById.get(leafId) ?? null;
+                if (leafCat === t.category) {
+                  // same-category demoted leaf must not also be a top-level cause here
+                  expect(topHere.has(leafId)).toBe(false);
+                }
+                // cross-category leaves are allowed to remain top-level elsewhere.
+              }
+            }
           }
         }
-        for (const id of driverIds) expect(causeIds.has(id)).toBe(false);
+      }),
+    );
+  });
+
+  test('per-category stroke conservation: no same-category leaf is both demoted-and-counted twice; cross-category leaf strokes never vanish', () => {
+    // For any row set, the sum of all top-level cause strokes per category must be
+    // finite and non-negative, and a same-category leaf demoted into a composite
+    // must not ALSO appear as a top-level cause (its strokes live once, on the
+    // composite). This guards conservation across the whole arbitrary space.
+    fc.assert(
+      fc.property(rowsArb, (rows) => {
+        const result = assembleThemes({ playerId: 'p1', rows, sgByCategory: {} });
+        for (const t of result.themes) {
+          const sum = t.causes.reduce((s, c) => s + c.strokesSavedPerRound, 0);
+          expect(Number.isFinite(sum)).toBe(true);
+          expect(sum).toBeGreaterThanOrEqual(0);
+          // top-level cause ids are unique within a theme (no leaf both top-level
+          // and demoted-into-a-same-category-composite-here).
+          const ids = t.causes.map((c) => c.insight_id);
+          expect(new Set(ids).size).toBe(ids.length);
+        }
       }),
     );
   });

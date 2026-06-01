@@ -16,9 +16,17 @@
  * design contract (see docs/superpowers/plans/).
  *
  * Player-vs-self diagnostic — no PGA benchmark for "driver strategy
- * quality" exists today, so requiresStanding=false. Indexed under
- * metric_id='sg_ott' (the closest tee-game metric) so the insight
- * surfaces under Strokes Gained Off the Tee in the UI.
+ * quality" exists today, so requiresStanding=false (DIAGNOSTIC-ONLY: no
+ * counterfactual). It measures driver-vs-non_driver fairway% dispersion,
+ * a unit (percent) that does NOT match the sg_ott strokes-gained baseline,
+ * so it cannot legitimately carry a standing/counterfactual without
+ * fabricating a unit-mismatched gap — leave diagnostic-only. Follow-up: a
+ * standing-backed tee accuracy metric (e.g. fairway% vs PGA) would let the
+ * tee theme carry a real counterfactual.
+ *
+ * Filed under category='tee' so it feeds the "Off the Tee" theme. Indexed
+ * under metric_id='sg_ott' (the closest tee-game metric) so the insight
+ * also surfaces under Strokes Gained Off the Tee in the UI.
  *
  * Per-team toggle: gated by golf_team_coachhelm_settings.preferences
  *   .tee_strategy_enabled — teams with sparse tee data or who don't
@@ -88,7 +96,13 @@ function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): Grou
 export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
   readonly name = 'TeeStrategyGenerator';
   readonly insightType = 'tee_strategy';
-  readonly category: InsightCategory = 'course_management';
+  // Off-the-tee driver/layback strategy is semantically a tee insight, so
+  // it must file under 'tee' to feed the "Off the Tee" theme (was
+  // 'course_management', which left the tee theme permanently empty).
+  // NOTE: this only affects NEWLY generated golf_coach_insights rows —
+  // existing stored rows keep their old 'course_management' category until
+  // a prod insight-regeneration is run.
+  readonly category: InsightCategory = 'tee';
   readonly minSampleN = MIN_DRIVER_ATTEMPTS;
   // Player-vs-self — driver-strategy quality has no PGA benchmark.
   protected override readonly requiresStanding = false;

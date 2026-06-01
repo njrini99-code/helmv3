@@ -98,15 +98,23 @@ export interface CauseNode {
   title: string;
   content: string;
   /**
-   * COLLEGE-REALISTIC per-round strokes to gain — the ranking/sizing/display
-   * value. Derived from the upstream counterfactual (which measures the gap to
-   * the PGA-Tour ceiling) re-scaled by a documented per-category college-realism
-   * factor, because a college player cannot realistically close the full Tour
-   * gap. 0 when the counterfactual is suppressed/absent (diagnostic-only).
+   * REALISTIC per-round strokes to gain — the PRIMARY ranking/sizing/display
+   * value. This is the gap to the player's TEAM AVERAGE (the realistic peer
+   * target), NOT the full Tour gap. Computed as `tourGapPerRound * teamFraction`
+   * where
+   *   teamFraction = clamp((player_value - team_avg) / (player_value - pga_value), 0, 1)
+   * i.e. the fraction of the player→PGA distance that lies between the player and
+   * their team average. When there is no usable team reference (any of team_avg /
+   * player_value / pga_value null, or player≈PGA), `teamFraction` falls back to 1
+   * and this equals the full `tourGapPerRound` (framed honestly as "to Tour"). If
+   * the player is already at/better than the team average on this metric the
+   * numerator goes ≤ 0 and clamps to 0 (no realistic gain vs peers — PGA stays the
+   * ceiling). 0 when the counterfactual is suppressed/absent (diagnostic-only).
+   * NEVER re-floors below the upstream 0.3 stat-noise threshold.
    */
   strokesSavedPerRound: number;
   /**
-   * The RAW gap to the PGA-Tour ceiling (the un-discounted upstream
+   * The RAW gap to the PGA/Tour CEILING (the un-discounted upstream
    * `counterfactual.strokes_saved_per_round`), for honest "gap to Tour ceiling"
    * labeling. null when no counterfactual. NEVER framed as "strokes you're losing."
    */
@@ -117,6 +125,8 @@ export interface CauseNode {
   standingPlayerValue: number | null;
   /** `standing.pga_value` → `computeTargetValue({ playerValue, pgaValue })`. */
   standingPgaValue: number | null;
+  /** `standing.team_avg` — the realistic peer target the primary number aims at; null when absent. UI labeling only. */
+  standingTeamAvgValue: number | null;
   /** root drivers (composites threaded here; may be []). */
   drivers: RootDriver[];
   /** leaf-level drills when there is no driver layer. */
@@ -141,14 +151,15 @@ export interface ThemeNode {
   displayLabel: string;
   isOutcomeTheme: boolean;
   /**
-   * COLLEGE-REALISTIC theme magnitude (sign-aware): the realistically-closable
-   * strokes/round for a LEAK theme, and 0 for a strength (positive SG never
-   * renders as a "cost"). SG/round, when known, is the authoritative category
-   * ceiling — identified causes enumerate within it and never exceed it. Drives
-   * card order.
+   * REALISTIC theme magnitude (sign-aware): the realistically-closable
+   * strokes/round (gap to TEAM AVERAGE) for a LEAK theme, and 0 for a strength
+   * (positive SG never renders as a "cost"). SG/round, when known, is the
+   * authoritative category ceiling — identified causes enumerate within it and
+   * never exceed it. Drives card order. Built from the causes' team-anchored
+   * `strokesSavedPerRound`, NOT the raw Tour gap.
    */
   themeStrokesPerRound: number;
-  /** Sum of the causes' raw vs-Tour gaps, for the "gap to Tour ceiling" label. */
+  /** Sum of the causes' raw vs-Tour (PGA ceiling) gaps, for the "gap to Tour ceiling" label. */
   tourGapPerRound: number;
   /** raw SG/round when known (GolfStats.sg*PerRound or golf_rounds.strokes_gained_*); null when unknown. */
   sgPerRound: number | null;

@@ -10,10 +10,13 @@
  * `FairwayStatsCockpit.tsx`). Plain CSS transition only — NO per-row
  * framer-motion (the Signals scroll-perf lesson).
  *
- * Collapsed: cause.title + an honest strokes pill (`≈{realistic}/rd to gain`,
- * with a smaller `({tour} to Tour)` ceiling note when the Tour gap is larger)
- * UNLESS the counterfactual is suppressed — then a neutral, player-legible
- * "Tendency" chip with NO fabricated number (a directional read, not a leak).
+ * Collapsed: cause.title + an honest strokes pill (`≈{realistic}/rd to team
+ * avg`, with a smaller `({tour} to Tour)` ceiling note when the Tour gap is
+ * larger) UNLESS the counterfactual is suppressed — then a neutral,
+ * player-legible "Tendency" chip with NO fabricated number (a directional read,
+ * not a leak). When the team fraction fell back to 1 (no team data — detected as
+ * strokesSavedPerRound == tourGapPerRound) the pill is honestly labeled "to
+ * Tour" instead of "to team avg," and the redundant ceiling note is hidden.
  *
  * Expanded:
  *   • for a suppressed/Tendency cause, a short caption explaining it's a
@@ -133,13 +136,19 @@ export function CauseRow({
   const playerNeedsDrill =
     !suppressed && role === 'player' && cause.canMakePlan && !hasDrill;
 
-  // Strokes pill: only when NOT suppressed. Show the COLLEGE-REALISTIC value as
+  // Strokes pill: only when NOT suppressed. Show the REALISTIC gap-to-team-avg as
   // the primary number; when the raw Tour gap is larger, append it as a smaller
-  // ceiling note (never framed as "strokes you're losing").
+  // ceiling note (never framed as "strokes you're losing"). When the team
+  // fraction fell back to 1 (no team reference), the realistic value equals the
+  // raw Tour gap — detect that and label the primary "to Tour" honestly, hiding
+  // the now-redundant ceiling note.
   const strokes = cause.strokesSavedPerRound;
   const tourGap = cause.tourGapPerRound;
   const showStrokesPill = !suppressed && strokes > 0;
-  const showTourCeiling = tourGap != null && tourGap > strokes;
+  const toTourOnly =
+    tourGap != null && tourGap.toFixed(1) === strokes.toFixed(1);
+  const primaryLabel = toTourOnly ? 'to Tour' : 'to team avg';
+  const showTourCeiling = !toTourOnly && tourGap != null && tourGap > strokes;
 
   return (
     <div
@@ -161,7 +170,7 @@ export function CauseRow({
           </span>
           {showStrokesPill ? (
             <span className="inline-flex w-fit flex-shrink-0 items-center gap-1 rounded-full bg-fw-warning-bg px-2 py-0.5 font-fw-mono text-eyebrow font-medium tabular-nums text-fw-warning">
-              ≈{strokes.toFixed(1)}/rd to gain
+              ≈{strokes.toFixed(1)}/rd {primaryLabel}
               {showTourCeiling && tourGap != null ? (
                 <span className="font-normal text-fw-warning/70">
                   ({tourGap.toFixed(1)} to Tour)

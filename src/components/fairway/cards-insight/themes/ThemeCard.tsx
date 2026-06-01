@@ -7,13 +7,16 @@
  * One THEME (an SG category or an outcome theme). Honest by `state`:
  *
  *   • leak     — warning-toned magnitude pill + a headline that quantifies the
- *                COLLEGE-REALISTIC strokes to gain ("{label} — ~{x}
- *                strokes/round to gain") when themeStrokesPerRound > 0;
- *                otherwise a neutral "{label}" header (NEVER a fabricated 0). A
- *                secondary, smaller line surfaces the raw vs-Tour ceiling
- *                ("{g} to Tour ceiling") only when the Tour gap exceeds the
- *                realistic gain — NEVER framed as "strokes you're losing." Below:
- *                the cause cascade (CauseRow[]).
+ *                REALISTIC strokes to reach the player's TEAM AVERAGE ("{label}
+ *                — ~{x} strokes/round to reach your team avg") when
+ *                themeStrokesPerRound > 0; otherwise a neutral "{label}" header
+ *                (NEVER a fabricated 0). When the team-fraction fell back to 1
+ *                (no team data — detected as themeStrokesPerRound ==
+ *                tourGapPerRound) the primary is honestly framed "to Tour"
+ *                instead. A secondary, smaller line surfaces the raw vs-Tour
+ *                ceiling ("{g} to Tour ceiling") only when the Tour gap exceeds
+ *                the realistic team gain — NEVER framed as "strokes you're
+ *                losing." Below: the cause cascade (CauseRow[]).
  *   • strength — green success-toned pill + "Strength — gaining ~{x}
  *                strokes/round vs your baseline". No leak framing.
  *   • thin     — muted stub: "Not enough data yet — log more rounds (or tag
@@ -69,19 +72,28 @@ export function ThemeCard({
   const isStrength = state === 'strength';
   const isThin = state === 'thin';
 
+  // When the realistic (team) magnitude equals the raw Tour gap, the team
+  // fraction fell back to 1 (no usable team reference) — so the primary number is
+  // honestly a gap "to Tour," not "to your team avg." Compare on the rounded
+  // display values so the on-screen numbers stay consistent.
+  const toTourOnly =
+    hasMagnitude && tourGapPerRound.toFixed(1) === magnitude;
+  const primaryTarget = toTourOnly ? 'to reach Tour' : 'to reach your team avg';
+
   const headline = isStrength
     ? hasMagnitude
       ? `Strength — gaining ~${magnitude} strokes/round vs your baseline`
       : `${displayLabel} — a strength`
     : isLeak && hasMagnitude
-      ? `${displayLabel} — ~${magnitude} strokes/round to gain`
+      ? `${displayLabel} — ~${magnitude} strokes/round ${primaryTarget}`
       : displayLabel;
 
   // Secondary, smaller honest line: the raw vs-Tour ceiling. Only shown for a
   // quantified leak where the Tour gap is materially larger than the realistic
-  // gain — context for "how far the very top is," NEVER a "losing X" framing.
+  // team gain — context for "how far the very top is," NEVER a "losing X"
+  // framing. Hidden when the primary already IS the Tour gap (toTourOnly).
   const showTourCeiling =
-    isLeak && hasMagnitude && tourGapPerRound > themeStrokesPerRound;
+    isLeak && hasMagnitude && !toTourOnly && tourGapPerRound > themeStrokesPerRound;
 
   return (
     <Surface

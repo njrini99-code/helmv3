@@ -32,6 +32,7 @@ import {
 } from '@/lib/coachhelm/v3/themes/taxonomy';
 import type {
   AssembledEvidence,
+  AssembledStanding,
   AssembledThemes,
   CauseNode,
   DriverLeaf,
@@ -43,52 +44,66 @@ import type {
 /** Strokes-per-round floor below which a theme has no material leak cause. */
 const LEAK_FLOOR = 0.3;
 
-/**
- * COLLEGE-REALISM RE-SCALE FACTORS — the fraction of the raw vs-PGA-Tour gap a
- * college player can realistically close, applied at READ TIME per category.
- *
- * WHY this exists: every upstream `counterfactual.strokes_saved_per_round` is
- * computed against the raw PGA-Tour ceiling. For a college player that gap
- * overstates realistically-closable strokes ~1.5–3×: a D1/D2 player who "fixes"
- * a leak lands at a college-good level, not Tour level. Showing the full Tour
- * gap as "strokes to gain" is quantitatively untrustworthy.
- *
- * EMPIRICAL ANCHOR: `baseline-registry.ts` carries REAL D2-vs-PGA putting
- * make-% ratios (e.g. 6–10ft D2 0.48 / PGA 0.55 ≈ 0.87; 10–15ft 0.28 / 0.31 ≈
- * 0.90). Those make-% RATIOS, however, UNDERSTATE the stroke realism: a college
- * player only closes PART of the Tour stroke gap even where the make-% gap is
- * narrow, because (a) the make-% ratio is not a stroke ratio, and (b) realistic
- * coachable improvement over a season is partial, not full convergence to the
- * better population. We therefore use CONSERVATIVE fractions BELOW the raw
- * make-% ratios — putting anchored a touch lower than its ~0.87–0.90 make-%
- * ratio to reflect that stroke convergence lags make-% convergence, and the
- * non-putting categories (no registry ratio yet) set to a uniform conservative
- * 0.6.
- *
- * This is a TRANSPARENT read-time approximation. It is explicitly a placeholder
- * pending the upstream DIVISION-baseline wiring (compute the counterfactual
- * against the player's actual division ceiling, not PGA) — that work is
- * deferred. Until then this constant is the single, documented knob, and the
- * honest raw Tour gap is preserved alongside every realistic value
- * (`tourGapPerRound`) so nothing is hidden.
- */
-const COLLEGE_REALISM_FACTOR: Record<InsightCategory, number> = {
-  putting: 0.55,
-  approach: 0.6,
-  short_game: 0.6,
-  tee: 0.6,
-  scoring: 0.6,
-  course_management: 0.6,
-  pressure: 0.6,
-};
+/** Below this player↔PGA span the standing has no usable orientation → fall back to the full Tour gap. */
+const TEAM_FRACTION_DENOM_EPS = 1e-6;
 
 /**
- * Safe lookup of the realism factor (strict `noUncheckedIndexedAccess`). An
- * unexpected category falls back to the most conservative table value so we
- * never over-state, and never read `undefined`.
+ * REALISTIC team-anchored stroke value for a cause.
+ *
+ * Product framing: the two honest baselines are PGA (the ceiling) and the
+ * player's TEAM AVERAGE (the realistic peer target). The upstream counterfactual
+ * (`tourGap`) measures the full gap to the PGA/Tour ceiling. The PRIMARY number
+ * we rank/size/display is the realistic gap to TEAM AVERAGE, computed as the
+ * fraction of that Tour gap that sits between the player and their team avg:
+ *
+ *   teamFraction = clamp( (player_value - team_avg) / (player_value - pga_value), 0, 1 )
+ *   realistic    = tourGap * teamFraction
+ *
+ * Why this is correct and direction-agnostic: numerator and denominator share
+ * the SAME orientation (both measured from `player_value`), so for a "lower is
+ * better" metric (3-putts) and a "higher is better" metric (GIR%) the ratio is
+ * the same positive fraction — the signs cancel. The fraction is the share of
+ * the player→PGA distance the player has yet to make up just to reach their own
+ * team's average.
+ *
+ * Guards (each → teamFraction = 1, i.e. NO team reference, fall back to the full
+ * Tour gap, which the UI labels honestly as "to Tour"):
+ *   - team_avg, player_value, or pga_value is null
+ *   - |player_value - pga_value| < eps (player already at the ceiling → no span)
+ *
+ * Already-beating-team case: if the player is at or better than the team average
+ * on this metric, the numerator flips sign (player→team-avg points the opposite
+ * way from player→PGA), so the ratio is ≤ 0 and clamps to 0 — there is NO
+ * realistic gain to be had versus peers, and PGA remains the (separate) ceiling.
+ *
+ * `tourGap` null/0 (suppressed/absent counterfactual) → 0, regardless of the
+ * team math (we never fabricate a stroke number).
  */
-function realismFactor(category: InsightCategory): number {
-  return COLLEGE_REALISM_FACTOR[category] ?? 0.55;
+function realisticTeamGap(
+  tourGap: number | null,
+  standing: AssembledStanding | null | undefined,
+): number {
+  if (tourGap == null || !Number.isFinite(tourGap)) return 0;
+
+  const playerValue = standing?.player_value ?? null;
+  const teamAvg = standing?.team_avg ?? null;
+  const pgaValue = standing?.pga_value ?? null;
+
+  // No usable team reference → fall back to the full Tour gap (teamFraction = 1).
+  if (playerValue == null || teamAvg == null || pgaValue == null) return tourGap;
+  const denom = playerValue - pgaValue;
+  if (Math.abs(denom) < TEAM_FRACTION_DENOM_EPS) return tourGap;
+
+  const teamFraction = clamp01((playerValue - teamAvg) / denom);
+  return tourGap * teamFraction;
+}
+
+/** Clamp to [0, 1] (NaN-safe → 0). */
+function clamp01(x: number): number {
+  if (!Number.isFinite(x)) return 0;
+  if (x < 0) return 0;
+  if (x > 1) return 1;
+  return x;
 }
 
 export interface AssembleThemesInput {
@@ -110,29 +125,59 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     if (row?.id) byId.set(row.id, row);
   }
 
-  // 2. Classify composites + collect every leaf id any composite claims.
+  // 2. Classify composites + decide which claimed leaves get DEMOTED.
+  //    PER-CATEGORY STROKE CONSERVATION (Change 2): a composite only OWNS (demotes
+  //    and absorbs the strokes of) the leaves whose category EQUALS the composite's
+  //    own category. A claimed leaf in a DIFFERENT category is NOT demoted — it
+  //    stays a top-level cause in its OWN theme (its strokes stay there, never
+  //    deleted, never double-counted) and is merely REFERENCED by the composite as
+  //    a cross-theme driver link. This is what keeps strokes conserved per category
+  //    and stops a cross-category composite from silently deleting a leaf's strokes.
+  //
+  //    `demotedLeafOwner` maps a demoted leaf id → the FIRST composite id that
+  //    claimed it (same-category). A leaf is demoted at most once, and its strokes
+  //    are absorbed by exactly that one owning composite — so even if two
+  //    same-category composites both claim a leaf, its strokes are NOT double-counted.
+  //    `claimedLeafIds` = every leaf any composite references (for driver threading).
+  const demotedLeafOwner = new Map<string, string>();
   const claimedLeafIds = new Set<string>();
   for (const row of rows) {
+    if (!row?.id) continue;
     const ev = readEvidence(row);
-    if (isComposite(ev)) {
-      for (const leafId of ev.source_insight_ids ?? []) {
-        if (typeof leafId === 'string' && leafId.length > 0) {
-          claimedLeafIds.add(leafId);
-        }
+    if (!isComposite(ev)) continue;
+    const compositeCategory = row.category ?? null;
+    for (const leafId of ev.source_insight_ids ?? []) {
+      if (typeof leafId !== 'string' || leafId.length === 0) continue;
+      claimedLeafIds.add(leafId);
+      const leaf = byId.get(leafId);
+      // Demote ONLY a same-category leaf (a real, resolvable row). A dangling or
+      // cross-category leaf is never demoted. First claimant wins ownership.
+      if (
+        leaf &&
+        leaf.category != null &&
+        leaf.category === compositeCategory &&
+        !demotedLeafOwner.has(leafId)
+      ) {
+        demotedLeafOwner.set(leafId, row.id);
       }
     }
   }
+  const demotedLeafIds: ReadonlySet<string> = new Set(demotedLeafOwner.keys());
 
-  // 3. Top-level rows = rows NOT demoted to a driver of some composite. Build a
-  //    CauseNode for each; resolve composite drivers via byId.
+  // 3. Top-level rows = rows NOT demoted into a composite. Build a CauseNode for
+  //    each; resolve composite drivers (same- AND cross-category) via byId. The
+  //    realistic team-anchored strokes are computed inside buildCause; a composite
+  //    additionally sums the realistic strokes of its DEMOTED (same-category) leaves
+  //    so the cascade carries real weight without double-counting (those leaves are
+  //    no longer top-level, so their strokes live only on the composite now).
   const causesByCategory = new Map<InsightCategory, CauseNode[]>();
   for (const row of rows) {
     if (!row?.id) continue;
-    if (claimedLeafIds.has(row.id)) continue; // demoted leaf — not top level
+    if (demotedLeafIds.has(row.id)) continue; // demoted same-category leaf — not top level
     if (!row.category) continue; // null/unknown category → skip (don't invent a theme)
     if (!getThemeDef(row.category)) continue; // unknown category → skip
 
-    const cause = buildCause(row, byId, row.category);
+    const cause = buildCause(row, byId, row.category, demotedLeafOwner);
     const bucket = causesByCategory.get(row.category);
     if (bucket) bucket.push(cause);
     else causesByCategory.set(row.category, [cause]);
@@ -258,32 +303,67 @@ function toDriverLeaves(row: EvidenceInsight | undefined): DriverLeaf[] {
   return drills.map((d) => ({ drill_id: d.id, slug: d.slug, title: d.title }));
 }
 
-/** Build a CauseNode (with composite drivers threaded in) from a top-level row. */
+/**
+ * Build a CauseNode (with composite drivers threaded in) from a top-level row.
+ *
+ * `demotedLeafOwner` maps each demoted (same-category) leaf id → the id of the
+ * single composite that OWNS it. It is used here to size a composite's realistic
+ * weight: a composite's `strokesSavedPerRound` = Σ realistic strokes of the
+ * leaves IT owns — see Change 2 in the file header. Ownership is unique, so a
+ * leaf claimed by two composites contributes its strokes only once. A
+ * non-composite cause sizes to its own team-anchored realistic gap.
+ */
 function buildCause(
   row: EvidenceInsight,
   byId: Map<string, EvidenceInsight>,
   category: InsightCategory,
+  demotedLeafOwner: ReadonlyMap<string, string>,
 ): CauseNode {
   const ev = readEvidence(row);
   const metric = typeof ev.metric === 'string' ? ev.metric : null;
+  const standing = ev.standing ?? null;
 
   const counterfactualSuppressed = !ev.counterfactual || ev.counterfactual.suppressed === true;
-  // Honest raw gap to the PGA-Tour ceiling (null when suppressed/absent), and
-  // the college-realistic re-scale used for ranking/sizing/display. We do NOT
+  // Honest raw gap to the PGA/Tour ceiling (null when suppressed/absent), and the
+  // REALISTIC gap to TEAM AVERAGE used for ranking/sizing/display. We do NOT
   // re-apply the 0.3 stat-noise floor here — upstream already applied it on the
   // raw Tour value; re-suppressing the (smaller) realistic value would over-thin.
   const tourGapPerRound = tourGapOf(ev);
-  const strokesSavedPerRound =
-    tourGapPerRound != null ? tourGapPerRound * realismFactor(category) : 0;
+  const ownRealistic = realisticTeamGap(tourGapPerRound, standing);
 
-  // Composite drivers: resolve each claimed leaf via byId; tolerate dangling refs.
+  // Composite drivers: resolve each CLAIMED leaf via byId; tolerate dangling refs.
+  // Both same-category (demoted) and cross-category (still top-level elsewhere)
+  // leaves render as driver links so the THEME→CAUSE→DRIVER cascade stays visible.
+  const composite = isComposite(ev);
   let drivers: RootDriver[] = [];
-  if (isComposite(ev)) {
+  // Composite weight: sum the realistic strokes of the SAME-CATEGORY leaves THIS
+  // composite demoted. Those leaves are no longer top-level, so their strokes are
+  // conserved here with no double-count. Cross-category leaves are excluded — they
+  // keep their strokes in their own theme. If a composite has no same-category
+  // leaves this stays 0 and the composite renders as a pure narrative link.
+  let compositeSameCategoryStrokes = 0;
+  let compositeSameCategoryTourGap = 0;
+  let compositeOwnedLeafCount = 0;
+  if (composite) {
     const ruleId = typeof ev.composite_rule_id === 'string' ? ev.composite_rule_id : undefined;
     drivers = (ev.source_insight_ids ?? [])
       .map((leafId): RootDriver | null => {
         const leaf = byId.get(leafId);
         if (!leaf) return null; // dangling ref — skip honestly
+        // Accrue weight only from the leaves THIS composite OWNS (same category and
+        // this row is the unique owner). Ownership is unique per leaf, so a leaf
+        // claimed by two composites is counted exactly once, on its owner. We sum
+        // BOTH the realistic team-gap AND the raw Tour gap from the SAME leaves, so
+        // the composite's "to Tour ceiling" is the conserved sum of its leaves'
+        // Tour gaps — never its own (usually absent) counterfactual. This keeps the
+        // realistic ≤ Tour invariant intact (each leaf's realistic ≤ its Tour gap).
+        if (leaf.category === category && demotedLeafOwner.get(leaf.id) === row.id) {
+          const leafEv = readEvidence(leaf);
+          const leafTourGap = tourGapOf(leafEv);
+          compositeSameCategoryStrokes += realisticTeamGap(leafTourGap, leafEv.standing ?? null);
+          compositeSameCategoryTourGap += leafTourGap ?? 0;
+          compositeOwnedLeafCount += 1;
+        }
         return {
           source: 'composite',
           composite_rule_id: ruleId,
@@ -296,16 +376,26 @@ function buildCause(
       .filter((d): d is RootDriver => d !== null);
   }
 
+  // A composite's display/ranking weight AND its Tour-ceiling number are the
+  // conserved sums of its demoted same-category leaves (NOT its own often-absent
+  // counterfactual), so the realistic ≤ Tour invariant holds. A normal cause uses
+  // its own realistic team gap + own Tour gap. A composite that owns no
+  // same-category leaves falls back to its own values (both typically 0/null).
+  const ownsLeaves = composite && compositeOwnedLeafCount > 0;
+  const strokesSavedPerRound = ownsLeaves ? compositeSameCategoryStrokes : ownRealistic;
+  const finalTourGapPerRound = ownsLeaves ? compositeSameCategoryTourGap : tourGapPerRound;
+
   return {
     insight_id: row.id,
     metric,
     title: row.title,
     content: row.content,
     strokesSavedPerRound,
-    tourGapPerRound,
+    tourGapPerRound: finalTourGapPerRound,
     counterfactualSuppressed,
-    standingPlayerValue: ev.standing?.player_value ?? null,
-    standingPgaValue: ev.standing?.pga_value ?? null,
+    standingPlayerValue: standing?.player_value ?? null,
+    standingPgaValue: standing?.pga_value ?? null,
+    standingTeamAvgValue: standing?.team_avg ?? null,
     drivers,
     drills: toDriverLeaves(row),
     canMakePlan: metric != null,
