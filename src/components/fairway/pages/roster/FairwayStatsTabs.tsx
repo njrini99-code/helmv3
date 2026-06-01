@@ -366,7 +366,7 @@ function TabBody({ tab, stats }: { tab: FairwayStatsTab; stats: GolfStats }) {
         <div className="space-y-1">
           <StatRow label="Fairway %" value={fmtPct(stats.fairwayPercentage)} highlight />
           <StatRow label="Driver Fairway %" value={fmtPct(stats.fairwayPctDriver)} />
-          <StatRow label="Driving Distance (avg)" value={finite(stats.drivingDistanceAvg) === null ? '—' : `${Math.round(stats.drivingDistanceAvg)} yds`} />
+          <StatRow label="Driving Distance (avg)" value={(() => { const d = finite(stats.drivingDistanceAvg); return d === null ? '—' : `${Math.round(d)} yds`; })()} />
           <StatRow label="Miss Left %" value={fmtPct(stats.missLeftPct)} />
           <StatRow label="Miss Right %" value={fmtPct(stats.missRightPct)} />
         </div>
