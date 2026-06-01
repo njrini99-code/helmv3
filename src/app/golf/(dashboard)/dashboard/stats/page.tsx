@@ -1,5 +1,7 @@
 import StatsClient from './stats-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
+import { FairwayPlayerStats } from '@/components/fairway/pages/coachhelm/FairwayPlayerStats';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -29,6 +31,18 @@ interface GolfStatsPageProps {
 export default async function GolfStatsPage({ searchParams }: GolfStatsPageProps) {
   const params = await searchParams;
   const playerId = params.player ?? null;
+
+  // Flag-on: the data-rich Fairway player stats surface (single-player view).
+  // It resolves the same player id the route resolves — `?player=` for a coach
+  // viewing a teammate, else the logged-in player via useGolfUser() — and
+  // renders in its own `.fairway-ds` scope on bg-canvas. Flag-off is unchanged.
+  if (isRedesignEnabled()) {
+    return (
+      <div className="min-h-full bg-canvas">
+        <FairwayPlayerStats initialPlayerId={playerId} />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

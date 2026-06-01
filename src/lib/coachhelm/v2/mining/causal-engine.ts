@@ -451,7 +451,24 @@ export class CausalEngine {
   }
 
   /**
-   * Saves relationships to database
+   * Saves relationships to database — IDEMPOTENT, non-destructive.
+   *
+   * The table has NO natural-key unique constraint and `id` was minted fresh
+   * with `crypto.randomUUID()` on every run, so the prior `upsert(onConflict:'id')`
+   * never collided and every per-round review APPENDED a duplicate copy (one
+   * gir→scoring relationship existed 1,831×). We fix this WITHOUT a migration,
+   * WITHOUT a unique constraint, and WITHOUT any delete-then-insert (the GolfHelm
+   * hard rule: no destructive writes in a save path):
+   *
+   *   For each relationship, look up an existing row by NATURAL KEY
+   *   (player_id, cause, effect, relationship_type). If one exists, UPDATE it in
+   *   place (refreshing the engine output) and KEEP its existing id; otherwise
+   *   INSERT with the freshly-minted id. Re-runs converge on one row per logical
+   *   relationship instead of growing unboundedly.
+   *
+   * The natural key MUST stay consistent with the read action's JS dedupe key
+   * (`player_id|cause|effect|relationship_type` — see
+   * `src/app/golf/actions/causal-relationships.ts`).
    */
   private async saveRelationships(
     relationships: CausalRelationship[]
@@ -465,8 +482,58 @@ export class CausalEngine {
     const table = supabase.from('golf_causal_relationships' as any) as any;
 
     for (const rel of relationships) {
-      const { error } = await table.upsert(
-        {
+      const nowIso = new Date().toISOString();
+
+      // The mutable engine-output payload, shared by both the update and the
+      // insert paths. `id`, `player_id`, and the natural-key columns are NOT in
+      // here because they identify the row (set only on insert / matched on update).
+      const payload = {
+        relationship_type: rel.relationshipType,
+        strength: rel.strength,
+        confidence: rel.confidence,
+        mechanism: rel.mechanism,
+        confounders: rel.confounders,
+        dose_response: rel.doseResponse,
+        intervention_potential: rel.interventionPotential,
+        evidence: rel.evidence,
+        validation_count: rel.validationCount,
+        updated_at: nowIso,
+      };
+
+      // Look up an existing row by NATURAL KEY (player_id, cause, effect,
+      // relationship_type). `relationship_type` is part of the key so a
+      // direct→mediated reclassification of the same cause/effect remains its
+      // own logical row rather than overwriting the other.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing, error: lookupError } = await table
+        .select('id')
+        .eq('player_id', rel.playerId)
+        .eq('cause', rel.cause)
+        .eq('effect', rel.effect)
+        .eq('relationship_type', rel.relationshipType)
+        .limit(1)
+        .maybeSingle();
+
+      if (lookupError) {
+        throw new Error(
+          `Failed to look up CoachHelm causal relationship: ${lookupError.message}`
+        );
+      }
+
+      if (existing?.id) {
+        // UPDATE in place — refresh the engine output, keep the existing id.
+        const { error: updateError } = await table
+          .update(payload)
+          .eq('id', existing.id);
+
+        if (updateError) {
+          throw new Error(
+            `Failed to update CoachHelm causal relationship: ${updateError.message}`
+          );
+        }
+      } else {
+        // INSERT a new row with the freshly-minted id + identity columns.
+        const { error: insertError } = await table.insert({
           id: rel.id,
           player_id: rel.playerId,
           team_id: rel.teamId,
@@ -474,23 +541,14 @@ export class CausalEngine {
           cause_metric: rel.causeMetric,
           effect: rel.effect,
           effect_metric: rel.effectMetric,
-          relationship_type: rel.relationshipType,
-          strength: rel.strength,
-          confidence: rel.confidence,
-          mechanism: rel.mechanism,
-          confounders: rel.confounders,
-          dose_response: rel.doseResponse,
-          intervention_potential: rel.interventionPotential,
-          evidence: rel.evidence,
-          validation_count: rel.validationCount,
-        },
-        { onConflict: 'id' }
-      );
+          ...payload,
+        });
 
-      if (error) {
-        throw new Error(
-          `Failed to save CoachHelm causal relationship: ${error.message}`
-        );
+        if (insertError) {
+          throw new Error(
+            `Failed to save CoachHelm causal relationship: ${insertError.message}`
+          );
+        }
       }
     }
   }

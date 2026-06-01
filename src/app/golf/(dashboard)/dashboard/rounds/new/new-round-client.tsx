@@ -42,6 +42,8 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer';
 import { RoundSubmitOverlay } from '@/components/golf/RoundSubmitOverlay';
+import { FairwaySaveRoundModal } from '@/components/fairway/pages/rounds-new/FairwaySaveRoundModal';
+import { FairwayRoundSubmitOverlay } from '@/components/fairway/pages/rounds-new/FairwayRoundSubmitOverlay';
 import { useToast } from '@/components/ui/sonner';
 import { triggerHaptic } from '@/lib/utils/capacitor';
 // DraftIndicator removed - was too noisy
@@ -56,6 +58,9 @@ import {
   isRecoverableRoundSubmitError,
   type EmergencySaveData
 } from '@/lib/utils/emergency-save';
+import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
+import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 
 type Hole = RoundHole;
 
@@ -82,6 +87,11 @@ interface NewRoundClientProps {
 
 export default function NewRoundClient({ existingInProgressRound }: NewRoundClientProps) {
   const prefersReducedMotion = useReducedMotion();
+  const redesign = useRedesign();
+  // Flag-gated overlay swaps — Fairway versions share the legacy prop contracts
+  // exactly, so flag-off renders the legacy components byte-for-byte.
+  const ExitRoundModal = redesign ? FairwaySaveRoundModal : SaveRoundModal;
+  const SubmitOverlay = redesign ? FairwayRoundSubmitOverlay : RoundSubmitOverlay;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -1493,6 +1503,108 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
   );
 
   // ============================================================================
+  // FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned ENTRY screens
+  // (resume gate + setup + holes) from the SAME state + handlers. The tracking
+  // and submitting steps still fall through to the legacy render below (a later
+  // phase). Flag OFF → every legacy branch below is byte-for-byte unchanged. No
+  // mutation/autosave/optimistic-lock logic moves; this is presentation only.
+  // ============================================================================
+  if (redesign && (showResumePrompt || step === 'setup' || step === 'holes')) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayNewRoundEntry
+          step={step}
+          showResumePrompt={showResumePrompt}
+          existingInProgressRound={existingInProgressRound}
+          onContinueResume={() =>
+            existingInProgressRound &&
+            router.push(`/golf/dashboard/rounds/continue/${existingInProgressRound.id}`)
+          }
+          onStartFresh={() => setShowResumePrompt(false)}
+          recentCourses={recentCourses}
+          onQuickPickConfirm={handleQuickPickConfirm}
+          isOnline={connectionStatus.isOnline}
+          loadingSavedCourses={loadingSavedCourses}
+          savedCourses={savedCourses}
+          filteredSavedCourses={filteredSavedCourses}
+          courseMode={courseMode}
+          onCourseModeChange={(next) => {
+            if (next === 'saved') {
+              setCourseMode('saved');
+              setCourseSearchQuery('');
+              if (!selectedCourseId && savedCourses.length > 0) {
+                handleSavedCourseSelect(savedCourses[0]!.id);
+              }
+            } else {
+              setCourseMode('new');
+              setSelectedCourseId(null);
+              resolvedCourseIdRef.current = null;
+              setPreloadedHoleConfigs(null);
+              setCourseSearchQuery('');
+              setSetupData((prev) => ({
+                ...prev,
+                courseName: '',
+                courseCity: '',
+                courseState: '',
+                courseRating: '',
+                courseSlope: '',
+                teesPlayed: 'White',
+              }));
+            }
+          }}
+          courseSearchQuery={courseSearchQuery}
+          setCourseSearchQuery={setCourseSearchQuery}
+          selectedCourseId={selectedCourseId}
+          onSavedCourseSelect={handleSavedCourseSelect}
+          selectedCourse={selectedCourse}
+          onClearSelectedCourse={() => {
+            setSelectedCourseId(null);
+            setPreloadedHoleConfigs(null);
+            setSetupData((prev) => ({
+              ...prev,
+              courseName: '',
+              courseCity: '',
+              courseState: '',
+              courseRating: '',
+              courseSlope: '',
+              teesPlayed: 'White',
+            }));
+          }}
+          setupData={setupData}
+          setSetupData={setSetupData}
+          saveCourseChecked={saveCourseChecked}
+          onToggleSaveCourse={() => setSaveCourseChecked(!saveCourseChecked)}
+          holesPerRound={holesPerRound}
+          setHolesPerRound={setHolesPerRound}
+          preloadedHoleConfigs={preloadedHoleConfigs}
+          nineSelection={nineSelection}
+          setNineSelection={setNineSelection}
+          allActiveQualifiers={allActiveQualifiers}
+          loadingActiveQualifiers={loadingActiveQualifiers}
+          onPickActiveQualifier={(q) => {
+            setSetupData((prev) => ({ ...prev, roundType: 'qualifier' }));
+            setSelectedQualifierId(q.id);
+          }}
+          qualifiers={qualifiers}
+          loadingQualifiers={loadingQualifiers}
+          qualifierError={qualifierError}
+          selectedQualifierId={selectedQualifierId}
+          setSelectedQualifierId={setSelectedQualifierId}
+          availableRounds={availableRounds}
+          selectedRoundNumber={selectedRoundNumber}
+          setSelectedRoundNumber={setSelectedRoundNumber}
+          error={error}
+          isStartingRound={isStartingRound}
+          onSubmit={handleSetupSubmit}
+          onCancel={() => router.back()}
+          onHolesSave={handleHolesSave}
+          onHolesBack={() => setStep('setup')}
+        />
+      </div>
+    );
+  }
+
+  // ============================================================================
   // RESUME IN-PROGRESS ROUND PROMPT
   // ============================================================================
   if (showResumePrompt && existingInProgressRound) {
@@ -2257,6 +2369,27 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         </div>
       )}
 
+      {/* FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned shot-tracking
+          screen from the SAME props; flag OFF keeps the legacy component
+          byte-for-byte. Presentation only — no mutation/autosave logic moves. */}
+      {redesign ? (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayShotTracking
+            holes={holes}
+            currentHoleIndex={currentHoleIndex}
+            onHoleComplete={handleHoleComplete}
+            onHoleStatsUpdate={handleHoleStatsUpdate}
+            onSaveShot={handleSaveShot}
+            onExit={() => setShowExitModal(true)}
+            onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
+            initialShots={activeHoleShots}
+            initialShotNumber={activeShotNumber}
+            onAutoSave={handleAutoSave}
+            autoSaveInterval={15000}
+            autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+          />
+        </div>
+      ) : (
       <ShotTrackingComprehensive
         holes={holes}
         currentHoleIndex={currentHoleIndex}
@@ -2271,6 +2404,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         autoSaveInterval={15000}
         autoSaveDisabled={step === 'submitting' || !!completedRoundId}
       />
+      )}
 
       {/* Offline Warning Banner - shows when offline or has slow connection */}
       {step === 'tracking' && showOfflineWarning && (
@@ -2369,7 +2503,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       </Drawer>
 
       {/* Save Round Modal */}
-      <SaveRoundModal
+      <ExitRoundModal
         isOpen={showExitModal}
         onClose={() => setShowExitModal(false)}
         onSaveForLater={handleSaveForLater}
@@ -2622,7 +2756,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
       </LazyMotion>
 
       {/* Submit Overlay — shows during submission, success celebration, and errors */}
-      <RoundSubmitOverlay
+      <SubmitOverlay
         isVisible={step === 'submitting'}
         totalScore={submittingTotalScore}
         toPar={submittingToPar}

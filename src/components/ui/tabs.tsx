@@ -88,7 +88,7 @@ const TabsTrigger = React.forwardRef<
     data-variant={variant}
     className={cn(
       'group relative inline-flex items-center justify-center gap-2 whitespace-nowrap outline-none',
-      'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'disabled:pointer-events-none disabled:opacity-40',
       'focus-visible:ring-2 focus-visible:ring-primary-500/30 focus-visible:ring-offset-0',
       variant === 'pills' && [
@@ -100,7 +100,7 @@ const TabsTrigger = React.forwardRef<
       variant === 'underline' && [
         'pb-3 text-[14px] font-medium tracking-[-0.005em]',
         'before:absolute before:inset-x-0 before:-bottom-px before:h-[2px] before:scale-x-0 before:bg-warm-900',
-        'before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'before:transition-transform before:duration-300 before:[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'data-[state=active]:text-warm-900 data-[state=active]:before:scale-x-100',
         'data-[state=inactive]:hover:text-warm-700',
       ],
@@ -133,7 +133,7 @@ const TabsContent = React.forwardRef<
     className={cn(
       'mt-6 outline-none',
       'data-[state=active]:animate-in data-[state=active]:fade-in-0',
-      'data-[state=active]:duration-300 data-[state=active]:ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'data-[state=active]:duration-300 data-[state=active]:[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       className,
     )}
     {...props}

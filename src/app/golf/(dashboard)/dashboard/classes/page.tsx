@@ -19,6 +19,8 @@ import { AnimatedNumber } from '@/components/ui/animated-number';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatTimeDisplay, formatDaysDisplay, generateClassColor, type ParsedClass } from '@/lib/utils/schedule-parser';
 import { syncClassToCalendar, removeClassFromCalendar } from '@/app/golf/actions/calendar-sync';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayGolfClasses } from '@/components/fairway/pages/player-game';
 
 // PlayerClass interface matches the actual golf_player_classes table schema
 interface PlayerClass {
@@ -394,6 +396,100 @@ export default function GolfClassesPage() {
 
   // Calculate total credits
   const totalCredits = classes.reduce((sum, cls) => sum + (cls.credits ?? 0), 0);
+
+  // ── Fairway redesign fork (ADDITIVE) ────────────────────────────────────────
+  // Presentation-only re-skin. Reuses the SAME state + verbatim handlers (the
+  // golf_player_classes writes + calendar-sync actions are untouched). The
+  // modals below are the SAME instances the legacy path mounts, so add/edit/
+  // import/detail/delete-all all flow exactly as the legacy page wired them.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayGolfClasses
+          classes={classes}
+          loading={loading}
+          hasTeam={Boolean(teamId)}
+          classesByDay={classesByDay}
+          totalCredits={totalCredits}
+          parseClassName={parseClassName}
+          getLocationDisplay={getLocationDisplay}
+          formatTimeDisplay={formatTimeDisplay}
+          formatDaysDisplay={formatDaysDisplay}
+          onAddClass={() => { setEditingClass(null); setShowAddModal(true); }}
+          onImportSchedule={() => setShowUploadModal(true)}
+          onClassClick={handleClassClick}
+          onDeleteAll={handleDeleteAllClasses}
+        />
+
+        {/* Modals — the SAME instances + props the legacy return mounts. */}
+        <AddClassModal
+          isOpen={showAddModal}
+          onClose={() => { setShowAddModal(false); setEditingClass(null); }}
+          onSave={editingClass?.id ? handleUpdateClass : handleAddClass}
+          editingClass={editingClass}
+          existingClasses={classes.map(cls => ({
+            id: cls.id,
+            days: cls.days,
+            start_time: cls.start_time,
+            end_time: cls.end_time,
+            class_name: cls.class_name,
+          }))}
+        />
+
+        <UploadScheduleModal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          onParsed={handleParsedClasses}
+        />
+
+        <ConfirmClassesModal
+          isOpen={showConfirmModal}
+          onClose={() => { setShowConfirmModal(false); setParsedClasses([]); }}
+          onConfirm={handleConfirmClasses}
+          parsedClasses={parsedClasses}
+        />
+
+        <ConfirmDialog
+          open={showDeleteAllConfirm}
+          title="Delete all classes?"
+          message={`This will remove all ${classes.length} class${classes.length === 1 ? '' : 'es'} from your schedule and your calendar. This action cannot be undone.`}
+          confirmLabel="Delete All"
+          cancelLabel="Cancel"
+          variant="danger"
+          isLoading={deletingAll}
+          onConfirm={confirmDeleteAllClasses}
+          onCancel={() => setShowDeleteAllConfirm(false)}
+        />
+
+        <ClassDetailModal
+          isOpen={showDetailModal}
+          onClose={() => { setShowDetailModal(false); setSelectedClass(null); }}
+          onEdit={handleEditFromDetail}
+          onDelete={handleDeleteClass}
+          classData={selectedClass ? (() => {
+            const { code, name } = parseClassName(selectedClass.class_name);
+            const location = getLocationDisplay(selectedClass);
+            return {
+              ...selectedClass,
+              course_code: code,
+              course_name: name,
+              instructor: selectedClass.instructor || '',
+              days: selectedClass.days || [],
+              start_time: selectedClass.start_time || '',
+              end_time: selectedClass.end_time || '',
+              location: location || '',
+              building: selectedClass.building || '',
+              room: selectedClass.room || '',
+              credits: selectedClass.credits,
+              semester: '', // Not stored in DB
+              color: selectedClass.color || 'var(--color-primary-600)',
+              notes: selectedClass.notes || '',
+            };
+          })() : null}
+        />
+      </div>
+    );
+  }
 
   // No team — show helpful empty state instead of silently failing on add/edit
   if (!teamId) {

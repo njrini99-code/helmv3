@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef, us
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { getPlayerNotificationCounts, markAnnouncementsSeen as markSeenAction } from '@/app/golf/actions/player-notifications';
 import { getCoachNotificationCounts } from '@/app/golf/actions/coach-notifications';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
 import type { GolfAnnouncementMeta } from '@/lib/types/golf';
 import { isNativeApp } from '@/lib/utils/capacitor';
 
@@ -17,6 +18,12 @@ interface NotificationBadges {
   messages: number;
   travel: number;
   calendarNotifications: number;
+  /**
+   * Coach-only — unread urgent/high open CoachHelm signals (getAlertCounts).
+   * Feeds the single "CoachHelm AI" sidebar entry badge. 0 → no badge (honest,
+   * never a fake "0"); players always read 0.
+   */
+  coachhelm: number;
   total: number;
   unseenAnnouncements: GolfAnnouncementMeta[];
   hasUnseenAnnouncements: boolean;
@@ -30,6 +37,7 @@ const EMPTY_BADGES: NotificationBadges = {
   messages: 0,
   travel: 0,
   calendarNotifications: 0,
+  coachhelm: 0,
   total: 0,
   unseenAnnouncements: [],
   hasUnseenAnnouncements: false,
@@ -58,6 +66,7 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
   const [messages, setMessages] = useState(0);
   const [travel, setTravel] = useState(0);
   const [calendarNotifications, setCalendarNotifications] = useState(0);
+  const [coachhelm, setCoachhelm] = useState(0);
   const [unseenAnnouncements, setUnseenAnnouncements] = useState<GolfAnnouncementMeta[]>([]);
   const isVisibleRef = useRef(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -91,11 +100,21 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
           setTravel(0);
           setUnseenAnnouncements([]);
         }
+        // CoachHelm unread-signal badge — same poll, additive. Failure/empty
+        // leaves the count at 0 (honest: no badge), never a fabricated value.
+        if (coachId) {
+          try {
+            const alerts = await getAlertCounts(coachId);
+            setCoachhelm(alerts.success ? (alerts.counts?.critical ?? 0) : 0);
+          } catch {
+            setCoachhelm(0);
+          }
+        }
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error(err);
     }
-  }, [isActive, isPlayer, isCoach, playerId, userId, teamId]);
+  }, [isActive, isPlayer, isCoach, playerId, userId, teamId, coachId]);
 
   const handleMarkSeen = useCallback(async () => {
     setUnseenAnnouncements([]);
@@ -145,13 +164,17 @@ export function NotificationBadgeProvider({ children }: { children: React.ReactN
       messages,
       travel,
       calendarNotifications,
+      coachhelm,
+      // `coachhelm` is intentionally excluded from `total` — the rail badge map
+      // reads it directly; the aggregate "total" stays the messaging/calendar
+      // unread sum it has always been.
       total: announcements + tasks + messages + travel + calendarNotifications,
       unseenAnnouncements,
       hasUnseenAnnouncements: unseenAnnouncements.length > 0,
       markAnnouncementsSeen: handleMarkSeen,
       refetch: fetchCounts,
     };
-  }, [isActive, announcements, tasks, messages, travel, calendarNotifications, unseenAnnouncements, handleMarkSeen, fetchCounts]);
+  }, [isActive, announcements, tasks, messages, travel, calendarNotifications, coachhelm, unseenAnnouncements, handleMarkSeen, fetchCounts]);
 
   return (
     <NotificationBadgeContext.Provider value={value}>

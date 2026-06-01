@@ -8,6 +8,8 @@
 
 Settings is the role-aware configuration hub for account information, preferences, notifications, golf profile/scoring, team settings, CoachHelm toggles, and coaching intelligence.
 
+The per-category notification page is the player-scoped V3 notification authority. It excludes coach-only categories from the player matrix, rolls back failed optimistic saves, and shows a non-404 unavailable state when a coach without a player profile reaches the route.
+
 Some preferences are saved locally and not yet consumed globally, so agents should distinguish persisted UI preferences from behavior that is actually applied.
 
 ## Primary Entry Points
@@ -61,6 +63,7 @@ Some preferences are saved locally and not yet consumed globally, so agents shou
 - Appearance preferences are saved but not broadly consumed.
 - Location defaults are saved but round creation may not prefill from them.
 - Notification UI can drift from actual push/email implementation.
+- Coach notification preferences are still not generalized into a V3 coach-scoped notification state table; coach preferences remain a backend/product backlog item.
 - CoachHelm toggle/settings can affect AI behavior without obvious downstream feedback.
 
 ## Tests To Prefer

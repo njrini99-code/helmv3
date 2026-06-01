@@ -1,0 +1,467 @@
+'use server';
+
+/**
+ * ============================================================================
+ * stats-leak-maps — shared, read-only leak-map loader (BATCH 0 / Item 0a)
+ * ----------------------------------------------------------------------------
+ * Derives putt-make%-by-distance and approach-proximity-by-distance "leak
+ * maps" from RAW `golf_shots`, compared against `golf_pga_standards`. The
+ * per-bucket stats-cache columns are populated for only 0-1 of 6 demo players,
+ * so we compute from raw shots (never the cache) — see spec-stats-coach §0.
+ *
+ * Consumed by BOTH stats surfaces:
+ *   - coach  → `getTeamLeakMaps(teamId)` (team aggregate) + per-player drill-down
+ *   - player → `getPuttMakeLeakMap` / `getApproachProximityLeakMap` /
+ *              `getPlayerStandingRows` (single player)
+ *
+ * ADDITIVE + read-only (SELECT only). No DDL, no existing loader changed.
+ *
+ * AUTH:
+ *   - team-level export gates on the golf coach session (mirrors
+ *     `stats-intelligence.ts:getTeamStatsIntelligence`).
+ *   - player-level exports gate on `verifyPlayerAccess` (re-exported from
+ *     `stats-data.ts`) so a coach only sees their own team's players and a
+ *     player only sees themselves.
+ *
+ * UNIT NORMALIZATION (critical — confirmed on the demo team):
+ *   `golf_shots.distance_to_hole_after` is stored in MIXED units per row via
+ *   `distance_unit_after` ('feet' OR 'yards'); PGA proximity refs are in FEET.
+ *   We normalize every after-value to feet (`yards → *3`) and drop outliers
+ *   (> 150 ft post-normalization, e.g. a mis-entered 265 yd blow-up shot) so
+ *   the average isn't dragged. `distance_to_hole_before` is uniformly yards.
+ * ========================================================================== */
+
+import { createClient } from '@/lib/supabase/server';
+import { getGolfSessionProfile } from '@/lib/auth/session';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { logServerError } from '@/lib/server-error-logger';
+import { describeError } from '@/lib/utils/describe-error';
+
+import { verifyPlayerAccess } from './stats-data';
+import type {
+  LeakBucket,
+  LeakMapResult,
+  PlayerLeakMaps,
+  PlayerStandingRow,
+  TeamLeakMaps,
+} from './stats-leak-maps-types';
+
+// ============================================================================
+// AUTH GUARD (mirrors stats-data.ts:47-59 — verifyPlayerAccess is imported)
+// ============================================================================
+
+/**
+ * Resolve the authenticated user. Mirrors the `requireAuth()` pattern in
+ * `stats-data.ts:47-59`; kept local because that helper is intentionally
+ * unexported (the spec permits exporting only `verifyPlayerAccess`).
+ */
+async function requireAuth() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    await logServerError('[LeakMaps] Auth error: no user session', {
+      action: 'stats_leak_maps.requireAuth',
+    });
+    throw new Error('Unauthorized');
+  }
+  return { supabase, user };
+}
+
+// ============================================================================
+// BUCKET DEFINITIONS (mirror metric-config.ts band edges exactly)
+// ============================================================================
+
+/** Putt-make% bands, low → high feet. The 0-3 ft band has no PGA standard. */
+const PUTT_BANDS: ReadonlyArray<{
+  bucket_id: string;
+  label: string;
+  metric_id: string | null;
+  min: number;
+  /** exclusive upper edge; null = open-ended (25+). */
+  max: number | null;
+}> = [
+  { bucket_id: '0_3', label: '0-3 ft', metric_id: null, min: 0, max: 3 },
+  { bucket_id: '3_5', label: '3-5 ft', metric_id: 'putts_made_3_5ft_pct', min: 3, max: 5 },
+  { bucket_id: '5_10', label: '5-10 ft', metric_id: 'putts_made_5_10ft_pct', min: 5, max: 10 },
+  { bucket_id: '10_15', label: '10-15 ft', metric_id: 'putts_made_10_15ft_pct', min: 10, max: 15 },
+  { bucket_id: '15_25', label: '15-25 ft', metric_id: 'putts_made_15_25ft_pct', min: 15, max: 25 },
+  { bucket_id: '25_plus', label: '25+ ft', metric_id: 'putts_made_25_plus_ft_pct', min: 25, max: null },
+];
+
+/** Approach-proximity bands bucketed on `distance_to_hole_before` (yards). */
+const APPROACH_BANDS: ReadonlyArray<{
+  bucket_id: string;
+  label: string;
+  metric_id: string;
+  min: number;
+  max: number | null;
+}> = [
+  { bucket_id: '50_125', label: '50-125 yd', metric_id: 'approach_proximity_50_125ft', min: 50, max: 125 },
+  { bucket_id: '125_175', label: '125-175 yd', metric_id: 'approach_proximity_125_175ft', min: 125, max: 175 },
+  { bucket_id: '175_plus', label: '175+ yd', metric_id: 'approach_proximity_175_plus_ft', min: 175, max: null },
+];
+
+/** Drop normalized after-distances above this (ft): a mis-entered blow-up shot. */
+const APPROACH_PROXIMITY_CEILING_FT = 150;
+/** Ignore approach attempts shorter than this band floor (yd). */
+const APPROACH_MIN_BEFORE_YD = 50;
+
+/** Cap raw rows pulled per surface to stay within statement_timeout. */
+const MAX_SHOT_ROWS = 20000;
+
+// ============================================================================
+// RAW ROW SHAPES (golf_shots is in generated types; columns confirmed present)
+// ============================================================================
+
+interface PuttRow {
+  round_id: string;
+  putt_distance_feet: number | null;
+  putt_made: boolean | null;
+}
+
+interface ApproachRow {
+  round_id: string;
+  distance_to_hole_before: number | null;
+  distance_to_hole_after: number | null;
+  distance_unit_after: string | null;
+}
+
+interface PgaRefRow {
+  metric_id: string;
+  pga_tour_value: number | null;
+  div1_avg_value: number | null;
+}
+
+// ============================================================================
+// SHARED HELPERS
+// ============================================================================
+
+/** Normalize a raw after-distance to FEET given its per-row unit. */
+function toFeet(value: number, unit: string | null): number {
+  // PGA proximity refs are in feet; rows tagged 'yards' must be scaled.
+  return unit === 'yards' ? value * 3 : value;
+}
+
+/** Find the band for a value: [min, max) with the last band open-ended. */
+function bandFor<T extends { min: number; max: number | null }>(
+  bands: ReadonlyArray<T>,
+  value: number,
+): T | null {
+  for (const band of bands) {
+    if (value < band.min) continue;
+    if (band.max === null || value < band.max) return band;
+  }
+  return null;
+}
+
+/** Pull the PGA reference rows for a set of metric ids once. */
+async function loadPgaRefs(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  metricIds: string[],
+): Promise<Map<string, PgaRefRow>> {
+  const refs = new Map<string, PgaRefRow>();
+  if (metricIds.length === 0) return refs;
+  const { data } = await supabase
+    .from('golf_pga_standards')
+    .select('metric_id, pga_tour_value, div1_avg_value')
+    .in('metric_id', metricIds);
+  for (const row of (data ?? []) as PgaRefRow[]) {
+    refs.set(row.metric_id, row);
+  }
+  return refs;
+}
+
+/**
+ * Resolve completed-round ids for a set of player ids. Self-contained so the
+ * loader doesn't depend on the calling page recomputing the round window.
+ */
+async function completedRoundIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  playerIds: string[],
+): Promise<string[]> {
+  if (playerIds.length === 0) return [];
+  const { data } = await supabase
+    .from('golf_rounds')
+    .select('id')
+    .in('player_id', playerIds)
+    .eq('status', 'completed');
+  return (data ?? [])
+    .map((r) => (r as { id: string }).id)
+    .filter((id): id is string => typeof id === 'string');
+}
+
+// ============================================================================
+// AGGREGATION — putting
+// ============================================================================
+
+async function buildPuttBuckets(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  roundIds: string[],
+): Promise<LeakBucket[]> {
+  const metricIds = PUTT_BANDS
+    .map((b) => b.metric_id)
+    .filter((id): id is string => id !== null);
+  const refs = await loadPgaRefs(supabase, metricIds);
+
+  // attempts = gradeable putts (putt_made non-null); made = putt_made === true.
+  const made = new Map<string, number>();
+  const gradeable = new Map<string, number>();
+
+  if (roundIds.length > 0) {
+    const { data } = await supabase
+      .from('golf_shots')
+      .select('round_id, putt_distance_feet, putt_made')
+      .in('round_id', roundIds)
+      .eq('shot_type', 'putting')
+      .not('putt_distance_feet', 'is', null)
+      .limit(MAX_SHOT_ROWS);
+
+    for (const row of (data ?? []) as PuttRow[]) {
+      const ft = row.putt_distance_feet;
+      if (ft === null || Number.isNaN(ft)) continue;
+      const band = bandFor(PUTT_BANDS, ft);
+      if (!band) continue;
+      // Only rows with a known outcome count toward make% (null = ungraded).
+      if (row.putt_made === null) continue;
+      gradeable.set(band.bucket_id, (gradeable.get(band.bucket_id) ?? 0) + 1);
+      if (row.putt_made === true) {
+        made.set(band.bucket_id, (made.get(band.bucket_id) ?? 0) + 1);
+      }
+    }
+  }
+
+  return PUTT_BANDS.map((band) => {
+    const n = gradeable.get(band.bucket_id) ?? 0;
+    const ref = band.metric_id ? refs.get(band.metric_id) : undefined;
+    return {
+      metric_id: band.metric_id,
+      bucket_id: band.bucket_id,
+      label: band.label,
+      team_value: n > 0 ? (100 * (made.get(band.bucket_id) ?? 0)) / n : null,
+      pga_value: ref?.pga_tour_value ?? null,
+      div1_value: ref?.div1_avg_value ?? null,
+      sample_n: n,
+    };
+  });
+}
+
+// ============================================================================
+// AGGREGATION — approach proximity
+// ============================================================================
+
+async function buildApproachBuckets(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  roundIds: string[],
+): Promise<LeakBucket[]> {
+  const refs = await loadPgaRefs(supabase, APPROACH_BANDS.map((b) => b.metric_id));
+
+  const sumFt = new Map<string, number>();
+  const count = new Map<string, number>();
+
+  if (roundIds.length > 0) {
+    const { data } = await supabase
+      .from('golf_shots')
+      .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after')
+      .in('round_id', roundIds)
+      .eq('shot_type', 'approach')
+      .not('distance_to_hole_before', 'is', null)
+      .not('distance_to_hole_after', 'is', null)
+      .limit(MAX_SHOT_ROWS);
+
+    for (const row of (data ?? []) as ApproachRow[]) {
+      const beforeYd = row.distance_to_hole_before;
+      const afterRaw = row.distance_to_hole_after;
+      if (beforeYd === null || Number.isNaN(beforeYd)) continue;
+      if (afterRaw === null || Number.isNaN(afterRaw)) continue;
+      if (beforeYd < APPROACH_MIN_BEFORE_YD) continue;
+
+      const band = bandFor(APPROACH_BANDS, beforeYd);
+      if (!band) continue;
+
+      // Mixed units → normalize to feet, then drop blow-up outliers.
+      const afterFt = toFeet(afterRaw, row.distance_unit_after);
+      if (afterFt < 0 || afterFt > APPROACH_PROXIMITY_CEILING_FT) continue;
+
+      sumFt.set(band.bucket_id, (sumFt.get(band.bucket_id) ?? 0) + afterFt);
+      count.set(band.bucket_id, (count.get(band.bucket_id) ?? 0) + 1);
+    }
+  }
+
+  return APPROACH_BANDS.map((band) => {
+    const n = count.get(band.bucket_id) ?? 0;
+    const ref = refs.get(band.metric_id);
+    return {
+      metric_id: band.metric_id,
+      bucket_id: band.bucket_id,
+      label: band.label,
+      team_value: n > 0 ? (sumFt.get(band.bucket_id) ?? 0) / n : null,
+      pga_value: ref?.pga_tour_value ?? null,
+      div1_value: ref?.div1_avg_value ?? null,
+      sample_n: n,
+    };
+  });
+}
+
+// ============================================================================
+// PUBLIC EXPORTS
+// ============================================================================
+
+/**
+ * Team-level leak maps (putting + approach) for the coach stats surface.
+ * Gates on the golf coach session; resolves the team via organization_id
+ * when `teamId` is omitted, then aggregates raw shots across the active
+ * roster's completed rounds.
+ */
+export async function getTeamLeakMaps(
+  teamId?: string,
+): Promise<LeakMapResult<TeamLeakMaps>> {
+  try {
+    const session = await getGolfSessionProfile();
+    if (!session?.coach) return { success: false, error: 'Unauthorized' };
+    const supabase = await createClient();
+
+    let resolvedTeamId: string | null = teamId ?? null;
+    if (!resolvedTeamId && session.coach.organization_id) {
+      const { data: team } = await supabase
+        .from('golf_teams')
+        .select('id')
+        .eq('organization_id', session.coach.organization_id)
+        .maybeSingle();
+      resolvedTeamId = team?.id ?? null;
+    }
+    if (!resolvedTeamId) return { success: false, error: 'No team found for coach' };
+
+    const { data: members } = await supabase
+      .from('golf_team_members')
+      .select('player_id')
+      .eq('team_id', resolvedTeamId)
+      .eq('status', 'active');
+
+    const playerIds = (members ?? [])
+      .map((m) => m.player_id)
+      .filter((id): id is string => typeof id === 'string');
+
+    const roundIds = await completedRoundIds(supabase, playerIds);
+
+    const [putting, approach] = await Promise.all([
+      buildPuttBuckets(supabase, roundIds),
+      buildApproachBuckets(supabase, roundIds),
+    ]);
+
+    return {
+      success: true,
+      data: { teamId: resolvedTeamId, putting, approach, roundsIncluded: roundIds.length },
+    };
+  } catch (error) {
+    await logServerError(`[LeakMaps] getTeamLeakMaps: ${describeError(error)}`, {
+      action: 'stats_leak_maps.getTeamLeakMaps',
+    });
+    return { success: false, error: 'Failed to load team leak maps' };
+  }
+}
+
+/**
+ * Single-player putt-make% leak map. Gated by `verifyPlayerAccess`.
+ * Returns the same `LeakBucket[]` shape (putting only) the chart consumes.
+ */
+export async function getPuttMakeLeakMap(
+  playerId: string,
+): Promise<LeakMapResult<{ putting: LeakBucket[]; roundsIncluded: number }>> {
+  try {
+    const { supabase, user } = await requireAuth();
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const roundIds = await completedRoundIds(supabase, [playerId]);
+    const putting = await buildPuttBuckets(supabase, roundIds);
+    return { success: true, data: { putting, roundsIncluded: roundIds.length } };
+  } catch (error) {
+    await logServerError(`[LeakMaps] getPuttMakeLeakMap: ${describeError(error)}`, {
+      action: 'stats_leak_maps.getPuttMakeLeakMap',
+    });
+    return { success: false, error: 'Failed to load putt leak map' };
+  }
+}
+
+/**
+ * Single-player approach-proximity leak map. Gated by `verifyPlayerAccess`.
+ */
+export async function getApproachProximityLeakMap(
+  playerId: string,
+): Promise<LeakMapResult<{ approach: LeakBucket[]; roundsIncluded: number }>> {
+  try {
+    const { supabase, user } = await requireAuth();
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const roundIds = await completedRoundIds(supabase, [playerId]);
+    const approach = await buildApproachBuckets(supabase, roundIds);
+    return { success: true, data: { approach, roundsIncluded: roundIds.length } };
+  } catch (error) {
+    await logServerError(`[LeakMaps] getApproachProximityLeakMap: ${describeError(error)}`, {
+      action: 'stats_leak_maps.getApproachProximityLeakMap',
+    });
+    return { success: false, error: 'Failed to load approach leak map' };
+  }
+}
+
+/**
+ * Convenience: both leak maps for one player in a single round-id pass.
+ * Gated by `verifyPlayerAccess`.
+ */
+export async function getPlayerLeakMaps(
+  playerId: string,
+): Promise<LeakMapResult<PlayerLeakMaps>> {
+  try {
+    const { supabase, user } = await requireAuth();
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const roundIds = await completedRoundIds(supabase, [playerId]);
+    const [putting, approach] = await Promise.all([
+      buildPuttBuckets(supabase, roundIds),
+      buildApproachBuckets(supabase, roundIds),
+    ]);
+    return {
+      success: true,
+      data: { playerId, putting, approach, roundsIncluded: roundIds.length },
+    };
+  } catch (error) {
+    await logServerError(`[LeakMaps] getPlayerLeakMaps: ${describeError(error)}`, {
+      action: 'stats_leak_maps.getPlayerLeakMaps',
+    });
+    return { success: false, error: 'Failed to load player leak maps' };
+  }
+}
+
+/**
+ * Plain, serialization-safe standing rows for one player. Wraps
+ * `loadPlayerStandingMap` (admin client → no RLS) behind `verifyPlayerAccess`
+ * so the StandingBar / StandingStrip data wiring can run from a client subtree.
+ */
+export async function getPlayerStandingRows(
+  playerId: string,
+): Promise<LeakMapResult<PlayerStandingRow[]>> {
+  try {
+    const { supabase, user } = await requireAuth();
+    if (!(await verifyPlayerAccess(supabase, user.id, playerId))) {
+      return { success: false, error: 'Unauthorized' };
+    }
+    const map = await loadPlayerStandingMap(playerId);
+    const rows: PlayerStandingRow[] = Array.from(map.values()).map((s) => ({
+      metric_id: s.metric_id,
+      player_value: s.player_value,
+      team_avg: s.team_avg,
+      team_n: s.team_n,
+      team_pct: s.team_pct,
+      pga_value: s.pga_value,
+      pga_delta: s.pga_delta,
+    }));
+    return { success: true, data: rows };
+  } catch (error) {
+    await logServerError(`[LeakMaps] getPlayerStandingRows: ${describeError(error)}`, {
+      action: 'stats_leak_maps.getPlayerStandingRows',
+    });
+    return { success: false, error: 'Failed to load player standing' };
+  }
+}

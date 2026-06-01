@@ -118,7 +118,7 @@ function JoinTeamBanner() {
                             'inline-flex items-center gap-2 px-5 py-2.5 rounded-full flex-shrink-0 text-body-sm font-medium',
                             'bg-primary-600/95 text-white',
                             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
-                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
+                            'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
                         )}
                     >
                         <IconSettings size={14} />
@@ -259,7 +259,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                             'group inline-flex items-center gap-2 px-7 py-3.5 rounded-full',
                                             'bg-primary-600/95 text-white font-medium text-body tracking-[-0.005em]',
                                             'shadow-[0_4px_14px_rgba(22,163,74,0.20)]',
-                                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.28)]',
+                                            'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.28)]',
                                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-4 focus-visible:ring-offset-cream-50'
                                         )}
                                     >
@@ -283,7 +283,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                             return (
                                                 <div
                                                     key={item.label}
-                                                    className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl bg-cream-50/55 ring-1 ring-warm-200/35 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px]"
+                                                    className="group flex flex-col items-center text-center gap-3 p-5 rounded-2xl bg-cream-50/55 ring-1 ring-warm-200/35 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-[2px]"
                                                 >
                                                     <span className={cn('w-10 h-10 rounded-2xl flex items-center justify-center', toneCls)}>
                                                         {item.icon}
@@ -478,7 +478,7 @@ export function PlayerDashboard({ data, enhancedData }: PlayerDashboardProps) {
                                     'group flex items-center justify-center gap-2 w-full py-4 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                                     'bg-primary-600/95 text-white',
                                     'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
-                                    'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
+                                    'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
                                 )}
                             >
                                 <IconPlus size={16} className="transition-transform duration-500 group-hover:rotate-90" />

@@ -11,6 +11,11 @@ import {
   getPredictionPerformance,
   getPatternImpact,
 } from '@/app/golf/actions/coachhelm-analytics';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayEffectiveness } from '@/components/fairway';
+import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 export const metadata = {
   title: 'CoachHelm Analytics | GolfHelm',
@@ -26,18 +31,22 @@ export default async function CoachHelmAnalyticsPage() {
 
   const supabase = await createClient();
 
-  // Get team ID from organization
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = team?.id ?? null;
-  }
+  // Get team ID from organization (deterministic: handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
+    // No-team branch ALSO forks: the redesign shows the canonical
+    // FeatureUnavailable, legacy keeps its bespoke "No Team Found" card.
+    if (isRedesignEnabled()) {
+      return (
+        <FeatureUnavailable
+          title="CoachHelm Effectiveness"
+          message="You need to be associated with a team to view effectiveness analytics. Create or join a team to start tracking insight and prediction accuracy."
+          actionHref="/golf/dashboard/team"
+          actionLabel="Go to Team Settings"
+        />
+      );
+    }
     return (
       <div className="min-h-full">
         <LargeTitleHeader
@@ -72,6 +81,32 @@ export default async function CoachHelmAnalyticsPage() {
     getPredictionPerformance(teamId),
     getPatternImpact(teamId),
   ]);
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm "Effectiveness" surface (CoachHelmShell active=
+  // 'effectiveness', defaultParams: predictions tab / 30d). The four SSR
+  // Promise.all results are passed UNCHANGED; the surface re-fetches on range
+  // change via the SAME four loaders. Honest InsufficientData for starved figures
+  // (never an authoritative 0%). Flag OFF → CoachHelmAnalyticsDashboard verbatim.
+  if (isRedesignEnabled()) {
+    const countsRes = await getAlertCounts(coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayEffectiveness
+          teamId={teamId}
+          coachId={coach.id}
+          initialOverview={overviewResult.data}
+          initialEffectiveness={effectivenessResult.data}
+          initialPerformance={performanceResult.data}
+          initialPatternImpact={patternResult.data}
+          signalCount={signalCount}
+          initialView="cockpit"
+          initialRange="30d"
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

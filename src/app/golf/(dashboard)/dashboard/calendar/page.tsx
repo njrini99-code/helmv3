@@ -5,6 +5,9 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { EditorialCalendarSurface } from '@/components/golf/calendar/editorial/EditorialCalendarSurface';
 import type { CalendarEvent } from '@/hooks/useCalendarEvents';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCalendar } from '@/components/fairway/pages/calendar/FairwayCalendar';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -32,10 +35,10 @@ export default async function GolfCalendarPage() {
 
   let coachList: { id: string; full_name: string | null; avatar_url: string | null }[] = [];
   try {
-    const [coachTeamResult, playerTeamResult, coachListResult] = await Promise.all([
+    const [coachTeamId, playerTeamResult, coachListResult] = await Promise.all([
       orgId
-        ? supabase.from('golf_teams').select('id').eq('organization_id', orgId).maybeSingle()
-        : Promise.resolve({ data: null }),
+        ? resolveCoachTeamId(supabase, orgId, coach?.id ?? null)
+        : Promise.resolve(null),
       playerId
         ? supabase.from('golf_team_members').select('team_id').eq('player_id', playerId).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -44,7 +47,7 @@ export default async function GolfCalendarPage() {
         : Promise.resolve({ data: null }),
     ]);
 
-    teamId = coachTeamResult.data?.id || playerTeamResult.data?.team_id || null;
+    teamId = coachTeamId || playerTeamResult.data?.team_id || null;
     coachList = coachListResult.data || [];
   } catch {
     // Network failure — proceed with null teamId and empty coachList
@@ -165,6 +168,28 @@ export default async function GolfCalendarPage() {
   // Used by the editorial hero subtitle.
   const serverNow = new Date().toISOString();
   const upcomingCount = events.filter(e => (e.start_time || e.start_date) >= serverNow).length;
+
+  // ── Fairway redesign fork (ADDITIVE + GATED) ─────────────────────────────
+  // When NEXT_PUBLIC_REDESIGN is on, render the re-skinned Calendar shell. It
+  // reuses the SAME events/teamMembers/timezone payload and the SAME legacy
+  // engine (PremiumCalendarClient grid + DnD + realtime + EventDetailModal)
+  // UNCHANGED behind the fork. Flag OFF → the legacy branch below runs
+  // byte-for-byte unchanged.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayCalendar
+          events={events}
+          teamMembers={teamMembers}
+          isCoach={isCoach}
+          teamTimezone={teamTimezone}
+          upcomingCount={upcomingCount}
+          serverNow={serverNow}
+          currentUserId={coach?.id ?? playerId ?? undefined}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

@@ -10,6 +10,8 @@ Coach Intelligence Triage is the coach-facing operational layer on top of CoachH
 
 This feature is distinct from the engine itself: `memory/features/coachhelm-ai.md` describes generation/trust behavior, while this document describes coach workflows after intelligence exists.
 
+Coaching philosophy saves use one authoritative hook write path with downstream revalidation, so settings pages should not add a second server-action write for the same patch.
+
 ## Primary Entry Points
 
 ### Routes

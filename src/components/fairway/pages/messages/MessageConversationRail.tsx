@@ -1,0 +1,348 @@
+'use client';
+
+/**
+ * ============================================================================
+ * Fairway · messages · MessageConversationRail — the TRIAGE inbox rail
+ * ----------------------------------------------------------------------------
+ * The two-pane inbox's LEFT pane (supporting chrome, NOT a second hero). A flat
+ * matte `InstrumentPanel` (depth='base'); the rows stay a dense, scannable list,
+ * never a card-in-card — mirrors AskConversationRail.
+ *
+ * TRIAGE ordering (spec): unread threads float to top; within that, conversations
+ * group by recency (Today / Yesterday / This Week / Earlier) rendered as quiet
+ * Fairway eyebrow labels. The grouping helper preserves the legacy
+ * `groupConversationsByTime` boundaries exactly.
+ *
+ * HONESTY CONTRACT:
+ *   • unread count renders as a quiet accent Badge (numeric, tabular) — NOT a
+ *     glass dot — and ONLY when unread_count > 0 (no raw 0, no fake unread on the
+ *     single-thread demo where everything is read).
+ *   • last-message preview decodes through the SAME decodeMessageContent the
+ *     legacy row used; falls back to "No messages yet" when truly empty.
+ *   • the thread-count readout reads `awaiting` until at least one conversation.
+ *
+ * PRESENTATION + ORGANIZATION ONLY: no data fetching, no send logic, no schema
+ * change. It renders the rows useGolfConversations() produced, passed down by
+ * FairwayMessages. Selection is a click handler (the page owns selected id +
+ * mobile master-detail), mirroring the legacy onSelect contract.
+ * ========================================================================== */
+
+import { motion, useReducedMotion } from 'framer-motion';
+import { Inbox, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { decodeMessageContent } from '@/lib/utils/decode-message-content';
+import type { GolfConversationWithMeta } from '@/hooks/golf/use-golf-messages';
+import { EmptyState } from '@/components/fairway/feedback';
+import { Avatar } from '@/components/fairway/controls/avatar';
+import { Badge } from '@/components/fairway/controls/badge';
+import { InstrumentPanel, Readout } from '@/components/fairway/instrument';
+
+export interface MessageConversationRailProps {
+  /** Rows from the unchanged useGolfConversations() hook. */
+  conversations: GolfConversationWithMeta[];
+  /** The currently-open conversation id (page-owned selection). */
+  selectedId: string | null;
+  /** Select a conversation (page sets selected id + mobile master-detail). */
+  onSelect: (id: string) => void;
+  /** Open the New message modal from the honest-empty CTA. */
+  onNewMessage: () => void;
+  /** First-paint skeleton rail. */
+  loading?: boolean;
+  className?: string;
+}
+
+/** Relative time for a row — only ever called with a real ISO string. */
+function formatTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return date.toLocaleDateString('en-US', { weekday: 'short' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+/** Recency buckets — PRESERVES the legacy groupConversationsByTime boundaries. */
+function groupConversationsByTime(conversations: GolfConversationWithMeta[]) {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const groups = {
+    today: [] as GolfConversationWithMeta[],
+    yesterday: [] as GolfConversationWithMeta[],
+    thisWeek: [] as GolfConversationWithMeta[],
+    older: [] as GolfConversationWithMeta[],
+  };
+
+  conversations.forEach(conv => {
+    const lastMsgDate = conv.last_message?.created_at
+      ? new Date(conv.last_message.created_at)
+      : new Date(0);
+    if (lastMsgDate >= today) groups.today.push(conv);
+    else if (lastMsgDate >= yesterday) groups.yesterday.push(conv);
+    else if (lastMsgDate >= lastWeek) groups.thisWeek.push(conv);
+    else groups.older.push(conv);
+  });
+
+  return groups;
+}
+
+const GROUP_ORDER: ReadonlyArray<{ key: keyof ReturnType<typeof groupConversationsByTime>; label: string }> = [
+  { key: 'today', label: 'Today' },
+  { key: 'yesterday', label: 'Yesterday' },
+  { key: 'thisWeek', label: 'This Week' },
+  { key: 'older', label: 'Earlier' },
+];
+
+function ConversationRow({
+  conv,
+  isSelected,
+  onSelect,
+}: {
+  conv: GolfConversationWithMeta;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const hasUnread = conv.unread_count > 0;
+  const isGroup = conv.is_group;
+  const displayName = isGroup
+    ? conv.title || 'Team Group'
+    : conv.other_participant?.name || 'Unknown User';
+  const time = formatTime(conv.last_message?.created_at);
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={isSelected ? 'true' : undefined}
+      className={cn(
+        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors [transition-duration:200ms]',
+        '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+        isSelected
+          ? 'bg-surface-sunken/90 shadow-[inset_2px_0_0_0_var(--fw-color-accent-500)] ring-1 ring-inset ring-accent-200/60'
+          : 'hover:bg-surface-sunken/60',
+      )}
+    >
+      <div className="flex items-start gap-3">
+        {isGroup ? (
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-700">
+            <Users size={18} aria-hidden="true" />
+          </span>
+        ) : (
+          <Avatar
+            name={conv.other_participant?.name || 'User'}
+            src={conv.other_participant?.avatar}
+            size="md"
+          />
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span
+              className={cn(
+                'truncate font-fw-sans text-body-sm',
+                hasUnread || isSelected ? 'font-medium text-text-primary' : 'font-medium text-text-secondary',
+              )}
+            >
+              {displayName}
+            </span>
+            {time ? (
+              <time
+                dateTime={conv.last_message?.created_at ?? undefined}
+                className={cn(
+                  'flex-shrink-0 font-fw-mono text-eyebrow tabular-nums',
+                  hasUnread ? 'text-accent-700' : 'text-text-tertiary',
+                )}
+              >
+                {time}
+              </time>
+            ) : null}
+          </div>
+
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <p
+              className={cn(
+                'min-w-0 flex-1 truncate font-fw-sans text-eyebrow leading-relaxed',
+                hasUnread ? 'text-text-primary' : 'text-text-tertiary',
+              )}
+            >
+              {conv.last_message?.content
+                ? decodeMessageContent(conv.last_message.content)
+                : 'No messages yet'}
+            </p>
+            {/* HONEST unread: quiet accent Badge, numeric/tabular, NEVER a glass
+                dot — and ONLY when unread_count > 0 (no raw 0 / fake unread). */}
+            {hasUnread ? (
+              <Badge tone="accent" size="sm" numeric className="flex-shrink-0">
+                {conv.unread_count > 9 ? '9+' : conv.unread_count}
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export function MessageConversationRail({
+  conversations,
+  selectedId,
+  onSelect,
+  onNewMessage,
+  loading = false,
+  className,
+}: MessageConversationRailProps) {
+  const reduced = useReducedMotion() ?? false;
+
+  const count = conversations.length;
+  const countReadout = (
+    <Readout
+      value={count}
+      format={{ maximumFractionDigits: 0 }}
+      label={count === 1 ? 'conversation' : 'conversations'}
+      size="sm"
+      align="end"
+      state={count > 0 ? 'live' : 'awaiting'}
+      samples={count === 0 ? { have: 0, need: 1 } : undefined}
+      awaitingLabel="None yet"
+    />
+  );
+
+  if (loading) {
+    return (
+      <InstrumentPanel
+        depth="base"
+        padding="md"
+        header="Conversations"
+        className={cn('flex flex-col', className)}
+        aria-busy="true"
+      >
+        <div className="flex flex-col gap-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-start gap-3 rounded-fw-md px-3 py-2.5">
+              <div className="h-10 w-10 flex-shrink-0 rounded-full bg-surface-sunken" />
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between">
+                  <div className="h-3.5 w-24 rounded bg-surface-sunken" />
+                  <div className="h-3 w-10 rounded bg-surface-sunken" />
+                </div>
+                <div className="h-3 w-40 rounded bg-surface-sunken" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </InstrumentPanel>
+    );
+  }
+
+  // HONEST-EMPTY (a): no conversations → Inbox EmptyState + New message CTA.
+  if (conversations.length === 0) {
+    return (
+      <InstrumentPanel
+        depth="base"
+        padding="md"
+        header="Conversations"
+        readout={countReadout}
+        className={cn('flex flex-col', className)}
+      >
+        <EmptyState
+          variant="subtle"
+          icon={Inbox}
+          title="No conversations yet"
+          description="Reach out to a teammate or coach to get a thread started."
+          action={
+            <button
+              type="button"
+              onClick={onNewMessage}
+              className={cn(
+                'inline-flex min-h-[36px] items-center gap-2 rounded-full px-4 py-1.5',
+                'bg-accent-500 font-fw-sans text-[13px] font-medium text-text-on-accent shadow-flat',
+                'outline-none transition-all duration-200 hover:bg-accent-600 hover:shadow-soft',
+                'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
+              )}
+            >
+              New message
+            </button>
+          }
+        />
+      </InstrumentPanel>
+    );
+  }
+
+  // TRIAGE: unread floats to top, then recency groups (each kept in the hook's
+  // most-recent-first order within the bucket).
+  const unread = conversations.filter(c => c.unread_count > 0);
+  const read = conversations.filter(c => c.unread_count === 0);
+  const grouped = groupConversationsByTime(read);
+
+  return (
+    <InstrumentPanel
+      as="nav"
+      depth="base"
+      padding="md"
+      header="Conversations"
+      readout={countReadout}
+      aria-label="Conversations"
+      className={cn('flex flex-col', className)}
+    >
+      <div className="flex flex-col gap-3">
+        {unread.length > 0 ? (
+          <div>
+            <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-accent-700">
+              Unread
+            </p>
+            <ul className="flex flex-col gap-1">
+              {unread.map((conv, i) => (
+                <motion.li
+                  key={conv.id}
+                  initial={reduced ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : Math.min(i, 8) * 0.035 }}
+                >
+                  <ConversationRow
+                    conv={conv}
+                    isSelected={selectedId === conv.id}
+                    onSelect={() => onSelect(conv.id)}
+                  />
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        {GROUP_ORDER.map(({ key, label }) => {
+          const group = grouped[key];
+          if (group.length === 0) return null;
+          return (
+            <div key={key}>
+              <p className="px-3 pb-1.5 font-fw-display text-eyebrow uppercase tracking-[0.14em] text-text-tertiary">
+                {label}
+              </p>
+              <ul className="flex flex-col gap-1">
+                {group.map((conv, i) => (
+                  <motion.li
+                    key={conv.id}
+                    initial={reduced ? false : { opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1], delay: reduced ? 0 : Math.min(i, 8) * 0.035 }}
+                  >
+                    <ConversationRow
+                      conv={conv}
+                      isSelected={selectedId === conv.id}
+                      onSelect={() => onSelect(conv.id)}
+                    />
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </InstrumentPanel>
+  );
+}

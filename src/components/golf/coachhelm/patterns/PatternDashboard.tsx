@@ -70,10 +70,28 @@ export function PatternDashboard({
   const [showFilters, setShowFilters] = useState(false);
   const [validatingPattern, setValidatingPattern] = useState<ExtendedPattern | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  // Pattern-noise parity (legacy flag-off path): low-value `contextual` patterns
+  // (avg −0.33 strokes) make up ~99.8% of rows and bury the real-signal
+  // conditional/compound ones. De-emphasize them by default — a one-tap toggle
+  // shows them, and a banner reports the exact hidden count. Read-only,
+  // client-side; nothing is mutated and nothing is permanently hidden.
+  const [hideContextual, setHideContextual] = useState(true);
+
+  // Count contextual patterns present in the incoming set (honest banner count).
+  const contextualCount = useMemo(
+    () => patterns.filter(p => p.patternType === 'contextual').length,
+    [patterns],
+  );
 
   // Filter patterns
   const filteredPatterns = useMemo(() => {
     return patterns.filter(pattern => {
+      // Default de-emphasis: drop contextual unless explicitly shown. Skipped
+      // when the user is explicitly browsing the by-type view (which groups by
+      // type and is the place to inspect contextual deliberately).
+      if (hideContextual && viewMode !== 'by-type' && pattern.patternType === 'contextual') {
+        return false;
+      }
       if (lifecycleFilter !== 'all' && pattern.lifecycleState !== lifecycleFilter) {
         return false;
       }
@@ -82,7 +100,7 @@ export function PatternDashboard({
       }
       return true;
     });
-  }, [patterns, lifecycleFilter, severityFilter]);
+  }, [patterns, lifecycleFilter, severityFilter, hideContextual, viewMode]);
 
   // Group patterns by player
   const patternsByPlayer = useMemo(() => {
@@ -269,6 +287,40 @@ export function PatternDashboard({
           )}
         </Button>
       </div>
+
+      {/* Contextual-suppression banner (legacy parity) — honest count + a
+          one-tap show/hide toggle so the low-value contextual flood doesn't
+          render as a wall, while staying one click away. Only shown when
+          contextual patterns are actually present. */}
+      {contextualCount > 0 && viewMode !== 'by-type' && (
+        <Card variant="overlay" padding="md" hover={false}>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm text-warm-600">
+              {hideContextual ? (
+                <>
+                  <span className="font-medium text-warm-900">{contextualCount}</span>{' '}
+                  low-value contextual pattern{contextualCount === 1 ? '' : 's'} hidden to
+                  surface higher-signal findings.
+                </>
+              ) : (
+                <>
+                  Showing{' '}
+                  <span className="font-medium text-warm-900">{contextualCount}</span>{' '}
+                  low-value contextual pattern{contextualCount === 1 ? '' : 's'} alongside
+                  high-signal ones.
+                </>
+              )}
+            </span>
+            <Button
+              variant="ghost"
+              onClick={() => setHideContextual(prev => !prev)}
+              className="ml-auto px-3 py-1.5 rounded-lg text-sm font-medium text-primary-700 hover:bg-primary-50 active:bg-primary-100 transition-colors"
+            >
+              {hideContextual ? `Show contextual (${contextualCount})` : 'Hide contextual'}
+            </Button>
+          </div>
+        </Card>
+      )}
 
       {/* Filter panel */}
       <AnimatePresence>

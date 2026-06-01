@@ -2,17 +2,22 @@ import type { Metadata, Viewport } from 'next';
 import { Playfair_Display, DM_Sans } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
-import { fraunces } from '@/lib/fonts';
+import { fraunces, frauncesDisplay, fragmentMono, generalSans } from '@/lib/fonts';
 import './globals.css';
+// Fairway design-system tokens (ADDITIVE — imported AFTER globals.css so it
+// only introduces new --fw-* custom properties; it overrides nothing). The
+// existing app's appearance is unchanged; only opted-in Fairway components and
+// the `.fairway-ds` scope consume these tokens.
+import '@/styles/design-tokens.css';
 // Client instrumentation is auto-loaded via instrumentation-client.ts
 import { Toaster } from '@/components/ui/sonner';
 import { DatadogProvider } from '@/components/providers/DatadogProvider';
-import { Analytics } from '@vercel/analytics/next';
 import { AdminErrorHandler } from '@/components/providers/AdminErrorHandler';
 import { ChunkLoadErrorHandler } from '@/components/providers/ChunkLoadErrorHandler';
 import { GlobalErrorHandlerSetup } from '@/components/providers/GlobalErrorHandlerSetup';
 import { CapacitorProvider } from '@/components/providers/CapacitorProvider';
 import { StaleDeploymentRecoveryScript } from '@/components/providers/StaleDeploymentRecoveryScript';
+import { VercelAnalyticsProvider } from '@/components/providers/VercelAnalyticsProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const playfair = Playfair_Display({
@@ -95,7 +100,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable} ${playfair.variable} ${dmSans.variable} ${fraunces.variable} ${frauncesDisplay.variable} ${generalSans.variable} ${fragmentMono.variable}`} suppressHydrationWarning>
       <head>
         <meta name="x-deployment-id" content={process.env.VERCEL_DEPLOYMENT_ID ?? 'dev'} />
       </head>
@@ -107,7 +112,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </TooltipProvider>
         </DatadogProvider>
         <Toaster />
-        <Analytics />
+        <VercelAnalyticsProvider />
         <AdminErrorHandler />
         <ChunkLoadErrorHandler />
         <GlobalErrorHandlerSetup />

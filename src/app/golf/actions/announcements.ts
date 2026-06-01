@@ -19,6 +19,7 @@ import { formatSafeErrorResponse } from '@/lib/validation/server-action-validato
 import { notifyTeamAnnouncement } from '@/lib/notifications';
 import { sendBulkPushNotification } from '@/lib/notifications/push';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import type { GolfAnnouncementMeta, GolfAnnouncementEnriched } from '@/lib/types/golf';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -58,13 +59,8 @@ async function getCoachTeamId(
   supabase: SupabaseClient,
   organizationId: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-  return team?.id ?? null;
+  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
+  return resolveCoachTeamId(supabase, organizationId);
 }
 
 async function getTeamPlayerIds(

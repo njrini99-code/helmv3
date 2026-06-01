@@ -115,6 +115,8 @@ export class WarmupHoleGenerator extends BaseGenerator<WarmupHoleAggregate> {
     return {
       title,
       content,
+      // Opening-hole gap vs the ~0.1 PGA tax: at/under is fine; a large opener tax escalates.
+      priority: agg.playerValue <= 0.1 ? 'low' : agg.playerValue <= 0.4 ? 'medium' : 'high',
       signature: `warmup_hole:hole_1`,
       evidence: {
         metric: this.metricId,

@@ -1,0 +1,65 @@
+/**
+ * ============================================================================
+ * Fairway · AppShell — shared types (Wave 1, ADDITIVE)
+ * ----------------------------------------------------------------------------
+ * Local type surface for the `app-shell` primitive group. Kept inside the group
+ * folder per the Wave-1 self-containment rule — no top-level shared file.
+ *
+ * The nav model mirrors the STRUCTURE of `src/components/golf/layout/GolfSidebar`
+ * (primary + secondary sections, icon + label + optional badge, active matching)
+ * without importing or editing it. Pages feed these data shapes into the shell.
+ * ========================================================================== */
+
+import type { ComponentType, SVGAttributes } from 'react';
+
+/** Icon component contract — matches `@/components/icons` (`IconProps`). */
+export type FairwayIcon = ComponentType<{ size?: number; className?: string } & SVGAttributes<SVGElement>>;
+
+/** A single navigation destination in the sidebar rail. */
+export interface NavItem {
+  /** Visible label + accessible name. */
+  readonly label: string;
+  /** Destination href (rendered via the shell's `linkComponent`). */
+  readonly href: string;
+  /** Leading glyph. */
+  readonly icon: FairwayIcon;
+  /** Optional unread/notification count rendered as a pill. */
+  readonly badge?: number;
+  /** Force-mark active regardless of pathname matching (rare). */
+  readonly active?: boolean;
+}
+
+/** A labelled group of nav items (e.g. "Team Management", "More"). */
+export interface NavSection {
+  /** Section eyebrow shown above the group (omitted when the rail is collapsed). */
+  readonly heading?: string;
+  readonly items: readonly NavItem[];
+}
+
+/** A single crumb in the top-bar breadcrumb trail. */
+export interface Breadcrumb {
+  readonly label: string;
+  /** When omitted, the crumb renders as plain text (the current page). */
+  readonly href?: string;
+}
+
+/** Identity block shown at the top of the rail. */
+export interface ShellUser {
+  readonly name: string;
+  readonly teamName?: string;
+  readonly avatarUrl?: string;
+}
+
+/**
+ * Minimal link element contract. Lets the shell render Next's `<Link>` (default)
+ * or a plain `<a>` in isolation/tests without importing `next/link` here.
+ */
+export type ShellLinkComponent = ComponentType<{
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+  'aria-current'?: 'page' | undefined;
+  'aria-label'?: string;
+  onClick?: () => void;
+  title?: string;
+}>;

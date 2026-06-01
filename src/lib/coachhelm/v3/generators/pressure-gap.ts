@@ -100,6 +100,9 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
     return {
       title,
       content,
+      // Severity from the gap itself (competitive − practice): >0.5 over the PGA
+      // reference is a real pressure weakness; at/under practice is fine.
+      priority: agg.playerValue > 0.5 ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {
         metric: this.metricId,

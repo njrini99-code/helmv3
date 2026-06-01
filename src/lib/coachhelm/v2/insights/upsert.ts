@@ -312,6 +312,7 @@ async function insertNew(
     metadata,
     lifecycle_state: lifecycleState,
     insight_type: input.insight_type ?? input.category,
+    priority: input.priority ?? 'medium',
   };
 
   // Use ON CONFLICT against the (signature, player_id, coach_id, team_id)

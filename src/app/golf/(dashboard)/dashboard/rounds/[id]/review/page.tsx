@@ -9,6 +9,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import type { ReactElement } from 'react';
 import { m, useReducedMotion } from 'framer-motion';
 import { containerVariants, itemVariants } from '@/components/golf/dashboard/premium-components';
 import Link from 'next/link';
@@ -23,6 +24,7 @@ import {
   getRoundReview,
   generateAndStoreRoundReview,
   getStatAverages,
+  getPlayerStandingForReview,
   shareRoundReviewWithCoach,
   type RoundReviewWithRound,
 } from '@/app/golf/actions/round-review-system';
@@ -42,6 +44,11 @@ import { PromoteToFocusAreaButton } from '@/components/golf/coachhelm/PromoteToF
 import { RoundReviewLlmCard } from '@/components/golf/coachhelm/v3/RoundReviewLlmCard';
 import { HoleByHoleShotPaths } from '@/components/golf/coachhelm/round-review/HoleByHoleShotPaths';
 import { Button } from '@/components/ui/button';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { StandingBar } from '@/components/golf/coachhelm/v3/StandingBar';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 // ============================================================================
 // TYPES
@@ -161,6 +168,11 @@ export default function RoundReviewPage() {
     avgGirPct: number;
     avgFairwayPct: number;
   } | null>(null);
+  // Season-level standing (PGA + team + you) keyed by canonical metric_id.
+  // Redesign-only: feeds the StandingBar "where this sits" band below the
+  // round stats. Empty `{}` until the season standing cron has populated rows
+  // for this player — the band renders nothing in that cold-start case.
+  const [standing, setStanding] = useState<Record<string, PlayerStanding>>({});
   const [loadingRound, setLoadingRound] = useState(true);
   const [loadingStoredReview, setLoadingStoredReview] = useState(true);
   const [generatingReview, setGeneratingReview] = useState(false);
@@ -176,10 +188,13 @@ export default function RoundReviewPage() {
   // longer rendered on this page (IA audit 2026-05-28 trimmed the dual V1/V2
   // surface down to V2 only — the W30 LLM round-review card lives in V2);
   // the hook still returns it for back-compat with `RoundReviewViewer.tsx`.
+  // NOTE: the hook call is retained (it drives V2 hydration side effects), but
+  // its `loading` return is intentionally NOT destructured — the page-level
+  // `isLoading` gate no longer consults it (see the umbrella below). We still
+  // pull `generating` for the Refresh-button spinner state.
   const {
     v2Review,
     isV2Enabled,
-    loading: v1Loading,
     generating: v1Generating,
   } = useRoundReviewV2(roundId);
 
@@ -239,16 +254,13 @@ export default function RoundReviewPage() {
         const isOwnRound = currentPlayerId !== null && roundData.player_id === currentPlayerId;
         let isCoachOnTeam = false;
         if (!isOwnRound && coachOrgId) {
-          const { data: orgTeam } = await supabase
-            .from('golf_teams')
-            .select('id')
-            .eq('organization_id', coachOrgId)
-            .maybeSingle();
-          if (orgTeam?.id) {
+          // Deterministic org→team resolution (handles orgs with >1 team)
+          const orgTeamId = await resolveCoachTeamId(supabase, coachOrgId, coachRecord?.id ?? null);
+          if (orgTeamId) {
             const { data: teamMembership } = await supabase
               .from('golf_team_members')
               .select('id')
-              .eq('team_id', orgTeam.id)
+              .eq('team_id', orgTeamId)
               .eq('player_id', roundData.player_id)
               .maybeSingle();
             isCoachOnTeam = !!teamMembership;
@@ -302,6 +314,14 @@ export default function RoundReviewPage() {
         if (!cancelled && avgResult.success) {
           setPlayerAvg(avgResult.playerAvg ?? null);
           setTeamAvg(avgResult.teamAvg ?? null);
+        }
+
+        // Redesign-only: fetch season standing for the PGA/team/you band.
+        // Gated so flag-off does zero extra work; failure-silent (the action
+        // returns `{}` on error/cold-start, so the band simply won't render).
+        if (isRedesignEnabled()) {
+          const standingMap = await getPlayerStandingForReview(round.player_id);
+          if (!cancelled) setStanding(standingMap);
         }
       } catch {
         // Silently ignore fetch errors
@@ -437,8 +457,19 @@ export default function RoundReviewPage() {
     }
   };
 
-  // Loading state
-  const isLoading = loadingRound || loadingStoredReview || generatingReview || v1Loading || v1Generating;
+  // Loading state — gated on the page's OWN states only. The vestigial
+  // `useRoundReviewV2` hook states (v1Loading / v1Generating) were removed
+  // from this umbrella on 2026-05-30: the page no longer renders the V1
+  // review object (IA audit 2026-05-28 trimmed the surface to V2-only), and
+  // that hook performs a REDUNDANT second auth + status + golf_round_reviews
+  // round-trip whose slowness/transient generating state would hold the whole
+  // page on the skeleton even when `storedReview` is already in hand. The
+  // page now renders its body from loadingRound / loadingStoredReview /
+  // generatingReview (its own generation). `v1Generating` is still consumed
+  // by `isGenerating` below to drive the Refresh-button spinner + the
+  // "Running CoachHelm analysis..." copy when the hook generates in the
+  // background, so it remains referenced; `v1Loading` is intentionally unused.
+  const isLoading = loadingRound || loadingStoredReview || generatingReview;
   const isGenerating = generatingReview || v1Generating;
 
   if (isLoading) {
@@ -670,6 +701,55 @@ export default function RoundReviewPage() {
           playerAvg={playerAvg}
           teamAvg={teamAvg}
         />
+
+        {/* Where this sits vs PGA + team — REDESIGN ONLY.
+            Season-level standing (NOT round values) for the metrics this round
+            exercised. The standing `player_value` is the season figure the
+            PGA/team markers are calibrated against; mixing a single-round value
+            onto a season scale would lie. Renders only when at least one
+            canonical standing row exists — otherwise the RoundStatsComparison
+            above is the honest fallback (cold-start: <5 rounds / cron unrun).
+            Flag-off: this whole block is byte-for-byte absent. */}
+        {isRedesignEnabled() && (() => {
+          const bandMetrics = ['gir_pct', 'sg_ott', 'sg_approach', 'sg_putting'] as const;
+          const bars = bandMetrics
+            .map((mid) => {
+              const st = standing[mid];
+              const cfg = getMetricRenderConfig(mid);
+              if (!st || !cfg) return null; // honest-empty: no row → no bar
+              return (
+                <StandingBar
+                  key={mid}
+                  size="card"
+                  metric_id={mid}
+                  metric_label={cfg.display_label}
+                  player_value={st.player_value}
+                  team_avg={st.team_avg}
+                  team_n={st.team_n}
+                  team_pct={st.team_pct}
+                  pga_value={st.pga_value}
+                  direction={cfg.direction}
+                  unit={cfg.unit}
+                  scale={cfg.default_scale}
+                />
+              );
+            })
+            .filter((b): b is ReactElement => b !== null);
+          if (bars.length === 0) return null; // band hidden entirely when no rows
+          return (
+            <section className={fairwayScope('space-y-3')}>
+              <div>
+                <h2 className="text-base font-medium text-warm-900 tracking-[-0.012em]">
+                  Where this sits
+                </h2>
+                <p className="text-xs text-warm-500">
+                  Your season standing vs PGA Tour and your team.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{bars}</div>
+            </section>
+          );
+        })()}
 
         {/* HERO takeaway — one insight that matters for today.
             When V2 is enabled (and `v2Review` resolved) we let V2ReviewSummary

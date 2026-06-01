@@ -180,6 +180,8 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
     return {
       title,
       content,
+      // laggy is the only branch framed as costing strokes; sharp/inconclusive are strength/neutral.
+      priority: agg.pattern === 'laggy' ? 'high' : 'low',
       signature: `tee_strategy:${agg.pattern}`,
       evidence: {
         metric: this.metricId,

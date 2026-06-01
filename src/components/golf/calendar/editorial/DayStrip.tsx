@@ -139,7 +139,7 @@ export function DayStrip({
               'group relative flex flex-col items-center justify-between',
               'min-h-[78px] md:min-h-[92px] py-2.5 md:py-3 px-1.5 md:px-2',
               'rounded-2xl',
-              'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
               // Touch target: ≥44px guaranteed by min-h above.
 

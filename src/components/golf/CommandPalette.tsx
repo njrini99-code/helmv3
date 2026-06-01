@@ -28,12 +28,13 @@ import {
   IconSettings, IconGolf, IconFlag, IconBook, IconAirplane, IconSparkles,
   IconTarget, IconTrophy, IconClipboardList, IconBell, IconAlertCircle,
   IconBrain, IconGauge, IconBot, IconChartRadar, IconCrosshair, IconWrench,
-  IconRocket,
+  IconRocket, IconLayoutGrid,
 } from '@/components/icons';
 import {
   getCommandPaletteData,
   type CommandPaletteData,
 } from '@/app/golf/actions/command-palette';
+import { useRedesign } from '@/lib/redesign/flag';
 
 interface CommandItemSpec {
   id: string;
@@ -105,7 +106,36 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     { id: 'settings', label: 'Settings', description: 'Account settings', icon: <IconSettings size={18} />, href: '/golf/dashboard/settings', keywords: ['account', 'profile'] },
   ];
 
-  const quickActions = isCoach ? coachQuickActions : playerQuickActions;
+  // Fairway redesign: the player's Tasks / Announcements / Travel / Classes are
+  // consolidated into the Team Hub, so the palette deep-links into the matching
+  // sub-tab (and gains a top-level "Team Hub" command) instead of the old
+  // scattered routes. Flag OFF → the original entries, unchanged.
+  const redesign = useRedesign();
+  const playerActions: CommandItemSpec[] = redesign
+    ? (() => {
+        const TAB_FOR_ID: Record<string, 'tasks' | 'announcements' | 'travel' | 'classes'> = {
+          tasks: 'tasks',
+          announcements: 'announcements',
+          travel: 'travel',
+          classes: 'classes',
+        };
+        const remapped = playerQuickActions.map((a) => {
+          const tab = TAB_FOR_ID[a.id];
+          return tab ? { ...a, href: `/golf/dashboard/team-hub?tab=${tab}` } : a;
+        });
+        const teamHubEntry: CommandItemSpec = {
+          id: 'team-hub',
+          label: 'Team Hub',
+          description: 'Tasks, announcements, travel & your classes',
+          icon: <IconLayoutGrid size={18} />,
+          href: '/golf/dashboard/team-hub',
+          keywords: ['team', 'hub', 'tasks', 'announcements', 'travel', 'classes', 'updates'],
+        };
+        return [teamHubEntry, ...remapped];
+      })()
+    : playerQuickActions;
+
+  const quickActions = isCoach ? coachQuickActions : playerActions;
 
   // ⌘K / Ctrl+K toggles the palette globally
   useEffect(() => {
@@ -157,7 +187,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       ><span className="sr-only">Close command palette</span></IconButton>
 
       {/* Palette frame */}
-      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
         <Command
           label="Command palette"
           loop
@@ -200,7 +230,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   }}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                    'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                   )}
                 >
@@ -230,7 +260,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >
@@ -266,7 +296,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >
@@ -303,7 +333,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >

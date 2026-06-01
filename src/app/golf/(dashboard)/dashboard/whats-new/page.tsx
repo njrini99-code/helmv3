@@ -19,6 +19,8 @@ import {
   type WhatsNewItem,
   type WhatsNewType,
 } from '@/app/golf/actions/whats-new';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayWhatsNew } from '@/components/fairway/pages/whats-new';
 
 // ============================================================================
 // METADATA
@@ -216,6 +218,13 @@ export default async function WhatsNewPage() {
   }
   const dayKeys = Array.from(grouped.keys()).sort((a, b) => (a < b ? 1 : -1));
   const totalItems = result.success && result.items ? result.items.length : 0;
+
+  if (isRedesignEnabled())
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayWhatsNew success={result.success} error={result.error} items={result.items} />
+      </div>
+    );
 
   return (
     <div className="min-h-full bg-transparent">

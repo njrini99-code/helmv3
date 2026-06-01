@@ -19,6 +19,9 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Reveal } from '@/components/ui/reveal';
 import type { Metadata } from 'next';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { GenomeCompareView, type CompareSeries } from '@/components/fairway';
 
 interface PageProps {
   searchParams: Promise<{ p1?: string; p2?: string }>;
@@ -66,6 +69,38 @@ export default async function GenomeComparePage({ searchParams }: PageProps) {
   }
   if (b && playerB) {
     series.push({ label: playerB.name, colorClass: 'amber-500', hex: PLAYER_B_HEX, vector: b.vector });
+  }
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm "Players → compare" surface (CoachHelmShell
+  // active='players'). It renders GenomeFingerprint DIVERGING BARS (not two
+  // overlaid radars) + a numeric dimension table + an honest "N of M live"
+  // caption + a "no genome computed" legend chip. loadGenomes + roster + ?p1=&p2=
+  // resolution + coach gate all ran above; vectors carried in as serializable
+  // CompareSeries. Flag OFF (default) → the legacy two-series radar overlay page.
+  if (isRedesignEnabled()) {
+    const seriesA: CompareSeries | null = playerA
+      ? { playerId: playerA.id, name: playerA.name, vector: a ? a.vector : null }
+      : null;
+    const seriesB: CompareSeries | null = playerB
+      ? { playerId: playerB.id, name: playerB.name, vector: b ? b.vector : null }
+      : null;
+
+    const countsRes = await getAlertCounts(session.coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <GenomeCompareView
+          roster={roster}
+          p1={p1 ?? null}
+          p2={p2 ?? null}
+          seriesA={seriesA}
+          seriesB={seriesB}
+          signalCount={signalCount}
+        />
+      </div>
+    );
   }
 
   return (

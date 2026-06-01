@@ -1,0 +1,106 @@
+/* ============================================================================
+ * Fairway · surfaces · GlassSurface — RESTRAINED Liquid Glass material
+ * ----------------------------------------------------------------------------
+ * Co-located CSS module for the parts of the warm Liquid Glass recipe that
+ * Tailwind utilities cannot express cleanly:
+ *   1. the prefixed `backdrop-filter` (blur + saturate) — vendor-prefix order,
+ *   2. the inset specular box-shadows + the `::before` top-sheen pseudo,
+ *   3. the `prefers-reduced-transparency` / `forced-colors` opaque fallback.
+ *
+ * Everything here reads the locked `--fw-*` Liquid Glass tokens from
+ * src/styles/design-tokens.css (DESIGN-SYSTEM.md §4.3). Class names are
+ * locally scoped by CSS Modules, so they cannot collide with the app's global
+ * `.glass` utilities. NOTHING global is touched — purely additive, opt-in.
+ *
+ * Allow-list reminder (DESIGN-SYSTEM.md §4.3): glass is ONLY for floating
+ * chrome / overlays / the ONE hero card per view — never a resting card.
+ * ========================================================================== */
+
+/* Baseline EVERY browser gets — Regular glass. */
+.glass {
+  position: relative;
+  isolation: isolate;
+  contain: layout paint style;
+  background: var(--fw-glass-bg); /* warm CREAM tint ~62% — never white-over-gray */
+  -webkit-backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+  backdrop-filter: blur(var(--fw-blur-glass)) saturate(var(--fw-glass-saturate));
+  border: 1px solid var(--fw-glass-border); /* bright specular top rim */
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-glass-highlight),    /* the "light source" specular top line */
+    inset 0 -1px 0 0 var(--fw-glass-border-bot),  /* faint warm base edge */
+    var(--fw-shadow-raise);                       /* floats off the page */
+}
+
+/* Cheap universal top sheen — Safari / Firefox get this even without refraction. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.28) 0%,
+    rgb(255 255 255 / 0.04) 22%,
+    transparent 60%
+  );
+}
+
+/* More opaque + stronger blur for command palette / modal sheets (more legible). */
+.glassStrong {
+  background: var(--fw-glass-bg-strong);
+  -webkit-backdrop-filter: blur(var(--fw-blur-strong)) saturate(150%);
+  backdrop-filter: blur(var(--fw-blur-strong)) saturate(150%);
+}
+
+/* The ONE hero / "key insight" card per view: a faint green breath at the rim. */
+.glassHero {
+  border-color: var(--fw-glass-accent-ring);
+  box-shadow:
+    inset 0 1px 0 0 var(--fw-glass-highlight),
+    0 0 0 1px var(--fw-glass-accent-ring),
+    var(--fw-shadow-raise);
+}
+
+/* Low-power downshift on small screens (cheaper blur, drop refraction). */
+@media (max-width: 768px) {
+  .glass {
+    -webkit-backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+    backdrop-filter: blur(var(--fw-blur-mobile)) saturate(var(--fw-glass-saturate));
+  }
+}
+
+/* Apple's own accessibility lesson — collapse to an OPAQUE matte surface.
+   Depth then comes from a soft shadow, never from translucency. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glassStrong,
+  .glassHero {
+    background: var(--fw-color-surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border-color: var(--fw-color-border-subtle);
+    box-shadow: var(--fw-shadow-soft);
+  }
+  .glass::before {
+    display: none;
+  }
+  .glassHero {
+    box-shadow: var(--fw-shadow-soft), 0 0 0 1px var(--fw-glass-accent-ring);
+  }
+}
+
+/* Windows High Contrast / forced colors — fall back to system Canvas. */
+@media (forced-colors: active) {
+  .glass,
+  .glassStrong,
+  .glassHero {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass::before {
+    display: none;
+  }
+}

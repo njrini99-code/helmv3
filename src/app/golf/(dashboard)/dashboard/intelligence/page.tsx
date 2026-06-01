@@ -5,9 +5,13 @@ import { IntelligenceCommandCenter } from '@/components/golf/coachhelm/v2';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { getTeamCategoryInsights, getTeamOverview } from '@/app/golf/actions/team-category-insights';
+import { getAlertCounts } from '@/app/golf/actions/alerts';
 import { TeamCategoryView, TeamCompositeCard, TeamShotOverview } from '@/components/golf/coachhelm/coach';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayBrief } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // METADATA
@@ -46,15 +50,8 @@ export default async function IntelligenceDashboardPage() {
   // Single org→team lookup shared by IntelligenceCommandCenter,
   // getTeamOverview, and getTeamCategoryInsights. Both action calls now
   // accept a teamId argument so they skip their internal redundant lookup.
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: team } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = team?.id ?? null;
-  }
+  // Deterministic resolution: handles orgs with >1 team.
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     redirect('/golf/dashboard');
@@ -66,6 +63,27 @@ export default async function IntelligenceDashboardPage() {
     getTeamOverview(teamId),
     getTeamCategoryInsights(teamId),
   ]);
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm Fairway "Brief" surface inside the .fairway-ds scope on
+  // bg-canvas. It renders the CoachHelmShell wrapper itself; the route only feeds
+  // it the SAME already-fetched data + the shared unread-signal count. Flag OFF
+  // (default) → the existing intelligence page renders EXACTLY as today.
+  if (isRedesignEnabled()) {
+    const countsRes = await getAlertCounts(coach.id);
+    const signalCount = countsRes.success ? (countsRes.counts?.critical ?? null) : null;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayBrief
+          overview={overviewResult}
+          categoryInsights={result}
+          teamId={teamId}
+          coachId={coach.id}
+          signalCount={signalCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-full">

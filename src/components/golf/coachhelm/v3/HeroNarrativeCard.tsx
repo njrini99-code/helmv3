@@ -35,10 +35,16 @@ export interface HeroNarrativeCardProps {
    *  back. Should be a sentence or two derived from the deterministic
    *  insight payload — never empty. */
   fallbackText: string;
+  /** Render light-on-dark for a dark "spotlight" hero band: drops the light
+   *  Card chrome and switches the prose + eyebrow to luminous text so it reads
+   *  on a near-black surface. Default `false` (the existing light treatment —
+   *  used unchanged by the 3 legacy callers). */
+  inverted?: boolean;
 }
 
 export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
   const prefersReducedMotion = useReducedMotion();
+  const inverted = props.inverted ?? false;
   const [text, setText] = useState(props.fallbackText);
   const [usedLlm, setUsedLlm] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -75,11 +81,76 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
     props.fallbackText,
   ]);
 
+  const inner = (
+    <>
+      {loading && (
+        <m.div
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="pointer-events-none absolute inset-0"
+        >
+          <m.div
+            className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+            animate={{ x: ['0%', '400%'] }}
+            transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1.6, repeat: Infinity, ease: 'easeInOut' })}
+          />
+        </m.div>
+      )}
+
+      <div className="relative">
+        <div className="flex items-baseline justify-between gap-4 mb-3">
+          <p
+            className={`text-eyebrow font-medium uppercase tracking-[0.14em] ${
+              inverted ? 'text-accent-300' : 'text-warm-500'
+            }`}
+          >
+            Today&apos;s read
+          </p>
+          <AnimatePresence>
+            {usedLlm && (
+              <m.span
+                key="ai-badge"
+                variants={badgeVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={prefersReducedMotion ? { duration: 0 } : (badgeTransition)}
+                className={`inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] ${
+                  inverted ? 'text-white/65' : 'text-warm-500'
+                }`}
+              >
+                <span aria-hidden className="text-caption leading-none">✦</span>
+                CoachHelm
+              </m.span>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence mode="wait">
+          <m.p
+            key={text}
+            variants={crossfadeVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
+            className={`text-body-lg md:text-h3 leading-relaxed ${
+              inverted ? 'text-white/92' : 'text-warm-900'
+            }`}
+          >
+            {text}
+          </m.p>
+        </AnimatePresence>
+      </div>
+    </>
+  );
+
   return (
-    // The matte surface, 24px corners, and generous padding now come from the
-    // canonical <Card variant="raised"> rather than a bespoke surface-stone
-    // primitive (Wave W2B). The motion + semantics (entrance animation,
-    // data-testid, data-used-llm) stay on the m.section wrapper.
+    // Light treatment: the matte surface/corners/padding come from the canonical
+    // <Card variant="raised">. Inverted treatment (dark spotlight hero): drop the
+    // light card chrome so the luminous prose sits directly on the dark band.
     <m.section
       data-testid="hero-narrative-card"
       data-used-llm={usedLlm ? 'true' : 'false'}
@@ -87,63 +158,15 @@ export function HeroNarrativeCard(props: HeroNarrativeCardProps) {
       initial="hidden"
       animate="visible"
       transition={prefersReducedMotion ? { duration: 0 } : (heroTransition)}
-      className="mb-5 md:mb-6"
+      className={inverted ? '' : 'mb-5 md:mb-6'}
     >
-      <Card variant="raised" hover={false} className="overflow-hidden">
-        {loading && (
-          <m.div
-            aria-hidden
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="pointer-events-none absolute inset-0"
-          >
-            <m.div
-              className="absolute inset-y-0 -left-1/2 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-              animate={{ x: ['0%', '400%'] }}
-              transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 1.6, repeat: Infinity, ease: 'easeInOut' })}
-            />
-          </m.div>
-        )}
-
-        <div className="relative">
-          <div className="flex items-baseline justify-between gap-4 mb-3">
-            <p className="text-eyebrow font-medium uppercase tracking-[0.14em] text-warm-500">
-              Today&apos;s read
-            </p>
-            <AnimatePresence>
-              {usedLlm && (
-                <m.span
-                  key="ai-badge"
-                  variants={badgeVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  transition={prefersReducedMotion ? { duration: 0 } : (badgeTransition)}
-                  className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.14em] text-warm-500"
-                >
-                  <span aria-hidden className="text-caption leading-none">✦</span>
-                  CoachHelm
-                </m.span>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <AnimatePresence mode="wait">
-            <m.p
-              key={text}
-              variants={crossfadeVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              transition={prefersReducedMotion ? { duration: 0 } : (crossfadeTransition)}
-              className="text-body-lg md:text-h3 leading-relaxed text-warm-900"
-            >
-              {text}
-            </m.p>
-          </AnimatePresence>
-        </div>
-      </Card>
+      {inverted ? (
+        <div className="relative overflow-hidden">{inner}</div>
+      ) : (
+        <Card variant="raised" hover={false} className="overflow-hidden">
+          {inner}
+        </Card>
+      )}
     </m.section>
   );
 }

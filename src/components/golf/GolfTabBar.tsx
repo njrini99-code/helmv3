@@ -100,14 +100,14 @@ export function GolfTabBar<T extends string>({
                 verticalPad,
                 fontSize,
                 'font-medium tracking-[-0.005em]',
-                'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                 'min-h-[44px]', // touch target — UX rule #2
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50 rounded-sm',
                 stretch && 'flex-1',
                 // Animated underline — anchored to the bottom hairline rule.
                 'before:absolute before:left-0 before:right-0 before:bottom-[-1px] before:h-[2px]',
                 'before:bg-primary-500 before:origin-left before:scale-x-0',
-                'before:transition-transform before:duration-300 before:ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'before:transition-transform before:duration-300 before:[transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                 isActive
                   ? 'text-warm-900 before:scale-x-100'
                   : 'text-warm-400 hover:text-warm-700 active:scale-[0.97]',

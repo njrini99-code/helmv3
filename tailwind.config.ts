@@ -1,5 +1,21 @@
 import type { Config } from "tailwindcss";
-import tailwindcssAnimate from "tailwindcss-animate";
+import * as tailwindcssAnimateNS from "tailwindcss-animate";
+
+/**
+ * Interop-safe resolution of `tailwindcss-animate`.
+ *
+ * `tailwindcss-animate` is CommonJS (`module.exports = { handler, config }`).
+ * Depending on which loader resolves this config (Node ESM vs Next's build-time
+ * TS→CJS transpile, which applies `__esModule`-style default interop), the
+ * default binding can come back as `undefined`, leaving a hole in `plugins: []`
+ * that crashes Tailwind's `resolveConfig` (`Cannot read properties of undefined
+ * (reading '__isOptionsFunction')`) — and that crash takes down EVERY CSS file,
+ * including `globals.css` and any `*.module.css`. Normalizing across the
+ * possible interop shapes (namespace object, `.default`, or the bare plugin)
+ * makes the config load identically under every loader.
+ */
+const tailwindcssAnimate =
+  (tailwindcssAnimateNS as { default?: unknown }).default ?? tailwindcssAnimateNS;
 
 const config: Config = {
   darkMode: ["class"],
@@ -7,6 +23,59 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // ═══════════════════════════════════════════════════════════════
+        // FAIRWAY DESIGN SYSTEM — token-backed utilities (ADDITIVE / FOUNDATION)
+        // ---------------------------------------------------------------
+        // Maps the locked warm OKLCH token set (src/styles/design-tokens.css,
+        // ui-intelligence/DESIGN-SYSTEM.md §1) onto Tailwind utilities for the
+        // redesign. ALL names here are NEW and do not collide with any existing
+        // utility above. The three colliding status names (success/warning/
+        // danger already exist as flat hex below) are namespaced `fw-*` so the
+        // current app's `bg-success` / `text-danger` etc. are untouched.
+        // Resolve to the --fw-color-* CSS variables, so they only render where a
+        // Fairway component opts in. The current app's appearance is unchanged.
+        // ═══════════════════════════════════════════════════════════════
+        canvas:       'var(--fw-color-canvas)',
+        surface:      'var(--fw-color-surface)',
+        'surface-tint':   'var(--fw-color-surface-tint)',   // = spec "surface-warm"
+        'surface-sunken': 'var(--fw-color-surface-sunken)',
+        inset:        'var(--fw-color-surface-sunken)',      // alias — nested wells
+        elevated:     'var(--fw-color-elevated)',
+        accent: {
+          50:  'var(--fw-color-accent-50)',
+          100: 'var(--fw-color-accent-100)',
+          200: 'var(--fw-color-accent-200)',
+          300: 'var(--fw-color-accent-300)',
+          400: 'var(--fw-color-accent-400)',
+          500: 'var(--fw-color-accent-500)',
+          600: 'var(--fw-color-accent-600)',
+          700: 'var(--fw-color-accent-700)',
+          800: 'var(--fw-color-accent-800)',
+          900: 'var(--fw-color-accent-900)',
+          DEFAULT: 'var(--fw-color-accent-500)',
+        },
+        'text-primary':   'var(--fw-color-text-primary)',
+        'text-secondary': 'var(--fw-color-text-secondary)',
+        'text-tertiary':  'var(--fw-color-text-tertiary)',
+        'text-on-accent': 'var(--fw-color-text-on-accent)',
+        'text-on-dark':   'var(--fw-color-text-on-dark)',
+        'border-subtle':  'var(--fw-color-border-subtle)',
+        'border-strong':  'var(--fw-color-border-strong)',
+        'border-focus':   'var(--fw-color-border-focus)',
+        // Status — namespaced `fw-*` (existing success/warning/danger kept as-is)
+        'fw-success':     'var(--fw-color-success)',
+        'fw-success-bg':  'var(--fw-color-success-bg)',
+        'fw-warning':     'var(--fw-color-warning)',
+        'fw-warning-bg':  'var(--fw-color-warning-bg)',
+        'fw-danger':      'var(--fw-color-danger)',
+        'fw-danger-bg':   'var(--fw-color-danger-bg)',
+        // Dark chrome (sidebar) aliases
+        'nav-bg':       'var(--fw-color-nav-bg)',
+        'nav-surface':  'var(--fw-color-nav-surface)',
+        'nav-text':     'var(--fw-color-nav-text)',
+        'nav-text-dim': 'var(--fw-color-nav-text-dim)',
+        'nav-accent':   'var(--fw-color-nav-accent)',
+
         // W0 token unification (2026-05-28): `helm-green-*` and
         // `helm-amber-*` OKLCH scales were deleted. The single canonical
         // brand green lives under `primary-*` below (sourced from
@@ -161,6 +230,18 @@ const config: Config = {
         serif: ['var(--font-fraunces)', 'var(--font-serif)', 'Playfair Display', 'Georgia', 'serif'],
         mono: ['var(--font-geist-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace'],
         display: ['var(--font-geist-sans)', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+        // ── Fairway design-system type roles (ADDITIVE) ──
+        // Distinct names (`font-fw-*`) so they never override the active
+        // `font-sans` / `font-display` / `font-mono` utilities above. Mirror
+        // the --fw-font-* vars in src/styles/design-tokens.css. Loaded by
+        // next/font in src/app/layout.tsx (Fraunces variable / General Sans
+        // local / Fragment Mono). Only opted-in Fairway components use these.
+        // Apple system sans (SF Pro on Apple devices) — no serif. The headline
+        // (`fw-display`) + body (`fw-sans`) both ride the system stack so the UI
+        // reads like a native Apple app; numbers stay on Fragment Mono (`fw-mono`).
+        'fw-display': ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        'fw-sans':    ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"Segoe UI"', 'Roboto', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        'fw-mono':    ['var(--font-fairway-mono)', 'ui-monospace', '"SF Mono"', 'monospace'],
       },
       fontSize: {
         // ═══════════════════════════════════════════════════════════════
@@ -260,6 +341,13 @@ const config: Config = {
         '2xl':  '20px',     // modals
         '3xl':  '24px',     // hero plinths only
         'full': '9999px',
+        // ── Fairway design-system radii (ADDITIVE — token-backed) ──
+        // `card` (= 20px, THE Fairway card radius) is a new name; the rest are
+        // `fw-*` so they never clash with the canonical scale above.
+        'card':   'var(--fw-radius-card)',  // 20px — THE Fairway card radius
+        'fw-sm':  'var(--fw-radius-sm)',    // 10px — inputs, chips
+        'fw-md':  'var(--fw-radius-md)',    // 14px — list rows, insets
+        'fw-lg':  'var(--fw-radius-lg)',    // 28px — modals, sheets, hero plinths
       },
       zIndex: {
         // CANONICAL z-index tier (W0 — synthesis §5: replaces 17 ad-hoc
@@ -320,6 +408,22 @@ const config: Config = {
         'glow-amber': '0 0 30px rgba(217,119,6,0.15)',
         'glow-emerald': '0 0 30px rgba(16,185,129,0.15)',
         'glow-green-intense': '0 0 60px rgba(22, 163, 74, 0.5)',
+
+        // ═══════════════════════════════════════════════════════════════
+        // FAIRWAY DESIGN SYSTEM — warm-tinted elevation (ADDITIVE / FOUNDATION)
+        // ---------------------------------------------------------------
+        // Soft, layered, warm-tinted (hue ~60) — afternoon light, never pure
+        // black (src/styles/design-tokens.css). `flat`/`soft`/`raise`/`pop`
+        // are new names; `fw-glass`/`fw-modal`/`fw-glow-accent` are namespaced
+        // because plain `glass` already exists above. The current app's
+        // `shadow-glass` / `shadow-card` etc. are untouched.
+        // ═══════════════════════════════════════════════════════════════
+        'flat':          'var(--fw-shadow-flat)',
+        'soft':          'var(--fw-shadow-soft)',   // hover / raised cards
+        'raise':         'var(--fw-shadow-raise)',  // popovers / floating glass (spec "lift")
+        'pop':           'var(--fw-shadow-pop)',    // anchored panels
+        'fw-modal':      'var(--fw-shadow-modal)',  // sheets / modals
+        'fw-glow-accent':'var(--fw-glow-accent)',   // accent emphasis ring
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
@@ -335,6 +439,12 @@ const config: Config = {
         // BATCH 5: Premium Dashboard Background
         'cream-gradient': 'linear-gradient(180deg, #FBFAF7 0%, #F7F5F2 35%, #F0EBE3 70%, #E5DFD3 100%)',
         'linen-gradient': 'linear-gradient(180deg, #FBFAF7 0%, #F7F5F2 100%)',
+        // ── Fairway design-system canvas wash (ADDITIVE — token-backed) ──
+        // The warm-cream sunlit page gradient. `bg-canvas-gradient` is the
+        // Fairway replacement for a flat `bg-canvas` on redesigned pages; it
+        // resolves to --fw-gradient-canvas (src/styles/design-tokens.css) and
+        // only renders where a Fairway surface opts in.
+        'canvas-gradient': 'var(--fw-gradient-canvas)',
       },
       animation: {
         // ═══════════════════════════════════════════════════════════════
@@ -569,6 +679,8 @@ const config: Config = {
       },
     },
   },
-  plugins: [tailwindcssAnimate],
+  // Filter falsy entries so a bad interop resolution can never inject an
+  // `undefined` plugin into `resolveConfig` (the global CSS crash above).
+  plugins: [tailwindcssAnimate].filter(Boolean) as Config["plugins"],
 };
 export default config;

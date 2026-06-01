@@ -40,7 +40,7 @@ export function IntentPill({
     : 'text-eyebrow px-2 py-0.5 gap-1';
 
   const baseClasses =
-    'inline-flex items-center font-medium rounded-full border tabular-nums transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]';
+    'inline-flex items-center font-medium rounded-full border tabular-nums transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]';
 
   // The exact hue is owned by the lib's NARRATIVE_GOAL_PRESENTATION map
   // (`pillClass`), shared with IntentDrawer — the pill's color stays the single

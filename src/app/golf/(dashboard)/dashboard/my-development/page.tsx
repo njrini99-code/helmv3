@@ -23,6 +23,18 @@ import { Reveal } from '@/components/ui/reveal';
 import { LogProgressButton, MarkCompleteButton } from './LogProgressButton';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayMyDevelopment, type FocusAreaCardData } from '@/components/fairway';
+import {
+  loadActiveGoals,
+  loadPendingGoalSuggestions,
+} from '@/lib/coachhelm/v3/goals/loader';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
+import type { FairwayGoalCardData } from '@/components/fairway/pages/coachhelm/FairwayGoalCard';
+import type { GoalSuggestionView } from '@/components/fairway/pages/coachhelm/GoalsSection';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
+import { getPlayerCausalRelationships } from '@/app/golf/actions/causal-relationships';
 
 export const metadata: Metadata = {
   title: 'My Development | Helm Golf',
@@ -72,7 +84,7 @@ export default async function MyDevelopmentPage() {
   const supabase = await createClient();
 
   // Fetch focus areas for this player
-  const { data: focusAreas } = await supabase
+  const { data: focusAreas, error: focusAreasError } = await supabase
     .from('golf_player_focus_areas')
     .select(`
       id,
@@ -95,6 +107,54 @@ export default async function MyDevelopmentPage() {
 
   const activeAreas = (focusAreas || []).filter(fa => fa.status === 'active' || fa.status === 'in_progress');
   const completedAreas = (focusAreas || []).filter(fa => fa.status === 'completed');
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm player "My Development" list (player CoachHelmShell
+  // variant). It receives the SAME pre-computed active/completed partition; cards
+  // render REAL source-chip Links + a per-area Sparkline (honest InsufficientData
+  // when thin), with a real error state distinct from empty. The write actions
+  // (updateFocusAreaProgress / completeFocusArea) are reused UNCHANGED. Flag OFF
+  // (default) → the legacy AREA_TYPES/STATUS_CONFIG card markup renders as today.
+  if (isRedesignEnabled()) {
+    // ── v3 data layers (Goals + Standing) — read ONLY inside the flag fork ──
+    // The flag-OFF legacy branch below never touches these loaders.
+    const [activeGoals, suggestions, standingMap, causalRelationships] = await Promise.all([
+      loadActiveGoals(player.id),
+      loadPendingGoalSuggestions(player.id, 5),
+      loadPlayerStandingMap(player.id),
+      getPlayerCausalRelationships(player.id),
+    ]);
+    const goalCards: FairwayGoalCardData[] = activeGoals.map((g) => ({
+      goal: g,
+      standing: standingMap.get(g.metric_id) ?? null,
+    }));
+    const suggestionViews: GoalSuggestionView[] = suggestions.map((s) => {
+      const cfg = getMetricRenderConfig(s.metric_id);
+      return {
+        suggestion: s,
+        display_label: cfg?.display_label ?? s.metric_id,
+        unit: cfg?.unit ?? 'count',
+      };
+    });
+    const standingByMetric = Object.fromEntries(standingMap) as Record<
+      string,
+      PlayerStanding
+    >;
+
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayMyDevelopment
+          activeAreas={activeAreas as FocusAreaCardData[]}
+          completedAreas={completedAreas as FocusAreaCardData[]}
+          loadError={Boolean(focusAreasError)}
+          goals={goalCards}
+          suggestions={suggestionViews}
+          standingByMetric={standingByMetric}
+          causalRelationships={causalRelationships}
+        />
+      </div>
+    );
+  }
 
   const getProgressPercent = (current: number | null, target: number | null, targetMetric?: string | null) => {
     if (current == null || target == null || target === 0) return 0;

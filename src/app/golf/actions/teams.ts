@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { revalidatePath } from 'next/cache';
 
 // ============================================================================
@@ -42,13 +43,8 @@ async function getCoachTeamId(
   supabase: Awaited<ReturnType<typeof createClient>>,
   organizationId: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-  return team?.id ?? null;
+  // Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
+  return resolveCoachTeamId(supabase, organizationId);
 }
 
 /**

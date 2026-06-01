@@ -70,6 +70,17 @@ export interface RoundInfo {
 // TYPES - Calculated Stats Output
 // ============================================================================
 
+/** Scoring outcome counts for the holes of one par type (3 / 4 / 5). */
+export interface ParScoreDistribution {
+  eagle: number; // score-to-par <= -2 (eagle or better)
+  birdie: number; // -1
+  par: number; // 0
+  bogey: number; // +1
+  doublePlus: number; // >= +2
+  total: number; // holes of this par played
+  avgToPar: number | null; // mean (score - par), null when no holes
+}
+
 export interface GolfStats {
   // General
   roundsPlayed: number;
@@ -101,6 +112,13 @@ export interface GolfStats {
   parsPerRound: number | null;
   bogeysPerRound: number | null;
   doublePlusPerRound: number | null;
+
+  /** Scoring distribution split by hole par (3 / 4 / 5). */
+  scoringByPar: {
+    par3: ParScoreDistribution;
+    par4: ParScoreDistribution;
+    par5: ParScoreDistribution;
+  };
 
   // Scoring by round type
   practiceScoringAvg: number | null;
@@ -989,6 +1007,11 @@ function aggregateRoundStats(rounds: Array<{
     parsPerRound: null,
     bogeysPerRound: null,
     doublePlusPerRound: null,
+    scoringByPar: {
+      par3: { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, avgToPar: null },
+      par4: { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, avgToPar: null },
+      par5: { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, avgToPar: null },
+    },
     practiceScoringAvg: null,
     practiceRounds: 0,
     qualifyingScoringAvg: null,
@@ -1238,6 +1261,11 @@ function aggregateRoundStats(rounds: Array<{
   const girPar5 = { made: 0, total: 0 };
   let puttsOnGir = 0;
 
+  // Per-par scoring distribution accumulators (→ stats.scoringByPar).
+  const scorePar3 = { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, toParSum: 0 };
+  const scorePar4 = { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, toParSum: 0 };
+  const scorePar5 = { eagle: 0, birdie: 0, par: 0, bogey: 0, doublePlus: 0, total: 0, toParSum: 0 };
+
   // GIR by distance and lie
   const girByDistance: Record<string, { made: number; total: number }> = {};
   const girByLie = {
@@ -1391,6 +1419,19 @@ function aggregateRoundStats(rounds: Array<{
       else if (scoreToPar === 0) stats.totalPars++;
       else if (scoreToPar === 1) stats.totalBogeys++;
       else stats.totalDoublePlus++;
+
+      // Per-par scoring distribution — bucket the same outcome by hole par.
+      const parBucket =
+        hole.par === 3 ? scorePar3 : hole.par === 4 ? scorePar4 : hole.par === 5 ? scorePar5 : null;
+      if (parBucket) {
+        parBucket.total++;
+        parBucket.toParSum += scoreToPar;
+        if (scoreToPar <= -2) parBucket.eagle++;
+        else if (scoreToPar === -1) parBucket.birdie++;
+        else if (scoreToPar === 0) parBucket.par++;
+        else if (scoreToPar === 1) parBucket.bogey++;
+        else parBucket.doublePlus++;
+      }
 
       // Streaks
       if (scoreToPar === -1) {
@@ -1846,6 +1887,21 @@ function aggregateRoundStats(rounds: Array<{
   stats.girPctPar3 = safePercent(girPar3.made, girPar3.total);
   stats.girPctPar4 = safePercent(girPar4.made, girPar4.total);
   stats.girPctPar5 = safePercent(girPar5.made, girPar5.total);
+
+  const finalizeParScore = (acc: typeof scorePar3): ParScoreDistribution => ({
+    eagle: acc.eagle,
+    birdie: acc.birdie,
+    par: acc.par,
+    bogey: acc.bogey,
+    doublePlus: acc.doublePlus,
+    total: acc.total,
+    avgToPar: acc.total > 0 ? acc.toParSum / acc.total : null,
+  });
+  stats.scoringByPar = {
+    par3: finalizeParScore(scorePar3),
+    par4: finalizeParScore(scorePar4),
+    par5: finalizeParScore(scorePar5),
+  };
 
   stats.puttsPerRound = stats.holesPlayed > 0
     ? Math.round(((stats.totalPutts / stats.holesPlayed) * 18) * 100) / 100

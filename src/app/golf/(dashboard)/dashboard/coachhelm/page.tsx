@@ -11,6 +11,10 @@ import {
 import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import type { Metadata } from 'next';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerCoachHelm } from '@/components/fairway';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
+import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 
 export const metadata: Metadata = {
   title: 'CoachHelm | GolfHelm',
@@ -179,6 +183,36 @@ export default async function PlayerCoachHelmPage() {
 
   if (!dashboardResult.data) {
     return <ErrorState error="No dashboard data available" />;
+  }
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the warm player front door (player CoachHelmShell variant: sub-nav
+  // = Brief + My Development). It receives the SAME parallel-fetched props; null
+  // V3 panels degrade to honest InsufficientData INSIDE the surface (no shells),
+  // and the "Ask CoachHelm about this insight" entry ships RESERVED/disabled (no
+  // chat-gate lift this wave). Flag OFF (default) → PlayerCoachHelmDashboard
+  // renders EXACTLY as today. All gate states above are shared by both branches.
+  if (isRedesignEnabled()) {
+    // Standing snapshots (you vs team vs PGA) — flag-gated read, lives ONLY in
+    // this fork so the flag-OFF path is byte-identical. Convert the Map to a
+    // plain Record so it serializes across the server→client boundary.
+    const standingMap = await loadPlayerStandingMap(player.id);
+    const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayPlayerCoachHelm
+          data={dashboardResult.data}
+          playerId={player.id}
+          initialShotAnalytics={analyticsResult.success ? analyticsResult.data : null}
+          profileData={profileData}
+          trendData={trendData}
+          shotData={shotData}
+          topInsight={topInsight}
+          secondaryInsights={secondaryInsights}
+          standingByMetric={standingByMetric}
+        />
+      </div>
+    );
   }
 
   // Render the dashboard

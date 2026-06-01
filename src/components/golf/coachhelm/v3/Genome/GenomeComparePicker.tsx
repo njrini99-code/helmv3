@@ -86,7 +86,7 @@ export function GenomeComparePicker({
                     aria-current={isSelected ? 'true' : undefined}
                     aria-disabled={isOther || undefined}
                     tabIndex={isOther ? -1 : undefined}
-                    className={`block px-3 py-2 rounded-lg text-sm transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+                    className={`block px-3 py-2 rounded-lg text-sm transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                       isSelected
                         ? 'bg-warm-900 text-white shadow-[0_8px_18px_-12px_rgba(28,25,23,0.45)]'
                         : isOther

@@ -15,6 +15,7 @@ import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { PlayerStatusBadge } from '@/components/golf/roster/PlayerStatusBadge';
 import { YearBadge } from '@/components/golf/roster/YearBadge';
 import { PlayerStatsSection } from '@/components/golf/profile/PlayerStatsSection';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import {
   IconMessage,
   IconMapPin,
@@ -23,6 +24,8 @@ import {
   IconPhone,
 } from '@/components/icons';
 import { Metadata } from 'next';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -122,16 +125,8 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     notFound();
   }
 
-  // Verify player is on coach's team
-  let teamId: string | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
-    teamId = orgTeam?.id || null;
-  }
+  // Verify player is on coach's team (deterministic: handles orgs with >1 team)
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
   if (!teamId) {
     notFound();
@@ -167,6 +162,18 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .limit(5);
 
   const totalRounds = recentRounds?.length || 0;
+
+  // ── Fairway (warm-premium) fork — flag-gated re-skin of this profile page.
+  // Reuses the SAME loaded player row + membership status + recent rounds; the
+  // detailed stats cluster (FairwayStatsSection) refetches via the same engine
+  // action client-side. Legacy markup below stays byte-for-byte when flag-off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full">

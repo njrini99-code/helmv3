@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import { TravelClient } from './travel-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayTravel } from '@/components/fairway/pages/travel';
 
 export const metadata: Metadata = {
   title: 'Travel | Helm Golf',
@@ -20,17 +23,17 @@ export default async function GolfTravelPage() {
   const { coach, player } = session;
   const supabase = await createClient();
 
-  // Team lookups in parallel (coach via org, player via membership)
-  const [coachTeamResult, playerTeamResult] = await Promise.all([
+  // Team lookups in parallel (coach via org — deterministic helper handles orgs
+  // with >1 team; player via membership)
+  const [coachTeamId, playerTeamResult] = await Promise.all([
     coach?.organization_id
-      ? supabase.from('golf_teams').select('id').eq('organization_id', coach.organization_id).maybeSingle()
-      : Promise.resolve({ data: null }),
+      ? resolveCoachTeamId(supabase, coach.organization_id, coach.id)
+      : Promise.resolve(null),
     player?.id
       ? supabase.from('golf_team_members').select('team_id').eq('player_id', player.id).eq('status', 'active').maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
 
-  const coachTeamId = coachTeamResult.data?.id || null;
   const playerTeamId = playerTeamResult.data?.team_id || null;
   const isCoach = !!coach && !!coachTeamId;
   const teamId = coachTeamId || playerTeamId;
@@ -78,6 +81,23 @@ export default async function GolfTravelPage() {
     notes: item.notes,
     created_at: item.created_at,
   }));
+
+  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
+  // Reuses the SAME mapped golf_travel_itineraries rows + role resolved above;
+  // re-skins onto the warm-matte Fairway system. Legacy branch below is
+  // unchanged when the flag is off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayTravel
+          itineraries={itineraries}
+          coachId={coach?.id || ''}
+          teamId={teamId}
+          isCoach={isCoach}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

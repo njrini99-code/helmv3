@@ -15,6 +15,8 @@ import { QualifyingBoard } from '@/components/golf/coachhelm/v3/QualifyingBoard'
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayQualifyingWorkspace } from '@/components/fairway/pages/qualifiers/FairwayQualifyingWorkspace';
 import type { Metadata } from 'next';
 
 interface PageProps {
@@ -43,6 +45,14 @@ export default async function QualifyingWorkspacePage({ params }: PageProps) {
   const supabase = await createClient();
   const workspace = await loadQualifyingWorkspace(supabase, id);
   if (!workspace) notFound();
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayQualifyingWorkspace workspace={workspace} />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full bg-transparent">

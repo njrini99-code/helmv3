@@ -126,7 +126,7 @@ export function RecruitingPageClient({
               onClick={() => setFilter(active ? 'all' : (s.value as StatusFilter))}
               className={cn(
                 'group relative flex flex-col items-start gap-1.5 px-5 py-4 rounded-3xl surface-matte',
-                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                 'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
                 active && 'ring-1 ring-primary-500/35',
@@ -180,7 +180,7 @@ export function RecruitingPageClient({
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="pl-8 pr-8 py-2 rounded-full text-[12.5px] font-medium text-warm-700 bg-cream-100/80 ring-1 ring-warm-200/55 hover:ring-warm-300/70 focus:outline-none focus:ring-2 focus:ring-primary-300/45 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] appearance-none"
+              className="pl-8 pr-8 py-2 rounded-full text-[12.5px] font-medium text-warm-700 bg-cream-100/80 ring-1 ring-warm-200/55 hover:ring-warm-300/70 focus:outline-none focus:ring-2 focus:ring-primary-300/45 transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] appearance-none"
               aria-label="Sort prospects"
             >
               {SORT_OPTIONS.map((opt) => (
@@ -198,7 +198,7 @@ export function RecruitingPageClient({
               'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
               'bg-primary-600/95 text-white',
               'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
-              'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
+              'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
             )}
           >
             <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />
@@ -267,7 +267,7 @@ function EmptyState({ isFiltered, onAdd }: { isFiltered: boolean; onAdd: () => v
             'group inline-flex items-center gap-2 px-6 py-3 rounded-full',
             'bg-primary-600/95 text-white text-body-sm font-medium tracking-[-0.005em]',
             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
-            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
+            'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_22px_rgba(22,163,74,0.24)]'
           )}
         >
           <Plus className="w-4 h-4 transition-transform duration-500 group-hover:rotate-90" />

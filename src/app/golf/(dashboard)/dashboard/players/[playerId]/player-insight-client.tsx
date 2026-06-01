@@ -608,7 +608,7 @@ export function PlayerInsightClient({
                 ) : (
                   <ul className="divide-y divide-warm-200/30">
                     {patterns.map((pattern) => (
-                      <li key={pattern.id} className="px-6 md:px-7 py-4 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                      <li key={pattern.id} className="px-6 md:px-7 py-4 hover:bg-cream-50/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
                         <div className="flex items-start justify-between gap-3 mb-1.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', severityDotColor(pattern.severity))} aria-hidden="true" />

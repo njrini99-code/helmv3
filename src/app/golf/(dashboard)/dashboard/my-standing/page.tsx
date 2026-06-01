@@ -36,6 +36,8 @@ import {
 } from '@/lib/coachhelm/v3/metrics/registry';
 import type { PlayerStanding } from '@/lib/coachhelm/v3/standing/types';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { StandingStrip, Surface, EmptyState as FairwayEmptyState } from '@/components/fairway';
 
 export const metadata: Metadata = {
   title: 'My Standing | Helm Golf',
@@ -100,6 +102,73 @@ export default async function MyStandingPage() {
 
   const totalRows = Array.from(byCategory.values()).reduce((a, b) => a + b.length, 0);
   const isEmpty = totalRows === 0;
+
+  // ── Fairway (warm-premium) fork — flag-gated re-skin. Same loaded standing
+  // map + the SAME StandingStrip vocabulary the stats cockpit uses, grouped by
+  // category, in a calm single column. Legacy below stays byte-for-byte off-flag.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <div className="mx-auto w-full max-w-[860px] px-4 py-6 md:px-6 md:py-8">
+          <header className="mb-8">
+            <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-accent-700">
+              Standing
+            </p>
+            <h1 className="mt-1 font-fw-display text-h1 font-semibold tracking-[-0.02em] text-text-primary">
+              Where you stack up.
+            </h1>
+            <p className="mt-1 font-fw-sans text-body-sm text-text-tertiary">
+              {isEmpty ? 'No standing data yet.' : `${totalRows} metric${totalRows === 1 ? '' : 's'} tracked`} · you vs your team
+              and PGA Tour, refreshed nightly.
+            </p>
+          </header>
+
+          {isEmpty ? (
+            <Surface elevation="border" padding="lg">
+              <FairwayEmptyState
+                title="More rounds needed"
+                description="Log 5+ rounds and you’ll see where you stack up vs PGA Tour and your team. Standing refreshes nightly."
+              />
+            </Surface>
+          ) : (
+            <div className="flex flex-col gap-10">
+              {CATEGORY_ORDER.filter((g) => (byCategory.get(g.category) ?? []).length > 0).map((group) => {
+                const rows = byCategory.get(group.category) ?? [];
+                return (
+                  <section key={group.category} className="flex flex-col gap-3">
+                    <div className="px-1">
+                      <p className="font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.16em] text-text-tertiary">
+                        {group.label}
+                      </p>
+                      <p className="mt-0.5 font-fw-sans text-caption text-text-tertiary">{group.description}</p>
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      {rows.map(({ id, standing, cfg }) => (
+                        <StandingStrip
+                          key={id}
+                          metric_id={id}
+                          metric_label={cfg.display_label}
+                          player_value={standing.player_value}
+                          team_avg={standing.team_avg}
+                          team_n={standing.team_n}
+                          team_pct={standing.team_pct}
+                          pga_value={standing.pga_value}
+                          direction={cfg.direction}
+                          unit={cfg.unit}
+                          scale={cfg.default_scale}
+                          size="card"
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full">

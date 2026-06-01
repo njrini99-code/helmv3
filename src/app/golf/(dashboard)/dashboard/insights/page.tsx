@@ -1,11 +1,15 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getGolfSessionProfile } from '@/lib/auth/session';
+import { createClient } from '@/lib/supabase/server';
 import { InsightsPageContent } from './InsightsPageContent';
 import { PageLoading } from '@/components/ui/loading';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { FeatureUnavailable } from '@/components/golf/layout/FeatureUnavailable';
 import { getInsightFilterOptions } from '@/app/golf/actions/insight-management';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCoachHelmSignals } from '@/components/fairway';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 
 // ============================================================================
 // METADATA
@@ -62,6 +66,41 @@ export default async function InsightsPage({ searchParams }: InsightsPageProps) 
   const filterOptions = filterOptionsResult.success && filterOptionsResult.options
     ? filterOptionsResult.options
     : null;
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the unified Signals workspace (insights-only preset, smart default
+  // "new & critical this week", table view). It renders the CoachHelmShell itself
+  // and client-fetches via getInsightsForCoach (the SAME read InsightsPageContent
+  // used). Flag OFF (default) → InsightsPageContent renders EXACTLY as today.
+  if (isRedesignEnabled()) {
+    // org→team lookup ONLY in the redesign branch (legacy path unchanged) so the
+    // Scan-Team control prop is satisfiable; not functionally used here.
+    const supabase = await createClient();
+    const teamId = (await resolveCoachTeamId(supabase, coach.organization_id, coach.id)) ?? '';
+    // Suppress the shell badge on the insights surface: the on-page "Urgent +
+    // high" tile is the single source of truth for the pressing-signal count.
+    // A shell badge (urgent+high alerts) contradicts the tile on the SAME
+    // screen (e.g. badge "13" vs tile "8"), so we pass null here. The
+    // getAlertCounts read is kept off this path entirely — it was only ever
+    // feeding the now-suppressed badge.
+    const signalCount = null;
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayCoachHelmSignals
+          coachId={coach.id}
+          teamId={teamId}
+          signalSource="insights"
+          defaultFilter={{
+            signalTypes: ['insight'],
+            smartDefault: 'new_and_critical_this_week',
+            view: 'table',
+          }}
+          signalCount={signalCount}
+          initialSearchParams={params}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full">

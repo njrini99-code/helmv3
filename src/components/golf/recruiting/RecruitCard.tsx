@@ -40,7 +40,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
       onClick={onClick}
       className={cn(
         'group relative w-full text-left rounded-3xl surface-matte',
-        'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'hover:-translate-y-[2px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_24px_44px_rgba(58,50,40,0.07)]',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30',
       )}
@@ -108,7 +108,7 @@ export function RecruitCard({ recruit, onClick }: RecruitCardProps) {
 
         <span
           aria-hidden
-          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] text-warm-400"
+          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] text-warm-400"
         >
           <MoreHorizontal className="w-4 h-4" />
         </span>

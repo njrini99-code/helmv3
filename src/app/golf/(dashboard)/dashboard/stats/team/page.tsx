@@ -6,6 +6,11 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
+import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
+import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -50,17 +55,17 @@ export default async function TeamStatsPage() {
 
   const supabase = await createClient();
 
-  // Get team_id from golf_teams via organization_id
-  let teamId: string | null = null;
+  // Get team_id from golf_teams via organization_id (deterministic: handles
+  // orgs with >1 team), then load the chosen team's display name.
+  const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
   let team: { name: string } | null = null;
-  if (coach.organization_id) {
-    const { data: orgTeam } = await supabase
+  if (teamId) {
+    const { data: chosenTeam } = await supabase
       .from('golf_teams')
-      .select('id, name')
-      .eq('organization_id', coach.organization_id)
+      .select('name')
+      .eq('id', teamId)
       .maybeSingle();
-    teamId = orgTeam?.id || null;
-    team = orgTeam ? { name: orgTeam.name } : null;
+    team = chosenTeam ? { name: chosenTeam.name } : null;
   }
 
   if (!teamId) {
@@ -306,6 +311,50 @@ export default async function TeamStatsPage() {
       best_round_9: bestRound9,
     };
   });
+
+  // ── Thin flag fork (ADDITIVE) ──────────────────────────────────────────────
+  // Flag ON → the data-rich Fairway team-stats surface inside the .fairway-ds
+  // scope on a bg-canvas page. It receives the SAME data the route already
+  // resolved (teamId-scoped players + per-player intelligence) plus two thin
+  // reads that JOIN already-populated tables: team leak maps (raw shots vs PGA)
+  // and per-player standing snapshots. Flag OFF (default) → the legacy
+  // AnimatedPage/TeamStatsTable below renders EXACTLY as today.
+  if (isRedesignEnabled()) {
+    // Same per-player intelligence map shape the legacy table receives.
+    const intelligenceByPlayer = intelligenceResult.success && intelligenceResult.data
+      ? Object.fromEntries(
+          intelligenceResult.data.players.map((p) => [
+            p.playerId,
+            {
+              composite: p.composite,
+              overall: p.categories?.overall ?? null,
+              topInsightTitle: p.topInsight?.title ?? null,
+              topInsightPriority: p.topInsight?.priority ?? null,
+              insightCount: p.insightCount,
+            },
+          ]),
+        )
+      : {};
+    const [leakRes, standingEntries] = await Promise.all([
+      getTeamLeakMaps(teamId),
+      Promise.all(
+        playersWithStats.map(
+          async (p) => [p.id, await loadPlayerStandingMap(p.id)] as const,
+        ),
+      ),
+    ]);
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayTeamStats
+          teamName={team?.name ?? 'Your Team'}
+          players={playersWithStats}
+          intelligenceByPlayer={intelligenceByPlayer}
+          leakMaps={leakRes.success ? leakRes.data ?? null : null}
+          standingByPlayer={new Map(standingEntries)}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full">

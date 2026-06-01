@@ -4,6 +4,9 @@ import { redirect } from 'next/navigation';
 import { Metadata } from 'next';
 import NewQualifierClient from './new-qualifier-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier | Helm Sports',
@@ -22,13 +25,9 @@ export default async function NewQualifierPage() {
   let players: Array<{ id: string; first_name: string; last_name: string }> = [];
 
   if (coach?.organization_id) {
-    const { data: orgTeam } = await supabase
-      .from('golf_teams')
-      .select('id')
-      .eq('organization_id', coach.organization_id)
-      .maybeSingle();
+    const teamId = await resolveCoachTeamId(supabase, coach.organization_id, coach.id);
 
-    if (orgTeam?.id) {
+    if (teamId) {
       const { data: teamMembersData } = await supabase
         .from('golf_team_members')
         .select(`
@@ -38,7 +37,7 @@ export default async function NewQualifierPage() {
             last_name
           )
         `)
-        .eq('team_id', orgTeam.id)
+        .eq('team_id', teamId)
         .eq('status', 'active');
 
       players = (teamMembersData || [])
@@ -48,6 +47,14 @@ export default async function NewQualifierPage() {
         )
         .sort((a, b) => a.last_name.localeCompare(b.last_name));
     }
+  }
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayNewQualifier players={players} />
+      </div>
+    );
   }
 
   return (

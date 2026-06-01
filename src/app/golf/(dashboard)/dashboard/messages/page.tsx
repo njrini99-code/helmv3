@@ -24,8 +24,18 @@ import { AttachmentPreview } from '@/components/golf/messages/AttachmentPreview'
 import { useMessageAttachments } from '@/hooks/golf/use-message-attachments';
 import type { PendingAttachment } from '@/lib/storage/attachments';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
+import { FairwayMessages } from '@/components/fairway/pages/messages';
 
 export default function GolfMessagesPage() {
+  // ── Fairway redesign fork ───────────────────────────────────────────────────
+  return isRedesignEnabled() ? <FairwayMessages /> : <LegacyGolfMessagesPage />;
+}
+
+function LegacyGolfMessagesPage() {
+  // ──────────────────────────────────────────────────────────────────────────
+  // LEGACY (flag-off) — unchanged.
+  // ──────────────────────────────────────────────────────────────────────────
   const { showToast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();

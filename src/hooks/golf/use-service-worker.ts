@@ -131,6 +131,10 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
         scope: '/',
       });
 
+      if (!registration) {
+        throw new Error('Service worker registration did not return a registration.');
+      }
+
       registrationRef.current = registration;
 
       if (!mountedRef.current) return;
@@ -138,7 +142,7 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       console.log('[SW Hook] Service worker registered:', registration.scope);
 
       // Check for sync support
-      const syncSupported = 'sync' in registration;
+      const syncSupported = typeof registration === 'object' && 'sync' in registration;
 
       // Check push notification permission. Guard `Notification` — it is
       // undefined in browsers/contexts without the Notifications API (e.g.
@@ -182,11 +186,26 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
       });
 
     } catch (error) {
-      console.error('[SW Hook] Registration failed:', error);
-
       if (!mountedRef.current) return;
 
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      const lowerMessage = errorMessage.toLowerCase();
+      const blockedOrUnavailable =
+        lowerMessage.includes('blocked') ||
+        lowerMessage.includes('not available') ||
+        lowerMessage.includes('did not return a registration');
+
+      if (blockedOrUnavailable) {
+        setState(prev => ({
+          ...prev,
+          isSupported: false,
+          status: 'idle',
+          error: null,
+        }));
+        return;
+      }
+
+      console.error('[SW Hook] Registration failed:', error);
 
       setState(prev => ({
         ...prev,

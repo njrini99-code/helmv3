@@ -746,6 +746,115 @@ export async function createFocusAreaFromInsight(
 }
 
 // ============================================================================
+// RECORD FOCUS-AREA OUTCOME (closes the effectiveness write loop)
+// ============================================================================
+
+/**
+ * Allowed outcome verdicts a coach can record against a focus area.
+ * These map 1:1 onto the values the CoachHelm effectiveness reader expects in
+ * `golf_coach_insights.outcome_status`.
+ */
+export type FocusAreaOutcome = 'improved' | 'no_change' | 'worsened';
+
+/**
+ * Record the measured outcome of a focus area and credit its source insight.
+ *
+ * Closes the effectiveness write loop that the CoachHelm Effectiveness reader
+ * depends on. Behavior:
+ *   1. Look up the focus area by id to get `from_insight_id` (and `player_id`
+ *      for the same ownership guard the other writers use).
+ *   2. If `from_insight_id` is present, UPDATE the originating insight:
+ *        outcome_status = <outcome>, outcome_measured_at = now(),
+ *        action_taken = true  (these are the exact live columns the reader uses).
+ *   3. ALSO mark the focus area `status='completed'` (the work is resolved).
+ *   4. If `from_insight_id` is null, just complete the focus area and return a
+ *      soft notice (there is no insight to credit).
+ *
+ * Authz mirrors `completeFocusArea`: caller must be the player whose focus area
+ * it is, or a coach staffing any team that player is on. Return shape matches
+ * the other simple writers in this file: { success, error? } (+ optional notice).
+ */
+export async function recordFocusAreaOutcome(
+  focusAreaId: string,
+  outcome: FocusAreaOutcome
+): Promise<{ success: boolean; error?: string; notice?: string }> {
+  const supabase = await createClient();
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return { success: false, error: 'Not authenticated' };
+  }
+
+  // Look up the focus area: we need its player (for the ownership guard) and
+  // its originating insight (the row whose outcome we credit).
+  const { data: focusArea } = await supabase
+    .from('golf_player_focus_areas')
+    .select('player_id, from_insight_id')
+    .eq('id', focusAreaId)
+    .maybeSingle();
+
+  if (!focusArea?.player_id) {
+    return { success: false, error: 'Focus area not found' };
+  }
+
+  const access = await verifyPlayerAccess(focusArea.player_id, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const nowIso = new Date().toISOString();
+
+  // Always mark the focus area completed (the outcome resolves the work).
+  const { error: faError } = await supabase
+    .from('golf_player_focus_areas')
+    .update({
+      status: 'completed',
+      completed_at: nowIso,
+      updated_at: nowIso,
+    })
+    .eq('id', focusAreaId);
+
+  if (faError) {
+    await logServerError(`Failed to complete focus area on outcome: ${faError instanceof Error ? faError.message : String(faError)}`, { action: 'development.recordFocusAreaOutcome' });
+    return { success: false, error: 'Failed to record outcome. Please try again.' };
+  }
+
+  // No source insight → nothing to credit. Soft-notice, still a success.
+  if (!focusArea.from_insight_id) {
+    revalidatePath('/golf/dashboard/development');
+    revalidatePath('/golf/dashboard/my-development');
+    return {
+      success: true,
+      notice: 'Outcome recorded. This focus area had no source insight to credit.',
+    };
+  }
+
+  // Credit the originating insight — the exact columns the effectiveness reader
+  // consumes (outcome_status / outcome_measured_at / action_taken).
+  const { error: insightError } = await supabase
+    .from('golf_coach_insights')
+    .update({
+      outcome_status: outcome,
+      outcome_measured_at: nowIso,
+      action_taken: true,
+    })
+    .eq('id', focusArea.from_insight_id);
+
+  if (insightError) {
+    await logServerError(`Failed to credit insight outcome: ${insightError instanceof Error ? insightError.message : String(insightError)}`, { action: 'development.recordFocusAreaOutcome' });
+    // The focus area is already completed; surface the partial failure honestly.
+    return { success: false, error: 'Outcome saved on the focus area, but crediting the source insight failed. Please try again.' };
+  }
+
+  revalidatePath('/golf/dashboard/development');
+  revalidatePath('/golf/dashboard/my-development');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/analytics/coachhelm');
+
+  return { success: true };
+}
+
+// ============================================================================
 // RESOLVE INSIGHT WITH FOCUS AREA COMPLETION
 // ============================================================================
 // `resolveFocusAreaAndInsight` removed 2026-04-27 — orphaned export with no

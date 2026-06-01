@@ -5,6 +5,8 @@ import { getRecruits } from '@/app/golf/actions/recruiting';
 import { RecruitingPageClient } from '@/components/golf/recruiting/RecruitingPageClient';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayRecruitingPage } from '@/components/fairway/pages/recruiting';
 
 export const metadata: Metadata = {
   title: 'Recruiting HQ | Helm Golf',
@@ -24,6 +26,16 @@ export default async function RecruitingPage() {
   const result = await getRecruits();
   const initialRecruits = result.success && result.data ? result.data : [];
   const loadError = result.success ? null : (result.error ?? 'Could not load recruits');
+
+  if (isRedesignEnabled())
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayRecruitingPage
+          initialRecruits={initialRecruits}
+          loadError={loadError}
+        />
+      </div>
+    );
 
   return (
     <AnimatedPage>

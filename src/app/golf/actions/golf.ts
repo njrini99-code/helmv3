@@ -4,6 +4,7 @@ import { randomInt } from 'crypto';
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { postRoundTrigger } from '@/lib/coachhelm/v2/post-round-trigger';
 import { revalidatePath, updateTag } from 'next/cache';
 import { CACHE_TAGS } from '@/lib/cache/tags';
@@ -403,18 +404,29 @@ const golfEventSchema = z.object({
   timezoneOffset: z.number().int().optional(),
 });
 
-const golfQualifierSchema = z.object({
-  name: z.string().min(1).max(200),
-  description: z.string().max(2000).optional(),
-  courseName: z.string().max(200).optional(),
-  courseId: z.string().uuid().optional(),
-  spotsAvailable: z.number().int().min(1).optional(),
-  entryDeadline: z.string().optional(),
-  rules: z.string().max(5000).optional(),
-  startDate: z.string(),
-  endDate: z.string().optional(),
-  playerIds: z.array(z.string().uuid()),
-});
+const golfQualifierSchema = z
+  .object({
+    name: z.string().min(1).max(200),
+    description: z.string().max(2000).optional(),
+    courseName: z.string().max(200).optional(),
+    courseId: z.string().uuid().optional(),
+    spotsAvailable: z.number().int().min(1).optional(),
+    entryDeadline: z.string().optional(),
+    rules: z.string().max(5000).optional(),
+    startDate: z.string(),
+    endDate: z.string().optional(),
+    playerIds: z.array(z.string().uuid()),
+    // Travel-squad selection model (omit → DB defaults 5 total / 1 coach-pick).
+    selectionSlotsTotal: z.number().int().min(1).max(50).optional(),
+    selectionSlotsCoachPick: z.number().int().min(0).max(50).optional(),
+  })
+  .refine(
+    (d) =>
+      d.selectionSlotsTotal === undefined ||
+      d.selectionSlotsCoachPick === undefined ||
+      d.selectionSlotsCoachPick <= d.selectionSlotsTotal,
+    { message: 'Coach picks cannot exceed the total travel-squad size', path: ['selectionSlotsCoachPick'] },
+  );
 
 const announcementSchema = z.object({
   title: z.string().min(1).max(200),
@@ -430,22 +442,15 @@ const announcementSchema = z.object({
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column)
- * Looks up via organization_id -> golf_teams
+ * Helper to get team_id for a coach (since golf_coaches doesn't have team_id column).
+ * Looks up via organization_id -> golf_teams.
+ * Delegates to the shared deterministic resolver (never throws on orgs with >1 team).
  */
 async function getCoachTeamId(
   supabase: SupabaseClient,
   organizationId: string | null
 ): Promise<string | null> {
-  if (!organizationId) return null;
-
-  const { data: team } = await supabase
-    .from('golf_teams')
-    .select('id')
-    .eq('organization_id', organizationId)
-    .maybeSingle();
-
-  return team?.id ?? null;
+  return resolveCoachTeamId(supabase, organizationId);
 }
 
 /**
@@ -519,6 +524,10 @@ interface GolfQualifierInput {
   startDate: string;
   endDate?: string;
   playerIds: string[];
+  /** Travel-squad size (omit → DB default 5). */
+  selectionSlotsTotal?: number;
+  /** Coach's discretionary picks within the squad (omit → DB default 1). */
+  selectionSlotsCoachPick?: number;
 }
 
 // deriveLieAfterFromResult, deriveLieAfter imported from '@/lib/utils/shot-helpers'
@@ -2276,6 +2285,14 @@ export async function createGolfQualifier(data: GolfQualifierInput): Promise<Act
         end_date: validatedData.endDate || null,
         status: 'upcoming',
         created_by: coach.id,
+        // Only set when provided so omitted values fall back to DB defaults
+        // (5 total / 1 coach-pick) — keeps the legacy create path byte-identical.
+        ...(validatedData.selectionSlotsTotal !== undefined
+          ? { selection_slots_total: validatedData.selectionSlotsTotal }
+          : {}),
+        ...(validatedData.selectionSlotsCoachPick !== undefined
+          ? { selection_slots_coach_pick: validatedData.selectionSlotsCoachPick }
+          : {}),
       })
       .select()
       .single();
@@ -4583,11 +4600,18 @@ export async function getQualifierLeaderboard(
           roundScores,
         };
       })
-      // Sort by total score (lower is better), then by rounds completed (more is better for tie-breaking)
+      // College qualifying ranks by CUMULATIVE TO-PAR (lower is better) — to-par
+      // normalizes rounds played on different-par setups across the window.
+      // Players with no completed round sink to the bottom (never rank "even").
+      // Ties broken by raw total strokes, then by more rounds completed.
       .sort((a, b) => {
-        if (a.totalScore !== b.totalScore) {
-          return a.totalScore - b.totalScore;
-        }
+        const aScored = a.roundsCompleted > 0;
+        const bScored = b.roundsCompleted > 0;
+        if (aScored !== bScored) return aScored ? -1 : 1;
+        const aPar = a.totalToPar ?? Infinity;
+        const bPar = b.totalToPar ?? Infinity;
+        if (aPar !== bPar) return aPar - bPar;
+        if (a.totalScore !== b.totalScore) return a.totalScore - b.totalScore;
         return b.roundsCompleted - a.roundsCompleted;
       });
 
@@ -4598,7 +4622,11 @@ export async function getQualifierLeaderboard(
 
       if (i > 0) {
         const prevEntry = leaderboard[i - 1]!;
-        if (entry.totalScore === prevEntry.totalScore && entry.roundsCompleted === prevEntry.roundsCompleted) {
+        // Ties are on cumulative to-par (the ranking key) — and only between
+        // players who have actually posted a round. Two no-score players don't
+        // "tie for last"; they're both unranked.
+        const bothScored = entry.roundsCompleted > 0 && prevEntry.roundsCompleted > 0;
+        if (bothScored && entry.totalToPar === prevEntry.totalToPar && entry.totalScore === prevEntry.totalScore) {
           entry.position = prevEntry.position;
           entry.isTied = true;
           prevEntry.isTied = true;

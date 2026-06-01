@@ -23,6 +23,7 @@ import type { ChatMessage } from '@/lib/coachhelm/v3/chat/types';
 import { ChatMessageList } from './ChatMessageList';
 import { ChatComposer } from './ChatComposer';
 import { Button, IconButton } from '@/components/ui/button';
+import { useCoachChatSend } from '@/components/fairway/pages/coachhelm/useCoachChatSend';
 import {
   drawerVariants,
   drawerTransition,
@@ -51,10 +52,22 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion() ?? false;
+
+  // Dead-code cleanup: the optimistic send/rollback logic that used to live
+  // inline here is now the ONE shared `useCoachChatSend` hook (a byte-for-byte
+  // extraction). The drawer still owns conversationId + messages; the hook owns
+  // only the in-flight `pending` flag + last `error`. Behavior is identical.
+  const { send, pending, error, clearError } = useCoachChatSend({
+    conversationId,
+    setConversationId,
+    setMessages,
+  });
+
+  const handleSend = (text: string) => {
+    void send(text);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -62,49 +75,10 @@ export function ChatDrawer({ defaultOpen = false }: ChatDrawerProps) {
     }
   }, [messages, pending]);
 
-  async function handleSend(text: string) {
-    setPending(true);
-    setError(null);
-    // Optimistic: stub the user bubble so the UI feels immediate.
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `pending-${Date.now()}`,
-        conversation_id: conversationId ?? '',
-        role: 'user',
-        content: text,
-        tool_calls: null,
-        tool_results: null,
-        cost_usd: null,
-        created_at: new Date().toISOString(),
-      },
-    ]);
-    try {
-      const res = await fetch('/api/coachhelm/v3/chat/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          conversation_id: conversationId ?? undefined,
-          user_message: text,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
-      setConversationId(json.conversation_id);
-      setMessages(json.messages);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      // Roll back the optimistic stub.
-      setMessages((prev) => prev.filter((m) => !m.id.startsWith('pending-')));
-    } finally {
-      setPending(false);
-    }
-  }
-
   function newChat() {
     setConversationId(null);
     setMessages([]);
-    setError(null);
+    clearError();
   }
 
   return (

@@ -64,6 +64,14 @@ export interface SaveCoachingPhilosophyResult {
   error?: string;
 }
 
+export async function revalidateCoachingPhilosophyPaths(): Promise<void> {
+  revalidatePath('/golf/dashboard/settings/coaching-intelligence');
+  revalidatePath('/golf/dashboard/insights');
+  revalidatePath('/golf/dashboard/alerts');
+  revalidatePath('/golf/dashboard/patterns');
+  revalidatePath('/golf/dashboard/intelligence');
+}
+
 /**
  * Upsert a coach's philosophy row. Verifies the current user owns the
  * `coach_id` (maps to golf_coaches.user_id === auth.uid()).
@@ -122,11 +130,7 @@ export async function saveCoachingPhilosophy(
   // revalidate them all. Without this, sensitivity/threshold changes
   // won't affect the next insight generation run until the next hard
   // refresh.
-  revalidatePath('/golf/dashboard/settings/coaching-intelligence');
-  revalidatePath('/golf/dashboard/insights');
-  revalidatePath('/golf/dashboard/alerts');
-  revalidatePath('/golf/dashboard/patterns');
-  revalidatePath('/golf/dashboard/intelligence');
+  await revalidateCoachingPhilosophyPaths();
 
   return { success: true };
 }

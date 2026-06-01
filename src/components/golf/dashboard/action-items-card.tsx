@@ -85,7 +85,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={cn(
-                                'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-4 text-body-sm font-medium transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                                'relative flex-1 flex items-center justify-center gap-1.5 px-3 py-4 text-body-sm font-medium transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                                 isActive ? 'text-warm-900' : 'text-warm-500 hover:text-warm-700'
                             )}
                         >
@@ -138,7 +138,7 @@ export const ActionItemsCard = memo(function ActionItemsCard({ items, role }: Ac
                             <div>
                                 {activeItems.slice(0, 6).map((item) => (
                                     <Link key={item.id} href={getItemLink(item, role)}>
-                                        <div className="group flex items-start gap-3 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer">
+                                        <div className="group flex items-start gap-3 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] cursor-pointer">
                                             <div className="flex-shrink-0 mt-1">
                                                 {item.overdue ? (
                                                     <IconAlertCircle size={15} className="text-red-500" />

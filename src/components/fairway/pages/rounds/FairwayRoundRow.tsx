@@ -1,0 +1,186 @@
+'use client';
+
+/**
+ * ============================================================================
+ * Fairway · Rounds · FairwayRoundRow — ONE round as a ledger row
+ * ----------------------------------------------------------------------------
+ * The month-ledger row (the scannable alternative to FairwayRoundCard). The
+ * whole row is a Link to the round detail — rounds stay clickable. Each row
+ * shows its quick stats inline (the "snapshot" the wall-of-cards hid): score +
+ * score-to-par pill, and Putts / FIR% / GIR% from real columns. On hover the
+ * row tints (bg-surface-tint) and a chevron slides in — premium feedback, NO
+ * layout shift.
+ *
+ * HONESTY: no fabricated zeros. FIR/GIR are shown only when the possible-count
+ * is present and > 0; when NOTHING is loggable the stat cluster reads an honest
+ * "No stats logged" instead of "— — —".
+ *
+ * Reuses the card's pure helpers (scoreToParTone / formatToPar /
+ * getRoundTypeLabel) so the score grading + labels match the card exactly.
+ * Rendered only inside FairwayRoundsLibrary's month blocks (.fairway-ds).
+ * ========================================================================== */
+
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { StatusPill } from '@/components/fairway/controls/status-pill';
+import { Badge, Chip } from '@/components/fairway/controls/badge';
+import { Avatar } from '@/components/fairway/controls/avatar';
+import type { RoundLibraryRound } from './FairwayRoundsLibrary';
+import { scoreToParTone, formatToPar, getRoundTypeLabel } from './FairwayRoundCard';
+
+export interface FairwayRoundRowProps {
+  round: RoundLibraryRound;
+  /** Lowest score-to-par of its month — gets the accent rail + Best badge. */
+  isBestOfPeriod: boolean;
+  userRole: 'coach' | 'player';
+}
+
+function dateParts(iso: string): { weekday: string; md: string } {
+  const d = new Date(iso);
+  return {
+    weekday: d.toLocaleDateString('en-US', { weekday: 'short' }),
+    md: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+  };
+}
+
+/** One round, as a clickable ledger row. */
+export function FairwayRoundRow({ round, isBestOfPeriod, userRole }: FairwayRoundRowProps) {
+  const stp = round.score_to_par ?? 0;
+  const hasToPar = round.score_to_par !== null;
+  const tone = scoreToParTone(stp);
+  const holesPlayed = round.holes_played ?? 18;
+  const { weekday, md } = dateParts(round.round_date);
+  const playerName = round.player
+    ? `${round.player.first_name || ''} ${round.player.last_name || ''}`.trim()
+    : '';
+
+  // Quick stats — HONEST: FIR/GIR only when the denominator is real and > 0.
+  const fir =
+    round.total_fairways !== null && round.total_fairways > 0 && round.total_fairways_hit !== null
+      ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
+      : null;
+  const gir =
+    round.total_gir_possible !== null && round.total_gir_possible > 0 && round.total_gir !== null
+      ? Math.round((round.total_gir / round.total_gir_possible) * 100)
+      : null;
+  const putts = round.total_putts;
+  const hasAnyMicroStat = putts !== null || fir !== null || gir !== null;
+
+  const city = [round.course_city, round.course_state].filter(Boolean).join(', ');
+
+  return (
+    <Link
+      href={`/golf/dashboard/rounds/${round.id}`}
+      className={cn(
+        'group/row relative flex items-center gap-3 px-4 py-3 outline-none transition-colors duration-150',
+        'hover:bg-surface-tint focus-visible:bg-surface-tint',
+        'focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus',
+      )}
+    >
+      {/* Best-of-month accent rail */}
+      {isBestOfPeriod && (
+        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-accent-500" />
+      )}
+
+      {/* Date */}
+      <div className="w-12 flex-shrink-0 leading-tight">
+        <div className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
+          {weekday}
+        </div>
+        <div className="font-fw-display text-body-sm font-medium tabular-nums text-text-primary">
+          {md}
+        </div>
+      </div>
+
+      {/* Course + type */}
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate font-fw-sans text-body font-medium text-text-primary">
+            {round.course_name ?? 'Unknown course'}
+          </span>
+          {isBestOfPeriod && (
+            <Badge tone="accent" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">
+              Best
+            </Badge>
+          )}
+        </div>
+        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 font-fw-sans text-caption text-text-tertiary">
+          <Chip tone="neutral" size="sm" className="flex-shrink-0 uppercase tracking-[0.06em]">
+            {getRoundTypeLabel(round.round_type)}
+          </Chip>
+          {city && <span className="truncate">{city}</span>}
+          <span className="flex-shrink-0 tabular-nums">· {holesPlayed}h</span>
+        </div>
+      </div>
+
+      {/* Quick stats — always visible (the snapshot the cards hid). Honest empty. */}
+      <div className="hidden flex-shrink-0 items-center gap-4 md:flex">
+        {hasAnyMicroStat ? (
+          <>
+            <RowStat label="Putts" value={putts !== null ? `${putts}` : '—'} />
+            <RowStat label="FIR" value={fir !== null ? `${fir}%` : '—'} />
+            <RowStat label="GIR" value={gir !== null ? `${gir}%` : '—'} />
+          </>
+        ) : (
+          <span className="font-fw-sans text-eyebrow italic text-text-tertiary">No stats logged</span>
+        )}
+      </div>
+
+      {/* Score + to-par */}
+      <div className="flex w-[88px] flex-shrink-0 items-center justify-end gap-2">
+        {round.total_score !== null ? (
+          <span
+            className={cn(
+              'font-fw-display text-h3 font-medium leading-none tabular-nums',
+              tone === 'under' ? 'text-accent-700' : 'text-text-primary',
+            )}
+          >
+            {round.total_score}
+          </span>
+        ) : (
+          <span className="font-fw-display text-h3 font-medium leading-none text-text-tertiary">—</span>
+        )}
+        {hasToPar && (
+          <StatusPill
+            tone={tone === 'under' ? 'accent' : tone === 'over' ? 'warning' : 'neutral'}
+            size="sm"
+            dot={false}
+            className="font-fw-mono tabular-nums"
+          >
+            {formatToPar(stp)}
+          </StatusPill>
+        )}
+      </div>
+
+      {/* Coach: player avatar */}
+      {userRole === 'coach' && round.player && (
+        <Avatar
+          src={round.player.avatar_url}
+          name={playerName || undefined}
+          size="sm"
+          className="flex-shrink-0"
+        />
+      )}
+
+      {/* Hover affordance */}
+      <ChevronRight
+        aria-hidden="true"
+        className="hidden h-4 w-4 flex-shrink-0 text-text-tertiary opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 md:block"
+      />
+    </Link>
+  );
+}
+
+function RowStat({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="flex w-11 flex-col items-end leading-tight">
+      <span className="font-fw-mono text-body-sm font-medium tabular-nums text-text-primary">
+        {value}
+      </span>
+      <span className="font-fw-sans text-eyebrow uppercase tracking-[0.06em] text-text-tertiary">
+        {label}
+      </span>
+    </span>
+  );
+}

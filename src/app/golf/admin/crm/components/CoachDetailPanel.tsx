@@ -252,7 +252,7 @@ function CoachDetailPanelInner({
       <aside className={cn(
         'fixed right-0 top-0 bottom-0 z-50 w-full max-w-lg',
         'bg-[#FFFEF8] border-l border-warm-200/60 shadow-2xl',
-        'transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+        'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]',
         isVisible ? 'translate-x-0' : 'translate-x-full',
         'flex flex-col'
       )}>
