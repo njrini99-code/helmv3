@@ -68,7 +68,22 @@ export default function GolfCoachOnboarding() {
     async function checkAuth() {
       let user = null;
       for (let attempt = 0; attempt < 5; attempt++) {
-        const { data } = await supabase.auth.getUser();
+        const result = await Promise.race([
+          supabase.auth.getUser(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]);
+
+        if (!result) {
+          router.replace('/golf/login');
+          return;
+        }
+
+        const { data, error: authError } = result;
+        if (authError) {
+          router.replace('/golf/login');
+          return;
+        }
+
         if (data.user) {
           user = data.user;
           break;
@@ -79,7 +94,7 @@ export default function GolfCoachOnboarding() {
       }
 
       if (!user) {
-        router.push('/golf/login');
+        router.replace('/golf/login');
         return;
       }
 

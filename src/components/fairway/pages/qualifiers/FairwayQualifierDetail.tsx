@@ -93,6 +93,7 @@ export interface FairwayQualifierDetailProps {
   // ── Coach selections strip (W29 selection_state + count) ─────────────────────
   selectionState: string;
   selectionSlotsTotal: number;
+  selectionSlotsCoachPick: number;
   selectionsCount: number;
 }
 
@@ -162,6 +163,7 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
     maxRoundNumber,
     selectionState,
     selectionSlotsTotal,
+    selectionSlotsCoachPick,
     selectionsCount,
   } = props;
 
@@ -267,6 +269,8 @@ export function FairwayQualifierDetail(props: FairwayQualifierDetailProps) {
         <FairwayQualifierLeaderboard
           qualifierId={qualifierId}
           entrantCount={entrantCount}
+          selectionSlotsTotal={selectionSlotsTotal}
+          selectionSlotsCoachPick={selectionSlotsCoachPick}
         />
 
         {/* 4 · COACH-only round-by-round breakdown */}

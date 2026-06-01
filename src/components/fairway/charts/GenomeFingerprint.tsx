@@ -213,7 +213,12 @@ export function GenomeFingerprint({
       actions={actions}
       className={className}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minHeight={height}
+        initialDimension={{ width: 1, height }}
+      >
         <BarChart
           data={liveRows}
           layout="vertical"

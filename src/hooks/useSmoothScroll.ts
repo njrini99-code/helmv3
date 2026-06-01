@@ -21,10 +21,19 @@ export function useSmoothScroll(active: boolean = true) {
     if (prefersReducedMotion || isCoarsePointer) return
 
     const lenis = new Lenis({
-      duration: 0.9,
+      duration: 0.72,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
+      syncTouch: false,
       touchMultiplier: 1,
+      stopInertiaOnNavigate: true,
+      prevent: (node) => {
+        if (node.closest('[data-lenis-prevent]')) return true
+        if (node.closest('[role="dialog"], [data-radix-popper-content-wrapper]')) return true
+        if (node === document.documentElement || node === document.body) return false
+        const style = window.getComputedStyle(node)
+        return /(auto|scroll)/.test(`${style.overflow}${style.overflowY}${style.overflowX}`)
+      },
     })
 
     let rafId = 0

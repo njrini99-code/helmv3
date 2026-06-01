@@ -70,7 +70,7 @@ export function Toaster(props: ToasterProps) {
         classNames: {
           toast:
             'surface-stone rounded-2xl !p-4 text-warm-900 ' +
-            '![transition-timing-function:cubic-bezier(0.16,1,0.3,1)] !duration-[400ms]',
+            '![transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ![transition-duration:400ms]',
           title: 'font-semibold text-sm',
           description: 'text-sm text-warm-500 mt-0.5',
           actionButton:

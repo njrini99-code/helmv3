@@ -603,7 +603,6 @@ export function FairwayEventEditor({
                           style={p.avatar_url ? undefined : { backgroundColor: tint.bg, color: tint.text }}
                         >
                           {p.avatar_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
                           ) : (
                             initials(p)

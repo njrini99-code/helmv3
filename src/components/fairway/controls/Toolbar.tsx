@@ -193,7 +193,7 @@ const ToolbarRoot = forwardRef<HTMLDivElement, ToolbarProps>(function Toolbar(
         style={rowStyle}
         className={cn(
           'rounded-card border',
-          'transition-[background-color,border-color,box-shadow] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none',
+          'transition-[background-color,border-color,box-shadow] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none',
           sticky && 'sticky',
           onGlass
             ? // Restrained warm cream glass (sticky-stuck or hosting the bulk bar).

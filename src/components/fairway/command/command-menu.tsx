@@ -174,7 +174,7 @@ function CommandRow({ item, onPick }: RowProps) {
       className={cn(
         'group flex cursor-pointer select-none items-center gap-3 rounded-fw-md px-3 py-2.5 outline-none',
         'text-text-secondary',
-        'transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         // cmdk drives selection via [data-selected]; keep mouse hover in sync
         'data-[selected=true]:bg-accent-50 data-[selected=true]:text-text-primary',
         'data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40',
@@ -184,7 +184,7 @@ function CommandRow({ item, onPick }: RowProps) {
         <span
           aria-hidden="true"
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-fw-sm transition-colors duration-[180ms]',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-fw-sm transition-colors [transition-duration:180ms]',
             '[&_svg]:h-[18px] [&_svg]:w-[18px]',
             toneChip(item.tone),
           )}
@@ -216,7 +216,7 @@ function CommandRow({ item, onPick }: RowProps) {
       {/* "go" affordance appears only on the active row */}
       <GoGlyph
         aria-hidden="true"
-        className="ml-1 h-4 w-4 shrink-0 text-accent-600 opacity-0 transition-opacity duration-[180ms] group-data-[selected=true]:opacity-100"
+        className="ml-1 h-4 w-4 shrink-0 text-accent-600 opacity-0 transition-opacity [transition-duration:180ms] group-data-[selected=true]:opacity-100"
       />
     </Command.Item>
   );

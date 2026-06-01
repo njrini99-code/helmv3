@@ -16,7 +16,6 @@ import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPag
 import { IconCheck } from '@/components/icons';
 import { MobileNavHeader } from '@/components/golf/layout/MobileNavHeader';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
-import { saveCoachingPhilosophy } from '@/app/golf/actions/coaching-philosophy';
 import { Button } from '@/components/ui/button';
 import {
     getOrCreateTeamCoachHelmSettings,
@@ -24,48 +23,8 @@ import {
     type TeamCoachHelmSettings,
 } from '@/app/golf/actions/insights';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
-
-// camelCase -> snake_case column mapping that mirrors the one in
-// useCoachPhilosophy, kept here so we can hit the server action directly
-// for the revalidatePath side-effect without going through the hook.
-const CAMEL_TO_DB: Record<string, string> = {
-    priorityBallStriking: 'priority_ball_striking',
-    priorityShortGame: 'priority_short_game',
-    priorityPutting: 'priority_putting',
-    priorityCourseManagement: 'priority_course_management',
-    priorityMentalGame: 'priority_mental_game',
-    alertSensitivity: 'alert_sensitivity',
-    declineThreshold: 'decline_threshold',
-    pressureGapThreshold: 'pressure_gap_threshold',
-    bubbleZoneRange: 'bubble_zone_range',
-    weightHistorical: 'weight_historical',
-    weightRecentForm: 'weight_recent_form',
-    weightTournament: 'weight_tournament',
-    weightQualifying: 'weight_qualifying',
-    weightSubjective: 'weight_subjective',
-    alertScoringDecline: 'alert_scoring_decline',
-    alertStatRegression: 'alert_stat_regression',
-    alertTournamentPressure: 'alert_tournament_pressure',
-    alertPlateau: 'alert_plateau',
-    alertBubblePlayer: 'alert_bubble_player',
-    alertSurgePlayer: 'alert_surge_player',
-    alertStreaks: 'alert_streaks',
-    alertRecurringWeakness: 'alert_recurring_weakness',
-    alertClosingHoles: 'alert_closing_holes',
-    alertPar3Issues: 'alert_par_3_issues',
-    showStrokesGained: 'show_strokes_gained',
-    showAdvancedStats: 'show_advanced_stats',
-    insightVerbosity: 'insight_verbosity',
-};
-
-function camelPatchToDb(patch: Record<string, unknown>): Record<string, unknown> {
-    const out: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(patch)) {
-        const dbKey = CAMEL_TO_DB[key];
-        if (dbKey) out[dbKey] = value;
-    }
-    return out;
-}
+import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
+import { FairwaySettingsCoachingIntelligence } from '@/components/fairway/pages/settings';
 
 type PriorityValues = Pick<
     CoachPhilosophy,
@@ -80,6 +39,19 @@ type DisplayToggleKey = 'showStrokesGained' | 'showAdvancedStats';
 type DisplayKey = DisplayToggleKey | 'insightVerbosity';
 
 export default function CoachingIntelligenceSettingsPage() {
+    // Fairway redesign fork (ADDITIVE). Flag off ⇒ identical legacy output.
+    // Hooks live inside each branch component, so rules-of-hooks are preserved.
+    if (useRedesign()) {
+        return (
+            <div className={fairwayScope('min-h-full bg-canvas')}>
+                <FairwaySettingsCoachingIntelligence />
+            </div>
+        );
+    }
+    return <LegacyCoachingIntelligenceSettingsPage />;
+}
+
+function LegacyCoachingIntelligenceSettingsPage() {
     const [coachId, setCoachId] = useState<string | null>(null);
     const [teamId, setTeamId] = useState<string | null>(null);
     const [teamSettings, setTeamSettings] = useState<TeamCoachHelmSettings | null>(null);
@@ -150,8 +122,8 @@ export default function CoachingIntelligenceSettingsPage() {
     const [hasEverSaved, setHasEverSaved] = useState(false);
 
     // Debounce sliders + toggles so rapid changes don't hammer the DB.
-    // Server action call afterwards ensures revalidatePath fires even when
-    // the hook's direct-supabase save would otherwise not trigger it.
+    // The hook owns the single write and can optionally trigger downstream
+    // revalidation; avoid a second server-action write for the same patch.
     const debounceTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
     useEffect(() => {
         const timers = debounceTimersRef.current;
@@ -163,15 +135,12 @@ export default function CoachingIntelligenceSettingsPage() {
 
     const flushSave = useCallback(
         async (patch: Partial<CoachPhilosophy>) => {
-            const ok = await save(patch);
-            if (ok && coachId) {
-                // Propagate the change + revalidate downstream screens.
-                // Best-effort — if this fails we still saved via `save`.
-                void saveCoachingPhilosophy(coachId, camelPatchToDb(patch));
+            const ok = await save(patch, { revalidate: true });
+            if (ok) {
                 setHasEverSaved(true);
             }
         },
-        [save, coachId],
+        [save],
     );
 
     const debouncedSave = useCallback(

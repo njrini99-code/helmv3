@@ -133,7 +133,7 @@ export const ViewHeaderSegments = React.forwardRef<
             disabled={segment.disabled}
             className={cn(
               "group relative inline-flex select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-fw-sm font-fw-sans font-medium",
-              "outline-none transition-colors duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+              "outline-none transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
               // Hit target: keep >=24px tall even in compact (a11y §7.4)
               compact ? "h-7 px-2.5 text-caption" : "h-9 px-3.5 text-label",
               // Quiet by default; warm up on hover

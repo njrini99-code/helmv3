@@ -60,7 +60,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         placeholder={placeholder ?? 'Ask about your players, rounds, or qualifying…'}
         disabled={disabled}
         aria-label="Chat message"
-        className="flex-1 resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 disabled:bg-warm-100 disabled:text-warm-500 transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] placeholder:text-warm-400"
+        className="flex-1 resize-none rounded-xl border border-warm-200 bg-white px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:border-primary-400 disabled:bg-warm-100 disabled:text-warm-500 transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] placeholder:text-warm-400"
       />
       <m.button
         type="button"
@@ -69,7 +69,7 @@ export function ChatComposer({ onSend, disabled = false, placeholder }: Props) {
         aria-label="Send message"
         {...hoverProps}
         {...tapProps}
-        className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-shadow duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${sendShadow}`}
+        className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-shadow [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${sendShadow}`}
       >
         Send
         <svg width="12" height="12" viewBox="0 0 16 16" aria-hidden>

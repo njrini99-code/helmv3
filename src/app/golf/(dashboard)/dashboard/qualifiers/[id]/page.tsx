@@ -201,6 +201,7 @@ export default async function QualifierDetailPage({ params }: PageProps) {
           maxRoundNumber={maxRoundNumber}
           selectionState={qualifierData.selection_state ?? 'open'}
           selectionSlotsTotal={qualifierData.selection_slots_total ?? 0}
+          selectionSlotsCoachPick={qualifierData.selection_slots_coach_pick ?? 0}
           selectionsCount={selectionsCount ?? 0}
         />
       </div>

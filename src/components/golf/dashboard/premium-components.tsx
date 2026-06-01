@@ -119,7 +119,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             className={cn(
                 'relative overflow-clip group cursor-pointer',
                 'surface-matte rounded-3xl p-6',
-                'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'transition-shadow duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                 accent && 'before:absolute before:inset-y-6 before:left-0 before:w-[2px] before:bg-primary-500/70 before:rounded-r-full'
             )}
             whileHover={{ y: -2 }}
@@ -147,7 +147,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
                     )}
                 </div>
                 <div className={cn(
-                    'w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105',
+                    'w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105',
                     iconBg, iconColor
                 )}>
                     {icon}
@@ -155,7 +155,7 @@ export const PremiumStatCard = memo(function PremiumStatCard({
             </div>
 
             {href && (
-                <div className="absolute bottom-5 right-5 opacity-0 md:group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                <div className="absolute bottom-5 right-5 opacity-0 md:group-hover:opacity-100 transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
                     <IconArrowRight size={14} className="text-primary-500" />
                 </div>
             )}
@@ -325,7 +325,7 @@ export function RoundRow({
             role={id ? undefined : "button"}
             tabIndex={id ? undefined : 0}
             aria-label={accessibleLabel}
-            className="group flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
+            className="group flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
             whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
         >
             <div className={cn(
@@ -361,7 +361,7 @@ export function RoundRow({
                     {new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
             </div>
-            <div className="flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+            <div className="flex-shrink-0 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
                 <IconArrowRight size={14} className="text-primary-500" />
             </div>
         </m.div>
@@ -456,7 +456,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                 aria-label={accessibleLabel}
                 className={cn(
                     'group relative px-5 py-5 md:px-6',
-                    'hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer',
+                    'hover:bg-cream-50/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] cursor-pointer',
                     'focus-within:ring-1 focus-within:ring-primary-400/30'
                 )}
                 whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
@@ -540,7 +540,7 @@ export const RecentRoundCard = memo(function RecentRoundCard({
                     </div>
 
                     {/* Arrow indicator */}
-                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                    <div className="flex-shrink-0 mt-2 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-[opacity,transform] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
                         <IconArrowRight size={14} className="text-primary-500" />
                     </div>
                 </div>
@@ -580,7 +580,7 @@ export function TopPerformerRow({
         <m.div
             role="listitem"
             aria-label={`${rankLabel} place: ${name}, average score ${avgScore.toFixed(1)} over ${rounds} rounds`}
-            className="flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
+            className="flex items-center gap-4 px-5 py-4 md:px-6 hover:bg-cream-50/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] cursor-pointer focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-400/30"
             whileHover={prefersReducedMotion ? undefined : ({ x: 3 })}
             tabIndex={0}
         >

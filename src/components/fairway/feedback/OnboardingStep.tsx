@@ -85,7 +85,7 @@ export const OnboardingStep = forwardRef<HTMLDivElement, OnboardingStepProps>(
         <span
           aria-hidden="true"
           className={cn(
-            'grid h-9 w-9 shrink-0 place-items-center rounded-full font-fw-mono text-body-sm font-medium tabular-nums transition-colors duration-[180ms]',
+            'grid h-9 w-9 shrink-0 place-items-center rounded-full font-fw-mono text-body-sm font-medium tabular-nums transition-colors [transition-duration:180ms]',
             isComplete && 'bg-accent-500 text-text-on-accent',
             isActive &&
               'bg-accent-50 text-fw-success ring-2 ring-accent-500 ring-offset-2 ring-offset-surface',
@@ -130,7 +130,7 @@ export const OnboardingStep = forwardRef<HTMLDivElement, OnboardingStepProps>(
     );
 
     const sharedClasses = cn(
-      'flex w-full gap-4 rounded-card p-4 text-left font-fw-sans transition-all duration-[180ms]',
+      'flex w-full gap-4 rounded-card p-4 text-left font-fw-sans transition-all [transition-duration:180ms]',
       isActive ? 'bg-surface shadow-soft' : 'bg-transparent',
       className,
     );

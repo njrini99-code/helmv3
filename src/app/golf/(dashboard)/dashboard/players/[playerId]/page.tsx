@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { PlayerInsightClient } from './player-insight-client';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -325,6 +327,28 @@ export default async function PlayerInsightPage({
   const categoryBreakdown = computeCategoryBreakdown(rounds);
   const trendSummary = computeTrendSummary(rounds);
   const playerStatus = derivePlayerStatus(trendSummary.trend);
+
+  // Fairway (warm-premium) fork — flag-gated re-skin of the coach Player Insight
+  // surface. Same loaded data + same server actions (the client widget reuses
+  // them verbatim). Legacy below stays byte-for-byte when flag-off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayPlayerInsight
+          player={player}
+          compositeRating={compositeRating}
+          categoryBreakdown={categoryBreakdown}
+          trendSummary={trendSummary}
+          playerStatus={playerStatus}
+          rounds={rounds}
+          patterns={patterns}
+          insights={insights}
+          focusAreas={focusAreas}
+          predictions={predictions}
+        />
+      </div>
+    );
+  }
 
   return (
     <PlayerInsightClient

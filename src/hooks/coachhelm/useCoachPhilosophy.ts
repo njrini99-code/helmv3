@@ -4,6 +4,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
+import { revalidateCoachingPhilosophyPaths } from '@/app/golf/actions/coaching-philosophy';
+
+interface SaveCoachPhilosophyOptions {
+    revalidate?: boolean;
+}
 
 // Database row type for golf_coach_philosophy
 interface PhilosophyDbRow {
@@ -185,7 +190,7 @@ export function useCoachPhilosophy(coachId: string | null) {
 
     // Save changes
     const save = useCallback(
-        async (updates: Partial<CoachPhilosophy>) => {
+        async (updates: Partial<CoachPhilosophy>, options: SaveCoachPhilosophyOptions = {}) => {
             if (!philosophy?.id) return false;
 
             setSaving(true);
@@ -205,6 +210,9 @@ export function useCoachPhilosophy(coachId: string | null) {
             }
 
             setPhilosophy(dbToTs(data as unknown as PhilosophyDbRow));
+            if (options.revalidate) {
+                await revalidateCoachingPhilosophyPaths();
+            }
             setSaving(false);
             return true;
         },

@@ -101,7 +101,7 @@ function BreadcrumbTrail({
                   href={crumb.href}
                   className={cn(
                     'truncate rounded-fw-sm px-0.5 text-text-secondary',
-                    'transition-colors duration-[var(--fw-dur-fast)] hover:text-text-primary',
+                    'transition-colors [transition-duration:var(--fw-dur-fast)] hover:text-text-primary',
                   )}
                 >
                   {crumb.label}
@@ -142,7 +142,7 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
             aria-label="Open navigation"
             className={cn(
               'flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-fw-md md:hidden',
-              'text-text-secondary transition-colors duration-[var(--fw-dur-fast)]',
+              'text-text-secondary transition-colors [transition-duration:var(--fw-dur-fast)]',
               'hover:bg-surface-sunken hover:text-text-primary active:translate-y-[0.5px]',
             )}
           >
@@ -170,7 +170,7 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
                   'group flex h-10 w-full max-w-[340px] items-center gap-2.5 rounded-fw-sm px-3',
                   'bg-surface-sunken/80 text-text-tertiary',
                   'border border-border-subtle',
-                  'transition-[color,background-color,box-shadow] duration-[var(--fw-dur-fast)]',
+                  'transition-[color,background-color,box-shadow] [transition-duration:var(--fw-dur-fast)]',
                   'hover:bg-surface-sunken hover:text-text-secondary hover:shadow-soft active:translate-y-[0.5px]',
                 )}
               >

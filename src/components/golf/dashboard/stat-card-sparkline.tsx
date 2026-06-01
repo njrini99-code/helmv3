@@ -71,7 +71,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             className={cn(
                 'relative overflow-clip group min-w-0',
                 'surface-matte rounded-3xl',
-                'transition-shadow duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                'transition-shadow duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                 'p-5 md:p-6',
                 accent && 'before:absolute before:inset-y-6 before:left-0 before:w-[2px] before:bg-primary-500/70 before:rounded-r-full',
                 href && 'cursor-pointer'
@@ -125,7 +125,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
                     ) : (
                         <div className={cn(
                             'w-10 h-10 md:w-11 md:h-11 rounded-2xl flex items-center justify-center',
-                            'transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105',
+                            'transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105',
                             iconBg, iconColor
                         )}>
                             {icon}
@@ -135,7 +135,7 @@ export const StatCardSparkline = memo(function StatCardSparkline({
             </div>
 
             {href && (
-                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
+                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
                     <IconArrowRight size={12} className="text-primary-500" />
                 </div>
             )}

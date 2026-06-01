@@ -272,8 +272,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body || 'You have a new notification',
-    icon: '/helm-golf-logo.png',
-    badge: '/helm-golf-logo.png',
+    icon: '/helm-golf-logo-transparent.png',
+    badge: '/helm-golf-logo-transparent.png',
     tag: data.tag || 'golfhelm-notification',
     data: data.data || {},
     actions: data.actions || [],
@@ -368,8 +368,8 @@ async function notifySyncComplete(data) {
 
     await self.registration.showNotification('GolfHelm Sync', {
       body,
-      icon: '/helm-golf-logo.png',
-      badge: '/helm-golf-logo.png',
+      icon: '/helm-golf-logo-transparent.png',
+      badge: '/helm-golf-logo-transparent.png',
       tag: 'sync-complete',
     });
   }

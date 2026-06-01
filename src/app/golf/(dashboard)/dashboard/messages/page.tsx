@@ -29,14 +29,10 @@ import { FairwayMessages } from '@/components/fairway/pages/messages';
 
 export default function GolfMessagesPage() {
   // ── Fairway redesign fork ───────────────────────────────────────────────────
-  // Build-time-inlined flag, safe at the top of this 'use client' component body
-  // (NextJS inlines NEXT_PUBLIC_REDESIGN, so the branch is statically resolved
-  // and the legacy branch below is dead-code-eliminated when off). Flag-off: the
-  // legacy implementation below renders BYTE-FOR-BYTE unchanged.
-  if (isRedesignEnabled()) {
-    return <FairwayMessages />;
-  }
+  return isRedesignEnabled() ? <FairwayMessages /> : <LegacyGolfMessagesPage />;
+}
 
+function LegacyGolfMessagesPage() {
   // ──────────────────────────────────────────────────────────────────────────
   // LEGACY (flag-off) — unchanged.
   // ──────────────────────────────────────────────────────────────────────────

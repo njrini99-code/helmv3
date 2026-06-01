@@ -194,7 +194,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                             animate={{ opacity: 1, y: 0 }}
                             transition={prefersReducedMotion ? { duration: 0 } : ({ duration: 0.2, ease: [0.16, 1, 0.3, 1] })}
                             className={cn(
-                                'rounded-2xl p-4 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                                'rounded-2xl p-4 transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                                 isCurrent
                                     ? 'bg-cream-50/95 shadow-[0_1px_3px_rgba(58,50,40,0.04),0_12px_28px_rgba(58,50,40,0.06)] ring-1 ring-primary-200/60'
                                     : isPast
@@ -363,7 +363,7 @@ export function TodayTimeline({ events, role, timezone }: TodayTimelineProps) {
                                             aria-label={eventLabel}
                                         >
                                             <div className={cn(
-                                                'rounded-2xl p-3.5 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] h-full',
+                                                'rounded-2xl p-3.5 transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] h-full',
                                                 isCurrent
                                                     ? 'bg-cream-50/95 shadow-[0_1px_3px_rgba(58,50,40,0.04),0_12px_28px_rgba(58,50,40,0.06)] ring-1 ring-primary-200/60'
                                                     : isPast

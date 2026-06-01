@@ -49,7 +49,7 @@ export const fieldControlBase = [
   "block w-full font-fw-sans text-text-primary rounded-fw-sm",
   "bg-surface-sunken border border-border-subtle",
   "placeholder:text-text-tertiary",
-  "transition-[border-color,box-shadow,background-color] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+  "transition-[border-color,box-shadow,background-color] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "hover:border-border-strong",
   "outline-none focus-visible:border-border-focus",
   "focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
@@ -100,7 +100,7 @@ export const popupClasses = [
   "outline-none",
   // materialize — opacity + tiny scale (honors reduced motion via the keyframe util)
   "origin-[var(--transform-origin)]",
-  "transition-[opacity,transform] duration-[var(--fw-dur-medium)] ease-[var(--fw-ease-emph)]",
+  "transition-[opacity,transform] [transition-duration:var(--fw-dur-medium)] [transition-timing-function:var(--fw-ease-emph)]",
   "data-[starting-style]:opacity-0 data-[starting-style]:scale-[0.98]",
   "data-[ending-style]:opacity-0 data-[ending-style]:scale-[0.98]",
 ].join(" ");
@@ -109,7 +109,7 @@ export const popupClasses = [
 export const optionClasses = [
   "relative flex cursor-default select-none items-center gap-2 rounded-fw-sm",
   "py-2 pl-3 pr-8 text-body text-text-primary",
-  "outline-none transition-colors duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+  "outline-none transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   // highlighted (keyboard/pointer) + selected
   "data-[highlighted]:bg-accent-50 data-[highlighted]:text-accent-900",
   "data-[selected]:font-medium",

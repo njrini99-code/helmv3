@@ -12,6 +12,8 @@ import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { PageHeader } from '@/components/ui/page-header';
 import { Reveal } from '@/components/ui/reveal';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayAnnouncements } from '@/components/fairway/pages/announcements';
 
 export const metadata: Metadata = {
   title: 'Team Announcements | Helm Sports',
@@ -93,6 +95,24 @@ export default async function GolfAnnouncementsPage() {
     if (!a.published_at) return false;
     return (Date.now() - new Date(a.published_at).getTime()) < 7 * 86400000;
   }).length;
+
+  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
+  // Reuses the SAME announcements + roster + documents + role resolved above;
+  // re-skins onto the warm-matte Fairway system. Legacy branch is unchanged off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayAnnouncements
+          announcements={announcements}
+          players={players}
+          documents={documents}
+          isCoach={isCoach}
+          playerId={playerId}
+          recentCount={recentCount}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

@@ -62,6 +62,10 @@ import {
   type TripData,
   type PlayerTask,
 } from '../hub/hub-parts';
+import {
+  FairwayPlayerRoster,
+  type FairwayPlayerRosterPlayer,
+} from '../roster/FairwayPlayerRoster';
 
 /* ─────────────────────────────────────────────────────────────────────────
  * A read-only class schedule row shape (subset of golf_player_classes). The
@@ -81,9 +85,9 @@ export interface TeamHubClass {
   color: string | null;
 }
 
-type TabId = 'tasks' | 'announcements' | 'travel' | 'classes';
+type TabId = 'tasks' | 'announcements' | 'travel' | 'classes' | 'teammates';
 
-const TAB_IDS: readonly TabId[] = ['tasks', 'announcements', 'travel', 'classes'];
+const TAB_IDS: readonly TabId[] = ['tasks', 'announcements', 'travel', 'classes', 'teammates'];
 
 /** Resolve the `?tab=` deep-link (Cmd+K / bookmarks) to a valid tab. */
 function normalizeTab(raw: string | undefined): TabId {
@@ -95,6 +99,8 @@ export interface FairwayTeamHubProps {
   announcements: GolfAnnouncementMeta[];
   trips: TripData[];
   classes: TeamHubClass[];
+  /** Teammates on the player's team (the roster, folded into the hub). */
+  teammates: FairwayPlayerRosterPlayer[];
   playerName: string;
   teamName: string;
   /** Deep-link target from the `?tab=` query (server-passed). Defaults to Tasks. */
@@ -108,6 +114,7 @@ export function FairwayTeamHub({
   announcements,
   trips,
   classes,
+  teammates,
   teamName,
   initialTab,
   onCompleteTask,
@@ -160,6 +167,7 @@ export function FairwayTeamHub({
           <TabsTrigger value="announcements">Announcements</TabsTrigger>
           <TabsTrigger value="travel">Travel</TabsTrigger>
           <TabsTrigger value="classes">Class schedule</TabsTrigger>
+          <TabsTrigger value="teammates">Teammates</TabsTrigger>
         </TabsList>
 
         {/* ═══════════ TASKS ═══════════ */}
@@ -236,6 +244,13 @@ export function FairwayTeamHub({
         {/* ═══════════ CLASS SCHEDULE ═══════════ (read-only; edits route out) */}
         <TabsContent value="classes">
           <ClassScheduleReadonly classes={classes} />
+        </TabsContent>
+
+        {/* ═══════════ TEAMMATES ═══════════ (the player roster, folded into the
+            hub; read-only teammate grid — header hidden since the hub masthead
+            + tab already title it). */}
+        <TabsContent value="teammates">
+          <FairwayPlayerRoster players={teammates} teamName={teamName} hideHeader />
         </TabsContent>
       </Tabs>
 
@@ -344,6 +359,7 @@ export interface FairwayTeamHubWrapperProps {
   announcements: GolfAnnouncementMeta[];
   trips: TripData[];
   classes: TeamHubClass[];
+  teammates: FairwayPlayerRosterPlayer[];
   playerName: string;
   teamName: string;
   /** Deep-link target from the `?tab=` query (server-passed). */
@@ -355,6 +371,7 @@ export function FairwayTeamHubWrapper({
   announcements,
   trips,
   classes,
+  teammates,
   playerName,
   teamName,
   initialTab,
@@ -398,6 +415,7 @@ export function FairwayTeamHubWrapper({
       announcements={announcements}
       trips={trips}
       classes={classes}
+      teammates={teammates}
       playerName={playerName}
       teamName={teamName}
       initialTab={initialTab}

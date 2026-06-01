@@ -5,9 +5,9 @@
  * Fairway · RouteTransition (Wave 1, ADDITIVE)
  * ----------------------------------------------------------------------------
  * The route-transition wrapper for the content region (DESIGN-SYSTEM §7.1).
- * Content settles in with a slow cinematic reveal: a small upward drift (≤8px)
- * + opacity, at --fw-dur-slow (520ms) on the --fw-ease-glide curve. Keyed on the
- * route so each navigation re-runs the reveal.
+ * Content settles in with a restrained route reveal: a small upward drift (≤4px)
+ * + opacity, at --fw-dur-base (280ms) on the --fw-ease-glide curve. Page headers
+ * own the larger visual emphasis, so route swaps stay responsive.
  *
  * Crossfade-on-key (no AnimatePresence `mode="wait"`) per §5.3 — that mode is the
  * verified flash bug. We render a single keyed `motion.div`; React swaps it on
@@ -30,7 +30,7 @@ export interface RouteTransitionProps {
   className?: string;
 }
 
-// --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1); --fw-dur-slow = 520ms.
+// --fw-ease-glide = cubic-bezier(0.16, 1, 0.3, 1); --fw-dur-base = 280ms.
 const GLIDE: Transition['ease'] = [0.16, 1, 0.3, 1];
 
 export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(function RouteTransition(
@@ -48,9 +48,9 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
       };
     }
     return {
-      initial: { opacity: 0, y: 8 },
+      initial: { opacity: 0, y: 4 },
       animate: { opacity: 1, y: 0 },
-      transition: { duration: 0.52, ease: GLIDE },
+      transition: { duration: 0.28, ease: GLIDE },
     };
   }, [reduceMotion]);
 
@@ -62,6 +62,7 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
       animate={animate}
       transition={transition}
       className={cn('min-h-full', className)}
+      style={{ willChange: reduceMotion ? 'auto' : 'opacity, transform' }}
     >
       {children}
     </motion.div>

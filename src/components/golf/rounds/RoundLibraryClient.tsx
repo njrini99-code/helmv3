@@ -275,7 +275,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
               <span
                 className={cn(
                   'rounded-md px-1.5 py-px text-eyebrow font-semibold tabular-nums',
-                  'transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   'group-hover/card:scale-[1.06] origin-left',
                   scoreTone === 'under' && 'bg-primary-100 text-primary-700',
                   scoreTone === 'par' && 'bg-warm-100 text-warm-700',
@@ -319,7 +319,7 @@ function RoundCardV2({ round, isBestOfPeriod, userRole, staggerIndex = 0 }: Roun
               Collapsed when not hovered (max-h-0), expands to ~40px on hover. */}
           <div
             className={cn(
-              'grid grid-rows-[0fr] transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'grid grid-rows-[0fr] transition-[grid-template-rows,opacity] duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               'group-hover/card:grid-rows-[1fr]',
               'opacity-0 group-hover/card:opacity-100',
             )}

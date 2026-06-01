@@ -406,7 +406,7 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h4
-                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  className="font-medium text-warm-900 text-[14.5px] tracking-[-0.005em] cursor-pointer hover:text-primary-700 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]"
                   onClick={() => onClick?.(insight.id)}
                 >
                   {title}
@@ -685,7 +685,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >
@@ -734,7 +734,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               className={cn(
                 'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                 'bg-primary-600/95 text-white shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
-                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
+                'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                 focusPending && 'opacity-60 pointer-events-none',
                 emphasis && 'px-6 py-2.5 text-body-sm',
@@ -752,7 +752,7 @@ function InsightActions({ insight, audience, onAction, emphasis = false }: Insig
               fire('dismissed', startDismiss);
             }}
             className={cn(
-              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-body-sm text-warm-500 hover:text-warm-700 hover:bg-cream-100/55 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
               dismissPending && 'opacity-60 pointer-events-none',
             )}
           >

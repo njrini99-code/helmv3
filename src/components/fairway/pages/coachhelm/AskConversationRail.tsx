@@ -222,7 +222,7 @@ export function AskConversationRail({
                   // Matte rows on warm glass — the dense list stays legible, never
                   // a second floating card. Active = a recessed sunken inset with
                   // an accent rail; hover = a calm warm sunken wash.
-                  'group block rounded-fw-md px-3 py-2.5 outline-none transition-colors duration-[200ms]',
+                  'group block rounded-fw-md px-3 py-2.5 outline-none transition-colors [transition-duration:200ms]',
                   '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
                   'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   isActive

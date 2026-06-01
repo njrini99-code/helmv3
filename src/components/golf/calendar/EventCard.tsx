@@ -57,7 +57,7 @@ const EventCardInner = forwardRef<
         className={cn(
           'w-full h-full rounded-md overflow-hidden text-left px-2.5 py-1.5',
           'border-l-[2px]',
-          'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
           'hover:scale-[1.015] hover:z-10 hover:shadow-[0_4px_12px_rgba(58,50,40,0.06)]',
 
           isDragging && 'opacity-50 shadow-lg scale-105',
@@ -83,7 +83,7 @@ const EventCardInner = forwardRef<
       className={cn(
         'w-full h-full rounded-lg overflow-hidden text-left px-3 py-2.5',
         'border-l-[2px]',
-        'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'hover:scale-[1.01] hover:z-10 hover:shadow-[0_6px_16px_rgba(58,50,40,0.07)]',
 
         isDragging && 'opacity-50 shadow-lg scale-105',

@@ -12,6 +12,9 @@ import { PendingJoinRequests } from '@/components/golf/roster/PendingJoinRequest
 import { RosterPageClient } from '@/components/golf/roster/RosterPageClient';
 import { RosterIntentControl } from '@/components/golf/roster/RosterIntentControl';
 import { PlayerRosterView } from '@/components/golf/roster/PlayerRosterView';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayCoachRoster } from '@/components/fairway/pages/roster/FairwayCoachRoster';
+import { getTeamJoinRequests } from '@/app/golf/actions/teams';
 import { loadCoachIntents } from '@/lib/coachhelm/v3/intent/loader';
 import { LargeTitleHeader } from '@/components/golf/layout/LargeTitleHeader';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -105,6 +108,13 @@ export default async function GolfRosterPage() {
           />
         </div>
       );
+    }
+
+    // Redesign: the player roster is folded into the Team Hub (Teammates tab),
+    // so the standalone player roster page redirects there. Flag-off keeps the
+    // legacy PlayerRosterView below, byte-for-byte.
+    if (isRedesignEnabled()) {
+      redirect('/golf/dashboard/team-hub?tab=teammates');
     }
 
     // Fetch team info and teammates for player view
@@ -315,6 +325,22 @@ export default async function GolfRosterPage() {
   // which the IntentPill renders as its neutral "No intent" cold-start chip.
   // This is the coach view only; the player roster path returned earlier.
   const coachIntents = await loadCoachIntents(coach.id);
+
+  if (isRedesignEnabled()) {
+    const jrRes = await getTeamJoinRequests();
+    const joinRequests = jrRes.success && jrRes.data ? jrRes.data : [];
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayCoachRoster
+          players={playersWithStats}
+          teamName={teamName}
+          inviteCode={inviteCode}
+          intents={Object.fromEntries(coachIntents)}
+          joinRequests={joinRequests}
+        />
+      </div>
+    );
+  }
 
   return (
     <RosterPageClient players={playersWithStats}>

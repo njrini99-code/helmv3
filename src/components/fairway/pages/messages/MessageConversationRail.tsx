@@ -120,7 +120,7 @@ function ConversationRow({
       onClick={onSelect}
       aria-current={isSelected ? 'true' : undefined}
       className={cn(
-        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors duration-[200ms]',
+        'group block w-full rounded-fw-md px-3 py-2.5 text-left outline-none transition-colors [transition-duration:200ms]',
         '[transition-timing-function:cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
         'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
         isSelected

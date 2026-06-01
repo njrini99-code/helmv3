@@ -114,7 +114,6 @@ export function FairwayCalendarMemberRail({
               }
             >
               {m.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <img src={m.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
               ) : (
                 <span>{initials(m)}</span>

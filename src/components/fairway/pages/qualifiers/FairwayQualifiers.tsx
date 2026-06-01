@@ -36,7 +36,6 @@
  * ========================================================================== */
 
 import Link from 'next/link';
-import { Flag } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -157,7 +156,6 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
         <div className="mt-8">
           <Surface elevation="shadow" padding="lg">
             <EmptyState
-              icon={Flag}
               title="No qualifiers yet"
               description={
                 isCoach
@@ -207,7 +205,6 @@ export function FairwayQualifiers({ isCoach, qualifiers }: FairwayQualifiersProp
               <Surface elevation="border" padding="none">
                 <EmptyState
                   variant="subtle"
-                  icon={Flag}
                   title="No concluded qualifiers yet"
                   description="Qualifiers move here once they're completed."
                 />
@@ -304,9 +301,9 @@ function QualifierHero({ qualifier }: { qualifier: GolfQualifier }) {
 
         <QualifierMeta qualifier={qualifier} />
 
-        <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors duration-[180ms] group-hover:text-accent-600 motion-reduce:transition-none">
+        <span className="inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-accent-700 transition-colors [transition-duration:180ms] group-hover:text-accent-600 motion-reduce:transition-none">
           View leaderboard
-          <IconArrowRight size={16} className="transition-transform duration-[180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
+          <IconArrowRight size={16} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
         </span>
       </div>
     </Surface>
@@ -333,7 +330,7 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <h3 className="truncate font-fw-sans text-body-lg font-medium text-text-primary transition-colors duration-[180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+          <h3 className="truncate font-fw-sans text-body-lg font-medium text-text-primary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
             {qualifier.name}
           </h3>
           {qualifier.description && (
@@ -349,9 +346,9 @@ function QualifierCard({ qualifier }: { qualifier: GolfQualifier }) {
 
       <QualifierMeta qualifier={qualifier} />
 
-      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-text-tertiary transition-colors duration-[180ms] group-hover:text-accent-700 motion-reduce:transition-none">
+      <span className="mt-auto inline-flex items-center gap-1.5 font-fw-sans text-label font-medium text-text-tertiary transition-colors [transition-duration:180ms] group-hover:text-accent-700 motion-reduce:transition-none">
         View leaderboard
-        <IconArrowRight size={15} className="transition-transform duration-[180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
+        <IconArrowRight size={15} className="transition-transform [transition-duration:180ms] group-hover:translate-x-0.5 motion-reduce:transition-none" />
       </span>
     </Surface>
   );

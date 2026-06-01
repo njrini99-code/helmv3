@@ -60,6 +60,7 @@ import {
 } from '@/lib/utils/emergency-save';
 import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayNewRoundEntry } from '@/components/fairway/pages/rounds-new/FairwayNewRoundEntry';
+import { FairwayShotTracking } from '@/components/fairway/pages/rounds-tracking';
 
 type Hole = RoundHole;
 
@@ -2368,6 +2369,27 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         </div>
       )}
 
+      {/* FAIRWAY FORK (ADDITIVE) — flag ON renders the redesigned shot-tracking
+          screen from the SAME props; flag OFF keeps the legacy component
+          byte-for-byte. Presentation only — no mutation/autosave logic moves. */}
+      {redesign ? (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayShotTracking
+            holes={holes}
+            currentHoleIndex={currentHoleIndex}
+            onHoleComplete={handleHoleComplete}
+            onHoleStatsUpdate={handleHoleStatsUpdate}
+            onSaveShot={handleSaveShot}
+            onExit={() => setShowExitModal(true)}
+            onNavigateToHole={(holeIndex) => setCurrentHoleIndex(holeIndex)}
+            initialShots={activeHoleShots}
+            initialShotNumber={activeShotNumber}
+            onAutoSave={handleAutoSave}
+            autoSaveInterval={15000}
+            autoSaveDisabled={step === 'submitting' || !!completedRoundId}
+          />
+        </div>
+      ) : (
       <ShotTrackingComprehensive
         holes={holes}
         currentHoleIndex={currentHoleIndex}
@@ -2382,6 +2404,7 @@ export default function NewRoundClient({ existingInProgressRound }: NewRoundClie
         autoSaveInterval={15000}
         autoSaveDisabled={step === 'submitting' || !!completedRoundId}
       />
+      )}
 
       {/* Offline Warning Banner - shows when offline or has slow connection */}
       {step === 'tracking' && showOfflineWarning && (

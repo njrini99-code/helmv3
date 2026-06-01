@@ -150,7 +150,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
         ref={ref}
         className={cn(
           'relative overflow-clip surface-matte rounded-3xl',
-          'transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'transition-[transform,box-shadow] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
           hover !== false && 'hover:-translate-y-0.5',
           raisedPadding,
           className

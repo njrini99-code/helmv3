@@ -334,7 +334,7 @@ export function FairwayBrief({
       breadcrumbs={shell?.breadcrumbs}
       actions={actions}
     >
-      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-1">
+      <div className="flex flex-col gap-8">
         {/* Load failures degrade independently — they never blank the hero. */}
         {!overview.success ? (
           <InlineNotice tone="warning" title="Couldn’t refresh the team read">

@@ -47,6 +47,8 @@ import {
   BENCHMARK_LEVELS,
   type BenchmarkLevel,
 } from '@/lib/golf/sg-benchmarks';
+import { useRedesign, fairwayScope } from '@/lib/redesign/flag';
+import { FairwaySettingsGeneral } from '@/components/fairway/pages/settings';
 
 // ============================================================================
 // TYPES
@@ -88,6 +90,19 @@ type ExpandedSection = string | null;
 // ============================================================================
 
 export default function GolfSettingsPage() {
+  // Fairway redesign fork (ADDITIVE). Flag off ⇒ identical legacy output.
+  // Hooks live inside each branch component, so rules-of-hooks are preserved.
+  if (useRedesign()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwaySettingsGeneral />
+      </div>
+    );
+  }
+  return <LegacyGolfSettingsPage />;
+}
+
+function LegacyGolfSettingsPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<ExpandedSection>(null);

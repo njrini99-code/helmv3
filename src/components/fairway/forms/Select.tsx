@@ -77,7 +77,7 @@ function SelectRoot({
           "flex w-full items-center justify-between gap-2 font-fw-sans rounded-fw-sm",
           "bg-surface-sunken border border-border-subtle text-text-primary text-left",
           sizeClasses[size],
-          "transition-[border-color,box-shadow] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+          "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
           "hover:border-border-strong",
           "outline-none focus-visible:border-border-focus focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-1 focus-visible:ring-offset-canvas",
           "data-[popup-open]:border-border-focus",
@@ -97,7 +97,7 @@ function SelectRoot({
         </BaseSelect.Value>
         <BaseSelect.Icon
           data-slot="select-icon"
-          className="shrink-0 text-text-tertiary transition-transform duration-[var(--fw-dur-fast)] data-[popup-open]:rotate-180"
+          className="shrink-0 text-text-tertiary transition-transform [transition-duration:var(--fw-dur-fast)] data-[popup-open]:rotate-180"
         >
           <ChevronGlyph />
         </BaseSelect.Icon>

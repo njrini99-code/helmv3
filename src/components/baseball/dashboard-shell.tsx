@@ -128,7 +128,7 @@ export function BaseballDashboardShell({ children, role }: Props) {
         aria-modal="true"
         className={cn(
           'fixed inset-y-0 left-0 z-50 lg:hidden',
-          'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -138,7 +138,7 @@ export function BaseballDashboardShell({ children, role }: Props) {
       <div
         className={cn(
           'min-h-dvh flex flex-col',
-          'transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transition-[margin-left] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
         )}
       >

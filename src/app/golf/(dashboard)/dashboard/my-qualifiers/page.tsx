@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import type { PlayerQualifierInfo } from '@/app/golf/actions/golf';
 import { MyQualifiersClient } from './my-qualifiers-client';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayMyQualifiers } from '@/components/fairway/pages/my-qualifiers';
 
 export default async function MyQualifiersPage() {
   const session = await getGolfSessionProfile();
@@ -11,7 +13,16 @@ export default async function MyQualifiersPage() {
   const { player } = session;
   if (!player) {
     const { coach } = session;
-    if (coach) return <MyQualifiersClient qualifiers={[]} error="This feature is for players only. Coaches can view qualifier results from the qualifiers page." />;
+    if (coach) {
+      const coachError = 'This feature is for players only. Coaches can view qualifier results from the qualifiers page.';
+      if (isRedesignEnabled())
+        return (
+          <div className={fairwayScope('min-h-full bg-canvas')}>
+            <FairwayMyQualifiers qualifiers={[]} error={coachError} />
+          </div>
+        );
+      return <MyQualifiersClient qualifiers={[]} error={coachError} />;
+    }
     return redirect('/golf/player');
   }
 
@@ -39,6 +50,12 @@ export default async function MyQualifiersPage() {
 
   // If query error or no entries, return empty array
   if (entriesError || !entries || entries.length === 0) {
+    if (isRedesignEnabled())
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayMyQualifiers qualifiers={[]} />
+        </div>
+      );
     return <MyQualifiersClient qualifiers={[]} />;
   }
 
@@ -122,6 +139,13 @@ export default async function MyQualifiersPage() {
         totalToPar: qualifierRounds.length > 0 ? totalToPar : (entry.total_to_par ?? null),
       };
     });
+
+  if (isRedesignEnabled())
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayMyQualifiers qualifiers={qualifiers} />
+      </div>
+    );
 
   return <MyQualifiersClient qualifiers={qualifiers} />;
 }

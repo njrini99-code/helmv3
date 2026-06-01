@@ -247,7 +247,7 @@ function SourceChip({
           'group/source inline-flex flex-shrink-0 items-center gap-1.5 rounded-full',
           'border border-accent-200 bg-accent-50 px-2.5 py-1',
           'font-fw-sans text-eyebrow font-medium text-accent-700',
-          'transition-[color,background-color,border-color] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+          'transition-[color,background-color,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
           'hover:bg-accent-100 hover:border-accent-300',
           'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
           'motion-reduce:transition-none',
@@ -257,7 +257,7 @@ function SourceChip({
         <span>{label}</span>
         <IconChevronRight
           size={11}
-          className="text-accent-400 transition-transform duration-[180ms] group-hover/source:translate-x-0.5 motion-reduce:transition-none"
+          className="text-accent-400 transition-transform [transition-duration:180ms] group-hover/source:translate-x-0.5 motion-reduce:transition-none"
         />
       </Link>
       {context ? (

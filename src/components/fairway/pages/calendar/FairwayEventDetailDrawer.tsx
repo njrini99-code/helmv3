@@ -164,7 +164,7 @@ export function FairwayEventDetailDrawer({
               rel="noopener noreferrer"
               className={cn(
                 'flex items-center justify-between gap-3 rounded-fw-md bg-surface-sunken px-4 py-3',
-                'outline-none transition-colors duration-[180ms] hover:bg-surface-tint',
+                'outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint',
                 'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               )}
             >

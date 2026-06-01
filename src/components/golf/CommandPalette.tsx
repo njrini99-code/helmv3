@@ -187,7 +187,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
       ><span className="sr-only">Close command palette</span></IconButton>
 
       {/* Palette frame */}
-      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]">
+      <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] sm:w-full max-w-xl animate-in zoom-in-95 fade-in-0 slide-in-from-top-2 duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
         <Command
           label="Command palette"
           loop
@@ -230,7 +230,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                   }}
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                    'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                   )}
                 >
@@ -260,7 +260,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >
@@ -296,7 +296,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >
@@ -333,7 +333,7 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
                     }}
                     className={cn(
                       'flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer outline-none',
-                      'transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                      'transition-colors duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                       'text-warm-700 data-[selected=true]:bg-primary-50/60 data-[selected=true]:text-primary-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-cream-50',
                     )}
                   >

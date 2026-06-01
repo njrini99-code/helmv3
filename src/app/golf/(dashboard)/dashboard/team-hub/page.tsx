@@ -73,7 +73,7 @@ export default async function TeamHubPage({
   // Fetch the four datasets in parallel — SAME queries the player Hub uses.
   // (golf_task_assignments + the casts mirror hub/page.tsx because the table is
   // not in the generated types.)
-  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult] = await Promise.all([
+  const [tripsResult, tasksRaw, announcementsResult, classesResult, teamResult, teammatesResult] = await Promise.all([
     supabase
       .from('golf_travel_itineraries')
       .select('*')
@@ -94,6 +94,19 @@ export default async function TeamHubPage({
       .order('start_time', { ascending: true }),
 
     supabase.from('golf_teams').select('name').eq('id', teamId).maybeSingle(),
+
+    // Teammates — the player roster, folded into the hub (SAME query the
+    // standalone player roster route used; excludes the viewer).
+    supabase
+      .from('golf_team_members')
+      .select(`
+        player:golf_players!inner (
+          id, first_name, last_name, avatar_url, handicap, graduation_year,
+          user:users(last_seen)
+        )
+      `)
+      .eq('team_id', teamId)
+      .neq('player_id', player.id),
   ]);
 
   // ── Trips (jsonb → string, text[] → csv) — verbatim from hub/page.tsx ──────
@@ -196,6 +209,31 @@ export default async function TeamHubPage({
 
   const announcements = announcementsResult.success ? (announcementsResult.data ?? []) : [];
 
+  // ── Teammates (read-only roster grid in the Teammates tab) ──────────────────
+  const teammates = (teammatesResult.data || [])
+    .filter((tm) => tm.player && !('error' in tm.player))
+    .map((tm) => {
+      const p = tm.player as {
+        id: string;
+        first_name: string | null;
+        last_name: string | null;
+        avatar_url: string | null;
+        handicap: number | null;
+        graduation_year: number | null;
+        user?: { last_seen: string | null } | null;
+      };
+      return {
+        id: p.id,
+        first_name: p.first_name,
+        last_name: p.last_name,
+        avatar_url: p.avatar_url,
+        handicap: p.handicap,
+        graduation_year: p.graduation_year,
+        last_seen: p.user?.last_seen || null,
+      };
+    })
+    .sort((a, b) => (a.last_name || '').localeCompare(b.last_name || ''));
+
   return (
     <div className={fairwayScope('min-h-full bg-canvas')}>
       <FairwayTeamHubWrapper
@@ -203,6 +241,7 @@ export default async function TeamHubPage({
         announcements={announcements}
         trips={trips}
         classes={classes}
+        teammates={teammates}
         playerName={playerName}
         teamName={teamResult.data?.name || 'Your team'}
         initialTab={initialTab}

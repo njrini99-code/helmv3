@@ -90,7 +90,12 @@ export function GenomeRadar({
       actions={actions}
       className={className}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minHeight={height}
+        initialDimension={{ width: 1, height }}
+      >
         <RadarChart data={data} outerRadius="72%" margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
           <PolarGrid stroke={VIZ_CHROME.grid} />
           <PolarAngleAxis

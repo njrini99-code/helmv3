@@ -33,7 +33,7 @@ export interface NumberFieldProps
 const stepperClasses = cn(
   "flex h-full w-9 shrink-0 select-none items-center justify-center",
   "text-text-secondary",
-  "transition-colors duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+  "transition-colors [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "hover:bg-accent-50 hover:text-accent-700",
   "active:translate-y-[0.5px]",
   "outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-500/70",
@@ -54,7 +54,7 @@ export const NumberField = React.forwardRef<HTMLDivElement, NumberFieldProps>(
           className={cn(
             "flex w-full items-stretch overflow-hidden rounded-fw-sm",
             "bg-surface-sunken border border-border-subtle",
-            "transition-[border-color,box-shadow] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+            "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
             "hover:border-border-strong",
             "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
             "has-[[data-invalid]]:border-fw-danger/60",

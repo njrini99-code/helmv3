@@ -111,7 +111,7 @@ export function FairwayEventCard({
         'group relative flex w-full items-stretch gap-4 text-left',
         'rounded-card bg-surface border border-border-subtle shadow-flat',
         'p-4 min-h-[64px]',
-        'transition-[box-shadow,transform,border-color] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        'transition-[box-shadow,transform,border-color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'hover:-translate-y-px hover:shadow-soft hover:border-border-strong',
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',

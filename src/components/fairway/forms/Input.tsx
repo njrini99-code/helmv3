@@ -62,7 +62,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
         className={cn(
           "flex w-full items-center gap-2 rounded-fw-sm",
           "bg-surface-sunken border border-border-subtle",
-          "transition-[border-color,box-shadow] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+          "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
           "hover:border-border-strong",
           "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
           "has-[[data-invalid]]:border-fw-danger/60 has-[[data-invalid]]:focus-within:ring-fw-danger/40",

@@ -6,6 +6,8 @@ import { TeamSettingsClient } from './team-settings-client';
 import { TeamInfoPlayer } from './team-info-player';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayTeam } from '@/components/fairway/pages/team';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -79,6 +81,21 @@ export default async function TeamSettingsPage() {
     const team = coachData.golf_teams
       ? { ...coachData.golf_teams, created_at: coachData.golf_teams.created_at ?? '' }
       : null;
+    if (isRedesignEnabled()) {
+      return (
+        <div className={fairwayScope('min-h-full bg-canvas')}>
+          <FairwayTeam
+            role="coach"
+            coach={{
+              id: coachData.id,
+              team_id: coachData.team_id,
+              full_name: coachData.full_name,
+            }}
+            team={team}
+          />
+        </div>
+      );
+    }
     return (
       <AnimatedPage>
         <AnimatedItem>
@@ -181,6 +198,21 @@ export default async function TeamSettingsPage() {
       priority: task.priority,
     };
   });
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayTeam
+          role="player"
+          team={team}
+          coach={teamCoach}
+          roster={roster ?? []}
+          announcements={announcements ?? []}
+          tasks={tasks}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

@@ -167,7 +167,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
           'fixed top-0 bottom-0 left-0 z-50 md:hidden',
           'h-dvh w-72 max-w-[85vw]',
           'pl-[env(safe-area-inset-left)]',
-          'transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transition-transform duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -189,7 +189,7 @@ function GolfDashboardContent({ children, userData }: { children: React.ReactNod
         className={cn(
           'flex-1 overflow-y-auto isolate',
           'pb-[var(--golf-mobile-bottom-nav-offset)] md:pb-0',
-          'transition-[padding-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transition-[padding-left] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
           collapsed ? 'md:pl-[72px]' : 'md:pl-64',
         )}
         style={{

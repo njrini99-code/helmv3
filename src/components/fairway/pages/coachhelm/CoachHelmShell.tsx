@@ -117,7 +117,9 @@ export function CoachHelmShell({
       className={cn('flex w-full flex-col', className)}
     >
       {/* ── Masthead (§A light-airy gutters) + persistent sub-nav strip ─────── */}
-      <div className="flex flex-col gap-5 px-1 pt-2 sm:px-2">
+      {/* Masthead + body share ONE centered max-w container so every CoachHelm
+          tab aligns at the same width + gutters (cross-tab cohesion). */}
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5 px-4 pt-2 md:px-6">
         <ViewHeader
           eyebrow={eyebrow}
           title={resolvedTitle}
@@ -138,7 +140,7 @@ export function CoachHelmShell({
                     {c.href && !last ? (
                       <Link
                         href={c.href}
-                        className="rounded-fw-sm text-text-secondary outline-none transition-colors duration-[180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+                        className="rounded-fw-sm text-text-secondary outline-none transition-colors [transition-duration:180ms] hover:text-text-primary focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
                       >
                         {c.label}
                       </Link>
@@ -163,8 +165,8 @@ export function CoachHelmShell({
         <CoachHelmSubNav active={active} role={role} signalCount={signalCount} />
       </div>
 
-      {/* ── Surface body on the warm canvas, with the §A airy gutters ───────── */}
-      <div className="px-1 py-6 sm:px-2">{children}</div>
+      {/* ── Surface body on the warm canvas, aligned to the masthead width ──── */}
+      <div className="mx-auto w-full max-w-[1200px] px-4 py-6 md:px-6">{children}</div>
     </div>
   );
 }

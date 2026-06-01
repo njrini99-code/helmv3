@@ -5,6 +5,8 @@ import { Metadata } from 'next';
 import NewQualifierClient from './new-qualifier-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayNewQualifier } from '@/components/fairway/pages/qualifiers/FairwayNewQualifier';
 
 export const metadata: Metadata = {
   title: 'Create Qualifier | Helm Sports',
@@ -45,6 +47,14 @@ export default async function NewQualifierPage() {
         )
         .sort((a, b) => a.last_name.localeCompare(b.last_name));
     }
+  }
+
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayNewQualifier players={players} />
+      </div>
+    );
   }
 
   return (

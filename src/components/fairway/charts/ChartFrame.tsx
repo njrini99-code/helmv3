@@ -183,7 +183,7 @@ function ViewToggle({ showTable, onToggle }: { showTable: boolean; onToggle: () 
         'inline-flex h-7 min-w-[24px] items-center gap-1.5 rounded-fw-sm px-2.5',
         'font-fw-sans text-caption font-medium',
         'text-text-secondary',
-        'transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'hover:bg-inset hover:text-text-primary',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface',
         'active:translate-y-[0.5px]',

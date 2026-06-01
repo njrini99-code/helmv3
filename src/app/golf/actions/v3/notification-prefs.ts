@@ -85,18 +85,20 @@ export async function setCategoryChannel(
     const updatedPrefs: PrefsByCategory = { ...currentPrefs, [category]: updatedChannels };
 
     if (row) {
-      await sb
+      const { error } = await sb
         .from('golf_player_notification_state')
         .update({
           prefs: updatedPrefs as unknown as Json,
           updated_at: new Date().toISOString(),
         })
         .eq('player_id', player.id);
+      if (error) throw error;
     } else {
-      await sb.from('golf_player_notification_state').insert({
+      const { error } = await sb.from('golf_player_notification_state').insert({
         player_id: player.id,
         prefs: updatedPrefs as unknown as Json,
       });
+      if (error) throw error;
     }
 
     revalidatePath('/golf/dashboard/settings/notifications');
@@ -132,15 +134,17 @@ export async function setQuietMode(enabled: boolean): Promise<PrefsActionResult>
       .eq('player_id', player.id)
       .maybeSingle();
     if (row) {
-      await sb
+      const { error } = await sb
         .from('golf_player_notification_state')
         .update({ quiet_mode: enabled, updated_at: new Date().toISOString() })
         .eq('player_id', player.id);
+      if (error) throw error;
     } else {
-      await sb.from('golf_player_notification_state').insert({
+      const { error } = await sb.from('golf_player_notification_state').insert({
         player_id: player.id,
         quiet_mode: enabled,
       });
+      if (error) throw error;
     }
     revalidatePath('/golf/dashboard/settings/notifications');
     return { ok: true };

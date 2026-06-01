@@ -230,7 +230,7 @@ export function EventDetailDrawer({
                       className={cn(
                         'inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-2xl',
                         'min-h-[44px] text-body-sm font-medium tracking-[-0.005em]',
-                        'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                        'transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                         'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                         'disabled:opacity-60',
                         isSelected

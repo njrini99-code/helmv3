@@ -85,8 +85,10 @@ export interface PatternFilters {
 }
 
 /** Default row cap for getTeamPatterns — keeps the highest-signal patterns and
- *  stops the contextual flood from building a multi-thousand-row client list. */
-export const PATTERNS_DEFAULT_LIMIT = 200;
+ *  stops the contextual flood from building a multi-thousand-row client list.
+ *  NOT exported: a 'use server' module may only export async functions, so this
+ *  stays a module-internal const (only referenced inside getTeamPatterns). */
+const PATTERNS_DEFAULT_LIMIT = 200;
 
 /**
  * Pattern with extended metadata for UI.

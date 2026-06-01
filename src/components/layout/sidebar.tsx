@@ -251,7 +251,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         // Dark sidebar per Batch 3 spec
         'bg-[rgba(28,25,23,0.97)] backdrop-blur-xl',
         'h-dvh flex flex-col relative',
-        'transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'transition-[width] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
         'will-change-[width]',
         isCollapsed ? 'w-[72px]' : 'w-64',
         !isMobile && 'fixed left-0 top-0 z-40'
@@ -281,7 +281,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       {/* Logo */}
       <div className={cn(
         'h-16 flex items-center border-b border-white/10',
-        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
         <Link
@@ -295,7 +295,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
               aria-hidden={!isCollapsed}
               className={cn(
                 'w-10 h-10 flex items-center justify-center flex-shrink-0',
-                'transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'transition-[opacity,transform] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-100 scale-100' : 'opacity-0 scale-75 absolute'
               )}
             >
@@ -313,7 +313,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
             <div
               aria-hidden={isCollapsed}
               className={cn(
-                'flex items-center gap-2 transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                'flex items-center gap-2 transition-[opacity,transform] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
                 isCollapsed ? 'opacity-0 scale-75 absolute' : 'opacity-100 scale-100'
               )}
             >
@@ -339,7 +339,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
       {/* Navigation */}
       <nav className={cn(
         'flex-1 py-4 overflow-y-auto overflow-x-hidden custom-scrollbar',
-        'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+        'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
         isCollapsed ? 'px-2' : 'px-3'
       )}>
         {/* ARCHIVED: Recruiting mode toggle hidden — re-enable when recruiting is ready */}
@@ -393,7 +393,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
                   {/* Text - animates out */}
                   <span
                     className={cn(
-                      'flex-1 whitespace-nowrap transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+                      'flex-1 whitespace-nowrap transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
                       isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                     )}
                   >
@@ -523,7 +523,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         <div
           className={cn(
             'rounded-xl bg-white/5 border border-white/10 overflow-hidden',
-            'transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0 border-0' : 'h-auto opacity-100 p-3 mb-3'
           )}
         >
@@ -537,7 +537,7 @@ export function Sidebar({ isMobile = false }: SidebarProps) {
         {/* User info */}
         <div
           className={cn(
-            'rounded-xl bg-white/5 overflow-hidden transition-opacity duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+            'rounded-xl bg-white/5 overflow-hidden transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
             isCollapsed ? 'h-0 opacity-0 p-0 mb-0' : 'h-auto opacity-100 px-3 py-2.5 mb-2'
           )}
         >

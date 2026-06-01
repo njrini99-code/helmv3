@@ -341,6 +341,7 @@ function LargeTitleHeader({
   const [reducedMotion, setReducedMotion] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const scrollTargetRef = useRef<HTMLElement | Window | null>(null);
+  const scrolledRef = useRef(false);
 
   // Tap compact title → scroll to top (iOS native behavior).
   const handleTapTitle = () => {
@@ -348,9 +349,9 @@ function LargeTitleHeader({
     if (!target) return;
     try {
       if (target instanceof Window) {
-        target.scrollTo({ top: 0, behavior: 'smooth' });
+        target.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
       } else {
-        target.scrollTo({ top: 0, behavior: 'smooth' });
+        target.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
       }
     } catch {
       // no-op
@@ -404,12 +405,18 @@ function LargeTitleHeader({
       if (ticking) return;
       ticking = true;
       window.requestAnimationFrame(() => {
-        setScrolled(getScrollTop() > COLLAPSE_THRESHOLD);
+        const next = getScrollTop() > COLLAPSE_THRESHOLD;
+        if (next !== scrolledRef.current) {
+          scrolledRef.current = next;
+          setScrolled(next);
+        }
         ticking = false;
       });
     };
 
-    setScrolled(getScrollTop() > COLLAPSE_THRESHOLD);
+    const initialScrolled = getScrollTop() > COLLAPSE_THRESHOLD;
+    scrolledRef.current = initialScrolled;
+    setScrolled(initialScrolled);
     target.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       target.removeEventListener('scroll', onScroll);
@@ -419,7 +426,7 @@ function LargeTitleHeader({
   // iOS easing; falls back to instant if reduced motion
   const transitionClass = reducedMotion
     ? ''
-    : 'transition-opacity duration-200 ease-[cubic-bezier(0.25,0.1,0.25,1)]';
+    : 'transition-opacity duration-200 [transition-timing-function:cubic-bezier(0.25,0.1,0.25,1)]';
 
   return (
     <div ref={wrapperRef} className={cn('relative', className)}>
@@ -839,7 +846,7 @@ function CalendarHeader({
           className={cn(
             'lg:hidden p-2.5 -ml-2 rounded-2xl',
             'text-warm-500 hover:text-warm-700 hover:bg-warm-100/65',
-            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
           aria-label="Open navigation menu"
@@ -859,7 +866,7 @@ function CalendarHeader({
             onClick={() => onNavigate('prev')}
             aria-label={`Previous ${view}`}
             className={cn(
-              'rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'rounded-full transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               'text-warm-500 hover:text-warm-800 hover:bg-cream-100/70',
               isMobile ? 'w-10 h-10' : 'w-9 h-9',
               'flex items-center justify-center'
@@ -872,7 +879,7 @@ function CalendarHeader({
             onClick={() => onNavigate('next')}
             aria-label={`Next ${view}`}
             className={cn(
-              'rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'rounded-full transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               'text-warm-500 hover:text-warm-800 hover:bg-cream-100/70',
               isMobile ? 'w-10 h-10' : 'w-9 h-9',
               'flex items-center justify-center'
@@ -908,7 +915,7 @@ function CalendarHeader({
                 aria-checked={view === v}
                 onClick={() => onViewChange(v)}
                 className={cn(
-                  'px-4 py-1.5 text-[12.5px] font-medium rounded-full transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'px-4 py-1.5 text-[12.5px] font-medium rounded-full transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   view === v
                     ? 'bg-cream-50 text-warm-900 shadow-[0_1px_2px_rgba(58,50,40,0.05),0_4px_10px_rgba(58,50,40,0.04)]'
                     : 'text-warm-500 hover:text-warm-700'
@@ -929,7 +936,7 @@ function CalendarHeader({
                 onClick={() => void triggerHaptic('light')}
                 aria-label={secondaryTimezone ? `Secondary timezone: ${secondaryTimezone}` : 'Add secondary timezone'}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'inline-flex items-center gap-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   secondaryTimezone
                     ? 'px-3 py-1.5 bg-primary-50/70 text-primary-700'
                     : 'px-2.5 py-1.5 text-warm-400 hover:text-warm-700 hover:bg-cream-100/65'
@@ -979,7 +986,7 @@ function CalendarHeader({
               'group inline-flex items-center gap-2 px-5 py-2 rounded-full text-body-sm font-medium tracking-[-0.005em]',
               'bg-primary-600/95 text-white',
               'shadow-[0_3px_10px_rgba(22,163,74,0.18)]',
-              'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
+              'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_6px_18px_rgba(22,163,74,0.24)]'
             )}
           >
             <Plus className="w-3.5 h-3.5 transition-transform duration-500 group-hover:rotate-90" />

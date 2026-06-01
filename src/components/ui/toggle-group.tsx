@@ -46,7 +46,7 @@ const ToggleGroupItem = React.forwardRef<
     className={cn(
       'relative inline-flex items-center justify-center whitespace-nowrap outline-none',
       'min-h-[36px] rounded-full px-3.5 text-[12.5px] font-medium tracking-[-0.005em]',
-      'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'disabled:pointer-events-none disabled:opacity-40',
       'focus-visible:ring-2 focus-visible:ring-primary-500/30',
       'data-[state=on]:bg-white data-[state=on]:text-warm-900',

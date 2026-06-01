@@ -88,7 +88,7 @@ export interface RadioProps
 const radioBase = cn(
   "flex h-[1.125rem] w-[1.125rem] shrink-0 items-center justify-center rounded-full",
   "border border-border-strong bg-surface",
-  "transition-[border-color,box-shadow] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+  "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "data-[checked]:border-accent-500",
   "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
   "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",

@@ -111,7 +111,12 @@ export function TrendChart({
       actions={actions}
       className={className}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minHeight={height}
+        initialDimension={{ width: 1, height }}
+      >
         <ComposedChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
           <defs>
             <linearGradient id={VIZ_DEFS.areaGradient} x1="0" y1="0" x2="0" y2="1">
@@ -282,7 +287,12 @@ export function BarCompare({
       actions={actions}
       className={className}
     >
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minHeight={height}
+        initialDimension={{ width: 1, height }}
+      >
         <BarChart
           data={data}
           layout="vertical"

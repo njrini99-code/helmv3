@@ -99,7 +99,7 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
             'rounded-card border border-[var(--fw-glass-border)]',
             'bg-[var(--fw-glass-bg-strong)] backdrop-blur-[var(--fw-blur-glass)] backdrop-saturate-[160%]',
             'text-text-primary shadow-raise',
-            '![transition-timing-function:var(--fw-ease-glide)] !duration-[520ms]',
+            '![transition-timing-function:var(--fw-ease-glide)] ![transition-duration:520ms]',
             // status left bar (4px) — color set via tone classes on the toast root
             'before:absolute before:inset-y-0 before:left-0 before:w-1 before:content-[""]',
             'before:bg-border-strong', // default (normal/info)
@@ -112,11 +112,11 @@ export function ToastStack({ mobileBreakpointPx = 768, ...props }: ToastStackPro
           title: 'text-[13px] font-semibold leading-5 text-text-primary',
           description: 'mt-0.5 text-[13px] leading-5 text-text-secondary',
           actionButton:
-            'rounded-fw-sm bg-accent-500 px-3 py-1.5 text-[13px] font-medium text-text-on-accent transition-colors duration-[180ms] hover:bg-accent-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
+            'rounded-fw-sm bg-accent-500 px-3 py-1.5 text-[13px] font-medium text-text-on-accent transition-colors [transition-duration:180ms] hover:bg-accent-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2',
           cancelButton:
-            'rounded-fw-sm px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors duration-[180ms] hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+            'rounded-fw-sm px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors [transition-duration:180ms] hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
           closeButton:
-            'border border-border-subtle bg-surface text-text-tertiary transition-colors duration-[180ms] hover:bg-surface-sunken hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+            'border border-border-subtle bg-surface text-text-tertiary transition-colors [transition-duration:180ms] hover:bg-surface-sunken hover:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
           icon: 'shrink-0',
         },
       }}

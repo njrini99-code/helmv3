@@ -131,7 +131,7 @@ export function FairwayDayStrip({
             className={cn(
               'group relative flex min-h-[78px] flex-col items-center justify-between md:min-h-[88px]',
               'rounded-card px-1.5 py-2.5 md:px-2 md:py-3',
-              'transition-[background-color,box-shadow,transform,color] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+              'transition-[background-color,box-shadow,transform,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'motion-reduce:transition-none',
               // Selected — the green CTA fill (overrides everything else).

@@ -33,7 +33,7 @@ const DropdownMenuContent = React.forwardRef<
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
         'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
         'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-        'duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         className,
       )}
       {...props}
@@ -52,7 +52,7 @@ const DropdownMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
-      'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
       selected
@@ -73,7 +73,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
     ref={ref}
     className={cn(
       'relative flex cursor-pointer select-none items-center pl-9 pr-4 py-2.5 text-[13px] outline-none',
-      'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[highlighted]:bg-cream-50/70 data-[highlighted]:text-warm-900',
       'data-[disabled]:pointer-events-none data-[disabled]:opacity-40',
@@ -127,7 +127,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       'flex cursor-pointer select-none items-center px-4 py-2.5 text-[13px] outline-none',
-      'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2',
       'text-warm-700 data-[state=open]:bg-cream-50/70 data-[highlighted]:bg-cream-50/70',
       className,
@@ -149,7 +149,7 @@ const DropdownMenuSubContent = React.forwardRef<
     className={cn(
       'z-50 min-w-[180px] overflow-hidden rounded-2xl surface-stone py-2',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
-      'duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+      'duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
       className,
     )}
     {...props}

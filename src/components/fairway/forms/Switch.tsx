@@ -34,7 +34,7 @@ export interface SwitchProps
 const trackBase = cn(
   "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5",
   "bg-surface-sunken border border-border-strong",
-  "transition-[background-color,border-color] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+  "transition-[background-color,border-color] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
   "data-[checked]:border-accent-500 data-[checked]:bg-accent-500",
   "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas",
   "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
@@ -42,7 +42,7 @@ const trackBase = cn(
 
 const thumbBase = cn(
   "block h-[1.125rem] w-[1.125rem] rounded-full bg-surface shadow-soft",
-  "transition-transform duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-spring)]",
+  "transition-transform [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-spring)]",
   "motion-reduce:transition-none",
   "translate-x-0 data-[checked]:translate-x-5",
   // on a green track the thumb reads as cream

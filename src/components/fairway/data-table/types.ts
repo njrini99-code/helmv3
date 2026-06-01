@@ -42,7 +42,7 @@ export interface FairwayColumnMeta {
 
 // Make `meta` on a ColumnDef strongly typed with FairwayColumnMeta.
 declare module '@tanstack/react-table' {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> extends FairwayColumnMeta {}
 }
 

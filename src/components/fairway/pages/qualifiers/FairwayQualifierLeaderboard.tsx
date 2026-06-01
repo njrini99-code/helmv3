@@ -33,18 +33,35 @@
  * inside the `.fairway-ds` scope on a bg-canvas page.
  * ========================================================================== */
 
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Flag } from 'lucide-react';
 
 import { useQualifierRealtime } from '@/hooks/golf/use-qualifier-realtime';
 import { Surface, EmptyState, InlineNotice, StatusPill } from '@/components/fairway';
+import type { FwStatusTone } from '@/components/fairway/controls';
 import { cn } from '@/lib/utils';
 
 interface FairwayQualifierLeaderboardProps {
   qualifierId: string;
   /** Entrant count from the server fetch — used in the honest "awaiting" copy. */
   entrantCount: number;
+  /**
+   * Travel-squad size (golf_qualifiers.selection_slots_total). The full lineup
+   * that makes the trip. 0/undefined → no cut lines are drawn (the coach hasn't
+   * declared a squad size, so we never invent one).
+   */
+  selectionSlotsTotal?: number;
+  /**
+   * How many of those spots are the coach's discretionary picks
+   * (golf_qualifiers.selection_slots_coach_pick). The remainder
+   * (`total − coachPick`) are the TOP-SCORE auto-qualify slots — players who lock
+   * their spot on merit. Mirrors the coach-side QualifyingBoard math.
+   */
+  selectionSlotsCoachPick?: number;
 }
+
+/** Where a scored player sits relative to the travel squad. */
+type LineupTier = 'locked' | 'bubble' | 'out' | null;
 
 /** A presentation row derived from the realtime leaderboard entries. */
 interface StandingRow {
@@ -53,6 +70,8 @@ interface StandingRow {
   roundsCompleted: number;
   totalScore: number | null;
   totalToPar: number | null;
+  /** Scoring average (total ÷ rounds) — the headline college stat; null until scored. */
+  averageScore: number | null;
   hasScore: boolean;
   /** Display position (1-based among scored players); null until a score posts. */
   position: number | null;
@@ -69,6 +88,8 @@ function formatToPar(toPar: number | null, hasScore: boolean): string {
 export function FairwayQualifierLeaderboard({
   qualifierId,
   entrantCount,
+  selectionSlotsTotal = 0,
+  selectionSlotsCoachPick = 0,
 }: FairwayQualifierLeaderboardProps) {
   // VERBATIM: same hook, same realtime subscription as the legacy leaderboard.
   const { leaderboard: entries, qualifier, loading, error } = useQualifierRealtime(qualifierId);
@@ -104,12 +125,19 @@ export function FairwayQualifierLeaderboard({
         prev.rounds_completed > 0 &&
         (prev.total_to_par ?? null) === (entry.total_to_par ?? null);
 
+      const totalScore = hasScore ? entry.total_score ?? null : null;
+      const averageScore =
+        hasScore && totalScore !== null && entry.rounds_completed > 0
+          ? totalScore / entry.rounds_completed
+          : null;
+
       return {
         playerId: entry.player_id,
         playerName: entry.player_name,
         roundsCompleted: entry.rounds_completed,
-        totalScore: hasScore ? entry.total_score ?? null : null,
+        totalScore,
         totalToPar: hasScore ? entry.total_to_par ?? null : null,
+        averageScore,
         hasScore,
         position,
         isTied,
@@ -152,7 +180,11 @@ export function FairwayQualifierLeaderboard({
             }
           />
         ) : (
-          <StandingsTable rows={rows} />
+          <StandingsTable
+            rows={rows}
+            selectionSlotsTotal={selectionSlotsTotal}
+            selectionSlotsCoachPick={selectionSlotsCoachPick}
+          />
         )}
       </Surface.Body>
     </Surface>
@@ -163,7 +195,51 @@ export function FairwayQualifierLeaderboard({
  * Matte standings table — flat, tabular-nums, no bracket / medals / rings
  * ──────────────────────────────────────────────────────────────────────── */
 
-function StandingsTable({ rows }: { rows: StandingRow[] }) {
+/** Tier badge config for a scored player's lineup standing. */
+const TIER_BADGE: Record<'locked' | 'bubble', { tone: FwStatusTone; label: string }> = {
+  locked: { tone: 'accent', label: 'In lineup' },
+  bubble: { tone: 'warning', label: 'Bubble' },
+};
+
+function StandingsTable({
+  rows,
+  selectionSlotsTotal,
+  selectionSlotsCoachPick,
+}: {
+  rows: StandingRow[];
+  selectionSlotsTotal: number;
+  selectionSlotsCoachPick: number;
+}) {
+  // ── College travel-squad model ────────────────────────────────────────────
+  // total spots = (top-score auto-qualify) + (coach's discretionary picks).
+  // The top-score line is where merit locks a spot; below it, up to the travel
+  // line, players are on the "bubble" for a coach's pick. Mirrors the coach-side
+  // QualifyingBoard (topScoreSlots = total − coachPick).
+  const travelLine = selectionSlotsTotal > 0 ? selectionSlotsTotal : 0;
+  const coachPicks = Math.min(Math.max(selectionSlotsCoachPick, 0), travelLine);
+  const topScoreLine = travelLine > 0 ? travelLine - coachPicks : 0;
+  const scoredCount = rows.reduce((n, r) => (r.hasScore ? n + 1 : n), 0);
+
+  // Only draw a line when a real player actually falls below it.
+  const drawTopScoreLine = topScoreLine > 0 && coachPicks > 0 && scoredCount > topScoreLine;
+  const drawTravelLine = travelLine > 0 && scoredCount > travelLine;
+
+  // Tier + cut lines key on the PHYSICAL scored rank (count of scored players
+  // above + self), NOT the golf position — a tie (positions 3,3,5) would skip
+  // the exact line number and the rule would never render.
+  let scoredRank = 0;
+  const decorated = rows.map((row) => ({
+    row,
+    scoredRank: row.hasScore ? ++scoredRank : null,
+  }));
+
+  const tierFor = (rank: number | null): LineupTier => {
+    if (rank === null || travelLine <= 0) return null;
+    if (rank <= topScoreLine) return 'locked';
+    if (rank <= travelLine) return coachPicks > 0 ? 'bubble' : 'locked';
+    return 'out';
+  };
+
   return (
     <div className="overflow-x-auto overscroll-x-contain">
       <table className="w-full border-collapse font-fw-sans text-body">
@@ -172,56 +248,125 @@ function StandingsTable({ rows }: { rows: StandingRow[] }) {
             <Th className="w-12">Pos</Th>
             <Th>Player</Th>
             <Th align="right">Rounds</Th>
+            <Th align="right">Avg</Th>
             <Th align="right">Total</Th>
             <Th align="right">To par</Th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {decorated.map(({ row, scoredRank: rank }) => {
             const leader = row.position === 1;
+            const tier = tierFor(rank);
+            const badge = tier === 'locked' || tier === 'bubble' ? TIER_BADGE[tier] : null;
             return (
-              <tr
-                key={row.playerId}
-                className={cn(
-                  'border-b border-border-subtle last:border-b-0',
-                  leader && 'bg-accent-50/60',
-                )}
-              >
-                <td className="py-2.5 pr-3 text-text-secondary tabular-nums">
-                  {row.position === null ? (
-                    <span className="text-text-tertiary">—</span>
-                  ) : (
-                    <span className={cn(leader && 'font-medium text-accent-700')}>
-                      {row.isTied ? 'T' : ''}
-                      {row.position}
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5 pr-3 font-medium text-text-primary">
-                  {row.playerName}
-                </td>
-                <td className="py-2.5 pr-3 text-right text-text-secondary tabular-nums">
-                  {row.roundsCompleted > 0 ? row.roundsCompleted : '—'}
-                </td>
-                <td className="py-2.5 pr-3 text-right font-fw-mono text-text-primary tabular-nums">
-                  {row.hasScore && row.totalScore !== null ? row.totalScore : '—'}
-                </td>
-                <td
+              <Fragment key={row.playerId}>
+                <tr
                   className={cn(
-                    'py-2.5 text-right font-fw-mono tabular-nums',
-                    row.hasScore && row.totalToPar !== null && row.totalToPar < 0
-                      ? 'text-accent-700'
-                      : 'text-text-secondary',
+                    'border-b border-border-subtle last:border-b-0',
+                    leader && 'bg-accent-50/60',
+                    tier === 'out' && 'text-text-secondary',
                   )}
                 >
-                  {formatToPar(row.totalToPar, row.hasScore)}
-                </td>
-              </tr>
+                  <td className="py-2.5 pr-3 text-text-secondary tabular-nums">
+                    {row.position === null ? (
+                      <span className="text-text-tertiary">—</span>
+                    ) : (
+                      <span className={cn(leader && 'font-medium text-accent-700')}>
+                        {row.isTied ? 'T' : ''}
+                        {row.position}
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2.5 pr-3 font-medium text-text-primary">
+                    <span className="inline-flex items-center gap-2">
+                      <span className={cn(tier === 'out' && 'text-text-secondary')}>
+                        {row.playerName}
+                      </span>
+                      {badge ? (
+                        <StatusPill tone={badge.tone} size="sm" className="flex-shrink-0">
+                          {badge.label}
+                        </StatusPill>
+                      ) : null}
+                    </span>
+                  </td>
+                  <td className="py-2.5 pr-3 text-right text-text-secondary tabular-nums">
+                    {row.roundsCompleted > 0 ? row.roundsCompleted : '—'}
+                  </td>
+                  <td className="py-2.5 pr-3 text-right font-fw-mono text-text-secondary tabular-nums">
+                    {row.averageScore !== null ? row.averageScore.toFixed(1) : '—'}
+                  </td>
+                  <td className="py-2.5 pr-3 text-right font-fw-mono text-text-primary tabular-nums">
+                    {row.hasScore && row.totalScore !== null ? row.totalScore : '—'}
+                  </td>
+                  <td
+                    className={cn(
+                      'py-2.5 text-right font-fw-mono tabular-nums',
+                      row.hasScore && row.totalToPar !== null && row.totalToPar < 0
+                        ? 'text-accent-700'
+                        : 'text-text-secondary',
+                    )}
+                  >
+                    {formatToPar(row.totalToPar, row.hasScore)}
+                  </td>
+                </tr>
+
+                {/* TOP-SCORE LINE — merit locks a spot above this rule */}
+                {drawTopScoreLine && rank === topScoreLine ? (
+                  <CutLineRow
+                    tone="accent"
+                    label={`Top-score line · ${topScoreLine} auto-qualify`}
+                  />
+                ) : null}
+
+                {/* TRAVEL CUT — full squad (incl. coach's picks) makes the trip above this */}
+                {drawTravelLine && rank === travelLine ? (
+                  <CutLineRow
+                    tone="muted"
+                    label={`Travel cut · top ${travelLine} make the trip`}
+                  />
+                ) : null}
+              </Fragment>
             );
           })}
         </tbody>
       </table>
+
+      {/* Honest ranking-basis caption */}
+      <p className="mt-3 px-0.5 font-fw-sans text-caption text-text-tertiary">
+        Ranked by cumulative to-par, lowest first. Every completed round counts.
+        {travelLine > 0
+          ? coachPicks > 0
+            ? ` Top ${topScoreLine} auto-qualify; ${coachPicks} coach's-pick spot${
+                coachPicks === 1 ? ' fills' : 's fill'
+              } the ${travelLine}-player travel squad.`
+            : ` Top ${travelLine} make the travel squad.`
+          : ''}
+      </p>
     </div>
+  );
+}
+
+/** A full-width horizontal rule between table rows marking a selection cut. */
+function CutLineRow({ tone, label }: { tone: 'accent' | 'muted'; label: string }) {
+  const ruleClass = tone === 'accent' ? 'bg-accent-300' : 'bg-border-strong';
+  const textClass = tone === 'accent' ? 'text-accent-700' : 'text-text-tertiary';
+  return (
+    <tr aria-hidden="true">
+      <td colSpan={6} className="py-1.5">
+        <div className="flex items-center gap-2.5">
+          <span className={cn('h-px flex-1', ruleClass)} />
+          <span
+            className={cn(
+              'whitespace-nowrap font-fw-sans text-eyebrow font-semibold uppercase tracking-[0.1em]',
+              textClass,
+            )}
+          >
+            {label}
+          </span>
+          <span className={cn('h-px flex-1', ruleClass)} />
+        </div>
+      </td>
+    </tr>
   );
 }
 

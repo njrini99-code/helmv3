@@ -186,7 +186,7 @@ function PracticeRxRow({ drill, onView }: PracticeRxRowProps) {
         'group relative block w-full rounded-card bg-surface px-4 py-3 text-left text-text-primary',
         'border border-border-subtle shadow-flat',
         'cursor-pointer transition-[box-shadow,transform,border-color]',
-        'duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'hover:shadow-raise hover:-translate-y-px',
         'active:translate-y-[0.5px] active:shadow-flat',
         'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',

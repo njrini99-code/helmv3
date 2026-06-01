@@ -193,7 +193,7 @@ export function FairwayRoundCard({ round, isBestOfPeriod, userRole }: FairwayRou
             card hover or keyboard focus. Honest "No stats logged" when empty. */}
         <div
           className={cn(
-            'grid grid-rows-[0fr] transition-[grid-template-rows,opacity] duration-[220ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+            'grid grid-rows-[0fr] transition-[grid-template-rows,opacity] [transition-duration:220ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
             'opacity-0 group-hover/card:grid-rows-[1fr] group-hover/card:opacity-100',
             'group-focus-visible/card:grid-rows-[1fr] group-focus-visible/card:opacity-100',
             'motion-reduce:transition-none',

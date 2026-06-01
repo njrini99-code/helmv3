@@ -36,7 +36,7 @@ export const fwDisabled =
  */
 export const fwTransition =
   'transition-[color,background-color,border-color,box-shadow,transform,opacity] ' +
-  'duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none';
+  '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none';
 
 /** Status families shared by StatusPill / Badge / FilterPill semantics. */
 export type FwStatusTone =

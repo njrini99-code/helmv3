@@ -24,6 +24,8 @@ import {
   IconPhone,
 } from '@/components/icons';
 import { Metadata } from 'next';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayPlayerProfile } from '@/components/fairway/pages/roster/FairwayPlayerProfile';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -160,6 +162,18 @@ export default async function PlayerProfilePage({ params }: PageProps) {
     .limit(5);
 
   const totalRounds = recentRounds?.length || 0;
+
+  // ── Fairway (warm-premium) fork — flag-gated re-skin of this profile page.
+  // Reuses the SAME loaded player row + membership status + recent rounds; the
+  // detailed stats cluster (FairwayStatsSection) refetches via the same engine
+  // action client-side. Legacy markup below stays byte-for-byte when flag-off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayPlayerProfile player={player} membershipStatus={membership.status} />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage className="min-h-full">

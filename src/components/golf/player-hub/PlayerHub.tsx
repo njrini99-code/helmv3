@@ -811,7 +811,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   </div>
                   <Button variant="danger"
                     onClick={() => setActiveTab('tasks')}
-                    className="text-caption font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
+                    className="text-caption font-medium text-red-700 hover:text-red-800 px-3 py-1.5 rounded-full hover:bg-red-100/70 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </Button>
@@ -837,7 +837,7 @@ export function PlayerHub({ trips, tasks, events, announcements, playerName, onC
                   </div>
                   <a
                     href="/golf/dashboard/travel"
-                    className="text-caption font-medium text-blue-700 hover:text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-100/70 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
+                    className="text-caption font-medium text-blue-700 hover:text-blue-800 px-3 py-1.5 rounded-full hover:bg-blue-100/70 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] flex-shrink-0"
                   >
                     View
                   </a>

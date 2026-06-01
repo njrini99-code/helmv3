@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { IconButton } from '@/components/ui/button';
+import { useState } from 'react';
+import { toast } from '@/components/ui/sonner';
 import {
   setCategoryChannel,
   setQuietMode,
@@ -32,6 +32,15 @@ const CHANNELS: Array<{ key: keyof ChannelPref; label: string }> = [
   { key: 'in_app', label: 'In-app' },
 ];
 
+const DEFAULT_CHANNELS: ChannelPref = { push: false, email: false, in_app: true };
+const QUIET_EXEMPT: ReadonlySet<NotificationCategory> = new Set([
+  'round_review_ready',
+  'coach_assigned_goal',
+]);
+const PLAYER_NOTIFICATION_CATEGORIES = NOTIFICATION_CATEGORIES.filter(
+  (cat) => cat !== 'weekly_digest',
+);
+
 interface Props {
   prefs: PrefsByCategory;
   quietMode: boolean;
@@ -40,22 +49,45 @@ interface Props {
 export function NotificationPrefsClient({ prefs: initialPrefs, quietMode: initialQuiet }: Props) {
   const [prefs, setPrefs] = useState<PrefsByCategory>(initialPrefs);
   const [quiet, setQuiet] = useState(initialQuiet);
-  const [pending, startTransition] = useTransition();
+  const [pendingKeys, setPendingKeys] = useState<Set<string>>(new Set());
 
-  function handleToggle(cat: NotificationCategory, channel: keyof ChannelPref, enabled: boolean) {
-    const current = prefs[cat] ?? { push: false, email: false, in_app: true };
-    const next: ChannelPref = { ...current, [channel]: enabled };
-    setPrefs({ ...prefs, [cat]: next });
-    startTransition(async () => {
-      await setCategoryChannel(cat, channel, enabled);
+  function setPending(key: string, pending: boolean) {
+    setPendingKeys((current) => {
+      const next = new Set(current);
+      if (pending) next.add(key);
+      else next.delete(key);
+      return next;
     });
   }
 
-  function handleQuiet(enabled: boolean) {
+  async function handleToggle(cat: NotificationCategory, channel: keyof ChannelPref, enabled: boolean) {
+    const key = `${cat}:${channel}`;
+    const current = prefs[cat] ?? DEFAULT_CHANNELS;
+    const next: ChannelPref = { ...current, [channel]: enabled };
+    const previousPrefs = prefs;
+
+    setPrefs((currentPrefs) => ({ ...currentPrefs, [cat]: next }));
+    setPending(key, true);
+
+    const result = await setCategoryChannel(cat, channel, enabled);
+    if (!result.ok) {
+      setPrefs(previousPrefs);
+      toast.error(result.error || 'Failed to save notification preference');
+    }
+    setPending(key, false);
+  }
+
+  async function handleQuiet(enabled: boolean) {
+    const previousQuiet = quiet;
     setQuiet(enabled);
-    startTransition(async () => {
-      await setQuietMode(enabled);
-    });
+    setPending('quiet', true);
+
+    const result = await setQuietMode(enabled);
+    if (!result.ok) {
+      setQuiet(previousQuiet);
+      toast.error(result.error || 'Failed to save quiet mode');
+    }
+    setPending('quiet', false);
   }
 
   return (
@@ -71,7 +103,7 @@ export function NotificationPrefsClient({ prefs: initialPrefs, quietMode: initia
         <Toggle
           checked={quiet}
           onChange={handleQuiet}
-          disabled={pending}
+          disabled={pendingKeys.has('quiet')}
           ariaLabel="Quiet mode"
         />
       </section>
@@ -85,19 +117,27 @@ export function NotificationPrefsClient({ prefs: initialPrefs, quietMode: initia
           ))}
         </header>
         <ul className="divide-y divide-warm-200/60">
-          {NOTIFICATION_CATEGORIES.map((cat) => {
-            const channels = prefs[cat] ?? { push: false, email: false, in_app: true };
+          {PLAYER_NOTIFICATION_CATEGORIES.map((cat) => {
+            const channels = prefs[cat] ?? DEFAULT_CHANNELS;
+            const silenced = quiet && !QUIET_EXEMPT.has(cat);
             return (
               <li key={cat} className="px-5 py-3 grid grid-cols-12 items-center gap-2">
-                <span className="col-span-6 text-sm text-warm-900">
-                  {CATEGORY_LABEL[cat]}
-                </span>
+                <div className="col-span-6 min-w-0">
+                  <span className="block text-sm text-warm-900">
+                    {CATEGORY_LABEL[cat]}
+                  </span>
+                  {silenced && (
+                    <span className="mt-0.5 block text-xs text-warm-500">
+                      Silenced by quiet mode
+                    </span>
+                  )}
+                </div>
                 {CHANNELS.map((c) => (
                   <div key={c.key} className="col-span-2 flex justify-center">
                     <Toggle
                       checked={channels[c.key]}
                       onChange={(enabled) => handleToggle(cat, c.key, enabled)}
-                      disabled={pending}
+                      disabled={pendingKeys.has(`${cat}:${c.key}`)}
                       ariaLabel={`${CATEGORY_LABEL[cat]} · ${c.label}`}
                     />
                   </div>
@@ -123,24 +163,24 @@ function Toggle({
   ariaLabel: string;
 }) {
   return (
-    <IconButton variant="primary"
+    <button
       type="button"
       role="switch"
       aria-checked={checked}
       aria-label={ariaLabel}
       onClick={() => onChange(!checked)}
       disabled={disabled}
-      className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+      className={`relative inline-flex h-6 w-10 items-center rounded-full transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
         checked
           ? 'bg-primary-600 shadow-[0_0_0_3px_rgba(22,163,74,0.18)]'
           : 'bg-warm-300'
       } ${disabled ? 'opacity-50' : 'hover:opacity-90'} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40`}
     >
       <span
-        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-[280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
+        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.32,0.72,0,1)] ${
           checked ? 'translate-x-4' : 'translate-x-0.5'
         }`}
       />
-    </IconButton>
+    </button>
   );
 }

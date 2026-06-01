@@ -105,7 +105,6 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>(function Avatar(
         )}
       >
         {showImage ? (
-          // eslint-disable-next-line @next/next/no-img-element -- avatar is a tiny, often-remote URL; intentional native img with onError fallback
           <img
             src={src ?? undefined}
             alt={alt ?? name ?? ''}

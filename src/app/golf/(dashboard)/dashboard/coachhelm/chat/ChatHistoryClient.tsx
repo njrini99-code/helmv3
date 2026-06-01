@@ -124,7 +124,7 @@ export function ChatHistoryClient({
                 onClick={() => loadConversation(c.id)}
                 whileHover={prefersReducedMotion || c.id === activeId ? undefined : liftHover}
                 whileTap={prefersReducedMotion ? undefined : tapPress}
-                className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors duration-[280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+                className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors [transition-duration:280ms] [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
                   c.id === activeId
                     ? 'bg-warm-900 text-white shadow-[0_8px_18px_-12px_rgba(28,25,23,0.45)]'
                     : 'text-warm-800 hover:bg-warm-100'

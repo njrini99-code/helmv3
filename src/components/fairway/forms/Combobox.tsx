@@ -94,7 +94,7 @@ export function Combobox(props: ComboboxProps) {
         className={cn(
           "flex w-full flex-wrap items-center gap-1.5 rounded-fw-sm",
           "bg-surface-sunken border border-border-subtle",
-          "transition-[border-color,box-shadow] duration-[var(--fw-dur-fast)] ease-[var(--fw-ease-soft)]",
+          "transition-[border-color,box-shadow] [transition-duration:var(--fw-dur-fast)] [transition-timing-function:var(--fw-ease-soft)]",
           "hover:border-border-strong",
           "focus-within:border-border-focus focus-within:ring-2 focus-within:ring-accent-500/70 focus-within:ring-offset-1 focus-within:ring-offset-canvas",
           "has-[[data-invalid]]:border-fw-danger/60",
@@ -121,7 +121,7 @@ export function Combobox(props: ComboboxProps) {
                       aria-label={`Remove ${item.label}`}
                       className={cn(
                         "flex h-4 w-4 items-center justify-center rounded-full text-accent-700/70",
-                        "transition-colors duration-[var(--fw-dur-fast)] hover:bg-accent-200/60 hover:text-accent-900",
+                        "transition-colors [transition-duration:var(--fw-dur-fast)] hover:bg-accent-200/60 hover:text-accent-900",
                         "outline-none focus-visible:ring-2 focus-visible:ring-accent-500/70",
                       )}
                     >

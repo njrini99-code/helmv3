@@ -200,7 +200,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
                 aria-label="Close navigation"
                 className={cn(
                   'on-dark absolute right-3 top-4 flex h-9 w-9 items-center justify-center rounded-fw-md',
-                  'text-nav-text-dim transition-colors duration-[var(--fw-dur-fast)]',
+                  'text-nav-text-dim transition-colors [transition-duration:var(--fw-dur-fast)]',
                   'hover:bg-nav-surface hover:text-nav-text active:translate-y-[0.5px]',
                 )}
               >
@@ -212,7 +212,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       </AnimatePresence>
 
       {/* ── Content column (offset by the rail) ── */}
-      <div className={cn('flex min-h-dvh flex-col transition-[padding] duration-[var(--fw-dur-slow)] ease-[var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}>
+      <div className={cn('flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}>
         <FairwayTopBar {...topBarProps} />
 
         <main className="flex-1">

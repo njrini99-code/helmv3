@@ -16,7 +16,10 @@ import { cn } from '@/lib/utils';
 import { useGolfUser } from '@/contexts/golf-user-context';
 import { useTaskRealtime } from '@/hooks/golf/use-task-realtime';
 import type { TaskTemplate } from '@/app/golf/actions/tasks';
+import { completeTask } from '@/app/golf/actions/tasks';
 import { PullToRefresh } from '@/components/golf/PullToRefresh';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayTasks } from '@/components/fairway/pages/tasks';
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -156,6 +159,30 @@ export default function GolfTasksPage() {
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // ── Fairway redesign fork (flag-gated, additive) ─────────────────────────
+  // Presentation-only re-skin. Reuses the SAME live tasks/stats/players + the
+  // SAME refetch, and the unchanged completeTask action for the player path.
+  // Legacy return below stays byte-identical when the flag is off.
+  if (isRedesignEnabled()) {
+    const handleCompleteTask = async (taskId: string) => {
+      await completeTask(taskId);
+      await refetch();
+    };
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas')}>
+        <FairwayTasks
+          role={userRole === 'coach' ? 'coach' : 'player'}
+          teamId={teamId}
+          tasks={tasks}
+          stats={stats}
+          players={players}
+          onRefetch={refetch}
+          onCompleteTask={userRole === 'player' ? handleCompleteTask : undefined}
+        />
       </div>
     );
   }

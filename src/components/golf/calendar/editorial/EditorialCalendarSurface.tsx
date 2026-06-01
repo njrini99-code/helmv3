@@ -346,7 +346,7 @@ export function EditorialCalendarSurface({
                     'inline-flex items-center justify-center rounded-full',
                     'w-10 h-10 md:w-9 md:h-9',
                     'text-warm-500 hover:text-warm-900 hover:bg-cream-50/65',
-                    'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                   )}
                 >
@@ -363,7 +363,7 @@ export function EditorialCalendarSurface({
                     isSameDay(focusDate, nowRef)
                       ? 'bg-primary-50/85 text-primary-700 ring-1 ring-primary-500/20'
                       : 'text-warm-700 hover:text-warm-900 bg-cream-50/65 hover:bg-cream-50/95 ring-1 ring-warm-200/55',
-                    'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                   )}
                 >
@@ -377,7 +377,7 @@ export function EditorialCalendarSurface({
                     'inline-flex items-center justify-center rounded-full',
                     'w-10 h-10 md:w-9 md:h-9',
                     'text-warm-500 hover:text-warm-900 hover:bg-cream-50/65',
-                    'transition-colors duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'transition-colors duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40',
                   )}
                 >

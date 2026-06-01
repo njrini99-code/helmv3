@@ -431,7 +431,7 @@ function ComparePicker({
                     aria-current={selected ? 'true' : undefined}
                     className={cn(
                       'flex items-center gap-3 rounded-fw-sm px-2.5 py-2',
-                      'transition-[background-color,color] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+                      'transition-[background-color,color] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                       'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                       'motion-reduce:transition-none',
                       selected

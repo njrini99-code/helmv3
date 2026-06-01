@@ -8,8 +8,8 @@
  * transitions were an abrupt cut.
  *
  * Premium recipe (May 2026):
- *   - Opacity fade-in 0 → 1 over 380ms
- *   - Tiny slide-up: 6px translate-y → 0
+ *   - Opacity fade-in 0 → 1 over 280ms
+ *   - Tiny slide-up: 4px translate-y → 0
  *   - Cubic-bezier(0.16, 1, 0.3, 1) — the "Apple iOS" out-quint ease
  *     used everywhere else in the system (DropdownMenu, Tooltip,
  *     Popover, Drawer, Tabs)
@@ -23,7 +23,7 @@ import { m, useReducedMotion } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 
 const PREMIUM_EASE = [0.16, 1, 0.3, 1] as const;
-const PREMIUM_DURATION = 0.38;
+const PREMIUM_DURATION = 0.28;
 
 export default function DashboardTemplate({ children }: { children: React.ReactNode }) {
   const prefersReducedMotion = useReducedMotion();
@@ -31,10 +31,11 @@ export default function DashboardTemplate({ children }: { children: React.ReactN
   return (
     <m.div
       key={pathname}
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? { duration: 0 } : ({ duration: PREMIUM_DURATION, ease: PREMIUM_EASE })}
       className="min-h-full"
+      style={{ willChange: prefersReducedMotion ? 'auto' : 'opacity, transform' }}
     >
       {children}
     </m.div>

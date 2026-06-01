@@ -141,7 +141,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           'group relative isolate flex items-center rounded-fw-sm',
           'bg-inset text-text-primary',
           'border border-border-subtle',
-          'transition-[border-color,box-shadow,background-color,transform] duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+          'transition-[border-color,box-shadow,background-color,transform] [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
           // hover (no layout shift)
           'hover:border-border-strong',
           // focus-within = the visible green ring that survives cream (WCAG)
@@ -159,7 +159,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
           aria-hidden="true"
           className={cn(
             'flex shrink-0 items-center justify-center text-text-tertiary',
-            'transition-colors duration-[180ms] group-focus-within:text-accent-600',
+            'transition-colors [transition-duration:180ms] group-focus-within:text-accent-600',
             s.icon,
           )}
         >
@@ -210,7 +210,7 @@ export const SearchField = forwardRef<HTMLInputElement, SearchFieldProps>(
             }}
             className={cn(
               'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-text-tertiary',
-              'transition-colors duration-[180ms] hover:bg-surface hover:text-text-secondary',
+              'transition-colors [transition-duration:180ms] hover:bg-surface hover:text-text-secondary',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
               'active:translate-y-[0.5px]',
             )}

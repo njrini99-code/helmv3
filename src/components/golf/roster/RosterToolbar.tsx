@@ -65,7 +65,7 @@ export const RosterToolbar = memo(function RosterToolbar({
             <IconFilter size={13} className="text-warm-400" />
             <span>Sort: {selectedSort?.label}</span>
             <span className="text-warm-400">{sortDirection === 'asc' ? '\u2191' : '\u2193'}</span>
-            <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
+            <IconChevronDown size={13} className={cn('text-warm-400 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]', showSortMenu && 'rotate-180')} />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[220px]">

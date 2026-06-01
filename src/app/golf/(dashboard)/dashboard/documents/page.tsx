@@ -5,6 +5,8 @@ import { Metadata } from 'next';
 import { DocumentsClient } from './documents-client';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
+import { FairwayDocuments } from '@/components/fairway/pages/documents';
 
 export const metadata: Metadata = {
   title: 'Documents | Helm Golf',
@@ -96,6 +98,23 @@ export default async function GolfDocumentsPage() {
 
   // Cast to correct type (database has player_visible, not is_public)
   const documents = rawDocuments as unknown as DocumentRow[] | null;
+
+  // ── Fairway redesign fork (flag-gated, additive) ──────────────────────────
+  // Reuses the SAME role + golf_documents list resolved above (players already
+  // filtered to public server-side); re-skins onto the warm-matte Fairway
+  // system. Legacy branch below is byte-identical when the flag is off.
+  if (isRedesignEnabled()) {
+    return (
+      <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+        <FairwayDocuments
+          documents={documents || []}
+          coachId={coach?.id || ''}
+          teamId={teamId}
+          isCoach={isCoach}
+        />
+      </div>
+    );
+  }
 
   return (
     <AnimatedPage>

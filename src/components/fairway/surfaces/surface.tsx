@@ -95,7 +95,7 @@ const SurfaceRoot = forwardRef<HTMLDivElement, SurfaceProps>(function Surface(
         // interactive affordance (cinematic, small-distance transforms only)
         interactive && [
           'cursor-pointer transition-[box-shadow,transform,border-color]',
-          'duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+          '[transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
           'hover:shadow-raise hover:-translate-y-px',
           'active:translate-y-[0.5px] active:shadow-flat',
           // green focus-visible ring that survives black + cream

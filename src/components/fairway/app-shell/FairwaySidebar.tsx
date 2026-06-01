@@ -71,7 +71,7 @@ const navRowBase = cn(
   'group relative flex items-center gap-3 rounded-fw-md',
   // spec §3.1 `label` role (13px) — the nav row voice
   'text-body-sm font-medium font-fw-sans tracking-[-0.005em]',
-  'transition-[color,background-color] duration-[var(--fw-dur-base)] ease-[var(--fw-ease-glide)]',
+  'transition-[color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
   'motion-reduce:transition-none',
 );
 
@@ -173,7 +173,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
       // layer so the green focus ring survives the black background (§7.2).
       className={cn(
         'on-dark flex flex-col bg-nav-bg text-nav-text',
-        'transition-[width] duration-[var(--fw-dur-slow)] ease-[var(--fw-ease-glide)] motion-reduce:transition-none',
+        'transition-[width] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
         isMobile
           ? 'h-full w-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
           : cn('fixed left-0 top-0 z-[var(--fw-z-nav)] h-dvh', isCollapsed ? 'w-[76px]' : 'w-[260px]'),
@@ -189,7 +189,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
           className={cn(
             'absolute -right-3 top-7 z-10 flex h-6 w-6 items-center justify-center',
             'rounded-full bg-nav-surface text-nav-text-dim ring-1 ring-white/10',
-            'shadow-soft transition-colors duration-[var(--fw-dur-fast)]',
+            'shadow-soft transition-colors [transition-duration:var(--fw-dur-fast)]',
             'hover:bg-nav-surface hover:text-nav-text',
             'active:translate-y-[0.5px]',
           )}

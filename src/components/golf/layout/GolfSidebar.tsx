@@ -23,6 +23,7 @@ import {
   IconLogout,
   IconGolf,
   IconBook,
+  IconBell,
   IconChevronLeft,
   IconChevronRight,
   IconTrophy,
@@ -30,6 +31,9 @@ import {
   IconSparkles,
   IconUserPlus,
   IconLayoutGrid,
+  IconAirplane,
+  IconClipboardList,
+  IconFileText,
 } from '@/components/icons';
 import { useRedesign } from '@/lib/redesign/flag';
 
@@ -41,15 +45,13 @@ interface NavItem {
 }
 
 // =============================================================================
-// IA Discipline — 7 primary + 3 secondary per role (Miller's 7±2)
+// IA Discipline — keep daily destinations primary and operational destinations
+// visible in the secondary rail/drawer. Coaches need one-tap access to the
+// team-management surfaces they create from: announcements, travel, documents,
+// and tasks.
 // =============================================================================
-// IA audit 2026-05-28 verdict: coach had 10 primary + 4 secondary, player had
-// 9 primary + 5 secondary — both 2× Miller's 7±2. The full surface area is
-// still reachable via the Cmd+K command palette and direct URL; pages are
-// untouched. Only the rail's "noise floor" was cut so the brand can breathe.
-//
-// Selection rule: daily-use destinations stay primary; weekly destinations
-// move to secondary; monthly/admin destinations are Cmd+K only.
+// Selection rule: daily-use destinations stay primary; coach operational tools
+// stay visible in secondary; low-frequency/admin destinations remain Cmd+K.
 
 // Coach primary nav — 7 daily-use destinations (decisions + flow)
 const coachNavItems: NavItem[] = [
@@ -62,9 +64,12 @@ const coachNavItems: NavItem[] = [
   { name: 'Messages', href: '/golf/dashboard/messages', icon: IconMessage },
 ];
 
-// Coach secondary — 3 weekly-use destinations
-// Cmd+K only: Travel, Documents, Tasks, Announcements
+// Coach secondary — weekly + operational destinations
 const coachSecondaryNav: NavItem[] = [
+  { name: 'Announcements', href: '/golf/dashboard/announcements', icon: IconBell },
+  { name: 'Travel', href: '/golf/dashboard/travel', icon: IconAirplane },
+  { name: 'Documents', href: '/golf/dashboard/documents', icon: IconFileText },
+  { name: 'Tasks', href: '/golf/dashboard/tasks', icon: IconClipboardList },
   { name: 'Recruiting HQ', href: '/golf/dashboard/recruiting', icon: IconUserPlus },
   { name: 'Development', href: '/golf/dashboard/development', icon: IconTarget },
   { name: 'Qualifiers', href: '/golf/dashboard/qualifiers', icon: IconFlag },
@@ -131,9 +136,8 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
     });
   }, [userRole, badges.messages, badges.coachhelm]);
 
-  // Secondary nav has no badge surfaces today — Tasks/Announcements/Travel
-  // moved to Cmd+K only in the 2026-05-28 IA trim. Keep the memo shape so
-  // adding a badge later is a one-line change.
+  // Secondary nav has no badge surfaces today. Keep the memo shape so adding a
+  // badge later is a one-line change.
   const secondaryNav = useMemo(() => {
     if (userRole === 'coach') return coachSecondaryNav;
     // Player: the Fairway redesign swaps the standalone "Classes" rail item for
@@ -177,7 +181,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         // the rail recedes.
         'bg-[rgba(28,25,23,0.96)] backdrop-blur-xl',
         'flex flex-col relative',
-        'transition-[width] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'transition-[width] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         'will-change-[width]',
         isMobile
           ? 'w-full h-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
@@ -197,7 +201,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
             'w-6 h-6 rounded-full bg-[rgba(28,25,23,0.96)] ring-1 ring-white/15',
             'flex items-center justify-center',
             'shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-white/8',
-            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
             'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40'
           )}
         >
@@ -212,7 +216,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {/* Logo */}
       <div className={cn(
         'h-16 flex items-center border-b border-white/[0.06]',
-        'transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'transition-[padding] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         isCollapsed ? 'px-3 justify-center' : 'px-5'
       )}>
         <Link href="/golf/dashboard" prefetch={true} className="flex items-center gap-3" onClick={handleNavClick}>
@@ -238,7 +242,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {/* Team/User Info */}
       <div
         className={cn(
-          'border-b border-white/[0.06] overflow-hidden transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+          'border-b border-white/[0.06] overflow-hidden transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
           isCollapsed ? 'h-0 p-0 border-0' : 'h-auto px-5 py-5'
         )}
       >
@@ -275,7 +279,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         aria-label={userRole === 'coach' ? 'Coach navigation' : 'Player navigation'}
         className={cn(
           'flex-1 overflow-y-auto overflow-x-hidden py-4 scrollbar-hidden',
-          'transition-[padding] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]',
+          'transition-[padding] duration-300 [transition-timing-function:cubic-bezier(0.4,0,0.2,1)]',
           isCollapsed ? 'px-2' : 'px-3'
         )}
       >
@@ -299,7 +303,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
-                  'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   active
                     ? 'bg-white/[0.07] text-white'
                     : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
@@ -309,7 +313,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 <Icon size={17} className={cn('flex-shrink-0', active ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
                 <span
                   className={cn(
-                    'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'whitespace-nowrap transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                   )}
                 >
@@ -344,7 +348,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
         <div className="space-y-1">
           {!isCollapsed && (
             <p className="px-4 pt-1 pb-3 text-[10.5px] font-medium text-white/35 uppercase tracking-[0.12em] whitespace-nowrap">
-              {userRole === 'coach' ? 'More' : 'Team'}
+              {userRole === 'coach' ? 'Operations' : 'Team'}
             </p>
           )}
           {secondaryNav.map((item) => {
@@ -360,7 +364,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'relative flex items-center gap-3 py-2.5 lg:py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
-                  'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                  'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                   active
                     ? 'bg-white/[0.07] text-white'
                     : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
@@ -370,7 +374,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
                 <Icon size={17} className={cn('flex-shrink-0', active ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
                 <span
                   className={cn(
-                    'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+                    'whitespace-nowrap transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
                     isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
                   )}
                 >
@@ -402,7 +406,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
       {/* Bottom Section */}
       <div className={cn(
         'border-t border-white/[0.06] space-y-1',
-        'transition-[padding] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'transition-[padding] duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         isCollapsed ? 'p-2' : 'p-3'
       )}>
         <Link
@@ -414,7 +418,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           aria-current={pathname.startsWith('/golf/dashboard/settings') ? 'page' : undefined}
           className={cn(
             'relative flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
-            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+            'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
             pathname.startsWith('/golf/dashboard/settings')
               ? 'bg-white/[0.07] text-white'
               : 'text-white/55 hover:bg-white/[0.04] hover:text-white/85',
@@ -424,7 +428,7 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           <IconSettings size={17} className={cn('flex-shrink-0', pathname.startsWith('/golf/dashboard/settings') ? 'text-primary-400/95' : 'text-white/45')} aria-hidden="true" />
           <span
             className={cn(
-              'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'whitespace-nowrap transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
             )}
           >
@@ -439,14 +443,14 @@ export function GolfSidebar({ userRole, userName, teamName, avatarUrl, isMobile 
           className={cn(
             'w-full flex items-center gap-3 py-2.5 rounded-2xl text-[13.5px] font-medium touch-manipulation',
             'text-white/55 hover:bg-red-500/8 hover:text-red-400',
-            'transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] disabled:opacity-50',
+            'transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] disabled:opacity-50',
             isCollapsed ? 'justify-center px-2' : 'px-3.5'
           )}
         >
           <IconLogout size={17} className="flex-shrink-0 text-white/45" aria-hidden="true" />
           <span
             className={cn(
-              'whitespace-nowrap transition-opacity duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+              'whitespace-nowrap transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
               isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
             )}
           >

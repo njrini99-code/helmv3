@@ -172,7 +172,7 @@ const InviteCodeCard = memo(function InviteCodeCard({ inviteCode }: { inviteCode
                         'inline-flex items-center gap-2 px-4 py-2 rounded-full',
                         'bg-cream-50/85 ring-1 ring-warm-200/60 hover:ring-primary-200/80 hover:bg-cream-50',
                         'text-body-sm font-mono tracking-[0.18em] text-primary-700',
-                        'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]'
+                        'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]'
                     )}
                     whileTap={{ scale: 0.97 }}
                 >
@@ -224,7 +224,7 @@ const DateRangeSelector = memo(function DateRangeSelector({
                     <IconClock size={12} className="text-warm-400" />
                     <span className="hidden sm:inline">{selected?.label}</span>
                     <span className="sm:hidden">{selected?.shortLabel}</span>
-                    <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
+                    <IconChevronDown size={12} className={cn('text-warm-400 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]', open && 'rotate-180')} />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -485,7 +485,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                             'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-body-sm font-medium',
                                             'bg-primary-600/95 text-white',
                                             'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
-                                            'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
+                                            'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
                                         )}
                                     >
                                         <IconPlus size={14} className="transition-transform duration-500 group-hover:rotate-90" />
@@ -527,7 +527,7 @@ export function CoachDashboard({ data, enhancedData, dateRange: initialRange = '
                                 'group inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-body-sm font-medium tracking-[-0.005em]',
                                 'bg-primary-600/95 text-white',
                                 'shadow-[0_4px_14px_rgba(22,163,74,0.18)]',
-                                'transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
+                                'transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] hover:bg-primary-700 hover:shadow-[0_8px_20px_rgba(22,163,74,0.24)]'
                             )}
                         >
                             <IconPlus size={14} className="transition-transform duration-500 group-hover:rotate-90" />

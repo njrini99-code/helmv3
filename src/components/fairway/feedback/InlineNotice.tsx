@@ -138,7 +138,7 @@ export const InlineNotice = forwardRef<HTMLDivElement, InlineNoticeProps>(
                 aria-label="Dismiss"
                 className={cn(
                   'group -mr-1 -mt-1 grid h-7 w-7 shrink-0 place-items-center rounded-fw-sm',
-                  'text-text-tertiary transition-colors duration-[180ms]',
+                  'text-text-tertiary transition-colors [transition-duration:180ms]',
                   'hover:bg-surface hover:text-text-secondary',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas',
                   'active:translate-y-[0.5px]',

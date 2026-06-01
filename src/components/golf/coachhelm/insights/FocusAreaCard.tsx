@@ -47,7 +47,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
   return (
     <Card variant="overlay"
       className={cn(
-        'group transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]',
+        'group transition-all duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]',
         onClick && 'cursor-pointer hover:-translate-y-[1px] hover:shadow-[0_2px_4px_rgba(58,50,40,0.04),0_18px_36px_rgba(58,50,40,0.06)]'
       )}
       padding="md"
@@ -96,7 +96,7 @@ export function FocusAreaCard({ focusArea, onClick }: FocusAreaCardProps) {
         {onClick && (
           <IconChevronRight
             size={15}
-            className="text-warm-300 group-hover:text-primary-500 transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 mt-1"
+            className="text-warm-300 group-hover:text-primary-500 transition-colors duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] flex-shrink-0 mt-1"
           />
         )}
       </div>

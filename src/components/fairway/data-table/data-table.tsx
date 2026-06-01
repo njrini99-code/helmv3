@@ -70,7 +70,7 @@ const TableCheckbox = React.forwardRef<
       type="checkbox"
       className={cn(
         'size-[18px] cursor-pointer appearance-none rounded-[5px] border border-border-strong bg-surface',
-        'transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'checked:border-accent-500 checked:bg-accent-500',
         'indeterminate:border-accent-500 indeterminate:bg-accent-500',
         // Tick mark via background image when checked.
@@ -95,7 +95,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         height="5"
         viewBox="0 0 8 5"
         className={cn(
-          '-mb-px transition-colors duration-[180ms]',
+          '-mb-px transition-colors [transition-duration:180ms]',
           dir === 'asc' ? 'text-accent-600' : 'text-text-tertiary/50',
         )}
       >
@@ -106,7 +106,7 @@ function SortGlyph({ dir }: { dir: false | 'asc' | 'desc' }) {
         height="5"
         viewBox="0 0 8 5"
         className={cn(
-          'transition-colors duration-[180ms]',
+          'transition-colors [transition-duration:180ms]',
           dir === 'desc' ? 'text-accent-600' : 'text-text-tertiary/50',
         )}
       >
@@ -132,7 +132,7 @@ function RowActions<TData>({
       className={cn(
         'flex items-center justify-end gap-0.5',
         // Quiet at rest; reveal on row hover or any focus within the row.
-        'opacity-0 transition-opacity duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+        'opacity-0 transition-opacity [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
         'group-hover/row:opacity-100 group-focus-within/row:opacity-100',
         // Always visible for touch / reduced-motion / no-hover environments.
         '[@media(hover:none)]:opacity-100 motion-reduce:opacity-100',
@@ -153,7 +153,7 @@ function RowActions<TData>({
             }}
             className={cn(
               'inline-flex size-7 items-center justify-center rounded-fw-sm',
-              'text-text-tertiary transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+              'text-text-tertiary transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
               'hover:bg-surface-sunken hover:text-text-secondary',
               action.tone === 'danger' && 'hover:bg-fw-danger-bg hover:text-fw-danger',
               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
@@ -405,7 +405,7 @@ export function DataTable<TData>({
                           className={cn(
                             'group/sort -mx-1.5 inline-flex max-w-full items-center rounded-fw-sm px-1.5 py-1',
                             'font-fw-sans text-eyebrow uppercase tracking-[0.06em]',
-                            'transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+                            'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                             'hover:text-text-secondary',
                             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
                             'active:translate-y-[0.5px]',
@@ -463,7 +463,7 @@ export function DataTable<TData>({
                             className={cn(
                               'inline-flex h-9 items-center rounded-full border border-border-strong bg-surface px-4',
                               'text-label text-text-primary',
-                              'transition-all duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+                              'transition-all [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                               'hover:shadow-soft hover:border-border-strong',
                               'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500',
                               'active:translate-y-[0.5px]',
@@ -506,7 +506,7 @@ export function DataTable<TData>({
                     aria-selected={enableRowSelection ? isSelected : undefined}
                     className={cn(
                       'group/row relative border-b border-border-subtle/70 last:border-b-0',
-                      'transition-colors duration-[180ms] ease-[cubic-bezier(0.22,0.61,0.36,1)]',
+                      'transition-colors [transition-duration:180ms] [transition-timing-function:cubic-bezier(0.22,0.61,0.36,1)]',
                       // Warm zebra (opt-in) — spacing is preferred, but supported.
                       zebra && idx % 2 === 1 && !isSelected && 'bg-surface-tint/40',
                       // Subtle hover.
