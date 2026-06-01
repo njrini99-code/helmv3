@@ -39,6 +39,7 @@ import type {
   RootDriver,
   ThemeNode,
   ThemeState,
+  ThemeTrend,
 } from '@/lib/coachhelm/v3/themes/types';
 
 /** Strokes-per-round floor below which a theme has no material leak cause. */
@@ -122,6 +123,18 @@ export interface AssembleThemesInput {
    * function stays pure and deterministic.
    */
   shotDriversByCategory?: Partial<Record<InsightCategory, RootDriver[]>>;
+  /**
+   * OPTIONAL per-category SG TREND (PLAY G). Built read-time by `computeSgTrends`
+   * from the player's per-round `golf_rounds.strokes_gained_*` series. When a
+   * category has a trend AND it matches a theme, the trend is attached to that
+   * `ThemeNode.trend`. Only the 4 SG categories ever carry a trend (outcome
+   * themes get none). Honest: a category with too-few rounds in either window is
+   * absent here, so its theme gets no trend (never a fabricated direction).
+   *
+   * DEFAULT (omitted) → behavior is identical to before this field existed; the
+   * function stays pure, deterministic, and byte-identical in output.
+   */
+  trendByCategory?: Partial<Record<InsightCategory, ThemeTrend>>;
 }
 
 /**
@@ -131,6 +144,7 @@ export interface AssembleThemesInput {
 export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
   const { playerId, rows, sgByCategory } = input;
   const shotDriversByCategory = input.shotDriversByCategory ?? {};
+  const trendByCategory = input.trendByCategory ?? {};
 
   // 1. Index every row by id.
   const byId = new Map<string, EvidenceInsight>();
@@ -262,6 +276,14 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
       causes,
       state,
     };
+
+    // PLAY G — attach the per-category SG trend when one was supplied for this
+    // category. We only SET the key when a trend exists, so the default
+    // (omitted input) leaves the output object byte-identical to before. Only
+    // the 4 SG categories ever appear in `trendByCategory`; outcome themes get
+    // none. Honest: a category absent from the map (too-few rounds) gets no trend.
+    const trend = trendByCategory[def.category];
+    if (trend) theme.trend = trend;
 
     // ITEM 5 — gate empty outcome themes. The 3 outcome themes (scoring /
     // course_management / pressure) have no SG metric and would otherwise be

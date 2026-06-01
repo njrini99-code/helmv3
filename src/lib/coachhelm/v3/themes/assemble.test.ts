@@ -12,7 +12,7 @@ import { describe, test, expect } from 'vitest';
 import fc from 'fast-check';
 import { assembleThemes } from './assemble';
 import { THEME_TAXONOMY } from './taxonomy';
-import type { AssembledEvidence, RootDriver } from './types';
+import type { AssembledEvidence, RootDriver, ThemeTrend } from './types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
 
@@ -950,6 +950,81 @@ describe('assembleThemes — shot-level driver attachment (PLAY C)', () => {
     });
     expect(themeOf(result, 'approach').causes[0]!.drivers[0]!.title).toBe('approach pattern');
     expect(themeOf(result, 'putting').causes[0]!.drivers[0]!.title).toBe('putting pattern');
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * PLAY G — per-category SG trend attachment (trendByCategory)
+ *
+ * The OPTIONAL `trendByCategory` input attaches each category's trend to the
+ * matching theme's `trend` field. Omitting it (the default) must leave the
+ * output byte-identical (no `trend` key anywhere).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function trend(direction: ThemeTrend['direction'], delta: number): ThemeTrend {
+  return { direction, recentAvg: 0, priorAvg: 0, delta, recentN: 5, priorN: 5 };
+}
+
+describe('assembleThemes — SG trend attachment (PLAY G)', () => {
+  test('a trend attaches to the matching SG theme', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 1 })],
+      sgByCategory: { putting: -0.5 },
+      trendByCategory: { putting: trend('improving', 0.4) },
+    });
+    const putting = themeOf(result, 'putting');
+    expect(putting.trend).toBeDefined();
+    expect(putting.trend?.direction).toBe('improving');
+    expect(putting.trend?.delta).toBeCloseTo(0.4, 10);
+    // Other SG themes get no trend (not in the map).
+    expect(themeOf(result, 'approach').trend).toBeUndefined();
+  });
+
+  test('multiple categories each get their own trend', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [],
+      sgByCategory: {},
+      trendByCategory: {
+        putting: trend('improving', 0.5),
+        approach: trend('declining', -0.6),
+        tee: trend('steady', 0.0),
+      },
+    });
+    expect(themeOf(result, 'putting').trend?.direction).toBe('improving');
+    expect(themeOf(result, 'approach').trend?.direction).toBe('declining');
+    expect(themeOf(result, 'tee').trend?.direction).toBe('steady');
+    expect(themeOf(result, 'short_game').trend).toBeUndefined();
+  });
+
+  test('a trend keyed to an EMPTY outcome category does not resurrect that theme', () => {
+    // scoring has no cause → gated out; a stray trend for it must not bring it back.
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [],
+      sgByCategory: {},
+      trendByCategory: { scoring: trend('improving', 0.3) },
+    });
+    const cats = new Set(result.themes.map((t) => t.category));
+    expect(cats.has('scoring')).toBe(false);
+    expect(result.themes).toHaveLength(4); // still just the 4 SG themes
+  });
+
+  test('REGRESSION: omitting trendByCategory leaves output byte-identical (no trend key)', () => {
+    const rows = [
+      row({ id: 'a', category: 'putting', strokesSaved: 1 }),
+      row({ id: 'b', category: 'approach', strokesSaved: 0.5 }),
+    ];
+    const sgByCategory = { putting: -0.4 };
+    const without = assembleThemes({ playerId: 'p1', rows, sgByCategory });
+    const withEmpty = assembleThemes({ playerId: 'p1', rows, sgByCategory, trendByCategory: {} });
+    expect(JSON.stringify(without)).toBe(JSON.stringify(withEmpty));
+    // No theme carries a `trend` when the map is absent/empty.
+    for (const t of without.themes) {
+      expect(t.trend).toBeUndefined();
+      expect('trend' in t).toBe(false);
+    }
   });
 });
 

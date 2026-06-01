@@ -139,6 +139,33 @@ export interface CauseNode {
 export type ThemeState = 'leak' | 'strength' | 'thin';
 
 /**
+ * PLAY G — an HONEST per-category SG TREND, computed read-time by
+ * `computeSgTrends` from the player's per-round `golf_rounds.strokes_gained_*`
+ * series. Attached only to the 4 SG themes (putting / approach / tee /
+ * short_game), and only when there were enough rounds in BOTH the recent and
+ * prior windows (see `trend.ts` MIN_WINDOW); otherwise the theme carries no
+ * trend at all (never a fabricated direction).
+ *
+ * SG SIGN CONVENTION: higher SG is better, so `improving` = the recent SG
+ * average is HIGHER than the prior window (`delta > 0`). This is the OPPOSITE
+ * sign of the lower-is-better scoring trend.
+ */
+export interface ThemeTrend {
+  /** `improving` = recent SG avg up vs prior (higher is better); `declining` = down. */
+  direction: 'improving' | 'declining' | 'steady';
+  /** mean per-round SG over the most-recent window. */
+  recentAvg: number;
+  /** mean per-round SG over the window before the recent one. */
+  priorAvg: number;
+  /** `recentAvg − priorAvg` (signed; > 0 means improving). */
+  delta: number;
+  /** number of real (non-null) SG samples in the recent window (≥ MIN_WINDOW). */
+  recentN: number;
+  /** number of real (non-null) SG samples in the prior window (≥ MIN_WINDOW). */
+  priorN: number;
+}
+
+/**
  * A THEME — one SG-aligned (or outcome) category bucket, anchored on its SG
  * headline metric and sized by per-round SG cross-checked against the SUM of
  * child counterfactual values. The scaffold ALWAYS renders all themes (honest
@@ -166,6 +193,13 @@ export interface ThemeNode {
   /** direct causes, ranked by `strokesSavedPerRound` desc. */
   causes: CauseNode[];
   state: ThemeState;
+  /**
+   * OPTIONAL per-category SG trend (PLAY G). Present only on the 4 SG themes
+   * when there were enough rounds in both windows; `null`/omitted otherwise.
+   * READ-TIME only — built by `computeSgTrends` and attached by the assembler
+   * via `AssembleThemesInput.trendByCategory`. Default (omitted) → no trend.
+   */
+  trend?: ThemeTrend | null;
 }
 
 /** The assembler output — the full scaffold for one player (always all themes). */

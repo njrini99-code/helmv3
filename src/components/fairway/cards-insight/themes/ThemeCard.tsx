@@ -36,8 +36,37 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Surface } from '@/components/fairway';
-import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import type { CauseNode, ThemeNode, ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
 import { CauseRow } from './CauseRow';
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * Trend chip (PLAY G)
+ * ----------------------------------------------------------------------------
+ * Honest per-category SG direction. SG SIGN CONVENTION: higher SG is better, so
+ * `improving` = SG rising = GOOD = success/green (arrow up). This is the
+ * OPPOSITE of the lower-is-better scoring trend in FairwayTeamStats. Rendered
+ * only when `theme.trend` exists (never fabricated).
+ * ────────────────────────────────────────────────────────────────────────── */
+
+interface TrendChipDisplay {
+  label: string;
+  /** tone class — improving = success/green, declining = warning, steady = muted. */
+  cls: string;
+  arrow: string;
+  /** |Δ| to 1 decimal, or null for steady (no magnitude shown). */
+  magnitude: string | null;
+}
+
+function describeTrend(trend: ThemeTrend): TrendChipDisplay {
+  if (trend.direction === 'steady') {
+    return { label: 'Steady', cls: 'text-text-tertiary', arrow: '→', magnitude: null };
+  }
+  const magnitude = Math.abs(trend.delta).toFixed(1);
+  // Higher SG is better → improving is the GOOD direction (success/green, up arrow).
+  return trend.direction === 'improving'
+    ? { label: 'Improving', cls: 'text-fw-success', arrow: '↗', magnitude }
+    : { label: 'Declining', cls: 'text-fw-warning', arrow: '↘', magnitude };
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props
@@ -62,9 +91,13 @@ export function ThemeCard({
   onMakePlan,
   makePlanPendingId,
 }: ThemeCardProps) {
-  const { displayLabel, state, themeStrokesPerRound, tourGapPerRound, causes } = theme;
+  const { displayLabel, state, themeStrokesPerRound, tourGapPerRound, causes, trend } = theme;
   const magnitude = themeStrokesPerRound.toFixed(1);
   const hasMagnitude = themeStrokesPerRound > 0;
+
+  // PLAY G — honest per-category SG direction. Only when a trend was supplied
+  // (the 4 SG themes with enough rounds). Never fabricated.
+  const trendChip = trend ? describeTrend(trend) : null;
 
   // Headline + pill per state. Honest: a leak with no positive magnitude shows
   // the neutral label only (never a fabricated 0).
@@ -116,6 +149,22 @@ export function ThemeCard({
           {showTourCeiling ? (
             <span className="font-fw-mono text-caption tabular-nums text-text-tertiary">
               {tourGapPerRound.toFixed(1)} to Tour ceiling
+            </span>
+          ) : null}
+          {/* PLAY G — SG trend chip (recent vs prior rounds). Honest: shown only
+              when a trend exists. SG up = improving = green. */}
+          {trendChip ? (
+            <span
+              className={`inline-flex w-fit items-center gap-1 font-fw-mono text-caption font-medium tabular-nums ${trendChip.cls}`}
+              data-slot="fairway-theme-trend"
+              data-trend-direction={trend?.direction}
+            >
+              <span aria-hidden>{trendChip.arrow}</span>
+              {trendChip.label}
+              {/* Direction only — the raw golf_rounds SG column is on a different
+                  scale than the normalized per-round magnitude shown above, so a
+                  numeric delta here would be inconsistent. Direction is scale-
+                  invariant and honest; magnitude is intentionally omitted. */}
             </span>
           ) : null}
         </div>

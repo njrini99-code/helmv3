@@ -29,9 +29,11 @@ import type {
 } from '@/lib/coachhelm/v2/insights/types';
 import type { Database } from '@/lib/types/database';
 import { assembleThemes } from '@/lib/coachhelm/v3/themes/assemble';
-import type { AssembledThemes, AssembledEvidence, RootDriver } from '@/lib/coachhelm/v3/themes/types';
+import type { AssembledThemes, AssembledEvidence, RootDriver, ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
 import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
+import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
+import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
 
 // ---------------------------------------------------------------------------
@@ -589,6 +591,10 @@ const SHOT_DRIVERS_FETCH_CAP = 5000;
 /** Recent-rounds cap when resolving completed round ids for the shot fetch. */
 const SHOT_DRIVERS_ROUNDS_CAP = 200;
 
+/** Recent-rounds cap for the SG-trend fetch (PLAY G). Two windows of ~5 each
+ *  plus headroom; 40 is ample for a recent-vs-prior split and bounds the query. */
+const SG_TREND_ROUNDS_CAP = 40;
+
 /**
  * PLAY C — best-effort shot-level root drivers. Resolves the player's completed
  * round ids, pulls the raw `golf_shots` (capped) with the 1:1 `putt_details` /
@@ -637,6 +643,53 @@ async function fetchShotDriversByCategory(
     await logServerError(
       `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
       { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
+    );
+    return undefined;
+  }
+}
+
+/**
+ * PLAY G — best-effort per-category SG trend. Pulls the player's most-recent
+ * completed rounds (the per-round `strokes_gained_*` columns + `round_date`,
+ * newest first, capped at {@link SG_TREND_ROUNDS_CAP}) and runs the PURE
+ * `computeSgTrends`. Wrapped end-to-end: ANY failure (or no data) returns
+ * `undefined` so the themes scaffold renders WITHOUT trends — NEVER errors the
+ * page. The trend honesty (min-window) lives in `computeSgTrends`, so even a
+ * successful fetch of too-few rounds yields no trend for a category.
+ */
+async function fetchSgTrendsByCategory(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Partial<Record<InsightCategory, ThemeTrend>> | undefined> {
+  try {
+    const { data: rounds, error } = await supabase
+      .from('golf_rounds')
+      .select(
+        'round_date, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
+      )
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(SG_TREND_ROUNDS_CAP);
+    if (error) throw new Error(error.message);
+    if (!rounds || rounds.length === 0) return undefined;
+
+    // Newest-first order is the SgRoundSample contract — preserve it as-is.
+    const samples: SgRoundSample[] = rounds.map((r) => ({
+      date: r.round_date,
+      sgPutting: r.strokes_gained_putting,
+      sgApproach: r.strokes_gained_approach,
+      sgTee: r.strokes_gained_tee,
+      sgAroundGreen: r.strokes_gained_around_green,
+    }));
+
+    const trends = computeSgTrends(samples);
+    // Empty map (no category cleared the min-window guard) → pass nothing.
+    return Object.keys(trends).length > 0 ? trends : undefined;
+  } catch (err) {
+    await logServerError(
+      `fetchSgTrendsByCategory failed (continuing without trends): ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.fetchSgTrendsByCategory', featureArea: 'insights', playerId },
     );
     return undefined;
   }
@@ -711,7 +764,17 @@ async function assembleForPlayer(
   // failures and returns undefined, so the assembler simply omits them.
   const shotDriversByCategory = await fetchShotDriversByCategory(supabase, playerId);
 
-  return assembleThemes({ playerId, rows, sgByCategory, shotDriversByCategory });
+  // PLAY G — per-category SG trends are best-effort too: the helper swallows its
+  // own failures and returns undefined, so the assembler omits trends entirely.
+  const trendByCategory = await fetchSgTrendsByCategory(supabase, playerId);
+
+  return assembleThemes({
+    playerId,
+    rows,
+    sgByCategory,
+    shotDriversByCategory,
+    trendByCategory,
+  });
 }
 
 /**
