@@ -23,7 +23,8 @@ export interface ApproachShot {
   hole_number: number | null;
   shot_number: number | null;
   distance_to_hole_before: number; // yards
-  distance_to_hole_after: number;  // unit per distance_unit_after; treat as feet for proximity
+  distance_to_hole_after: number;  // raw, in the unit named by distance_unit_after — normalize to feet before use
+  distance_unit_after: string | null; // 'feet' | 'yards' (mixed in prod) — drives the proximity→feet conversion
   lie_before: string | null;
   is_penalty: boolean;
   miss_direction: string | null;
@@ -93,7 +94,7 @@ export async function loadApproachShots(
 
   const { data, error } = await fromUntyped(supabase, 'golf_shots')
     .select(
-      'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, lie_before, is_penalty, miss_direction',
+      'round_id, hole_number, shot_number, distance_to_hole_before, distance_to_hole_after, distance_unit_after, lie_before, is_penalty, miss_direction',
     )
     .eq('shot_type', 'approach')
     .in('round_id', roundIds) as {

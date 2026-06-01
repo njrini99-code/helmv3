@@ -83,11 +83,21 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     );
     if (inBucket.length === 0) return null;
 
-    // distance_to_hole_after is stored in the same unit table the cache
-    // uses for proximity displays — treat as feet for the 50-125 yd
-    // bucket (Tour anchor is in feet). For longer buckets we accept the
-    // raw value; the comparison line below uses the same unit assumption.
-    const proximity_sum = inBucket.reduce((a, s) => a + Number(s.distance_to_hole_after), 0);
+    // distance_to_hole_after is recorded in MIXED units in prod
+    // (distance_unit_after is 'feet' for some rows, 'yards' for others).
+    // The PGA proximity anchors (18/30/45) and the metric label are all in
+    // FEET, so normalize every row to feet before averaging — yard rows are
+    // otherwise ~3× inflated against a feet baseline. Mirrors the canonical
+    // conversion in src/app/golf/actions/coachhelm-data.ts:646-649
+    // ('feet' → as-is; else ×3 yards→feet).
+    const proximity_sum = inBucket.reduce(
+      (a, s) =>
+        a +
+        (s.distance_unit_after === 'feet'
+          ? Number(s.distance_to_hole_after)
+          : Number(s.distance_to_hole_after) * 3),
+      0,
+    );
     const avg = proximity_sum / inBucket.length;
     const penaltyCount = inBucket.filter((s) => s.is_penalty).length;
 

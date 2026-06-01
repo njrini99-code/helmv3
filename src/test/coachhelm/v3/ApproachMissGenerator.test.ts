@@ -1,6 +1,41 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ApproachMissGenerator } from '@/lib/coachhelm/v3/generators/approach-miss';
-import { bucketApproachDistance } from '@/lib/coachhelm/v3/engine/shot-source';
+import {
+  bucketApproachDistance,
+  loadApproachShots,
+  type ApproachShot,
+} from '@/lib/coachhelm/v3/engine/shot-source';
+
+// Mock ONLY the DB loader; keep bucketApproachDistance (pure) real so the
+// generator's distance-bucketing stays under test.
+vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/coachhelm/v3/engine/shot-source')>();
+  return { ...actual, loadApproachShots: vi.fn() };
+});
+
+const mockLoadApproachShots = vi.mocked(loadApproachShots);
+
+/** Build an ApproachShot fixture. distBefore is yards (drives the bucket);
+ *  proxAfter + unitAfter drive the proximity-to-feet normalization. */
+function shot(
+  distBeforeYards: number,
+  proxAfter: number,
+  unitAfter: 'feet' | 'yards',
+  over: Partial<ApproachShot> = {},
+): ApproachShot {
+  return {
+    round_id: 'r-1',
+    hole_number: 1,
+    shot_number: 2,
+    distance_to_hole_before: distBeforeYards,
+    distance_to_hole_after: proxAfter,
+    distance_unit_after: unitAfter,
+    lie_before: 'fairway',
+    is_penalty: false,
+    miss_direction: null,
+    ...over,
+  };
+}
 
 const PLAYER_ID = 'p-1';
 
@@ -87,5 +122,96 @@ describe('ApproachMissGenerator', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
     const c = g.composeContent(makeAgg({ penalty_rate_pct: 2 }));
     expect(c.content).not.toContain('incurred a penalty');
+  });
+});
+
+// ============================================================================
+// aggregate() — E0 approach-unit normalization
+// ----------------------------------------------------------------------------
+// golf_shots.distance_unit_after is MIXED in prod (feet vs yards). The
+// generator labels everything "ft" and compares against feet PGA anchors, so
+// yard rows must be ×3 (yards→feet) before averaging. These cases pin that the
+// average is feet-canonical, not the old raw mixed sum. Mirrors the canonical
+// conversion in src/app/golf/actions/coachhelm-data.ts:646-649.
+// ============================================================================
+
+describe('ApproachMissGenerator.aggregate (unit normalization)', () => {
+  beforeEach(() => {
+    mockLoadApproachShots.mockReset();
+  });
+
+  it('passes feet-unit shots through unchanged', async () => {
+    // 5 shots in the 50-125 bucket, all already in feet → avg is the raw feet avg.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet'),
+      shot(100, 22, 'feet'),
+      shot(100, 20, 'feet'),
+      shot(100, 16, 'feet'),
+      shot(100, 24, 'feet'),
+    ]);
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const agg = await g.aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.avg_proximity_feet).toBe(20); // (18+22+20+16+24)/5
+  });
+
+  it('converts yard-unit shots ×3 to feet before averaging', async () => {
+    // 5 shots all recorded in YARDS. 7 yd = 21 ft. avg must be 21 ft, NOT 7.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 7, 'yards'),
+      shot(100, 7, 'yards'),
+      shot(100, 7, 'yards'),
+      shot(100, 7, 'yards'),
+      shot(100, 7, 'yards'),
+    ]);
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const agg = await g.aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.avg_proximity_feet).toBe(21); // 7 yd ×3 = 21 ft
+  });
+
+  it('yields the feet-canonical average for a mixed-unit fixture (not the raw mixed sum)', async () => {
+    // 3 feet rows (18, 24, 30 ft) + 3 yard rows (8, 10, 12 yd → 24, 30, 36 ft).
+    // Feet-canonical sum = 18+24+30+24+30+36 = 162 over 6 → 27 ft.
+    // Old raw-sum behavior would have been 18+24+30+8+10+12 = 102 / 6 = 17 ft (wrong).
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet'),
+      shot(100, 24, 'feet'),
+      shot(100, 30, 'feet'),
+      shot(100, 8, 'yards'),
+      shot(100, 10, 'yards'),
+      shot(100, 12, 'yards'),
+    ]);
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const agg = await g.aggregate();
+    expect(agg).not.toBeNull();
+    expect(agg!.avg_proximity_feet).toBe(27); // feet-canonical, not 17
+    expect(agg!.attempts).toBe(6);
+  });
+
+  it('only aggregates shots in this generator bucket (distance_to_hole_before, yards)', async () => {
+    // Two 175+ shots (in feet) + two 50-125 shots (in yards). The 125_175
+    // generator should pick up neither — returns null below minSample handling.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(200, 45, 'feet'),
+      shot(60, 6, 'yards'),
+    ]);
+    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
+    const agg = await g.aggregate();
+    expect(agg).toBeNull(); // no shots bucketed into 125-175 yd
+  });
+
+  it('null label/unit treated as yards → ×3 (defensive: only "feet" passes through)', async () => {
+    // distance_unit_after null is NOT 'feet', so it converts ×3 (yards default).
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 7, 'feet', { distance_unit_after: null }),
+      shot(100, 7, 'feet', { distance_unit_after: null }),
+      shot(100, 7, 'feet', { distance_unit_after: null }),
+      shot(100, 7, 'feet', { distance_unit_after: null }),
+      shot(100, 7, 'feet', { distance_unit_after: null }),
+    ]);
+    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
+    const agg = await g.aggregate();
+    expect(agg!.avg_proximity_feet).toBe(21);
   });
 });
