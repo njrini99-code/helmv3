@@ -74,6 +74,29 @@ export function useRedesign(): boolean {
 }
 
 /**
+ * Whether the hierarchical CoachHelm THEME insights (ThemesPanel/ThemeCard) are
+ * shown in place of the flat insight feed. Reads `NEXT_PUBLIC_REDESIGN_THEMES`:
+ *   - explicitly set (1/true/on/yes OR 0/false/off/no) → that value wins, both ways;
+ *   - UNSET → defaults to following {@link isRedesignEnabled} (themes ship wherever
+ *     the redesign is already on — zero extra config to go live), while still
+ *     leaving an independent kill-switch (set it to 0 to disable just themes).
+ * The host surfaces only render the theme view inside their existing redesign
+ * fork, so this never affects the flag-off (legacy) app.
+ */
+export function isThemesEnabled(): boolean {
+  const raw = process.env.NEXT_PUBLIC_REDESIGN_THEMES;
+  if (typeof raw === 'string' && raw.trim() !== '') {
+    return TRUTHY.has(raw.trim().toLowerCase());
+  }
+  return isRedesignEnabled();
+}
+
+/** Client hook mirror of {@link isThemesEnabled} (build-time-inlined value). */
+export function useThemesInsights(): boolean {
+  return useMemo(() => isThemesEnabled(), []);
+}
+
+/**
  * Compose the Fairway scope class with optional extra classes.
  * Example: `<div className={fairwayScope('grid gap-6')}>`.
  */

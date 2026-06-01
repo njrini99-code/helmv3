@@ -6,6 +6,7 @@ import { PlayerInsightClient } from './player-insight-client';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
+import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -149,6 +150,7 @@ export default async function PlayerInsightPage({
     insightsResult,
     focusAreasResult,
     predictionsResult,
+    themesResult,
   ] = await Promise.all([
     // Player profile
     supabase
@@ -203,6 +205,10 @@ export default async function PlayerInsightPage({
       .eq('player_id', playerId)
       .order('created_at', { ascending: false })
       .limit(40),
+
+    // Hierarchical THEME scaffold for the redesigned coach surface. Per-player.
+    // Degrades to [] on any failure — never errors the page.
+    getThemesForCoach({ player_id: playerId }).catch(() => null),
   ]);
 
   const player = (playerResult.data as PlayerProfile | null) ?? null;
@@ -328,6 +334,10 @@ export default async function PlayerInsightPage({
   const trendSummary = computeTrendSummary(rounds);
   const playerStatus = derivePlayerStatus(trendSummary.trend);
 
+  // Hierarchical THEME scaffold — additive, redesign-only. Degrades to [] when
+  // the fetch failed or returned no data (themesResult may be null on throw).
+  const themes = themesResult?.data?.themes ?? [];
+
   // Fairway (warm-premium) fork — flag-gated re-skin of the coach Player Insight
   // surface. Same loaded data + same server actions (the client widget reuses
   // them verbatim). Legacy below stays byte-for-byte when flag-off.
@@ -345,6 +355,7 @@ export default async function PlayerInsightPage({
           insights={insights}
           focusAreas={focusAreas}
           predictions={predictions}
+          themes={themes}
         />
       </div>
     );

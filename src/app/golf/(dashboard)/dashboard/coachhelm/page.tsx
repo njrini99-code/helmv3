@@ -7,6 +7,7 @@ import { getPlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import {
   getTopInsightForPlayer,
   getInsightsForPlayer,
+  getThemesForPlayer,
 } from '@/app/golf/actions/insight-delivery';
 import { PlayerCoachHelmDashboard } from './components/PlayerCoachHelmDashboard';
 import { AnimatedPage, AnimatedItem } from '@/components/golf/layout/AnimatedPage';
@@ -141,14 +142,22 @@ export default async function PlayerCoachHelmPage() {
   let analyticsResult: Awaited<ReturnType<typeof getPlayerShotAnalytics>>;
   let topInsight: Awaited<ReturnType<typeof getTopInsightForPlayer>> = null;
   let secondaryInsights: Awaited<ReturnType<typeof getInsightsForPlayer>> = [];
+  // Hierarchical THEME scaffold (flag-gated read; only consumed in the redesign
+  // fork below). A failed/rejected themes fetch MUST degrade to `[]` themes and
+  // NEVER error the page, so it joins the parallel fetch via a swallow-to-null
+  // wrapper rather than the fail-the-page Promise.all alongside it.
+  let themesRes: Awaited<ReturnType<typeof getThemesForPlayer>> | null = null;
   try {
-    [dashboardResult, analyticsResult, topInsight, secondaryInsights] = await Promise.all([
-      getPlayerCoachHelmDashboard(player.id),
-      getPlayerShotAnalytics(player.id, 30),
-      getTopInsightForPlayer(player.id),
-      // Pull a small buffer — the client dedupes the hero id and displays up to 5.
-      getInsightsForPlayer(player.id, { limit: 6 }),
-    ]);
+    [dashboardResult, analyticsResult, topInsight, secondaryInsights, themesRes] =
+      await Promise.all([
+        getPlayerCoachHelmDashboard(player.id),
+        getPlayerShotAnalytics(player.id, 30),
+        getTopInsightForPlayer(player.id),
+        // Pull a small buffer — the client dedupes the hero id and displays up to 5.
+        getInsightsForPlayer(player.id, { limit: 6 }),
+        // Swallow to null so a themes failure can never reject the page load.
+        getThemesForPlayer(player.id).catch(() => null),
+      ]);
   } catch (err) {
     return <ErrorState error={err instanceof Error ? err.message : 'Failed to load dashboard data'} />;
   }
@@ -198,6 +207,8 @@ export default async function PlayerCoachHelmPage() {
     // plain Record so it serializes across the server→client boundary.
     const standingMap = await loadPlayerStandingMap(player.id);
     const standingByMetric = Object.fromEntries(standingMap) as Record<string, PlayerStanding>;
+    // Hierarchical theme scaffold — degrades to `[]` on a failed/absent fetch.
+    const themes = themesRes?.data?.themes ?? [];
     return (
       <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
         <FairwayPlayerCoachHelm
@@ -210,6 +221,7 @@ export default async function PlayerCoachHelmPage() {
           topInsight={topInsight}
           secondaryInsights={secondaryInsights}
           standingByMetric={standingByMetric}
+          themes={themes}
         />
       </div>
     );
