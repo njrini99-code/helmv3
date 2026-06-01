@@ -29,7 +29,9 @@ import type {
 } from '@/lib/coachhelm/v2/insights/types';
 import type { Database } from '@/lib/types/database';
 import { assembleThemes } from '@/lib/coachhelm/v3/themes/assemble';
-import type { AssembledThemes, AssembledEvidence } from '@/lib/coachhelm/v3/themes/types';
+import type { AssembledThemes, AssembledEvidence, RootDriver } from '@/lib/coachhelm/v3/themes/types';
+import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
+import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
 
 // ---------------------------------------------------------------------------
@@ -582,6 +584,64 @@ export async function getRoundTakeawayInsight(
 /** High cap for the themes query — no per-card limit; we want the full set. */
 const THEMES_FETCH_CAP = 200;
 
+/** Cap for the shot-driver fetch (PLAY C) — mirrors PuttingStats.tsx (5000). */
+const SHOT_DRIVERS_FETCH_CAP = 5000;
+/** Recent-rounds cap when resolving completed round ids for the shot fetch. */
+const SHOT_DRIVERS_ROUNDS_CAP = 200;
+
+/**
+ * PLAY C — best-effort shot-level root drivers. Resolves the player's completed
+ * round ids, pulls the raw `golf_shots` (capped) with the 1:1 `putt_details` /
+ * `approach_miss_details` joins the stats pipeline already fetches, and runs the
+ * PURE `buildShotDrivers`. Wrapped end-to-end: ANY failure (or no data) returns
+ * `undefined` so the themes scaffold renders without shot drivers — NEVER errors
+ * the page. `golf_shots` has no `player_id` column, so we resolve via
+ * `golf_rounds` exactly like PuttingStats.tsx does.
+ */
+async function fetchShotDriversByCategory(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Partial<Record<InsightCategory, RootDriver[]>> | undefined> {
+  try {
+    const { data: rounds, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('id')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(SHOT_DRIVERS_ROUNDS_CAP);
+    if (roundsError) throw new Error(roundsError.message);
+
+    const roundIds = (rounds ?? []).map((r) => r.id as string);
+    if (roundIds.length === 0) return undefined;
+
+    const { data: shots, error: shotsError } = await supabase
+      .from('golf_shots')
+      .select(`
+        shot_type,
+        club_type,
+        distance_to_hole_before,
+        distance_unit_before,
+        result,
+        miss_direction,
+        putt_details(miss_tags, break_direction),
+        approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+      `)
+      .in('round_id', roundIds)
+      .limit(SHOT_DRIVERS_FETCH_CAP);
+    if (shotsError) throw new Error(shotsError.message);
+    if (!shots || shots.length === 0) return undefined;
+
+    return buildShotDrivers(shots as unknown as ShotDriverInput[]);
+  } catch (err) {
+    await logServerError(
+      `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
+    );
+    return undefined;
+  }
+}
+
 /**
  * Per-player query + assemble. Shared by both the player and coach paths
  * (themes are inherently per-player — the SG cascade is per-player). The
@@ -647,7 +707,11 @@ async function assembleForPlayer(
     sgByCategory = {};
   }
 
-  return assembleThemes({ playerId, rows, sgByCategory });
+  // PLAY C — shot-level drivers are best-effort: the helper swallows its own
+  // failures and returns undefined, so the assembler simply omits them.
+  const shotDriversByCategory = await fetchShotDriversByCategory(supabase, playerId);
+
+  return assembleThemes({ playerId, rows, sgByCategory, shotDriversByCategory });
 }
 
 /**

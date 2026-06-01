@@ -98,7 +98,7 @@ function driverSourceLabel(source: RootDriver['source']): string {
     case 'composite':
       return 'Root driver';
     case 'shot_detail':
-      return 'Shot detail';
+      return 'Shot pattern';
     case 'diagnostic':
     default:
       return 'Diagnostic';

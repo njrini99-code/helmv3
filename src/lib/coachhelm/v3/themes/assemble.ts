@@ -110,6 +110,18 @@ export interface AssembleThemesInput {
   playerId: string;
   rows: EvidenceInsight[];
   sgByCategory: Partial<Record<InsightCategory, number | null>>;
+  /**
+   * OPTIONAL shot-level root drivers per category (PLAY C). Built read-time by
+   * `buildShotDrivers` from already-fetched raw shot rows. When present, the
+   * drivers for a category are appended to the TOP-RANKED cause of that category
+   * (after any composite drivers) so a standalone cause's expand surfaces a real
+   * shot pattern. Attached ONLY when the category has ≥1 cause — a category with
+   * shot drivers but no cause attaches to nothing (we never invent a cause).
+   *
+   * DEFAULT (omitted) → behavior is identical to before this field existed; the
+   * function stays pure and deterministic.
+   */
+  shotDriversByCategory?: Partial<Record<InsightCategory, RootDriver[]>>;
 }
 
 /**
@@ -118,6 +130,7 @@ export interface AssembleThemesInput {
  */
 export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
   const { playerId, rows, sgByCategory } = input;
+  const shotDriversByCategory = input.shotDriversByCategory ?? {};
 
   // 1. Index every row by id.
   const byId = new Map<string, EvidenceInsight>();
@@ -198,6 +211,16 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
 
     // 5. Rank causes: strokesSavedPerRound (realistic) desc → |strokes_impact| desc → title.
     causes.sort((a, b) => rankCauses(a, b, impactById));
+
+    // 5b. PLAY C — attach shot-level drivers to the MOST RELEVANT cause (the
+    //     now top-ranked cause), APPENDED after any composite drivers. Only when
+    //     the category actually has a cause to anchor on (we never invent one).
+    //     Pure: the input shot-drivers are precomputed deterministically upstream.
+    const shotDrivers = shotDriversByCategory[def.category];
+    const topCause = causes[0];
+    if (shotDrivers && shotDrivers.length > 0 && topCause) {
+      topCause.drivers = [...topCause.drivers, ...shotDrivers];
+    }
 
     // 6. SIGN-AWARE, SINGLE-SOURCE theme sizing on the REALISTIC cause values.
     //    `themeStrokesPerRound` is a college-realistic LEAK magnitude — 0 for a

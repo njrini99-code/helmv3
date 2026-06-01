@@ -12,7 +12,7 @@ import { describe, test, expect } from 'vitest';
 import fc from 'fast-check';
 import { assembleThemes } from './assemble';
 import { THEME_TAXONOMY } from './taxonomy';
-import type { AssembledEvidence } from './types';
+import type { AssembledEvidence, RootDriver } from './types';
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
 
@@ -842,6 +842,114 @@ describe('assembleThemes — outcome theme gating', () => {
     });
     expect(themeOf(result, 'tee')).toBeDefined();
     expect(themeOf(result, 'tee').causes).toHaveLength(0);
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * PLAY C — shot-level driver attachment (shotDriversByCategory)
+ *
+ * The OPTIONAL `shotDriversByCategory` input attaches each category's shot-detail
+ * drivers to the TOP-RANKED cause of that category, appended AFTER any composite
+ * drivers. Omitting it (the default) must not change any existing behavior.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function shotDriver(title: string): RootDriver {
+  return {
+    source: 'shot_detail',
+    source_insight_ids: [],
+    title,
+    prose: `${title} prose`,
+    drills: [],
+  };
+}
+
+describe('assembleThemes — shot-level driver attachment (PLAY C)', () => {
+  test('a shot driver attaches to the TOP-RANKED cause of its category', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'small', category: 'approach', strokesSaved: 0.4 }),
+        row({ id: 'big', category: 'approach', strokesSaved: 1.5 }),
+      ],
+      sgByCategory: {},
+      shotDriversByCategory: { approach: [shotDriver('150-175: short-right')] },
+    });
+    const causes = themeOf(result, 'approach').causes;
+    // 'big' ranks first → gets the shot driver; 'small' gets none.
+    expect(causes[0]!.insight_id).toBe('big');
+    expect(causes[0]!.drivers).toHaveLength(1);
+    expect(causes[0]!.drivers[0]).toMatchObject({ source: 'shot_detail', title: '150-175: short-right' });
+    expect(causes[1]!.insight_id).toBe('small');
+    expect(causes[1]!.drivers).toHaveLength(0);
+  });
+
+  test('shot drivers are APPENDED after composite drivers on the top cause', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({
+          id: 'comp',
+          category: 'putting',
+          strokesSaved: 1.2,
+          compositeRuleId: 'lag_3putt',
+          sourceInsightIds: ['leaf1'],
+          metric: 'three_putts',
+        }),
+        row({ id: 'leaf1', category: 'putting', strokesSaved: 0.5, title: 'Leaf One', content: 'lag speed' }),
+      ],
+      sgByCategory: {},
+      shotDriversByCategory: { putting: [shotDriver('left-to-right: missed low')] },
+    });
+    const comp = themeOf(result, 'putting').causes[0]!;
+    expect(comp.insight_id).toBe('comp');
+    // composite driver first, shot driver appended last.
+    expect(comp.drivers.map((d) => d.source)).toEqual(['composite', 'shot_detail']);
+    expect(comp.drivers[1]!.title).toBe('left-to-right: missed low');
+  });
+
+  test('a category with shot drivers but NO cause attaches to nothing (no invented cause)', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [row({ id: 'a', category: 'putting', strokesSaved: 1 })],
+      sgByCategory: {},
+      // tee has a shot driver but no cause row.
+      shotDriversByCategory: { tee: [shotDriver('driver leaks left')] },
+    });
+    const tee = themeOf(result, 'tee');
+    expect(tee.causes).toHaveLength(0);
+    // putting cause is untouched (no tee driver leaked into it).
+    expect(themeOf(result, 'putting').causes[0]!.drivers).toHaveLength(0);
+  });
+
+  test('REGRESSION: omitting shotDriversByCategory leaves behavior unchanged', () => {
+    const rows = [
+      row({ id: 'big', category: 'approach', strokesSaved: 1.5 }),
+      row({ id: 'small', category: 'approach', strokesSaved: 0.4 }),
+    ];
+    const withField = assembleThemes({ playerId: 'p1', rows, sgByCategory: {}, shotDriversByCategory: {} });
+    const without = assembleThemes({ playerId: 'p1', rows, sgByCategory: {} });
+    // Identical output: an empty/absent map adds no drivers anywhere.
+    expect(JSON.stringify(without)).toBe(JSON.stringify(withField));
+    for (const t of without.themes) {
+      for (const c of t.causes) expect(c.drivers).toHaveLength(0);
+    }
+  });
+
+  test('multiple categories each attach to their own top cause', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'app', category: 'approach', strokesSaved: 1.0 }),
+        row({ id: 'putt', category: 'putting', strokesSaved: 1.0 }),
+      ],
+      sgByCategory: {},
+      shotDriversByCategory: {
+        approach: [shotDriver('approach pattern')],
+        putting: [shotDriver('putting pattern')],
+      },
+    });
+    expect(themeOf(result, 'approach').causes[0]!.drivers[0]!.title).toBe('approach pattern');
+    expect(themeOf(result, 'putting').causes[0]!.drivers[0]!.title).toBe('putting pattern');
   });
 });
 
