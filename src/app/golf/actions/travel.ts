@@ -35,7 +35,7 @@ const createTravelItinerarySchema = z.object({
   uniform_requirements: z.string().max(1000).optional(),
   gear_list: z.string().max(2000).optional(),
   notes: z.string().max(5000).optional(),
-  created_by: z.string().uuid(),
+  created_by: z.string().uuid().optional(),
 });
 
 const updateTravelItinerarySchema = z.object({
@@ -87,7 +87,7 @@ export interface CreateTravelItineraryInput {
   uniform_requirements?: string;
   gear_list?: string;
   notes?: string;
-  created_by: string;
+  created_by?: string;
 }
 
 export interface UpdateTravelItineraryInput {
@@ -130,7 +130,8 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
       return { success: false, error: 'Not authenticated' };
     }
 
-    // Verify user is a coach
+    // Verify user is a coach. The travel table's created_by column references
+    // golf_coaches.id, so use the trusted row from auth instead of client input.
     const { data: coach } = await supabase
       .from('golf_coaches')
       .select('id')
@@ -168,7 +169,7 @@ export async function createGolfTravelItinerary(input: CreateTravelItineraryInpu
         uniform_requirements: emptyToNull(validatedData.uniform_requirements),
         gear_list: validatedData.gear_list ? validatedData.gear_list.split(',').map((s: string) => s.trim()).filter(Boolean) : null,
         notes: emptyToNull(validatedData.notes),
-        created_by: validatedData.created_by,
+        created_by: coach.id,
       })
       .select()
       .single();

@@ -60,6 +60,10 @@ import {
   LeakMap,
   BarCompare,
   StandingStrip,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
   type LeakMapBucket,
 } from '@/components/fairway';
 
@@ -125,6 +129,16 @@ function metricCategory(metricId: string): string {
 /** The four non-total SG categories, in cockpit display order. */
 const SG_CATEGORIES = ['sg_ott', 'sg_approach', 'sg_around_green', 'sg_putting'] as const;
 const SG_SET = new Set<string>(['sg_total', ...SG_CATEGORIES]);
+
+const STATS_TABS = [
+  { id: 'scoring', label: 'Scoring' },
+  { id: 'driving', label: 'Driving' },
+  { id: 'approach', label: 'Approach' },
+  { id: 'putting', label: 'Putting' },
+  { id: 'scrambling', label: 'Scrambling' },
+  { id: 'strokes-gained', label: 'Strokes Gained' },
+  { id: 'analysis', label: 'Analysis' },
+] as const;
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Props — the consumer hands a resolved playerId. (No useGolfUser here; the
@@ -500,216 +514,180 @@ export function FairwayStatsCockpit({ playerId, className }: FairwayStatsCockpit
         </div>
       </section>
 
-      {/* ════════════════ 3 · STROKES GAINED — the diagnosis ══════════════════ */}
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 px-1">
-          <SectionHeading as="div">Where you win &amp; lose strokes</SectionHeading>
-          {gainLeak ? (
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-              <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
-                <span aria-hidden className="text-fw-success">▲</span>
-                Biggest gain:{' '}
-                <span className="font-medium text-text-primary">{gainLeak.best.label}</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
-                <span aria-hidden className="text-fw-warning">▼</span>
-                Biggest leak:{' '}
-                <span className="font-medium text-text-primary">{gainLeak.worst.label}</span>
-              </span>
-            </div>
-          ) : null}
-        </div>
-
-        {sgCategoryItems.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {sgCategoryItems.map(({ id, row, cfg }) => (
-              <StandingStrip
-                key={id}
-                metric_id={id}
-                metric_label={cfg.display_label}
-                player_value={row.player_value}
-                team_avg={row.team_avg}
-                team_n={row.team_n}
-                team_pct={row.team_pct}
-                pga_value={row.pga_value}
-                direction={cfg.direction}
-                unit={cfg.unit}
-                scale={cfg.default_scale}
-                size="card"
-              />
+      <Surface padding="none" elevation="border" className="overflow-hidden">
+        <Tabs defaultValue="scoring" className="gap-0">
+          <TabsList className="px-4">
+            {STATS_TABS.map((tab) => (
+              <TabsTrigger key={tab.id} value={tab.id}>
+                {tab.label}
+              </TabsTrigger>
             ))}
-          </div>
-        ) : (
-          <Surface padding="lg">
-            <InsufficientData
-              compact
-              title="SG breakdown warming up"
-              description="Off-the-tee, approach, around-green, and putting standings appear as rounds are logged."
-              unit="rounds"
-            />
-          </Surface>
-        )}
-      </section>
+          </TabsList>
 
-      {/* ════════════════ 3b · SCORING BY PAR — distribution ══════════════════ */}
-      {hasParData ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex flex-col gap-0.5 px-1">
-            <SectionHeading as="div">Scoring by par</SectionHeading>
-            <span className="font-fw-sans text-caption text-text-tertiary">
-              Outcome mix on par 3s, 4s, and 5s — where the easy and hard pars are.
-            </span>
-          </div>
-          <ScoringByPar data={scoringByPar!} />
-        </section>
-      ) : null}
-
-      {/* ════════════════ 3c · SHORT GAME — scrambling + sand saves + penalties ═ */}
-      <ShortGameSection detailedStats={detailedStats} />
-
-      {/* ════════════════ 3d · OFF THE TEE — distance + accuracy + miss bias ════ */}
-      <DrivingSection detailedStats={detailedStats} />
-
-      {/* ════════════════ 3e · APPROACH & GIR — headline proximity + GIR ═══════ */}
-      <ApproachHeadlineSection detailedStats={detailedStats} />
-
-      {/* ════════════════ 4 · WHERE THE STROKES LEAK ══════════════════════════ */}
-      <section className="flex flex-col gap-3">
-        <SectionHeading>Where the strokes leak</SectionHeading>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <LeakMap
-            title="Putt make %"
-            overline="Putting"
-            subtitle="Make rate by distance vs PGA Tour"
-            takeaway="Bands below the dashed Tour line are where putts are leaking."
-            direction="higher_better"
-            unit="percent"
-            data={leakMaps ? toChartBuckets(leakMaps.putting) : []}
-          />
-          <LeakMap
-            title="Approach proximity"
-            overline="Approach"
-            subtitle="Average proximity to the hole by approach distance vs PGA Tour"
-            takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
-            direction="lower_better"
-            unit="feet"
-            data={leakMaps ? toChartBuckets(leakMaps.approach) : []}
-          />
-        </div>
-      </section>
-
-      {/* ════════════════ 4b · COACHHELM — cause & effect (integration) ═══════ */}
-      {coachHelmReads.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-3 px-1">
-            <span className="inline-flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-accent-600" aria-hidden />
-              <SectionHeading as="div">What CoachHelm sees</SectionHeading>
-            </span>
-            <Link
-              href={`/golf/dashboard/players/${playerId}`}
-              className="inline-flex items-center gap-1 rounded-fw-sm font-fw-sans text-label font-medium text-accent-600 outline-none transition-colors [transition-duration:180ms] hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-            >
-              Open CoachHelm
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {coachHelmReads.map((p) => (
-              <CauseEffectCard key={p.id} pattern={p} />
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {/* ════════════════ 5 · SCORING TREND ═══════════════════════════════════ */}
-      <section className="flex flex-col gap-3">
-        <SectionHeading>Scoring trend</SectionHeading>
-        <Ribbon
-          title="Score by round"
-          overline="Trend"
-          takeaway="Scoring trace across logged rounds, with the 30-day average as the benchmark."
-          data={trendPoints}
-          benchmark={
-            trendBenchmark != null ? { value: trendBenchmark, label: '30-day avg' } : undefined
-          }
-          seriesName="Score"
-          valueFormatter={(v) => v.toFixed(1)}
-        />
-      </section>
-
-      {/* ════════════════ 6 · DETAILED STANDINGS — collapsed disclosure ═══════ */}
-      {detailedGroups.length > 0 ? (
-        <section className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => setShowDetailed((v) => !v)}
-            aria-expanded={showDetailed}
-            className="group flex w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
-          >
-            <span className="flex flex-col gap-0.5">
-              <span className="font-fw-display text-body font-medium text-text-primary">
-                Detailed standings
-              </span>
-              <span className="font-fw-sans text-caption text-text-tertiary">
-                {detailedGroups.length} categories · putting bands, scrambling, scoring, course management{detailedGroups.some((g) => g.category === 'pressure') ? ', pressure' : ''}
-              </span>
-            </span>
-            <ChevronDown
-              className={cn(
-                'h-5 w-5 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
-                showDetailed && 'rotate-180',
-              )}
-            />
-          </button>
-
-          {showDetailed ? (
-            <div className="flex flex-col gap-6 pt-1">
-              {detailedGroups.map((group) => {
-                const rows = matrixByCategory.get(group.category) ?? [];
-                return (
-                  <div key={group.category} className="flex flex-col gap-3">
-                    <div className="px-1">
-                      <h4 className="font-fw-sans text-body font-medium text-text-primary">
-                        {group.label}
-                      </h4>
-                      <p className="font-fw-sans text-caption text-text-tertiary">
-                        {group.description}
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {rows.map(({ id, row, cfg }) => (
-                        <StandingStrip
-                          key={id}
-                          metric_id={id}
-                          metric_label={cfg.display_label}
-                          player_value={row.player_value}
-                          team_avg={row.team_avg}
-                          team_n={row.team_n}
-                          team_pct={row.team_pct}
-                          pga_value={row.pga_value}
-                          direction={cfg.direction}
-                          unit={cfg.unit}
-                          scale={cfg.default_scale}
-                          size="card"
-                        />
-                      ))}
-                    </div>
+          <TabsContent value="scoring" className="px-4 py-5 sm:px-5">
+            <div className="flex flex-col gap-6">
+              {hasParData ? (
+                <section className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-0.5 px-1">
+                    <SectionHeading as="div">Scoring by par</SectionHeading>
+                    <span className="font-fw-sans text-caption text-text-tertiary">
+                      Outcome mix on par 3s, 4s, and 5s.
+                    </span>
                   </div>
-                );
-              })}
+                  <ScoringByPar data={scoringByPar!} />
+                </section>
+              ) : null}
+              <section className="flex flex-col gap-3">
+                <SectionHeading>Scoring trend</SectionHeading>
+                <Ribbon
+                  title="Score by round"
+                  overline="Trend"
+                  takeaway="Scoring trace across logged rounds, with the 30-day average as the benchmark."
+                  data={trendPoints}
+                  benchmark={
+                    trendBenchmark != null ? { value: trendBenchmark, label: '30-day avg' } : undefined
+                  }
+                  seriesName="Score"
+                  valueFormatter={(v) => v.toFixed(1)}
+                />
+              </section>
             </div>
-          ) : null}
-        </section>
-      ) : null}
+          </TabsContent>
 
-      {/* ════════════════ 6b · FULL SHOT DETAIL — collapsed disclosure ═════════ */}
-      <ComprehensiveDetail
-        detailedStats={detailedStats}
-        trendData={trendData}
-        open={showComprehensive}
-        onToggle={() => setShowComprehensive((v) => !v)}
-      />
+          <TabsContent value="driving" className="px-4 py-5 sm:px-5">
+            <DrivingSection detailedStats={detailedStats} />
+          </TabsContent>
+
+          <TabsContent value="approach" className="px-4 py-5 sm:px-5">
+            <div className="flex flex-col gap-6">
+              <ApproachHeadlineSection detailedStats={detailedStats} />
+              <ApproachLegacyDetail detailedStats={detailedStats} />
+              <LeakMap
+                title="Approach proximity"
+                overline="Approach"
+                subtitle="Average proximity to the hole by approach distance vs PGA Tour"
+                takeaway="Bands above the dashed Tour line leave you farther from the hole than Tour."
+                direction="lower_better"
+                unit="feet"
+                data={leakMaps ? toChartBuckets(leakMaps.approach) : []}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="putting" className="px-4 py-5 sm:px-5">
+            <div className="flex flex-col gap-6">
+              <PuttingLegacyDetail detailedStats={detailedStats} />
+              <LeakMap
+                title="Putt make %"
+                overline="Putting"
+                subtitle="Make rate by distance vs PGA Tour"
+                takeaway="Bands below the dashed Tour line are where putts are leaking."
+                direction="higher_better"
+                unit="percent"
+                data={leakMaps ? toChartBuckets(leakMaps.putting) : []}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="scrambling" className="px-4 py-5 sm:px-5">
+            <ShortGameSection detailedStats={detailedStats} />
+          </TabsContent>
+
+          <TabsContent value="strokes-gained" className="px-4 py-5 sm:px-5">
+            <div className="flex flex-col gap-6">
+              <section className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1 px-1">
+                  <SectionHeading as="div">Where you win &amp; lose strokes</SectionHeading>
+                  {gainLeak ? (
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                      <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
+                        <span aria-hidden className="text-fw-success">▲</span>
+                        Biggest gain:{' '}
+                        <span className="font-medium text-text-primary">{gainLeak.best.label}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 font-fw-sans text-caption text-text-secondary">
+                        <span aria-hidden className="text-fw-warning">▼</span>
+                        Biggest leak:{' '}
+                        <span className="font-medium text-text-primary">{gainLeak.worst.label}</span>
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {sgCategoryItems.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    {sgCategoryItems.map(({ id, row, cfg }) => (
+                      <StandingStrip
+                        key={id}
+                        metric_id={id}
+                        metric_label={cfg.display_label}
+                        player_value={row.player_value}
+                        team_avg={row.team_avg}
+                        team_n={row.team_n}
+                        team_pct={row.team_pct}
+                        pga_value={row.pga_value}
+                        direction={cfg.direction}
+                        unit={cfg.unit}
+                        scale={cfg.default_scale}
+                        size="card"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Surface padding="lg">
+                    <InsufficientData
+                      compact
+                      title="SG breakdown warming up"
+                      description="Off-the-tee, approach, around-green, and putting standings appear as rounds are logged."
+                      unit="rounds"
+                    />
+                  </Surface>
+                )}
+              </section>
+
+              {coachHelmReads.length > 0 ? (
+                <section className="flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3 px-1">
+                    <span className="inline-flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-accent-600" aria-hidden />
+                      <SectionHeading as="div">What CoachHelm sees</SectionHeading>
+                    </span>
+                    <Link
+                      href={`/golf/dashboard/players/${playerId}`}
+                      className="inline-flex items-center gap-1 rounded-fw-sm font-fw-sans text-label font-medium text-accent-600 outline-none transition-colors [transition-duration:180ms] hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+                    >
+                      Open CoachHelm
+                      <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    {coachHelmReads.map((p) => (
+                      <CauseEffectCard key={p.id} pattern={p} />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analysis" className="px-4 py-5 sm:px-5">
+            <div className="flex flex-col gap-6">
+              <DetailedStandingsSection
+                detailedGroups={detailedGroups}
+                matrixByCategory={matrixByCategory}
+                open={showDetailed}
+                onToggle={() => setShowDetailed((v) => !v)}
+              />
+              <ComprehensiveDetail
+                detailedStats={detailedStats}
+                trendData={trendData}
+                open={showComprehensive}
+                onToggle={() => setShowComprehensive((v) => !v)}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </Surface>
 
       {/* ════════════════ 7 · RECENT ROUNDS ═══════════════════════════════════ */}
       {trendData && trendData.rounds.length > 0 ? (
@@ -1223,6 +1201,288 @@ function ApproachHeadlineSection({ detailedStats }: { detailedStats: GolfStats |
           awaitingLabel="No greens missed"
         />
       </div>
+    </section>
+  );
+}
+
+type ApproachLie = 'fairway' | 'rough' | 'sand';
+type PuttBreak = keyof GolfStats['puttingByBreak'];
+
+function ToggleChip<T extends string>({
+  active,
+  value,
+  label,
+  onSelect,
+}: {
+  active: boolean;
+  value: T;
+  label: string;
+  onSelect: (value: T) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={cn(
+        'min-h-9 rounded-full border px-3.5 py-1.5 font-fw-sans text-label font-medium outline-none transition-colors [transition-duration:180ms]',
+        'focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none',
+        active
+          ? 'border-accent-500 bg-accent-50 text-accent-700'
+          : 'border-border-subtle bg-surface text-text-secondary hover:bg-surface-tint hover:text-text-primary',
+      )}
+      aria-pressed={active}
+    >
+      {label}
+    </button>
+  );
+}
+
+function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | null }) {
+  const [selectedLie, setSelectedLie] = useState<ApproachLie>('fairway');
+  if (!detailedStats) return null;
+  const s = detailedStats;
+
+  const girByDistance: DetailRow[] = [
+    { label: '50-75 yds', value: fmtPct(s.girPct50_75) },
+    { label: '75-100 yds', value: fmtPct(s.girPct75_100) },
+    { label: '100-125 yds', value: fmtPct(s.girPct100_125) },
+    { label: '125-150 yds', value: fmtPct(s.girPct125_150) },
+    { label: '150-175 yds', value: fmtPct(s.girPct150_175) },
+    { label: '175-200 yds', value: fmtPct(s.girPct175_200) },
+    { label: '200-225 yds', value: fmtPct(s.girPct200_225) },
+    { label: '225+ yds', value: fmtPct(s.girPct225Plus) },
+  ];
+  const girByPar: DetailRow[] = [
+    { label: 'Par 3s', value: fmtPct(s.girPctPar3) },
+    { label: 'Par 4s', value: fmtPct(s.girPctPar4) },
+    { label: 'Par 5s', value: fmtPct(s.girPctPar5) },
+  ];
+  const lieRows: Record<ApproachLie, DetailRow[]> = {
+    fairway: [
+      { label: 'GIR from fairway', value: fmtPct(s.girPctFromFairway) },
+      { label: 'Proximity from fairway', value: fmtFeet(s.approachProximityFairway) },
+    ],
+    rough: [
+      { label: 'GIR from rough', value: fmtPct(s.girPctFromRough) },
+      { label: 'Proximity from rough', value: fmtFeet(s.approachProximityRough) },
+    ],
+    sand: [
+      { label: 'GIR from sand', value: fmtPct(s.girPctFromSand) },
+      { label: 'Proximity from sand', value: fmtFeet(s.approachProximitySand) },
+    ],
+  };
+  const approachEfficiencyRows: DetailRow[] = [
+    { label: '30-75 yds', value: fmtNum(s.approachEff30_75[selectedLie], 2) },
+    { label: '75-100 yds', value: fmtNum(s.approachEff75_100[selectedLie], 2) },
+    { label: '100-125 yds', value: fmtNum(s.approachEff100_125[selectedLie], 2) },
+    { label: '125-150 yds', value: fmtNum(s.approachEff125_150[selectedLie], 2) },
+    { label: '150-175 yds', value: fmtNum(s.approachEff150_175[selectedLie], 2) },
+    { label: '175-200 yds', value: fmtNum(s.approachEff175_200[selectedLie], 2) },
+    { label: '200-225 yds', value: fmtNum(s.approachEff200_225[selectedLie], 2) },
+    { label: '225+ yds', value: fmtNum(s.approachEff225Plus[selectedLie], 2) },
+  ];
+
+  const hasAny = !allDash(girByDistance) || !allDash(girByPar) || !allDash(lieRows[selectedLie]);
+  if (!hasAny) return null;
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Approach breakdowns</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Legacy GIR splits restored with Fairway lie controls.
+        </span>
+      </div>
+
+      <div className="flex flex-wrap gap-2 px-1" aria-label="Approach lie filter">
+        <ToggleChip active={selectedLie === 'fairway'} value="fairway" label="Fairway" onSelect={setSelectedLie} />
+        <ToggleChip active={selectedLie === 'rough'} value="rough" label="Rough" onSelect={setSelectedLie} />
+        <ToggleChip active={selectedLie === 'sand'} value="sand" label="Sand" onSelect={setSelectedLie} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {!allDash(girByDistance) ? (
+          <DetailGrid title="GIR by approach distance" rows={girByDistance} columns={4} />
+        ) : null}
+        {!allDash(girByPar) ? (
+          <DetailGrid title="GIR by hole type" rows={girByPar} columns={3} />
+        ) : null}
+        {!allDash(lieRows[selectedLie]) ? (
+          <DetailGrid title={`${selectedLie[0].toUpperCase()}${selectedLie.slice(1)} lie`} rows={lieRows[selectedLie]} />
+        ) : null}
+        {!allDash(approachEfficiencyRows) ? (
+          <DetailGrid
+            title={`Efficiency from ${selectedLie}`}
+            hint="Average strokes to hole out"
+            rows={approachEfficiencyRows}
+            columns={4}
+          />
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | null }) {
+  const [selectedBreak, setSelectedBreak] = useState<PuttBreak>('left_to_right');
+  if (!detailedStats) return null;
+  const s = detailedStats;
+  const breakStats = s.puttingByBreak[selectedBreak];
+  const breakLabel =
+    selectedBreak === 'left_to_right'
+      ? 'Left to right'
+      : selectedBreak === 'right_to_left'
+        ? 'Right to left'
+        : selectedBreak === 'straight'
+          ? 'Straight'
+          : 'Multiple breaks';
+
+  const headline: DetailRow[] = [
+    { label: 'Putts / round', value: fmtNum(s.puttsPerRound, 1) },
+    { label: 'Putts / GIR', value: fmtNum(s.puttsPerGir, 2) },
+    { label: '3-putts / round', value: fmtNum(s.threePuttsPerRound, 2) },
+    { label: '1-putts total', value: s.totalPutts > 0 ? fmtInt(s.onePuttsTotal) : '—' },
+  ];
+  const makeBands: DetailRow[] = [
+    { label: '0-3 ft', value: fmtPct(s.puttMakePct0_3) },
+    { label: '3-5 ft', value: fmtPct(s.puttMakePct3_5) },
+    { label: '5-10 ft', value: fmtPct(s.puttMakePct5_10) },
+    { label: '10-15 ft', value: fmtPct(s.puttMakePct10_15) },
+    { label: '15-20 ft', value: fmtPct(s.puttMakePct15_20) },
+    { label: '20-25 ft', value: fmtPct(s.puttMakePct20_25) },
+    { label: '25-30 ft', value: fmtPct(s.puttMakePct25_30) },
+    { label: '30-35 ft', value: fmtPct(s.puttMakePct30_35) },
+    { label: '35+ ft', value: fmtPct(s.puttMakePct35Plus) },
+  ];
+  const breakMakeBands: DetailRow[] = [
+    { label: '0-3 ft', value: fmtPct(breakStats.makePct0_3) },
+    { label: '3-5 ft', value: fmtPct(breakStats.makePct3_5) },
+    { label: '5-10 ft', value: fmtPct(breakStats.makePct5_10) },
+    { label: '10-15 ft', value: fmtPct(breakStats.makePct10_15) },
+    { label: '15-20 ft', value: fmtPct(breakStats.makePct15_20) },
+    { label: '20-25 ft', value: fmtPct(breakStats.makePct20_25) },
+    { label: '25-30 ft', value: fmtPct(breakStats.makePct25_30) },
+    { label: '30-35 ft', value: fmtPct(breakStats.makePct30_35) },
+    { label: '35+ ft', value: fmtPct(breakStats.makePct35Plus) },
+    { label: 'Overall make %', value: fmtPct(breakStats.overallMakePct) },
+  ];
+  const breakMissRows: DetailRow[] = [
+    { label: 'Miss short', value: fmtPct(breakStats.missShortPct) },
+    { label: 'Low side', value: fmtPct(breakStats.missLowPct) },
+    { label: 'High side', value: fmtPct(breakStats.missHighPct) },
+  ];
+
+  return (
+    <section className="flex flex-col gap-4">
+      <div className="flex flex-col gap-0.5 px-1">
+        <SectionHeading as="div">Putting breakdowns</SectionHeading>
+        <span className="font-fw-sans text-caption text-text-tertiary">
+          Distance bands plus restored break-type toggles.
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {!allDash(headline) ? <DetailGrid title="Putting efficiency" rows={headline} columns={4} /> : null}
+        {!allDash(makeBands) ? <DetailGrid title="Make % by distance" rows={makeBands} columns={3} /> : null}
+      </div>
+
+      <div className="flex flex-wrap gap-2 px-1" aria-label="Putt break filter">
+        <ToggleChip active={selectedBreak === 'left_to_right'} value="left_to_right" label="L -> R" onSelect={setSelectedBreak} />
+        <ToggleChip active={selectedBreak === 'right_to_left'} value="right_to_left" label="R -> L" onSelect={setSelectedBreak} />
+        <ToggleChip active={selectedBreak === 'straight'} value="straight" label="Straight" onSelect={setSelectedBreak} />
+        <ToggleChip active={selectedBreak === 'multiple'} value="multiple" label="Multiple" onSelect={setSelectedBreak} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {!allDash(breakMakeBands) ? (
+          <DetailGrid
+            title={`Make % by distance - ${breakLabel}`}
+            hint={`${breakStats.totalPutts} putts with this break`}
+            rows={breakMakeBands}
+            columns={3}
+          />
+        ) : null}
+        {!allDash(breakMissRows) ? (
+          <DetailGrid title={`Miss direction - ${breakLabel}`} rows={breakMissRows} columns={3} />
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function DetailedStandingsSection({
+  detailedGroups,
+  matrixByCategory,
+  open,
+  onToggle,
+}: {
+  detailedGroups: ReadonlyArray<(typeof CATEGORY_ORDER)[number]>;
+  matrixByCategory: Map<string, Array<{ id: MetricId; row: PlayerStandingRow; cfg: MetricRenderConfig }>>;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (detailedGroups.length === 0) return null;
+  return (
+    <section className="flex flex-col gap-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="group flex w-full items-center justify-between rounded-card border border-border-subtle bg-surface px-5 py-4 text-left outline-none transition-colors [transition-duration:180ms] hover:bg-surface-tint focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-offset-2 focus-visible:ring-offset-canvas motion-reduce:transition-none"
+      >
+        <span className="flex flex-col gap-0.5">
+          <span className="font-fw-display text-body font-medium text-text-primary">
+            Detailed standings
+          </span>
+          <span className="font-fw-sans text-caption text-text-tertiary">
+            {detailedGroups.length} categories · putting bands, scrambling, scoring, course management{detailedGroups.some((g) => g.category === 'pressure') ? ', pressure' : ''}
+          </span>
+        </span>
+        <ChevronDown
+          className={cn(
+            'h-5 w-5 flex-shrink-0 text-text-tertiary transition-transform [transition-duration:180ms] motion-reduce:transition-none',
+            open && 'rotate-180',
+          )}
+        />
+      </button>
+
+      {open ? (
+        <div className="flex flex-col gap-6 pt-1">
+          {detailedGroups.map((group) => {
+            const rows = matrixByCategory.get(group.category) ?? [];
+            return (
+              <div key={group.category} className="flex flex-col gap-3">
+                <div className="px-1">
+                  <h4 className="font-fw-sans text-body font-medium text-text-primary">
+                    {group.label}
+                  </h4>
+                  <p className="font-fw-sans text-caption text-text-tertiary">
+                    {group.description}
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {rows.map(({ id, row, cfg }) => (
+                    <StandingStrip
+                      key={id}
+                      metric_id={id}
+                      metric_label={cfg.display_label}
+                      player_value={row.player_value}
+                      team_avg={row.team_avg}
+                      team_n={row.team_n}
+                      team_pct={row.team_pct}
+                      pga_value={row.pga_value}
+                      direction={cfg.direction}
+                      unit={cfg.unit}
+                      scale={cfg.default_scale}
+                      size="card"
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 }
