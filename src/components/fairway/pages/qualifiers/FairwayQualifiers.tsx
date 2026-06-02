@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * ============================================================================
  * Fairway · pages/qualifiers · FairwayQualifiers  (ADDITIVE · FLAG-GATED)

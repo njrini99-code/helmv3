@@ -114,7 +114,10 @@ function shortDate(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  // Pin to UTC: round_date is a date-only column, so format it the same on the
+  // server and the client to avoid a hydration mismatch (React #418) and an
+  // off-by-one day for clients west of UTC.
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
