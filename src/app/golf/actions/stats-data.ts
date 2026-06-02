@@ -998,7 +998,14 @@ async function queryDetailedStatsWithClient(
     computed.truncated = truncated;
     return serializeDetailedStats(computed);
   } catch (error) {
-    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
+    // Graceful degradation path — the detailed shot-level query timed out or
+    // failed; the user still gets round-level stats. Log at `warning` (not
+    // `error`) so this routes to observability, not the page-error bucket.
+    await logServerError(
+      `[Stats] Falling back to round-level stats: ${describeError(error)}`,
+      { action: 'stats_data.queryDetailedStatsWithClient' },
+      'warning',
+    );
     const fallback = buildFallbackDetailedStats(roundsData);
     fallback.truncated = truncated;
     return serializeDetailedStats(fallback);
