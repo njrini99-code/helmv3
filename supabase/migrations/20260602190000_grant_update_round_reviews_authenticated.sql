@@ -1,0 +1,23 @@
+-- Round-review generation regression fix.
+--
+-- generateAndStoreRoundReview() (src/app/golf/actions/round-review-system.ts)
+-- was refactored from a select-then-insert/update pattern to a single
+-- `upsert(..., { onConflict: 'round_id' })` — i.e. INSERT ... ON CONFLICT
+-- (round_id) DO UPDATE. Postgres requires the UPDATE privilege for ANY
+-- INSERT ... ON CONFLICT DO UPDATE statement, even when no conflict occurs
+-- and the row is freshly inserted.
+--
+-- The `authenticated` role had INSERT but NOT UPDATE on golf_round_reviews,
+-- so after the upsert refactor EVERY review generation (player AND coach)
+-- failed at the table-privilege check with
+--   "permission denied for table golf_round_reviews"
+-- and the round-review page surfaced "Failed to save review". Pre-refactor
+-- the INSERT-only happy path worked (INSERT was granted), which is why
+-- historically-generated snapshots exist but nothing regenerates.
+--
+-- RLS remains the row-level guard — table UPDATE is confined by the existing
+-- policies: "Players can update their own reviews" (own rows) and
+-- "round_reviews_write_coach" (a coach's active team members). This mirrors
+-- the earlier fix in 20260528011000_harden_coach_insights_update_grants.sql,
+-- which addressed the same missing-UPDATE-grant class on golf_coach_insights.
+GRANT UPDATE ON public.golf_round_reviews TO authenticated;
