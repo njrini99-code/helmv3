@@ -260,7 +260,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
               animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
               transition={{ duration: reduceMotion ? 0.18 : 0.52, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute left-0 top-0 h-full w-[280px] max-w-[85vw] shadow-fw-modal"
+              className="absolute left-0 top-0 h-full w-[280px] max-w-[85vw] overflow-hidden rounded-r-[22px] shadow-fw-modal"
             >
               <FairwaySidebar {...sidebarProps} isMobile onNavigate={closeMobile} />
               {/* In-drawer close affordance */}
