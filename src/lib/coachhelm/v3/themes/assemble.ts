@@ -107,6 +107,32 @@ function clamp01(x: number): number {
   return x;
 }
 
+/**
+ * Read-time prose hygiene. The engine generators bake two authoring artifacts
+ * into insight copy that must never reach a user:
+ *   • internal "(Research doc §N)" / "Per Research doc §N …" citations, and
+ *   • a dangling "The standing card below shows …" sentence — the themes UI
+ *     renders no standing card, so that reference points at nothing.
+ * This strips both from displayed cause content + driver prose. It is the
+ * read-time complement to cleaning the generators at the source (which only
+ * takes effect after a prod insight re-gen); applied here, the ~hundreds of
+ * already-stored rows read cleanly immediately. Pure + idempotent.
+ */
+export function sanitizeProse(text: string | null | undefined): string {
+  if (!text) return '';
+  return text
+    // parenthetical internal citation: "… (Research doc §9) …"
+    .replace(/\s*\([^)]*Research doc[^)]*\)/gi, '')
+    // inline citation sentence: "Per Research doc §4 …."
+    .replace(/\s*Per Research doc[^.]*\.?/gi, '')
+    // dangling standing-card/strip reference sentence (no such card is rendered)
+    .replace(/\s*The standing (?:card|strip)[^.]*\.?/gi, '')
+    // tidy the seams left behind
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .trim();
+}
+
 export interface AssembleThemesInput {
   playerId: string;
   rows: EvidenceInsight[];
@@ -414,7 +440,7 @@ function buildCause(
           composite_rule_id: ruleId,
           source_insight_ids: [leaf.id],
           title: leaf.title,
-          prose: leaf.content,
+          prose: sanitizeProse(leaf.content),
           drills: toDriverLeaves(leaf),
         };
       })
@@ -434,7 +460,7 @@ function buildCause(
     insight_id: row.id,
     metric,
     title: row.title,
-    content: row.content,
+    content: sanitizeProse(row.content),
     strokesSavedPerRound,
     tourGapPerRound: finalTourGapPerRound,
     counterfactualSuppressed,

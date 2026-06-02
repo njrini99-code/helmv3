@@ -752,7 +752,10 @@ function SgVerdict({
         ? `Gaining ${formatSg(sgValue)} strokes per round on the field`
         : `${formatSg(sgValue)} strokes per round vs PGA Tour`;
     if (gainLeak) {
-      return `${head}. Strongest in ${gainLeak.best.label.toLowerCase()}; leaking most in ${gainLeak.worst.label.toLowerCase()}.`;
+      // Strip the "SG: " metric-id prefix so the prose reads "around the green",
+      // not "sg: around the green".
+      const cleanLabel = (l: string) => l.toLowerCase().replace(/^sg:\s*/, '');
+      return `${head}. Strongest in ${cleanLabel(gainLeak.best.label)}; leaking most in ${cleanLabel(gainLeak.worst.label)}.`;
     }
     return `${head}.`;
   })();
@@ -1531,7 +1534,7 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
       <div className="flex flex-col gap-0.5 px-1">
         <SectionHeading as="div">Approach breakdowns</SectionHeading>
         <span className="font-fw-sans text-caption text-text-tertiary">
-          Legacy GIR splits restored with Fairway lie controls.
+          Greens hit, proximity, and efficiency by distance and hole type — filtered by the lie you played from.
         </span>
       </div>
 
@@ -1631,7 +1634,7 @@ function PuttingLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nul
       <div className="flex flex-col gap-0.5 px-1">
         <SectionHeading as="div">Putting breakdowns</SectionHeading>
         <span className="font-fw-sans text-caption text-text-tertiary">
-          Distance bands plus restored break-type toggles.
+          Make rate and putt distances by band — filter by the break you faced.
         </span>
       </div>
 
