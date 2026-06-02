@@ -704,7 +704,7 @@ export async function getPlayerDashboardData(
         supabase.from('golf_players').select('handicap').eq('id', playerId).single(),
         supabase
             .from('golf_player_stats_cache')
-            .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage')
+            .select('sg_total_per_round, sg_tee_per_round, sg_approach_per_round, sg_around_green_per_round, sg_putting_per_round, scrambling_percentage, birdies, rounds_played')
             .eq('player_id', playerId)
             .maybeSingle(),
         // Today's events
@@ -751,6 +751,8 @@ export async function getPlayerDashboardData(
         sg_around_green_per_round: number | null;
         sg_putting_per_round: number | null;
         scrambling_percentage: number | null;
+        birdies: number | null;
+        rounds_played: number | null;
     } | null;
 
     // Fetch player's own RSVP for today's events
@@ -818,8 +820,14 @@ export async function getPlayerDashboardData(
         .map(r => (r.total_fairways_hit! / r.total_fairways!) * 100);
     const firPct = firValues.length > 0 ? Number((firValues.reduce((a, b) => a + b, 0) / firValues.length).toFixed(1)) : null;
 
-    // Birdies per round — column doesn't exist on golf_rounds, return null
-    const birdiesPerRound: number | null = null;
+    // Birdies per round — sourced from the maintained stats cache (golf_player_stats_cache
+    // is trigger-refreshed on round submit). `birdies` is the season total over
+    // `rounds_played`; divide for the per-round figure. Null when the cache row is
+    // absent or has no rounds yet (cold-start → the card shows its empty state).
+    const birdiesPerRound: number | null =
+        statsCache?.birdies != null && (statsCache.rounds_played ?? 0) > 0
+            ? Number((Number(statsCache.birdies) / statsCache.rounds_played!).toFixed(2))
+            : null;
 
     // Scoring trend (per round, newest last)
     const scoringTrend: ScoringTrend[] = [...rounds].reverse()
