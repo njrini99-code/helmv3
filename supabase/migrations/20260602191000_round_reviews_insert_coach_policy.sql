@@ -13,6 +13,13 @@
 -- coach SELECT/UPDATE policies (active team membership + is_golf_team_coach),
 -- so a coach can only create reviews for players on a team they coach. No new
 -- privilege surface beyond what coaches already have on these rows.
+--
+-- Idempotent: this repo's migration pipeline re-applies files under their
+-- filename version even when the change was first applied out-of-band via MCP
+-- (the migrations table shows several duplicate-name entries from exactly that
+-- path). DROP ... IF EXISTS keeps a second apply from failing "policy already
+-- exists".
+DROP POLICY IF EXISTS round_reviews_insert_coach ON public.golf_round_reviews;
 CREATE POLICY round_reviews_insert_coach
   ON public.golf_round_reviews
   FOR INSERT
