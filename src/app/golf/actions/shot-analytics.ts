@@ -374,7 +374,12 @@ export async function getPlayerShotAnalytics(
 
     const totalApproachMisses = allApproachMisses.length || 1;
 
+    // ON-GREEN ONLY: proximity is a green-surface distance (feet). A missed approach
+    // finishes off-green (stored in yards) and toFeet would ×3 it — the unit-blend that
+    // inflated this stat ~2×. Only approaches that found the green contribute; girPct
+    // above is the reach signal for the misses.
     const approachProximities = approachShots
+      .filter(s => s.result === 'green' || s.result === 'hole' || s.result === 'gir')
       .map(s => toFeet(s.distance_to_hole_after, s.distance_unit_after))
       .filter((distance): distance is number => distance != null && distance > 0);
 

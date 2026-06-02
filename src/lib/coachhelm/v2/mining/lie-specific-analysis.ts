@@ -1346,8 +1346,14 @@ class LieSpecificAnalyzer {
       const greenHits = bracketShots.filter((s) => s.result === 'green' || s.result === 'hole');
       const girRate = (greenHits.length / bracketShots.length) * 100;
 
-      // Average proximity (distance to hole after shot)
-      const shotsWithProximity = bracketShots.filter((s) => s.distance_to_hole_after != null);
+      // Average proximity (distance to hole after shot) — ON-GREEN ONLY.
+      // A missed approach finishes off-green (stored in yards); the ×3 below would
+      // inflate it ~2× (the unit-blend bug). Proximity is a green-surface distance, so
+      // only count approaches that actually found the green — girRate above already
+      // carries the reach signal for the misses.
+      const shotsWithProximity = bracketShots.filter(
+        (s) => s.distance_to_hole_after != null && (s.result === 'green' || s.result === 'hole'),
+      );
       const avgProximity = shotsWithProximity.length > 0
         ? shotsWithProximity.reduce(
             (sum, s) => sum + (toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0) * 3, // Convert to feet
