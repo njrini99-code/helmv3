@@ -238,7 +238,9 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
           <div
             className={cn(
               // Generous gutters (§A: 48–56px page gutters), roomy vertical rhythm.
-              'px-6 py-8 sm:px-8 lg:px-12 lg:py-10',
+              // Bottom pad also clears the iOS home indicator (env() is 0 on
+              // non-notched/desktop, so this is a no-op there).
+              'px-6 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:px-8 lg:px-12 lg:pt-10',
               constrainContent && 'mx-auto w-full max-w-[1280px]',
             )}
           >
