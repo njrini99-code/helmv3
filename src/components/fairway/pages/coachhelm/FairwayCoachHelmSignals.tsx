@@ -1072,8 +1072,12 @@ export function FairwayCoachHelmSignals({
           <MetricCard label="Loaded" value={summary.total} />
         </div>
 
-        {/* ONE toolbar — the single coherent filter system */}
+        {/* ONE toolbar — the single coherent filter system. stickyTop=64 pins
+            it BELOW the Fairway glass top bar (FairwayTopBar, 64px / 4rem),
+            which the redesign shell owns; without it the sticky triage row
+            would stick at top:0 and collide with that chrome. */}
         <SignalsToolbar<SignalsView>
+          stickyTop={64}
           query={query}
           onQueryChange={onQueryChange}
           severityOptions={SEVERITY_OPTIONS}

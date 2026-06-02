@@ -35,7 +35,7 @@ function renderCoachDashboard(props: {
 }) {
     if (isRedesignEnabled()) {
         return (
-            <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+            <div className={fairwayScope('min-h-full')}>
                 <FairwayCoachDashboard
                     data={props.data}
                     enhancedData={props.enhancedData ?? undefined}
@@ -59,7 +59,7 @@ function renderPlayerDashboard(props: {
 }) {
     if (isRedesignEnabled()) {
         return (
-            <div className={fairwayScope('min-h-full bg-canvas bg-canvas-gradient font-fw-sans text-text-primary')}>
+            <div className={fairwayScope('min-h-full')}>
                 <FairwayPlayerDashboard data={props.data} enhancedData={props.enhancedData ?? undefined} />
             </div>
         );

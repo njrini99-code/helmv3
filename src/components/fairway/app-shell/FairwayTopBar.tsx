@@ -131,7 +131,10 @@ export const FairwayTopBar = forwardRef<HTMLElement, FairwayTopBarProps>(functio
   return (
     <header
       ref={ref}
-      className={cn(glassSurface, 'sticky top-0 z-[var(--fw-z-sticky)] w-full', className)}
+      // `pt-[env(safe-area-inset-top)]` keeps the bar's contents clear of the
+      // iOS status bar / notch (Capacitor `contentInset: 'never'` → the web owns
+      // the safe area). The glass tints UP into the notch; 0 on non-notched/desktop.
+      className={cn(glassSurface, 'sticky top-0 z-[var(--fw-z-sticky)] w-full pt-[env(safe-area-inset-top)]', className)}
     >
       <div className="flex h-16 items-center gap-3 px-6 lg:px-8">
         {/* Mobile menu affordance */}

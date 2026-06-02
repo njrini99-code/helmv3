@@ -149,6 +149,16 @@ export function CommandPalette({ isCoach = true }: CommandPaletteProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Additive imperative open — lets a click target (e.g. the Fairway shell's
+  // glass-topbar ⌘K button) open the palette without faking a keystroke, which
+  // is unreliable inside the iOS WKWebView. Inert unless the event is fired, so
+  // the flag-off legacy app behaves identically.
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener('helm:open-command-palette', onOpen);
+    return () => window.removeEventListener('helm:open-command-palette', onOpen);
+  }, []);
+
   // Lazy-fetch dynamic data on first open. Cached for the session — the
   // bundle is small enough (~60 players + 10 rounds + 10 insights) that
   // a single fetch covers any reasonable session. Re-fetch on every open

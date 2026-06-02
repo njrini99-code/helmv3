@@ -48,8 +48,12 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
       };
     }
     return {
-      initial: { opacity: 0, y: 4 },
-      animate: { opacity: 1, y: 0 },
+      // Opacity-ONLY reveal (no transform). A transform value / `will-change:
+      // transform` establishes a CSS containing block, which would anchor every
+      // page's position:fixed UI (modals, FABs, bottom action bars) to THIS
+      // wrapper instead of the viewport. Fading sidesteps that entirely.
+      initial: { opacity: 0 },
+      animate: { opacity: 1 },
       transition: { duration: 0.28, ease: GLIDE },
     };
   }, [reduceMotion]);
@@ -62,7 +66,7 @@ export const RouteTransition = forwardRef<HTMLDivElement, RouteTransitionProps>(
       animate={animate}
       transition={transition}
       className={cn('min-h-full', className)}
-      style={{ willChange: reduceMotion ? 'auto' : 'opacity, transform' }}
+      style={{ willChange: 'auto' }}
     >
       {children}
     </motion.div>

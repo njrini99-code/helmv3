@@ -275,7 +275,7 @@ export function FairwayMessages() {
   // ── HONEST-EMPTY (f): no-team error state, role-branched copy ────────────────
   if (!teamId) {
     return (
-      <div className={fairwayScope('flex min-h-[100dvh] items-center justify-center bg-canvas p-6')}>
+      <div className={fairwayScope('flex h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] items-center justify-center bg-canvas p-6')}>
         <EmptyState
           icon={Users}
           title="No team found"
@@ -297,7 +297,7 @@ export function FairwayMessages() {
   }
 
   return (
-    <div className={fairwayScope('min-h-[100dvh] bg-canvas')}>
+    <div className={fairwayScope('h-[calc(100dvh-4rem-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] bg-canvas')}>
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:py-8">
         {/* ── ONE MASTHEAD — replaces the legacy LargeTitleHeader + PageHeader ── */}
         <ViewHeader
