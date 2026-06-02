@@ -9826,6 +9826,7 @@ export type Database = {
           disabled_reason: string | null
           enabled: boolean
           id: string
+          preferences: Json
           team_id: string
           updated_at: string
         }
@@ -9836,6 +9837,7 @@ export type Database = {
           disabled_reason?: string | null
           enabled?: boolean
           id?: string
+          preferences?: Json
           team_id: string
           updated_at?: string
         }
@@ -9846,6 +9848,7 @@ export type Database = {
           disabled_reason?: string | null
           enabled?: boolean
           id?: string
+          preferences?: Json
           team_id?: string
           updated_at?: string
         }
@@ -11479,4 +11482,3 @@ export const Constants = {
     },
   },
 } as const
-
