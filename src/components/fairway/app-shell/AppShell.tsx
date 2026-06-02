@@ -23,7 +23,7 @@
  * presentation-only and owns no data.
  * ========================================================================== */
 
-import { forwardRef, useState, useCallback, useEffect } from 'react';
+import { forwardRef, useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { FAIRWAY_SCOPE } from '@/lib/redesign/flag';
@@ -80,6 +80,14 @@ export interface AppShellProps {
   disableRouteTransition?: boolean;
   /** Width-cap + center the content column. Default true (premium reading width). */
   constrainContent?: boolean;
+  /**
+   * Apply the content wrapper's own horizontal + top gutters and max-width.
+   * Default true (the shell owns the page frame, e.g. fairway-preview). Pass
+   * `false` when the PAGES own their gutters + titles (the legacy `<main>` had
+   * no content padding); the bottom pad — which clears the iOS home indicator —
+   * is KEPT regardless so home-indicator clearance never regresses.
+   */
+  contentPadding?: boolean;
   className?: string;
 }
 
@@ -106,6 +114,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     children,
     disableRouteTransition = false,
     constrainContent = true,
+    contentPadding = true,
     className,
   },
   ref,
@@ -113,6 +122,8 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   const reduceMotion = useReducedMotion();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const [internalMobileOpen, setInternalMobileOpen] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<Element | null>(null);
 
   const isControlled = collapsedProp !== undefined;
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
@@ -148,6 +159,45 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [mobileOpen, setMobileOpen]);
+
+  // Focus management for the mobile drawer (a11y): store the trigger, move focus
+  // into the drawer, trap Tab/Shift+Tab within it, restore focus on close.
+  // (Ported from the legacy GolfDashboardShell. Body-scroll-lock is handled by
+  // SidebarProvider via the bridged mobileOpen — NOT duplicated here.)
+  useEffect(() => {
+    if (!mobileOpen || !drawerRef.current) return;
+
+    // Remember whatever had focus before the drawer opened.
+    triggerRef.current = document.activeElement;
+
+    const drawer = drawerRef.current;
+    const focusable = drawer.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    const first = focusable[0];
+    if (first) first.focus();
+
+    function trapFocus(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || focusable.length === 0) return;
+      const firstEl = focusable[0]!;
+      const lastEl = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    }
+    document.addEventListener('keydown', trapFocus);
+    return () => {
+      document.removeEventListener('keydown', trapFocus);
+      // Restore focus to the trigger when the drawer closes.
+      if (triggerRef.current instanceof HTMLElement) {
+        triggerRef.current.focus();
+      }
+    };
+  }, [mobileOpen]);
 
   const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> = {
     sections,
@@ -205,6 +255,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
               className="absolute inset-0 bg-[rgb(28_25_23_/_0.28)]"
             />
             <motion.div
+              ref={drawerRef}
               initial={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
               animate={reduceMotion ? { opacity: 1 } : { x: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { x: '-100%' }}
@@ -231,17 +282,27 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       </AnimatePresence>
 
       {/* ── Content column (offset by the rail) ── */}
-      <div className={cn('flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}>
+      <div
+        className={cn('flex min-h-dvh flex-col transition-[padding] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none', railOffset)}
+        // In-page sticky sub-headers offset below the glass top bar (4rem tall
+        // + the notch inset). The immersive branch sets this var elsewhere.
+        style={{ '--golf-mobile-header-offset': 'calc(4rem + env(safe-area-inset-top, 0px))' } as React.CSSProperties}
+      >
         <FairwayTopBar {...topBarProps} />
 
         <main className="flex-1">
           <div
             className={cn(
-              // Generous gutters (§A: 48–56px page gutters), roomy vertical rhythm.
-              // Bottom pad also clears the iOS home indicator (env() is 0 on
-              // non-notched/desktop, so this is a no-op there).
-              'px-6 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom,0px))] sm:px-8 lg:px-12 lg:pt-10',
-              constrainContent && 'mx-auto w-full max-w-[1280px]',
+              // The bottom pad clears the iOS home indicator (env() is 0 on
+              // non-notched/desktop, so this is a no-op there) — KEPT in both
+              // modes so home-indicator clearance never regresses.
+              'pb-[calc(2rem+env(safe-area-inset-bottom,0px))]',
+              // Generous gutters (§A: 48–56px page gutters) + premium reading
+              // width — applied only when the shell owns the page frame. When
+              // `contentPadding` is false, PAGES own their gutters + titles
+              // (matching the legacy <main> which had no content padding).
+              contentPadding && 'px-6 pt-8 sm:px-8 lg:px-12 lg:pt-10',
+              contentPadding && constrainContent && 'mx-auto w-full max-w-[1280px]',
             )}
           >
             {disableRouteTransition ? (

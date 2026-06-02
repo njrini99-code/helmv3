@@ -374,6 +374,11 @@ function FairwayDashboardContent({
         linkComponent={ShellLink}
         breadcrumbs={breadcrumbs}
         collapsible={false}
+        // Pages own their gutters (horizontal padding + max-width) and their
+        // page-title blocks, exactly as in the legacy shell whose <main> had no
+        // content padding. The shell keeps only the bottom home-indicator pad.
+        contentPadding={false}
+        constrainContent={false}
         mobileOpen={mobileOpen}
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}

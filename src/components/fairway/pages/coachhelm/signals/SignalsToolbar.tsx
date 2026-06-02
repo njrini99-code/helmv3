@@ -84,6 +84,12 @@ export interface SignalsToolbarProps<V extends string = string> {
 
   /** Sticky toolbar that earns the cream glass once content scrolls under. */
   sticky?: boolean;
+  /**
+   * Top offset (px) when sticky. Defaults to 64 — the Fairway glass top bar
+   * (FairwayTopBar) is 64px (4rem) tall, and this toolbar only ever renders
+   * inside the redesign shell, so it must pin BELOW that bar instead of at
+   * top:0 (where it would collide with / hide behind the glass chrome).
+   */
   stickyTop?: number;
 }
 
@@ -113,7 +119,9 @@ export function SignalsToolbar<V extends string = string>({
   bulkActions,
   onClearSelection,
   sticky = true,
-  stickyTop = 0,
+  // 64px = the height of the sticky Fairway glass top bar (4rem). Pinning here
+  // (rather than top:0) keeps this triage row from colliding with that chrome.
+  stickyTop = 64,
 }: SignalsToolbarProps<V>) {
   const filters = (
     <>
