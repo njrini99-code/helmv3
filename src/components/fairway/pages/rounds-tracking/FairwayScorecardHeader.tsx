@@ -88,6 +88,8 @@ export function FairwayDesktopExitHeader({
         </span>
         {showAutoSaveStatus && autoSaveStatus !== 'idle' && (
           <span
+            role="status"
+            aria-live="polite"
             className={cn(
               'flex items-center gap-2 rounded-fw-sm px-2 py-1 font-fw-sans text-xs font-medium transition-colors',
               autoSaveStatus === 'saving' && 'bg-fw-warning/15 text-fw-warning',
@@ -252,6 +254,13 @@ export const FairwayScorecardHeader = memo(function FairwayScorecardHeader({
         <div className="flex items-center gap-2">
           {autoSaveStatus !== 'idle' && (
             <span
+              role="status"
+              aria-live="polite"
+              aria-label={
+                autoSaveStatus === 'saving' ? 'Saving round'
+                  : autoSaveStatus === 'saved' ? 'Round saved'
+                    : 'Save failed'
+              }
               className={cn(
                 'flex items-center gap-1 rounded-fw-sm px-1.5 py-0.5 font-fw-sans text-xs font-medium transition-colors',
                 autoSaveStatus === 'saving' && 'bg-fw-warning/15 text-fw-warning',

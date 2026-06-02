@@ -29,6 +29,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 import {
   ViewHeader,
@@ -287,6 +288,30 @@ export function FairwayTeamStats({
     ? worstLeakTakeaway(leakMaps.approach, 'lower_better', 'feet')
     : undefined;
 
+  // ── Team-trajectory tally (per-player scoring_trend → improving/steady/declining) ──
+  // Counts derived ONLY from the existing classifyScoringTrend helper. Players
+  // with a null/NaN trend fall into `unknown` and never inflate a verdict bucket.
+  const trajectory = React.useMemo(() => {
+    let improving = 0;
+    let steady = 0;
+    let declining = 0;
+    let unknown = 0;
+    for (const p of players) {
+      const t = classifyScoringTrend(p.scoring_trend);
+      if (!t) {
+        unknown += 1;
+        continue;
+      }
+      if (t.verdict === 'improving') improving += 1;
+      else if (t.verdict === 'declining') declining += 1;
+      else steady += 1;
+    }
+    const analyzed = improving + steady + declining;
+    return { improving, steady, declining, unknown, analyzed };
+  }, [players]);
+
+  const hasTrajectory = trajectory.analyzed > 0;
+
   return (
     <div className="mx-auto w-full max-w-[1536px] px-4 py-6 md:px-6 md:py-8 pb-24">
       {/* ── MASTHEAD ──────────────────────────────────────────────────────────── */}
@@ -339,6 +364,50 @@ export function FairwayTeamStats({
           </p>
         </InstrumentPanel>
       </section>
+
+      {/* ── TEAM TRAJECTORY: improving / steady / declining headcount ──────────── */}
+      {hasTrajectory ? (
+        <InstrumentPanel
+          depth="base"
+          padding="md"
+          className="mt-8"
+          as="section"
+        >
+          <div className="mb-3 flex items-baseline justify-between gap-3">
+            <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+              Team trajectory
+            </span>
+            <span className="font-fw-sans text-caption text-text-tertiary">
+              {trajectory.analyzed} player{trajectory.analyzed !== 1 ? 's' : ''} analyzed
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-x-3 gap-y-3">
+            <TrajectoryCell
+              count={trajectory.improving}
+              label="Improving"
+              arrow="↘"
+              cls="text-fw-success"
+            />
+            <TrajectoryCell
+              count={trajectory.steady}
+              label="Steady"
+              arrow="→"
+              cls="text-text-tertiary"
+            />
+            <TrajectoryCell
+              count={trajectory.declining}
+              label="Declining"
+              arrow="↗"
+              cls="text-fw-warning"
+            />
+          </div>
+          {trajectory.unknown > 0 ? (
+            <p className="mt-3 font-fw-sans text-caption text-text-tertiary">
+              {trajectory.unknown} player{trajectory.unknown !== 1 ? 's' : ''} awaiting trend data.
+            </p>
+          ) : null}
+        </InstrumentPanel>
+      ) : null}
 
       {/* ── LEAK MAPS: what to work on ─────────────────────────────────────────── */}
       <section className="mt-10">
@@ -406,9 +475,48 @@ export function FairwayTeamStats({
 
 /** One labeled micro-stat (value + uppercase caption). Em-dash when null. */
 function MetricCell({ label, value }: { label: string; value: string }) {
+  // A missing reading renders as an em-dash — tone it to text-tertiary so it
+  // never reads with the same authority as a real value (matches TrendCell's
+  // dash treatment and the honest-dash intent of the formatters).
+  const isMissing = value === '—';
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="font-fw-mono text-body-sm tabular-nums text-text-primary">{value}</span>
+      <span
+        className={`font-fw-mono text-body-sm tabular-nums ${
+          isMissing ? 'text-text-tertiary' : 'text-text-primary'
+        }`}
+      >
+        {value}
+      </span>
+      <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Team-trajectory cell — a headcount toned to its verdict, mirroring MetricCell's
+ * value-over-caption layout. Arrow + color match the per-player TrendCell exactly
+ * (improving ↘ / fw-success, steady → / tertiary, declining ↗ / fw-warning).
+ */
+function TrajectoryCell({
+  count,
+  label,
+  arrow,
+  cls,
+}: {
+  count: number;
+  label: string;
+  arrow: string;
+  cls: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={`inline-flex items-center gap-1 font-fw-mono text-body-lg tabular-nums ${cls}`}>
+        <span aria-hidden>{arrow}</span>
+        {count}
+      </span>
       <span className="font-fw-display text-eyebrow uppercase tracking-[0.1em] text-text-tertiary">
         {label}
       </span>
@@ -459,7 +567,12 @@ function PlayerTile({
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate font-fw-display text-body-lg font-medium text-text-primary">
-            {fullName}
+            <Link
+              href={`/golf/dashboard/stats?player=${player.id}`}
+              className="transition-colors hover:text-accent-600"
+            >
+              {fullName}
+            </Link>
           </h3>
           {player.graduation_year ? (
             <p className="font-fw-sans text-caption text-text-tertiary">
@@ -530,6 +643,15 @@ function PlayerTile({
           {intelligence.topInsightTitle}
         </Link>
       ) : null}
+
+      {/* Always-present drill-in → that player's full stats page. */}
+      <Link
+        href={`/golf/dashboard/stats?player=${player.id}`}
+        className="mt-3 inline-flex items-center gap-1 font-fw-sans text-caption font-medium text-accent-600 transition-colors hover:text-accent-700"
+      >
+        View full stats
+        <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+      </Link>
     </InstrumentPanel>
   );
 }

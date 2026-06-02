@@ -124,6 +124,17 @@ export function FairwayShotEntry({
   const distanceInvalid =
     !!distanceAfterShot && (!Number.isFinite(parseFloat(distanceAfterShot)) || parseFloat(distanceAfterShot) < 0);
 
+  // Distance-after unit is DETERMINED by context, never a free toggle. This kills the
+  // footgun that let putts / on-green proximity be stored in yards — the unit-blend that
+  // inflated approach-proximity stats. On the green (a putt) or a shot that finished on
+  // the green is measured in FEET; everything else (the distance still remaining) in YARDS.
+  const lockedAfterUnit: 'yards' | 'feet' = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
+  const distanceLabel = isPutting
+    ? 'Leave distance (ft)'
+    : resultOfShot === 'green'
+      ? 'Proximity to hole (ft)'
+      : 'Distance remaining (yds)';
+
   return (
     <>
       <Surface elevation="shadow" padding="none" className="overflow-hidden">
@@ -295,7 +306,7 @@ export function FairwayShotEntry({
           {/* Distance Remaining - Final Step (if not holed) */}
           {resultOfShot && resultOfShot !== 'hole' && (
             <Section
-              label={isPutting ? 'Leave distance' : 'Distance remaining'}
+              label={distanceLabel}
               tint
               hint={<StatusPill tone="accent" dot={false} size="sm">Required</StatusPill>}
             >
@@ -308,7 +319,7 @@ export function FairwayShotEntry({
                   inputMode="numeric"
                   pattern="[0-9]*"
                   min="0"
-                  aria-label={isPutting ? 'Leave distance in feet or yards' : 'Distance remaining to hole'}
+                  aria-label={isPutting ? 'Leave distance in feet' : lockedAfterUnit === 'feet' ? 'Proximity to hole in feet' : 'Distance remaining to hole in yards'}
                   value={distanceAfterShot}
                   onChange={(e) => dispatch({ type: 'SET_DISTANCE_AFTER', payload: e.target.value })}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
@@ -346,21 +357,15 @@ export function FairwayShotEntry({
                   </div>
                 )}
 
-                <div className="flex w-full gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken p-1">
-                  <Button variant="ghost"
-                    type="button"
-                    onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'yards' })}
-                    className={cn(segBtn(distanceAfterUnit === 'yards'), 'min-h-[44px] uppercase tracking-wide')}
-                  >
-                    Yards
-                  </Button>
-                  <Button variant="ghost"
-                    type="button"
-                    onClick={() => dispatch({ type: 'SET_DISTANCE_AFTER_UNIT', payload: 'feet' })}
-                    className={cn(segBtn(distanceAfterUnit === 'feet'), 'min-h-[44px] uppercase tracking-wide')}
-                  >
-                    Feet
-                  </Button>
+                {/* Unit is locked by context — no manual toggle. Putts & on-green proximity
+                    are always feet; the distance still remaining is always yards. This is
+                    the entry-side half of the unit-integrity fix (the write path enforces
+                    the same rule), so a value can never be stored in the wrong unit. */}
+                <div className="flex items-center justify-center gap-2 rounded-fw-md border border-border-subtle bg-surface-sunken px-3 py-2.5">
+                  <span className="font-fw-sans text-xs font-medium uppercase tracking-wide text-text-tertiary">Measured in</span>
+                  <span className="font-fw-sans text-sm font-semibold uppercase tracking-wide text-accent-700">
+                    {lockedAfterUnit === 'feet' ? 'Feet' : 'Yards'}
+                  </span>
                 </div>
 
                 {distanceAfterShot && (
@@ -369,7 +374,7 @@ export function FairwayShotEntry({
                     <span className="font-fw-mono text-body-lg font-medium tabular-nums text-accent-700">
                       ~{Math.round(calculateShotDistanceWithDirection(
                         distanceUnit === 'feet' ? distanceToHole / 3 : distanceToHole,
-                        distanceAfterUnit === 'feet' ? (parseFloat(distanceAfterShot) || 0) / 3 : (parseFloat(distanceAfterShot) || 0),
+                        lockedAfterUnit === 'feet' ? (parseFloat(distanceAfterShot) || 0) / 3 : (parseFloat(distanceAfterShot) || 0),
                         isApproachOrAroundGreen ? (approachMissDirection || missDirection) : missDirection,
                       ))} yds
                     </span>

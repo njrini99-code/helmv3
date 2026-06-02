@@ -124,6 +124,7 @@ interface ApproachRow {
   distance_to_hole_before: number | null;
   distance_to_hole_after: number | null;
   distance_unit_after: string | null;
+  result: string | null;
 }
 
 interface PgaRefRow {
@@ -261,9 +262,14 @@ async function buildApproachBuckets(
   if (roundIds.length > 0) {
     const { data } = await supabase
       .from('golf_shots')
-      .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after')
+      .select('round_id, distance_to_hole_before, distance_to_hole_after, distance_unit_after, result')
       .in('round_id', roundIds)
       .eq('shot_type', 'approach')
+      // ON-GREEN ONLY: proximity is a green-surface distance, so only approaches that
+      // FOUND the green count. A missed approach finishes off-green (stored in YARDS);
+      // including it ×3'd those finishes into "feet" and inflated every band ~2× (the
+      // "175+ → 63 ft" artifact). Green-hit rate covers the missed approaches instead.
+      .in('result', ['green', 'hole', 'gir'])
       .not('distance_to_hole_before', 'is', null)
       .not('distance_to_hole_after', 'is', null)
       .limit(MAX_SHOT_ROWS);

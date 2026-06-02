@@ -4,7 +4,7 @@
   "installCommand": "npm ci",
   "framework": "nextjs",
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": true
   },
   "regions": [
     "iad1"

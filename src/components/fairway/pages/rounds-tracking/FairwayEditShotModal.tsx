@@ -59,14 +59,6 @@ function gridBtn(selected: boolean): string {
   );
 }
 
-function unitBtn(selected: boolean): string {
-  return cn(
-    'min-h-[44px] rounded-fw-sm px-3 py-2.5 font-fw-sans text-xs font-medium uppercase transition-colors',
-    'outline-none focus-visible:ring-2 focus-visible:ring-border-focus focus-visible:ring-inset',
-    selected ? 'bg-accent-500 text-text-on-accent shadow-flat' : 'text-text-secondary',
-  );
-}
-
 export function FairwayEditShotModal({
   open,
   editingShot,
@@ -187,7 +179,7 @@ export function FairwayEditShotModal({
                     {(['tee', 'fairway', 'rough', 'sand', 'green', 'other'] as const).map((lie) => {
                       const lieLabel = lie.charAt(0).toUpperCase() + lie.slice(1);
                       return (
-                        <Button variant="ghost" key={lie} type="button" onClick={() => updateEditForm({ lieBefore: lie })} className={gridBtn(editFormData.lieBefore === lie)}>
+                        <Button variant="ghost" key={lie} type="button" onClick={() => updateEditForm({ lieBefore: lie, distanceUnitBefore: lie === 'green' ? 'feet' : 'yards' })} className={gridBtn(editFormData.lieBefore === lie)}>
                           {lieLabel}
                           {lie === 'green' && (
                             <span className={cn('block text-xs font-normal leading-tight', editFormData.lieBefore === 'green' ? 'text-white/80' : 'text-text-tertiary')}>(putting surface)</span>
@@ -213,13 +205,12 @@ export function FairwayEditShotModal({
                       onWheel={(e) => (e.target as HTMLInputElement).blur()}
                       className="h-12 flex-1 rounded-fw-md border-2 border-border-subtle bg-surface px-4 text-center font-fw-mono text-body-lg font-medium tabular-nums text-text-primary transition-colors focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/15"
                     />
-                    <div className="inline-flex gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken p-1">
-                      <Button variant="ghost" type="button" onClick={() => updateEditForm({ distanceUnitBefore: 'yards' })} className={unitBtn(editFormData.distanceUnitBefore === 'yards')}>
-                        Yds
-                      </Button>
-                      <Button variant="ghost" type="button" onClick={() => updateEditForm({ distanceUnitBefore: 'feet' })} className={unitBtn(editFormData.distanceUnitBefore === 'feet')}>
-                        Ft
-                      </Button>
+                    {/* Unit is locked by the lie (no manual toggle): on the green → feet,
+                        otherwise yards. Re-tapping the lie above re-derives it. */}
+                    <div className="inline-flex items-center rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2">
+                      <span className="font-fw-sans text-sm font-semibold uppercase tracking-wide text-accent-700">
+                        {editFormData.distanceUnitBefore === 'feet' ? 'Ft' : 'Yds'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -235,18 +226,21 @@ export function FairwayEditShotModal({
                           key={r}
                           type="button"
                           onClick={() => {
-                            // ── VERBATIM auto-derivation block (legacy ~1735-1762) ──
+                            // ── Auto-derivation block (was legacy ~1735-1762; the unit
+                            //    branch is now fully deterministic to match the entry
+                            //    write guard — see FairwayShotTracking handleNextShot). ──
                             if (!editFormData) return;
                             const updates: Partial<EditFormData> = { result: r };
-                            // Auto-switch distance unit when result changes
+                            // Distance-after unit is DETERMINED by context, never free-toggled:
+                            // on the green (or holed) → FEET; otherwise the distance remaining
+                            // is YARDS, except a putt that rolled off the green which stays feet.
                             if (r === 'green') {
                               updates.distanceUnitAfter = 'feet';
                             } else if (r === 'hole') {
                               updates.distanceToHoleAfter = '0';
                               updates.distanceUnitAfter = 'feet';
-                            } else if (editFormData.result === 'green' || editFormData.result === 'hole') {
-                              // Switching away from green/hole — restore yards
-                              updates.distanceUnitAfter = 'yards';
+                            } else {
+                              updates.distanceUnitAfter = editingShot.shotType === 'putting' ? 'feet' : 'yards';
                             }
                             // Auto-derive approach miss lie type from result
                             if (editingShot.shotType === 'approach' || editingShot.shotType === 'around_green') {
@@ -332,13 +326,13 @@ export function FairwayEditShotModal({
                         onWheel={(e) => (e.target as HTMLInputElement).blur()}
                         className="h-12 flex-1 rounded-fw-md border-2 border-border-subtle bg-surface px-4 text-center font-fw-mono text-body-lg font-medium tabular-nums text-text-primary transition-colors focus:border-accent-500 focus:outline-none focus:ring-2 focus:ring-accent-500/15"
                       />
-                      <div className="inline-flex gap-1 rounded-fw-md border border-border-subtle bg-surface-sunken p-1">
-                        <Button variant="ghost" type="button" onClick={() => updateEditForm({ distanceUnitAfter: 'yards' })} className={unitBtn(editFormData.distanceUnitAfter === 'yards')}>
-                          Yds
-                        </Button>
-                        <Button variant="ghost" type="button" onClick={() => updateEditForm({ distanceUnitAfter: 'feet' })} className={unitBtn(editFormData.distanceUnitAfter === 'feet')}>
-                          Ft
-                        </Button>
+                      {/* Unit is locked by context (no manual toggle) — putts & on-green
+                          proximity are feet, the distance remaining is yards. Re-tapping a
+                          result re-derives it; this prevents the unit-blend footgun on edit. */}
+                      <div className="inline-flex items-center rounded-fw-md border border-border-subtle bg-surface-sunken px-3.5 py-2">
+                        <span className="font-fw-sans text-sm font-semibold uppercase tracking-wide text-accent-700">
+                          {editFormData.distanceUnitAfter === 'feet' ? 'Ft' : 'Yds'}
+                        </span>
                       </div>
                     </div>
                   </div>

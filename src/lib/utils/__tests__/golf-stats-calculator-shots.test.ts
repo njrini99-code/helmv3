@@ -19,6 +19,7 @@ import {
   formatStatInt,
   AROUND_GREEN_THRESHOLD_YARDS,
 } from '../golf-stats-calculator-shots';
+import type { GolfStats, RawShot, HoleInfo } from '../golf-stats-calculator-shots';
 import {
   makeRawShot,
   makeHoleInfo,
@@ -1082,7 +1083,10 @@ describe('calculateHoleStatsFromShots edge cases', () => {
     const stats = calculateHoleStatsFromShots(shots, 4);
     expect(stats.greenInRegulation).toBe(false);
     expect(stats.scrambleAttempt).toBe(true);
-    expect(stats.approachProximity).toBe(150);
+    // Green never found → NO approach proximity. The approach finished off-green at
+    // 50 yards; the old code ran that through normalizeToFeet (×3 = 150 "ft") and
+    // reported a fake on-green proximity. Proximity is on-green-only now → null.
+    expect(stats.approachProximity).toBeNull();
   });
 
   it('par 3 miss GIR (tee shot misses green)', () => {
@@ -1223,5 +1227,242 @@ describe('formatStat edge cases', () => {
 
   it('formats negative number', () => {
     expect(formatStat(-72.5, '%')).toBe('-72.5%');
+  });
+});
+
+// ============================================================================
+// LEGACY-BAND REGRESSION GUARD (aggregate putt make% + approach prox bands)
+// ----------------------------------------------------------------------------
+// The per-band aggregate fields on GolfStats (puttMakePct*, approachProx*) were
+// previously only covered indirectly (the bucket function + per-hole fields are
+// tested, but the top-level calculator's mapping of buckets → aggregate band
+// fields was not asserted end-to-end). A future edit to getPuttDistanceBucket's
+// boundaries — or to which puttMake[bucket] feeds which puttMakePct* field —
+// could silently shift e.g. a 22 ft putt out of puttMakePct20_25 and into
+// puttMakePct15_20 with NO test failure.
+//
+// This block pins the CURRENT, unchanged behavior of calculateStatsFromShots:
+// it builds first-putt fixtures at distances placed deliberately at/around the
+// legacy bucket boundaries and asserts each putt lands in the correct band
+// field. It MUST PASS against the unchanged calculator (it captures the
+// baseline). If it ever fails, a band boundary moved — fail loudly so the shift
+// is intentional, not silent.
+//
+// NOTE: the legacy bands (15_20 / 20_25 / 25_30 / 30_35 / 35_plus) and the v3
+// bands (15_25 / 25_plus) coexist permanently — this guard only concerns the
+// LEGACY GolfStats fields the calculator produces today.
+// ============================================================================
+
+describe('legacy-band regression guard (putt make% aggregate bands)', () => {
+  // Build a putt-only hole with a KNOWN first-putt distance (feet).
+  //   made === true  → one-putt hole (firstPutt result = 'hole')  → counts as a "make"
+  //   made === false → two-putt hole (firstPutt leaves a tap-in)   → counts as a "miss"
+  // The bucket is determined SOLELY by the first putt's distance_to_hole_before,
+  // so a make+miss pair at the same distance gives a band with total=2, made=1
+  // → puttMakePct === 50 when the distance lands in that band.
+  function puttHole(
+    holeNumber: number,
+    firstPuttFeet: number,
+    made: boolean,
+  ): RawShot[] {
+    // Par-3 tee → green so the hole is well-formed; only the putts drive the band.
+    const teeToGreen = makeRawShot({
+      hole_number: holeNumber, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+      lie_before: 'tee', distance_to_hole_before: 160, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: firstPuttFeet, distance_unit_after: 'feet',
+      shot_distance: 160,
+    });
+
+    if (made) {
+      return [
+        teeToGreen,
+        makeRawShot({
+          hole_number: holeNumber, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+          lie_before: 'green', distance_to_hole_before: firstPuttFeet, distance_unit_before: 'feet',
+          result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+          shot_distance: 0, putt_distance_feet: firstPuttFeet, putt_made: true,
+        }),
+      ];
+    }
+    return [
+      teeToGreen,
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: firstPuttFeet, distance_unit_before: 'feet',
+        result: 'green', distance_to_hole_after: 2, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: firstPuttFeet, putt_made: false,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 3, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 2, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: 2, putt_made: true,
+      }),
+    ];
+  }
+
+  // 9 legacy bands. One make + one miss in each → each band should report 50%.
+  // Distances chosen to sit cleanly inside each legacy bucket (boundaries are
+  // <=3, <=5, <=10, <=15, <=20, <=25, <=30, <=35, else 35_plus).
+  const BANDS: Array<{ feet: number; field: keyof GolfStats; bucket: string }> = [
+    { feet: 2,  field: 'puttMakePct0_3',    bucket: '0_3' },
+    { feet: 4,  field: 'puttMakePct3_5',    bucket: '3_5' },
+    { feet: 7,  field: 'puttMakePct5_10',   bucket: '5_10' },
+    { feet: 12, field: 'puttMakePct10_15',  bucket: '10_15' },
+    { feet: 17, field: 'puttMakePct15_20',  bucket: '15_20' },
+    { feet: 22, field: 'puttMakePct20_25',  bucket: '20_25' },
+    { feet: 27, field: 'puttMakePct25_30',  bucket: '25_30' },
+    { feet: 32, field: 'puttMakePct30_35',  bucket: '30_35' },
+    { feet: 40, field: 'puttMakePct35Plus', bucket: '35_plus' },
+  ];
+
+  // Assemble: 2 holes per band (make + miss) across distinct hole numbers.
+  const shots: RawShot[] = [];
+  const holes: HoleInfo[] = [];
+  let holeNumber = 1;
+  for (const band of BANDS) {
+    shots.push(...puttHole(holeNumber, band.feet, true));
+    holes.push(makeHoleInfo({ hole_number: holeNumber, par: 3, yardage: 160 }));
+    holeNumber++;
+    shots.push(...puttHole(holeNumber, band.feet, false));
+    holes.push(makeHoleInfo({ hole_number: holeNumber, par: 3, yardage: 160 }));
+    holeNumber++;
+  }
+  const rounds = [makeRoundInfo({ holes_played: holes.length })];
+  const stats = calculateStatsFromShots(shots, holes, rounds);
+
+  it('routes each first-putt distance into the correct legacy make% band (50% each)', () => {
+    for (const band of BANDS) {
+      expect(stats[band.field], `${band.feet}ft expected in ${String(band.field)} (bucket ${band.bucket})`).toBe(50);
+    }
+  });
+
+  it('pins the 15 ft boundary into puttMakePct10_15 (<=15 closes the 10_15 band)', () => {
+    const s = calculateStatsFromShots(
+      [...puttHole(1, 15, true), ...puttHole(2, 15, false)],
+      [makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }), makeHoleInfo({ hole_number: 2, par: 3, yardage: 160 })],
+      [makeRoundInfo()],
+    );
+    expect(s.puttMakePct10_15).toBe(50);
+    expect(s.puttMakePct15_20).toBeNull(); // no putts landed in 15_20
+  });
+
+  it('pins the 20 ft boundary into puttMakePct15_20 (<=20 closes the 15_20 band, NOT 20_25)', () => {
+    const s = calculateStatsFromShots(
+      [...puttHole(1, 20, true), ...puttHole(2, 20, false)],
+      [makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }), makeHoleInfo({ hole_number: 2, par: 3, yardage: 160 })],
+      [makeRoundInfo()],
+    );
+    expect(s.puttMakePct15_20).toBe(50);
+    expect(s.puttMakePct20_25).toBeNull();
+  });
+
+  it('CRITICALLY: a 22 ft putt lands in puttMakePct20_25, NOT puttMakePct15_20', () => {
+    const s = calculateStatsFromShots(
+      [...puttHole(1, 22, true), ...puttHole(2, 22, false)],
+      [makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }), makeHoleInfo({ hole_number: 2, par: 3, yardage: 160 })],
+      [makeRoundInfo()],
+    );
+    expect(s.puttMakePct20_25).toBe(50);
+    expect(s.puttMakePct15_20).toBeNull();
+  });
+
+  it('pins the 25 ft boundary into puttMakePct20_25 (<=25 closes the 20_25 band, NOT 25_30)', () => {
+    const s = calculateStatsFromShots(
+      [...puttHole(1, 25, true), ...puttHole(2, 25, false)],
+      [makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }), makeHoleInfo({ hole_number: 2, par: 3, yardage: 160 })],
+      [makeRoundInfo()],
+    );
+    expect(s.puttMakePct20_25).toBe(50);
+    expect(s.puttMakePct25_30).toBeNull();
+  });
+});
+
+describe('legacy-band regression guard (approach proximity aggregate bands)', () => {
+  // Cheap parallel guard for the approachProx* band fields. On a GIR par-3 the
+  // calculator uses the tee shot's distance_to_hole_before (yards) to bucket via
+  // getApproachDistanceBucket, and its distance_to_hole_after (normalized to
+  // feet) as the proximity value. A 160 yd → green shot leaving 30 ft pins band
+  // 150_175 at 30 ft; a 110 yd shot leaving 24 ft pins band 100_125 at 24 ft.
+  function girPar3(holeNumber: number, approachYards: number, proxFeet: number): RawShot[] {
+    return [
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 1, shot_type: 'tee', club_type: 'non_driver',
+        lie_before: 'tee', distance_to_hole_before: approachYards, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: proxFeet, distance_unit_after: 'feet',
+        shot_distance: approachYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 2, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: proxFeet, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: proxFeet, putt_made: true,
+      }),
+    ];
+  }
+
+  const stats = calculateStatsFromShots(
+    [...girPar3(1, 110, 24), ...girPar3(2, 160, 30)],
+    [
+      makeHoleInfo({ hole_number: 1, par: 3, yardage: 110 }),
+      makeHoleInfo({ hole_number: 2, par: 3, yardage: 160 }),
+    ],
+    [makeRoundInfo()],
+  );
+
+  it('routes a 110 yd approach proximity into approachProx100_125 (feet)', () => {
+    expect(stats.approachProx100_125).toBe(24);
+  });
+
+  it('routes a 160 yd approach proximity into approachProx150_175 (feet)', () => {
+    expect(stats.approachProx150_175).toBe(30);
+  });
+
+  // Regression: a MISSED approach (off-green finish, stored in yards) must NOT
+  // contribute to any proximity band. The old code ran the yards finish through
+  // normalizeToFeet (×3) and reported it as on-green "feet", inflating bands ~2×.
+  function missedApproachPar4(holeNumber: number, approachYards: number, missYards: number): RawShot[] {
+    return [
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+        lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+        result: 'fairway', distance_to_hole_after: approachYards, distance_unit_after: 'yards',
+        shot_distance: 400 - approachYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+        lie_before: 'fairway', distance_to_hole_before: approachYards, distance_unit_before: 'yards',
+        result: 'rough', distance_to_hole_after: missYards, distance_unit_after: 'yards',
+        shot_distance: approachYards - missYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 3, shot_type: 'around_green', club_type: 'non_driver',
+        lie_before: 'rough', distance_to_hole_before: missYards, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 8, distance_unit_after: 'feet', shot_distance: missYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 4, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 8, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: 8, putt_made: true,
+      }),
+    ];
+  }
+
+  it('excludes a missed approach (off-green yards) from the proximity bands — no ×3 inflation', () => {
+    const mixed = calculateStatsFromShots(
+      [...girPar3(1, 160, 30), ...missedApproachPar4(2, 160, 40)],
+      [
+        makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }),
+        makeHoleInfo({ hole_number: 2, par: 4, yardage: 400 }),
+      ],
+      [makeRoundInfo()],
+    );
+    // Both approaches are ~160 yd → band 150_175. Only the GIR hole (30 ft) contributes;
+    // the missed approach (40 yd off-green) would have been ×3'd to 120 ft and dragged the
+    // band to 75. On-green-only keeps it at 30, and there is no fabricated "missed" proximity.
+    expect(mixed.approachProx150_175).toBe(30);
+    expect(mixed.approachProximityWhenMissedGreen).toBeNull();
+    expect(mixed.approachProximityWhenHitGreen).toBe(30);
   });
 });

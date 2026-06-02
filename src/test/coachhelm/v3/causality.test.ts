@@ -132,6 +132,34 @@ describe('METRIC_SOURCE registry coverage (drift catcher)', () => {
     expect(lookupMetricSource('totally_made_up_metric_xyz')).toBeNull();
   });
 
+  it('lookupMetricSource classifies v2-mining legacy metric families as intentional-null', () => {
+    // v2 mining (`src/lib/coachhelm/v2/mining/*`) and retired generators
+    // emit per-bucket metric names that the v3 attribution cron cannot
+    // attribute today (no per-round shot-level cache). They must resolve
+    // to intentional-null so the cron stops logging registry-drift
+    // warnings to Sentry for them — see metric-sources.ts comment.
+    const legacy = [
+      'approach_severity_<150',
+      'approach_severity_150_175',
+      'approach_severity_175_200',
+      'approach_severity_200+',
+      'approach_direction_<150_left',
+      'approach_direction_200+_right',
+      'approach_miss_lie_150_175_fairway',
+      'approach_miss_lie_<150_bunker',
+      'tee_strategy_driver_vs_layback',
+      'putt_make_rate_0_3ft',
+      'putt_make_rate_20+ft',
+      'short_putt_make_rate_3_5ft',
+      'shortside_scrambling_pct',
+    ];
+    for (const id of legacy) {
+      const def = lookupMetricSource(id);
+      expect(def, `expected ${id} to resolve`).toBeTruthy();
+      expect(def!.kind).toBe('intentional-null');
+    }
+  });
+
   it('reports the expected count of attributable vs intentional-null metrics', () => {
     // Snapshot the coverage so future drift is visible in the diff.
     // If you add a new source, bump these numbers.

@@ -28,6 +28,13 @@ import type {
   InsightMovement,
 } from '@/lib/coachhelm/v2/insights/types';
 import type { Database } from '@/lib/types/database';
+import { assembleThemes } from '@/lib/coachhelm/v3/themes/assemble';
+import type { AssembledThemes, AssembledEvidence, RootDriver, ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
+import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
+import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
+import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
+import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
+import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -563,6 +570,317 @@ export async function getRoundTakeawayInsight(
     .sort((a, b) => rankScore(b) - rankScore(a));
 
   return ranked[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// v3 THEMES — hierarchical insight scaffold (THEME → CAUSE → DRIVER)
+// ---------------------------------------------------------------------------
+//
+// Unlike the flat fetchers above, the themes fetchers DO NOT dedupe (the
+// assembler re-expands the sibling structure the flat path collapses) and use
+// a LOOSER keep than `mapRowToEvidenceInsight`: a row survives if it carries a
+// usable `evidence.metric` OR a non-suppressed `evidence.counterfactual`. They
+// never drop a row purely for a missing `strokes_impact` — counterfactual is
+// the ranking key, not the base impact.
+
+/** High cap for the themes query — no per-card limit; we want the full set. */
+const THEMES_FETCH_CAP = 200;
+
+/** Cap for the shot-driver fetch (PLAY C) — mirrors PuttingStats.tsx (5000). */
+const SHOT_DRIVERS_FETCH_CAP = 5000;
+/** Recent-rounds cap when resolving completed round ids for the shot fetch. */
+const SHOT_DRIVERS_ROUNDS_CAP = 200;
+
+/** Recent-rounds cap for the SG-trend fetch (PLAY G). Two windows of ~5 each
+ *  plus headroom; 40 is ample for a recent-vs-prior split and bounds the query. */
+const SG_TREND_ROUNDS_CAP = 40;
+
+/**
+ * PLAY C — best-effort shot-level root drivers. Resolves the player's completed
+ * round ids, pulls the raw `golf_shots` (capped) with the 1:1 `putt_details` /
+ * `approach_miss_details` joins the stats pipeline already fetches, and runs the
+ * PURE `buildShotDrivers`. Wrapped end-to-end: ANY failure (or no data) returns
+ * `undefined` so the themes scaffold renders without shot drivers — NEVER errors
+ * the page. `golf_shots` has no `player_id` column, so we resolve via
+ * `golf_rounds` exactly like PuttingStats.tsx does.
+ */
+async function fetchShotDriversByCategory(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Partial<Record<InsightCategory, RootDriver[]>> | undefined> {
+  try {
+    const { data: rounds, error: roundsError } = await supabase
+      .from('golf_rounds')
+      .select('id')
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(SHOT_DRIVERS_ROUNDS_CAP);
+    if (roundsError) throw new Error(roundsError.message);
+
+    const roundIds = (rounds ?? []).map((r) => r.id as string);
+    if (roundIds.length === 0) return undefined;
+
+    const { data: shots, error: shotsError } = await supabase
+      .from('golf_shots')
+      .select(`
+        shot_type,
+        club_type,
+        distance_to_hole_before,
+        distance_unit_before,
+        result,
+        miss_direction,
+        round_id,
+        hole_number,
+        shot_number,
+        putt_details(miss_tags, break_direction),
+        approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
+      `)
+      .in('round_id', roundIds)
+      .limit(SHOT_DRIVERS_FETCH_CAP);
+    if (shotsError) throw new Error(shotsError.message);
+    if (!shots || shots.length === 0) return undefined;
+
+    return buildShotDrivers(shots as unknown as ShotDriverInput[]);
+  } catch (err) {
+    void logServerError(
+      `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
+    ).catch(() => undefined);
+    return undefined;
+  }
+}
+
+/**
+ * PLAY G — best-effort per-category SG trend. Pulls the player's most-recent
+ * completed rounds (the per-round `strokes_gained_*` columns + `round_date`,
+ * newest first, capped at {@link SG_TREND_ROUNDS_CAP}) and runs the PURE
+ * `computeSgTrends`. Wrapped end-to-end: ANY failure (or no data) returns
+ * `undefined` so the themes scaffold renders WITHOUT trends — NEVER errors the
+ * page. The trend honesty (min-window) lives in `computeSgTrends`, so even a
+ * successful fetch of too-few rounds yields no trend for a category.
+ */
+async function fetchSgTrendsByCategory(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<Partial<Record<InsightCategory, ThemeTrend>> | undefined> {
+  try {
+    const { data: rounds, error } = await supabase
+      .from('golf_rounds')
+      .select(
+        'round_date, strokes_gained_putting, strokes_gained_approach, strokes_gained_tee, strokes_gained_around_green',
+      )
+      .eq('player_id', playerId)
+      .eq('status', 'completed')
+      .order('round_date', { ascending: false })
+      .limit(SG_TREND_ROUNDS_CAP);
+    if (error) throw new Error(error.message);
+    if (!rounds || rounds.length === 0) return undefined;
+
+    // Newest-first order is the SgRoundSample contract — preserve it as-is.
+    const samples: SgRoundSample[] = rounds.map((r) => ({
+      date: r.round_date,
+      sgPutting: r.strokes_gained_putting,
+      sgApproach: r.strokes_gained_approach,
+      sgTee: r.strokes_gained_tee,
+      sgAroundGreen: r.strokes_gained_around_green,
+    }));
+
+    const trends = computeSgTrends(samples);
+    // Empty map (no category cleared the min-window guard) → pass nothing.
+    return Object.keys(trends).length > 0 ? trends : undefined;
+  } catch (err) {
+    void logServerError(
+      `fetchSgTrendsByCategory failed (continuing without trends): ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.fetchSgTrendsByCategory', featureArea: 'insights', playerId },
+    ).catch(() => undefined);
+    return undefined;
+  }
+}
+
+/**
+ * Per-player query + assemble. Shared by both the player and coach paths
+ * (themes are inherently per-player — the SG cascade is per-player). The
+ * caller is responsible for auth BEFORE invoking this.
+ */
+async function assembleForPlayer(
+  supabase: SupabaseClient,
+  playerId: string,
+): Promise<AssembledThemes> {
+  const runQuery = () =>
+    supabase
+      .from('golf_coach_insights')
+      .select(INSIGHT_SELECT)
+      .eq('player_id', playerId)
+      .not('evidence', 'is', null)
+      .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(THEMES_FETCH_CAP);
+
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  try {
+    const result = await runQuery();
+    data = result.data;
+    error = result.error;
+  } catch (err) {
+    // Mirror the player fetcher's single transient retry.
+    if (isTransientFetchError(err)) {
+      await delay(500);
+      const result = await runQuery();
+      data = result.data;
+      error = result.error;
+    } else {
+      throw err;
+    }
+  }
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const rawRows = (data ?? []) as unknown as RawInsightRowWithDrills[];
+  const rows = rawRows
+    .map(mapRowLoose)
+    .filter((r): r is EvidenceInsight => r !== null);
+
+  // SG fetch is best-effort: a failure must NOT fail the themes scaffold.
+  let sgByCategory: Partial<Record<InsightCategory, number | null>> = {};
+  try {
+    const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
+    sgByCategory = {
+      putting: stats.sgPuttingPerRound,
+      approach: stats.sgApproachPerRound,
+      tee: stats.sgTeePerRound,
+      short_game: stats.sgAroundGreenPerRound,
+    };
+  } catch (sgErr) {
+    void logServerError(
+      `assembleForPlayer SG fetch failed (continuing): ${sgErr instanceof Error ? sgErr.message : String(sgErr)}`,
+      { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
+    ).catch(() => undefined);
+    sgByCategory = {};
+  }
+
+  // PLAY C — shot-level drivers are best-effort: the helper swallows its own
+  // failures and returns undefined, so the assembler simply omits them.
+  const shotDriversByCategory = await fetchShotDriversByCategory(supabase, playerId);
+
+  // PLAY G — per-category SG trends are best-effort too: the helper swallows its
+  // own failures and returns undefined, so the assembler omits trends entirely.
+  const trendByCategory = await fetchSgTrendsByCategory(supabase, playerId);
+
+  return assembleThemes({
+    playerId,
+    rows,
+    sgByCategory,
+    shotDriversByCategory,
+    trendByCategory,
+  });
+}
+
+/**
+ * Looser row→EvidenceInsight mapper for the themes path. Keeps a row when it
+ * has a usable `evidence.metric` OR a non-suppressed `evidence.counterfactual`;
+ * does NOT drop on missing `strokes_impact`/`confidence`. Normalizes drills
+ * with the same logic as `extractDrills`.
+ */
+function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
+  if (!row) return null;
+  if (!row.evidence || typeof row.evidence !== 'object') return null;
+  if (!row.id || !row.player_id || !row.title) return null;
+
+  const evidence = row.evidence as unknown as InsightEvidence;
+  const assembled = row.evidence as unknown as AssembledEvidence;
+
+  const hasMetric = typeof assembled.metric === 'string' && assembled.metric.length > 0;
+  const hasLiveCounterfactual =
+    !!assembled.counterfactual && assembled.counterfactual.suppressed !== true;
+  if (!hasMetric && !hasLiveCounterfactual) return null;
+
+  const drills = extractDrills(row.drill_attachments ?? null);
+
+  return {
+    id: row.id,
+    player_id: row.player_id,
+    category: (row.category as InsightCategory | null) ?? null,
+    title: row.title,
+    content: row.content ?? '',
+    signature: row.signature ?? null,
+    evidence,
+    metadata: normalizeMetadata(row.metadata),
+    lifecycle_state: (row.lifecycle_state as EvidenceInsight['lifecycle_state']) ?? 'detected',
+    status: (row.status as EvidenceInsight['status']) ?? 'active',
+    priority: (row.priority as EvidenceInsight['priority']) ?? 'medium',
+    acknowledged_at: row.acknowledged_at ?? null,
+    resolved_at: row.resolved_at ?? null,
+    created_at: row.created_at ?? '',
+    updated_at: row.updated_at ?? '',
+    drills,
+  };
+}
+
+/**
+ * Returns the full hierarchical theme scaffold for a player (always all 7
+ * themes; honest `thin`/`strength`/`leak` states). Self or coach-staffing-team
+ * access via `verifyPlayerAccess`, mirroring the existing player fetchers.
+ */
+export async function getThemesForPlayer(
+  playerId: string,
+  _opts: { window_days?: number } = {},
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  if (!playerId) return { success: false, error: 'playerId required' };
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: 'Unauthorized' };
+
+    const access = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) return { success: false, error: 'Forbidden' };
+
+    const data = await assembleForPlayer(supabase, playerId);
+    return { success: true, data };
+  } catch (err) {
+    await logServerError(
+      `getThemesForPlayer failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getThemesForPlayer', featureArea: 'insights', playerId },
+    );
+    return { success: false, error: 'Failed to assemble themes' };
+  }
+}
+
+/**
+ * Coach-side variant. Themes are inherently per-player, so a `player_id` is
+ * required. Authorizes the coach exactly as `getInsightsForCoach` does when a
+ * specific player is requested (`verifyPlayerAccess`), then delegates to the
+ * same per-player query + assemble.
+ */
+export async function getThemesForCoach(
+  opts: { player_id: string; window_days?: number },
+): Promise<{ success: boolean; data?: AssembledThemes; error?: string }> {
+  const playerId = opts?.player_id;
+  if (!playerId) return { success: false, error: 'player_id required' };
+
+  try {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: 'Unauthorized' };
+
+    // Same authorization path getInsightsForCoach uses for a specific player.
+    const access = await verifyPlayerAccess(playerId, user.id, supabase);
+    if (!access.allowed) return { success: false, error: 'Forbidden' };
+
+    const data = await assembleForPlayer(supabase, playerId);
+    return { success: true, data };
+  } catch (err) {
+    await logServerError(
+      `getThemesForCoach failed: ${err instanceof Error ? err.message : String(err)}`,
+      { action: 'insight-delivery.getThemesForCoach', featureArea: 'insights', extra: { playerId } },
+    );
+    return { success: false, error: 'Failed to assemble themes' };
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -47,7 +47,7 @@
  * inside the `.fairway-ds` scope on a `bg-canvas` page.
  * ========================================================================== */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -58,7 +58,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 
-import { fairwayScope } from '@/lib/redesign/flag';
+import { fairwayScope, isThemesEnabled } from '@/lib/redesign/flag';
 import {
   Button,
   InsightCard,
@@ -78,6 +78,7 @@ import {
 import { CoachHelmShell } from './CoachHelmShell';
 import { StandingStrip } from '@/components/fairway/charts/StandingStrip';
 import { PracticeRxPanel } from '@/components/fairway/pages/coachhelm/PracticeRxPanel';
+import { ThemesPanel } from '@/components/fairway/cards-insight/themes';
 import { m, useReducedMotion } from 'framer-motion';
 
 // Standing wiring — sourced ONLY from golf_player_standing (the insight evidence
@@ -101,12 +102,17 @@ import { WhatIfPanel } from '@/components/golf/coachhelm/player/WhatIfPanel';
 // PRESERVED write/feedback action — imported UNCHANGED.
 import { rateInsightAsPlayer } from '@/app/golf/actions/player-feedback';
 import { getPlayerWhatIf } from '@/app/golf/actions/coachhelm-data';
+// THEME "make it a plan" (player path) — create a self-set development goal.
+import { createGoal } from '@/app/golf/actions/v3/goals';
+import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import { isMetricId } from '@/lib/coachhelm/v3/metrics/registry';
 import { useToast } from '@/components/ui/sonner';
 
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import type { PlayerCoachHelmDashboardData } from '@/app/golf/actions/insights';
 import type { PlayerShotAnalytics } from '@/app/golf/actions/shot-analytics';
 import type { InsightPriority } from '@/components/fairway';
+import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
 
 /* ───────────────────────────────────────────────────────────────────────────
  * Honesty thresholds — deterministic product rules (resolved decisions).
@@ -144,6 +150,13 @@ export interface FairwayPlayerCoachHelmProps {
    * to its existing flat-number read).
    */
   standingByMetric?: Record<string, PlayerStanding>;
+  /**
+   * The hierarchical THEME scaffold (THEME → CAUSE → DRIVER → PLAN). When the
+   * themes flag is on AND this is non-empty, it REPLACES the flat secondary
+   * feed; otherwise the flat feed renders (kill-switch + empty-themes fallback).
+   * Default `[]` (honest-empty: degrades to the flat feed).
+   */
+  themes?: ThemeNode[];
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
@@ -207,9 +220,12 @@ export function FairwayPlayerCoachHelm({
   topInsight = null,
   secondaryInsights = [],
   standingByMetric = {},
+  themes = [],
 }: FairwayPlayerCoachHelmProps) {
   const router = useRouter();
   const { addToast } = useToast();
+  const [, startMakePlanTransition] = useTransition();
+  const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
 
   // Which secondary insight is expanded in place (kills the View-N-more dead-end).
   const [openInsight, setOpenInsight] = useState<EvidenceInsight | null>(null);
@@ -263,6 +279,86 @@ export function FairwayPlayerCoachHelm({
             err instanceof Error ? err.message : 'Please try again in a moment.',
         });
       }
+    },
+    [addToast, router],
+  );
+
+  /* ── Theme "Make it a plan" (player path) — create a self-set development goal
+       from the direct cause. Mirrors the canonical runTransition pattern in
+       FairwayGoalCard (useTransition + addToast + router.refresh). CauseRow only
+       fires this when the cause is actionable AND a drill exists, so the goal is
+       always derivable here. Two fields not present on CauseNode are filled with
+       robust, non-fabricated defaults: `category` = 'from_insight' and a 30-day
+       `ends_at` window. Baseline = the player's standing value; the target is the
+       midpoint toward PGA (computeTargetValue) ONLY when both standing values are
+       finite — otherwise both target fields stay null (never a fabricated number).
+       The cause's metric must be a canonical MetricId for createGoal; if it is
+       not, we surface an honest error rather than guessing. ───────────────────── */
+  const handleMakePlan = useCallback(
+    (cause: CauseNode, _theme: ThemeNode) => {
+      setMakePlanPendingId(cause.insight_id);
+      startMakePlanTransition(async () => {
+        try {
+          if (!cause.metric || !isMetricId(cause.metric)) {
+            addToast({
+              type: 'error',
+              title: 'Could not add to your plan',
+              description: 'This focus area is not yet a trackable metric.',
+            });
+            return;
+          }
+
+          const baseline =
+            typeof cause.standingPlayerValue === 'number' &&
+            Number.isFinite(cause.standingPlayerValue)
+              ? cause.standingPlayerValue
+              : null;
+          const canTarget =
+            baseline !== null &&
+            typeof cause.standingPgaValue === 'number' &&
+            Number.isFinite(cause.standingPgaValue);
+          const target = canTarget
+            ? computeTargetValue({
+                playerValue: baseline,
+                pgaValue: cause.standingPgaValue as number,
+              })
+            : null;
+
+          const result = await createGoal({
+            metric_id: cause.metric,
+            title: cause.title,
+            category: 'from_insight',
+            // No window on the cause — a 30-day self-set window (the engine's
+            // default suggested window) is the simplest robust choice.
+            ends_at: new Date(Date.now() + 30 * 86_400_000).toISOString(),
+            baseline_value: baseline,
+            target_value: target,
+            target_source: target !== null ? 'midpoint' : null,
+            shared_with_coach: true,
+          });
+
+          if (!result.ok) {
+            addToast({
+              type: 'error',
+              title: 'Could not add to your plan',
+              description: result.error || 'Please try again in a moment.',
+            });
+            return;
+          }
+
+          addToast({ type: 'success', title: 'Added to your development plan' });
+          router.refresh();
+        } catch (err) {
+          addToast({
+            type: 'error',
+            title: 'Could not add to your plan',
+            description:
+              err instanceof Error ? err.message : 'Please try again in a moment.',
+          });
+        } finally {
+          setMakePlanPendingId(null);
+        }
+      });
     },
     [addToast, router],
   );
@@ -364,8 +460,22 @@ export function FairwayPlayerCoachHelm({
                 ]}
               />
 
-              {/* ════════════ THE FEED — secondary signals (expand-in-place) ════ */}
-              {secondaryDeduped.length > 0 ? (
+              {/* ════════════ THE FEED — hierarchical THEMES (flag on + present)
+                    REPLACE the flat secondary feed; otherwise the flat feed is
+                    the kill-switch + empty-themes fallback (kept verbatim). ════ */}
+              {isThemesEnabled() && themes.length > 0 ? (
+                <section className="flex flex-col gap-3" data-slot="coachhelm-themes">
+                  <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
+                    Themes to work on
+                  </h3>
+                  <ThemesPanel
+                    themes={themes}
+                    role="player"
+                    onMakePlan={handleMakePlan}
+                    makePlanPendingId={makePlanPendingId}
+                  />
+                </section>
+              ) : secondaryDeduped.length > 0 ? (
                 <section className="flex flex-col gap-3">
                   <h3 className="px-1 font-fw-display text-eyebrow font-medium uppercase tracking-[0.14em] text-text-tertiary">
                     {topInsight ? 'More for you' : 'Your insights'}

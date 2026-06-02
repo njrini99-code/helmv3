@@ -27,6 +27,14 @@ interface PressureGapAggregate extends GeneratorAggregate {
   competitive_count: number;
 }
 
+/**
+ * Minimum rounds required in EACH bucket before a pressure gap is meaningful.
+ * A delta off a single round (e.g. n=1 practice → a fake "+2.3 gap") is noise,
+ * not a pressure signal — both the practice and competitive averages need a few
+ * rounds to stabilise (Research doc §9; audit P2a). 3 is the floor.
+ */
+const MIN_ROUNDS_PER_BUCKET = 3;
+
 export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
   readonly name = 'PressureGapGenerator';
   readonly insightType = 'pressure_gap';
@@ -65,7 +73,10 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         competitiveN += 1;
       }
     }
-    if (practiceN === 0 || competitiveN === 0) return null;
+    // Per-bucket sample gate (P2a): both buckets need ≥ MIN_ROUNDS_PER_BUCKET rounds.
+    // Without this, a single practice or tournament round produces a wild, meaningless
+    // gap that ranks as a "pressure weakness". Below the floor → emit nothing.
+    if (practiceN < MIN_ROUNDS_PER_BUCKET || competitiveN < MIN_ROUNDS_PER_BUCKET) return null;
     const practiceAvg = practiceSum / practiceN;
     const competitiveAvg = competitiveSum / competitiveN;
     const delta = competitiveAvg - practiceAvg;

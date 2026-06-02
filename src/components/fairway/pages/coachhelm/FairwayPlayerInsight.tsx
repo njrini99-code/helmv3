@@ -53,6 +53,13 @@ import { tintFor } from '@/components/fairway/pages/calendar/FairwayCalendarMemb
 import { InsightCard, type InsightAction } from '@/components/golf/coachhelm/insight-card';
 import { PrescribedPracticePlanCard } from '@/components/golf/coachhelm/coach';
 
+// Hierarchical THEME insights (v3) — flag-gated replacement for the flat feed.
+import { ThemesPanel } from '@/components/fairway/cards-insight/themes';
+import { isThemesEnabled } from '@/lib/redesign/flag';
+import { computeTargetValue } from '@/lib/coachhelm/v3/goals/suggestion-writer';
+import type { CauseNode, ThemeNode } from '@/lib/coachhelm/v3/themes/types';
+import { useToast } from '@/components/ui/sonner';
+
 // Server actions — REUSED VERBATIM.
 import {
   getInsightsForCoach,
@@ -159,6 +166,12 @@ export interface FairwayPlayerInsightProps {
   insights: InsightRow[]; // legacy; client re-fetches evidence rows
   focusAreas: FocusAreaRow[];
   predictions: PredictionRow[];
+  /**
+   * Hierarchical THEME scaffold (v3). Additive — when `isThemesEnabled()` and
+   * non-empty, the ThemesPanel replaces the flat "Where to focus" feed in
+   * section C. Degrades to `[]` (route already null-guards the fetch).
+   */
+  themes: ThemeNode[];
 }
 
 /* ---------------------------------------------------------------------------
@@ -354,9 +367,11 @@ export function FairwayPlayerInsight({
   patterns,
   focusAreas,
   predictions,
+  themes,
 }: FairwayPlayerInsightProps) {
   const router = useRouter();
   const golfUser = useGolfUser();
+  const { addToast } = useToast();
   const coachId = golfUser.coachId ?? null;
   const playerName = `${player.first_name ?? ''} ${player.last_name ?? ''}`.trim() || 'Player';
   const tint = tintFor(player.id);
@@ -366,6 +381,12 @@ export function FairwayPlayerInsight({
   const [, startActionTransition] = useTransition();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshNotice, setRefreshNotice] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+
+  // THEME "make it a plan" (coach path) — mirrors the FairwayGoalCard
+  // runTransition pattern (useTransition + useToast + router). The pending id is
+  // the cause's insight_id so the originating CauseRow shows the busy CTA.
+  const [, startMakePlanTransition] = useTransition();
+  const [makePlanPendingId, setMakePlanPendingId] = useState<string | null>(null);
 
   // ── Insight fetch + handlers: copied VERBATIM from the legacy client ──────
   const loadInsights = useCallback(async () => {
@@ -456,6 +477,58 @@ export function FairwayPlayerInsight({
       });
     },
     [coachId, insights, router],
+  );
+
+  // ── THEME → "Make it a plan" (coach): mirror the FairwayGoalCard runTransition
+  // pattern (useTransition + useToast + router). Builds a focus area from the
+  // cause + page scope, mapping ONLY to fields that exist on
+  // CreateFocusAreaFromInsightData. `computeTargetValue` needs two real numbers,
+  // so we only pass a derived target when BOTH standing values are present.
+  const handleMakePlan = useCallback(
+    (cause: CauseNode, theme: ThemeNode) => {
+      if (!coachId) {
+        addToast({ type: 'error', title: 'Sign in as a coach to create a plan' });
+        return;
+      }
+      setMakePlanPendingId(cause.insight_id);
+      startMakePlanTransition(async () => {
+        try {
+          const playerValue = cause.standingPlayerValue;
+          const pgaValue = cause.standingPgaValue;
+          const targetValue =
+            playerValue !== null && pgaValue !== null
+              ? computeTargetValue({ playerValue, pgaValue })
+              : null;
+
+          const res = await createFocusAreaFromInsight({
+            insight_id: cause.insight_id,
+            player_id: player.id,
+            coach_id: coachId,
+            title: cause.title,
+            description: cause.content,
+            insight_type: theme.category,
+            target_metric: cause.metric,
+            current_value: playerValue,
+            target_value: targetValue,
+          });
+
+          if (res.success) {
+            addToast({ type: 'success', title: 'Focus area created' });
+            router.push('/golf/dashboard/development');
+          } else {
+            addToast({ type: 'error', title: res.error ?? 'Could not create focus area' });
+          }
+        } catch (err) {
+          addToast({
+            type: 'error',
+            title: err instanceof Error ? err.message : 'Could not create focus area',
+          });
+        } finally {
+          setMakePlanPendingId(null);
+        }
+      });
+    },
+    [coachId, player.id, router, addToast],
   );
 
   // ── Dedupe for display: the fetcher already ranks best-first, so keep the
@@ -553,58 +626,97 @@ export function FairwayPlayerInsight({
           </div>
         </section>
 
-        {/* ════════ C · WHERE TO FOCUS (insights, deduped) ════════ */}
-        <section data-testid="player-insight-section">
-          <div className="flex items-center justify-between gap-3">
-            <Eyebrow>Where to focus</Eyebrow>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              busy={isRefreshing}
-              leftIcon={<Sparkles className="h-4 w-4" />}
-              data-testid="refresh-player-analysis"
-              aria-label="Refresh AI analysis for this player"
-            >
-              {isRefreshing ? 'Analyzing…' : 'Refresh'}
-            </Button>
-          </div>
-
-          {refreshNotice ? (
-            <div className="mt-3">
-              <InlineNotice tone={refreshNotice.tone === 'success' ? 'success' : 'danger'}>
-                {refreshNotice.text}
-              </InlineNotice>
+        {/* ════════ C · WHERE TO FOCUS ════════ */}
+        {/* THEME view (v3) replaces the flat feed when enabled + non-empty.
+            Else-branch = the existing flat "Where to focus" feed VERBATIM
+            (kill-switch + empty fallback). Section rhythm A→B→C→D preserved. */}
+        {isThemesEnabled() && themes.length > 0 ? (
+          <section data-testid="player-insight-section">
+            <div className="flex items-center justify-between gap-3">
+              <Eyebrow>Where to focus</Eyebrow>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                busy={isRefreshing}
+                leftIcon={<Sparkles className="h-4 w-4" />}
+                data-testid="refresh-player-analysis"
+                aria-label="Refresh AI analysis for this player"
+              >
+                {isRefreshing ? 'Analyzing…' : 'Refresh'}
+              </Button>
             </div>
-          ) : null}
 
-          <div className="mt-3">
-            {insightsLoading ? (
-              <div className="flex flex-col gap-3">
-                <Skeleton className="h-28 rounded-card" />
-                <Skeleton className="h-24 rounded-card" />
+            {refreshNotice ? (
+              <div className="mt-3">
+                <InlineNotice tone={refreshNotice.tone === 'success' ? 'success' : 'danger'}>
+                  {refreshNotice.text}
+                </InlineNotice>
               </div>
-            ) : displayInsights.length === 0 ? (
-              <Surface elevation="border" padding="lg">
-                <EmptyState
-                  icon={Activity}
-                  variant="subtle"
-                  title="No insights generated yet"
-                  description="Run the engine for this player with Refresh above."
-                />
-              </Surface>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {heroInsight ? (
-                  <InsightCard insight={heroInsight} density="hero" audience="coach" showActions onAction={handleAction} />
-                ) : null}
-                {secondInsight ? (
-                  <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
-                ) : null}
+            ) : null}
+
+            <div className="mt-3">
+              <ThemesPanel
+                themes={themes}
+                role="coach"
+                onMakePlan={handleMakePlan}
+                makePlanPendingId={makePlanPendingId}
+              />
+            </div>
+          </section>
+        ) : (
+          <section data-testid="player-insight-section">
+            <div className="flex items-center justify-between gap-3">
+              <Eyebrow>Where to focus</Eyebrow>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                busy={isRefreshing}
+                leftIcon={<Sparkles className="h-4 w-4" />}
+                data-testid="refresh-player-analysis"
+                aria-label="Refresh AI analysis for this player"
+              >
+                {isRefreshing ? 'Analyzing…' : 'Refresh'}
+              </Button>
+            </div>
+
+            {refreshNotice ? (
+              <div className="mt-3">
+                <InlineNotice tone={refreshNotice.tone === 'success' ? 'success' : 'danger'}>
+                  {refreshNotice.text}
+                </InlineNotice>
               </div>
-            )}
-          </div>
-        </section>
+            ) : null}
+
+            <div className="mt-3">
+              {insightsLoading ? (
+                <div className="flex flex-col gap-3">
+                  <Skeleton className="h-28 rounded-card" />
+                  <Skeleton className="h-24 rounded-card" />
+                </div>
+              ) : displayInsights.length === 0 ? (
+                <Surface elevation="border" padding="lg">
+                  <EmptyState
+                    icon={Activity}
+                    variant="subtle"
+                    title="No insights generated yet"
+                    description="Run the engine for this player with Refresh above."
+                  />
+                </Surface>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {heroInsight ? (
+                    <InsightCard insight={heroInsight} density="hero" audience="coach" showActions onAction={handleAction} />
+                  ) : null}
+                  {secondInsight ? (
+                    <InsightCard insight={secondInsight} density="default" audience="coach" showActions onAction={handleAction} />
+                  ) : null}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         {/* ════════ D · THE PLAN ════════ */}
         <section>

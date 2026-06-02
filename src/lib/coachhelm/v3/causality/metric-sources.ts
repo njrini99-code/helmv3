@@ -278,10 +278,48 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
 };
 
 /**
+ * v2-mining and legacy insight metric prefixes. The insight surface in
+ * `src/lib/coachhelm/v2/mining/*` (and historical generators no longer in
+ * code but still represented in `golf_coach_insights.evidence.metric`)
+ * emit per-bucket metric names like `approach_severity_<150` and
+ * `tee_strategy_driver_vs_layback`. These names are not registered in
+ * the canonical v3 metric registry, and they all share the same property:
+ * attribution needs shot-level data that today only exists as a player-
+ * aggregate in `golf_player_stats_cache`, with no per-round time-series.
+ *
+ * Treating them as `intentional-null` (instead of `unknown-metric`) keeps
+ * the cron summary honest — the cron's `intentional_no_lift` counter still
+ * reflects coverage gaps, but Sentry no longer fires a "registry drift"
+ * warning per insight. Until a per-round shot-level cache lands and these
+ * graduate to a real source, this is the correct classification.
+ *
+ * Emitted by:
+ *  - `src/lib/coachhelm/v2/mining/approach-analytics.ts`
+ *  - `src/lib/coachhelm/v2/mining/tee-strategy.ts`
+ *  - `src/lib/coachhelm/v2/mining/correlation-discovery.ts`
+ *  - legacy insights backfilled by retired generators
+ */
+const LEGACY_V2_METRIC_PREFIXES: readonly string[] = [
+  'approach_severity_',
+  'approach_direction_',
+  'approach_miss_lie_',
+  'tee_strategy_',
+  'putt_make_rate_',
+  'short_putt_make_rate_',
+  'shortside_scrambling',
+];
+
+const LEGACY_V2_INTENTIONAL_NULL: MetricSourceDef = {
+  kind: 'intentional-null',
+  reason: 'v2-mining-needs-shot-level-graduation',
+};
+
+/**
  * Returns the source definition for any metric id, including the
- * `score_to_par` alias. Returns null when the id is completely unknown
- * (which the cron treats as a different observability bucket — drift
- * between the insight surface and this registry).
+ * `score_to_par` alias and the v2-mining legacy prefixes. Returns null
+ * when the id is completely unknown (which the cron treats as a different
+ * observability bucket — true drift between the insight surface and this
+ * registry).
  */
 export function lookupMetricSource(metricId: string): MetricSourceDef | null {
   // Canonical registry first
@@ -289,5 +327,8 @@ export function lookupMetricSource(metricId: string): MetricSourceDef | null {
   if (canonical) return canonical;
   const alias = METRIC_SOURCE_ALIASES[metricId];
   if (alias) return alias;
+  if (LEGACY_V2_METRIC_PREFIXES.some((p) => metricId.startsWith(p))) {
+    return LEGACY_V2_INTENTIONAL_NULL;
+  }
   return null;
 }
