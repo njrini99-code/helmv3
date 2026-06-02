@@ -15,14 +15,17 @@ vi.mock('@/lib/coachhelm/v3/engine/shot-source', async (importOriginal) => {
 
 const mockLoadApproachShots = vi.mocked(loadApproachShots);
 
-/** Build an ApproachShot fixture. distBefore is yards (drives the bucket);
- *  proxAfter + unitAfter drive the proximity-to-feet normalization. */
+/** Build an ApproachShot fixture. distBefore is yards (drives the bucket); proxAfter +
+ *  unitAfter drive the on-green proximity normalization; result drives the green-hit
+ *  signal ('green'|'hole'|'gir' = found the green; anything else = missed). */
 function shot(
   distBeforeYards: number,
   proxAfter: number,
   unitAfter: 'feet' | 'yards',
+  result: string = 'green',
   over: Partial<ApproachShot> = {},
 ): ApproachShot {
+  const onGreen = result === 'green' || result === 'hole' || result === 'gir';
   return {
     round_id: 'r-1',
     hole_number: 1,
@@ -31,6 +34,8 @@ function shot(
     distance_to_hole_after: proxAfter,
     distance_unit_after: unitAfter,
     lie_before: 'fairway',
+    lie_after: onGreen ? 'green' : 'rough',
+    result,
     is_penalty: false,
     miss_direction: null,
     ...over,
@@ -42,15 +47,22 @@ const PLAYER_ID = 'p-1';
 function makeAgg(over: Partial<{
   bucket: '50_125ft' | '125_175ft' | '175_plus_ft';
   attempts: number;
-  avg_proximity_feet: number;
+  green_hit_n: number;
+  green_hit_pct: number;
+  proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
 }> = {}) {
+  const attempts = over.attempts ?? 20;
+  const greenHitPct = over.green_hit_pct ?? 60;
   return {
-    sampleN: over.attempts ?? 20,
-    playerValue: over.avg_proximity_feet ?? 22,
-    bucket: over.bucket ?? '50_125ft' as const,
-    attempts: over.attempts ?? 20,
-    avg_proximity_feet: over.avg_proximity_feet ?? 22,
+    sampleN: attempts,
+    playerValue: greenHitPct,
+    bucket: (over.bucket ?? '50_125ft') as '50_125ft' | '125_175ft' | '175_plus_ft',
+    attempts,
+    green_hit_n: over.green_hit_n ?? Math.round((greenHitPct / 100) * attempts),
+    green_hit_pct: greenHitPct,
+    // Respect an explicitly-passed null (?? would coerce null back to 22).
+    proximity_when_hit_feet: 'proximity_when_hit_feet' in over ? over.proximity_when_hit_feet! : 22,
     penalty_rate_pct: over.penalty_rate_pct ?? 0,
   };
 }
@@ -91,25 +103,29 @@ describe('ApproachMissGenerator', () => {
     expect(g.minSampleN).toBe(5);
   });
 
-  it('composes a positive-delta insight when avg is above PGA', () => {
+  it('leads with green-hit % and rides proximity-when-hit along when reliable', () => {
     const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const c = g.composeContent(makeAgg({ bucket: '50_125ft', avg_proximity_feet: 25, attempts: 30 }));
-    // Tour anchor for 50-125 is 18 ft; delta = +7
+    const c = g.composeContent(makeAgg({ bucket: '50_125ft', green_hit_pct: 70, proximity_when_hit_feet: 22, attempts: 30 }));
     expect(c.title).toContain('50-125 yd');
-    expect(c.title).toContain('25 ft');
-    expect(c.title).toContain('+7');
-    expect(c.content).toContain('30 approach shots');
+    expect(c.title).toContain('70%');
+    expect(c.title).toContain('22 ft when you do');
+    expect(c.content).toContain('30 approaches');
+    expect(c.content).toContain('found the green 70%');
+    expect(c.content).toContain('PGA Tour ~80%'); // approximate green-hit anchor for 50-125
     expect(c.signature).toBe('approach_miss:50_125ft');
-    expect(c.evidence.unit).toBe('feet');
-    expect(c.evidence.comparison_value).toBe(18);
+    expect(c.evidence.unit).toBe('percent');
+    expect(c.evidence.your_value).toBe(70);
+    expect(c.evidence.comparison_value).toBe(80);
     expect(c.evidence.comparison_source).toBe('pga_baseline');
   });
 
-  it('composes a negative-delta insight when avg is below PGA', () => {
-    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
-    const c = g.composeContent(makeAgg({ bucket: '125_175ft', avg_proximity_feet: 27, attempts: 15 }));
-    // Tour anchor for 125-175 is 30 ft; delta = -3
-    expect(c.title).toContain('-3');
+  it('frames a reach problem (no reliable proximity) when too few greens are hit', () => {
+    const g = new ApproachMissGenerator(PLAYER_ID, '175_plus_ft');
+    const c = g.composeContent(makeAgg({ bucket: '175_plus_ft', green_hit_pct: 20, proximity_when_hit_feet: null, attempts: 15 }));
+    expect(c.title).toContain('20% greens hit');
+    expect(c.title).not.toContain('ft when you do');
+    expect(c.content).toContain('Too few greens hit');
+    expect(c.content).toContain('finding the green, not distance control');
   });
 
   it('surfaces penalty flag when penalty rate > 5%', () => {
@@ -126,92 +142,95 @@ describe('ApproachMissGenerator', () => {
 });
 
 // ============================================================================
-// aggregate() — E0 approach-unit normalization
+// aggregate() — green-hit % (reach) + on-green-only proximity (dial-in)
 // ----------------------------------------------------------------------------
-// golf_shots.distance_unit_after is MIXED in prod (feet vs yards). The
-// generator labels everything "ft" and compares against feet PGA anchors, so
-// yard rows must be ×3 (yards→feet) before averaging. These cases pin that the
-// average is feet-canonical, not the old raw mixed sum. Mirrors the canonical
-// conversion in src/app/golf/actions/coachhelm-data.ts:646-649.
+// Proximity is a green-surface distance (feet) and is computed ONLY over shots
+// that found the green. A MISSED approach finishes off-green (yards); the old
+// generator ×3'd that into "feet" and inflated proximity ~2×. These cases pin
+// that misses are counted by green-hit rate and NEVER blended into proximity.
 // ============================================================================
 
-describe('ApproachMissGenerator.aggregate (unit normalization)', () => {
+describe('ApproachMissGenerator.aggregate (green-hit + on-green proximity)', () => {
   beforeEach(() => {
     mockLoadApproachShots.mockReset();
   });
 
-  it('passes feet-unit shots through unchanged', async () => {
-    // 5 shots in the 50-125 bucket, all already in feet → avg is the raw feet avg.
+  it('computes green-hit % over all in-bucket attempts', async () => {
+    // 10 in 50-125: 7 found the green, 3 missed → 70% green-hit.
     mockLoadApproachShots.mockResolvedValue([
-      shot(100, 18, 'feet'),
-      shot(100, 22, 'feet'),
-      shot(100, 20, 'feet'),
-      shot(100, 16, 'feet'),
-      shot(100, 24, 'feet'),
+      shot(100, 18, 'feet', 'green'), shot(100, 20, 'feet', 'green'), shot(100, 22, 'feet', 'green'),
+      shot(100, 16, 'feet', 'green'), shot(100, 24, 'feet', 'green'), shot(100, 19, 'feet', 'green'),
+      shot(100, 21, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough'), shot(100, 35, 'yards', 'rough'), shot(100, 30, 'yards', 'sand'),
     ]);
-    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const agg = await g.aggregate();
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
     expect(agg).not.toBeNull();
-    expect(agg!.avg_proximity_feet).toBe(20); // (18+22+20+16+24)/5
+    expect(agg!.attempts).toBe(10);
+    expect(agg!.green_hit_n).toBe(7);
+    expect(agg!.green_hit_pct).toBe(70);
   });
 
-  it('converts yard-unit shots ×3 to feet before averaging', async () => {
-    // 5 shots all recorded in YARDS. 7 yd = 21 ft. avg must be 21 ft, NOT 7.
+  it('excludes off-green misses from proximity — NO ×3 inflation', async () => {
+    // 3 green (18/20/22 ft) + 2 rough misses finishing 50 YARDS off-green.
+    // proximity-when-hit = (18+20+22)/3 = 20 ft. The 50-yd misses are NOT ×3'd to 150.
     mockLoadApproachShots.mockResolvedValue([
-      shot(100, 7, 'yards'),
-      shot(100, 7, 'yards'),
-      shot(100, 7, 'yards'),
-      shot(100, 7, 'yards'),
-      shot(100, 7, 'yards'),
+      shot(100, 18, 'feet', 'green'),
+      shot(100, 20, 'feet', 'green'),
+      shot(100, 22, 'feet', 'green'),
+      shot(100, 50, 'yards', 'rough'),
+      shot(100, 50, 'yards', 'rough'),
     ]);
-    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const agg = await g.aggregate();
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
     expect(agg).not.toBeNull();
-    expect(agg!.avg_proximity_feet).toBe(21); // 7 yd ×3 = 21 ft
+    expect(agg!.green_hit_pct).toBe(60);
+    expect(agg!.green_hit_n).toBe(3);
+    expect(agg!.proximity_when_hit_feet).toBe(20); // NOT (20*3 + ...) — misses excluded
   });
 
-  it('yields the feet-canonical average for a mixed-unit fixture (not the raw mixed sum)', async () => {
-    // 3 feet rows (18, 24, 30 ft) + 3 yard rows (8, 10, 12 yd → 24, 30, 36 ft).
-    // Feet-canonical sum = 18+24+30+24+30+36 = 162 over 6 → 27 ft.
-    // Old raw-sum behavior would have been 18+24+30+8+10+12 = 102 / 6 = 17 ft (wrong).
+  it('normalizes a legacy on-green-in-yards finish ×3 to feet', async () => {
+    // All 5 found the green but were stored in yards (7 yd = 21 ft on-green). avg = 21 ft.
     mockLoadApproachShots.mockResolvedValue([
-      shot(100, 18, 'feet'),
-      shot(100, 24, 'feet'),
-      shot(100, 30, 'feet'),
-      shot(100, 8, 'yards'),
-      shot(100, 10, 'yards'),
-      shot(100, 12, 'yards'),
+      shot(100, 7, 'yards', 'green'), shot(100, 7, 'yards', 'green'), shot(100, 7, 'yards', 'green'),
+      shot(100, 7, 'yards', 'green'), shot(100, 7, 'yards', 'green'),
     ]);
-    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const agg = await g.aggregate();
-    expect(agg).not.toBeNull();
-    expect(agg!.avg_proximity_feet).toBe(27); // feet-canonical, not 17
-    expect(agg!.attempts).toBe(6);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.green_hit_pct).toBe(100);
+    expect(agg!.proximity_when_hit_feet).toBe(21);
+  });
+
+  it('reports NO proximity when fewer than 3 greens are hit (noise guard)', async () => {
+    // 6 attempts, only 2 found the green → green-hit% reported, proximity null.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'),
+      shot(100, 22, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough'), shot(100, 35, 'yards', 'rough'),
+      shot(100, 30, 'yards', 'sand'), shot(100, 45, 'yards', 'rough'),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.green_hit_n).toBe(2);
+    expect(Math.round(agg!.green_hit_pct)).toBe(33);
+    expect(agg!.proximity_when_hit_feet).toBeNull();
+  });
+
+  it('uses lie_after as a fallback green signal when result is absent', async () => {
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green', { result: null, lie_after: 'green' }),
+      shot(100, 20, 'feet', 'green', { result: null, lie_after: 'green' }),
+      shot(100, 22, 'feet', 'green', { result: null, lie_after: 'green' }),
+      shot(100, 40, 'yards', 'rough', { result: null, lie_after: 'rough' }),
+      shot(100, 35, 'yards', 'rough', { result: null, lie_after: 'rough' }),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.green_hit_n).toBe(3);
+    expect(agg!.proximity_when_hit_feet).toBe(20);
   });
 
   it('only aggregates shots in this generator bucket (distance_to_hole_before, yards)', async () => {
-    // Two 175+ shots (in feet) + two 50-125 shots (in yards). The 125_175
-    // generator should pick up neither — returns null below minSample handling.
     mockLoadApproachShots.mockResolvedValue([
-      shot(200, 45, 'feet'),
-      shot(60, 6, 'yards'),
+      shot(200, 45, 'feet', 'green'),
+      shot(60, 6, 'yards', 'green'),
     ]);
-    const g = new ApproachMissGenerator(PLAYER_ID, '125_175ft');
-    const agg = await g.aggregate();
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '125_175ft').aggregate();
     expect(agg).toBeNull(); // no shots bucketed into 125-175 yd
-  });
-
-  it('null label/unit treated as yards → ×3 (defensive: only "feet" passes through)', async () => {
-    // distance_unit_after null is NOT 'feet', so it converts ×3 (yards default).
-    mockLoadApproachShots.mockResolvedValue([
-      shot(100, 7, 'feet', { distance_unit_after: null }),
-      shot(100, 7, 'feet', { distance_unit_after: null }),
-      shot(100, 7, 'feet', { distance_unit_after: null }),
-      shot(100, 7, 'feet', { distance_unit_after: null }),
-      shot(100, 7, 'feet', { distance_unit_after: null }),
-    ]);
-    const g = new ApproachMissGenerator(PLAYER_ID, '50_125ft');
-    const agg = await g.aggregate();
-    expect(agg!.avg_proximity_feet).toBe(21);
   });
 });

@@ -1,9 +1,5 @@
 /**
- * v3 ApproachMissGenerator (wave-3bucket-fix).
- *
- * Previously deferred from W22 because the cache only has overall
- * approach_proximity_average, not per-bucket. Now built using the
- * shot-source helper which aggregates from raw golf_shots.
+ * v3 ApproachMissGenerator (P1b — reach-vs-dial-in redesign).
  *
  * 3-BUCKET CLUB MODEL (master plan Part V.1.5):
  *   Bucketed by APPROACH DISTANCE (50-125 / 125-175 / 175+ yards),
@@ -15,10 +11,22 @@
  *   approach_proximity_125_175ft
  *   approach_proximity_175_plus_ft
  *
- * V1 ships with requiresStanding=false (diagnostic). Standing-row
- * population for these metrics is a follow-up RPC; once it exists,
- * remove the override and the generator picks up team + Tour
- * comparison automatically.
+ * WHAT THIS INSIGHT ANSWERS (the coach's real question — is it reach or dial-in?):
+ *   1. GREEN-HIT % (primary): of the approaches from this band, how many found the
+ *      green. A low rate is a REACH problem (club/contact/commitment).
+ *   2. PROXIMITY WHEN THE GREEN IS HIT (feet, secondary): how close the ball finishes
+ *      WHEN it reaches the green. Poor here with a healthy green-hit% is a DIAL-IN
+ *      problem (distance control), not a reach problem.
+ *
+ * UNIT INTEGRITY (the bug this fixes): proximity is a green-surface distance (feet).
+ * A MISSED approach finishes off-green (stored in YARDS); the old generator ran that
+ * yards value through ×3 and averaged it as "feet", inflating proximity ~2× (the
+ * "175+ → 63 ft" artifact). Proximity is now computed ONLY over green-finding shots,
+ * whose finish is genuinely on the green (feet). Missed approaches are counted by the
+ * green-hit rate, never as a fabricated proximity.
+ *
+ * V1 ships with requiresStanding=false (diagnostic). Standing-row population for these
+ * metrics is a follow-up RPC; the PGA green-hit anchors below are APPROXIMATE.
  */
 
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
@@ -26,6 +34,7 @@ import {
   loadApproachShots,
   bucketApproachDistance,
   type ApproachBucket,
+  type ApproachShot,
 } from '@/lib/coachhelm/v3/engine/shot-source';
 import type {
   ComposedContent,
@@ -46,17 +55,50 @@ const BUCKET_LABEL: Record<ApproachBucket, string> = {
   '175_plus_ft': '175+ yd',
 };
 
-/** Tour proximity anchors from Research doc §2 — used inline for content. */
+/** Proximity-WHEN-ON-GREEN Tour anchors (feet), Research doc §2. Used for the dial-in
+ *  comparison — only meaningful for shots that actually found the green. */
 const TOUR_PROXIMITY_FEET: Record<ApproachBucket, number> = {
   '50_125ft':    18,
   '125_175ft':   30,
   '175_plus_ft': 45,
 };
 
+/** APPROXIMATE PGA green-hit % by approach band (no sourced per-band table yet — see
+ *  Research doc §2 ranges 75-85 / 60-70 / 45-55%). Flagged "approx" in the prose. */
+const TOUR_GREEN_HIT_PCT: Record<ApproachBucket, number> = {
+  '50_125ft':    80,
+  '125_175ft':   65,
+  '175_plus_ft': 50,
+};
+
+/** Need at least this many GREENS HIT in the band before reporting a proximity —
+ *  an average over one or two greens is noise. */
+const MIN_GREENS_FOR_PROXIMITY = 3;
+
+/** Did the approach find the green? Result is the canonical signal; lie_after is a
+ *  corroborating fallback for older rows where only the lie was recorded. */
+function reachedGreen(s: ApproachShot): boolean {
+  const r = (s.result ?? '').toLowerCase();
+  if (r === 'green' || r === 'hole' || r === 'gir') return true;
+  return (s.lie_after ?? '').toLowerCase() === 'green';
+}
+
+/** On-green finish → feet. On-green rows are stored in feet; the ×3 only guards the
+ *  rare legacy on-green-in-yards row (off-green misses are excluded upstream, so this
+ *  never ×3's a real yards "miss" into the proximity). */
+function onGreenFinishFeet(s: ApproachShot): number {
+  return s.distance_unit_after === 'feet'
+    ? Number(s.distance_to_hole_after)
+    : Number(s.distance_to_hole_after) * 3;
+}
+
 interface ApproachMissAggregate extends GeneratorAggregate {
   bucket: ApproachBucket;
   attempts: number;
-  avg_proximity_feet: number;
+  green_hit_n: number;
+  green_hit_pct: number;
+  /** Avg proximity in FEET over green-finding shots only; null when too few greens hit. */
+  proximity_when_hit_feet: number | null;
   penalty_rate_pct: number;
 }
 
@@ -83,64 +125,76 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
     );
     if (inBucket.length === 0) return null;
 
-    // distance_to_hole_after is recorded in MIXED units in prod
-    // (distance_unit_after is 'feet' for some rows, 'yards' for others).
-    // The PGA proximity anchors (18/30/45) and the metric label are all in
-    // FEET, so normalize every row to feet before averaging — yard rows are
-    // otherwise ~3× inflated against a feet baseline. Mirrors the canonical
-    // conversion in src/app/golf/actions/coachhelm-data.ts:646-649
-    // ('feet' → as-is; else ×3 yards→feet).
-    const proximity_sum = inBucket.reduce(
-      (a, s) =>
-        a +
-        (s.distance_unit_after === 'feet'
-          ? Number(s.distance_to_hole_after)
-          : Number(s.distance_to_hole_after) * 3),
-      0,
-    );
-    const avg = proximity_sum / inBucket.length;
+    const greenShots = inBucket.filter(reachedGreen);
+    const greenHitN = greenShots.length;
+    const greenHitPct = (100 * greenHitN) / inBucket.length;
+
+    // Proximity is ON-GREEN ONLY (feet), averaged over green-finding shots — never the
+    // off-green (yards) misses, which used to be ×3'd into a fake proximity.
+    const proximityWhenHit =
+      greenHitN >= MIN_GREENS_FOR_PROXIMITY
+        ? greenShots.reduce((a, s) => a + onGreenFinishFeet(s), 0) / greenHitN
+        : null;
+
     const penaltyCount = inBucket.filter((s) => s.is_penalty).length;
 
     return {
       sampleN: inBucket.length,
-      playerValue: avg,
+      // Green-hit % is the headline signal for this insight (reach). Unused downstream
+      // for diagnostic generators (requiresStanding=false), but semantically the lead.
+      playerValue: greenHitPct,
       bucket: this.bucket,
       attempts: inBucket.length,
-      avg_proximity_feet: avg,
+      green_hit_n: greenHitN,
+      green_hit_pct: greenHitPct,
+      proximity_when_hit_feet: proximityWhenHit,
       penalty_rate_pct: inBucket.length > 0 ? (100 * penaltyCount) / inBucket.length : 0,
     };
   }
 
   composeContent(agg: ApproachMissAggregate): ComposedContent {
-    const tour = TOUR_PROXIMITY_FEET[agg.bucket];
-    const diff = agg.avg_proximity_feet - tour;
-    const diffDisp = diff > 0 ? `+${diff.toFixed(0)}` : diff.toFixed(0);
     const label = BUCKET_LABEL[agg.bucket];
-    const valueDisp = `${agg.avg_proximity_feet.toFixed(0)} ft`;
+    const tourGreenHit = TOUR_GREEN_HIT_PCT[agg.bucket];
+    const tourProx = TOUR_PROXIMITY_FEET[agg.bucket];
+    const ghDisp = `${agg.green_hit_pct.toFixed(0)}%`;
+    const prox = agg.proximity_when_hit_feet;
 
-    const title = `${label} approach: ${valueDisp} avg proximity (${diffDisp} vs PGA)`;
-    const content =
-      `Across your last ${agg.attempts} approach shots from ${label} you ` +
-      `averaged ${valueDisp} from the hole. PGA Tour averages ~${tour} ft ` +
-      `from this distance (Research doc §2). ` +
-      (agg.penalty_rate_pct > 5
-        ? `Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
-        : '');
+    // Title leads with reach (green-hit %); proximity-when-hit rides along when reliable.
+    const title =
+      prox != null
+        ? `${label} approach: ${ghDisp} greens hit · ${prox.toFixed(0)} ft when you do`
+        : `${label} approach: ${ghDisp} greens hit`;
+
+    // Reach sentence + (when enough greens) the dial-in sentence — this is what tells the
+    // coach whether the leak is finding greens or controlling distance once there.
+    const reachSentence =
+      `Across your last ${agg.attempts} approaches from ${label} you found the green ` +
+      `${ghDisp} of the time (PGA Tour ~${tourGreenHit}%, approximate).`;
+    const dialInSentence =
+      prox != null
+        ? ` When you do reach it you finish ${prox.toFixed(0)} ft from the hole ` +
+          `(Tour ~${tourProx} ft) — that's the dial-in once you're on.`
+        : ` Too few greens hit from here to read a reliable proximity yet — the gap is ` +
+          `finding the green, not distance control on it.`;
+    const penaltySentence =
+      agg.penalty_rate_pct > 5
+        ? ` Note: ${agg.penalty_rate_pct.toFixed(0)}% of these approaches incurred a penalty — worth flagging in practice.`
+        : '';
 
     return {
       title,
-      content,
-      // Descriptive proximity standing row — severity is read off the StandingBar, not the verdict.
+      content: reachSentence + dialInSentence + penaltySentence,
+      // Descriptive diagnostic — severity is read off the StandingBar, not the verdict.
       priority: 'low',
       signature: `approach_miss:${agg.bucket}`,
       evidence: {
         metric: this.metricId,
-        metric_label: `Approach Proximity ${label}`,
-        unit: 'feet',
-        your_value: agg.avg_proximity_feet,
-        your_value_display: valueDisp,
-        comparison_value: tour,
-        comparison_label: 'PGA Tour avg',
+        metric_label: `Greens hit from ${label}`,
+        unit: 'percent',
+        your_value: agg.green_hit_pct,
+        your_value_display: ghDisp,
+        comparison_value: tourGreenHit,
+        comparison_label: 'PGA Tour (approx)',
         comparison_source: 'pga_baseline',
         sample_n: agg.attempts,
         window_days: 90,

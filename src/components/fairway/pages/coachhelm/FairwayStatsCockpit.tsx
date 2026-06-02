@@ -1303,11 +1303,14 @@ function ApproachHeadlineSection({ detailedStats }: { detailedStats: GolfStats |
   if (!detailedStats) return null;
   const girPct = finite(detailedStats.girPercentage);
   const girOpps = detailedStats.girOpportunities ?? 0;
-  const proxAll = finite(detailedStats.approachProximityAvg);
-  const proxHit = finite(detailedStats.approachProximityWhenHitGreen);
-  const proxMiss = finite(detailedStats.approachProximityWhenMissedGreen);
+  // Proximity is ON-GREEN ONLY now (a missed approach finishes off-green and has no
+  // green proximity). WhenHitGreen is the canonical dial-in number; Avg equals it since
+  // both populations are on-green. The old "all" / "when missed green" tiles were the
+  // unit-blend artifact (off-green yards ×3'd into feet) and are gone — green-hit rate
+  // (GIR) is the reach signal, proximity is the dial-in once on the green.
+  const proxOnGreen = finite(detailedStats.approachProximityWhenHitGreen) ?? finite(detailedStats.approachProximityAvg);
 
-  const hasHeadline = (girPct != null && girOpps > 0) || proxAll != null;
+  const hasHeadline = (girPct != null && girOpps > 0) || proxOnGreen != null;
   if (!hasHeadline) return null;
 
   return (
@@ -1315,41 +1318,25 @@ function ApproachHeadlineSection({ detailedStats }: { detailedStats: GolfStats |
       <div className="flex flex-col gap-0.5 px-1">
         <SectionHeading as="div">Approach &amp; greens</SectionHeading>
         <span className="font-fw-sans text-caption text-text-tertiary">
-          Greens in regulation and how close the approaches finish.
+          How often approaches find the green, and how close they finish once there.
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3">
         <HeadlineReadout
           value={girPct}
           format={{ maximumFractionDigits: 0 }}
           unit="%"
-          label="GIR"
+          label="Greens hit (GIR)"
           hasSample={girPct != null && girOpps > 0}
           awaitingLabel="No approaches"
         />
         <HeadlineReadout
-          value={proxAll}
+          value={proxOnGreen}
           format={{ maximumFractionDigits: 0 }}
           unit="ft"
-          label="Proximity (all)"
-          hasSample={proxAll != null}
-          awaitingLabel="No approaches"
-        />
-        <HeadlineReadout
-          value={proxHit}
-          format={{ maximumFractionDigits: 0 }}
-          unit="ft"
-          label="When hit green"
-          hasSample={proxHit != null}
+          label="Proximity on green"
+          hasSample={proxOnGreen != null}
           awaitingLabel="No greens hit"
-        />
-        <HeadlineReadout
-          value={proxMiss}
-          format={{ maximumFractionDigits: 0 }}
-          unit="ft"
-          label="When missed green"
-          hasSample={proxMiss != null}
-          awaitingLabel="No greens missed"
         />
       </div>
     </section>
