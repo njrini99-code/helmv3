@@ -255,7 +255,12 @@ export default function FairwayShotTracking({
       // Parse the distance, handling potential whitespace and ensuring valid number
       const parsedDistance = parseFloat(distanceAfterShot.trim());
       distanceAfter = Number.isFinite(parsedDistance) && parsedDistance >= 0 ? Math.round(parsedDistance) : 0;
-      unitAfter = distanceAfterUnit;
+      // Write-time unit guard: the stored unit is DERIVED from context, never trusted from
+      // the input state. On the green (a putt) or a shot that finished on the green is
+      // proximity in FEET; everything else is distance-remaining in YARDS. This makes it
+      // structurally impossible to persist the putt-in-yards / on-green-in-yards blend that
+      // inflated approach-proximity stats — matching the (now non-interactive) entry label.
+      unitAfter = isPutting || resultOfShot === 'green' ? 'feet' : 'yards';
 
       if (distanceAfter === 0) {
         isProcessingShotRef.current = false;
