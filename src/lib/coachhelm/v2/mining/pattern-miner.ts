@@ -365,44 +365,21 @@ export class PatternMiner {
         },
         test: (r) => r.round_type === 'qualifier',
       },
-      // Putting-heavy days (33+ putts is a clear above-average putting load)
-      {
-        condition: {
-          field: 'putts',
-          operator: 'gte',
-          value: 33,
-          label: 'Heavy putting day (33+ putts)',
-        },
-        test: (r) => (r.putts ?? 0) >= 33,
-      },
-      // Low-fairway days (<55% fairways hit out of attempted)
-      {
-        condition: {
-          field: 'fairway_pct',
-          operator: 'lt',
-          value: 0.55,
-          label: 'Off the tee struggles (<55% fairways)',
-        },
-        test: (r) => {
-          const att = r.total_fairways ?? 0;
-          if (att <= 0) return false;
-          return ((r.total_fairways_hit ?? 0) / att) < 0.55;
-        },
-      },
-      // Low-GIR days (<55% GIR of possible)
-      {
-        condition: {
-          field: 'gir_pct',
-          operator: 'lt',
-          value: 0.55,
-          label: 'Approach struggles (<55% GIR)',
-        },
-        test: (r) => {
-          const possible = r.total_gir_possible ?? 0;
-          if (possible <= 0) return false;
-          return ((r.total_gir ?? 0) / possible) < 0.55;
-        },
-      },
+      // NOTE (QA-D): score-COMPONENT conditions ("Heavy putting day 33+ putts",
+      // "Off the tee struggles <55% fairways", "Approach struggles <55% GIR")
+      // were removed here for the SAME reason the blow-up condition below was.
+      // Putts, fairways-hit and GIR are all components/proxies of the same
+      // round's score_to_par, so testing them against a score_to_par outcome is
+      // tautological: "when you take more putts you score worse" only restates
+      // that putts ARE strokes, and "when you miss greens you score worse" only
+      // restates that GIR drives scoring (it produced an absurd ~+6 "impact").
+      // These describe SYMPTOMS, not causes — they never answer "why did the
+      // putts/greens go bad." A conditional pattern must condition on something
+      // INDEPENDENT of the round's score, i.e. CONTEXT (rest/rust, round type,
+      // which remain above). Where strokes are lost — and the cause behind a
+      // high-putt or low-GIR day — is the job of the strokes-gained breakdown
+      // and the leak maps, not this conditional surface.
+      //
       // NOTE: a "Blow-up round (score_to_par >= +5)" condition was previously
       // included here, but it was tautological — its outcome is also
       // score_to_par, so the pattern read "when score is +5 or worse, score
@@ -801,9 +778,6 @@ export class PatternMiner {
         if ((condition.value as number) >= 7) {
           return 'Consider a practice round before important events after extended breaks.';
         }
-      }
-      if (condition.field === 'putts' && condition.operator === 'gte') {
-        return 'Focus on converting GIR opportunities with improved putting practice.';
       }
     }
 
