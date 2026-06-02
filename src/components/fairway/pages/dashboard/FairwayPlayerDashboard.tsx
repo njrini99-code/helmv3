@@ -240,6 +240,7 @@ export function FairwayPlayerDashboard({ data, enhancedData }: FairwayPlayerDash
         x: new Date(r.round_date).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
+          timeZone: 'UTC',
         }),
         y: r.total_score,
       }));

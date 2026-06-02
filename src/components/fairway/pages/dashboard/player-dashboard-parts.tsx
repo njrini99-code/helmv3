@@ -284,9 +284,14 @@ export function GenomeFingerprintTeaser({
 
 function formatRoundDate(date: string): string {
   try {
+    // round_date is a DATE column ('YYYY-MM-DD') → new Date() = UTC midnight.
+    // Pin the formatter to UTC so SSR (server TZ) and hydration (client TZ)
+    // agree — without this, west-of-UTC clients render the previous day,
+    // producing both a hydration mismatch (React #418) and an off-by-one date.
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
+      timeZone: 'UTC',
     });
   } catch {
     return date;

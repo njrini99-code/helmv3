@@ -1009,6 +1009,8 @@ export async function generateTeamInsights() {
           await logServerError(`generateInsightsForTeam skipped ${skipped} legacy records with insufficient sample_n`, {
             action: 'generateInsightsForTeam.skip-insufficient',
             featureArea: 'insights',
+            // Routine legacy-record skip counter — admin-feed only, not Sentry.
+            skipSentry: true,
           }, 'warning');
         }
         await Promise.all(inputs.map(({ input }) => upsertInsight(supabase, input)));
@@ -3316,6 +3318,8 @@ export async function triggerPlayerInsightsAfterRound(
           action: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
           featureArea: 'coachhelm',
           playerId,
+          // Routine post-deploy verification counter — admin-feed only, not Sentry (issue 20).
+          skipSentry: true,
           extra: { gatedCount: analysis.tier1GateMetrics.gatedCount },
         },
         'warning',
@@ -3437,6 +3441,8 @@ export async function triggerPlayerInsightsAfterRound(
         await logServerError(`triggerPlayerInsightsAfterRound skipped ${skipped} legacy records (insufficient sample_n)`, {
           action: 'triggerPlayerInsightsAfterRound.skip-insufficient',
           featureArea: 'insights',
+          // Routine legacy-record skip counter — admin-feed only, not Sentry (issue 2J).
+          skipSentry: true,
         }, 'warning');
       }
       await Promise.all(

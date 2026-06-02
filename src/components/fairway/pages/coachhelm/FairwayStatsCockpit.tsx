@@ -1308,7 +1308,7 @@ function ApproachLegacyDetail({ detailedStats }: { detailedStats: GolfStats | nu
           <DetailGrid title="GIR by hole type" rows={girByPar} columns={3} />
         ) : null}
         {!allDash(lieRows[selectedLie]) ? (
-          <DetailGrid title={`${selectedLie[0].toUpperCase()}${selectedLie.slice(1)} lie`} rows={lieRows[selectedLie]} />
+          <DetailGrid title={`${selectedLie.charAt(0).toUpperCase()}${selectedLie.slice(1)} lie`} rows={lieRows[selectedLie]} />
         ) : null}
         {!allDash(approachEfficiencyRows) ? (
           <DetailGrid

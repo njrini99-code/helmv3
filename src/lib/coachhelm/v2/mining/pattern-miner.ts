@@ -259,6 +259,9 @@ export class PatternMiner {
           {
             action: 'pattern-miner.thresholds.starvation',
             featureArea: 'coachhelm.mining',
+            // Routine "tried and found nothing" telemetry — keep the admin-feed
+            // + console signal, but do not page Sentry (issues 13/1B).
+            skipSentry: true,
             metadata: {
               playerId: this.playerId,
               roundCount: this.rounds.length,
