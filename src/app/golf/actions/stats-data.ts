@@ -998,10 +998,20 @@ async function queryDetailedStatsWithClient(
     computed.truncated = truncated;
     return serializeDetailedStats(computed);
   } catch (error) {
-    // Handled degradation: the detailed shot query timed out (statement_timeout
-    // 57014) or failed, so we fall back to round-level stats — the user still gets
-    // data. Record it for perf tracking, but keep it out of Sentry (issue 4K).
-    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
+    const described = describeError(error);
+    const isStatementTimeout =
+      described.includes('57014') || described.toLowerCase().includes('statement_timeout');
+    if (isStatementTimeout) {
+      // Handled degradation: the detailed-shot query hit statement_timeout (57014)
+      // and we fall back to round-level stats — the user still gets data. Record it
+      // for perf tracking but keep THIS specific case out of Sentry (issue 4K).
+      await logServerError(`[Stats] Falling back to round-level stats: ${described}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
+    } else {
+      // Any OTHER failure (schema break, bad response shape, mapping/calc bug) is a
+      // real defect that also degrades to round-level stats — it MUST still page
+      // Sentry on the default path so it is not silently masked.
+      await logServerError(`[Stats] Falling back to round-level stats: ${described}`, { action: 'stats_data.queryDetailedStatsWithClient' });
+    }
     const fallback = buildFallbackDetailedStats(roundsData);
     fallback.truncated = truncated;
     return serializeDetailedStats(fallback);
