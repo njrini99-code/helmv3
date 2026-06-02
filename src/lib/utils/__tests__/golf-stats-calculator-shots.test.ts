@@ -1083,7 +1083,10 @@ describe('calculateHoleStatsFromShots edge cases', () => {
     const stats = calculateHoleStatsFromShots(shots, 4);
     expect(stats.greenInRegulation).toBe(false);
     expect(stats.scrambleAttempt).toBe(true);
-    expect(stats.approachProximity).toBe(150);
+    // Green never found → NO approach proximity. The approach finished off-green at
+    // 50 yards; the old code ran that through normalizeToFeet (×3 = 150 "ft") and
+    // reported a fake on-green proximity. Proximity is on-green-only now → null.
+    expect(stats.approachProximity).toBeNull();
   });
 
   it('par 3 miss GIR (tee shot misses green)', () => {
@@ -1413,5 +1416,53 @@ describe('legacy-band regression guard (approach proximity aggregate bands)', ()
 
   it('routes a 160 yd approach proximity into approachProx150_175 (feet)', () => {
     expect(stats.approachProx150_175).toBe(30);
+  });
+
+  // Regression: a MISSED approach (off-green finish, stored in yards) must NOT
+  // contribute to any proximity band. The old code ran the yards finish through
+  // normalizeToFeet (×3) and reported it as on-green "feet", inflating bands ~2×.
+  function missedApproachPar4(holeNumber: number, approachYards: number, missYards: number): RawShot[] {
+    return [
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 1, shot_type: 'tee', club_type: 'driver',
+        lie_before: 'tee', distance_to_hole_before: 400, distance_unit_before: 'yards',
+        result: 'fairway', distance_to_hole_after: approachYards, distance_unit_after: 'yards',
+        shot_distance: 400 - approachYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 2, shot_type: 'approach', club_type: 'non_driver',
+        lie_before: 'fairway', distance_to_hole_before: approachYards, distance_unit_before: 'yards',
+        result: 'rough', distance_to_hole_after: missYards, distance_unit_after: 'yards',
+        shot_distance: approachYards - missYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 3, shot_type: 'around_green', club_type: 'non_driver',
+        lie_before: 'rough', distance_to_hole_before: missYards, distance_unit_before: 'yards',
+        result: 'green', distance_to_hole_after: 8, distance_unit_after: 'feet', shot_distance: missYards,
+      }),
+      makeRawShot({
+        hole_number: holeNumber, shot_number: 4, shot_type: 'putting', club_type: 'putter',
+        lie_before: 'green', distance_to_hole_before: 8, distance_unit_before: 'feet',
+        result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+        shot_distance: 0, putt_distance_feet: 8, putt_made: true,
+      }),
+    ];
+  }
+
+  it('excludes a missed approach (off-green yards) from the proximity bands — no ×3 inflation', () => {
+    const mixed = calculateStatsFromShots(
+      [...girPar3(1, 160, 30), ...missedApproachPar4(2, 160, 40)],
+      [
+        makeHoleInfo({ hole_number: 1, par: 3, yardage: 160 }),
+        makeHoleInfo({ hole_number: 2, par: 4, yardage: 400 }),
+      ],
+      [makeRoundInfo()],
+    );
+    // Both approaches are ~160 yd → band 150_175. Only the GIR hole (30 ft) contributes;
+    // the missed approach (40 yd off-green) would have been ×3'd to 120 ft and dragged the
+    // band to 75. On-green-only keeps it at 30, and there is no fabricated "missed" proximity.
+    expect(mixed.approachProx150_175).toBe(30);
+    expect(mixed.approachProximityWhenMissedGreen).toBeNull();
+    expect(mixed.approachProximityWhenHitGreen).toBe(30);
   });
 });

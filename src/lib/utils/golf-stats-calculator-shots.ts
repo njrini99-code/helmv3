@@ -827,17 +827,19 @@ export function calculateHoleStatsFromShots(
   const rawLie = approachShot ? approachShot.lie_before : null;
   const approachLie = rawLie === 'tee' ? 'fairway' : rawLie;
 
-  // Approach proximity - how close to the hole the approach shot left the ball.
-  // When GIR is achieved, use shotToGreen (the shot that actually landed on the green).
-  // When GIR is NOT achieved, use the identified approachShot (the GIR attempt) -
-  // this avoids picking up the subsequent chip/pitch shot's proximity instead.
-  const approachProximity = greenInRegulation
-    ? (shotToGreen && shotToGreen.distance_to_hole_after !== null
-      ? normalizeToFeet(shotToGreen.distance_to_hole_after, shotToGreen.distance_unit_after)
-      : null)
-    : (approachShot && approachShot.distance_to_hole_after !== null
+  // Approach proximity - how close to the hole the approach left the ball, in FEET.
+  // ON-GREEN ONLY: the regulation-attempt approach counts ONLY when it actually found
+  // the green — its finish is then stored in feet (a real proximity). When the approach
+  // MISSES, the finish is off-green (stored in YARDS); feeding that through
+  // normalizeToFeet (×3) inflated this stat ~2× and corrupted every approach-proximity
+  // aggregate (overall, by par/lie/distance, and the cockpit leak map). A missed approach
+  // now records NO proximity (null) — green-hit rate is the signal for missed approaches,
+  // not a fabricated distance. (`approachShot` is already reassigned to an earlier
+  // green-finding shot for par-5 eagle attempts above, so this stays correct there.)
+  const approachProximity =
+    approachShot && isGreenHit(approachShot.result) && approachShot.distance_to_hole_after !== null
       ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
-      : null);
+      : null;
 
   // Approach miss direction - when NOT GIR, get the miss direction from the approach shot
   // Use the identified approach shot (the GIR attempt), not searching for any missed shot
