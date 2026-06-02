@@ -923,11 +923,29 @@ function generateReviewContent(
     { label: '15-25 ft', min: 15, max: 25 },
     { label: '25+ ft', min: 25, max: 999 },
   ];
+  // Bucket EVERY putt by its own distance (made = holed) so the ranges sum to
+  // the total putt count — not one first-putt per hole. The old per-hole
+  // first-putt bucketing made the chart attempts add up to 18 (holes) while the
+  // header showed 35 (total putts), which read as "missing" putts. Falls back to
+  // the per-hole first-putt view only when shot-level putt rows are unavailable.
+  const puttShots = shotRows.filter(s => s.shot_type === 'putting');
   const puttingRanges: PuttingRange[] = puttBuckets.map(bucket => {
-    const inBucket = holes.filter(h => {
-      if (h.firstPuttFeet === null) return false;
-      return h.firstPuttFeet >= bucket.min && h.firstPuttFeet < bucket.max;
-    });
+    if (puttShots.length > 0) {
+      const inBucket = puttShots.filter(s => {
+        const ft = s.putt_distance_feet != null ? parseFloat(s.putt_distance_feet) : NaN;
+        if (Number.isNaN(ft)) return false;
+        return ft >= bucket.min && ft < bucket.max;
+      });
+      const made = inBucket.filter(s => s.putt_made === true || s.result === 'hole').length;
+      return {
+        label: bucket.label,
+        attempts: inBucket.length,
+        made,
+        pct: inBucket.length > 0 ? Math.round((made / inBucket.length) * 100) : 0,
+      };
+    }
+    // Fallback (hole-level data only): per-hole first putt, made = one-putt.
+    const inBucket = holes.filter(h => h.firstPuttFeet !== null && h.firstPuttFeet >= bucket.min && h.firstPuttFeet < bucket.max);
     const made = inBucket.filter(h => h.onePutt).length;
     return {
       label: bucket.label,
