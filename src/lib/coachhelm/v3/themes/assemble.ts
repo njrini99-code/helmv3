@@ -49,6 +49,31 @@ const LEAK_FLOOR = 0.3;
 const TEAM_FRACTION_DENOM_EPS = 1e-6;
 
 /**
+ * SORT-ONLY ranking floor (PLAY: team-wide-weakness rescue). `realisticTeamGap`
+ * collapses to ~0 when the player sits at their team average — which correctly
+ * de-prioritises "you're average on your team", but WRONGLY hides a real gap when
+ * the whole team is weak at that skill (team_avg far from PGA). A roster backtest
+ * found 54% of real Tour gaps were zeroed this way. We floor the SORT key (not the
+ * displayed magnitude) at this fraction of the raw Tour gap so a genuine gap keeps
+ * a minimum ranking weight and stays visible. Conservative: a real personal leak
+ * (large `strokesSavedPerRound`) still outranks a floored team-wide gap; this only
+ * rescues gaps that would otherwise rank as exactly 0. At 0.15, a genuine personal
+ * leak (realistic ≳ 0.45 strokes) still outranks even a large team-wide gap, so the
+ * #1 slot stays a real personal-gain cause when one exists — team-wide gaps surface
+ * below it (visible, not buried), rather than topping the list with a 0 display.
+ */
+const RANK_LEVERAGE_FLOOR = 0.15;
+
+/** SORT-ONLY ranking weight for a cause: its realistic magnitude, floored so a real
+ *  Tour gap zeroed by teamFraction never ranks as 0. Display value is untouched. */
+function causeRankKey(strokesSavedPerRound: number, tourGapPerRound: number | null): number {
+  const floor = tourGapPerRound != null && Number.isFinite(tourGapPerRound) && tourGapPerRound > 0
+    ? RANK_LEVERAGE_FLOOR * tourGapPerRound
+    : 0;
+  return Math.max(strokesSavedPerRound, floor);
+}
+
+/**
  * REALISTIC team-anchored stroke value for a cause.
  *
  * Product framing: the two honest baselines are PGA (the ceiling) and the
@@ -246,6 +271,9 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
   }
 
   // 4-7. Build one ThemeNode per taxonomy entry, then gate empty outcome themes.
+  // SORT-ONLY rank keys (never displayed) live here so a real-loss/outcome theme
+  // whose causes were all zeroed by teamFraction still sorts into visibility.
+  const themeRankKeys = new Map<ThemeNode, number>();
   const themes: ThemeNode[] = THEME_TAXONOMY.flatMap((def): ThemeNode[] => {
     const causes = (causesByCategory.get(def.category) ?? []).slice();
 
@@ -311,6 +339,18 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     const trend = trendByCategory[def.category];
     if (trend) theme.trend = trend;
 
+    // SORT-ONLY theme rank key: a strength (positive SG) is never a leak (0); any
+    // other theme is floored at RANK_LEVERAGE_FLOOR × its biggest cause's Tour gap
+    // so a real-loss/outcome theme whose causes were all zeroed by teamFraction
+    // still sorts into visibility. themeStrokesPerRound (the displayed magnitude)
+    // is untouched.
+    const isStrength = sgPerRound != null && sgPerRound > 0;
+    const dominantCauseTourGap = causes.reduce((m, c) => Math.max(m, c.tourGapPerRound ?? 0), 0);
+    themeRankKeys.set(
+      theme,
+      isStrength ? 0 : Math.max(themeStrokesPerRound, RANK_LEVERAGE_FLOOR * dominantCauseTourGap),
+    );
+
     // ITEM 5 — gate empty outcome themes. The 3 outcome themes (scoring /
     // course_management / pressure) have no SG metric and would otherwise be
     // permanent thin stubs; only emit them when they carry ≥1 cause. The 4 SG
@@ -319,8 +359,13 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     return [theme];
   });
 
-  // 8. Sort themes by magnitude desc, tiebreak by stable scaffold index asc.
+  // 8. Sort themes by the SORT-ONLY rank key desc (floors zeroed-but-real themes
+  //    into visibility), tiebreak on the displayed magnitude, then stable scaffold
+  //    index asc. The displayed themeStrokesPerRound is unchanged.
   themes.sort((a, b) => {
+    const aKey = themeRankKeys.get(a) ?? a.themeStrokesPerRound;
+    const bKey = themeRankKeys.get(b) ?? b.themeStrokesPerRound;
+    if (bKey !== aKey) return bKey - aKey;
     if (b.themeStrokesPerRound !== a.themeStrokesPerRound) {
       return b.themeStrokesPerRound - a.themeStrokesPerRound;
     }
@@ -462,6 +507,7 @@ function buildCause(
     title: row.title,
     content: sanitizeProse(row.content),
     strokesSavedPerRound,
+    rankKey: causeRankKey(strokesSavedPerRound, finalTourGapPerRound),
     tourGapPerRound: finalTourGapPerRound,
     counterfactualSuppressed,
     standingPlayerValue: standing?.player_value ?? null,
@@ -473,12 +519,18 @@ function buildCause(
   };
 }
 
-/** Cause comparator: realistic strokesSavedPerRound desc → |strokes_impact| desc → title asc. */
+/** Cause comparator: floored rank key desc → realistic magnitude desc → |strokes_impact|
+ *  desc → title asc. The rank key floors a real Tour gap zeroed by teamFraction so a
+ *  team-wide weakness stays visible; the realistic magnitude (display value) is the
+ *  next tiebreak so genuine personal leaks still order correctly among themselves. */
 function rankCauses(
   a: CauseNode,
   b: CauseNode,
   impactById: Map<string, number>,
 ): number {
+  const aKey = a.rankKey ?? a.strokesSavedPerRound;
+  const bKey = b.rankKey ?? b.strokesSavedPerRound;
+  if (bKey !== aKey) return bKey - aKey;
   if (b.strokesSavedPerRound !== a.strokesSavedPerRound) {
     return b.strokesSavedPerRound - a.strokesSavedPerRound;
   }

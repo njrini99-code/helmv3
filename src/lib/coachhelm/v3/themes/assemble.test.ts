@@ -607,6 +607,45 @@ describe('assembleThemes — ranking', () => {
     // equal strokesSaved → higher |strokes_impact| first (hi), despite title order
     expect(themeOf(result, 'approach').causes.map((c) => c.insight_id)).toEqual(['hi', 'lo']);
   });
+
+  // P2c — team-wide-weakness rescue: a real Tour gap that teamFraction zeroes
+  // (player sits at the team average) must not vanish from the ranking.
+  test('team-wide weakness (player at team avg) is rescued from rank 0 by the leverage floor', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'personal', category: 'approach', strokesSaved: 1.0, player: 10, team: 8, pga: 6 }), // realistic 0.5
+        rowWithTeam({ id: 'teamwide', category: 'approach', strokesSaved: 3.0, player: 10, team: 10, pga: 6 }), // realistic 0, Tour gap 3.0
+        row({ id: 'tiny', category: 'approach', strokesSaved: 0.2 }), // realistic 0.2 (no team ref)
+      ],
+      sgByCategory: {},
+    });
+    const causes = themeOf(result, 'approach').causes;
+    // Personal leak (0.5) still leads; the team-wide gap is rescued ABOVE the tiny
+    // real gap by its floored key (0.15 × 3.0 = 0.45 > 0.2), not buried last at 0.
+    expect(causes.map((c) => c.insight_id)).toEqual(['personal', 'teamwide', 'tiny']);
+    const teamwide = causes.find((c) => c.insight_id === 'teamwide')!;
+    // DISPLAY magnitude unchanged — still realistic 0; only the SORT position moved.
+    expect(teamwide.strokesSavedPerRound).toBe(0);
+    expect(teamwide.tourGapPerRound).toBe(3.0);
+    expect(teamwide.rankKey).toBeCloseTo(0.45, 5);
+  });
+
+  test('a real-loss theme whose causes are all zeroed still sorts above a smaller theme', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        rowWithTeam({ id: 'a1', category: 'approach', strokesSaved: 3.0, player: 10, team: 10, pga: 6 }), // approach realistic 0, Tour 3.0
+        row({ id: 'p1c', category: 'putting', strokesSaved: 0.2 }), // putting realistic 0.2
+      ],
+      sgByCategory: {},
+    });
+    const order = result.themes.map((t) => t.category);
+    // approach themeStrokesPerRound is 0 (cause zeroed) but its floored theme rank key
+    // (0.15 × 3.0 = 0.45) lifts it above putting (0.2) so the gap stays visible.
+    expect(order.indexOf('approach')).toBeLessThan(order.indexOf('putting'));
+    expect(themeOf(result, 'approach').themeStrokesPerRound).toBe(0); // display unchanged
+  });
 });
 
 /* ───────────────────────────────────────────────────────────────────────────

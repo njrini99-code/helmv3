@@ -114,6 +114,17 @@ export interface CauseNode {
    */
   strokesSavedPerRound: number;
   /**
+   * SORT-ONLY ranking key (never displayed). Equals `strokesSavedPerRound` EXCEPT
+   * when a real Tour gap has been zeroed by `teamFraction` (the player sits at their
+   * team average on a skill the whole team is weak at). Without a floor those real,
+   * coachable gaps rank as 0 and vanish from the cockpit — a roster backtest found
+   * this hid 54% of real gaps. The floor is `RANK_LEVERAGE_FLOOR * tourGapPerRound`,
+   * so a genuine gap keeps a minimum ranking weight while `strokesSavedPerRound`
+   * (the realistic team-anchored magnitude) remains the DISPLAYED number unchanged.
+   * Optional: a node without it falls back to `strokesSavedPerRound` for sorting.
+   */
+  rankKey?: number;
+  /**
    * The RAW gap to the PGA/Tour CEILING (the un-discounted upstream
    * `counterfactual.strokes_saved_per_round`), for honest "gap to Tour ceiling"
    * labeling. null when no counterfactual. NEVER framed as "strokes you're losing."
