@@ -87,6 +87,27 @@ export function teamCohortText(team_pct: number | null | undefined): string {
 }
 
 /**
+ * Mean-relative cohort line — describes the player's position vs the TEAM
+ * AVERAGE the bar's "T" marker actually renders (props.team_avg). Keeping the
+ * caption mean-relative makes it agree with the ↑/↓ arrow, the tone color, and
+ * the marker position. (The older percentile-based teamCohortText could read
+ * "Above team average" while the mean-delta arrow pointed DOWN on an
+ * outlier-skewed team — the contradiction surfaced on the round-review SG
+ * cards, e.g. You 0.17 vs Team-mean 1.02 dragged up by one 6.64 teammate.)
+ */
+export function teamRelativeText(
+  player_value: number,
+  team_avg: number | null,
+  direction: Direction,
+): string {
+  if (team_avg === null || !Number.isFinite(team_avg)) return '';
+  const diff = player_value - team_avg;
+  if (Math.abs(diff) < 0.01) return 'About your team average';
+  const better = direction === 'higher_better' ? diff > 0 : diff < 0;
+  return better ? 'Above team average' : 'Below team average';
+}
+
+/**
  * Derive the auto state from the props when one isn't passed explicitly.
  * 'error' and 'empty' must be passed in; this function returns either
  * 'cold-start' (when team data is insufficient) or 'happy'.
@@ -114,7 +135,7 @@ export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }
-  const cohort = teamCohortText(props.team_pct);
+  const cohort = teamRelativeText(props.player_value, props.team_avg, props.direction);
   if (cohort) parts.push(cohort + '.');
   return parts.join(' ');
 }

@@ -142,7 +142,9 @@ describe('deriveAriaLabel', () => {
     expect(label).toContain('You: 38%');
     expect(label).toContain('PGA Tour: 36%');
     expect(label).toContain('Team average: 41%');
-    expect(label).toContain('Bottom 18% on your team');
+    // Caption is mean-relative (consistent with the arrow + "T" marker): the
+    // HAPPY fixture is You 38% < Team 41% (higher_better) → below the team mean.
+    expect(label).toContain('Below team average');
   });
   it('omits team line in cold-start', () => {
     const props: StandingBarProps = {
@@ -180,7 +182,7 @@ describe('StandingBar render states — card', () => {
     expect(screen.getByText(/You 38%/)).toBeTruthy();
     expect(screen.getByText(/PGA 36%/)).toBeTruthy();
     expect(screen.getByText(/Team 41%/)).toBeTruthy();
-    expect(screen.getByText('Bottom 18% on your team')).toBeTruthy();
+    expect(screen.getByText('Below team average')).toBeTruthy();
   });
 
   it('cold-start: team_n < 5 hides team marker + shows cold-start hint', () => {
