@@ -262,6 +262,28 @@ export const METRIC_SOURCE_ALIASES: Record<string, MetricSourceDef> = {
     scale: 100,
   },
 
+  // ── v2 approach-mining diagnostics (severity + dominant horizontal axis) ──
+  // The v2 mining surface (src/lib/coachhelm/v2/mining/approach-analytics.ts)
+  // emits per-distance-bucket diagnostic metrics that the insight surface tags
+  // as evidence.metric. Like `putt_miss_bias_*`, these have no honest per-round
+  // time-series — the mining computes them at single-round bucket volume and
+  // golf_round_stats_cache aggregates approaches by count, not by bucket. There
+  // is no per-round numerator/denominator we can window-average. Reclassify
+  // from the "unknown-metric drift" warning bucket into "intentional-no-lift"
+  // (silent) so the cron observability accurately reflects coverage.
+  'approach_severity_<150':    { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_severity_150_175': { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_severity_175_200': { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_severity_200+':    { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_<150_left':     { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_<150_right':    { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_150_175_left':  { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_150_175_right': { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_175_200_left':  { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_175_200_right': { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_200+_left':     { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+  'approach_direction_200+_right':    { kind: 'intentional-null', reason: 'v2-mining-diagnostic' },
+
   // DEFERRED (no honest per-round source — intentionally NOT aliased):
   //  - `shortside_scrambling_pct`: "short-side" is a positional concept, not a
   //    lie. The cache only stores aggregate sand (sand_saves/sand_attempts) and
