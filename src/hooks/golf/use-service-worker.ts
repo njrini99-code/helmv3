@@ -141,13 +141,21 @@ export function useServiceWorker(options: UseServiceWorkerOptions = {}): Service
 
       console.log('[SW Hook] Service worker registered:', registration.scope);
 
-      // Check for sync support. The `typeof === 'object'` guard alone is unsafe:
-      // `typeof null === 'object'` is true, and some headless/instrumented browser
-      // contexts (Lighthouse CI, in-app WebViews) have been observed to resolve
-      // `serviceWorker.register()` to a falsy value past the !registration throw
-      // above, surfacing as "Cannot use 'in' operator to search for 'sync' in
-      // null/undefined" in prod. Tighten with a non-null check.
-      const syncSupported = registration != null && 'sync' in registration;
+      // Check for sync support. Per the TS types `registration` is non-null
+      // here, but production has surfaced "Cannot use 'in' operator to search
+      // for 'sync' in null/undefined" from some headless / instrumented browser
+      // contexts (Lighthouse CI, in-app WebViews) where the platform resolves
+      // `serviceWorker.register()` to a falsy value past the !registration
+      // throw above. A plain `'sync' in registration` would throw; a null/typeof
+      // check is type-unsound (CodeQL flags comparing a non-null type to null).
+      // Wrap in try/catch — the only operation is the `in` test, so the catch
+      // captures exactly the failure we're defending against.
+      let syncSupported = false;
+      try {
+        syncSupported = 'sync' in registration;
+      } catch {
+        // Treat as unsupported when the runtime gave us a non-object value.
+      }
 
       // Check push notification permission. Guard `Notification` — it is
       // undefined in browsers/contexts without the Notifications API (e.g.
