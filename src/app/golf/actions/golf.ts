@@ -789,12 +789,37 @@ async function submitRoundDirectFallback({
 
   const existingDraftData = existingRound?.draft_data;
 
+  // Snapshot the existing holes + shots BEFORE we clear them. The JS client can't
+  // wrap this in a DB transaction (that's exactly what the atomic RPC this is a
+  // fallback FOR does), so if an insert fails after the deletes we manually restore
+  // the snapshot instead of leaving the round with no holes/shots. This honors the
+  // no-destructive-writes rule on a save/submit path — a transient failure must not
+  // lose the round. Restore is best-effort: if it also fails we surface the original
+  // error, but the common case (transient insert error) is fully recoverable.
+  const { data: shotSnapshot } = await supabase.from('golf_shots').select('*').eq('round_id', roundId);
+  const { data: holeSnapshot } = await supabase.from('golf_holes').select('*').eq('round_id', roundId);
+  const restoreSnapshot = async (): Promise<void> => {
+    try {
+      await supabase.from('golf_shots').delete().eq('round_id', roundId);
+      await supabase.from('golf_holes').delete().eq('round_id', roundId);
+      if (Array.isArray(holeSnapshot) && holeSnapshot.length > 0) {
+        await supabase.from('golf_holes').insert(holeSnapshot);
+      }
+      if (Array.isArray(shotSnapshot) && shotSnapshot.length > 0) {
+        await supabase.from('golf_shots').insert(shotSnapshot);
+      }
+    } catch {
+      // Best-effort rollback — the caller surfaces the ORIGINAL failure either way.
+    }
+  };
+
   const { error: deleteShotsError } = await supabase
     .from('golf_shots')
     .delete()
     .eq('round_id', roundId);
 
   if (deleteShotsError) {
+    // Nothing destroyed yet (the delete itself failed) — no restore needed.
     return { success: false, error: `Fallback failed while clearing shots: ${deleteShotsError.message}` };
   }
 
@@ -804,6 +829,7 @@ async function submitRoundDirectFallback({
     .eq('round_id', roundId);
 
   if (deleteHolesError) {
+    await restoreSnapshot(); // shots were already cleared — put them back
     return { success: false, error: `Fallback failed while clearing holes: ${deleteHolesError.message}` };
   }
 
@@ -813,6 +839,7 @@ async function submitRoundDirectFallback({
     .select('id, hole_number');
 
   if (holesError || !insertedHoles) {
+    await restoreSnapshot(); // holes+shots cleared, new holes failed — restore originals
     return { success: false, error: `Fallback failed while writing holes: ${holesError?.message || 'unknown error'}` };
   }
 
@@ -838,6 +865,7 @@ async function submitRoundDirectFallback({
       .select('id, hole_number, shot_number');
 
     if (shotsError || !insertedShots) {
+      await restoreSnapshot(); // partial new holes/shots written — roll back to originals
       return { success: false, error: `Fallback failed while writing shots: ${shotsError?.message || 'unknown error'}` };
     }
 
