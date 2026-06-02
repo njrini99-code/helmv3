@@ -796,8 +796,16 @@ async function submitRoundDirectFallback({
   // no-destructive-writes rule on a save/submit path — a transient failure must not
   // lose the round. Restore is best-effort: if it also fails we surface the original
   // error, but the common case (transient insert error) is fully recoverable.
-  const { data: shotSnapshot } = await supabase.from('golf_shots').select('*').eq('round_id', roundId);
-  const { data: holeSnapshot } = await supabase.from('golf_holes').select('*').eq('round_id', roundId);
+  const { data: shotSnapshot, error: shotSnapshotError } = await supabase.from('golf_shots').select('*').eq('round_id', roundId);
+  const { data: holeSnapshot, error: holeSnapshotError } = await supabase.from('golf_holes').select('*').eq('round_id', roundId);
+  if (shotSnapshotError || holeSnapshotError || shotSnapshot == null || holeSnapshot == null) {
+    // Could not capture a reliable snapshot — abort BEFORE any delete so a later
+    // restoreSnapshot() can never wipe shots/holes and re-insert nothing (data-loss guard).
+    return {
+      success: false,
+      error: `Fallback aborted: could not snapshot existing round data: ${shotSnapshotError?.message || holeSnapshotError?.message || 'snapshot returned null'}`,
+    };
+  }
   const restoreSnapshot = async (): Promise<void> => {
     try {
       await supabase.from('golf_shots').delete().eq('round_id', roundId);

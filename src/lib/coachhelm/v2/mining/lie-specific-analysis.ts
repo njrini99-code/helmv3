@@ -818,7 +818,11 @@ class LieSpecificAnalyzer {
    * Calculates average proximity (distance to hole after shot)
    */
   private calculateAvgProximity(shots: RawShot[]): number {
-    const shotsWithProximity = shots.filter((s) => s.distance_to_hole_after != null);
+    // ON-GREEN ONLY: a missed approach finishes off-green; including it blends
+    // populations and inflates proximity — matches analyzeApproachByBracket / P1a.
+    const shotsWithProximity = shots.filter(
+      (s) => s.distance_to_hole_after != null && (s.result === 'green' || s.result === 'hole')
+    );
 
     if (shotsWithProximity.length === 0) return 0;
 

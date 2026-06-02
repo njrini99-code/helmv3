@@ -643,10 +643,10 @@ async function fetchShotDriversByCategory(
 
     return buildShotDrivers(shots as unknown as ShotDriverInput[]);
   } catch (err) {
-    await logServerError(
+    void logServerError(
       `fetchShotDriversByCategory failed (continuing without shot drivers): ${err instanceof Error ? err.message : String(err)}`,
       { action: 'insight-delivery.fetchShotDriversByCategory', featureArea: 'insights', playerId },
-    );
+    ).catch(() => undefined);
     return undefined;
   }
 }
@@ -690,10 +690,10 @@ async function fetchSgTrendsByCategory(
     // Empty map (no category cleared the min-window guard) → pass nothing.
     return Object.keys(trends).length > 0 ? trends : undefined;
   } catch (err) {
-    await logServerError(
+    void logServerError(
       `fetchSgTrendsByCategory failed (continuing without trends): ${err instanceof Error ? err.message : String(err)}`,
       { action: 'insight-delivery.fetchSgTrendsByCategory', featureArea: 'insights', playerId },
-    );
+    ).catch(() => undefined);
     return undefined;
   }
 }
@@ -756,10 +756,10 @@ async function assembleForPlayer(
       short_game: stats.sgAroundGreenPerRound,
     };
   } catch (sgErr) {
-    await logServerError(
+    void logServerError(
       `assembleForPlayer SG fetch failed (continuing): ${sgErr instanceof Error ? sgErr.message : String(sgErr)}`,
       { action: 'insight-delivery.assembleForPlayer', featureArea: 'insights', playerId },
-    );
+    ).catch(() => undefined);
     sgByCategory = {};
   }
 

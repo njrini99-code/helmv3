@@ -439,7 +439,7 @@ function buildCause(
   const metric = typeof ev.metric === 'string' ? ev.metric : null;
   const standing = ev.standing ?? null;
 
-  const counterfactualSuppressed = !ev.counterfactual || ev.counterfactual.suppressed === true;
+  const ownCounterfactualSuppressed = !ev.counterfactual || ev.counterfactual.suppressed === true;
   // Honest raw gap to the PGA/Tour ceiling (null when suppressed/absent), and the
   // REALISTIC gap to TEAM AVERAGE used for ranking/sizing/display. We do NOT
   // re-apply the 0.3 stat-noise floor here — upstream already applied it on the
@@ -509,7 +509,10 @@ function buildCause(
     strokesSavedPerRound,
     rankKey: causeRankKey(strokesSavedPerRound, finalTourGapPerRound),
     tourGapPerRound: finalTourGapPerRound,
-    counterfactualSuppressed,
+    // A composite that OWNS leaves carries the conserved leaf gap as its own displayed
+    // strokes; if that gap is real (>0) the cause is quantified and must NOT read as
+    // suppressed, even though the parent row has no own counterfactual.
+    counterfactualSuppressed: ownsLeaves && strokesSavedPerRound > 0 ? false : ownCounterfactualSuppressed,
     standingPlayerValue: standing?.player_value ?? null,
     standingPgaValue: standing?.pga_value ?? null,
     standingTeamAvgValue: standing?.team_avg ?? null,

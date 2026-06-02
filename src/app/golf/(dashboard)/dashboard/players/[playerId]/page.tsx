@@ -7,6 +7,7 @@ import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayPlayerInsight } from '@/components/fairway/pages/coachhelm/FairwayPlayerInsight';
 import { getThemesForCoach } from '@/app/golf/actions/insight-delivery';
+import { logServerError } from '@/lib/server-error-logger';
 
 export const metadata: Metadata = {
   title: 'Player Insight | Helm Golf',
@@ -207,8 +208,15 @@ export default async function PlayerInsightPage({
       .limit(40),
 
     // Hierarchical THEME scaffold for the redesigned coach surface. Per-player.
-    // Degrades to [] on any failure — never errors the page.
-    getThemesForCoach({ player_id: playerId }).catch(() => null),
+    // Degrades to null (→ []) on any failure so it never errors the page — but LOGS
+    // the failure so a real load/auth/query regression is observable, not silent.
+    getThemesForCoach({ player_id: playerId }).catch((err) => {
+      void logServerError(
+        `players page themes fetch failed (continuing without themes): ${err instanceof Error ? err.message : String(err)}`,
+        { action: 'players-page.getThemesForCoach', featureArea: 'insights', playerId },
+      ).catch(() => undefined);
+      return null;
+    }),
   ]);
 
   const player = (playerResult.data as PlayerProfile | null) ?? null;

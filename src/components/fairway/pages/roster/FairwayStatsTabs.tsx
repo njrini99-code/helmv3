@@ -245,7 +245,7 @@ function ApproachBody({ stats }: { stats: GolfStats }) {
         <StatRow label="GIR from Fairway" value={fmtPct(stats.girPctFromFairway)} />
         <StatRow label="GIR from Rough" value={fmtPct(stats.girPctFromRough)} />
         <StatRow label="GIR from Sand" value={fmtPct(stats.girPctFromSand)} />
-        <StatRow label="Approach Proximity (avg)" value={fmtFeet(stats.approachProximityAvg)} />
+        <StatRow label="Approach Proximity (on green)" value={fmtFeet(stats.approachProximityWhenHitGreen)} />
         <StatRow label="Proximity 125-150 yds" value={fmtFeet(stats.approachProx125_150)} />
         <StatRow label="Proximity 175-200 yds" value={fmtFeet(stats.approachProx175_200)} />
       </div>

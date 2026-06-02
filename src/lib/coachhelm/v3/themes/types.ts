@@ -161,9 +161,12 @@ export type ThemeState = 'leak' | 'strength' | 'thin';
  * average is HIGHER than the prior window (`delta > 0`). This is the OPPOSITE
  * sign of the lower-is-better scoring trend.
  */
+/** Direction of a per-category SG trend. SG up = `improving` (higher is better). */
+export type ThemeTrendDirection = 'improving' | 'declining' | 'steady';
+
 export interface ThemeTrend {
   /** `improving` = recent SG avg up vs prior (higher is better); `declining` = down. */
-  direction: 'improving' | 'declining' | 'steady';
+  direction: ThemeTrendDirection;
   /** mean per-round SG over the most-recent window. */
   recentAvg: number;
   /** mean per-round SG over the window before the recent one. */

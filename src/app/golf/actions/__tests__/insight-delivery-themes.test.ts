@@ -274,7 +274,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
       if (table === 'golf_coach_insights') return buildInsightBuilder();
       if (table === 'golf_rounds') return buildRoundsBuilder();
       if (table === 'golf_shots') return buildShotsBuilder();
-      return buildInsightBuilder();
+      throw new Error(`fake-supabase: unexpected table "${table}" in themes delivery test`);
     }),
   };
 }

@@ -837,8 +837,12 @@ export function calculateHoleStatsFromShots(
   // not a fabricated distance. (`approachShot` is already reassigned to an earlier
   // green-finding shot for par-5 eagle attempts above, so this stays correct there.)
   const approachProximity =
-    approachShot && isGreenHit(approachShot.result) && approachShot.distance_to_hole_after !== null
-      ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
+    approachShot && isGreenHit(approachShot.result)
+      ? approachShot.result === 'hole'
+        ? 0 // holed the approach — best possible proximity (0 ft), not "no data"
+        : approachShot.distance_to_hole_after !== null
+          ? normalizeToFeet(approachShot.distance_to_hole_after, approachShot.distance_unit_after)
+          : null
       : null;
 
   // Approach miss direction - when NOT GIR, get the miss direction from the approach shot
@@ -1741,7 +1745,11 @@ function aggregateRoundStats(rounds: Array<{
       if (hole.approachProximity !== null) {
         approachProximities.push(hole.approachProximity);
 
-        // Split proximity by green hit vs miss
+        // Split proximity by green hit vs miss. NOTE: per-hole approachProximity is
+        // null on missed greens (on-green-only semantics), so this else-branch is
+        // structurally unreachable and approachProximityWhenMissedGreen is always
+        // null — honest ("no on-green proximity exists for a missed approach"), and
+        // no surface displays it. Kept as a guard if per-hole semantics ever change.
         if (hole.greenInRegulation) {
           greenHitProximities.push(hole.approachProximity);
         } else {

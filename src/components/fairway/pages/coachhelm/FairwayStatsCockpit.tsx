@@ -1308,7 +1308,9 @@ function ApproachHeadlineSection({ detailedStats }: { detailedStats: GolfStats |
   // both populations are on-green. The old "all" / "when missed green" tiles were the
   // unit-blend artifact (off-green yards ×3'd into feet) and are gone — green-hit rate
   // (GIR) is the reach signal, proximity is the dial-in once on the green.
-  const proxOnGreen = finite(detailedStats.approachProximityWhenHitGreen) ?? finite(detailedStats.approachProximityAvg);
+  // Bound to the on-green field ONLY (no Avg fallback) so this tile can never show a
+  // non-on-green value labeled "Proximity on green" — it shows "No greens hit" instead.
+  const proxOnGreen = finite(detailedStats.approachProximityWhenHitGreen);
 
   const hasHeadline = (girPct != null && girOpps > 0) || proxOnGreen != null;
   if (!hasHeadline) return null;

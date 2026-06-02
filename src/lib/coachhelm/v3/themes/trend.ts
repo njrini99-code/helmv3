@@ -32,7 +32,7 @@
  * ========================================================================== */
 
 import type { InsightCategory } from '@/lib/coachhelm/v2/insights/types';
-import type { ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
+import type { ThemeTrend, ThemeTrendDirection } from '@/lib/coachhelm/v3/themes/types';
 
 /**
  * Minimum number of REAL (non-null, finite) SG samples required in EACH of the
@@ -60,8 +60,9 @@ export const WINDOW = 5;
  */
 export const STEADY_THRESHOLD = 0.15;
 
-/** Direction of a per-category SG trend. SG up = `improving` (higher is better). */
-export type ThemeTrendDirection = 'improving' | 'declining' | 'steady';
+/** Direction of a per-category SG trend — canonical definition lives in `./types`;
+ *  re-exported here so existing `import { ThemeTrendDirection } from './trend'` callers keep working. */
+export type { ThemeTrendDirection };
 
 /**
  * One per-round SG sample. Each SG field is the round's per-round strokes-gained
