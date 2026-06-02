@@ -2,7 +2,9 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { getGolfSessionProfile } from '@/lib/auth/session';
 import { GolfDashboardShell } from './GolfDashboardShell';
+import { FairwayDashboardShell } from './FairwayDashboardShell';
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
+import { isRedesignEnabled } from '@/lib/redesign/flag';
 import type { GolfUserData } from '@/contexts/golf-user-context';
 
 /**
@@ -169,10 +171,13 @@ export default async function GolfDashboardLayout({
     return null;
   }
 
-  // 4. Render the client shell with resolved data — no loading spinner needed
+  // 4. Render the client shell with resolved data — no loading spinner needed.
+  //    Flag ON → the premium Fairway shell (AppShell rail + glass top bar +
+  //    hamburger drawer). Flag OFF → the legacy shell, byte-for-byte unchanged.
+  const DashboardShell = isRedesignEnabled() ? FairwayDashboardShell : GolfDashboardShell;
   return (
-    <GolfDashboardShell userData={userData}>
+    <DashboardShell userData={userData}>
       {children}
-    </GolfDashboardShell>
+    </DashboardShell>
   );
 }

@@ -65,6 +65,15 @@ export interface AppShellProps {
   /** Hide the collapse affordance entirely. */
   collapsible?: boolean;
 
+  /**
+   * Controlled mobile-drawer open state. When omitted, the shell manages it
+   * internally (mirrors the `collapsed` controlled/uncontrolled pattern above).
+   * Pass these to bridge the drawer to an external nav context so OTHER triggers
+   * (e.g. a not-yet-migrated page's own menu button) open the SAME drawer.
+   */
+  mobileOpen?: boolean;
+  onMobileOpenChange?: (next: boolean) => void;
+
   /** The page content. */
   children: React.ReactNode;
   /** Disable the route-transition reveal (e.g. if a page owns its own motion). */
@@ -92,6 +101,8 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     collapsed: collapsedProp,
     onCollapsedChange,
     collapsible = true,
+    mobileOpen: mobileOpenProp,
+    onMobileOpenChange,
     children,
     disableRouteTransition = false,
     constrainContent = true,
@@ -101,10 +112,13 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
 ) {
   const reduceMotion = useReducedMotion();
   const [internalCollapsed, setInternalCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [internalMobileOpen, setInternalMobileOpen] = useState(false);
 
   const isControlled = collapsedProp !== undefined;
   const collapsed = isControlled ? collapsedProp : internalCollapsed;
+
+  const isMobileControlled = mobileOpenProp !== undefined;
+  const mobileOpen = isMobileControlled ? mobileOpenProp : internalMobileOpen;
 
   const toggleCollapsed = useCallback(() => {
     const next = !collapsed;
@@ -112,13 +126,18 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     onCollapsedChange?.(next);
   }, [collapsed, isControlled, onCollapsedChange]);
 
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
-  const openMobile = useCallback(() => setMobileOpen(true), []);
+  const setMobileOpen = useCallback((next: boolean) => {
+    if (!isMobileControlled) setInternalMobileOpen(next);
+    onMobileOpenChange?.(next);
+  }, [isMobileControlled, onMobileOpenChange]);
+
+  const closeMobile = useCallback(() => setMobileOpen(false), [setMobileOpen]);
+  const openMobile = useCallback(() => setMobileOpen(true), [setMobileOpen]);
 
   // Close the mobile drawer on route change.
   useEffect(() => {
     setMobileOpen(false);
-  }, [pathname]);
+  }, [pathname, setMobileOpen]);
 
   // Escape closes the mobile drawer.
   useEffect(() => {
@@ -128,7 +147,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [mobileOpen]);
+  }, [mobileOpen, setMobileOpen]);
 
   const sidebarProps: Omit<FairwaySidebarProps, 'isMobile' | 'onNavigate' | 'collapsed' | 'onToggleCollapsed'> = {
     sections,
