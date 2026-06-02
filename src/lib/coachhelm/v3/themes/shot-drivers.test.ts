@@ -160,6 +160,60 @@ describe('buildShotDrivers — putting', () => {
 });
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * PUTTING — lag origin (3-putts from long first putts vs missed shorts)
+ * ────────────────────────────────────────────────────────────────────────── */
+
+function puttRow(roundId: string, hole: number, shotNumber: number, distFt: number): ShotDriverInput {
+  return {
+    shot_type: 'putting',
+    round_id: roundId,
+    hole_number: hole,
+    shot_number: shotNumber,
+    distance_to_hole_before: distFt,
+    distance_unit_before: 'feet',
+  };
+}
+
+describe('buildShotDrivers — putting lag origin', () => {
+  test('emits a lag-origin driver when 3-putts come from long first putts', () => {
+    const shots: ShotDriverInput[] = [];
+    // 6 three-putt holes, each starting from a 35 ft first putt (lag length).
+    for (let h = 1; h <= 6; h++) {
+      shots.push(puttRow('r1', h, 1, 35), puttRow('r1', h, 2, 6), puttRow('r1', h, 3, 1));
+    }
+    // 10 two-putt holes from short (12 ft) first putts — short putting is fine.
+    for (let h = 11; h <= 20; h++) {
+      shots.push(puttRow('r1', h, 1, 12), puttRow('r1', h, 2, 1));
+    }
+    const drivers = buildShotDrivers(shots).putting!;
+    const lag = drivers.find((d) => /long first putts/i.test(d.title));
+    expect(lag).toBeDefined();
+    expect(lag!.source).toBe('shot_detail');
+    expect(lag!.prose).toContain('100% of your 6 three-putts started from 30+ ft');
+    expect(lag!.prose).toContain('inside 20 ft three-putt just 0%');
+  });
+
+  test('omits the lag driver when there are too few 3-putts to characterise', () => {
+    const shots: ShotDriverInput[] = [];
+    for (let h = 1; h <= 3; h++) {
+      shots.push(puttRow('r1', h, 1, 35), puttRow('r1', h, 2, 6), puttRow('r1', h, 3, 1));
+    }
+    const lag = (buildShotDrivers(shots).putting ?? []).find((d) => /long first putts/i.test(d.title));
+    expect(lag).toBeUndefined(); // 3 three-putts < MIN_THREE_PUTTS (5)
+  });
+
+  test('omits the lag driver when 3-putts come from SHORT first putts (stroke, not lag)', () => {
+    const shots: ShotDriverInput[] = [];
+    // 6 three-putts but all from 10 ft first putts → a stroke problem, not lag.
+    for (let h = 1; h <= 6; h++) {
+      shots.push(puttRow('r1', h, 1, 10), puttRow('r1', h, 2, 4), puttRow('r1', h, 3, 1));
+    }
+    const lag = (buildShotDrivers(shots).putting ?? []).find((d) => /long first putts/i.test(d.title));
+    expect(lag).toBeUndefined(); // longShare 0 < 0.6 → correctly NOT attributed to lag
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
  * TEE
  * ────────────────────────────────────────────────────────────────────────── */
 

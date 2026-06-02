@@ -630,6 +630,9 @@ async function fetchShotDriversByCategory(
         distance_unit_before,
         result,
         miss_direction,
+        round_id,
+        hole_number,
+        shot_number,
         putt_details(miss_tags, break_direction),
         approach_miss_details(miss_direction, lie_type, distance_from_green_yards)
       `)

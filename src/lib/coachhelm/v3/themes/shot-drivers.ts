@@ -55,13 +55,19 @@ interface ApproachMissDetailLike {
 export interface ShotDriverInput {
   shot_type?: string | null;
   club_type?: string | null;
-  /** approach starting distance to the pin (yards) — the band source. */
+  /** approach starting distance to the pin (yards), OR — for putts — the first/next
+   *  putt length (feet). Unit named by distance_unit_before. */
   distance_to_hole_before?: number | null;
   distance_unit_before?: string | null;
   /** tee-shot landing surface (fairway / rough / sand / other). */
   result?: string | null;
   /** tee-shot horizontal miss side (left / right / ...). */
   miss_direction?: string | null;
+  /** Hole-grouping keys — used by the putting LAG driver to find each hole's first
+   *  putt (min shot_number) and total putt count (3-putt = ≥3 putting rows). */
+  round_id?: string | null;
+  hole_number?: number | null;
+  shot_number?: number | null;
   putt_details?: PuttDetailLike | PuttDetailLike[] | null;
   approach_miss_details?: ApproachMissDetailLike | ApproachMissDetailLike[] | null;
 }
@@ -356,6 +362,94 @@ function buildPuttingDriver(shots: readonly ShotDriverInput[]): RootDriver | nul
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * PUTTING (lag origin) — do 3-putts come from LONG first putts (lag + the
+ * approach/chip that left them there) or from missed SHORT ones (stroke)?
+ *
+ * Confirmed by a roster-wide trace: 3-putt rate climbs from ~0% inside 5 ft to
+ * ~31% from 30-45 ft and ~37% from 45+ ft — i.e. 3-putts originate from long
+ * first putts, not short misses. Without this, a negative SG-putting shows up
+ * with NO cause, and a coach wrongly drills short-putt mechanics.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** ≥ this first-putt length (feet) is a lag-length putt. */
+const LONG_FIRST_PUTT_FT = 30;
+/** < this first-putt length (feet) is a routine first putt. */
+const SHORT_FIRST_PUTT_FT = 20;
+/** Need at least this many 3-putts before characterising their origin. */
+const MIN_THREE_PUTTS = 5;
+/** ≥ this share of 3-putts must trace to long first putts to call it lag. */
+const LAG_ORIGIN_SHARE = 0.6;
+
+/** A putt's length normalized to FEET (on-green rows are feet; defensive ×3 for
+ *  a stray yards row). */
+function puttDistanceFeet(row: ShotDriverInput): number | null {
+  const raw = row.distance_to_hole_before;
+  if (raw == null || !Number.isFinite(raw)) return null;
+  return row.distance_unit_before === 'yards' ? raw * 3 : raw;
+}
+
+function buildPuttingLagDriver(shots: readonly ShotDriverInput[]): RootDriver | null {
+  // Group putting rows by hole. Each hole's first putt is the min shot_number;
+  // its total putt count gives the 3-putt flag (≥3 putting rows).
+  interface HoleAgg { firstSn: number; firstDistFt: number | null; putts: number }
+  const holes = new Map<string, HoleAgg>();
+  for (const s of shots) {
+    if (s.shot_type !== 'putting') continue;
+    if (s.round_id == null || s.hole_number == null || s.shot_number == null) continue;
+    const key = `${s.round_id}:${s.hole_number}`;
+    const agg = holes.get(key) ?? { firstSn: Infinity, firstDistFt: null, putts: 0 };
+    agg.putts += 1;
+    if (s.shot_number < agg.firstSn) {
+      agg.firstSn = s.shot_number;
+      agg.firstDistFt = puttDistanceFeet(s);
+    }
+    holes.set(key, agg);
+  }
+
+  let threePuttTotal = 0;
+  let threePuttLong = 0;
+  let shortHoles = 0;
+  let shortThreePutts = 0;
+  for (const h of holes.values()) {
+    if (h.firstDistFt == null) continue;
+    const isThree = h.putts >= 3;
+    if (isThree) {
+      threePuttTotal += 1;
+      if (h.firstDistFt >= LONG_FIRST_PUTT_FT) threePuttLong += 1;
+    }
+    if (h.firstDistFt < SHORT_FIRST_PUTT_FT) {
+      shortHoles += 1;
+      if (isThree) shortThreePutts += 1;
+    }
+  }
+
+  if (threePuttTotal < MIN_THREE_PUTTS) return null; // too few 3-putts to characterise
+  const longShare = threePuttLong / threePuttTotal;
+  if (longShare < LAG_ORIGIN_SHARE) return null; // not predominantly lag-origin → omit
+
+  const longPct = pct(threePuttLong, threePuttTotal);
+  const shortThreePuttPct = shortHoles > 0 ? pct(shortThreePutts, shortHoles) : 0;
+  const shortClause =
+    shortHoles >= MIN_BAND_SAMPLE
+      ? `, while first putts inside ${SHORT_FIRST_PUTT_FT} ft three-putt just ${shortThreePuttPct}%`
+      : '';
+  const prose =
+    `Your 3-putts come from long first putts, not missed short ones: ` +
+    `${longPct}% of your ${threePuttTotal} three-putts started from ${LONG_FIRST_PUTT_FT}+ ft` +
+    `${shortClause}. The leak is lag speed and the approach/chip leaving you that far — ` +
+    `not your stroke. Work distance control from 30-45 ft and tighter approach proximity, ` +
+    `not short-putt mechanics.`;
+
+  return {
+    source: 'shot_detail',
+    source_insight_ids: [],
+    title: '3-putts trace to long first putts (lag, not stroke)',
+    drills: [],
+    prose,
+  };
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
  * TEE — driver dispersion: dominant miss side + off-fairway rate.
  * ────────────────────────────────────────────────────────────────────────── */
 
@@ -437,8 +531,15 @@ export function buildShotDrivers(
   const approach = buildApproachDriver(shots);
   if (approach) out.approach = [approach];
 
+  // Putting can surface up to two drivers: the lag-origin attribution (where
+  // 3-putts come from) leads, then the break-direction miss tendency. The
+  // assembler attaches them to the most-relevant putting cause.
+  const puttingDrivers: RootDriver[] = [];
+  const lag = buildPuttingLagDriver(shots);
+  if (lag) puttingDrivers.push(lag);
   const putting = buildPuttingDriver(shots);
-  if (putting) out.putting = [putting];
+  if (putting) puttingDrivers.push(putting);
+  if (puttingDrivers.length > 0) out.putting = puttingDrivers;
 
   const tee = buildTeeDriver(shots);
   if (tee) out.tee = [tee];
