@@ -136,10 +136,18 @@
   }
 
   /* Lock horizontal scroll on mobile only — prevents iPhone side-scroll
-     without breaking desktop nested scroll containers (CRM panels etc.) */
+     without breaking desktop nested scroll containers (CRM panels etc.).
+     Use `clip`, not `hidden`: `overflow-x: hidden` forces overflow-y to
+     compute to `auto`, turning <html>/<body> into a scroll container — which
+     defeats `position: sticky` on the document-scrolling Fairway shell (the
+     glass top bar + in-page sticky sub-headers ride away on scroll). `clip`
+     leaves overflow-y `visible`, so no scroll container is created and sticky
+     works, while still clipping the side-scroll. `hidden` stays first as a
+     pre-iOS-16 / Chrome-<90 fallback (older engines ignore the `clip` line). */
   @media (max-width: 1024px) {
     html, body {
       overflow-x: hidden;
+      overflow-x: clip;
       max-width: 100vw;
     }
   }
@@ -2053,7 +2061,11 @@
     html,
     body {
       overscroll-behavior-y: none;
+      /* `clip` (with `hidden` fallback) — see the note on the earlier
+         max-width:1024px block: `hidden` would force overflow-y→auto and
+         break position:sticky on the document-scrolling Fairway shell. */
       overflow-x: hidden;
+      overflow-x: clip;
     }
 
     /* Fix nested scroll containers */
