@@ -321,16 +321,18 @@ function calculateComparisonAverages(rounds: ComparisonRoundRow[]): {
   const puttRounds = valid.filter(r => r.total_putts !== null);
   const puttHoles = puttRounds.reduce((sum, round) => sum + (round.holes_played ?? 18), 0);
   const totalPutts = puttRounds.reduce((sum, round) => sum + (round.total_putts ?? 0), 0);
-  const avgPutts = puttHoles > 0 ? (totalPutts / puttHoles) * 18 : 32;
+  // Round at the source so no consumer (UI labels, tooltips) ever prints a raw
+  // float like "76.11111111111113%". Grade/comparison logic is unaffected.
+  const avgPutts = puttHoles > 0 ? Math.round((totalPutts / puttHoles) * 18) : 32;
 
   const girRounds = valid.filter(r => r.total_gir !== null && r.total_gir_possible);
   const avgGirPct = girRounds.length > 0
-    ? girRounds.reduce((sum, round) => sum + ((round.total_gir ?? 0) / (round.total_gir_possible ?? 18)) * 100, 0) / girRounds.length
+    ? Math.round(girRounds.reduce((sum, round) => sum + ((round.total_gir ?? 0) / (round.total_gir_possible ?? 18)) * 100, 0) / girRounds.length)
     : 50;
 
   const fwRounds = valid.filter(r => r.total_fairways_hit !== null && r.total_fairways);
   const avgFairwayPct = fwRounds.length > 0
-    ? fwRounds.reduce((sum, round) => sum + ((round.total_fairways_hit ?? 0) / (round.total_fairways ?? 14)) * 100, 0) / fwRounds.length
+    ? Math.round(fwRounds.reduce((sum, round) => sum + ((round.total_fairways_hit ?? 0) / (round.total_fairways ?? 14)) * 100, 0) / fwRounds.length)
     : 50;
 
   return { avgScore, avgScoreToPar, avgPutts, avgGirPct, avgFairwayPct };

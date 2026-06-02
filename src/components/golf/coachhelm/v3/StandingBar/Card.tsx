@@ -22,7 +22,7 @@ import {
   deriveState,
   formatValue,
   shouldShowTeamMarker,
-  teamCohortText,
+  teamRelativeText,
   toScalePct,
 } from './utils';
 import { EASE_CINEMATIC, DURATION } from '@/lib/coachhelm/v3/motion';
@@ -43,7 +43,7 @@ export function Card(props: CardProps) {
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
   const pgaPct = toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
-  const cohortText = teamCohortText(props.team_pct);
+  const cohortText = teamRelativeText(props.player_value, props.team_avg, props.direction);
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :

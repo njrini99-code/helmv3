@@ -793,7 +793,13 @@ export function RoundReviewDisplay({
         >
           {(() => {
             const data = review.momentumData;
-            const maxVal = Math.max(...data.map(d => Math.abs(d.rollingScoreToPar)), 1);
+            // Per-hole score-to-par = the change in the cumulative series at
+            // each hole (cum[i] - cum[i-1]). Plotting PER-HOLE reads as real
+            // momentum — a bar only where a stroke was gained/lost — instead of
+            // the old cumulative render that drew every even hole at 0 height
+            // and piled all the unders into a cluster at the end.
+            const perHole = data.map((d, i) => d.rollingScoreToPar - (i > 0 ? data[i - 1]!.rollingScoreToPar : 0));
+            const maxVal = Math.max(...perHole.map(v => Math.abs(v)), 1);
             const chartHeight = 120;
             const midY = chartHeight / 2;
             return (
@@ -808,8 +814,8 @@ export function RoundReviewDisplay({
                   <div className="absolute left-0 text-micro text-warm-400" style={{ top: midY - 14 }}>E</div>
                   {/* Bars */}
                   <div className="flex items-end justify-between h-full pl-4">
-                    {data.map((d) => {
-                      const val = d.rollingScoreToPar;
+                    {data.map((d, i) => {
+                      const val = perHole[i]!;
                       const barH = Math.abs(val) / maxVal * (chartHeight / 2 - 4);
                       const isOver = val > 0;
                       return (
