@@ -19,7 +19,7 @@
  * the SAME drawer. One nav surface, no dead buttons, no double drawers.
  * ========================================================================== */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -39,7 +39,6 @@ import { OfflineProvider } from '@/components/golf/OfflineProvider';
 import { LastSeenUpdater } from '@/components/admin/LastSeenUpdater';
 import { NoTeamBanner } from '@/components/golf/NoTeamBanner';
 import { KeyboardShortcutHint } from '@/components/golf/KeyboardShortcutHint';
-import { NotificationCenter } from '@/components/golf/calendar/NotificationCenter';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
 import { usePresence } from '@/hooks/use-presence';
 import { createClient } from '@/lib/supabase/client';
@@ -237,14 +236,17 @@ function ShellFooter() {
   const router = useRouter();
   const pathname = usePathname();
   const { setMobileOpen } = useSidebar();
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const settingsActive = pathname.startsWith('/golf/dashboard/settings');
 
   const handleSignOut = useCallback(async () => {
+    if (isSigningOut) return; // guard double-tap (legacy shell guarded this too)
+    setIsSigningOut(true);
     void triggerHaptic('heavy');
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/golf/login');
-  }, [router]);
+  }, [router, isSigningOut]);
 
   const rowBase =
     'flex w-full items-center gap-3 rounded-fw-md px-3.5 py-2.5 text-body-sm font-medium font-fw-sans tracking-[-0.005em] transition-colors [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none';
@@ -273,10 +275,11 @@ function ShellFooter() {
       <button
         type="button"
         onClick={handleSignOut}
-        className={cn(rowBase, 'text-nav-text-dim hover:bg-red-500/10 hover:text-red-400')}
+        disabled={isSigningOut}
+        className={cn(rowBase, 'text-nav-text-dim hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50')}
       >
         <IconLogout size={18} aria-hidden className="flex-shrink-0 text-nav-text-dim" />
-        <span className="min-w-0 flex-1 truncate text-left">Sign out</span>
+        <span className="min-w-0 flex-1 truncate text-left">{isSigningOut ? 'Signing out…' : 'Sign out'}</span>
       </button>
     </div>
   );
@@ -319,9 +322,26 @@ function FairwayDashboardContent({
   const isImmersive =
     pathname === '/golf/dashboard/rounds/new' || pathname.startsWith('/golf/dashboard/rounds/continue');
 
+  // Immersive routes render no drawer; if the bridged drawer state is somehow
+  // open, force it closed so SidebarProvider's body-scroll-lock can't soft-lock
+  // the immersive screen.
+  useEffect(() => {
+    if (isImmersive && mobileOpen) setMobileOpen(false);
+  }, [isImmersive, mobileOpen, setMobileOpen]);
+
+  const skipLink = (
+    <a
+      href="#main-content"
+      className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+    >
+      Skip to main content
+    </a>
+  );
+
   if (isImmersive) {
     return (
       <MotionConfig reducedMotion={showAnimations ? 'user' : 'always'}>
+        {skipLink}
         <div
           id="main-content"
           tabIndex={-1}
@@ -343,14 +363,7 @@ function FairwayDashboardContent({
 
   return (
     <MotionConfig reducedMotion={showAnimations ? 'user' : 'always'}>
-      {/* Skip link — a11y parity with the legacy shell (renders outside the
-          Fairway scope, so it uses the global accent tokens). */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-modal focus:top-[max(1rem,env(safe-area-inset-top))] focus:left-4 bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-      >
-        Skip to main content
-      </a>
+      {skipLink}
 
       <AppShell
         sections={sections}
@@ -365,7 +378,6 @@ function FairwayDashboardContent({
         onMobileOpenChange={setMobileOpen}
         onSearchOpen={openCommandPalette}
         searchPlaceholder="Search players, rounds, pages…"
-        topBarActions={<NotificationCenter />}
         className={cn(displayDensity === 'compact' && 'density-compact', !showAnimations && 'reduce-motion')}
       >
         <div id="main-content" tabIndex={-1} className="outline-none">

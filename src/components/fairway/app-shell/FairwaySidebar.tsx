@@ -68,7 +68,8 @@ function matchActive(href: string, pathname?: string): boolean {
 }
 
 const navRowBase = cn(
-  'group relative flex items-center gap-3 rounded-fw-md',
+  // min-h-11 (44px) meets the iOS touch-target minimum for iPad touch.
+  'group relative flex min-h-11 items-center gap-3 rounded-fw-md',
   // spec §3.1 `label` role (13px) — the nav row voice
   'text-body-sm font-medium font-fw-sans tracking-[-0.005em]',
   'transition-[color,background-color] [transition-duration:var(--fw-dur-base)] [transition-timing-function:var(--fw-ease-glide)]',
@@ -176,7 +177,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
         'transition-[width] [transition-duration:var(--fw-dur-slow)] [transition-timing-function:var(--fw-ease-glide)] motion-reduce:transition-none',
         isMobile
           ? 'h-full w-full pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]'
-          : cn('fixed left-0 top-0 z-[var(--fw-z-nav)] h-dvh', isCollapsed ? 'w-[76px]' : 'w-[260px]'),
+          : cn('fixed left-0 top-0 z-[var(--fw-z-nav)] h-dvh pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)]', isCollapsed ? 'w-[76px]' : 'w-[260px]'),
         className,
       )}
     >
@@ -259,7 +260,7 @@ export const FairwaySidebar = forwardRef<HTMLElement, FairwaySidebarProps>(funct
           <div key={section.heading ?? `section-${sIdx}`} className={cn(sIdx > 0 && 'mt-5')}>
             {sIdx > 0 && <div className="mx-3 mb-5 h-px bg-white/[0.05]" aria-hidden />}
             {section.heading && !isCollapsed && (
-              <p className="px-4 pb-3 pt-1 font-fw-sans text-eyebrow uppercase text-nav-text-dim/70">
+              <p className="px-4 pb-3 pt-1 font-fw-sans text-eyebrow uppercase text-nav-text-dim">
                 {section.heading}
               </p>
             )}

@@ -192,7 +192,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       {/* ── Mobile drawer ── */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="fixed inset-0 z-[var(--fw-z-modal)] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
+          <div id="mobile-sidebar" className="fixed inset-0 z-[var(--fw-z-modal)] md:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
             {/* Dim scrim (cheap, not blurred — §4.3) */}
             <motion.button
               type="button"
