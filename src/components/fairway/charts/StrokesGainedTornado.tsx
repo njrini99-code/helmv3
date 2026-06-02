@@ -49,7 +49,9 @@ export interface StrokesGainedTornadoProps {
 }
 
 const ROW_PAD = 0.32;
-const LABEL_GUTTER = 104;
+// Wide enough for the longest category label ("Around the Green") at labelSize,
+// accounting for the -12px end-anchored offset — 104 clipped it to "round the Green".
+const LABEL_GUTTER = 126;
 const VALUE_GUTTER = 56;
 const MARGIN = { top: 8, right: VALUE_GUTTER, bottom: 22, left: LABEL_GUTTER };
 
