@@ -60,8 +60,7 @@ export function deriveCoachSignal(
         actionCount === 1
           ? '1 item is waiting on you'
           : `${actionCount} items are waiting on you`,
-      body:
-        'Tasks, approvals and deadlines CoachHelm flagged from your roster activity. Clear them to keep the week moving.',
+      body: 'Tasks, approvals, and deadlines flagged from your roster this week.',
       insufficient: false,
     };
   }

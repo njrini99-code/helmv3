@@ -236,7 +236,9 @@ export const MetricCard = forwardRef<HTMLDivElement, MetricCardProps>(
 
         {/* value row */}
         {empty ? (
-          <p className="font-fw-sans text-h3 font-semibold text-text-tertiary">
+          // Null metric: recede it so it reads as "no data yet", not as a value
+          // competing with live figures next to it (premium-polish pass).
+          <p className="font-fw-sans text-h3 font-normal text-text-tertiary opacity-50">
             {emptyMessage}
           </p>
         ) : (

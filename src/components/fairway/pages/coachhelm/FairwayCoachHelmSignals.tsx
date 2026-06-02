@@ -1061,8 +1061,10 @@ export function FairwayCoachHelmSignals({
       }
     >
       <div className="flex flex-col gap-6">
-        {/* honest summary tiles — never fabricate a 0%; show counts only */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* honest summary tiles — never fabricate a 0%; show counts only.
+            Compact 3-up even on mobile so the triage feed isn't pushed below
+            the fold by three full-width stacked cards (premium-polish pass). */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4">
           <MetricCard label="Open signals" value={summary.open} />
           <MetricCard label="Urgent + high" value={summary.urgent} goodDirection="down" />
           {/* "Loaded" (not "Total"): this counts the rows currently in view —
