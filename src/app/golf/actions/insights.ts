@@ -3317,6 +3317,8 @@ export async function triggerPlayerInsightsAfterRound(
           action: 'insights.triggerPlayerInsightsAfterRound.gateMetrics',
           featureArea: 'coachhelm',
           playerId,
+          // Routine philosophy-gate filter counter — admin-feed only, not Sentry (issue 20).
+          skipSentry: true,
           extra: { gatedCount: analysis.tier1GateMetrics.gatedCount },
         },
         'warning',

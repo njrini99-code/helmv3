@@ -36,6 +36,14 @@ interface RoundErrorContext {
   tags?: Record<string, string | number | boolean | null | undefined>;
   metadata?: Record<string, unknown>;
   extra?: Record<string, unknown>;
+  /**
+   * When true, suppress the Sentry capture for this trace (the error_logs +
+   * admin_events rows are still written). Use for ROUTINE operational telemetry
+   * — threshold starvation, philosophy-gate filters, handled-degradation
+   * fallbacks — that should stay discoverable in the admin feed + console
+   * without creating Sentry issues that drown out real bugs.
+   */
+  skipSentry?: boolean;
 }
 
 const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
@@ -205,10 +213,12 @@ async function captureServerTrace(
 ): Promise<void> {
   const normalizedError = error ?? new Error(message);
 
-  try {
-    captureSentryTrace(message, normalizedError, context, severity, forceException);
-  } catch {
-    // Sentry should never block request handling.
+  if (!context.skipSentry) {
+    try {
+      captureSentryTrace(message, normalizedError, context, severity, forceException);
+    } catch {
+      // Sentry should never block request handling.
+    }
   }
 
   try {

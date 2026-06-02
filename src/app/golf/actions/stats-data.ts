@@ -998,7 +998,10 @@ async function queryDetailedStatsWithClient(
     computed.truncated = truncated;
     return serializeDetailedStats(computed);
   } catch (error) {
-    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient' });
+    // Handled degradation: the detailed shot query timed out (statement_timeout
+    // 57014) or failed, so we fall back to round-level stats — the user still gets
+    // data. Record it for perf tracking, but keep it out of Sentry (issue 4K).
+    await logServerError(`[Stats] Falling back to round-level stats: ${describeError(error)}`, { action: 'stats_data.queryDetailedStatsWithClient', skipSentry: true }, 'warning');
     const fallback = buildFallbackDetailedStats(roundsData);
     fallback.truncated = truncated;
     return serializeDetailedStats(fallback);

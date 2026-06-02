@@ -191,7 +191,6 @@ interface RoundRow {
   round_date: string;
   total_score: number | null;
   score_to_par: number | null;
-  course_par: number | null;
   course_name: string | null;
   holes_played: number | null;
   round_type: string | null;
@@ -263,7 +262,7 @@ export async function getPlayerFingerprint(
     supabase
       .from('golf_rounds')
       .select(
-        'id, round_date, total_score, score_to_par, course_par, course_name, holes_played, round_type',
+        'id, round_date, total_score, score_to_par, course_name, holes_played, round_type',
       )
       .eq('player_id', playerId)
       .not('total_score', 'is', null)
@@ -750,8 +749,8 @@ function buildPressureSection(
   insights: EvidenceInsight[],
 ): SectionData {
   const withDiff = rounds.filter(
-    (r): r is RoundRow & { course_par: number; total_score: number } =>
-      typeof r.total_score === 'number' && typeof r.course_par === 'number',
+    (r): r is RoundRow & { score_to_par: number } =>
+      typeof r.score_to_par === 'number',
   );
   const practice = withDiff.filter((r) => r.round_type === 'practice');
   const competitive = withDiff.filter((r) => r.round_type && r.round_type !== 'practice');
@@ -760,8 +759,8 @@ function buildPressureSection(
   let sparse = false;
 
   if (practice.length >= 2 && competitive.length >= 2) {
-    const practiceAvg = avgOf(practice.map((r) => r.total_score - r.course_par));
-    const competitiveAvg = avgOf(competitive.map((r) => r.total_score - r.course_par));
+    const practiceAvg = avgOf(practice.map((r) => r.score_to_par));
+    const competitiveAvg = avgOf(competitive.map((r) => r.score_to_par));
     const gap = competitiveAvg - practiceAvg;
 
     metrics.push({
@@ -870,9 +869,7 @@ function buildTrend(
   const rolling: FingerprintTrendPoint[] = ordered.map((r) => ({
     round_id: r.id,
     round_date: r.round_date,
-    score_to_par: r.score_to_par ?? (r.total_score != null && r.course_par != null
-      ? r.total_score - r.course_par
-      : null),
+    score_to_par: r.score_to_par,
     total_score: r.total_score,
     course_name: r.course_name,
     notable: insightDays.has(r.round_date),
@@ -915,9 +912,7 @@ function computeScoringAverage(rounds: RoundRow[]): number | null {
 }
 
 function computeScoringVsPar(rounds: RoundRow[]): number | null {
-  const scored = rounds.filter(
-    (r) => typeof r.total_score === 'number' && typeof r.course_par === 'number',
-  );
+  const scored = rounds.filter((r) => typeof r.score_to_par === 'number');
   if (scored.length === 0) return null;
-  return avgOf(scored.map((r) => (r.total_score as number) - (r.course_par as number)));
+  return avgOf(scored.map((r) => r.score_to_par as number));
 }
