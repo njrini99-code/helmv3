@@ -155,6 +155,25 @@ async function handle(): Promise<NextResponse> {
           lift: row.lift,
         });
       if (insErr) {
+        // Postgres 23503 = foreign_key_violation. The only FK on this
+        // table that can trip on a happy-path insert is
+        // golf_insight_outcome_attribution_target_metric_id_fkey
+        // → golf_metrics(metric_id). lookupMetricSource() above said
+        // the code-side registry knows this metric, but the DB-side
+        // golf_metrics registry hasn't been seeded for it yet. Same
+        // operator signal as "unknown-metric" — re-bucket it there so
+        // it shows up in the end-of-run summary instead of as a hard
+        // error (which pages on-call).
+        if (insErr.code === '23503') {
+          summary.unknown_metric += 1;
+          console.warn(
+            `[cron.v3.causality] target_metric_id '${metric}' missing from golf_metrics registry (insight ${c.id})`,
+          );
+          if (unknownMetricSamples.length < 10) {
+            unknownMetricSamples.push({ insight_id: c.id, metric });
+          }
+          continue;
+        }
         await logServerError(`causality insert ${c.id}: ${insErr.message}`, {
           action: 'cron.v3.causality.insert',
         });
