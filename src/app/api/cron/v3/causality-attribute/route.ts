@@ -155,6 +155,26 @@ async function handle(): Promise<NextResponse> {
           lift: row.lift,
         });
       if (insErr) {
+        // Postgres 23503 = foreign_key_violation. The table has two FKs
+        // that can trip on insert: target_metric_id → golf_metrics, and
+        // insight_id → golf_coach_insights. Only the metric-registry FK
+        // means "lookupMetricSource() knows it but golf_metrics hasn't
+        // been seeded" — same operator signal as the existing unknown-
+        // metric branch, so re-bucket it there (summary surface, info
+        // severity). insight_id FK violations mean the candidate was
+        // concurrently deleted between the fetch and the insert — that
+        // IS a real error, keep it on the errors counter.
+        const fkText = `${insErr.details ?? ''} ${insErr.message ?? ''}`;
+        if (insErr.code === '23503' && fkText.includes('target_metric_id')) {
+          summary.unknown_metric += 1;
+          console.warn(
+            `[cron.v3.causality] target_metric_id '${metric}' missing from golf_metrics registry (insight ${c.id})`,
+          );
+          if (unknownMetricSamples.length < 10) {
+            unknownMetricSamples.push({ insight_id: c.id, metric });
+          }
+          continue;
+        }
         await logServerError(`causality insert ${c.id}: ${insErr.message}`, {
           action: 'cron.v3.causality.insert',
         });
