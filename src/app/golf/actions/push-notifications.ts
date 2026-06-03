@@ -11,11 +11,7 @@ export async function registerDeviceToken(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  // The iOS webview fires this on app launch / login confirmation; the
-  // session cookie sometimes hasn't propagated yet. Return a soft failure
-  // so the webview can retry, instead of throwing into Sentry on every
-  // race.
-  if (!user) return { success: false, error: 'Unauthorized' };
+  if (!user) throw new Error('Unauthorized');
 
   // Upsert: if token already exists, update it
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
