@@ -1,0 +1,37 @@
+-- Auto-save partial-round UPDATE regression fix.
+--
+-- savePartialRound() (src/app/golf/actions/golf.ts) builds a roundData
+-- object that includes player_id, team_id, qualifier_id, and
+-- qualifier_round_number, then calls
+--   supabase.from('golf_rounds').update(roundData) ...
+-- on the existing in_progress row.
+--
+-- The baseline grants on golf_rounds (see 20260527000000_prod_public_baseline.sql)
+-- gave `authenticated` SELECT/INSERT/DELETE on the table but only
+-- column-level UPDATE on the user-controlled scoring/course columns —
+-- player_id, team_id, qualifier_id, and qualifier_round_number were
+-- intentionally NOT in that list to lock down identity columns.
+--
+-- Postgres checks UPDATE privilege against every column that appears in
+-- the SET list, regardless of whether the new value differs from the
+-- current value. Because the auto-save payload always re-sets player_id
+-- (and friends) — even though RLS already constrains the row to the
+-- caller's own player — every UPDATE failed with
+--   ERROR 42501: permission denied for table golf_rounds
+-- → "Auto-save server error: Failed to save round. Please try again."
+-- in the round-tracking UI, repeatedly tripping the client-side
+-- circuit breaker.
+--
+-- The same root cause was fixed for golf_round_reviews in
+-- 20260602190000_grant_update_round_reviews_authenticated.sql and for
+-- golf_coach_insights in 20260528011000_harden_coach_insights_update_grants.sql.
+-- This migration adopts the same pattern: grant table-level UPDATE and
+-- rely on RLS as the row-level guard.
+--
+-- RLS remains the row-level guard — `golf_rounds_player_update` (player
+-- updates own rounds) and the coach/team policies continue to scope
+-- which rows can be touched. This grant only changes which columns the
+-- authenticated role can SET.
+--
+-- Idempotent: re-running GRANT is a no-op in Postgres.
+GRANT UPDATE ON public.golf_rounds TO authenticated;
