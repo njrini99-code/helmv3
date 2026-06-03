@@ -11,7 +11,11 @@ export async function registerDeviceToken(
 ) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  // The iOS webview fires this on app launch / login confirmation; the
+  // session cookie sometimes hasn't propagated yet. Return a soft failure
+  // so the webview can retry, instead of throwing into Sentry on every
+  // race.
+  if (!user) return { success: false, error: 'Unauthorized' };
 
   // Upsert: if token already exists, update it
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -30,7 +34,9 @@ export async function registerDeviceToken(
     );
 
   if (error) {
-    await logServerError(`Failed to register device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.registerDeviceToken' });
+    // Supabase PostgrestError is a plain object, not an Error instance —
+    // `String(error)` becomes "[object Object]". Read message directly.
+    await logServerError(`Failed to register device token: ${error.message}`, { action: 'push_notifications.registerDeviceToken' });
     return { success: false, error: error.message };
   }
 
@@ -50,7 +56,7 @@ export async function unregisterDeviceToken(token: string) {
     .eq('user_id', user.id);
 
   if (error) {
-    await logServerError(`Failed to unregister device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.unregisterDeviceToken' });
+    await logServerError(`Failed to unregister device token: ${error.message}`, { action: 'push_notifications.unregisterDeviceToken' });
     return { success: false, error: error.message };
   }
 
@@ -71,7 +77,7 @@ export async function getDeviceTokens() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    await logServerError(`Failed to get device tokens: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.getDeviceTokens' });
+    await logServerError(`Failed to get device tokens: ${error.message}`, { action: 'push_notifications.getDeviceTokens' });
     return { success: false, data: [], error: error.message };
   }
 
