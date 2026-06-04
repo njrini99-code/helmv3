@@ -61,20 +61,15 @@ export async function registerDeviceToken(
     return { success: false, error: 'Invalid device token payload' };
   }
 
-  // Upsert: if token already exists, update it
-  const { error } = await supabase
-    .from('device_tokens')
-    .upsert(
-      {
-        user_id: user.id,
-        token: parsed.data.token,
-        platform: parsed.data.platform,
-        device_name: parsed.data.deviceName ?? null,
-        active: true,
-        failed_count: 0,
-      },
-      { onConflict: 'token' }
-    );
+  // SECURITY DEFINER RPC handles the iPhone-changes-hands case (same APNs
+  // token previously registered to a different user) — direct upsert on the
+  // table would trip the device_tokens UPDATE policy. See migration
+  // 20260604040000_device_tokens_allow_user_takeover.sql.
+  const { error } = await supabase.rpc('claim_device_token', {
+    p_token: parsed.data.token,
+    p_platform: parsed.data.platform,
+    p_device_name: parsed.data.deviceName ?? null,
+  });
 
   if (error) {
     // Supabase PostgrestError is a plain object, not an Error instance —

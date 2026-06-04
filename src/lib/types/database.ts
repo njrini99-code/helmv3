@@ -10730,6 +10730,14 @@ export type Database = {
           sg_total: number
         }[]
       }
+      claim_device_token: {
+        Args: {
+          p_token: string
+          p_platform: string
+          p_device_name?: string | null
+        }
+        Returns: Database["public"]["Tables"]["device_tokens"]["Row"]
+      }
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string

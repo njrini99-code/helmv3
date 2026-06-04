@@ -161,17 +161,28 @@ export function isStaleServerActionError(error: unknown): boolean {
  */
 export function isBenignAbortError(error: unknown): boolean {
   if (!error) return false;
-  if (typeof error === 'object') {
-    const name = (error as { name?: unknown }).name;
-    if (name === 'AbortError') return true;
-  }
-  const msg =
-    typeof error === 'string'
-      ? error
-      : typeof error === 'object' && 'message' in error
-        ? String((error as { message?: unknown }).message ?? '')
-        : '';
-  return msg === 'signal is aborted without reason' || msg === 'The user aborted a request.';
+  if (typeof error !== 'object') return false;
+
+  const e = error as {
+    name?: string;
+    message?: string;
+    code?: string;
+    cause?: { code?: string; name?: string };
+  };
+
+  if (e.name === 'AbortError') return true;
+  if (e.code === 'ABORT_ERR' || e.code === 'UND_ERR_ABORTED') return true;
+  if (e.cause?.code === 'UND_ERR_ABORTED' || e.cause?.code === 'ABORT_ERR') return true;
+  if (e.cause?.name === 'AbortError') return true;
+
+  const msg = (e.message ?? '').toLowerCase();
+  return (
+    msg === 'signal is aborted without reason' ||
+    msg === 'the user aborted a request.' ||
+    msg === 'aborted' ||
+    msg === 'request aborted' ||
+    msg.includes('the operation was aborted')
+  );
 }
 
 /** Track suppressed stale-action warnings so we still emit one per session. */
