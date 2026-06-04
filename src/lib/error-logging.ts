@@ -152,6 +152,28 @@ export function isStaleServerActionError(error: unknown): boolean {
   );
 }
 
+/**
+ * AbortError is a benign cleanup signal — fetch/AbortController throws it
+ * when a request is cancelled (route change, component unmount, user
+ * navigation). It surfaces through `unhandledrejection` because React
+ * cleanup runs after the promise chain has already rejected. Not a bug;
+ * shouldn't page Sentry. (JAVASCRIPT-NEXTJS-4N — 6 events / 24h on /golf/login.)
+ */
+export function isBenignAbortError(error: unknown): boolean {
+  if (!error) return false;
+  if (typeof error === 'object') {
+    const name = (error as { name?: unknown }).name;
+    if (name === 'AbortError') return true;
+  }
+  const msg =
+    typeof error === 'string'
+      ? error
+      : typeof error === 'object' && 'message' in error
+        ? String((error as { message?: unknown }).message ?? '')
+        : '';
+  return msg === 'signal is aborted without reason' || msg === 'The user aborted a request.';
+}
+
 /** Track suppressed stale-action warnings so we still emit one per session. */
 let staleActionWarnedThisSession = false;
 
@@ -340,6 +362,11 @@ export function setupGlobalErrorHandlers(): void {
       // Stale server action — soft-reload once per session and don't log.
       if (isStaleServerActionError(reason) || isStaleServerActionError(reasonMessage)) {
         softReloadForStaleServerAction();
+        return;
+      }
+
+      // Cancelled fetch on unmount/navigation — benign, don't page Sentry.
+      if (isBenignAbortError(reason)) {
         return;
       }
 
