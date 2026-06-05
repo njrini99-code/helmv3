@@ -3909,11 +3909,20 @@ export async function savePartialRound(
 
       let round: { id: string } | null = null;
       if (existingRound) {
+        // Identity columns (player_id, team_id, qualifier_id, qualifier_round_number)
+        // are set on INSERT and never change for an in-progress round. Stripping
+        // them from the UPDATE payload avoids Postgres' per-column UPDATE-privilege
+        // check on identity columns the baseline `authenticated` GRANT intentionally
+        // omits (see 20260603040000_grant_update_golf_rounds_authenticated.sql) —
+        // production stayed 42501-broken on this fallback path while that migration
+        // was on disk but not yet applied.
+        const { player_id: _pid, team_id: _tid, qualifier_id: _qid, qualifier_round_number: _qrn, ...updatePayload } = roundData;
+        void _pid; void _tid; void _qid; void _qrn;
         // Update the existing in-progress round — ONLY if still in_progress
         // (prevents reverting a round that was just completed by submit)
         const { data: updatedRound, error: updateError } = await supabase
           .from('golf_rounds')
-          .update(roundData)
+          .update(updatePayload)
           .eq('id', existingRound.id)
           .eq('player_id', player.id)
           .eq('status', 'in_progress')

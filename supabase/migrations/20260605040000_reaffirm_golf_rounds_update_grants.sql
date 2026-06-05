@@ -1,0 +1,28 @@
+-- Reaffirm column-level UPDATE grants on golf_rounds for `authenticated`.
+--
+-- Sentry 24h (2026-06-05 04:00 UTC, release 22e1d327):
+--   JAVASCRIPT-NEXTJS-50: 46 events / 1 user, "Auto-save update failed:
+--     permission denied for table golf_rounds" (pg_error_code 42501)
+--   JAVASCRIPT-NEXTJS-4Z: 46 mirrored server-side events
+--   JAVASCRIPT-NEXTJS-51: 22 client-side captures
+--   JAVASCRIPT-NEXTJS-58: 2 new events on the edit-shot path (same trace, same root)
+--
+-- The prior fix migration 20260603040000_grant_update_golf_rounds_authenticated.sql
+-- was committed to the deployed tree (PR #217, 2026-06-04 16:42 UTC) but the
+-- 42501s continued for the next ~22 hours under the same release SHA, which
+-- means the migration file was on disk but never applied to the production
+-- Supabase database. This repo applies migrations to prod manually via the
+-- Supabase MCP — no auto-apply step in CI/CD.
+--
+-- This migration restates the same GRANT so that the next `supabase db push`
+-- (or MCP apply_migration) picks it up under a fresh timestamp. GRANT is
+-- idempotent in Postgres, so this is a safe no-op if the prior migration has
+-- since been applied. Companion code change in src/app/golf/actions/golf.ts
+-- strips the four identity columns from the UPDATE payload entirely, so
+-- savePartialRound no longer depends on these grants — but keeping the GRANT
+-- aligned to the code keeps any other UPDATE caller covered.
+--
+-- Same column allowlist as 20260603040000 (preserves the baseline's deliberate
+-- column-scoped UPDATE surface).
+GRANT UPDATE (player_id, team_id, qualifier_id, qualifier_round_number)
+  ON TABLE public.golf_rounds TO authenticated;
