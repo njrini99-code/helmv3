@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
@@ -159,8 +160,7 @@ export async function getPlayerRecruitingSnapshot(playerId: string): Promise<
         .eq('engagement_type', 'video_view'),
 
       // Unread messages
-      supabase
-        .from('baseball_messages')
+      fromUntyped(supabase, 'baseball_messages')
         .select('*', { count: 'exact', head: true })
         .eq('recipient_id', auth.user.id)
         .eq('is_read', false),
@@ -349,16 +349,14 @@ export async function getJucoPlayerDashboardData(): Promise<
         : Promise.resolve({ data: [] }),
 
       // Pending tasks
-      supabase
-        .from('baseball_task_assignments')
+      fromUntyped(supabase, 'baseball_task_assignments')
         .select('*', { count: 'exact', head: true })
         .eq('assigned_to', user.id)
         .eq('status', 'pending'),
 
       // Unread announcements
       teamId
-        ? supabase
-            .from('baseball_announcements')
+        ? fromUntyped(supabase, 'baseball_announcements')
             .select('id, title, urgency, published_at')
             .eq('team_id', teamId)
             .eq('status', 'published')
@@ -441,7 +439,7 @@ export async function getJucoPlayerDashboardData(): Promise<
         unreadMessages: 0,
         schoolsInterested: [],
       },
-      recentAnnouncements: (announcementsResult.data || []).map(a => ({
+      recentAnnouncements: (announcementsResult.data || []).map((a: { id: string; title: string; urgency: string | null; published_at: string | null }) => ({
         id: a.id,
         title: a.title,
         urgency: a.urgency,

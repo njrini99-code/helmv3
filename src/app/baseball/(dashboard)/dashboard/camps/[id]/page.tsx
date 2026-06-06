@@ -22,6 +22,7 @@ import {
   IconAlertCircle,
 } from '@/components/icons';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/components/ui/sonner';
 import { cn, getFullName, formatRelativeTime } from '@/lib/utils';
@@ -166,8 +167,7 @@ export default function CampDetailPage() {
   const handleCheckIn = async (registrationId: string) => {
     setCheckingIn(registrationId);
     
-    const { error } = await supabase
-      .from('baseball_camp_registrations')
+    const { error } = await fromUntyped(supabase, 'baseball_camp_registrations')
       .update({
         status: 'attended',
         attended_at: new Date().toISOString(),

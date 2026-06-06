@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { CoachPhilosophy } from '@/lib/coachhelm/types';
 import { PHILOSOPHY_DEFAULTS } from '@/lib/coachhelm/constants';
 import { revalidateCoachingPhilosophyPaths } from '@/app/golf/actions/coaching-philosophy';
@@ -196,8 +197,7 @@ export function useCoachPhilosophy(coachId: string | null) {
             setSaving(true);
             setError(null);
 
-            const { data, error: updateError } = await supabaseRef.current
-                .from('golf_coach_philosophy')
+            const { data, error: updateError } = await fromUntyped(supabaseRef.current, 'golf_coach_philosophy')
                 .update(tsToDb(updates))
                 .eq('id', philosophy.id)
                 .select()

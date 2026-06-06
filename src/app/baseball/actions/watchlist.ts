@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { PipelineStage } from '@/lib/types';
 import {
@@ -63,8 +64,7 @@ export async function addToWatchlist(coachId: string, playerId: string) {
   }
 
   // Log engagement event
-  await supabase
-    .from('baseball_player_engagement_events')
+  await fromUntyped(supabase, 'baseball_player_engagement_events')
     .insert({
       player_id: playerId,
       coach_id: coachId,
@@ -369,8 +369,7 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
       }
 
       // Log engagement event for removal
-      await supabase
-        .from('baseball_player_engagement_events')
+      await fromUntyped(supabase, 'baseball_player_engagement_events')
         .insert({
           player_id: playerId,
           coach_id: coach.id,
@@ -400,8 +399,7 @@ export async function toggleWatchlistPlayer(playerId: string): Promise<{
       }
 
       // Log engagement event
-      await supabase
-        .from('baseball_player_engagement_events')
+      await fromUntyped(supabase, 'baseball_player_engagement_events')
         .insert({
           player_id: playerId,
           coach_id: coach.id,

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
@@ -745,8 +746,7 @@ export async function saveCoachFeedback(
       updateData.coach_notes = feedback.coach_notes;
     }
 
-    const { error: updateError } = await supabase
-      .from('golf_round_reviews')
+    const { error: updateError } = await fromUntyped(supabase, 'golf_round_reviews')
       .update(updateData)
       .eq('id', reviewId);
 
@@ -1588,8 +1588,7 @@ export async function acknowledgeReview(
       };
     }
 
-    const { error } = await supabase
-      .from('golf_round_reviews')
+    const { error } = await fromUntyped(supabase, 'golf_round_reviews')
       .update(updateData)
       .eq('id', reviewId);
 

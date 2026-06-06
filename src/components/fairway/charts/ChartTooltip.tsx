@@ -17,6 +17,7 @@
  * ========================================================================== */
 
 import * as React from 'react';
+import { Tooltip as RechartsTooltipBase } from 'recharts';
 import { cn } from '@/lib/utils';
 import { TABULAR_NUMS } from './theme';
 
@@ -198,17 +199,22 @@ export function RechartsTooltip({
  * slice we read). This keeps call sites `content={makeChartTooltip({ … })}` —
  * no prop-spread conflicts, no `any`, no Recharts type imports to churn on.
  */
+type RechartsTooltipContent = NonNullable<
+  React.ComponentProps<typeof RechartsTooltipBase>['content']
+>;
+
 export function makeChartTooltip(
   options: RechartsTooltipOptions = {},
-): (props: ChartTooltipRenderProps) => React.ReactNode {
-  return function ChartTooltipContent(props) {
-    return (
-      <RechartsTooltip
-        active={props.active}
-        label={props.label}
-        payload={props.payload}
-        {...options}
-      />
-    );
-  };
+): RechartsTooltipContent {
+  const Content = (props: ChartTooltipRenderProps): React.ReactNode => (
+    <RechartsTooltip
+      active={props.active}
+      label={props.label}
+      payload={props.payload}
+      {...options}
+    />
+  );
+  // Recharts 3.8 narrowed the `content` prop to ContentType<ValueType, NameType>;
+  // our renderer reads only the active/label/payload slice, so bridge the types.
+  return Content as unknown as RechartsTooltipContent;
 }

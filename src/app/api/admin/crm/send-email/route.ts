@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 
 interface Recipient {
@@ -279,8 +280,7 @@ export async function POST(request: Request) {
           .single() as { data: { usage_count: number } | null };
 
         if (tpl) {
-          await supabase
-            .from('crm_email_templates' as 'crm_contact_log')
+          await fromUntyped(supabase, 'crm_email_templates')
             .update({ usage_count: (tpl.usage_count ?? 0) + 1 } as Record<string, unknown>)
             .eq('id', templateId);
         }

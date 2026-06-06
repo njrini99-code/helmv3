@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type { MinedPattern, PatternTrend } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
@@ -447,7 +448,7 @@ export async function validatePattern(
       return { success: false, error: 'Coach not found' };
     }
 
-    const patternsTable = supabase.from('golf_patterns_v2');
+    const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: validation.isAccurate ? 'confirmed' : 'dismissed',
@@ -572,7 +573,7 @@ export async function markPatternAddressed(
       return { success: false, error: 'Forbidden' };
     }
 
-    const patternsTable = supabase.from('golf_patterns_v2');
+    const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: 'addressed',
@@ -630,7 +631,7 @@ export async function resolvePattern(
       return { success: false, error: 'Forbidden' };
     }
 
-    const patternsTable = supabase.from('golf_patterns_v2');
+    const patternsTable = fromUntyped(supabase, 'golf_patterns_v2');
 
     const updateData: Record<string, unknown> = {
       lifecycle_state: 'resolved',

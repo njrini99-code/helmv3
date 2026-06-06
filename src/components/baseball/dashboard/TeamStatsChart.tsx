@@ -43,14 +43,14 @@ function CustomTooltip({ active, payload, label }: Partial<TooltipContentProps<n
       {payload.map((entry) => {
         const metric = metrics.find(m => m.key === entry.dataKey);
         return (
-          <div key={entry.dataKey} className="flex items-center gap-2 text-sm">
+          <div key={String(entry.dataKey)} className="flex items-center gap-2 text-sm">
             <div 
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
             <span className="text-warm-600">{metric?.label}:</span>
             <span className="font-medium text-warm-900">
-              {metric?.format(entry.value)}
+              {metric?.format(entry.value as number)}
             </span>
           </div>
         );

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -105,8 +106,7 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
 
     // Method 1: For high school orgs, also query via high_school_org_id
     if (organizationType === 'high_school') {
-      const { data: playersData, error } = await supabase
-        .from('baseball_players')
+      const { data: playersData, error } = await fromUntyped(supabase, 'baseball_players')
         .select('id, first_name, last_name, primary_position, grad_year, avatar_url, recruiting_activated, pitch_velo, exit_velo, city, state, player_type')
         .eq('high_school_org_id', organizationId)
         .neq('player_type', 'college'); // never show college players
@@ -115,9 +115,9 @@ export function ProgramRoster({ organizationId, organizationType, coachType }: P
         console.error('Error fetching players via high_school_org_id:', error);
       }
 
-      (playersData || []).forEach((p) => {
+      (playersData || []).forEach((p: RosterPlayer) => {
         if (!playerMap.has(p.id) && isRosterVisible(p)) {
-          playerMap.set(p.id, p as RosterPlayer);
+          playerMap.set(p.id, p);
         }
       });
     }

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import type {
   TaskTemplate,
@@ -336,8 +337,7 @@ export async function createTaskFromTemplate(
       created_by: user.id,
     }));
 
-    const { data: tasks, error: createError } = await supabase
-      .from('golf_tasks')
+    const { data: tasks, error: createError } = await fromUntyped(supabase, 'golf_tasks')
       .insert(tasksToCreate)
       .select();
 

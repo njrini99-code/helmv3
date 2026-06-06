@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 
 // Database row type for golf_coachhelm_settings (table created in migration)
 interface CoachHelmSettingsRow {
@@ -96,8 +97,7 @@ export function useCoachHelmSettings(
       setError(null);
 
       // Use type assertion since table is created via migration
-      const { data, error: fetchError } = await (supabaseRef.current
-        .from('golf_coachhelm_settings' as 'users') // Type hack for new table
+      const { data, error: fetchError } = await (fromUntyped(supabaseRef.current, 'golf_coachhelm_settings')
         .select('*')
         .eq('coach_id', currentCoachId)
         .maybeSingle() as unknown as Promise<{ data: CoachHelmSettingsRow | null; error: Error | null }>);

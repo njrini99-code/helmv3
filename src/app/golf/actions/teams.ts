@@ -424,8 +424,7 @@ export async function updateTeam(
   if (updates.season !== undefined) updateData.season = updates.season;
 
   // Update team
-  const { data: updatedTeam, error: updateError } = await supabase
-    .from('golf_teams')
+  const { data: updatedTeam, error: updateError } = await fromUntyped(supabase, 'golf_teams')
     .update(updateData)
     .eq('id', teamId)
     .select('id, name, season, join_code, created_at')

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { cn } from '@/lib/utils';
 import type { Coach, CoachStatus } from '../crm-config';
 import { IconX, IconMail, IconPhone, IconCalendar, IconPlus, IconVideo, IconUsers, IconNote } from '@/components/icons';
@@ -115,8 +116,7 @@ export function ContactLogModal({ coach, onClose, onUpdate }: ContactLogModalPro
         updateData.status = newLog.update_status;
       }
 
-      const { error: updateError } = await supabase
-        .from('crm_coaches')
+      const { error: updateError } = await fromUntyped(supabase, 'crm_coaches')
         .update(updateData)
         .eq('id', coach.id);
 

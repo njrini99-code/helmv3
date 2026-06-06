@@ -18,6 +18,7 @@
 // ============================================================================
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 import { verifyInsightAccess } from '@/lib/auth/verify-player-access';
@@ -3745,8 +3746,7 @@ export async function updateTeamCoachHelmSettings(
     update.disabled_reason = patch.disabled_reason;
   }
 
-  const { data: updated, error } = await supabase
-    .from('golf_team_coachhelm_settings')
+  const { data: updated, error } = await fromUntyped(supabase, 'golf_team_coachhelm_settings')
     .update(update)
     .eq('team_id', teamId)
     .select(

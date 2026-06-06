@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyProfileView } from '@/lib/notifications';
 import { logServerError } from '@/lib/server-error-logger';
 
@@ -115,8 +116,7 @@ export async function getPlayerPeekData(playerId: string): Promise<{
       }
 
       // Log profile view engagement
-      await supabase
-        .from('baseball_player_engagement_events')
+      await fromUntyped(supabase, 'baseball_player_engagement_events')
         .insert({
           player_id: playerId,
           coach_id: coach.id,

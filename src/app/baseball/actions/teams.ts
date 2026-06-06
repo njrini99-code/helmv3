@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import {
   formatSafeErrorResponse,
@@ -550,8 +551,7 @@ export async function generateTeamInviteCode(teamId: string): Promise<TeamInvite
   // Generate new invite code
   const inviteCode = generateInviteCode();
 
-  const { error: updateError } = await supabase
-    .from('baseball_teams')
+  const { error: updateError } = await fromUntyped(supabase, 'baseball_teams')
     .update({ join_code: inviteCode } as Record<string, unknown>)
     .eq('id', teamId);
 
@@ -615,8 +615,7 @@ export async function regenerateTeamInviteCode(teamId: string): Promise<TeamInvi
   // Generate new invite code
   const inviteCode = generateInviteCode();
 
-  const { error: updateError } = await supabase
-    .from('baseball_teams')
+  const { error: updateError } = await fromUntyped(supabase, 'baseball_teams')
     .update({ join_code: inviteCode } as Record<string, unknown>)
     .eq('id', teamId);
 

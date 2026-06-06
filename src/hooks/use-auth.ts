@@ -4,6 +4,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { useAuthStore } from '@/stores/auth-store';
 import type { Player, CoachWithOrganization } from '@/lib/types';
 
@@ -122,7 +123,7 @@ export function useAuth() {
 
   const updateCoach = async (updates: Partial<CoachWithOrganization>) => {
     if (!coach) return;
-    const { data, error } = await supabase.from('baseball_coaches').update(updates).eq('id', coach.id).select().single();
+    const { data, error } = await fromUntyped(supabase, 'baseball_coaches').update(updates).eq('id', coach.id).select().single();
     if (!error && data) setCoach(data);
     return { data, error };
   };

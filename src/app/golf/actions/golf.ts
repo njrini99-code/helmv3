@@ -5365,8 +5365,7 @@ export async function updateShot(
     }
 
     // Update the shot
-    const { error: updateError } = await supabase
-      .from('golf_shots')
+    const { error: updateError } = await fromUntyped(supabase, 'golf_shots')
       .update(updateData)
       .eq('id', shotId);
 

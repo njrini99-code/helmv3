@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 
 export async function addToInterests(collegeId: string, schoolName: string, division?: string | null, conference?: string | null) {
@@ -36,8 +37,7 @@ export async function addToInterests(collegeId: string, schoolName: string, divi
   }
 
   // Add to interests
-  const { error } = await supabase
-    .from('baseball_recruiting_interests')
+  const { error } = await fromUntyped(supabase, 'baseball_recruiting_interests')
     .insert({
       player_id: player.id,
       organization_id: collegeId,

@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { notifyDevPlanAssigned } from '@/lib/notifications';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
@@ -310,8 +311,7 @@ export async function updateFocusAreaProgress(
     updatePayload.progress_notes = next;
   }
 
-  const { error } = await supabase
-    .from('golf_player_focus_areas')
+  const { error } = await fromUntyped(supabase, 'golf_player_focus_areas')
     .update(updatePayload)
     .eq('id', id);
 

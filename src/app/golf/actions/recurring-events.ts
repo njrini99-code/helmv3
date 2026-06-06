@@ -22,6 +22,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { formatSafeErrorResponse } from '@/lib/validation/server-action-validator';
 
@@ -356,8 +357,7 @@ export async function editRecurringEvent(
         // 2026-05-17: audit Q-NEW-7. .select('id') so we can count
         // affected rows; return a real error when the scope filter
         // matches nothing instead of returning success: true.
-        const { data: affected, error: updateError } = await supabase
-          .from('golf_events')
+        const { data: affected, error: updateError } = await fromUntyped(supabase, 'golf_events')
           .update(updates)
           .eq('id', input.eventId)
           .select('id');
@@ -374,7 +374,7 @@ export async function editRecurringEvent(
       }
 
       case 'thisAndFuture': {
-        let query = supabase.from('golf_events').update(updates);
+        let query = fromUntyped(supabase, 'golf_events').update(updates);
         if (rootId) {
           // Walk by parent_event_id, but ALSO scope by team_id as
           // defense-in-depth: even if a sibling row's parent_event_id was
@@ -409,7 +409,7 @@ export async function editRecurringEvent(
       }
 
       case 'all': {
-        let query = supabase.from('golf_events').update(updates);
+        let query = fromUntyped(supabase, 'golf_events').update(updates);
         if (rootId) {
           query = query
             .eq('team_id', targetEvent.team_id)

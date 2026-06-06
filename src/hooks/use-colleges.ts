@@ -27,13 +27,13 @@ export function useColleges(options: UseCollegesOptions = {}) {
       query = query.eq('division', options.division);
     }
     if (options.state) {
-      query = query.eq('state', options.state);
+      query = query.eq('location_state', options.state);
     }
     if (options.conference) {
       query = query.ilike('conference', `%${options.conference}%`);
     }
     if (options.search) {
-      query = query.or(`name.ilike.%${options.search}%,city.ilike.%${options.search}%,state.ilike.%${options.search}%`);
+      query = query.or(`name.ilike.%${options.search}%,location_city.ilike.%${options.search}%,location_state.ilike.%${options.search}%`);
     }
 
     const { data } = await query;

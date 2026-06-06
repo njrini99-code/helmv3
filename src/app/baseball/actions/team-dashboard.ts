@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { logServerError } from '@/lib/server-error-logger';
 
 // ============================================================================
@@ -258,15 +259,13 @@ export async function getTeamDashboardData(teamId?: string): Promise<
         .limit(10),
 
       // Pending tasks for this coach
-      supabase
-        .from('baseball_task_assignments')
+      fromUntyped(supabase, 'baseball_task_assignments')
         .select('*', { count: 'exact', head: true })
         .eq('assigned_to', user.id)
         .eq('status', 'pending'),
 
       // Unread messages for this user
-      supabase
-        .from('baseball_messages')
+      fromUntyped(supabase, 'baseball_messages')
         .select('*', { count: 'exact', head: true })
         .eq('recipient_id', user.id)
         .eq('is_read', false),

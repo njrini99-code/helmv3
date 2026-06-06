@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { sanitizeDbError } from '@/lib/db-error';
 import { revalidatePath } from 'next/cache';
 
@@ -197,8 +198,7 @@ export async function updateBaseballEvent(eventId: string, input: UpdateEventInp
     updateData.end_time = buildEndDateTime(input.endDate, input.endTime, input.startDate);
   }
 
-  const { data, error } = await supabase
-    .from('baseball_events')
+  const { data, error } = await fromUntyped(supabase, 'baseball_events')
     .update(updateData)
     .eq('id', eventId)
     .eq('created_by', coach.id)

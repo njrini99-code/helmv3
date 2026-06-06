@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button, IconButton } from '@/components/ui/button';
 import { createClient } from '@/lib/supabase/client';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { toast } from '@/components/ui/sonner';
 
 interface PlayerSettings {
@@ -225,16 +226,14 @@ export function PrivacySettingsForm({
 
       if (existing) {
         // Update existing
-        const { error } = await supabase
-          .from('baseball_player_settings')
+        const { error } = await fromUntyped(supabase, 'baseball_player_settings')
           .update(settings)
           .eq('player_id', playerId);
 
         if (error) throw error;
       } else {
         // Insert new
-        const { error } = await supabase
-          .from('baseball_player_settings')
+        const { error } = await fromUntyped(supabase, 'baseball_player_settings')
           .insert({ ...settings, player_id: playerId });
 
         if (error) throw error;

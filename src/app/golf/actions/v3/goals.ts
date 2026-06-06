@@ -12,6 +12,7 @@
  */
 
 import { createClient } from '@/lib/supabase/server';
+import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { ACTIVE_GOAL_SOFT_CAP } from '@/lib/coachhelm/v3/goals/types';
@@ -196,8 +197,7 @@ async function transitionGoal(
       update.player_declined_at = new Date().toISOString();
     }
 
-    const { error } = await supabase
-      .from('golf_goals')
+    const { error } = await fromUntyped(supabase, 'golf_goals')
       .update(update)
       .eq('id', goalId);
 

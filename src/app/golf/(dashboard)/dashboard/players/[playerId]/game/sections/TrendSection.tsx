@@ -119,7 +119,7 @@ export function TrendSection({ trend }: TrendSectionProps) {
 
 function TrendTooltip({ active, payload }: Partial<TooltipContentProps<number, string>>) {
   if (!active || !payload?.length) return null;
-  const p = payload[0].payload as Point;
+  const p = payload[0]!.payload as Point;
   if (typeof p.score_to_par !== 'number') return null;
   return (
     <div className="rounded-lg bg-white shadow-md border border-warm-200 px-3 py-2">
