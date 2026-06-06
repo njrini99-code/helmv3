@@ -380,7 +380,10 @@ export async function enrollSegmentInSequence(input: {
   let query = client
     .from('crm_coaches')
     .select('id')
-    .eq('is_archived', false);
+    // NULL-safe archived filter: legacy rows with is_archived = NULL must still
+    // enroll, so match NULL OR false. A bare .eq('is_archived', false) would drop
+    // NULL rows via Postgres three-valued logic. Mirrors admin/crm/page.tsx.
+    .or('is_archived.is.null,is_archived.eq.false');
 
   if (def.status && def.status !== 'all') {
     query = query.eq('status', def.status);
