@@ -1,0 +1,49 @@
+# Dependabot — grouped, scheduled dependency-update PRs.
+#
+# Note: SECURITY updates are raised separately and immediately by Dependabot
+# regardless of the schedule/groups below. The groups here exist to batch the
+# routine version bumps so they arrive as a few reviewable PRs instead of dozens.
+#
+# Not covered here (extend if/when needed):
+#   - iOS native deps (CocoaPods/Podfile under the Capacitor app)
+version: 2
+updates:
+  # ── npm (repo root) ───────────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    groups:
+      # All non-major dev-dependency bumps → one PR.
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      # All non-major production bumps → one PR. Majors stay separate so they
+      # get individual review.
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # ── GitHub Actions ────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
