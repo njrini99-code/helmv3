@@ -253,10 +253,13 @@ export default async function TeamStatsPage() {
     playerRounds.forEach(round => {
       const holes = holesByRound[round.id] || [];
       holes.forEach(hole => {
-        // Fairway (only par 4s and 5s)
-        // Match the player stats calculator: every par 4 / par 5 is a fairway
-        // opportunity, even if the explicit hole flag is missing.
-        if (hole.par >= 4) {
+        // Fairway (only par 4s and 5s). Exclude holes where fairway_hit was never
+        // recorded (NULL) — mirrors the GIR rule below and the player stats page.
+        // Counting a NULL flag as a miss understated FW% and disagreed with the
+        // player page, which recovers the real outcome from tee-shot data (e.g. a
+        // re-tee after a penalty that finds the fairway). "Of the holes where we
+        // know the tee result, what fraction found the fairway" is the right rate.
+        if (hole.par >= 4 && hole.fairway_hit !== null) {
           totalFairwayOpps++;
           if (hole.fairway_hit) totalFairwayHits++;
         }
