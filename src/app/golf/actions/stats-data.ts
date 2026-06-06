@@ -2276,6 +2276,13 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
 
   const supabase = await createClient();
 
+  // Auth guard (S1): require a session. Team-scoping is already enforced by RLS
+  // on golf_team_members/golf_players/golf_rounds, so we deliberately do NOT add a
+  // coach-of-team throw here — that would risk locking out active demo accounts.
+  // RLS returns [] for non-members.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Unauthorized');
+
   const { data: teamMembers } = await supabase
     .from('golf_team_members')
     .select('player_id')

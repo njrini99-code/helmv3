@@ -1086,7 +1086,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
 
   useEffect(() => {
     (async () => {
-      // sg_benchmark_level column was added after type generation
+      // sg_benchmark_level is added by migration 20260606130000; database.ts
+      // types are regenerated on the next deploy/prod-apply.
       const { data } = await fromUntyped(supabase, 'golf_team_settings')
         .select('scoring_format, handicap_system, default_tees, timezone, sg_benchmark_level')
         .eq('team_id', teamId)
@@ -1107,7 +1108,8 @@ function GolfScoringPanel({ teamId }: { teamId: string }) {
     setSaving(true);
     try {
       // Upsert — create if doesn't exist
-      // sg_benchmark_level column was added after type generation
+      // sg_benchmark_level is added by migration 20260606130000; database.ts
+      // types are regenerated on the next deploy/prod-apply.
       const { error } = await fromUntyped(supabase, 'golf_team_settings')
         .upsert({
           team_id: teamId,
