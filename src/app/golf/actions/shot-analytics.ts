@@ -287,7 +287,8 @@ export async function getPlayerShotAnalytics(
         id, round_id, hole_number, par, score, putts,
         fairway_hit, gir, up_and_down, sand_save
       `)
-      .in('round_id', roundIds);
+      .in('round_id', roundIds)
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     const holes = (holesData || []) as HoleRow[];
 
@@ -300,7 +301,8 @@ export async function getPlayerShotAnalytics(
         distance_to_hole_after, distance_unit_after, shot_distance,
         miss_direction, result, putt_distance_feet, putt_made
       `)
-      .in('round_id', roundIds);
+      .in('round_id', roundIds)
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     const shots = (shotsData || []) as ShotRow[];
 

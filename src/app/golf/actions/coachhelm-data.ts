@@ -621,7 +621,8 @@ export async function getPlayerShotContext(
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
-      .order('shot_number');
+      .order('shot_number')
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     if (shotsError) {
       return { success: false, error: 'Failed to fetch shot data' };
@@ -706,7 +707,8 @@ export async function getPlayerShotContext(
     const { data: holesData } = await supabase
       .from('golf_holes')
       .select('hole_number, par, score, gir, putts, round_id')
-      .in('round_id', roundIds);
+      .in('round_id', roundIds)
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     const scrambleHoles = (holesData ?? [])
       .filter((h): h is typeof h & { par: number; score: number; gir: boolean } =>

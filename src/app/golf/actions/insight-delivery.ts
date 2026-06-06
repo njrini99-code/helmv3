@@ -628,8 +628,10 @@ export async function getRoundTakeawayInsight(
 /** High cap for the themes query — no per-card limit; we want the full set. */
 const THEMES_FETCH_CAP = 200;
 
-/** Cap for the shot-driver fetch (PLAY C) — mirrors PuttingStats.tsx (5000). */
-const SHOT_DRIVERS_FETCH_CAP = 5000;
+/** Cap for the shot-driver fetch (PLAY C). Must cover SHOT_DRIVERS_ROUNDS_CAP
+ *  rounds fully (200 rounds × ~108 shots ≈ 21.6k); the query has no .order(),
+ *  so a lower cap truncated an ARBITRARY subset at PostgREST's 1000-row default. */
+const SHOT_DRIVERS_FETCH_CAP = 25000;
 /** Recent-rounds cap when resolving completed round ids for the shot fetch. */
 const SHOT_DRIVERS_ROUNDS_CAP = 200;
 

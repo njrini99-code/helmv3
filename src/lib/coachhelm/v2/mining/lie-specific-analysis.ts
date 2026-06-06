@@ -617,7 +617,8 @@ class LieSpecificAnalyzer {
       .not('shot_type', 'in', '("putt","putting")')
       .order('round_id')
       .order('hole_number')
-      .order('shot_number');
+      .order('shot_number')
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     if (error || !shots) {
       return;

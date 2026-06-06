@@ -165,7 +165,8 @@ async function fetchTeeShots(
     )
     .eq('shot_type', 'tee')
     .eq('golf_rounds.player_id', playerId)
-    .gte('golf_rounds.round_date', windowStartIso);
+    .gte('golf_rounds.round_date', windowStartIso)
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   if (error) {
     throw new Error(`tee-strategy.fetchTeeShots failed: ${error.message}`);

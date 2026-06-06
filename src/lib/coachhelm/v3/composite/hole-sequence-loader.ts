@@ -54,7 +54,8 @@ export async function loadHoleScores(
     .from('golf_holes')
     .select('round_id, hole_number, par, score')
     .in('round_id', roundIds)
-    .not('score', 'is', null);
+    .not('score', 'is', null)
+    .limit(50000); // lift PostgREST 1000-row default cap
   if (error || !data) return [];
 
   return data

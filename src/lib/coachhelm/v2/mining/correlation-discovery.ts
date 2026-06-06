@@ -217,7 +217,8 @@ export class CorrelationDiscovery {
           putt_made,
           is_penalty
         `)
-        .in('round_id', roundIds);
+        .in('round_id', roundIds)
+        .limit(50000); // lift PostgREST 1000-row default cap
 
       if (shots) {
         this.shots = shots;
@@ -260,7 +261,8 @@ export class CorrelationDiscovery {
           gir,
           fairway_hit
         `)
-        .in('round_id', roundIds);
+        .in('round_id', roundIds)
+        .limit(50000); // lift PostgREST 1000-row default cap
 
       if (holes) {
         this.holes = holes.map(h => ({

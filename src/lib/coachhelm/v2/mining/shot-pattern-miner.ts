@@ -166,7 +166,8 @@ export class ShotPatternMiner {
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
-      .order('shot_number');
+      .order('shot_number')
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     if (error || !shots) {
       return;

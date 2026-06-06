@@ -207,7 +207,8 @@ async function averageHoleLevelByPar(
     .eq('golf_rounds.status', 'completed')
     .eq('par', source.par_filter)
     .gte('golf_rounds.round_date', startIso.slice(0, 10))
-    .lte('golf_rounds.round_date', endIso.slice(0, 10));
+    .lte('golf_rounds.round_date', endIso.slice(0, 10))
+    .limit(50000); // lift PostgREST 1000-row default cap
   type Row = Record<string, unknown>;
   const diffs: number[] = [];
   const roundIds = new Set<string>();

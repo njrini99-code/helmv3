@@ -61,7 +61,8 @@ export async function extractSequenceFeatures(
     .select('hole_number, score, par, round_id')
     .in('round_id', roundIds)
     .order('round_id')
-    .order('hole_number');
+    .order('hole_number')
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   if (holesError || !holes || holes.length < 36) {
     return null;

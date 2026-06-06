@@ -136,7 +136,8 @@ export async function getPlayerProfileStats(
       `)
       .in('round_id', roundIdsToFetch)
       .order('hole_number')
-      .order('shot_number');
+      .order('shot_number')
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     if (shotsError) {
       await logServerError(`[getPlayerProfileStats] Error fetching shots: ${shotsError instanceof Error ? shotsError.message : String(shotsError)}`, { action: 'player_profile_stats.getPlayerProfileStats' });
@@ -156,7 +157,8 @@ export async function getPlayerProfileStats(
     const { data: holesData } = await supabase
       .from('golf_holes')
       .select('round_id, hole_number, par, yardage')
-      .in('round_id', roundIdsToFetch);
+      .in('round_id', roundIdsToFetch)
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     // 5. Build data structures for calculator
     const selectedRounds = roundId === 'overall'
