@@ -110,7 +110,7 @@
     "inngest": "^4.4.0",
     "jspdf": "^4.0.0",
     "lenis": "^1.3.17",
-    "lucide-react": "^0.562.0",
+    "lucide-react": "^1.17.0",
     "mapbox-gl": "^3.24.0",
     "next": "^16.0.10",
     "postcss": "^8.5.6",
