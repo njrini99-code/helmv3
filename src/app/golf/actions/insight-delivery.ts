@@ -205,6 +205,27 @@ function feedRankScore(insight: EvidenceInsight): number {
   return impact * confidence;
 }
 
+/**
+ * Cross-surface dedupe (audit finding 29). Collapses rows that share the same
+ * `(player_id:category:metric-subject)` key — keeping the first survivor in the
+ * supplied (already-ranked) order — so the same underlying leak never renders
+ * twice. The metric subject is canonicalized so a v2 `par_scoring_par4` and a
+ * v3 `scoring_par_4` for the same player collapse to one row (ASM-1). Falls
+ * back to the insight title when no metric is present. MUST be applied
+ * IDENTICALLY on the player and coach read paths so a player and a coach
+ * viewing the same player see the same merged card set.
+ */
+function dedupeBySubject(insights: EvidenceInsight[]): EvidenceInsight[] {
+  const seenSignatures = new Set<string>();
+  return insights.filter((insight) => {
+    const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
+    const sig = `${insight.player_id}:${insight.category}:${subject}`;
+    if (seenSignatures.has(sig)) return false;
+    seenSignatures.add(sig);
+    return true;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -426,13 +447,18 @@ export async function getInsightsForPlayer(
   // clamped) — the same composite the engine ranks with — so the high-leverage
   // leak leads the card stack instead of whatever was created most recently.
   // Stable tie-break on created_at DESC keeps equal-score rows newest-first.
-  return filtered
-    .sort((a, b) => {
-      const diff = feedRankScore(b) - feedRankScore(a);
-      if (diff !== 0) return diff;
-      return (b.created_at ?? '').localeCompare(a.created_at ?? '');
-    })
-    .slice(0, limit);
+  const ranked = filtered.sort((a, b) => {
+    const diff = feedRankScore(b) - feedRankScore(a);
+    if (diff !== 0) return diff;
+    return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+  });
+
+  // Finding 29: apply the SAME (player:category:metric-subject) dedupe the
+  // coach feed uses (via the shared `dedupeBySubject` helper) so a player does
+  // not see duplicate-subject cards a coach viewing the same player sees merged.
+  // Dedupe AFTER ranking so the surviving row is the highest-ranked of a group,
+  // then trim to the requested limit.
+  return dedupeBySubject(ranked).slice(0, limit);
 }
 
 /**
@@ -515,19 +541,13 @@ export async function getInsightsForCoach(
   // Rank by |strokes_impact| × confidence (ceiling-clamped — the same composite
   // the engine uses internally to decide which insights matter) and dedupe
   // across categories so the feed doesn't show three overlapping putting rows.
-  // The dedupe key canonicalizes the metric subject so a v2 `par_scoring_par4`
-  // and a v3 `scoring_par_4` for the same player collapse to one row (ASM-1).
-  const seenSignatures = new Set<string>();
-  const ranked = mapped
-    .slice()
-    .sort((a, b) => feedRankScore(b) - feedRankScore(a))
-    .filter((insight) => {
-      const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
-      const sig = `${insight.player_id}:${insight.category}:${subject}`;
-      if (seenSignatures.has(sig)) return false;
-      seenSignatures.add(sig);
-      return true;
-    });
+  // Dedupe runs through the shared `dedupeBySubject` helper so the player feed
+  // (getInsightsForPlayer) collapses an IDENTICAL key set (finding 29). The key
+  // canonicalizes the metric subject so a v2 `par_scoring_par4` and a v3
+  // `scoring_par_4` for the same player collapse to one row (ASM-1).
+  const ranked = dedupeBySubject(
+    mapped.slice().sort((a, b) => feedRankScore(b) - feedRankScore(a)),
+  );
 
   return ranked.slice(0, limit);
 }

@@ -948,13 +948,17 @@ export function calculateHoleStatsFromShots(
     ? approachShot.miss_direction ?? null
     : null;
 
-  // First putt analysis - only set if we have actual distance data
+  // First putt analysis - only set if we have actual distance data.
+  // Putt distances are ALWAYS feet (a putt is on the green by definition), so
+  // use normalizePuttFeet — treat the raw value as feet and clamp — NEVER
+  // normalizeToFeet, which would ×3 a 'yards'-tagged putt into an impossible
+  // distance. Both the start distance and the leave are on-green putts.
   const firstPutt = puttingShots[0];
   const firstPuttDistance = firstPutt && firstPutt.distance_to_hole_before !== null
-    ? normalizeToFeet(firstPutt.distance_to_hole_before, firstPutt.distance_unit_before)
+    ? normalizePuttFeet(firstPutt.distance_to_hole_before)
     : null;
   const firstPuttLeave = firstPutt && firstPutt.result !== 'hole' && firstPutt.distance_to_hole_after !== null
-    ? normalizeToFeet(firstPutt.distance_to_hole_after, firstPutt.distance_unit_after)
+    ? normalizePuttFeet(firstPutt.distance_to_hole_after)
     : null;
   const firstPuttBreak = firstPutt ? (firstPutt.putt_break ?? null) : null;
   const firstPuttSlope = firstPutt ? (firstPutt.putt_slope ?? null) : null;
@@ -970,10 +974,15 @@ export function calculateHoleStatsFromShots(
   const aroundGreenShot = normalizedShots.find(s => {
     // Explicit around_green type
     if (s.shot_type === 'around_green') return true;
-    // Or: not on green, not a putt, not a tee shot, and within around-green threshold
+    // Or: not on green, not a putt, not a tee shot, not a full approach, and
+    // within the around-green threshold. Excluding shot_type === 'approach'
+    // prevents a long approach hit from <=50yd (e.g. an approach-from-sand) from
+    // being mislabeled as the greenside up-and-down shot, which would corrupt
+    // the chip-lie / sand-save split.
     if (s.lie_before !== 'green' &&
         s.shot_type !== 'putting' &&
         s.shot_type !== 'tee' &&
+        s.shot_type !== 'approach' &&
         !s.is_penalty &&
         s.distance_to_hole_before !== null) {
       const distYards = normalizeToYards(s.distance_to_hole_before, s.distance_unit_before);
@@ -1622,8 +1631,10 @@ function aggregateRoundStats(rounds: Array<{
         current3PuttStreak = 0;
       }
 
-      // Driving
-      if (hole.drivingDistance !== null) {
+      // Driving — exclude 0-yard placeholder tee shots (data artifacts) so the
+      // average matches shot-analytics (which filters > 0) and isn't dragged
+      // down by zero-distance entries.
+      if (hole.drivingDistance !== null && hole.drivingDistance > 0) {
         drivingDistances.push(hole.drivingDistance);
         if (hole.usedDriver) {
           drivingDistancesDriverOnly.push(hole.drivingDistance);
@@ -1633,10 +1644,11 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // Fairway stats - every par 4/par 5 is an opportunity, even if tee-shot
-      // detail is incomplete. Missing hit data should count as an opportunity,
-      // not silently shrink the denominator.
-      if (hole.par !== 3) {
+      // Fairway stats - a par 4/par 5 counts as an opportunity ONLY when its
+      // tee result resolved to a KNOWN fairway outcome (fairwayHit !== null).
+      // Holes with an unknown fairway outcome are excluded — never counted as a
+      // miss — per CANON, matching the team stats page and ground-truth formula.
+      if (hole.par !== 3 && hole.fairwayHit !== null) {
         stats.fairwayOpportunities++;
         if (hole.fairwayHit) stats.fairwaysHit++;
 
@@ -1693,16 +1705,11 @@ function aggregateRoundStats(rounds: Array<{
 
       // GIR by approach distance
       if (hole.approachDistance !== null) {
-        const distYards = hole.approachDistance;
-        let bucket = '';
-        if (distYards >= 50 && distYards < 75) bucket = '50_75';
-        else if (distYards >= 75 && distYards < 100) bucket = '75_100';
-        else if (distYards >= 100 && distYards < 125) bucket = '100_125';
-        else if (distYards >= 125 && distYards < 150) bucket = '125_150';
-        else if (distYards >= 150 && distYards < 175) bucket = '150_175';
-        else if (distYards >= 175 && distYards < 200) bucket = '175_200';
-        else if (distYards >= 200 && distYards < 225) bucket = '200_225';
-        else if (distYards >= 225) bucket = '225_plus';
+        // Route through the shared bucketer so a given approach yardage lands in
+        // the SAME band as the proximity/efficiency/miss charts on this surface
+        // (single source of band edges — no per-chart boundary drift, and the
+        // 30-50yd shots previously dropped by the inline 50yd floor are kept).
+        const bucket = getApproachDistanceBucket(hole.approachDistance);
 
         if (bucket) {
           if (!girByDistance[bucket]) {
@@ -1793,10 +1800,13 @@ function aggregateRoundStats(rounds: Array<{
 
         // Miss direction
         if (hole.putts > 1 && hole.firstPuttLeave && hole.firstPuttLeave > 0) {
-          puttMissTotal++;
           // Determine miss direction from shots
           const firstPuttShot = hole.shots.find(s => s.shot_type === 'putting');
           if (firstPuttShot?.miss_direction) {
+            // Denominator counts only tagged misses (matches the by-break and
+            // approach-miss patterns) so each direction % is "% of missed putts
+            // with a recorded direction", not diluted by untagged multi-putts.
+            puttMissTotal++;
             const pm = firstPuttShot.miss_direction;
             if (pm === 'left' || pm.startsWith('left_') || pm.endsWith('_left')) puttMissLeft++;
             if (pm === 'right' || pm.startsWith('right_') || pm.endsWith('_right')) puttMissRight++;
@@ -2245,7 +2255,12 @@ function aggregateRoundStats(rounds: Array<{
   stats.puttMissHighPct = safePercent(puttMissHigh, puttMissTotal);
 
   // GIR by distance
-  stats.girPct50_75 = safePercent(girByDistance['50_75']?.made || 0, girByDistance['50_75']?.total || 0);
+  // NB: the shared getApproachDistanceBucket lowest band is keyed '30_75' (its
+  // floor is AROUND_GREEN_THRESHOLD_YARDS=50, so it only ever holds 50-75yd
+  // shots). The output field name stays girPct50_75 for compatibility, but it
+  // now reads the '30_75' bucket key so boundary yardages land in the same band
+  // as the proximity/efficiency/miss charts.
+  stats.girPct50_75 = safePercent(girByDistance['30_75']?.made || 0, girByDistance['30_75']?.total || 0);
   stats.girPct75_100 = safePercent(girByDistance['75_100']?.made || 0, girByDistance['75_100']?.total || 0);
   stats.girPct100_125 = safePercent(girByDistance['100_125']?.made || 0, girByDistance['100_125']?.total || 0);
   stats.girPct125_150 = safePercent(girByDistance['125_150']?.made || 0, girByDistance['125_150']?.total || 0);

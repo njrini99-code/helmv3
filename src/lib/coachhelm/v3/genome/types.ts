@@ -80,6 +80,10 @@ export interface GenomeShot {
   lie_after: string | null;
   distance_to_hole_before: number | null;
   distance_to_hole_after: number | null;
+  /** Unit of distance_to_hole_after ('feet'|'yards'); needed to convert leaves
+   *  to feet for the scrambling-rate save threshold (CANON: UNITS). Optional so
+   *  fixtures may omit it (absent ⇒ treated as feet). */
+  distance_unit_after?: string | null;
   miss_direction: string | null;
   is_penalty: boolean | null;
 }

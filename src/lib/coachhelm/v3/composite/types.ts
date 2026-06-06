@@ -96,6 +96,9 @@ export interface ShortGameShot {
   lie_before: string;
   distance_to_hole_before: number; // yards
   distance_to_hole_after: number;
+  /** Unit of distance_to_hole_after ('feet'|'yards'); the short-side-scrambling
+   *  composite converts yards→feet before the proximity gate (CANON: UNITS). */
+  distance_unit_after?: string | null;
 }
 
 /** Approach shot from a flyer-prone lie (light rough). */

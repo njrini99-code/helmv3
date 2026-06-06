@@ -82,7 +82,7 @@ export async function loadShortGameShots(
 
   const { data, error } = await fromUntyped(supabase, 'golf_shots')
     .select(
-      'round_id, hole_number, lie_before, distance_to_hole_before, distance_to_hole_after',
+      'round_id, hole_number, lie_before, distance_to_hole_before, distance_to_hole_after, distance_unit_after',
     )
     .in('round_id', roundIds)
     // Migration 040's CHECK constraint allows only the 5 canonical values

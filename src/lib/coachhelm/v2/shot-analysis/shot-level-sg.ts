@@ -287,6 +287,7 @@ export function analyzeShotsByContext(
       shot.distanceAfter,
       shot.lieAfter,
       baseline,
+      shot.result,
     );
     group.sgValues.push(sg);
   }

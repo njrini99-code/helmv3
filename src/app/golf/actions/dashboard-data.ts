@@ -477,9 +477,12 @@ export async function getCoachDashboardData(
             const roundsByYearMonth: Record<string, { label: string; scores: number[] }> = {};
             allRounds.forEach(round => {
                 if (!round.round_date || round.total_score === null) return;
-                const d = new Date(round.round_date);
-                const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+                // round_date is a date-only column; parse the YYYY-MM substring (or pin
+                // the label to UTC) so a date-only round on the 1st is not shifted into
+                // the prior month when the server TZ is west of UTC.
+                const sortKey = round.round_date.slice(0, 7); // 'YYYY-MM'
+                const label = new Date(`${round.round_date}T00:00:00Z`)
+                    .toLocaleString('default', { month: 'short', year: '2-digit', timeZone: 'UTC' });
                 if (!roundsByYearMonth[sortKey]) roundsByYearMonth[sortKey] = { label, scores: [] };
                 const holes = (round as { holes_played?: number | null }).holes_played ?? 18;
                 const normalizedScore = holes > 0 && holes < 18
@@ -832,13 +835,43 @@ export async function getPlayerDashboardData(
             : null
     })));
 
-    // Current GIR% and Putts/Rd
-    const girValues = rounds.slice(0, 20)
+    // Current GIR% and Putts/Rd — mirror the coach-dashboard / team-page convention
+    // so the same player shows the same numbers everywhere.
+    // GIR% is a WEIGHTED aggregate (sum made / sum opportunities), not an unweighted
+    // per-round mean; this also keeps 9-hole rounds from skewing it.
+    let girMadeTotal = 0;
+    let girPossibleTotal = 0;
+    for (const r of rounds) {
+        if (r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0) {
+            girMadeTotal += r.total_gir;
+            girPossibleTotal += r.total_gir_possible;
+        }
+    }
+    const avgGir = girPossibleTotal > 0 ? (girMadeTotal / girPossibleTotal) * 100 : null;
+    // Putts/Rd normalized to 18 holes before averaging (a raw mean under-reports
+    // when 9-hole rounds exist), matching the coach dashboard and stats page.
+    const normalizedPutts = rounds
+        .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
+        .map(r => {
+            const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
+            return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
+        });
+    const avgPutts = normalizedPutts.length > 0
+        ? normalizedPutts.reduce((a, b) => a + b, 0) / normalizedPutts.length
+        : null;
+
+    // Per-round series (newest first) feeding the sparkline trend arrows. These
+    // are intentionally per-round (not the windowed aggregate above) — the trend
+    // is a recent-vs-older split of individual rounds. Putts normalized to 18.
+    const girValues = rounds
         .filter(r => r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0)
         .map(r => (r.total_gir! / r.total_gir_possible!) * 100);
-    const avgGir = girValues.length > 0 ? girValues.reduce((a, b) => a + b, 0) / girValues.length : null;
-    const puttsValues = rounds.slice(0, 20).map(r => r.total_putts).filter((p): p is number => p !== null);
-    const avgPutts = puttsValues.length > 0 ? puttsValues.reduce((a, b) => a + b, 0) / puttsValues.length : null;
+    const puttsValues = rounds
+        .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
+        .map(r => {
+            const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
+            return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
+        });
 
     // Secondary stats
     const firValues = rounds.slice(0, 20)

@@ -96,6 +96,11 @@ export function buildYardageCurve(
   }
 
   for (const shot of shots) {
+    // Exclude putts: green-lie distances are FEET, not yards, and must not be
+    // floor-divided into yard buckets. Putting belongs to a separate feet-based
+    // curve (analyzeShotsByContext green_* contexts).
+    if (shot.lieBefore === 'green') continue;
+
     // Find the right bucket
     const bucketStart =
       Math.floor(shot.distanceBefore / bucketSize) * bucketSize;
@@ -113,9 +118,14 @@ export function buildYardageCurve(
       shot.distanceAfter,
       shot.lieAfter,
       baseline,
+      shot.result,
     );
     entry.sgValues.push(sg);
-    entry.proximities.push(yardsToFeet(shot.distanceAfter));
+    // avgProximity is documented as feet. distanceAfter is already feet when the
+    // shot finishes on the green; only the non-green case is yards (convert ×3).
+    const proxFeet =
+      shot.lieAfter === 'green' ? shot.distanceAfter : yardsToFeet(shot.distanceAfter);
+    entry.proximities.push(proxFeet);
 
     // Count approach shots and green hits
     if (shot.lieBefore !== 'green') {

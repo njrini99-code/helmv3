@@ -1655,22 +1655,29 @@ class LieSpecificAnalyzer {
         });
       }
 
-      // Wide dispersion
-      const benchmark = DISPERSION_BENCHMARKS.driving.dispersionRadius;
-      if (driving.dispersionRadius > benchmark * 1.5) {
+      // Wide dispersion off the tee.
+      // NOTE: DrivingAnalysis.dispersionRadius is a SYNTHETIC std-dev of fixed
+      // result-bucket constants ({fairway:0, rough:15, sand:20, penalty:35, other:10})
+      // bounded at ~17.5yd — it is NOT a measured lateral spread, so comparing it to a
+      // real-yards 25yd benchmark (×1.5 = 37.5yd) made this insight unable to fire and
+      // its "X yards wider than benchmark" body meaningless. We have no landing-coordinate
+      // data, so "wide driving" is driven instead by the genuinely-measured fairway hit
+      // rate vs the fairwayHitRate benchmark (the dangerZone/penalty insights are separate).
+      const fairwayBenchmark = DISPERSION_BENCHMARKS.driving.fairwayHitRate;
+      if (driving.fairwayHitRate < fairwayBenchmark - 10) {
         insights.push({
           id: crypto.randomUUID(),
           category: 'driving',
           headline: 'Wide Driving Dispersion',
-          body: `Your driving dispersion is ${Math.round(driving.dispersionRadius)} yards, which is ${Math.round((driving.dispersionRadius / benchmark - 1) * 100)}% wider than benchmark.`,
+          body: `You're hitting ${Math.round(driving.fairwayHitRate)}% of fairways vs a ${fairwayBenchmark}% benchmark — your tee shots are scattering off-line more than a strong college player's.`,
           evidence: [
-            `Your dispersion: ${Math.round(driving.dispersionRadius)} yards`,
-            `Benchmark: ${benchmark} yards`,
             `Fairway hit rate: ${Math.round(driving.fairwayHitRate)}%`,
+            `Benchmark: ${fairwayBenchmark}%`,
+            `Primary miss: ${this.formatMissDirection(driving.primaryMiss)} (${Math.round(driving.primaryMissFrequency)}%)`,
           ],
           severity: 'warning',
-          strokeImpact: (driving.dispersionRadius - benchmark) / 10 * 0.3, // Rough estimate
-          recommendation: 'Focus on consistent contact and tempo. Consider a shorter club for better control.',
+          strokeImpact: (fairwayBenchmark - driving.fairwayHitRate) / 100 * 14 * 0.3, // ~14 drives/round
+          recommendation: 'Focus on consistent contact and tempo. Consider a shorter club off the tee for better control.',
         });
       }
 
@@ -1957,9 +1964,18 @@ class LieSpecificAnalyzer {
     category: ShotCategory,
     bracket?: ApproachBracket
   ): DispersionPattern {
-    // Calculate distances from target
-    const distancesFromTarget = shots
-      .filter((s) => s.distance_to_hole_after != null)
+    // Dispersion (stdDeviation/avgDistanceFromTarget/maxMissDistance) measures how far
+    // MISSED shots end up off-line, and is compared against a miss-distance-spread
+    // benchmark (DISPERSION_BENCHMARKS.approach.dispersionRadius). It must therefore be
+    // computed over off-green misses only — a holed-out / on-green finish is not a miss,
+    // and its remaining-distance is a green-surface proximity (stored in feet), not a
+    // yards-measured miss distance. Including on-green finishers (a) blended feet and
+    // yards and (b) made the metric a function of GIR rate rather than dispersion.
+    // Mirrors the on-green guard in calculateAvgProximity / analyzeApproachByBracket.
+    const missShots = shots.filter(
+      (s) => s.distance_to_hole_after != null && s.result !== 'green' && s.result !== 'hole'
+    );
+    const distancesFromTarget = missShots
       .map((s) => toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0);
 
     const avgDistanceFromTarget = distancesFromTarget.length > 0

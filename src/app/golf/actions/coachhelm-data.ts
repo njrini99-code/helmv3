@@ -697,6 +697,7 @@ export async function getPlayerShotContext(
         shot.distanceAfter,
         shot.lieAfter,
         sgBaseline,
+        shot.result,
       ),
     );
 

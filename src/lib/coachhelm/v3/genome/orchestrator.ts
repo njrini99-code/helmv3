@@ -76,7 +76,7 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
         .limit(50000), // lift PostgREST 1000-row default cap
       fromUntyped(supabase, 'golf_shots')
         .select(
-          'round_id, hole_number, shot_type, club_type, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, miss_direction, is_penalty',
+          'round_id, hole_number, shot_type, club_type, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_after, miss_direction, is_penalty',
         )
         .in('round_id', roundIds)
         .limit(50000) as { data: GenomeShot[] | null; error: unknown }, // lift 1000-row cap
