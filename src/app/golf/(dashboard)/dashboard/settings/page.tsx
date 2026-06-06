@@ -1362,13 +1362,13 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const { data: org } = await (supabase as any)
             .from('organizations')
-            .select('name, city, state, division, conference')
+            .select('name, location_city, location_state, division, conference')
             .eq('id', team.organization_id)
             .maybeSingle();
           if (org) {
             setOrgName(org.name || '');
-            setCity(org.city || '');
-            setState(org.state || '');
+            setCity(org.location_city || '');
+            setState(org.location_state || '');
             setDivision(org.division || '');
             setConference(org.conference || '');
           }
@@ -1398,8 +1398,8 @@ function TeamSettingsPanel({ onUpdate }: { onUpdate: () => void }) {
           .from('organizations')
           .update({
             name: orgName.trim() || undefined,
-            city: city.trim() || undefined,
-            state: state.trim() || undefined,
+            location_city: city.trim() || undefined,
+            location_state: state.trim() || undefined,
             division: division.trim() || undefined,
             conference: conference.trim() || undefined,
             updated_at: new Date().toISOString(),
