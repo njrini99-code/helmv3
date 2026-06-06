@@ -2,27 +2,74 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { logServerError } from '@/lib/server-error-logger';
+import { z } from 'zod';
 
+// Device-token payloads arrive from the iOS Capacitor bridge as raw
+// strings — validate before they reach the database.
+const registerDeviceTokenSchema = z.object({
+  token: z.string().min(1, 'token is required').max(512),
+  platform: z.enum(['ios', 'android', 'web']),
+  deviceName: z.string().max(256).optional(),
+});
+
+const deviceTokenSchema = z.string().min(1, 'token is required').max(512);
+
+/**
+ * Result shape for device-token mutations.
+ *
+ * `UNAUTHORIZED_RETRYABLE` is returned (not thrown) when the iOS webview
+ * fires registration before the Supabase session cookie has propagated.
+ * The caller retries silently instead of surfacing a noisy Sentry error.
+ */
+type DeviceTokenResult =
+  | { success: true }
+  | {
+      success: false;
+      error: string;
+      code?: 'UNAUTHORIZED_RETRYABLE';
+      retryable?: boolean;
+    };
+
+/**
+ * Register (or refresh) an APNs/FCM device token for the current user.
+ * Auth-first per server-action convention; on a missing session it returns
+ * a retryable result rather than throwing so the iOS login-confirm cookie
+ * race can be retried silently by the caller.
+ */
 // SEMGREP-ALLOW: device-token registry is read directly by the push worker, not cached pages
 export async function registerDeviceToken(
   token: string,
   platform: 'ios' | 'android' | 'web',
   deviceName?: string
-) {
+): Promise<DeviceTokenResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) {
+    // The iOS webview fires this during login-confirm before the session
+    // cookie has fully propagated. Return a retryable failure so the caller
+    // re-tries silently rather than throwing into Sentry on a routine race.
+    return {
+      success: false,
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED_RETRYABLE',
+      retryable: true,
+    };
+  }
+
+  const parsed = registerDeviceTokenSchema.safeParse({ token, platform, deviceName });
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid device token payload' };
+  }
 
   // Upsert: if token already exists, update it
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('device_tokens')
     .upsert(
       {
         user_id: user.id,
-        token,
-        platform,
-        device_name: deviceName || null,
+        token: parsed.data.token,
+        platform: parsed.data.platform,
+        device_name: parsed.data.deviceName ?? null,
         active: true,
         failed_count: 0,
       },
@@ -30,40 +77,62 @@ export async function registerDeviceToken(
     );
 
   if (error) {
-    await logServerError(`Failed to register device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.registerDeviceToken' });
+    // Supabase PostgrestError is a plain object, not an Error instance —
+    // `String(error)` becomes "[object Object]". Read message directly.
+    await logServerError(`Failed to register device token: ${error.message}`, { action: 'push_notifications.registerDeviceToken' });
     return { success: false, error: error.message };
   }
 
   return { success: true };
 }
 
-export async function unregisterDeviceToken(token: string) {
+/** Soft-deactivate a device token for the current user (auth-first). */
+export async function unregisterDeviceToken(token: string): Promise<DeviceTokenResult> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) {
+    return {
+      success: false,
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED_RETRYABLE',
+      retryable: true,
+    };
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const parsed = deviceTokenSchema.safeParse(token);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid device token' };
+  }
+
+  const { error } = await supabase
     .from('device_tokens')
     .update({ active: false })
-    .eq('token', token)
+    .eq('token', parsed.data)
     .eq('user_id', user.id);
 
   if (error) {
-    await logServerError(`Failed to unregister device token: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.unregisterDeviceToken' });
+    await logServerError(`Failed to unregister device token: ${error.message}`, { action: 'push_notifications.unregisterDeviceToken' });
     return { success: false, error: error.message };
   }
 
   return { success: true };
 }
 
+/** List the current user's active device tokens (auth-first). */
 export async function getDeviceTokens() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Unauthorized');
+  if (!user) {
+    return {
+      success: false as const,
+      data: [],
+      error: 'Unauthorized',
+      code: 'UNAUTHORIZED_RETRYABLE' as const,
+      retryable: true,
+    };
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('device_tokens')
     .select('*')
     .eq('user_id', user.id)
@@ -71,9 +140,9 @@ export async function getDeviceTokens() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    await logServerError(`Failed to get device tokens: ${error instanceof Error ? error.message : String(error)}`, { action: 'push_notifications.getDeviceTokens' });
-    return { success: false, data: [], error: error.message };
+    await logServerError(`Failed to get device tokens: ${error.message}`, { action: 'push_notifications.getDeviceTokens' });
+    return { success: false as const, data: [], error: error.message };
   }
 
-  return { success: true, data: data || [] };
+  return { success: true as const, data: data ?? [] };
 }
