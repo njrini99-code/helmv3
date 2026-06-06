@@ -90,7 +90,12 @@ export async function loadShortGameShots(
     // still carry legacy 'chip'/'pitch' values — accept all three for the
     // window to keep historical reads aligned with shot-analytics.ts:410.
     .in('shot_type', ['around_green', 'chip', 'pitch'])
-    .in('lie_before', ['rough', 'heavy_rough', 'light_rough', 'bunker']) as {
+    // golf_shots.lie CHECK allows only tee|fairway|rough|sand|green|other|penalty
+    // (prod_public_baseline). 'heavy_rough'/'light_rough'/'bunker' are NOT valid
+    // values → they matched 0 rows and silently dropped every real greenside
+    // 'sand' recovery (sscc-1). Use the two canonical recovery lies so the
+    // short-side-scrambling-chain composite (detect() keys off 'sand') sees them.
+    .in('lie_before', ['rough', 'sand']) as {
       data: ShortGameShot[] | null;
       error: { message: string } | null;
     };
