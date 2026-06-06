@@ -34,7 +34,9 @@ const { tables, supabaseStub, upsertInsightMock, attachDrillsMock } = vi.hoisted
       in: vi.fn(() => Promise.resolve({ data: payload(), error: null })),
       not: vi.fn(() => thenable),
       order: vi.fn(() => thenable),
-      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      // fetchScoredHoles now ends the chain with .limit(50000) (truncation fix);
+      // return the chainable thenable so its `then` resolves to payload().
+      limit: vi.fn(() => thenable),
       single: vi.fn(() =>
         Promise.resolve({ data: { id: 'new-insight-id' }, error: null }),
       ),
