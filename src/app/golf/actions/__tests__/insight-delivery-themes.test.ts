@@ -235,6 +235,11 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
       not: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
+      // The themes query engine-filters with `.or(V3_ENGINE_FILTER)` (added in
+      // the audit-remediation commit). The real PostgrestFilterBuilder has it;
+      // the mock must too, or assembleForPlayer throws on `.or is not a function`
+      // and every themes entry point returns { success: false }.
+      or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       // `.limit()` is the terminal awaited node on the insight query.
       limit: vi.fn(() => Promise.resolve(terminal)),
@@ -249,6 +254,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
     return {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn(() => Promise.resolve(terminal)),
     };
@@ -259,6 +265,7 @@ function makeSupabaseMock(opts: SupabaseMockOpts) {
     return {
       select: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       limit: vi.fn(() => Promise.resolve(terminal)),
     };
   };
