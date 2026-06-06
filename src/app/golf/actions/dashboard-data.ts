@@ -358,7 +358,11 @@ export async function getCoachDashboardData(
             .eq('status', 'completed')
             .not('total_score', 'is', null);
         if (dateCutoff) recentRoundsQ = recentRoundsQ.gte('round_date', dateCutoff);
-        recentRoundsQ = recentRoundsQ.order('round_date', { ascending: false }).limit(50);
+        // 200 (not 50) so the "N rounds in window" footnote reflects the true
+        // windowed count and matches the round set the KPIs are computed over
+        // (allRounds is also capped at 200). The Recent Rounds table still renders
+        // only the first 8.
+        recentRoundsQ = recentRoundsQ.order('round_date', { ascending: false }).limit(200);
 
         // Build all rounds query with optional date filter + holes_played for normalization
         let allRoundsQ = supabase
@@ -504,14 +508,36 @@ export async function getCoachDashboardData(
             const puttsSparkline = buildSparkline(puttsSparkRounds);
             const girSparkline = buildSparkline(girSparkRounds);
 
-            // Compute current values
-            const recentGirValues = allRounds.slice(0, 20)
-                .filter(r => r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0)
-                .map(r => (r.total_gir! / r.total_gir_possible!) * 100);
-            const avgGir = recentGirValues.length > 0 ? recentGirValues.reduce((a, b) => a + b, 0) / recentGirValues.length : null;
+            // Compute current KPI values over the FULL windowed round set.
+            // `allRounds` already respects the selected window (via dateCutoff).
+            // Previously these used `allRounds.slice(0, 20)` — an arbitrary
+            // latest-20 cap unrelated to the window — so the headline GIR%
+            // reflected only a recent slump (e.g. 56% over the last 20 rounds vs
+            // the true 64.5% for the season) and disagreed with the team stats page.
+            //
+            // GIR% is a WEIGHTED aggregate (sum made / sum opportunities), matching
+            // the team stats page; this also keeps 9-hole rounds from skewing it.
+            let girMadeTotal = 0;
+            let girPossibleTotal = 0;
+            for (const r of allRounds) {
+                if (r.total_gir !== null && r.total_gir_possible && r.total_gir_possible > 0) {
+                    girMadeTotal += r.total_gir;
+                    girPossibleTotal += r.total_gir_possible;
+                }
+            }
+            const avgGir = girPossibleTotal > 0 ? (girMadeTotal / girPossibleTotal) * 100 : null;
 
-            const recentPutts = allRounds.slice(0, 20).map(r => r.total_putts).filter((p): p is number => p !== null);
-            const avgPutts = recentPutts.length > 0 ? recentPutts.reduce((a, b) => a + b, 0) / recentPutts.length : null;
+            // Putts/round over the full window, normalized to 18 holes (matches the
+            // team stats page; a raw mean under-reports when 9-hole rounds exist).
+            const normalizedPutts = allRounds
+                .filter((r): r is typeof r & { total_putts: number } => r.total_putts !== null)
+                .map(r => {
+                    const hp = (r as { holes_played?: number | null }).holes_played ?? 18;
+                    return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
+                });
+            const avgPutts = normalizedPutts.length > 0
+                ? normalizedPutts.reduce((a, b) => a + b, 0) / normalizedPutts.length
+                : null;
 
             // Compute GIR% and Putts trends (need arrays sorted newest-first)
             const girTrendValues = allRounds.slice(0, 20)
