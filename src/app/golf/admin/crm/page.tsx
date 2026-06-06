@@ -230,6 +230,12 @@ export default function CRMPage() {
       const { data } = await supabase
         .from('crm_coaches')
         .select(CRM_COACHES_LIST_COLUMNS)
+        // Hide archived rows from the main list. NULL-safe: legacy rows with
+        // is_archived = NULL must still appear, so we match NULL OR false
+        // explicitly. (Do NOT use .neq('is_archived', true) — Postgres
+        // three-valued logic evaluates NULL <> true as UNKNOWN and would
+        // wrongly drop the NULL rows.)
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('is_starred', { ascending: false })
         .order('priority', { ascending: false })
         .order('updated_at', { ascending: false });
@@ -505,7 +511,16 @@ export default function CRMPage() {
       else if (action === 'star') await bulkUpdateCoaches(ids, { is_starred: true });
       else if (action === 'unstar') await bulkUpdateCoaches(ids, { is_starred: false });
       else if (action === 'delete') {
-        await supabase.from('crm_coaches').delete().in('id', ids);
+        // Soft archive (recoverable) instead of a hard delete. Admin-only
+        // surface (behind admin/layout.tsx role check), so window.confirm is
+        // acceptable here — no demo accounts reach this code path.
+        const confirmed = window.confirm(
+          `Archive ${ids.length} selected coach${ids.length === 1 ? '' : 'es'}? ` +
+            `This hides them from the list but does NOT permanently delete them — ` +
+            `archived coaches can be recovered.`,
+        );
+        if (!confirmed) return;
+        await supabase.from('crm_coaches').update({ is_archived: true }).in('id', ids);
         fetchAllCoaches();
       }
       setSelectedIds(new Set());

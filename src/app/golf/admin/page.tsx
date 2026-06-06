@@ -273,7 +273,13 @@ function AdminDashboardContent() {
       const [result, rollupResult, crmResult] = await Promise.all([
         getAdminDashboardData(),
         getAdminDashboardRollup().catch(() => null),
-        supabase.from('crm_coaches').select('status').gte('created_at', ninetyDaysAgo),
+        // Exclude archived coaches from the 90-day CRM KPIs (NULL-safe; mirrors
+        // the list filter in admin/crm/page.tsx so archived rows aren't counted).
+        supabase
+          .from('crm_coaches')
+          .select('status')
+          .gte('created_at', ninetyDaysAgo)
+          .or('is_archived.is.null,is_archived.eq.false'),
       ]);
 
       setData(result);
