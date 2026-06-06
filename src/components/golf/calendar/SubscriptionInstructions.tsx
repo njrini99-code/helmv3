@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Apple,
-  Chrome,
+  CalendarDays,
   Copy,
   Check,
   ExternalLink,
@@ -49,7 +49,7 @@ const PLATFORMS = [
   {
     id: 'google' as Platform,
     name: 'Google',
-    icon: Chrome,
+    icon: CalendarDays,
     devices: ['Web', 'Android'],
   },
   {
