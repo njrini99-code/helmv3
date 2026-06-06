@@ -13,6 +13,9 @@ import {
   getExpectedStrokes,
   calculateStrokesGainedForShot,
   getStrokesGainedCategory,
+  getPenaltyCategory,
+  normalizePuttFeet,
+  MAX_PUTT_FEET,
   calculateHoleStatsFromShots,
   calculateStatsFromShots,
   formatStat,
@@ -387,9 +390,11 @@ describe('getExpectedStrokes', () => {
     expect(getExpectedStrokes('green', 0, 10)).toBe(1.61);
   });
 
-  it('uses closest green benchmark for in-between distances', () => {
-    // 12 feet → closest to 10 (1.61) or 15 (1.78), 12 is closer to 10
-    expect(getExpectedStrokes('green', 0, 12)).toBe(1.61);
+  it('interpolates the green benchmark for in-between distances (DC-SG-1)', () => {
+    // 12ft is now an explicit anchor → 1.69 (was nearest-neighbour 1.61).
+    expect(getExpectedStrokes('green', 0, 12)).toBeCloseTo(1.69, 5);
+    // 13ft interpolates between 12 (1.69) and 15 (1.78): 1.69 + (1/3)(0.09) = 1.72.
+    expect(getExpectedStrokes('green', 0, 13)).toBeCloseTo(1.72, 2);
   });
 
   it('uses fairway benchmark for fairway lie', () => {
@@ -407,18 +412,24 @@ describe('getExpectedStrokes', () => {
     expect(getExpectedStrokes('sand', 30)).toBe(2.60);
   });
 
-  it('falls back to fairway for tee shots under 400 yards', () => {
-    // Tee at 150 yards (par 3) → should use fairway benchmark: 2.99
-    expect(getExpectedStrokes('tee', 150)).toBe(2.99);
+  it('uses the continuous tee curve for short tee shots (DC-SG-3)', () => {
+    // Tee at 150yd now reads its own continuous tee anchor (3.05), no longer
+    // re-routed to the fairway table.
+    expect(getExpectedStrokes('tee', 150)).toBeCloseTo(3.05, 5);
   });
 
   it('uses tee benchmark for 400+ yard shots', () => {
     // Tee at 400 yards → tee benchmark: 4.08
-    expect(getExpectedStrokes('tee', 400)).toBe(4.08);
+    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(4.08, 5);
   });
 
-  it('returns fallback 3.50 for unknown lie type', () => {
-    expect(getExpectedStrokes('water', 100)).toBe(3.50);
+  it('routes unknown lie types to the distance-sensitive rough table (SG-1)', () => {
+    // 'water'/'other'/'recovery'/unmapped no longer collapse to a flat 3.50.
+    // They use the rough table: 100yd rough = 2.95, and the value MOVES with
+    // distance instead of being flat.
+    expect(getExpectedStrokes('water', 100)).toBeCloseTo(2.95, 5);
+    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.39, 5);
+    expect(getExpectedStrokes('recovery', 100)).not.toBe(getExpectedStrokes('recovery', 200));
   });
 });
 
@@ -969,26 +980,36 @@ describe('getAtgDistanceBucket boundary precision', () => {
 // ============================================================================
 
 describe('getExpectedStrokes edge cases', () => {
-  it('tee at exactly 399 yards → uses fairway benchmark', () => {
-    expect(getExpectedStrokes('tee', 399)).toBe(getExpectedStrokes('fairway', 399));
+  it('tee curve is continuous across the 400yd handoff (DC-SG-3)', () => {
+    // The old fairway re-route created a ~0.5-stroke jump at 400yd. The single
+    // continuous tee curve must be monotonic and change by < 0.05 stroke per yd
+    // across the seam (375→3.86, 400→4.08, interpolated between).
+    const e399 = getExpectedStrokes('tee', 399);
+    const e400 = getExpectedStrokes('tee', 400);
+    const e401 = getExpectedStrokes('tee', 401);
+    expect(e399).toBeLessThan(e400);
+    expect(e400).toBeLessThan(e401);
+    expect(e400 - e399).toBeLessThan(0.05); // no discontinuity at the handoff
+    expect(e401 - e400).toBeLessThan(0.05);
   });
 
-  it('tee at exactly 400 yards → uses tee benchmark', () => {
-    // Tee at 400 → tee benchmark 4.08, NOT fairway
-    expect(getExpectedStrokes('tee', 400)).toBe(4.08);
+  it('tee at exactly 400 yards → 4.08 anchor', () => {
+    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(4.08, 5);
   });
 
-  it('green with very small putt (0.5 feet) → uses 1-foot benchmark', () => {
-    expect(getExpectedStrokes('green', 0, 0.5)).toBe(1.00);
+  it('green with very small putt (0.5 feet) → clamps to the 1-foot benchmark', () => {
+    expect(getExpectedStrokes('green', 0, 0.5)).toBeCloseTo(1.00, 5);
   });
 
-  it('green without feet parameter uses the closest green benchmark', () => {
-    const result = getExpectedStrokes('green', 100);
-    expect(result).toBe(2.18);
+  it('green without feet parameter clamps to the longest green anchor', () => {
+    // No distanceFeet → not the putting branch. The green table is still found
+    // (treated as feet-positions); 100 is past the 60ft max anchor so it clamps
+    // to 2.18 (matches prior behaviour).
+    expect(getExpectedStrokes('green', 100)).toBeCloseTo(2.18, 5);
   });
 
   it('sand at very close distance (20 yards) → uses benchmark', () => {
-    expect(getExpectedStrokes('sand', 20)).toBe(2.53);
+    expect(getExpectedStrokes('sand', 20)).toBeCloseTo(2.53, 5);
   });
 });
 
@@ -1027,6 +1048,158 @@ describe('calculateStrokesGainedForShot edge cases', () => {
     expect(sg).not.toBeNull();
     // SG = expected(30yd sand) - (1 + expected(10ft green)) = 2.60 - (1 + 1.61) = -0.01
     expect(sg).toBeCloseTo(-0.01, 1);
+  });
+});
+
+// ============================================================================
+// SG-1: unknown-lie fallback is distance-sensitive (not flat 3.50)
+// ============================================================================
+
+describe('SG-1: unknown lie fallback (rough table, distance-sensitive)', () => {
+  it('"other"-lie shots produce distance-sensitive SG, not a frozen ±1', () => {
+    // Two 'other'-lie approaches, different distances, same outcome lie/distance.
+    // Pre-fix: both expectedBefore = 3.50 (flat) → identical SG regardless of
+    // distance. Post-fix: expectedBefore tracks the rough curve → SG differs.
+    const near = makeRawShot({
+      lie_before: 'other', distance_to_hole_before: 100, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet', shot_type: 'approach',
+    });
+    const far = makeRawShot({
+      lie_before: 'other', distance_to_hole_before: 200, distance_unit_before: 'yards',
+      result: 'green', distance_to_hole_after: 20, distance_unit_after: 'feet', shot_type: 'approach',
+    });
+    const sgNear = calculateStrokesGainedForShot(near);
+    const sgFar = calculateStrokesGainedForShot(far);
+    expect(sgNear).not.toBeNull();
+    expect(sgFar).not.toBeNull();
+    // A 200yd 'other' shot starts from a harder position than a 100yd one, so its
+    // expectedBefore is higher → larger SG for the same result.
+    expect(sgFar!).toBeGreaterThan(sgNear!);
+  });
+
+  it('"recovery" and unmapped lies use the rough table, not 3.50', () => {
+    expect(getExpectedStrokes('recovery', 150)).toBeCloseTo(getExpectedStrokes('rough', 150), 5);
+    expect(getExpectedStrokes('totally_unknown_lie', 150)).toBeCloseTo(getExpectedStrokes('rough', 150), 5);
+    // And the value is no longer the old flat 3.50.
+    expect(getExpectedStrokes('other', 150)).not.toBe(3.5);
+  });
+});
+
+// ============================================================================
+// SG-2: putt distance is feet regardless of unit + clamp
+// ============================================================================
+
+describe('normalizePuttFeet (SG-2)', () => {
+  it('passes a feet value through unchanged', () => {
+    expect(normalizePuttFeet(15)).toBe(15);
+  });
+
+  it('does NOT ×3 — a putt logged "in yards" is still treated as feet', () => {
+    // 30 → 30ft, not 90ft. (A 30 here is almost certainly a feet entry under a
+    // mislabeled unit; we never multiply a putt distance.)
+    expect(normalizePuttFeet(30)).toBe(30);
+  });
+
+  it('clamps the yards-as-feet tail to MAX_PUTT_FEET', () => {
+    expect(normalizePuttFeet(390)).toBe(MAX_PUTT_FEET);
+    expect(normalizePuttFeet(130)).toBe(MAX_PUTT_FEET);
+  });
+
+  it('floors negatives to 0 and treats null as 0', () => {
+    expect(normalizePuttFeet(-5)).toBe(0);
+    expect(normalizePuttFeet(null)).toBe(0);
+    expect(normalizePuttFeet(undefined)).toBe(0);
+  });
+});
+
+describe('SG-2: a "yards"-unit putt is not inflated ×3', () => {
+  it('10-unit putt scores the same whether stored as feet or "yards"', () => {
+    const asFeet = makeRawShot({
+      lie_before: 'green', distance_to_hole_before: 10, distance_unit_before: 'feet',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'feet',
+    });
+    const asYards = makeRawShot({
+      lie_before: 'green', distance_to_hole_before: 10, distance_unit_before: 'yards',
+      result: 'hole', distance_to_hole_after: 0, distance_unit_after: 'yards',
+    });
+    const sgFeet = calculateStrokesGainedForShot(asFeet);
+    const sgYards = calculateStrokesGainedForShot(asYards);
+    // Pre-fix: the 'yards' putt became 30ft → expectedBefore 1.99 vs 1.61.
+    // Post-fix: both treat the value as 10ft → identical SG.
+    expect(sgYards).toBeCloseTo(sgFeet!, 5);
+  });
+});
+
+// ============================================================================
+// SG-4: penalty strokes are charged to the offending category (additivity)
+// ============================================================================
+
+describe('getPenaltyCategory (SG-4)', () => {
+  it('charges a tee penalty (par > 3) to tee', () => {
+    const shot = makeRawShot({ lie_before: 'tee', shot_type: 'penalty', is_penalty: true });
+    expect(getPenaltyCategory(shot, 4)).toBe('tee');
+  });
+
+  it('charges a tee penalty on a par 3 to approach', () => {
+    const shot = makeRawShot({ lie_before: 'tee', shot_type: 'penalty', is_penalty: true });
+    expect(getPenaltyCategory(shot, 3)).toBe('approach');
+  });
+
+  it('charges an in-play (fairway/rough) penalty to approach', () => {
+    const shot = makeRawShot({
+      lie_before: 'fairway', distance_to_hole_before: 200, distance_unit_before: 'yards',
+      shot_type: 'penalty', is_penalty: true,
+    });
+    expect(getPenaltyCategory(shot, 5)).toBe('approach');
+  });
+
+  it('charges a greenside penalty to around_green', () => {
+    const shot = makeRawShot({
+      lie_before: 'rough', distance_to_hole_before: 30, distance_unit_before: 'yards',
+      shot_type: 'penalty', is_penalty: true,
+    });
+    expect(getPenaltyCategory(shot, 4)).toBe('around_green');
+  });
+});
+
+describe('SG-4: penalty strokes preserve SG additivity', () => {
+  it('charges -1.0 per penalty stroke and keeps sgTotal = sum of the 4 categories', () => {
+    // par5WithPenaltyRawShots: tee→fairway, OB penalty (from fairway @260yd),
+    // approach→green, approach→green, 2 putts. The penalty stroke must show up
+    // in the approach category (offending position = fairway long game), not
+    // vanish.
+    const shots = par5WithPenaltyRawShots(1);
+    const holes = [makeHoleInfo({ hole_number: 1, par: 5, yardage: 540 })];
+    const rounds = [makeRoundInfo()];
+    const stats = calculateStatsFromShots(shots, holes, rounds);
+
+    // SG:Total reconciles with the sum of its parts.
+    const parts =
+      (stats.strokesGainedTee ?? 0) +
+      (stats.strokesGainedApproach ?? 0) +
+      (stats.strokesGainedAroundGreen ?? 0) +
+      (stats.strokesGainedPutting ?? 0);
+    expect(stats.strokesGainedTotal).not.toBeNull();
+    expect(stats.strokesGainedTotal!).toBeCloseTo(parts, 5);
+  });
+
+  it('the penalty stroke lowers SG:Total by ~1 vs the same hole without it', () => {
+    const withPenalty = par5WithPenaltyRawShots(1);
+    const holes = [makeHoleInfo({ hole_number: 1, par: 5, yardage: 540 })];
+    const rounds = [makeRoundInfo()];
+    const statsWith = calculateStatsFromShots(withPenalty, holes, rounds);
+
+    // Same hole with the penalty shot removed.
+    const withoutPenalty = withPenalty.filter(
+      s => s.result !== 'penalty' && !s.is_penalty && s.shot_type !== 'penalty'
+    );
+    const statsWithout = calculateStatsFromShots(withoutPenalty, holes, rounds);
+
+    expect(statsWith.strokesGainedTotal).not.toBeNull();
+    expect(statsWithout.strokesGainedTotal).not.toBeNull();
+    // Charging the lost stroke removes ~1.0 from SG:Total (the penalty no longer
+    // silently disappears from every category).
+    expect(statsWithout.strokesGainedTotal! - statsWith.strokesGainedTotal!).toBeCloseTo(1.0, 5);
   });
 });
 

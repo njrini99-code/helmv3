@@ -132,6 +132,49 @@ export function confidenceColor(c: number): {
   return { bar: 'bg-warm-400', text: 'text-warm-600', bg: 'bg-warm-100' };
 }
 
+/**
+ * FID-5: a render-time sanity ceiling on `strokes_impact`. The engine should
+ * cap counterfactuals upstream, but undeployed/stale rows have shipped values
+ * up to ~42 strokes/round (an impossible single-leak leverage). Clamp the
+ * magnitude defensively so a card never displays "~42.5 strokes/round".
+ * 8 strokes/round is already an extreme leak; anything past it is bad data.
+ */
+const STROKES_IMPACT_CEILING = 8;
+export function sanitizeStrokesImpact(raw: number | null | undefined): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return 0;
+  const sign = n < 0 ? -1 : 1;
+  return sign * Math.min(Math.abs(n), STROKES_IMPACT_CEILING);
+}
+
+/**
+ * ui-tone-4: percent evidence arrives in two representations — a 0..1 fraction
+ * (0.65) OR a whole-number percent (65). The original axis hard-clamped the
+ * percent domain to [0, 1], which collapsed every whole-number-percent row's
+ * ticks onto the right edge (38 and 52 both → 100%). This returns the correct
+ * clamp BOUNDS for the percent domain the row actually uses: [0, 1] when all
+ * values look like fractions, else [0, 100]. Non-percent units don't clamp.
+ *
+ * FID-5: it also surfaces whether the supplied values share a representation.
+ * A mixed pair (one fraction-looking ≤1, one whole-looking >1) can't be drawn
+ * on one honest axis — the caller skips the percent clamp and lets the natural
+ * padded extents drive positioning rather than fabricating a shared scale.
+ */
+function percentAxisBounds(
+  values: number[],
+  unit: InsightUnit,
+): { min: number; max: number } | null {
+  if (unit !== 'percent') return null;
+  const finite = values.filter((v) => Number.isFinite(v));
+  if (finite.length === 0) return null;
+  const anyWhole = finite.some((v) => Math.abs(v) > 1);
+  const anyFractionOnly = finite.some((v) => Math.abs(v) > 0 && Math.abs(v) < 1);
+  // FID-5: mixed representation (e.g. 65 vs 0.62) — refuse to clamp; a shared
+  // percent axis would mislead. Natural extents stay in charge.
+  if (anyWhole && anyFractionOnly) return null;
+  return anyWhole ? { min: 0, max: 100 } : { min: 0, max: 1 };
+}
+
 const METHOD_LABELS: Record<InsightEvidence['strokes_impact_method'], string> = {
   sg_baseline: 'Strokes-gained baseline',
   historical_correlation: 'Historical correlation',
@@ -204,17 +247,21 @@ function BenchmarkScale({ evidence }: { evidence: InsightEvidence }) {
     });
   }
 
-  // Pad the axis 10% beyond the extremes so the ticks aren't pinned to
-  // the edges. For percent metrics clamp to [0, 1].
-  const rawMin = Math.min(...ticks.map((t) => t.value));
-  const rawMax = Math.max(...ticks.map((t) => t.value));
+  // Pad the axis 25% beyond the extremes so the ticks aren't pinned to
+  // the edges. ui-tone-4: for percent metrics clamp to a DOMAIN-AWARE range
+  // ([0,1] for fractions, [0,100] for whole-number percents) so a row of
+  // 38%/52% no longer collapses both ticks onto the right edge.
+  const tickValues = ticks.map((t) => t.value);
+  const rawMin = Math.min(...tickValues);
+  const rawMax = Math.max(...tickValues);
   const span = Math.max(rawMax - rawMin, 0.0001);
   const pad = span * 0.25;
   let axisMin = rawMin - pad;
   let axisMax = rawMax + pad;
-  if (evidence.unit === 'percent') {
-    axisMin = Math.max(0, axisMin);
-    axisMax = Math.min(1, axisMax);
+  const pctBounds = percentAxisBounds(tickValues, evidence.unit);
+  if (pctBounds) {
+    axisMin = Math.max(pctBounds.min, axisMin);
+    axisMax = Math.min(pctBounds.max, axisMax);
   }
   const axisSpan = Math.max(axisMax - axisMin, 0.0001);
 
@@ -287,6 +334,10 @@ export function EvidencePanel({
   const confPct = Math.round(Math.max(0, Math.min(1, evidence.confidence)) * 100);
   const colors = confidenceColor(evidence.confidence);
 
+  // FID-5: clamp the stroke magnitude at render so an impossible upstream
+  // value (stale rows have carried 40+ strokes/round) never reaches the eye.
+  const safeImpact = sanitizeStrokesImpact(evidence.strokes_impact);
+
   // W15: prefer v3 StandingBar when v14 generators have populated
   // evidence.standing AND the metric_id resolves to a canonical v3 metric.
   // Falls through to the legacy BenchmarkScale for v2-only insights.
@@ -303,11 +354,11 @@ export function EvidencePanel({
           <span data-testid="evidence-sample">
             {formatSample(evidence.sample_n, evidence.metric)} · {evidence.window_days} days
           </span>
-          {evidence.strokes_impact !== 0 && (
+          {Math.round(Math.abs(safeImpact) * 10) > 0 && (
             <>
               <span aria-hidden="true">·</span>
               <span className="text-warm-700 font-medium" data-testid="evidence-impact">
-                ~{Math.abs(evidence.strokes_impact).toFixed(1)} strokes/round
+                ~{Math.abs(safeImpact).toFixed(1)} strokes/round
               </span>
             </>
           )}
@@ -364,7 +415,7 @@ export function EvidencePanel({
       label: 'Strokes impact',
       value: (
         <span>
-          ~{Math.abs(evidence.strokes_impact).toFixed(1)}{' '}
+          ~{Math.abs(safeImpact).toFixed(1)}{' '}
           <span className="text-warm-500">strokes/round</span>
         </span>
       ),

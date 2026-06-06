@@ -21,10 +21,52 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
+import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 
 type Sb = SupabaseClient<Database>;
 
 export const MIN_CALIBRATED_SAMPLES = 10;
+
+/**
+ * Hard per-round magnitude ceiling on `strokes_impact` BEFORE it enters the
+ * rank score (audit EC-1 / FID-1/FID-2). Stale scale-mixed v2 `par_scoring`
+ * rows carry a physically-impossible |impact| up to ~42.5 strokes/round (a
+ * to-par player value compared against a raw-stroke team average) and would
+ * otherwise rank #1 over every real leak. No single per-round leak can exceed
+ * a few strokes, so we clamp the magnitude here — a defensive guard that holds
+ * even if a stale row slips past the v3 read-path filter. Display magnitudes
+ * are untouched; only the ranking input is clamped.
+ */
+export const STROKES_IMPACT_CEILING = 8;
+
+/** Clamp a raw strokes_impact to the ranking ceiling (magnitude only). */
+export function cappedStrokesImpact(strokesImpact: number): number {
+  const v = Math.abs(Number(strokesImpact));
+  if (!Number.isFinite(v)) return 0;
+  return Math.min(v, STROKES_IMPACT_CEILING);
+}
+
+/**
+ * Coachability horizon → a gentle rank multiplier so two leaks of equal stroke
+ * magnitude are ordered by how SOON a player can realistically close them
+ * (domain doc §10: putting/wedge/bunker = weeks; iron striking = months;
+ * driving distance = years). Reference is ~8 weeks (boost 1.0); a 4-week fix
+ * floats up, a 24-week one sinks — clamped to [0.6, 1.5] so it only breaks
+ * ties / nudges, never dominates the stroke value.
+ */
+const COACHABILITY_REFERENCE_WEEKS = 8;
+const COACHABILITY_MIN = 0.6;
+const COACHABILITY_MAX = 1.5;
+
+export function coachabilityBoost(metric: string | undefined): number {
+  if (!metric) return 1.0;
+  const cfg = getCounterfactualConfig(metric);
+  if (!cfg || !Number.isFinite(cfg.coachable_timeframe_weeks) || cfg.coachable_timeframe_weeks <= 0) {
+    return 1.0;
+  }
+  const raw = COACHABILITY_REFERENCE_WEEKS / cfg.coachable_timeframe_weeks;
+  return Math.min(COACHABILITY_MAX, Math.max(COACHABILITY_MIN, raw));
+}
 
 export interface RankableInsight {
   /** Per-insight type used to look up coach weight. */
@@ -77,7 +119,13 @@ export function scoreInsight(
 ): number {
   const w = weights[insight.insight_type] ?? 1.0;
   const boost = computeGoalBoost(insight, activeGoals);
-  return Math.abs(insight.strokes_impact) * insight.confidence * w * boost;
+  // Rank by strokes-recoverable-SOON: equal-magnitude leaks order by how
+  // quickly they're coachable (domain doc §10), so a coach's feed leads with
+  // what this season's practice can actually move.
+  const coachability = coachabilityBoost(insight.metric);
+  // |strokes_impact| is clamped to STROKES_IMPACT_CEILING first so a stale
+  // scale-mixed row (impossible 40-stroke leak) can never dominate the feed.
+  return cappedStrokesImpact(insight.strokes_impact) * insight.confidence * w * boost * coachability;
 }
 
 /** Sort descending by score. Stable — equal scores preserve input order. */

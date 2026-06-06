@@ -11,6 +11,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { getCounterfactualConfig } from '@/lib/coachhelm/v3/counterfactual/lookup-tables';
 import type {
   ComposedContent,
   GeneratorAggregate,
@@ -75,6 +76,34 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
     };
   }
 
+  /**
+   * Per-par holes-per-round leverage cap (par-type-3). The counterfactual lookup
+   * multiplies the per-par gap by 4/10/4 holes/round, which lets the par-4 family
+   * (×10) project the whole-round scoring gap onto one descriptive decomposition
+   * row and dominate the top-3. Per-par scoring is NOT an independent additive
+   * leak — improving par-4 average IS improving overall scoring, already captured
+   * by SG/overall. So the generator declares a strokes_impact CAPPED at the
+   * per-par ceiling (lookup `max_strokes_saved_per_round`) and keeps the card
+   * descriptive (priority never escalated past medium from this row).
+   *
+   * CROSS-FILE DEPENDENCY: the AUTHORITATIVE leverage cap belongs in
+   * counterfactual/compute.ts (counterfactual owner) — it must apply each
+   * metric's `max_strokes_saved_per_round` to `strokes_saved_per_round` so the
+   * BaseGenerator's counterfactual backfill + leveragePriorityFloor stop reading
+   * the uncapped ×10 value. This generator-side cap only bounds the value the
+   * row itself OWNS; the base currently overwrites it with the uncapped
+   * counterfactual until compute.ts lands the ceiling.
+   */
+  private cappedDiagnosticStrokes(vsPar: number): number {
+    const cfg = getCounterfactualConfig(this.metricId);
+    if (!cfg) return 0;
+    // Only an OVER-par average is "costing" strokes (lower_better metric).
+    const overPar = Math.max(0, vsPar);
+    const raw = overPar * cfg.stroke_impact_per_unit;
+    const ceiling = cfg.max_strokes_saved_per_round ?? raw;
+    return Math.min(raw, ceiling);
+  }
+
   composeContent(agg: ParTypeAggregate): ComposedContent {
     const vsPar = agg.playerValue - agg.par;
     const vsParDisp = vsPar > 0 ? `+${vsPar.toFixed(2)}` : vsPar.toFixed(2);
@@ -86,10 +115,14 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
       `on par ${agg.par}s — ${vsParDisp} versus par. The standing card below ` +
       `shows where that sits vs PGA Tour and your team.`;
 
+    const cappedStrokes = this.cappedDiagnosticStrokes(vsPar);
+
     return {
       title,
       content,
       // Descriptive par-scoring standing row — severity is read off the StandingBar.
+      // Kept descriptive (never high) so the ×10 par-4 leverage can't dominate the
+      // top-3; the StandingBar carries the real positional severity.
       priority: 'low',
       signature: `par_scoring:par${agg.par}`,
       evidence: {
@@ -105,8 +138,11 @@ export class ParTypeGenerator extends BaseGenerator<ParTypeAggregate> {
         window_days: 90,
         window_start: '',
         window_end: '',
-        strokes_impact: 0,
-        strokes_impact_method: 'peer_delta',
+        // Capped at the per-par ceiling (par-type-3) — see cappedDiagnosticStrokes.
+        // The base overwrites this from the counterfactual until compute.ts applies
+        // the same ceiling (cross-file dependency noted there).
+        strokes_impact: cappedStrokes,
+        strokes_impact_method: 'rough_estimate',
         confidence: 0,
         confidence_factors: {
           sample_adequacy: Math.min(agg.rounds_played / 30, 1),

@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { TeeStrategyGenerator } from '@/lib/coachhelm/v3/generators/tee-strategy';
+import {
+  TeeStrategyGenerator,
+  laggyDiagnosticStrokesImpact,
+} from '@/lib/coachhelm/v3/generators/tee-strategy';
 
 const PLAYER_ID = 'p-1';
 
@@ -108,5 +111,38 @@ describe('TeeStrategyGenerator', () => {
     const b = g.composeContent(makeAgg({ pattern: 'laggy', driverFw: 0.45 })).signature;
     expect(a).toBe(b);
     expect(a).toBe('tee_strategy:laggy');
+  });
+
+  // tee-strat-1: requiresStanding=false → the base injects no counterfactual, so
+  // a hard strokes_impact=0 made the "Driver costing you" card render "~0.0
+  // strokes" and rank last. The laggy branch now carries a diagnostic estimate.
+  describe('tee-strat-1 diagnostic strokes_impact', () => {
+    it('laggy carries a positive diagnostic strokes_impact (rough_estimate)', () => {
+      const g = new TeeStrategyGenerator(PLAYER_ID);
+      const c = g.composeContent(
+        makeAgg({ pattern: 'laggy', driverFw: 0.45, ndFw: 0.7, driverAttempts: 30, roundsCovered: 10 }),
+      );
+      expect(c.evidence.strokes_impact).toBeGreaterThan(0);
+      expect(c.evidence.strokes_impact_method).toBe('rough_estimate');
+    });
+
+    it('sharp + inconclusive stay at 0 (not framed as costing strokes)', () => {
+      const g = new TeeStrategyGenerator(PLAYER_ID);
+      expect(
+        g.composeContent(makeAgg({ pattern: 'sharp', driverFw: 0.65, ndFw: 0.68 })).evidence.strokes_impact,
+      ).toBe(0);
+      expect(
+        g.composeContent(makeAgg({ pattern: 'inconclusive', driverFw: 0.55, ndFw: 0.62 })).evidence.strokes_impact,
+      ).toBe(0);
+    });
+
+    it('laggyDiagnosticStrokesImpact = |fwGap| × driver/round × 0.3', () => {
+      // gap -0.25, 30 driver attempts over 10 rounds = 3 driver/rd: 0.25*3*0.3 = 0.225
+      expect(laggyDiagnosticStrokesImpact(-0.25, 30, 10)).toBeCloseTo(0.225, 3);
+      // positive gap (driver better) → no cost
+      expect(laggyDiagnosticStrokesImpact(0.1, 30, 10)).toBe(0);
+      // guard: zero rounds → 0, never NaN/Infinity
+      expect(laggyDiagnosticStrokesImpact(-0.2, 30, 0)).toBe(0);
+    });
   });
 });

@@ -21,12 +21,22 @@
  */
 
 import type { MetricId } from '@/lib/coachhelm/v3/metrics/registry';
+import { COUNTERFACTUAL_MAX_STROKES_PER_ROUND } from './types';
 
 export interface CounterfactualConfig {
   /** Strokes-per-round impact per unit of player_value improvement. */
   stroke_impact_per_unit: number;
   /** Typical weeks to close a meaningful gap with focused work. */
   coachable_timeframe_weeks: number;
+  /**
+   * Per-projection upper ceiling on strokes_saved_per_round (CF-1/CF-2).
+   * No single-metric leak realistically saves more than this much per round.
+   * Tightest on the high-leverage / slow-to-close metrics: the per-par
+   * factor-10 family (`scoring_par_4`) and the pressure deltas, where the
+   * raw `gap × factor` overstates a recoverable single-metric improvement.
+   * Omitted → falls back to {@link COUNTERFACTUAL_MAX_STROKES_PER_ROUND}.
+   */
+  max_strokes_saved_per_round?: number;
 }
 
 export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
@@ -80,19 +90,95 @@ export const COUNTERFACTUAL_LOOKUP: Record<MetricId, CounterfactualConfig> = {
 
   // Per-par scoring — direct: 1 stroke improvement on the per-par average
   // multiplied by holes/round of that par. Typical: 4 par-3s, 10 par-4s,
-  // 4 par-5s on a par-72.
-  scoring_par_3: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8 },
-  scoring_par_4: { stroke_impact_per_unit: 10, coachable_timeframe_weeks: 12 },
-  scoring_par_5: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8 },
+  // 4 par-5s on a par-72. The factor-10 par-4 family dominates the feed when
+  // gapped to a full target, so it carries the tightest ceiling (CF-1/CF-2):
+  // per-par is descriptive — a single par-type can't realistically reclaim
+  // the whole-round gap on its own.
+  scoring_par_3: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0 },
+  scoring_par_4: { stroke_impact_per_unit: 10, coachable_timeframe_weeks: 12, max_strokes_saved_per_round: 1.5 },
+  scoring_par_5: { stroke_impact_per_unit: 4,  coachable_timeframe_weeks: 8,  max_strokes_saved_per_round: 1.0 },
 
   // GIR — each pp ≈ 0.18 holes/round × 0.5 strokes per GIR = ~0.09 strokes/pp
   gir_pct: { stroke_impact_per_unit: 0.09, coachable_timeframe_weeks: 12 },
 
   // Pressure + warmup
-  practice_tournament_delta: { stroke_impact_per_unit: 1.0, coachable_timeframe_weeks: 16 }, // slow
+  // Pressure gap is "typical / slow-to-close" (domain doc §9-10) — only a
+  // fraction of the above-reference gap is realistically recoverable, so the
+  // per-unit factor carries a <1.0 closability discount rather than projecting
+  // the full delta as strokes a player can simply reclaim.
+  // Pressure gap is "slow-to-close" (domain doc §9-10), so the ceiling is tight
+  // even after the per-unit closability discount (CF-1/CF-2): a large above-
+  // reference gap can't be reclaimed as a clean single-metric stroke recovery.
+  practice_tournament_delta: { stroke_impact_per_unit: 0.5, coachable_timeframe_weeks: 16, max_strokes_saved_per_round: 1.0 }, // slow, partial close
   opening_hole_delta:        { stroke_impact_per_unit: 0.5, coachable_timeframe_weeks: 4 },  // routine work
 };
 
 export function getCounterfactualConfig(metricId: string): CounterfactualConfig | null {
   return (COUNTERFACTUAL_LOOKUP as Record<string, CounterfactualConfig | undefined>)[metricId] ?? null;
+}
+
+/**
+ * Effective per-projection ceiling on strokes_saved_per_round (CF-1/CF-2):
+ * the metric's own `max_strokes_saved_per_round` when set, else the global
+ * {@link COUNTERFACTUAL_MAX_STROKES_PER_ROUND} default.
+ */
+export function getCounterfactualCeiling(cfg: CounterfactualConfig): number {
+  return cfg.max_strokes_saved_per_round ?? COUNTERFACTUAL_MAX_STROKES_PER_ROUND;
+}
+
+/**
+ * Per-metric plausibility bounds on a COHORT `level_avg` before it's allowed
+ * to become a counterfactual target (DC-COHORT-1).
+ *
+ * The cohort baseline is the app-population average (V1: no real division
+ * field, heavily synthetic demo data — domain doc §9 calibration gate). On
+ * the current prod snapshot it produces physically-implausible targets
+ * (`sg_putting` −3.94, sand-save 14.8%, 50-125yd proximity *better* than
+ * Tour). Gapping a player to a target that bad/good either fabricates a
+ * negative gap (player "already past cohort" → silent suppression) or, for
+ * a too-good cohort, projects a Tour-beating target.
+ *
+ * When a cohort value falls outside its plausible band we REJECT it and fall
+ * back to `pga_value` (Tour ceiling) — the pre-cohort behavior — rather than
+ * trust a synthetic artifact. The existing 0.3 lower suppression and the
+ * "no positive gap" rule still apply on top of whichever target survives.
+ *
+ *   min / max are in the metric's stored unit (strokes, percent points, feet).
+ *   `not_better_than_pga: true` additionally rejects a cohort that is at or
+ *   beyond the Tour value (a cohort of college players cannot out-perform the
+ *   Tour on a skill metric — that's a data artifact, not a realistic target).
+ */
+export interface CohortPlausibilityBound {
+  /** Lower bound (inclusive) in the metric's stored unit. */
+  min?: number;
+  /** Upper bound (inclusive) in the metric's stored unit. */
+  max?: number;
+  /** Reject when the cohort is at/past the Tour value (impossible for amateurs). */
+  not_better_than_pga?: boolean;
+}
+
+export const COHORT_PLAUSIBILITY_BOUNDS: Partial<Record<MetricId, CohortPlausibilityBound>> = {
+  // Strokes Gained are vs a scratch/Tour baseline; a college cohort sits below
+  // Tour but a −1.0+ SG cohort is a synthetic artifact, not a target to chase.
+  sg_total:        { min: -1.0, not_better_than_pga: true },
+  sg_ott:          { min: -1.0, not_better_than_pga: true },
+  sg_approach:     { min: -1.0, not_better_than_pga: true },
+  sg_around_green: { min: -1.0, not_better_than_pga: true },
+  sg_putting:      { min: -1.0, not_better_than_pga: true },
+
+  // Scrambling — college ~40% (domain doc §174); a sub-25% cohort is
+  // implausible and would make almost any real player look "above cohort."
+  scrambling_pct_rough:   { min: 25, not_better_than_pga: true },
+  scrambling_pct_sand:    { min: 25, not_better_than_pga: true },
+  scrambling_pct_fairway: { min: 25, not_better_than_pga: true },
+
+  // Approach proximity (lower_better, feet) — a college cohort cannot be
+  // tighter than the Tour, so reject any cohort better than (less than) PGA.
+  approach_proximity_50_125ft:    { not_better_than_pga: true },
+  approach_proximity_125_175ft:   { not_better_than_pga: true },
+  approach_proximity_175_plus_ft: { not_better_than_pga: true },
+};
+
+export function getCohortPlausibilityBound(metricId: string): CohortPlausibilityBound | null {
+  return (COHORT_PLAUSIBILITY_BOUNDS as Record<string, CohortPlausibilityBound | undefined>)[metricId] ?? null;
 }

@@ -9,6 +9,7 @@
 import { createClient } from '@/lib/supabase/server';
 import type { PatternCondition, InsightTone } from '@/lib/coachhelm/v2/types';
 import { logServerError } from '@/lib/server-error-logger';
+import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
 
 interface EvidenceMetadata {
   patternId?: string;
@@ -47,6 +48,14 @@ export async function getInsightEvidenceSources(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return { success: false, error: 'Unauthorized' };
+  }
+
+  // RP-1: app-level ownership check. RLS alone allowed same-team peers to read
+  // each other's round summaries (golf_rounds RLS is team-scoped). Restrict to
+  // the player themselves or a coach who staffs a team the player is on.
+  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
   }
 
   try {
@@ -172,6 +181,14 @@ export async function getPatternMatchingRounds(
     return { success: false, error: 'Unauthorized' };
   }
 
+  // RP-1: guard the direct fallback fetch below (the delegated
+  // getInsightEvidenceSources path is guarded separately, but the
+  // pattern-not-found branch reads golf_rounds itself).
+  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     // First, get the pattern to understand its conditions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -237,6 +254,12 @@ export async function getTrendEvidenceRounds(
     return { success: false, error: 'Unauthorized' };
   }
 
+  // RP-1: app-level ownership check (RLS alone allowed same-team peer reads).
+  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
+  }
+
   try {
     const { data: rounds, error } = await supabase
       .from('golf_rounds')
@@ -295,6 +318,12 @@ export async function getComparisonRounds(
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     return { success: false, error: 'Unauthorized' };
+  }
+
+  // RP-1: app-level ownership check (RLS alone allowed same-team peer reads).
+  const access = await verifyPlayerAccess(playerId, user.id, supabase);
+  if (!access.allowed) {
+    return { success: false, error: 'Forbidden' };
   }
 
   try {

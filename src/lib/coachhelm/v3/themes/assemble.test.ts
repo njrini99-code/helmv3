@@ -885,6 +885,72 @@ describe('assembleThemes — outcome theme gating', () => {
 });
 
 /* ───────────────────────────────────────────────────────────────────────────
+ * ASM-1 — cross-metric/same-subject alias dedup
+ *
+ * The v2 generator emits `par_scoring_par4` for the same subject the v3
+ * generator emits as `scoring_par_4`. Both would otherwise render as two
+ * top-level Scoring causes for the same par-4 leak. The assembler collapses the
+ * (category, canonical-subject) collision to one winner — preferring the v3
+ * canonical form — deterministically and independent of input order.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+describe('assembleThemes — alias dedup (ASM-1)', () => {
+  test('par_scoring_par4 (v2) + scoring_par_4 (v3) collapse to a single cause', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'v2par4', category: 'scoring', metric: 'par_scoring_par4', strokesSaved: 1.0 }),
+        row({ id: 'v3par4', category: 'scoring', metric: 'scoring_par_4', strokesSaved: 1.2 }),
+      ],
+      sgByCategory: {},
+    });
+    const scoring = themeOf(result, 'scoring');
+    expect(scoring.causes).toHaveLength(1);
+    // The v3 canonical-form row wins ownership of the surviving cause.
+    expect(scoring.causes[0]!.insight_id).toBe('v3par4');
+  });
+
+  test('dedup is input-order independent (v3-first vs v2-first → same winner)', () => {
+    const v2 = row({ id: 'v2par4', category: 'scoring', metric: 'par_scoring_par4', strokesSaved: 5.0 });
+    const v3 = row({ id: 'v3par4', category: 'scoring', metric: 'scoring_par_4', strokesSaved: 1.0 });
+    const a = assembleThemes({ playerId: 'p1', rows: [v2, v3], sgByCategory: {} });
+    const b = assembleThemes({ playerId: 'p1', rows: [v3, v2], sgByCategory: {} });
+    expect(themeOf(a, 'scoring').causes).toHaveLength(1);
+    expect(themeOf(b, 'scoring').causes).toHaveLength(1);
+    // Canonical (v3) form wins regardless of order, even when the v2 alias has a
+    // larger strokesSaved — canonical-form preference outranks magnitude.
+    expect(themeOf(a, 'scoring').causes[0]!.insight_id).toBe('v3par4');
+    expect(themeOf(b, 'scoring').causes[0]!.insight_id).toBe('v3par4');
+  });
+
+  test('distinct subjects in the same category are NOT collapsed', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 'par3', category: 'scoring', metric: 'scoring_par_3', strokesSaved: 1.0 }),
+        row({ id: 'par4', category: 'scoring', metric: 'scoring_par_4', strokesSaved: 1.0 }),
+      ],
+      sgByCategory: {},
+    });
+    expect(themeOf(result, 'scoring').causes).toHaveLength(2);
+  });
+
+  test('the same canonical subject in DIFFERENT categories is not cross-collapsed', () => {
+    const result = assembleThemes({
+      playerId: 'p1',
+      rows: [
+        row({ id: 's-par4', category: 'scoring', metric: 'par_scoring_par4', strokesSaved: 1.0 }),
+        row({ id: 'cm-par4', category: 'course_management', metric: 'scoring_par_4', strokesSaved: 1.0 }),
+      ],
+      sgByCategory: {},
+    });
+    // One cause survives in EACH category — the dedup key is (category, subject).
+    expect(themeOf(result, 'scoring').causes).toHaveLength(1);
+    expect(themeOf(result, 'course_management').causes).toHaveLength(1);
+  });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
  * PLAY C — shot-level driver attachment (shotDriversByCategory)
  *
  * The OPTIONAL `shotDriversByCategory` input attaches each category's shot-detail

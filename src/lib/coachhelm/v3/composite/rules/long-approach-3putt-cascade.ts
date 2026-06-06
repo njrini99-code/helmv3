@@ -13,12 +13,24 @@
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
 
+/** Proximity-when-on-green (feet) for an approach_miss insight. Post the
+ *  reach-vs-dial-in redesign, `evidence.your_value` is the green-hit PERCENT,
+ *  NOT feet — the real on-green proximity lives in `evidence.detail`. Returns
+ *  NaN when no reliable proximity was recorded (too few greens hit). */
+function approachProximityFeet(i: EvidenceInsight): number {
+  const detail = i.evidence.detail as { proximity_when_hit_feet?: number | null } | undefined;
+  const prox = detail?.proximity_when_hit_feet;
+  return typeof prox === 'number' && Number.isFinite(prox) ? prox : NaN;
+}
+
 function isWeakLongApproach(i: EvidenceInsight): boolean {
   return (
     i.insight_type === 'approach_miss' &&
     i.signature.includes('175_plus_ft') &&
-    // For approach_miss the lower-better unit is feet; >50 ft is weak vs Tour 45 ft
-    Number(i.evidence.your_value ?? 0) > 50
+    // Dial-in leak: finishing far from the hole WHEN the green is found.
+    // Tour ~45 ft from 175+ yd; > 50 ft is weak. Requires a real proximity
+    // (≥ MIN_GREENS hit) — without one we can't claim a 3-putt cascade.
+    approachProximityFeet(i) > 50
   );
 }
 
@@ -42,7 +54,7 @@ const rule: CompositeRule = {
     return {
       source_insight_ids: [longApproach.id, midPutt.id],
       signals: {
-        approach_proximity_ft: Number(longApproach.evidence.your_value ?? 0),
+        approach_proximity_ft: approachProximityFeet(longApproach),
         mid_putt_pct: Number(midPutt.evidence.your_value ?? 0),
       },
     };

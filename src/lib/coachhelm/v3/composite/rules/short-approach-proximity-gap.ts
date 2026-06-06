@@ -11,13 +11,21 @@
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
 
+/** On-green proximity (feet) for an approach_miss insight. `evidence.your_value`
+ *  is the green-hit PERCENT post the reach-vs-dial-in redesign; the real
+ *  proximity lives in `evidence.detail`. NaN when no reliable proximity. */
+function approachProximityFeet(i: EvidenceInsight): number {
+  const detail = i.evidence.detail as { proximity_when_hit_feet?: number | null } | undefined;
+  const prox = detail?.proximity_when_hit_feet;
+  return typeof prox === 'number' && Number.isFinite(prox) ? prox : NaN;
+}
+
 function isWeakShortApproach(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'approach_miss') return false;
   if (!i.signature.includes('50_125ft')) return false;
-  // 50-125 yd Tour anchor ~18 ft proximity; anything > 22 ft is the
-  // generator's "negative delta" zone (see approach-miss generator).
-  const yourVal = Number(i.evidence.your_value ?? 0);
-  return yourVal > 22;
+  // 50-125 yd Tour anchor ~18 ft proximity; > 22 ft on-green-when-hit is the
+  // dial-in leak. Requires a real proximity (≥ MIN_GREENS hit).
+  return approachProximityFeet(i) > 22;
 }
 
 function isWeakScrambling(i: EvidenceInsight): boolean {
@@ -39,7 +47,7 @@ const rule: CompositeRule = {
     return {
       source_insight_ids: [approach.id, scramble.id],
       signals: {
-        approach_proximity_ft: Number(approach.evidence.your_value ?? 0),
+        approach_proximity_ft: approachProximityFeet(approach),
         scramble_pct: Number(scramble.evidence.your_value ?? 0),
       },
     };

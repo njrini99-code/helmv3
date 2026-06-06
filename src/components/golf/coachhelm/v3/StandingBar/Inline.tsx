@@ -18,6 +18,7 @@ import {
   deriveAriaLabel,
   deriveState,
   formatValue,
+  pgaReferenceLabel,
   shouldShowTeamMarker,
   teamRelativeText,
   toScalePct,
@@ -36,7 +37,12 @@ export function Inline(props: StandingBarProps) {
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
   const pgaPct = toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
-  const cohortText = teamRelativeText(props.player_value, props.team_avg, props.direction);
+  // EC-2: suppress the team-relative caption when the team marker is hidden
+  // (tiny roster) — same team_n>=5 floor the marker uses.
+  const cohortText = showTeam
+    ? teamRelativeText(props.player_value, props.team_avg, props.direction)
+    : '';
+  const refLabel = pgaReferenceLabel(props.metric_id).short;
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
@@ -69,7 +75,7 @@ export function Inline(props: StandingBarProps) {
         )}
         <span className="text-warm-900 font-medium">You {formatValue(props.player_value, props.unit)}</span>
         {' · '}
-        PGA {formatValue(props.pga_value, props.unit)}
+        {refLabel} {formatValue(props.pga_value, props.unit)}
       </div>
 
       {/* Bar */}

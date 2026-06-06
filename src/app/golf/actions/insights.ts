@@ -749,6 +749,14 @@ export async function generateTeamInsights() {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Rate-limit the whole-roster engine sweep, same as the per-player /
+    // per-round entrypoints. Without this, a coach can fan analyzePlayer out
+    // across the entire roster with no throttle (self-scoped DoS vector).
+    const rateLimit = await gateCoachHelmEngineCall(user.id);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
+    }
+
     // Get coach and look up team_id via organization
     const { data: coach, error: coachError } = await supabase
       .from('golf_coaches')
@@ -1814,6 +1822,13 @@ export async function generateTeamInsight(): Promise<{
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
+    }
+
+    // Rate-limit the whole-roster engine sweep (self-scoped DoS vector
+    // otherwise — same gate the per-player/per-round entrypoints use).
+    const rateLimit = await gateCoachHelmEngineCall(user.id);
+    if (!rateLimit.allowed) {
+      return { success: false, error: rateLimit.error };
     }
 
     // Get coach and look up team_id via organization

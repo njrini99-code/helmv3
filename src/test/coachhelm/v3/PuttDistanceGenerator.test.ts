@@ -15,7 +15,7 @@ import { PuttDistanceGenerator } from '@/lib/coachhelm/v3/generators/putt-distan
 const PLAYER_ID = 'player-test-1';
 
 function makeAgg(overrides: Partial<{
-  bucket: '3_5ft' | '5_10ft' | '10_15ft';
+  bucket: '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
   playerValue: number;
   rounds_played: number;
 }> = {}) {
@@ -37,10 +37,28 @@ describe('PuttDistanceGenerator', () => {
     expect(g.minSampleN).toBe(5);
   });
 
-  it('maps bucket → metricId correctly', () => {
+  it('maps bucket → metricId correctly (incl. lag buckets)', () => {
     expect(new PuttDistanceGenerator(PLAYER_ID, '3_5ft').metricId).toBe('putts_made_3_5ft_pct');
     expect(new PuttDistanceGenerator(PLAYER_ID, '5_10ft').metricId).toBe('putts_made_5_10ft_pct');
     expect(new PuttDistanceGenerator(PLAYER_ID, '10_15ft').metricId).toBe('putts_made_10_15ft_pct');
+    expect(new PuttDistanceGenerator(PLAYER_ID, '15_25ft').metricId).toBe('putts_made_15_25ft_pct');
+    expect(new PuttDistanceGenerator(PLAYER_ID, '25_plus_ft').metricId).toBe('putts_made_25_plus_ft_pct');
+  });
+
+  it('composeContent renders the lag buckets (15-25 / 25+ ft)', () => {
+    const lag = new PuttDistanceGenerator(PLAYER_ID, '15_25ft')
+      .composeContent(makeAgg({ bucket: '15_25ft', playerValue: 18, rounds_played: 20 }));
+    expect(lag.title).toContain('15-25 ft');
+    expect(lag.signature).toBe('putt_distance:15_25ft');
+    expect(lag.evidence.metric).toBe('putts_made_15_25ft_pct');
+
+    const long = new PuttDistanceGenerator(PLAYER_ID, '25_plus_ft')
+      .composeContent(makeAgg({ bucket: '25_plus_ft', playerValue: 6, rounds_played: 20 }));
+    expect(long.title).toContain('25+ ft');
+    expect(long.signature).toBe('putt_distance:25_plus_ft');
+    expect(long.evidence.metric).toBe('putts_made_25_plus_ft_pct');
+    // no authoring artifact in content
+    expect(long.content).not.toContain('standing card below');
   });
 
   it('composeContent renders a sensible title + content + signature for 10-15 ft', () => {
@@ -70,5 +88,34 @@ describe('PuttDistanceGenerator', () => {
     expect(small.evidence.confidence_factors.sample_adequacy).toBeCloseTo(0.2, 1);
     const large = g.composeContent(makeAgg({ rounds_played: 60 }));
     expect(large.evidence.confidence_factors.sample_adequacy).toBe(1);
+  });
+
+  // gen-putt-distance-1: comparison_value was hard-coded 0 → "95% vs 0% PGA"
+  // inverted anchor in the WhyPopover. It now carries the real PGA Tour make %
+  // per bucket (golf_pga_standards), so the flat comparison agrees with the bar.
+  describe('gen-putt-distance-1 real PGA comparison_value', () => {
+    it('each bucket carries its real PGA Tour make % (never 0)', () => {
+      const expectations: Array<[ '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft', number ]> = [
+        ['3_5ft', 90.5],
+        ['5_10ft', 62.2],
+        ['10_15ft', 35.7],
+        ['15_25ft', 15.4],
+        ['25_plus_ft', 5.5],
+      ];
+      for (const [bucket, pga] of expectations) {
+        const c = new PuttDistanceGenerator(PLAYER_ID, bucket)
+          .composeContent(makeAgg({ bucket, playerValue: 50 }));
+        expect(c.evidence.comparison_value).toBe(pga);
+        expect(c.evidence.comparison_value).not.toBe(0);
+        expect(c.evidence.comparison_source).toBe('pga_baseline');
+      }
+    });
+
+    it('content cites the PGA Tour anchor (not a bare make %)', () => {
+      // 90.5.toFixed(0) → "91" (PGA 3-5 ft Tour make %).
+      const c = new PuttDistanceGenerator(PLAYER_ID, '3_5ft')
+        .composeContent(makeAgg({ bucket: '3_5ft', playerValue: 95 }));
+      expect(c.content).toContain('PGA Tour ~91%');
+    });
   });
 });

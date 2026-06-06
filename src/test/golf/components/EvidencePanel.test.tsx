@@ -18,6 +18,7 @@ import {
   formatValue,
   formatWindow,
   confidenceColor,
+  sanitizeStrokesImpact,
 } from '@/components/golf/coachhelm/insights/EvidencePanel';
 import type { InsightEvidence } from '@/lib/coachhelm/v2/insights/types';
 
@@ -195,6 +196,93 @@ describe('EvidencePanel', () => {
 
     it('prefers your_value_display when provided', () => {
       expect(formatValue(0.38, 'percent', '38.2%')).toBe('38.2%');
+    });
+  });
+
+  // FID-5: render-time sanity ceiling on strokes_impact.
+  describe('sanitizeStrokesImpact (FID-5)', () => {
+    it('passes plausible magnitudes through unchanged', () => {
+      expect(sanitizeStrokesImpact(2.1)).toBe(2.1);
+      expect(sanitizeStrokesImpact(-1.3)).toBe(-1.3);
+      expect(sanitizeStrokesImpact(0)).toBe(0);
+    });
+
+    it('clamps impossible magnitudes to the ±8 ceiling', () => {
+      expect(sanitizeStrokesImpact(42.53)).toBe(8);
+      expect(sanitizeStrokesImpact(-99)).toBe(-8);
+    });
+
+    it('coerces non-finite values to 0', () => {
+      expect(sanitizeStrokesImpact(Number.NaN)).toBe(0);
+      expect(sanitizeStrokesImpact(null)).toBe(0);
+      expect(sanitizeStrokesImpact(undefined)).toBe(0);
+    });
+
+    it('never shows the raw 40+ figure in the rendered panel', () => {
+      render(<EvidencePanel evidence={makeEvidence({ strokes_impact: 42.53 })} compact={false} />);
+      const impactRow = screen.getByTestId('evidence-row-impact');
+      expect(impactRow.textContent).toContain('8.0');
+      expect(impactRow.textContent).not.toContain('42.5');
+    });
+
+    it('suppresses the compact impact pill when impact rounds to 0.0', () => {
+      render(<EvidencePanel evidence={makeEvidence({ strokes_impact: 0.03 })} compact />);
+      expect(screen.queryByTestId('evidence-impact')).toBeNull();
+    });
+  });
+
+  // ui-tone-4: percent-axis must be domain-aware (whole-number vs fraction).
+  describe('BenchmarkScale percent axis (ui-tone-4)', () => {
+    function tickLeft(role: string): number {
+      const scale = screen.getByTestId('evidence-benchmark-scale');
+      const tick = scale.querySelector<HTMLElement>(`[aria-label^="${role}"]`);
+      return Number.parseFloat(tick?.style.left ?? 'NaN');
+    }
+
+    it('does not collapse whole-number-percent ticks to the edge', () => {
+      // Whole-number percents (38 vs 52) — the old [0,1] clamp pinned both to
+      // 100%. With the domain-aware fix they sit at distinct interior spots.
+      render(
+        <EvidencePanel
+          evidence={makeEvidence({
+            unit: 'percent',
+            your_value: 38,
+            your_value_display: undefined,
+            comparison_value: 52,
+          })}
+          compact
+        />,
+      );
+      const you = tickLeft('You');
+      const comp = tickLeft('D2 average');
+      // You (38) is the smaller value → left of the comparison (52).
+      expect(you).toBeLessThan(comp);
+      // Neither tick is pinned to an edge.
+      expect(you).toBeGreaterThan(0);
+      expect(comp).toBeLessThan(100);
+    });
+
+    it('orders mixed-representation ticks by magnitude without a fabricated clamp', () => {
+      // FID-5: your_value as whole-percent (65) vs comparison as fraction
+      // (0.62) is a representation mismatch — the percent clamp is skipped and
+      // the natural padded extents order the ticks by raw magnitude (65 > 0.62)
+      // rather than collapsing both onto an edge.
+      render(
+        <EvidencePanel
+          evidence={makeEvidence({
+            unit: 'percent',
+            your_value: 65,
+            your_value_display: undefined,
+            comparison_value: 0.62,
+          })}
+          compact
+        />,
+      );
+      const you = tickLeft('You');
+      const comp = tickLeft('D2 average');
+      expect(you).toBeGreaterThan(comp);
+      expect(you).toBeLessThanOrEqual(100);
+      expect(comp).toBeGreaterThanOrEqual(0);
     });
   });
 

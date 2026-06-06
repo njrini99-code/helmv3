@@ -7,6 +7,16 @@
  *
  * Standing populated by `refresh_player_standing_round_metrics` (W24-prep
  * companion RPC). PGA reference = 0.1 strokes per Research doc §9.
+ *
+ * DOUBLE-SURFACE NOTE (warmup-hole / front-9-starter): this generator
+ * (metric `opening_hole_delta`, hole 1, category 'pressure') and the
+ * `front-9-starter` composite (same `opening_hole_delta`, holes 1-3, category
+ * 'scoring') describe the SAME opening-stretch leak in two themes. There is no
+ * cross-metric dedup between them, so a slow-start player can see the leak twice.
+ * CROSS-FILE DEPENDENCY (composites / assembler owner): the cross-theme
+ * suppression (pick one home, or dedup cross-theme rows by metric_id) is owned
+ * by the composite synthesis / themes assembler — not changeable from this
+ * generator. Flagged here so the overlap is documented at the source.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';

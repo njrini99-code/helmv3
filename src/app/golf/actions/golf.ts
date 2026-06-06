@@ -537,9 +537,11 @@ function derivePuttDistanceFeet(shot: ShotRecord): number | null {
   if (shot.puttDistanceFeet !== undefined) return shot.puttDistanceFeet ?? null;
   const distance = shot.distanceToHoleBefore;
   if (!Number.isFinite(distance)) return null;
-  const feet = shot.distanceUnitBefore === 'yards' ? distance * 3 : distance;
-  // Clamp to DB CHECK constraint max (500 feet) — yards×3 can exceed this
-  return Math.min(feet, 500);
+  // SG-2: a putt distance is ALWAYS in feet. Converting a 'yards'-unit value to
+  // feet (×3) fabricated impossible 90-500ft "putts" that then ×3'd again
+  // downstream in SG. Treat the raw value as feet regardless of the stored unit
+  // and clamp to a realistic putt max (120ft).
+  return Math.min(Math.max(distance, 0), 120);
 }
 
 /** Allowed lie_type values for approach_miss_details CHECK constraint */
@@ -5735,11 +5737,13 @@ export async function getRoundShotDetails(
       const teeShot = holeShots.find(shot => shot.shot_type === 'tee');
       const firstPutt = holeShots.find(shot => shot.shot_type === 'putting');
 
+      // SG-2: a putt distance is ALWAYS in feet. Distance recorded with
+      // distance_unit_before === 'yards' was being ×3'd into impossible
+      // 390-foot "putts". Treat the raw value as feet regardless of the stored
+      // unit and clamp to a realistic max (a putt can't be 120ft+).
       let firstPuttDistance: number | null = null;
-      if (firstPutt?.distance_to_hole_before !== null && firstPutt?.distance_unit_before) {
-        firstPuttDistance = firstPutt.distance_unit_before === 'yards'
-          ? Math.round(firstPutt.distance_to_hole_before * 3)
-          : firstPutt.distance_to_hole_before;
+      if (firstPutt?.distance_to_hole_before != null) {
+        firstPuttDistance = Math.min(Math.max(Math.round(firstPutt.distance_to_hole_before), 0), 120);
       }
 
       return {

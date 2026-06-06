@@ -133,6 +133,22 @@ function clamp01(x: number): number {
 }
 
 /**
+ * Canonicalize a metric id to its *subject* so cross-version aliases collapse
+ * to one cause (ASM-1). The v2 generator emits `par_scoring_par4` for the same
+ * subject the v3 generator emits as `scoring_par_4`; without this the two
+ * render as two separate scoring causes for the same par-4 leak. Lower-cased,
+ * with the legacy `par_scoring_parN` form mapped onto the v3 `scoring_par_N`
+ * form. A null/empty metric returns '' (never dedup-collapses with another).
+ */
+function canonicalMetricSubject(metric: string | null | undefined): string {
+  if (!metric) return '';
+  const m = metric.toLowerCase();
+  const v2Par = m.match(/^par_scoring_par(\d)$/);
+  if (v2Par) return `scoring_par_${v2Par[1]}`;
+  return m;
+}
+
+/**
  * Read-time prose hygiene. The engine generators bake two authoring artifacts
  * into insight copy that must never reach a user:
  *   • internal "(Research doc §N)" / "Per Research doc §N …" citations, and
@@ -248,10 +264,63 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
   //    additionally sums the realistic strokes of its DEMOTED (same-category) leaves
   //    so the cascade carries real weight without double-counting (those leaves are
   //    no longer top-level, so their strokes live only on the composite now).
+  // 2b. ASM-1 — cross-metric/same-subject dedup. The v2 generator emits
+  //     `par_scoring_par4` for the SAME subject the v3 generator emits as
+  //     `scoring_par_4`; both would otherwise render as two top-level causes in
+  //     the Scoring theme. Collapse a (category, canonicalSubject) collision to
+  //     ONE winner: prefer the row whose raw metric already IS the canonical
+  //     (v3) form, then larger |strokes_impact|, then lexically-smaller id —
+  //     fully deterministic and pure (input-order-independent). Only rows whose
+  //     RAW metrics actually DIFFER but share a canonical subject are deduped
+  //     (a real alias collision); two rows with the same raw metric are left to
+  //     the existing path. Losers are suppressed from the top level (their
+  //     strokes are NOT re-homed — they are duplicates of the kept row).
+  const aliasSuppressedRowIds = new Set<string>();
+  const subjectGroups = new Map<string, EvidenceInsight[]>();
+  for (const row of rows) {
+    if (!row?.id) continue;
+    if (demotedLeafIds.has(row.id)) continue;
+    if (!row.category) continue;
+    const ev = readEvidence(row);
+    const metric = typeof ev.metric === 'string' ? ev.metric : null;
+    const subject = canonicalMetricSubject(metric);
+    if (!subject) continue; // no metric → never an alias collision
+    const key = `${row.category} ${subject}`;
+    const g = subjectGroups.get(key);
+    if (g) g.push(row);
+    else subjectGroups.set(key, [row]);
+  }
+  for (const group of subjectGroups.values()) {
+    if (group.length < 2) continue;
+    // Only a genuine alias collision (≥2 distinct RAW metric strings) is deduped.
+    const rawMetrics = new Set(
+      group.map((r) => (readEvidence(r).metric as string | undefined) ?? ''),
+    );
+    if (rawMetrics.size < 2) continue;
+    const winner = group.slice().sort((a, b) => {
+      const aEv = readEvidence(a);
+      const bEv = readEvidence(b);
+      const aCanonical = ((aEv.metric as string | undefined) ?? '').toLowerCase() ===
+        canonicalMetricSubject(aEv.metric as string | undefined);
+      const bCanonical = ((bEv.metric as string | undefined) ?? '').toLowerCase() ===
+        canonicalMetricSubject(bEv.metric as string | undefined);
+      if (aCanonical !== bCanonical) return aCanonical ? -1 : 1;
+      const aImpact = Math.abs(Number(aEv.strokes_impact ?? 0));
+      const bImpact = Math.abs(Number(bEv.strokes_impact ?? 0));
+      if (bImpact !== aImpact) return bImpact - aImpact;
+      return a.id.localeCompare(b.id);
+    })[0];
+    if (!winner) continue;
+    for (const r of group) {
+      if (r.id !== winner.id) aliasSuppressedRowIds.add(r.id);
+    }
+  }
+
   const causesByCategory = new Map<InsightCategory, CauseNode[]>();
   for (const row of rows) {
     if (!row?.id) continue;
     if (demotedLeafIds.has(row.id)) continue; // demoted same-category leaf — not top level
+    if (aliasSuppressedRowIds.has(row.id)) continue; // ASM-1 alias duplicate — keep the winner only
     if (!row.category) continue; // null/unknown category → skip (don't invent a theme)
     if (!getThemeDef(row.category)) continue; // unknown category → skip
 
@@ -372,8 +441,12 @@ export function assembleThemes(input: AssembleThemesInput): AssembledThemes {
     return themeScaffoldIndex(a.category) - themeScaffoldIndex(b.category);
   });
 
+  // Sum ONLY the 4 SG themes. The outcome themes (Big Numbers, Pressure) are
+  // re-cuts of the same strokes the SG themes already count, so including them
+  // double-counts the player's total leak. SG categories partition strokes-
+  // gained, so their sum is the honest per-round total.
   const totalStrokesPerRound = themes.reduce(
-    (acc, t) => acc + t.themeStrokesPerRound,
+    (acc, t) => acc + (t.isOutcomeTheme ? 0 : t.themeStrokesPerRound),
     0,
   );
 
@@ -498,8 +571,29 @@ function buildCause(
   // its own realistic team gap + own Tour gap. A composite that owns no
   // same-category leaves falls back to its own values (both typically 0/null).
   const ownsLeaves = composite && compositeOwnedLeafCount > 0;
-  const strokesSavedPerRound = ownsLeaves ? compositeSameCategoryStrokes : ownRealistic;
-  const finalTourGapPerRound = ownsLeaves ? compositeSameCategoryTourGap : tourGapPerRound;
+
+  // Ctx-driven composite (closing-hole-fatigue, doubles-after-bogey,
+  // front-9-starter): no source-insight leaves to absorb AND no own
+  // counterfactual, but the rule computed a real per-round `strokes_impact`.
+  // Fall back to that so the cause carries a number + "Make it a plan" CTA
+  // instead of collapsing to a numberless "Tendency" chip (and so its theme,
+  // e.g. Scoring, is sized to a real magnitude rather than 0).
+  const ownImpactPerRound = Math.abs(Number(ev.strokes_impact ?? 0));
+  const ctxFallbackStrokes =
+    composite && !ownsLeaves && tourGapPerRound == null && ownImpactPerRound > 0
+      ? ownImpactPerRound
+      : 0;
+
+  const strokesSavedPerRound = ownsLeaves
+    ? compositeSameCategoryStrokes
+    : ctxFallbackStrokes > 0
+      ? ctxFallbackStrokes
+      : ownRealistic;
+  const finalTourGapPerRound = ownsLeaves
+    ? compositeSameCategoryTourGap
+    : ctxFallbackStrokes > 0
+      ? ctxFallbackStrokes
+      : tourGapPerRound;
 
   return {
     insight_id: row.id,
@@ -509,10 +603,13 @@ function buildCause(
     strokesSavedPerRound,
     rankKey: causeRankKey(strokesSavedPerRound, finalTourGapPerRound),
     tourGapPerRound: finalTourGapPerRound,
-    // A composite that OWNS leaves carries the conserved leaf gap as its own displayed
-    // strokes; if that gap is real (>0) the cause is quantified and must NOT read as
+    // A composite that OWNS leaves (or a ctx composite with its own computed
+    // per-round strokes) carries a real magnitude and must NOT read as
     // suppressed, even though the parent row has no own counterfactual.
-    counterfactualSuppressed: ownsLeaves && strokesSavedPerRound > 0 ? false : ownCounterfactualSuppressed,
+    counterfactualSuppressed:
+      (ownsLeaves && strokesSavedPerRound > 0) || ctxFallbackStrokes > 0
+        ? false
+        : ownCounterfactualSuppressed,
     standingPlayerValue: standing?.player_value ?? null,
     standingPgaValue: standing?.pga_value ?? null,
     standingTeamAvgValue: standing?.team_avg ?? null,

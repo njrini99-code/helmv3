@@ -37,7 +37,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
   readonly name = 'ScramblingGenerator';
   readonly insightType = 'scrambling';
   readonly category: InsightCategory = 'short_game';
-  readonly minSampleN = 5; // rounds_played
+  readonly minSampleN = 5; // sand ATTEMPTS — a sand-save % off 1-2 bunker shots is noise
 
   readonly metricId: MetricId;
   readonly lie: ScramblingLie;
@@ -70,7 +70,9 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const attempts = data.sand_attempts ?? 0;
 
     return {
-      sampleN: roundsPlayed,
+      // Gate on bunker ATTEMPTS, not rounds: a player with 5 rounds but only
+      // 1-2 greenside-bunker shots shouldn't get a PGA-benchmarked sand-save %.
+      sampleN: attempts,
       playerValue,
       lie: this.lie,
       attempts,
@@ -84,8 +86,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
     const content =
       `Across your last ${agg.rounds_played} rounds you converted ` +
       `${valueDisp} of greenside-bunker attempts (${agg.attempts} total). ` +
-      `Tour average is ~50% (Research doc §2). The standing card below ` +
-      `shows where you sit vs PGA and your team.`;
+      `Tour average is ~50%.`;
 
     return {
       title,
@@ -102,7 +103,7 @@ export class ScramblingGenerator extends BaseGenerator<ScramblingAggregate> {
         comparison_value: 50,
         comparison_label: 'PGA Tour sand save avg',
         comparison_source: 'pga_baseline',
-        sample_n: Math.max(agg.attempts, agg.rounds_played),
+        sample_n: agg.attempts,
         window_days: 90,
         window_start: '',
         window_end: '',

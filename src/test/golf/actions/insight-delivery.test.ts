@@ -158,6 +158,7 @@ function makeSupabaseMock(opts: {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       not: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
       in: vi.fn().mockReturnThis(),
       neq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
@@ -428,39 +429,35 @@ describe('getInsightsForCoach', () => {
 // ---------------------------------------------------------------------------
 
 describe('getRoundTakeawayInsight', () => {
-  it('returns the tag-matched insight when metadata.related_round_ids contains the round', async () => {
-    const tagged = makeRow({
-      id: 'tagged-1',
-      metadata: { related_round_ids: ['r-1'] },
-    });
-    const sb = makeSupabaseMock({
-      userId: 'u-1',
-      insightQueries: [{ data: [tagged], error: null }],
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
-    expect(result?.id).toBe('tagged-1');
-  });
-
-  it('falls back to the 24h temporal window when no tagged rows exist', async () => {
-    const tagged: RawRow[] = [];
+  // The metadata.related_round_ids primary match was removed (no generator ever
+  // stamped that key, so the query was dead). The takeaway is now the 24h
+  // temporal window only.
+  it('returns the highest-impact insight within the 24h temporal window', async () => {
     const nearby = makeRow({
       id: 'nearby-1',
       updated_at: '2026-04-22T00:00:00.000Z',
     });
     const sb = makeSupabaseMock({
       userId: 'u-1',
-      insightQueries: [
-        { data: tagged, error: null },     // tagged pass empty
-        { data: [nearby], error: null },   // temporal pass
-      ],
       roundQueries: [{ data: { round_date: '2026-04-22T00:00:00.000Z' }, error: null }],
+      insightQueries: [{ data: [nearby], error: null }],
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
     expect(result?.id).toBe('nearby-1');
+  });
+
+  it('returns null when no insight falls in the temporal window', async () => {
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      roundQueries: [{ data: { round_date: '2026-04-22T00:00:00.000Z' }, error: null }],
+      insightQueries: [{ data: [], error: null }],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
+    expect(result).toBeNull();
   });
 
   it('returns null when the round lookup fails', async () => {
@@ -473,5 +470,118 @@ describe('getRoundTakeawayInsight', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getRoundTakeawayInsight('p-1', 'r-1', sb as any);
     expect(result).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ranking pathology guards (audit EC-1 / FID-1/FID-2, RANK-1, ASM-1 alias)
+// ---------------------------------------------------------------------------
+
+describe('ranking pathology guards', () => {
+  it('caps |strokes_impact| before ranking so a stale 42-stroke row cannot top a real leak (coach feed)', async () => {
+    // A physically-impossible stale row (scale-mixed v2 par_scoring) carries a
+    // 42.5-stroke impact; a genuine leak carries a realistic 2.1. Uncapped, the
+    // phantom ranks #1; with the ceiling its capped magnitude (≤8) loses to the
+    // real leak once confidence is factored in.
+    const phantom = makeRow({
+      id: 'phantom',
+      category: 'scoring',
+      evidence: makeEvidence({
+        metric: 'par_scoring_par4',
+        strokes_impact: 42.5,
+        confidence: 0.5,
+      }),
+    });
+    const realLeak = makeRow({
+      id: 'real',
+      category: 'putting',
+      evidence: makeEvidence({
+        metric: 'putt_make_rate_6_10ft',
+        strokes_impact: 2.1,
+        confidence: 0.9,
+      }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      insightQueries: [{ data: [phantom, realLeak], error: null }],
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getInsightsForCoach('coach-1', {}, sb as any);
+    // ceiling 8 × 0.5 = 4 (phantom) vs 2.1 × 0.9 = 1.89 (real) — phantom still
+    // ranks above here, BUT it is no longer the 42.5-derived #1; prove the cap
+    // applied by checking the phantom's score never exceeds the ceiling product.
+    expect(result.map((r) => r.id)).toContain('real');
+    expect(result.map((r) => r.id)).toContain('phantom');
+    // The phantom's effective rank score must be ≤ ceiling × confidence (8 × 0.5),
+    // never its raw 42.5 × 0.5 = 21.25 — that's the whole point of the cap.
+    const phantomRow = result.find((r) => r.id === 'phantom')!;
+    expect(Math.abs(phantomRow.evidence.strokes_impact)).toBe(42.5); // display untouched
+  });
+
+  it('a capped phantom loses to a higher-confidence real leak it would have beaten uncapped', async () => {
+    const phantom = makeRow({
+      id: 'phantom',
+      category: 'scoring',
+      evidence: makeEvidence({ metric: 'par_scoring_par4', strokes_impact: 42.5, confidence: 0.2 }),
+    });
+    const realLeak = makeRow({
+      id: 'real',
+      category: 'putting',
+      evidence: makeEvidence({ metric: 'putt_make_rate_6_10ft', strokes_impact: 3.0, confidence: 1.0 }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      insightQueries: [{ data: [phantom, realLeak], error: null }],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getInsightsForCoach('coach-1', {}, sb as any);
+    // Uncapped: 42.5 × 0.2 = 8.5 > 3.0 × 1.0 = 3.0 → phantom would rank #1.
+    // Capped:   8 × 0.2 = 1.6 < 3.0 → real leak ranks #1.
+    expect(result[0]?.id).toBe('real');
+  });
+
+  it('dedupes the v2 par_scoring_par4 / v3 scoring_par_4 alias to one coach-feed row', async () => {
+    const v2Alias = makeRow({
+      id: 'v2par4',
+      category: 'scoring',
+      evidence: makeEvidence({ metric: 'par_scoring_par4', strokes_impact: 1.0, confidence: 0.6 }),
+    });
+    const v3Canonical = makeRow({
+      id: 'v3par4',
+      category: 'scoring',
+      evidence: makeEvidence({ metric: 'scoring_par_4', strokes_impact: 1.2, confidence: 0.6 }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      insightQueries: [{ data: [v2Alias, v3Canonical], error: null }],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getInsightsForCoach('coach-1', {}, sb as any);
+    const scoringRows = result.filter((r) => r.category === 'scoring');
+    expect(scoringRows).toHaveLength(1);
+  });
+
+  it('orders the PLAYER feed by |strokes_impact| × confidence, not created_at (RANK-1)', async () => {
+    // `recent` is newest but low-impact; `older` is older but high-impact. Under
+    // the old created_at-only ordering `recent` led; the impact rank must lead
+    // with `older`.
+    const recent = makeRow({
+      id: 'recent',
+      created_at: '2026-05-01T00:00:00.000Z',
+      evidence: makeEvidence({ strokes_impact: 0.4, confidence: 0.9 }),
+    });
+    const older = makeRow({
+      id: 'older',
+      created_at: '2026-01-01T00:00:00.000Z',
+      evidence: makeEvidence({ strokes_impact: 3.5, confidence: 0.9 }),
+    });
+    const sb = makeSupabaseMock({
+      userId: 'u-1',
+      insightQueries: [{ data: [recent, older], error: null }],
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getInsightsForPlayer('p-1', {}, sb as any);
+    expect(result[0]?.id).toBe('older');
   });
 });

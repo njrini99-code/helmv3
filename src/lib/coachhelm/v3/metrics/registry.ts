@@ -1,8 +1,12 @@
 /**
  * Canonical v3 metric registry (TypeScript side).
  *
- * MIRRORS the seed in:
- *   supabase/migrations/20260524190200_v3_golf_metrics_seed.sql
+ * MIRRORS the reproducible seed in:
+ *   supabase/migrations/20260606010000_v3_golf_metrics_seed_reproducible.sql
+ *   (the original 20260524190200_v3_golf_metrics_seed.sql was archived under
+ *    migrations_archive/pre_20260527/ when the prod baseline was cut — the
+ *    baseline re-CREATEs golf_metrics but never re-seeds it, so the new
+ *    numbered migration restores reproducibility — see MR-2.)
  *
  * The `golf_metrics` DB table is the source of truth at runtime — these
  * IDs exist so the TypeScript layer can reference metrics by literal-union
@@ -13,7 +17,19 @@
  *
  * If you change this array, you MUST ship a new SQL seed migration in the
  * same PR (e.g. `20260601_v3_golf_metrics_seed_update.sql`) — never edit
- * the original seed file.
+ * an already-applied seed file.
+ *
+ * NOTE on the v2-mining `approach_direction_*` family (ui-tone-2): those
+ * per-bucket metric ids (e.g. `approach_direction_<150_left`) are emitted
+ * by `src/lib/coachhelm/v2/mining/approach-analytics.ts`, are deliberately
+ * classified as legacy `intentional-null` in
+ * `src/lib/coachhelm/v3/causality/metric-sources.ts`, and use bucket tokens
+ * (`<`, `+`) that violate the canonical snake_case `metric_id` format. They
+ * are intentionally NOT members of this canonical registry — adding them
+ * would expand the `MetricId` union and break the exhaustive
+ * `Record<MetricId, …>` tables (metric-config, metric-sources, counterfactual
+ * lookup). The tone-polarity fix for that family lives in the tone-derivation
+ * regex (negative-pattern) owner, not here.
  */
 
 export const METRIC_IDS = [

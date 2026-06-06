@@ -12,7 +12,13 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { scoreInsight, rankInsights } from '@/lib/coachhelm/v3/ranking/score';
+import {
+  scoreInsight,
+  rankInsights,
+  coachabilityBoost,
+  cappedStrokesImpact,
+  STROKES_IMPACT_CEILING,
+} from '@/lib/coachhelm/v3/ranking/score';
 import type { Goal } from '@/lib/coachhelm/v3/goals/types';
 
 /**
@@ -140,8 +146,10 @@ describe('rankInsights', () => {
 // ---------------------------------------------------------------------------
 
 describe('scoreInsight — goal-aware boost', () => {
-  const base = { insight_type: 'x', strokes_impact: 2, confidence: 0.5 };
-  const baseScore = 2 * 0.5 * 1.0; // 1.0
+  // base carries a metric so the coachability factor is part of the baseline;
+  // these tests isolate the GOAL multiplier layered on top of it.
+  const base = { insight_type: 'x', strokes_impact: 2, confidence: 0.5, metric: 'sg_putting' };
+  const baseScore = scoreInsight(base, {}, []); // 2 * 0.5 * coachability(sg_putting)
 
   it('returns the same score when activeGoals is empty (regression w/ W36)', () => {
     const withGoals = scoreInsight(
@@ -185,5 +193,57 @@ describe('scoreInsight — goal-aware boost', () => {
       [paused, achieved],
     );
     expect(score).toBe(baseScore);
+  });
+});
+
+describe('coachabilityBoost — strokes-recoverable-soon', () => {
+  it('is 1.0 for an unknown / missing metric (no nudge)', () => {
+    expect(coachabilityBoost(undefined)).toBe(1.0);
+    expect(coachabilityBoost('not_a_metric')).toBe(1.0);
+  });
+
+  it('floats a fast-to-fix metric above a slow one of equal magnitude', () => {
+    // sg_putting (4 wks) is more coachable-soon than sg_ott (24 wks).
+    expect(coachabilityBoost('sg_putting')).toBeGreaterThan(coachabilityBoost('sg_ott'));
+    const fast = scoreInsight({ insight_type: 'x', strokes_impact: 1, confidence: 1, metric: 'sg_putting' }, {});
+    const slow = scoreInsight({ insight_type: 'x', strokes_impact: 1, confidence: 1, metric: 'sg_ott' }, {});
+    expect(fast).toBeGreaterThan(slow);
+  });
+
+  it('stays clamped within [0.6, 1.5] so it nudges, never dominates', () => {
+    for (const m of ['sg_putting', 'sg_ott', 'scoring_par_4', 'penalty_rate_per_round', 'gir_pct']) {
+      const b = coachabilityBoost(m);
+      expect(b).toBeGreaterThanOrEqual(0.6);
+      expect(b).toBeLessThanOrEqual(1.5);
+    }
+  });
+});
+
+describe('cappedStrokesImpact — ranking ceiling (audit EC-1 / FID-1/FID-2)', () => {
+  it('caps a physically-impossible 42.5-stroke phantom at the ceiling magnitude', () => {
+    expect(cappedStrokesImpact(42.5)).toBe(STROKES_IMPACT_CEILING);
+    expect(cappedStrokesImpact(-42.5)).toBe(STROKES_IMPACT_CEILING);
+  });
+
+  it('passes a realistic per-round leak through untouched (magnitude < ceiling)', () => {
+    expect(cappedStrokesImpact(2.1)).toBe(2.1);
+    expect(cappedStrokesImpact(-1.5)).toBe(1.5);
+  });
+
+  it('treats NaN / non-finite impact as 0 (NaN-safe)', () => {
+    expect(cappedStrokesImpact(NaN)).toBe(0);
+    // Infinity is non-finite → 0 (never the ceiling). A real impact is always finite.
+    expect(cappedStrokesImpact(Infinity)).toBe(0);
+    expect(cappedStrokesImpact(-Infinity)).toBe(0);
+  });
+
+  it('scoreInsight uses the capped magnitude, so a 42.5 phantom cannot top a real leak', () => {
+    // Uncapped a 42.5 × 0.5 = 21.25 phantom would dwarf a 3.0 × 1.0 = 3.0 leak.
+    // Capped: 8 × 0.5 = 4 phantom vs 3.0 leak — and with a lower-confidence
+    // phantom the real leak wins outright.
+    const phantom = scoreInsight({ insight_type: 'scoring', strokes_impact: 42.5, confidence: 0.2 }, {});
+    const realLeak = scoreInsight({ insight_type: 'putting', strokes_impact: 3.0, confidence: 1.0 }, {});
+    expect(phantom).toBeLessThanOrEqual(STROKES_IMPACT_CEILING * 0.2);
+    expect(realLeak).toBeGreaterThan(phantom);
   });
 });

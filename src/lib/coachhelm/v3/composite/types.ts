@@ -30,6 +30,10 @@ export interface EvidenceInsight {
       team_avg: number | null;
       team_n: number;
       team_pct: number | null;
+      /** College/division cohort baseline (null until the cohort RPC lands). */
+      level_avg?: number | null;
+      level_n?: number;
+      level_pct?: number | null;
       pga_value: number;
       pga_delta: number | null;
       computed_at: string;

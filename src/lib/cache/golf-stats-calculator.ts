@@ -273,9 +273,24 @@ export async function getStatsFromCache(playerId: string): Promise<PlayerStatsSu
 /**
  * Refresh the stats cache for a player
  * Called after round completion, edits, or deletions
+ *
+ * SC2 (2026-06-06): the actual column computation lives in the SQL
+ * `refresh_player_stats_cache(p_player_id)` RPC (this function only delegates +
+ * invalidates Redis). That RPC does NOT compute the per-band putt make %
+ * columns (putt_make_pct_3_5ft … putt_make_pct_20_plus_ft) — they are 100% NULL
+ * in prod — so the 5 putts_made_*_pct standing metrics that bind to them yield
+ * 0 rows. Because the cache row is computed entirely in SQL, those columns can't
+ * be populated cleanly from TS here; the 5 metrics are therefore deferred in
+ * src/lib/coachhelm/v3/standing/refresh.ts (STANDING_REFRESH_DEFERRED_METRIC_IDS)
+ * and the standing-refresh cron asserts on declared-covered-but-0-rows. Re-promote
+ * once the SQL writer computes per-band make % from putt distances.
  */
 export async function refreshStatsCache(playerId: string): Promise<void> {
-  const supabase = await createClient();
+  // Admin (service-role) client: the refresh_player_stats_cache SECURITY DEFINER
+  // RPC is service_role-only after the 2026-06-06 grant-hardening migration
+  // (REVOKE FROM anon/authenticated). A user-scoped client would 403. Callers
+  // are responsible for authorizing `playerId` before delegating here.
+  const supabase = createAdminClient();
 
   // Call the database function to refresh
   // Note: This RPC function may not be in generated types yet
@@ -308,7 +323,10 @@ export async function refreshStatsCache(playerId: string): Promise<void> {
  * Used when data changes but full recalc isn't needed immediately
  */
 export async function markStatsStale(playerId: string): Promise<void> {
-  const supabase = await createClient();
+  // Admin (service-role) client — see refreshStatsCache: mark_player_stats_stale
+  // is service_role-only after the grant-hardening migration. Callers must
+  // authorize `playerId`.
+  const supabase = createAdminClient();
 
   // Note: This RPC function may not be in generated types yet
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

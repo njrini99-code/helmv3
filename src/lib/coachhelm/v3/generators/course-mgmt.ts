@@ -13,10 +13,12 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { loadStandingForMetric } from '@/lib/coachhelm/v3/standing/loader';
 import type {
   ComposedContent,
   GeneratorAggregate,
   InsightCategory,
+  InsightPriority,
   MetricId,
 } from '@/lib/coachhelm/v3/engine/types';
 
@@ -32,6 +34,18 @@ interface CourseMgmtAggregate extends GeneratorAggregate {
   /** Convenience: same as playerValue, named for downstream clarity. */
   metric_value: number;
   rounds_played: number;
+  /**
+   * Realistic baseline the priority + prose anchor to (cm-1): the college/division
+   * COHORT average (golf_player_standing.level_avg) when populated, else the PGA
+   * value as the fallback ceiling. This is the SAME target the BaseGenerator feeds
+   * the counterfactual (compute.ts: cohort-primary, Tour-ceiling), so an at/below-
+   * cohort player no longer gets a HIGH "3× Tour" card whose counterfactual is 0.
+   * Null only when no standing row exists yet (cold-start) → falls back to the raw
+   * PGA anchors below, unchanged from the pre-cm-1 behavior.
+   */
+  anchor_value: number | null;
+  /** True when anchor_value came from the cohort (level_avg), not the PGA fallback. */
+  anchor_is_cohort: boolean;
 }
 
 export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
@@ -81,27 +95,67 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
     }
     if (value === null || !Number.isFinite(value)) return null;
 
+    // cm-1: anchor the card's priority + prose to the SAME baseline the
+    // counterfactual measures the gap to — the cohort (level_avg) when present,
+    // else the PGA value. Cold-start (no standing row) leaves anchor_value null
+    // and composeContent falls back to the raw PGA anchors.
+    const standing = await loadStandingForMetric(this.playerId, this.metricId);
+    const cohort = standing?.level_avg ?? null;
+    const anchorIsCohort = cohort !== null && Number.isFinite(cohort);
+    const anchorValue = anchorIsCohort
+      ? cohort
+      : standing && Number.isFinite(standing.pga_value)
+        ? standing.pga_value
+        : null;
+
     return {
       sampleN: roundsPlayed,
       playerValue: value,
       metric_value: value,
       variant: this.variant,
       rounds_played: roundsPlayed,
+      anchor_value: anchorValue,
+      anchor_is_cohort: anchorIsCohort,
     };
+  }
+
+  /**
+   * Severity anchored to the realistic baseline the counterfactual uses (cm-1):
+   * the cohort (level_avg) when present, else the PGA value, else the hard-coded
+   * PGA default. `highMargin`/`medMargin` are the over-anchor margins (in the
+   * metric's unit) at which the gap escalates. An at/below-anchor player is `low`
+   * — never a HIGH "3× Tour" card whose counterfactual is 0.
+   */
+  private anchoredPriority(
+    agg: CourseMgmtAggregate,
+    pgaDefault: number,
+    medMargin: number,
+    highMargin: number,
+  ): InsightPriority {
+    const anchor = agg.anchor_value ?? pgaDefault;
+    const over = agg.metric_value - anchor; // lower_better: positive = worse than anchor
+    if (over > highMargin) return 'high';
+    if (over > medMargin) return 'medium';
+    return 'low';
   }
 
   composeContent(agg: CourseMgmtAggregate): ComposedContent {
     if (agg.variant === 'penalty') {
       const valueDisp = agg.metric_value.toFixed(1);
+      const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
+        ? `Your division cohort averages ~${agg.anchor_value.toFixed(1)} (PGA Tour ~0.3)`
+        : `PGA Tour is ~0.3; top college teams stay under 0.5`;
       return {
         title: `Penalty strokes: ${valueDisp} per round`,
         content:
           `Across your last ${agg.rounds_played} rounds you're averaging ` +
-          `${valueDisp} penalty strokes per round. PGA Tour is ~0.3; top ` +
-          `college teams stay under 0.5. The standing card below shows where ` +
-          `you stack up — every penalty avoided is worth ~1.5 strokes per round.`,
-        // Severity from the value vs the PGA ~0.3/round baseline: >2× is high, >1× medium, at/under low.
-        priority: agg.metric_value > 0.6 ? 'high' : agg.metric_value > 0.3 ? 'medium' : 'low',
+          `${valueDisp} penalty strokes per round. ${anchorClause}. The standing ` +
+          `card below shows where you stack up — every penalty avoided is worth ` +
+          `~1.5 strokes per round.`,
+        // Severity anchored to the cohort the counterfactual uses (cm-1): >0.3 over
+        // anchor is high, >0.1 over medium, at/under the anchor low. PGA fallback
+        // (0.3) keeps the pre-cm-1 thresholds (0.6 high / 0.3 medium) at cold-start.
+        priority: this.anchoredPriority(agg, 0.3, 0, 0.3),
         signature: `course_management:penalty_rate`,
         evidence: {
           metric: this.metricId,
@@ -130,15 +184,20 @@ export class CourseMgmtGenerator extends BaseGenerator<CourseMgmtAggregate> {
 
     // big_number variant
     const valueDisp = `${agg.metric_value.toFixed(1)}%`;
+    const anchorClause = agg.anchor_is_cohort && agg.anchor_value !== null
+      ? `Your division cohort averages ~${agg.anchor_value.toFixed(1)}% (PGA Tour ~2%)`
+      : `PGA Tour is ~2%`;
     return {
       title: `Double bogey-or-worse rate: ${valueDisp}`,
       content:
         `Across your last ${agg.rounds_played} rounds, ${valueDisp} of holes ` +
-        `ended in double bogey or worse. PGA Tour is ~2%. Per Research doc §4 ` +
+        `ended in double bogey or worse. ${anchorClause}. Per Research doc §4 ` +
         `this is the #1 separator between 70s and 80s rounds. The standing ` +
         `card below shows your position relative to Tour and your team.`,
-      // Severity from the value vs the PGA ~2% baseline: >2× is high, >1× medium, at/under low.
-      priority: agg.metric_value > 4 ? 'high' : agg.metric_value > 2 ? 'medium' : 'low',
+      // Severity anchored to the cohort the counterfactual uses (cm-1): >2pp over
+      // anchor is high, >0.5pp over medium, at/under the anchor low. PGA fallback
+      // (2%) keeps the pre-cm-1 thresholds (4% high / 2% medium) at cold-start.
+      priority: this.anchoredPriority(agg, 2, 0, 2),
       signature: `course_management:big_number`,
       evidence: {
         metric: this.metricId,

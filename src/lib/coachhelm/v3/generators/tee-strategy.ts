@@ -16,13 +16,22 @@
  * design contract (see docs/superpowers/plans/).
  *
  * Player-vs-self diagnostic — no PGA benchmark for "driver strategy
- * quality" exists today, so requiresStanding=false (DIAGNOSTIC-ONLY: no
+ * quality" exists today, so requiresStanding=false (no standing-backed
  * counterfactual). It measures driver-vs-non_driver fairway% dispersion,
  * a unit (percent) that does NOT match the sg_ott strokes-gained baseline,
  * so it cannot legitimately carry a standing/counterfactual without
  * fabricating a unit-mismatched gap — leave diagnostic-only. Follow-up: a
  * standing-backed tee accuracy metric (e.g. fairway% vs PGA) would let the
  * tee theme carry a real counterfactual.
+ *
+ * The LAGGY pattern carries a conservative diagnostic strokes_impact
+ * (tee-strat-1): the BaseGenerator injects no counterfactual for a
+ * requiresStanding=false generator, so a hard strokes_impact=0 makes the
+ * "Driver costing you" card render "~0.0 strokes" and rank last on every
+ * flat surface. The estimate (fairway gap × driver tee shots/round ×
+ * conservative miss cost) is marked strokes_impact_method='rough_estimate',
+ * NOT a standing-backed projection. Sharp/inconclusive stay 0 — they aren't
+ * framed as costing strokes.
  *
  * Filed under category='tee' so it feeds the "Off the Tee" theme. Indexed
  * under metric_id='sg_ott' (the closest tee-game metric) so the insight
@@ -56,6 +65,34 @@ const LAGGY_DISTANCE_GAP = 35;
  *  "sharp" reinforcement insight. Negative because driver can BEAT
  *  non-driver: gap >= -0.05 means driver is at most 5pp worse. */
 const SHARP_FW_GAP = -0.05;
+
+/** Conservative strokes-cost of a fairway lost off the tee vs a fairway found
+ *  (penalty/recovery delta, lower bound of Broadie's off-the-tee SG spread).
+ *  Used ONLY for the laggy pattern's diagnostic strokes_impact (tee-strat-1) —
+ *  tee strategy has no PGA standing, so the BaseGenerator never injects a
+ *  counterfactual; without a value here the "Driver costing you" card renders
+ *  "~0.0 strokes" and ranks last. This is a rough_estimate, not a standing-
+ *  backed counterfactual. */
+const FAIRWAY_MISS_COST_STROKES = 0.3;
+
+/**
+ * Diagnostic strokes-per-round estimate for the LAGGY pattern (tee-strat-1).
+ * The fairway-accuracy gap the player would recover by laying back, scaled by
+ * driver tee shots per round and the conservative miss cost. Non-laggy patterns
+ * are NOT framed as costing strokes → 0 (correct: they rank as descriptive).
+ * Pure + exported for unit testing.
+ */
+export function laggyDiagnosticStrokesImpact(
+  fairwayGap: number,
+  driverAttempts: number,
+  roundsCovered: number,
+): number {
+  if (roundsCovered <= 0 || !Number.isFinite(fairwayGap)) return 0;
+  const recoverableFwFraction = Math.max(0, -fairwayGap); // negative gap = driver worse
+  const driverPerRound = driverAttempts / roundsCovered;
+  const v = recoverableFwFraction * driverPerRound * FAIRWAY_MISS_COST_STROKES;
+  return Number.isFinite(v) ? v : 0;
+}
 
 type TeeStrategyPattern = 'laggy' | 'sharp' | 'inconclusive';
 
@@ -157,6 +194,15 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
     const distGap = Math.round(agg.distanceGap);
     const fwGapPp = Math.round(Math.abs(agg.fairwayGap) * 100);
 
+    // Diagnostic strokes_impact for the laggy pattern (tee-strat-1): this
+    // generator is requiresStanding=false, so the BaseGenerator injects no
+    // counterfactual; a hard 0 here makes the "Driver costing you" card render
+    // "~0.0 strokes" and rank last. Only the laggy branch is framed as a cost.
+    const diagnosticStrokes =
+      agg.pattern === 'laggy'
+        ? laggyDiagnosticStrokesImpact(agg.fairwayGap, agg.driver.attempts, agg.roundsCovered)
+        : 0;
+
     let title: string;
     let content: string;
 
@@ -210,8 +256,10 @@ export class TeeStrategyGenerator extends BaseGenerator<TeeStrategyAggregate> {
         window_days: WINDOW_DAYS,
         window_start: '',
         window_end: '',
-        strokes_impact: 0,
-        strokes_impact_method: 'peer_delta',
+        // Diagnostic estimate (tee-strat-1) — laggy only; no PGA standing exists
+        // for tee strategy so this is rough_estimate, not a real counterfactual.
+        strokes_impact: diagnosticStrokes,
+        strokes_impact_method: 'rough_estimate',
         confidence: 0,
         confidence_factors: {
           sample_adequacy: Math.min(agg.driver.attempts / 25, 1),

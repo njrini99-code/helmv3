@@ -83,13 +83,15 @@ function reachedGreen(s: ApproachShot): boolean {
   return (s.lie_after ?? '').toLowerCase() === 'green';
 }
 
-/** On-green finish → feet. On-green rows are stored in feet; the ×3 only guards the
+/** On-green finish → feet. On-green rows are stored in feet; the ×3 only converts the
  *  rare legacy on-green-in-yards row (off-green misses are excluded upstream, so this
- *  never ×3's a real yards "miss" into the proximity). */
+ *  never ×3's a real yards "miss" into the proximity). A null/unknown unit is treated
+ *  as ALREADY feet (the on-green default) — only an explicit 'yards' row is scaled, so
+ *  a unit-less 20 ft proximity is no longer inflated to 60 ft. */
 function onGreenFinishFeet(s: ApproachShot): number {
-  return s.distance_unit_after === 'feet'
-    ? Number(s.distance_to_hole_after)
-    : Number(s.distance_to_hole_after) * 3;
+  return s.distance_unit_after === 'yards'
+    ? Number(s.distance_to_hole_after) * 3
+    : Number(s.distance_to_hole_after);
 }
 
 interface ApproachMissAggregate extends GeneratorAggregate {
@@ -140,9 +142,18 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     return {
       sampleN: inBucket.length,
-      // Green-hit % is the headline signal for this insight (reach). Unused downstream
-      // for diagnostic generators (requiresStanding=false), but semantically the lead.
-      playerValue: greenHitPct,
+      // am-3 (armed-landmine guard): `playerValue` is contractually "the unit of
+      // the v3 metric" — and `approach_proximity_*ft` is registered as FEET
+      // (lower_better) in the metric registry + counterfactual lookup. The
+      // counterfactual reads `agg.playerValue` directly. So playerValue MUST be
+      // the on-green proximity in FEET, NEVER the green-hit PERCENT. If it carried
+      // the percent (e.g. 70), the day `requiresStanding` flips to true the base
+      // would feed "70 feet" into computeCounterfactual vs an ~18 ft Tour target
+      // → a fabricated multi-stroke gap. The green-hit % (the display headline)
+      // lives in `green_hit_pct` / evidence.your_value, not here.
+      // Null proximity (too few greens) → NaN, which the base's Number.isFinite
+      // guards on backfill + the priority floor safely ignore (no counterfactual).
+      playerValue: proximityWhenHit ?? NaN,
       bucket: this.bucket,
       attempts: inBucket.length,
       green_hit_n: greenHitN,
@@ -207,6 +218,14 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
           sample_adequacy: Math.min(agg.attempts / 25, 1),
           recency: 1.0,
           variance: 0.5,
+        },
+        // Structured dial-in signal (feet, on-green only) for downstream
+        // composites. `your_value` above is the green-hit PERCENT (reach); the
+        // proximity-when-hit lives ONLY here so a rule never mistakes the
+        // percent for feet. Null when too few greens hit to read a proximity.
+        detail: {
+          proximity_when_hit_feet: agg.proximity_when_hit_feet,
+          green_hit_pct: agg.green_hit_pct,
         },
       },
     };

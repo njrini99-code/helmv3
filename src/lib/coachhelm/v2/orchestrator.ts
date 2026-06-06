@@ -228,10 +228,14 @@ class CoachHelmIntelligence {
     //     missing buckets/directions are less actionable and will be
     //     added when the v3 metric IDs align with cache columns.
     const tier1Generators: Array<{ name: string; fn: () => Promise<unknown> }> = [
-      // v3 — putt distance (3 buckets)
-      { name: 'v3.puttDistance.3_5ft',   fn: () => new PuttDistanceGenerator(playerId, '3_5ft').run() },
-      { name: 'v3.puttDistance.5_10ft',  fn: () => new PuttDistanceGenerator(playerId, '5_10ft').run() },
-      { name: 'v3.puttDistance.10_15ft', fn: () => new PuttDistanceGenerator(playerId, '10_15ft').run() },
+      // v3 — putt distance (5 buckets: short/mid make-% + 2 lag buckets).
+      // Lag (15-25 / 25+) is the domain's #1 3-putt driver; standings landed
+      // 2026-06-05 via the cache 15_20 / 20_plus columns.
+      { name: 'v3.puttDistance.3_5ft',     fn: () => new PuttDistanceGenerator(playerId, '3_5ft').run() },
+      { name: 'v3.puttDistance.5_10ft',    fn: () => new PuttDistanceGenerator(playerId, '5_10ft').run() },
+      { name: 'v3.puttDistance.10_15ft',   fn: () => new PuttDistanceGenerator(playerId, '10_15ft').run() },
+      { name: 'v3.puttDistance.15_25ft',   fn: () => new PuttDistanceGenerator(playerId, '15_25ft').run() },
+      { name: 'v3.puttDistance.25_plus_ft', fn: () => new PuttDistanceGenerator(playerId, '25_plus_ft').run() },
       // v3 — putt bias (left / right; diagnostic, no PGA standing)
       { name: 'v3.puttBias.left',  fn: () => new PuttBiasGenerator(playerId, 'left').run() },
       { name: 'v3.puttBias.right', fn: () => new PuttBiasGenerator(playerId, 'right').run() },

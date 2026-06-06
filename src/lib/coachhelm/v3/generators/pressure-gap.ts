@@ -32,6 +32,15 @@ interface PressureGapAggregate extends GeneratorAggregate {
  * A delta off a single round (e.g. n=1 practice → a fake "+2.3 gap") is noise,
  * not a pressure signal — both the practice and competitive averages need a few
  * rounds to stabilise (Research doc §9; audit P2a). 3 is the floor.
+ *
+ * pg-2 (unify SQL ↔ TS gate): this is the CANONICAL per-bucket floor. The
+ * standing RPC `refresh_player_standing_round_metrics` currently creates a
+ * standing row at `>0` rounds per bucket (>=1 both sides), which is looser than
+ * this gate. The generator already returns null below this floor (so it never
+ * emits at 1+1 rounds), but the two gates should match.
+ * CROSS-FILE DEPENDENCY (standing-cron owner): raise the RPC's HAVING from
+ * `COUNT(...) > 0` to `COUNT(...) >= 3` in both buckets so a standing row only
+ * exists once the pressure gap is itself meaningful.
  */
 const MIN_ROUNDS_PER_BUCKET = 3;
 
@@ -73,9 +82,17 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
         competitiveN += 1;
       }
     }
-    // Per-bucket sample gate (P2a): both buckets need ≥ MIN_ROUNDS_PER_BUCKET rounds.
-    // Without this, a single practice or tournament round produces a wild, meaningless
-    // gap that ranks as a "pressure weakness". Below the floor → emit nothing.
+    // Per-bucket sample gate (P2a) + requalification check (pg-1): BOTH buckets
+    // need ≥ MIN_ROUNDS_PER_BUCKET rounds (the canonical floor above). Without
+    // this, a single practice or tournament round produces a wild, meaningless
+    // gap that ranks as a "pressure weakness". Returning null here is also the
+    // REQUALIFICATION gate: if a player who previously qualified drops below the
+    // floor in the 90-day window (e.g. recent rounds are all one type), the
+    // generator emits nothing this run, so the row is not refreshed.
+    // CROSS-FILE DEPENDENCY (lifecycle-cron / data owner): a stale stored HIGH
+    // pressure row from a player no longer meeting this gate is RETRACTED by the
+    // lifecycle resolve/archive sweep + the one-time stale-row cleanup — the
+    // generator cannot archive an existing row from here (upsert-only boundary).
     if (practiceN < MIN_ROUNDS_PER_BUCKET || competitiveN < MIN_ROUNDS_PER_BUCKET) return null;
     const practiceAvg = practiceSum / practiceN;
     const competitiveAvg = competitiveSum / competitiveN;
@@ -113,6 +130,12 @@ export class PressureGapGenerator extends BaseGenerator<PressureGapAggregate> {
       content,
       // Severity from the gap itself (competitive − practice): >0.5 over the PGA
       // reference is a real pressure weakness; at/under practice is fine.
+      // pg-3 (Tour-anchor caveat): the 0.5 reference + the counterfactual the base
+      // injects both anchor to PGA Tour until the cohort RPC populates
+      // `practice_tournament_delta.level_avg` (migration 20260606120000 adds the
+      // college-population level_avg → once deployed, the base prefers the cohort
+      // target, so this Tour anchor becomes the ceiling fallback only). College
+      // typical is 2-5 strokes (Research doc §9) — far above Tour 0.5.
       priority: agg.playerValue > 0.5 ? 'high' : agg.playerValue <= 0 ? 'low' : 'medium',
       signature: `pressure_gap:practice_vs_tournament`,
       evidence: {

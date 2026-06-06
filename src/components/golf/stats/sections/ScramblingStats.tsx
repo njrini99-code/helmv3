@@ -98,7 +98,9 @@ export function ScramblingStats({ stats }: { stats: GolfStats }) {
                 {[
                   { label: '0-10 yds', key: '0_10' },
                   { label: '10-20 yds', key: '10_20' },
-                  { label: '20-30 yds', key: '20_30' },
+                  // key stays '20_30' (typed field), but the bucket actually
+                  // captures 20 yd up to the 50 yd around-green threshold.
+                  { label: '20-50 yds', key: '20_30' },
                 ].map((row, idx) => {
                   const data = stats.atgEffByDistanceLie[row.key];
                   if (!data) return null;

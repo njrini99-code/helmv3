@@ -21,6 +21,7 @@ import {
   deriveAriaLabel,
   deriveState,
   formatValue,
+  pgaReferenceLabel,
   shouldShowTeamMarker,
   teamRelativeText,
   toScalePct,
@@ -43,7 +44,13 @@ export function Card(props: CardProps) {
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
   const pgaPct = toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
-  const cohortText = teamRelativeText(props.player_value, props.team_avg, props.direction);
+  // EC-2: only narrate "Above/Below team average" when the team marker itself
+  // renders (team_n>=5 && team_avg!=null). On a tiny roster the comparison is
+  // statistical noise, so we suppress the caption alongside the hidden marker.
+  const cohortText = showTeam
+    ? teamRelativeText(props.player_value, props.team_avg, props.direction)
+    : '';
+  const refLabel = pgaReferenceLabel(props.metric_id).short;
 
   const toneColor =
     delta.tone === 'good' ? 'text-primary-700' :
@@ -77,7 +84,7 @@ export function Card(props: CardProps) {
         <span className="text-warm-900 font-medium text-sm">
           You {formatValue(props.player_value, props.unit)}
         </span>
-        <span>PGA {formatValue(props.pga_value, props.unit)}</span>
+        <span>{refLabel} {formatValue(props.pga_value, props.unit)}</span>
       </div>
 
       {/* Bar */}

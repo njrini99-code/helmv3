@@ -9,8 +9,9 @@
  * Rules enforced here:
  *  - evidence.sample_n < 5 → throw. Do not emit.
  *  - confidence is computed from evidence.confidence_factors.
- *  - If an insight with same (player_id, signature) exists with
- *    created_at > now() - 30 days:
+ *  - If an insight with same (signature, player_id, coach_id, team_id) exists
+ *    (any age — the dedup lookup must match the scope of the global UNIQUE
+ *    key, which has no time window; see DI-1, 2026-06-06):
  *      * |new.your_value - existing.evidence.your_value| / existing < 5% →
  *        refresh evidence + content; don't touch lifecycle_state.
  *      * >= 5% movement → update evidence + content; set metadata.movement;
@@ -43,7 +44,6 @@ import { logServerError } from '@/lib/server-error-logger';
  */
 export const GATED_OUT = '__gated_out__';
 
-const DEDUP_WINDOW_DAYS = 30;
 const MOVEMENT_THRESHOLD = 0.05; // 5%
 const MATURATION_MOVEMENTS = 3;
 const MIN_SAMPLE_N = 5;
@@ -114,11 +114,18 @@ export async function upsertInsight(
   const resolvedTeamId = input.team_id ?? ownership.teamId;
 
   // Look up the most recent row with same (signature, player_id, coach_id,
-  // team_id). The partial index predicate (30-day window) is enforced in
-  // code, not in SQL, because now() isn't IMMUTABLE.
-  const cutoff = new Date(
-    Date.now() - DEDUP_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  ).toISOString();
+  // team_id).
+  //
+  // 2026-06-06 DI-1: the dedup lookup MUST match the scope of the global
+  // UNIQUE NULLS NOT DISTINCT constraint (signature,player_id,coach_id,team_id)
+  // that `insertNew` upserts against — that constraint has NO 30-day window.
+  // The old `.gte(created_at, now()-30d)` filter narrowed the lookup so that
+  // for an insight older than 30 days we'd MISS the existing row, fall into
+  // `insertNew`, hit the conflict, and (with ignoreDuplicates:true) leave the
+  // stale row untouched — recomputed evidence silently dropped and the
+  // lifecycle frozen forever. Dropping the cutoff routes the refresh through
+  // `updateExisting` (a true DO-UPDATE / upsert, no destructive write) so
+  // fresh evidence always lands regardless of the row's age.
 
   // 2026-05-17: dedup is scoped to (signature, player_id, coach_id, team_id)
   // — closes audit S-HIGH-1 / Q-NEW-2 / Q-NEW-3. The previous dedup keyed
@@ -128,8 +135,7 @@ export async function upsertInsight(
   let lookup = supabase
     .from('golf_coach_insights')
     .select('id, evidence, metadata, lifecycle_state')
-    .eq('signature', input.signature)
-    .gte('created_at', cutoff);
+    .eq('signature', input.signature);
   lookup = input.player_id === null
     ? lookup.is('player_id', null)
     : lookup.eq('player_id', input.player_id);
@@ -183,16 +189,24 @@ async function updateExisting(
       last_refreshed_at: nowIso,
     };
 
+    const refreshPayload: Record<string, unknown> = {
+      evidence,
+      content: input.content,
+      title: input.title,
+      category: input.category,
+      metadata: mergedMetadata,
+      updated_at: nowIso,
+    };
+    // Re-persist the freshly-computed severity. Value-derived generators
+    // recompute priority every run, and there is no coach manual-priority
+    // edit path (coaches only dismiss/acknowledge/resolve), so an insight that
+    // escalated/de-escalated would otherwise keep its stale INSERT-time
+    // priority — wrong in the Alert Center's ['urgent','high'] filter + ordering.
+    if (input.priority) refreshPayload.priority = input.priority;
+
     const { error } = await supabase
       .from('golf_coach_insights')
-      .update({
-        evidence,
-        content: input.content,
-        title: input.title,
-        category: input.category,
-        metadata: mergedMetadata,
-        updated_at: nowIso,
-      })
+      .update(refreshPayload)
       .eq('id', existing.id);
 
     if (error) {
@@ -241,6 +255,10 @@ async function updateExisting(
   if (shouldMature) {
     updatePayload.lifecycle_state = 'matured';
   }
+  // Re-persist freshly-computed severity (no coach manual-priority path exists;
+  // see refresh branch above) so escalations/de-escalations aren't pinned to
+  // the stale INSERT-time value.
+  if (input.priority) updatePayload.priority = input.priority;
 
   const { error } = await supabase
     .from('golf_coach_insights')

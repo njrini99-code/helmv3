@@ -17,6 +17,10 @@ import {
   deriveTone,
   isImprovement,
 } from '@/components/golf/coachhelm/insight-card/tone-derivation';
+import {
+  MovementPill,
+  formatMovementMagnitude,
+} from '@/components/golf/coachhelm/insight-card/MovementPill';
 
 // Framer-motion's full animation stack is unnecessary for these click tests.
 // Re-export its primitives as plain DOM passthroughs so buttons / chips render
@@ -184,6 +188,18 @@ describe('isImprovement', () => {
     expect(isImprovement('down', 'score_to_par')).toBe(true);
     expect(isImprovement('down', 'dispersion_stddev')).toBe(true);
   });
+
+  // ui-tone-2: un-registered dispersion/bias leak families must be treated as
+  // lower_better so a WORSENING leak ("up") does not read as an improvement.
+  it('treats direction/leak/bias families as lower_better (ui-tone-2)', () => {
+    // A worsening approach-direction leak (more left misses) is NOT an
+    // improvement — "down" (fewer) is.
+    expect(isImprovement('up', 'approach_direction_left_pct')).toBe(false);
+    expect(isImprovement('down', 'approach_direction_left_pct')).toBe(true);
+    // Generic "leak" / "bias" composite strings follow the same polarity.
+    expect(isImprovement('up', 'tempo_leak_rate')).toBe(false);
+    expect(isImprovement('up', 'start_line_bias')).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -246,6 +262,84 @@ describe('InsightCard render matrix', () => {
   it('hides the movement pill when metadata.movement is missing', () => {
     render(<InsightCard insight={makeInsight()} density="default" audience="player" />);
     expect(screen.queryByTestId('movement-pill')).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ui-tone-3: MovementPill % magnitude must cap — no "↑399%" labels.
+// ---------------------------------------------------------------------------
+
+describe('formatMovementMagnitude (ui-tone-3)', () => {
+  it('renders sub-100% deltas as a percent', () => {
+    expect(formatMovementMagnitude(0.12)).toBe('12%');
+    expect(formatMovementMagnitude(-0.08)).toBe('8%');
+    expect(formatMovementMagnitude(0.99)).toBe('99%');
+  });
+
+  it('switches to a multiplier at/above 100% (no "399%")', () => {
+    // A 100% change = 2.0x the old value.
+    expect(formatMovementMagnitude(1)).toBe('2.0x');
+    // The pathological "↑399%" becomes a compact, honest multiple.
+    expect(formatMovementMagnitude(3.99)).toBe('5.0x');
+  });
+
+  it('returns null for no measurable movement', () => {
+    expect(formatMovementMagnitude(0)).toBeNull();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(formatMovementMagnitude(NaN as any)).toBeNull();
+  });
+
+  it('caps the rendered pill label rather than showing a giant percent', () => {
+    const insight = makeInsight({
+      metadata: {
+        movement: { from: 1, to: 5, direction: 'up', percent_change: 3.99 },
+      },
+    });
+    render(<MovementPill insight={insight} />);
+    const pill = screen.getByTestId('movement-pill');
+    expect(pill.textContent).toContain('5.0x');
+    expect(pill.textContent).not.toContain('399%');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// tee-strat-1: zero-leverage rows must NOT render a "~0.0 strokes" subtitle.
+// (Composites + requiresStanding=false generators bypass the impact backfill.)
+// ---------------------------------------------------------------------------
+
+describe('InsightCard zero-impact suppression (tee-strat-1)', () => {
+  it('hero: drops the focal strokes figure when strokes_impact is 0', () => {
+    const insight = makeInsight({ evidence: makeEvidence({ strokes_impact: 0 }) });
+    render(<InsightCard insight={insight} density="hero" audience="coach" />);
+    expect(screen.getByTestId('insight-card-hero')).toBeInTheDocument();
+    expect(screen.queryByTestId('hero-strokes-impact')).toBeNull();
+  });
+
+  it('hero: keeps the focal strokes figure when impact is meaningful', () => {
+    const insight = makeInsight({ evidence: makeEvidence({ strokes_impact: 2.1 }) });
+    render(<InsightCard insight={insight} density="hero" audience="coach" />);
+    expect(screen.getByTestId('hero-strokes-impact')).toBeInTheDocument();
+  });
+
+  it('default: omits the "~0.0 strokes/round" subtitle at zero impact', () => {
+    const insight = makeInsight({ evidence: makeEvidence({ strokes_impact: 0 }) });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const card = screen.getByTestId('insight-card-default');
+    expect(card.textContent).not.toContain('~0.0 strokes');
+  });
+
+  it('compact: omits the "~0.0 strokes" tail at zero impact', () => {
+    const insight = makeInsight({ evidence: makeEvidence({ strokes_impact: 0 }) });
+    render(<InsightCard insight={insight} density="compact" audience="player" />);
+    const row = screen.getByTestId('insight-card-compact');
+    expect(row.textContent).not.toContain('~0.0 strokes');
+  });
+
+  it('default: a sub-0.05 impact still rounds away and is suppressed', () => {
+    const insight = makeInsight({ evidence: makeEvidence({ strokes_impact: 0.03 }) });
+    render(<InsightCard insight={insight} density="default" audience="coach" />);
+    const card = screen.getByTestId('insight-card-default');
+    expect(card.textContent).not.toContain('~0.0 strokes');
   });
 });
 

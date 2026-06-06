@@ -16,12 +16,30 @@ function isPressureGap(i: EvidenceInsight): boolean {
   return i.insight_type === 'pressure_gap' && Number(i.evidence.your_value ?? 0) > 0.3;
 }
 
+/**
+ * Absolute-skill floor (PDC-1).
+ *
+ * `team_pct` is 0 for the worst/only row on a tiny team, so an elite putter
+ * gets flagged "weak" on team rank alone. Putt make-% is `higher_better`, so
+ * only flag when make-% is also below the PGA baseline. Falls back to the
+ * team gate when no usable `pga_value` exists (legacy/0).
+ */
+function belowPgaFloor(i: EvidenceInsight): boolean {
+  const standing = i.evidence.standing;
+  if (!standing) return true;
+  const pga = standing.pga_value;
+  if (typeof pga !== 'number' || pga <= 0) return true;
+  const player = standing.player_value;
+  if (typeof player !== 'number') return true;
+  return player < pga - 1;
+}
+
 function isWeakShortPutt(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'putt_distance') return false;
   if (!i.signature.includes('3_5ft') && !i.signature.includes('5_10ft')) return false;
-  // Player at or below team avg = worth flagging in a chain
+  // Player at or below team avg AND below the PGA absolute floor.
   const teamPct = i.evidence.standing?.team_pct;
-  return typeof teamPct === 'number' && teamPct < 50;
+  return typeof teamPct === 'number' && teamPct < 50 && belowPgaFloor(i);
 }
 
 const rule: CompositeRule = {
@@ -47,6 +65,16 @@ const rule: CompositeRule = {
   compose(match: CompositeMatch): CompositeContent {
     const pressureDelta = Number(match.signals.pressure_delta ?? 0);
     const shortPuttPct = Math.round(Number(match.signals.short_putt_value ?? 0));
+    // Recoverable strokes = gap ABOVE the typical ~0.5-stroke pressure gap
+    // (everyone plays a touch worse under pressure), discounted by a
+    // closability factor — the domain doc calls the college 2-5 stroke gap
+    // "typical / slow-to-close", so the full delta is NOT all recoverable.
+    const PRESSURE_REFERENCE = 0.5;
+    const PRESSURE_CLOSABILITY = 0.5;
+    const recoverablePerRound = Math.max(
+      0,
+      (pressureDelta - PRESSURE_REFERENCE) * PRESSURE_CLOSABILITY,
+    );
     const sigParts = String(match.signals.short_putt_signature ?? '').split(':');
     const bucket = sigParts[sigParts.length - 1] === '3_5ft' ? '3-5 ft' : '5-10 ft';
     return {
@@ -72,7 +100,7 @@ const rule: CompositeRule = {
         window_days: 30,
         window_start: '',
         window_end: '',
-        strokes_impact: pressureDelta,
+        strokes_impact: recoverablePerRound,
         strokes_impact_method: 'peer_delta',
         confidence: 0.7,
         confidence_factors: {

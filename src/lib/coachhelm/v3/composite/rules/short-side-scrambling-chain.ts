@@ -30,9 +30,12 @@ const rule: CompositeRule = {
     const avgProximity = sumProximity / shots.length;
     if (avgProximity <= POOR_PROXIMITY_FT) return null;
 
-    // Distinguish rough vs bunker for the prose
+    // Distinguish rough vs bunker for the prose. The golf_shots CHECK
+    // constraint stores bunker lies as the canonical value 'sand' (not
+    // 'bunker') — matching the wrong literal left bunkerPct permanently 0
+    // while the prose promised "bunker splash" coaching (sscc-1).
     const roughShots = shots.filter((s) => s.lie_before.includes('rough'));
-    const bunkerShots = shots.filter((s) => s.lie_before === 'bunker');
+    const bunkerShots = shots.filter((s) => s.lie_before === 'sand');
     const roughPct = (roughShots.length / shots.length) * 100;
     const bunkerPct = (bunkerShots.length / shots.length) * 100;
 

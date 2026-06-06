@@ -8,6 +8,14 @@
  * Uses ctx.hole_scores. Complementary to closing_hole_fatigue:
  * suppression handles overlap if both fire (subset check by ids —
  * they read no insights, so neither suppresses the other).
+ *
+ * f9s-1: cross-suppress against the warmup-hole Tier-1 generator. Both
+ * describe the same "slow start" phenomenon on the same metric
+ * (`opening_hole_delta`) — warmup_hole over hole 1, this rule over holes
+ * 1-3 — so emitting both double-surfaces one leak to the coach. The runner's
+ * id-subset suppression can't catch it (this rule carries
+ * `source_insight_ids: []`), so we suppress here: if a warmup_hole insight
+ * already exists in the window, defer to it and don't also fire.
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
@@ -21,8 +29,17 @@ const rule: CompositeRule = {
   priority: 'high',
   category: 'scoring',
 
-  detect(_insights, ctx) {
+  detect(insights, ctx) {
     if (!ctx || ctx.hole_scores.length === 0) return null;
+
+    // f9s-1: defer to the warmup-hole Tier-1 generator if it already
+    // surfaced the opening-hole tax — same metric, same phenomenon.
+    const warmupAlreadyFired = insights.some(
+      (i) =>
+        i.insight_type === 'warmup_hole' ||
+        i.evidence?.standing?.metric_id === 'opening_hole_delta',
+    );
+    if (warmupAlreadyFired) return null;
 
     const distinctRounds = new Set(ctx.hole_scores.map((h) => h.round_id));
     if (distinctRounds.size < MIN_ROUNDS) return null;

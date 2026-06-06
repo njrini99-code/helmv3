@@ -35,6 +35,10 @@ export interface AssembledStanding {
   player_value: number | null;
   team_avg: number | null;
   team_pct: number | null;
+  /** College/division cohort baseline (null until the cohort RPC lands). */
+  level_avg?: number | null;
+  level_n?: number;
+  level_pct?: number | null;
   pga_value: number | null;
   pga_delta: number | null;
 }

@@ -9,6 +9,15 @@
 /** Strokes-per-round value below which we don't bother showing a counterfactual. */
 export const COUNTERFACTUAL_SUPPRESS_THRESHOLD = 0.3;
 
+/**
+ * Default per-projection upper ceiling (CF-1/CF-2). No single-metric leak
+ * realistically saves more than ~2.5 strokes/round; without this cap a
+ * factor=10 metric (scoring_par_4) or a large pressure gap projects an
+ * implausible double-digit recovery. Individual metrics tighten this in
+ * `lookup-tables.ts` (`max_strokes_saved_per_round`).
+ */
+export const COUNTERFACTUAL_MAX_STROKES_PER_ROUND = 2.5;
+
 export interface CounterfactualProjection {
   /** Player's current 30-day scoring average. Null when not enough data. */
   current_baseline_score: number | null;
@@ -25,4 +34,10 @@ export interface CounterfactualProjection {
   suppressed: boolean;
   /** Reason for suppression (logged for debugging, not user-facing). */
   suppress_reason?: 'below_threshold' | 'no_baseline' | 'no_gap' | 'unknown_metric';
+  /**
+   * True when `strokes_saved_per_round` was capped at the per-metric ceiling
+   * (CF-1/CF-2). The raw uncapped value is descriptive-only; surfaces a
+   * "≥" framing if a consumer wants to flag the projection is bounded.
+   */
+  clamped?: boolean;
 }

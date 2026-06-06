@@ -33,6 +33,9 @@ function makeInsight(over: {
   signature: string;
   your_value?: number;
   team_pct?: number | null;
+  /** On-green proximity (feet) for approach_miss — lands in evidence.detail,
+   *  NOT your_value (the green-hit percent). */
+  proximity_feet?: number | null;
 }): EvidenceInsight {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const evidence: any = {
@@ -53,6 +56,9 @@ function makeInsight(over: {
     confidence: 0.5,
     confidence_factors: { sample_adequacy: 0.5, recency: 1, variance: 0.5 },
   };
+  if (over.proximity_feet !== undefined) {
+    evidence.detail = { proximity_when_hit_feet: over.proximity_feet };
+  }
   if (over.team_pct !== undefined) {
     evidence.standing = {
       metric_id: over.type,
@@ -145,21 +151,31 @@ describe('lag_distance_3putt', () => {
 // ---------------------------------------------------------------------------
 
 describe('short_approach_proximity_gap', () => {
-  it('fires when 50-125 yd approach miss > 22 ft AND scrambling weak', () => {
+  it('fires on on-green proximity > 22 ft (feet) AND weak scrambling — NOT green-hit %', () => {
     const insights = [
-      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 28 }),
+      // your_value is green-hit % (55); the 28 ft on-green proximity is what fires + displays.
+      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 55, proximity_feet: 28 }),
       makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25 }),
     ];
     const m = shortApproachGap.detect(insights);
     expect(m).not.toBeNull();
     const c = shortApproachGap.compose(m!);
     expect(c.title).toContain('Short approaches');
-    expect(c.content).toContain('28 ft');
+    expect(c.content).toContain('28 ft'); // real proximity, not the 55% green-hit
+    expect(c.content).not.toContain('55 ft');
   });
 
-  it('does NOT fire when proximity is acceptable', () => {
+  it('does NOT fire when on-green proximity is acceptable (≤ 22 ft)', () => {
     const insights = [
-      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 19 }),
+      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 60, proximity_feet: 19 }),
+      makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25 }),
+    ];
+    expect(shortApproachGap.detect(insights)).toBeNull();
+  });
+
+  it('does NOT fire on a good ball-striker with no recorded proximity', () => {
+    const insights = [
+      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:50_125ft', your_value: 75, proximity_feet: null }),
       makeInsight({ type: 'scrambling', signature: 'v3:scrambling:sand', your_value: 30, team_pct: 25 }),
     ];
     expect(shortApproachGap.detect(insights)).toBeNull();
@@ -223,6 +239,19 @@ describe('front_9_starter', () => {
     }
     expect(front9Starter.detect([], ctx)).toBeNull();
   });
+
+  it('f9s-1: cross-suppresses when a warmup_hole insight already surfaced the opening tax', () => {
+    const ctx = emptyCtx();
+    for (const rid of ['r1', 'r2', 'r3']) {
+      for (let h = 1; h <= 3; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 6)); // double
+      for (let h = 4; h <= 18; h++) ctx.hole_scores.push(holeScore(rid, h, 4, 4));
+    }
+    // Same data would otherwise fire — but warmup-hole already owns the leak.
+    const warmup = makeInsight({ type: 'warmup_hole', signature: 'warmup_hole:hole_1', your_value: 0.8 });
+    expect(front9Starter.detect([warmup], ctx)).toBeNull();
+    // Sanity: still fires when no warmup insight exists.
+    expect(front9Starter.detect([], ctx)).not.toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -257,6 +286,51 @@ describe('doubles_after_bogey', () => {
     ctx.hole_scores.push(holeScore('r1', 2, 4, 6));
     expect(doublesAfterBogey.detect([], ctx)).toBeNull();
   });
+
+  it('DAB-1/DAB-2: does NOT fire from a single 15-bogey blow-up round', () => {
+    // One round, 15 bogey-then-X sequences (clears the 10-opp floor alone),
+    // 8 of them compounding into doubles (53%). Without the round guards this
+    // minted a 3.5-strokes/round "urgent" #1 card. Now it must no-op: only
+    // 1 round in the window, and the bogeys span only 1 round.
+    const ctx = emptyCtx();
+    for (let i = 0; i < 15; i++) {
+      const bogeyHole = i * 2 + 1;
+      ctx.hole_scores.push(holeScore('r1', bogeyHole, 4, 5)); // bogey
+      ctx.hole_scores.push(holeScore('r1', bogeyHole + 1, 4, i < 8 ? 6 : 4)); // double or par
+    }
+    expect(doublesAfterBogey.detect([], ctx)).toBeNull();
+  });
+
+  it('DAB-2: does NOT fire when ≥3 rounds exist but bogeys come from one round', () => {
+    // 3 distinct rounds clear MIN_ROUNDS, but only r1 has any bogeys → the
+    // signal is a single-round artifact and must not fire.
+    const ctx = emptyCtx();
+    for (let i = 0; i < 12; i++) {
+      const bogeyHole = i * 2 + 1;
+      ctx.hole_scores.push(holeScore('r1', bogeyHole, 4, 5)); // bogey
+      ctx.hole_scores.push(holeScore('r1', bogeyHole + 1, 4, i < 4 ? 6 : 4));
+    }
+    // Two clean rounds — present in the window, no bogeys.
+    for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore('r2', h, 4, 4));
+    for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore('r3', h, 4, 4));
+    expect(doublesAfterBogey.detect([], ctx)).toBeNull();
+  });
+
+  it('DAB: STILL fires when the pattern spans ≥2 rounds across ≥3 rounds', () => {
+    // 3 rounds, bogeys in r1 + r2 (spanning ≥2 rounds), r3 clean.
+    const ctx = emptyCtx();
+    for (const rid of ['r1', 'r2']) {
+      for (let i = 0; i < 6; i++) {
+        const bogeyHole = i * 2 + 1;
+        ctx.hole_scores.push(holeScore(rid, bogeyHole, 4, 5)); // bogey
+        ctx.hole_scores.push(holeScore(rid, bogeyHole + 1, 4, i < 2 ? 6 : 4)); // 2 doubles/round
+      }
+    }
+    for (let h = 1; h <= 18; h++) ctx.hole_scores.push(holeScore('r3', h, 4, 4));
+    const m = doublesAfterBogey.detect([], ctx);
+    expect(m).not.toBeNull();
+    expect(Number(m!.signals.rounds)).toBe(3);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -285,19 +359,52 @@ describe('short_side_scrambling_chain', () => {
     for (let i = 0; i < 12; i++) ctx.short_game_shots.push(shortGameShot({ distance_to_hole_after: 8 }));
     expect(shortSideScrambling.detect([], ctx)).toBeNull();
   });
+
+  it("sscc-1: counts real 'sand' recoveries as bunker (CHECK value is 'sand', not 'bunker')", () => {
+    const ctx = emptyCtx();
+    for (let i = 0; i < 12; i++) {
+      ctx.short_game_shots.push(shortGameShot({ lie_before: 'sand', distance_to_hole_after: 22 }));
+    }
+    const m = shortSideScrambling.detect([], ctx);
+    expect(m).not.toBeNull();
+    // All shots are sand → bunkerPct is fully populated (was permanently 0
+    // when the branch matched the non-canonical 'bunker' literal).
+    expect(Number(m!.signals.bunker_pct)).toBe(100);
+    expect(Number(m!.signals.rough_pct)).toBe(0);
+    const c = shortSideScrambling.compose(m!);
+    expect(c.content).toContain('% from bunker'); // prose now reflects the real sand mix
+  });
+
+  it('sscc-1: mixed rough + sand splits the dominant correctly', () => {
+    const ctx = emptyCtx();
+    for (let i = 0; i < 8; i++) {
+      ctx.short_game_shots.push(shortGameShot({ lie_before: 'rough', distance_to_hole_after: 22 }));
+    }
+    for (let i = 0; i < 4; i++) {
+      ctx.short_game_shots.push(shortGameShot({ lie_before: 'sand', distance_to_hole_after: 22 }));
+    }
+    const m = shortSideScrambling.detect([], ctx);
+    expect(m).not.toBeNull();
+    expect(Math.round(Number(m!.signals.rough_pct))).toBe(67);
+    expect(Math.round(Number(m!.signals.bunker_pct))).toBe(33);
+  });
 });
 
 // ---------------------------------------------------------------------------
 // flyer_lie_over_the_green (ctx-driven)
 // ---------------------------------------------------------------------------
 
-describe('flyer_lie_over_the_green', () => {
-  it('fires with ≥10 light_rough approaches and avg proximity > 35 ft', () => {
+describe('flyer_lie_over_the_green (DISABLED — blocked on rough-severity capture)', () => {
+  // The supplemental loader filters lie_before='light_rough', which violates
+  // the golf_shots CHECK (tee|fairway|rough|sand|green|other|penalty) → 0 rows.
+  // The rule is explicitly disabled (RULE_ENABLED=false) so it can't fire on
+  // data that can never exist; firing on the plain 'rough' bucket would
+  // conflate flyer-prone light rough with deep rough. It returns null even
+  // when given an (impossible) qualifying fixture.
+  it('does NOT fire even with qualifying light_rough fixture (explicitly disabled)', () => {
     const ctx = emptyCtx();
     for (let i = 0; i < 12; i++) ctx.flyer_lie_shots.push(flyerShot({ distance_to_hole_after: 45 }));
-    const m = flyerLieOverGreen.detect([], ctx);
-    expect(m).not.toBeNull();
-    expect(Number(m!.signals.avg_proximity_ft)).toBe(45);
+    expect(flyerLieOverGreen.detect([], ctx)).toBeNull();
   });
 
   it('does NOT fire when proximity is acceptable', () => {

@@ -169,6 +169,18 @@ function OutcomeBadge({ insight, className }: OutcomeBadgeProps) {
   return null;
 }
 
+/**
+ * tee-strat-1: zero-leverage rows (composites + `requiresStanding=false`
+ * generators bypass the strokes_impact backfill, so `strokes_impact=0`)
+ * rendered "~0.0 strokes/round", which reads as noise under an urgent title.
+ * Treat anything that rounds to "0.0" at the card's `.toFixed(1)` precision as
+ * "no displayable impact" and suppress the stroke subtitle entirely.
+ */
+function hasDisplayableImpact(strokesImpact: number | null | undefined): boolean {
+  const impact = Math.abs(Number(strokesImpact ?? 0));
+  return Number.isFinite(impact) && Math.round(impact * 10) > 0;
+}
+
 const TONE_CONFIG: Record<DerivedTone, ToneConfig> = {
   encouraging: {
     icon: IconTrophy,
@@ -330,8 +342,15 @@ const CompactInsightRow = forwardRef<HTMLButtonElement, CompactInsightRowProps>(
           <p className="text-sm font-medium text-warm-900 truncate">{insight.title}</p>
           <p className="text-xs text-warm-500 truncate">
             {insight.evidence.your_value_display || insight.evidence.metric_label}
-            {' · '}
-            <span className="tabular-nums">~{impact.toFixed(1)} strokes</span>
+            {/* tee-strat-1: suppress the "~0.0 strokes" tail for zero-leverage
+                rows (composites / requiresStanding=false bypass the impact
+                backfill). A bare "~0.0 strokes" reads as noise. */}
+            {hasDisplayableImpact(insight.evidence.strokes_impact) && (
+              <>
+                {' · '}
+                <span className="tabular-nums">~{impact.toFixed(1)} strokes</span>
+              </>
+            )}
           </p>
         </div>
         <IconChevronDown size={16} className="text-warm-400 -rotate-90 flex-shrink-0" aria-hidden />
@@ -421,9 +440,14 @@ const DefaultInsightCard = forwardRef<HTMLDivElement, CardInnerProps>(
               <EvidencePanel evidence={insight.evidence} compact />
 
               <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <span className="text-xs text-warm-400 tabular-nums">
-                  ~{impact.toFixed(1)} strokes/round
-                </span>
+                {/* tee-strat-1: hide the "~0.0 strokes/round" subtitle on
+                    zero-leverage rows so an urgent-framed card isn't tailed
+                    by a meaningless impact figure. */}
+                {hasDisplayableImpact(insight.evidence.strokes_impact) && (
+                  <span className="text-xs text-warm-400 tabular-nums">
+                    ~{impact.toFixed(1)} strokes/round
+                  </span>
+                )}
                 {insight.resolved_at && (
                   <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-700 font-medium">
                     Resolved
@@ -541,17 +565,22 @@ const HeroInsightCardInner = forwardRef<HTMLDivElement, CardInnerProps>(
               <WhyPopover insight={insight} />
             </div>
 
-            <div className="text-right flex-shrink-0">
-              <div
-                data-testid="hero-strokes-impact"
-                className="text-display font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
-              >
-                <AnimatedNumber value={impact} decimals={1} prefix="~" />
+            {/* tee-strat-1: the focal "~0.0 strokes/round" figure is the most
+                jarring zero-leverage display — drop the whole block when the
+                row carries no measurable impact. */}
+            {hasDisplayableImpact(insight.evidence.strokes_impact) && (
+              <div className="text-right flex-shrink-0">
+                <div
+                  data-testid="hero-strokes-impact"
+                  className="text-display font-light text-warm-900 tabular-nums leading-none tracking-[-0.025em]"
+                >
+                  <AnimatedNumber value={impact} decimals={1} prefix="~" />
+                </div>
+                <div className="text-eyebrow uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
+                  strokes/round
+                </div>
               </div>
-              <div className="text-eyebrow uppercase tracking-[0.12em] text-warm-500 mt-1.5 opacity-80">
-                strokes/round
-              </div>
-            </div>
+            )}
           </div>
 
           <div>

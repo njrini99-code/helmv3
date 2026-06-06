@@ -47,4 +47,36 @@ describe('ParTypeGenerator', () => {
     expect(c.title).toContain('-0.30');
     expect(c.signature).toBe('par_scoring:par5');
   });
+
+  // par-type-3: the ×4/×10/×4 holes/round leverage lets the par-4 family project
+  // the whole-round gap and dominate the top-3. The generator caps its declared
+  // strokes_impact at the per-par ceiling and stays descriptive (priority low).
+  describe('par-type-3 leverage cap', () => {
+    it('par-4 strokes_impact is capped at the par-4 ceiling (1.5), not gap×10', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 4);
+      // +0.40 over par × 10 holes = 4.0 raw → capped to the 1.5 ceiling.
+      const c = g.composeContent(makeAgg(4, 4.4));
+      expect(c.evidence.strokes_impact).toBe(1.5);
+      expect(c.evidence.strokes_impact_method).toBe('rough_estimate');
+      expect(c.priority).toBe('low'); // descriptive — never dominates top-3
+    });
+
+    it('par-3 strokes_impact is capped at the par-3 ceiling (1.0)', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 3);
+      // +0.50 over par × 4 holes = 2.0 raw → capped to 1.0.
+      expect(g.composeContent(makeAgg(3, 3.5)).evidence.strokes_impact).toBe(1.0);
+    });
+
+    it('a small over-par gap stays below the ceiling (uncapped)', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 4);
+      // +0.08 × 10 = 0.8 < 1.5 ceiling.
+      expect(g.composeContent(makeAgg(4, 4.08)).evidence.strokes_impact).toBeCloseTo(0.8, 3);
+    });
+
+    it('at/under par is not "costing" strokes → 0', () => {
+      const g = new ParTypeGenerator(PLAYER_ID, 5);
+      expect(g.composeContent(makeAgg(5, 4.7)).evidence.strokes_impact).toBe(0);
+      expect(g.composeContent(makeAgg(5, 5.0)).evidence.strokes_impact).toBe(0);
+    });
+  });
 });

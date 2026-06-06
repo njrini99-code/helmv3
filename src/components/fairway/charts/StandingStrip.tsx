@@ -33,6 +33,7 @@ import {
   deriveState,
   shouldShowTeamMarker,
   deriveAriaLabel,
+  pgaReferenceLabel,
 } from '@/components/golf/coachhelm/v3/StandingBar';
 
 /** StandingStrip shares the legacy StandingBar prop surface verbatim. */
@@ -51,7 +52,16 @@ export function StandingStrip(props: StandingStripProps) {
   const teamPct = showTeam && props.team_avg !== null ? toScalePct(props.team_avg, props.scale) : null;
   const pgaPct = toScalePct(props.pga_value, props.scale);
   const delta = deltaVsTeam(props.player_value, props.team_avg, props.direction);
-  const cohortText = props.show_cohort_text !== false ? teamCohortText(props.team_pct) : '';
+  // EC-2: a team percentile is meaningless on a tiny roster — PERCENT_RANK()
+  // returns 0/100 for the only/worst row, so "Bottom 1% on your team" fires on
+  // a team of one. Gate the cohort caption on the SAME team_n>=5 floor the team
+  // marker uses (`showTeam`), so we never narrate a percentile we won't draw.
+  const cohortText =
+    props.show_cohort_text !== false && showTeam
+      ? teamCohortText(props.team_pct, props.team_n)
+      : '';
+  // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
+  const refLabel = pgaReferenceLabel(props.metric_id).short;
 
   const deltaToneClass =
     delta.tone === 'good' ? 'text-accent-600' :
@@ -87,12 +97,13 @@ export function StandingStrip(props: StandingStripProps) {
         ) : null}
       </div>
 
-      {/* Premium meter — green "You" hero, black PGA tick, grey Team tick */}
+      {/* Premium meter — green "You" hero, black reference tick, grey Team tick */}
       <StripTrack
         youPct={youPct}
         teamPct={teamPct}
         pgaPct={pgaPct}
         youValue={formatValue(props.player_value, props.unit)}
+        refLabel={refLabel.toUpperCase()}
       />
 
       {/* High-contrast 3-up readouts (You is the green hero figure) */}
@@ -103,7 +114,7 @@ export function StandingStrip(props: StandingStripProps) {
         ) : (
           <Readout label="Team" value="—" tone="muted" align="center" />
         )}
-        <Readout label="PGA" value={formatValue(props.pga_value, props.unit)} align="end" />
+        <Readout label={refLabel} value={formatValue(props.pga_value, props.unit)} align="end" />
       </div>
 
       {/* Cohort text */}
@@ -132,11 +143,14 @@ function StripTrack({
   teamPct,
   pgaPct,
   youValue,
+  refLabel,
 }: {
   youPct: number;
   teamPct: number | null;
   pgaPct: number;
   youValue: string;
+  /** CF-3: the reference-tick label ("PGA" / "FIELD AVG"). */
+  refLabel: string;
 }) {
   const you = clampPct(youPct);
   const pga = clampPct(pgaPct);
@@ -153,8 +167,8 @@ function StripTrack({
 
       {/* The track — defined ring so it reads against the card */}
       <div className="relative h-2.5 w-full rounded-full bg-inset ring-1 ring-inset ring-border-strong">
-        {/* PGA reference tick — black, high contrast */}
-        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label="PGA" />
+        {/* Reference tick — black, high contrast (PGA, or "FIELD AVG" for SG) */}
+        <Tick leftPct={pga} barClass="bg-text-primary" labelClass="text-text-secondary" label={refLabel} />
         {/* Team tick — mid grey (omitted in cold-start) */}
         {team !== null ? (
           <Tick leftPct={team} barClass="bg-text-tertiary" labelClass="text-text-tertiary" label="TEAM" />

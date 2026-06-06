@@ -10,6 +10,7 @@
  *   docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md
  */
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
+import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';
 
 export type DerivedTone =
   | 'urgent'
@@ -72,10 +73,26 @@ export function isImprovement(direction: 'up' | 'down', metric: string): boolean
   return direction === 'up';
 }
 
-const NEGATIVE_METRIC_PATTERN = /severity|score_to_par|miss|stddev|dispersion|penalty/i;
+// Fallback only — used for composite ad-hoc metric strings that aren't in the
+// canonical v3 registry (closing_hole_delta, compound_mistake_rate,
+// short_side_proximity, flyer_lie_proximity, approach_direction_*, …). All such
+// composite metrics are lower-better, so the patterns below are deliberately
+// broad on delta/proximity/rate/direction/leak/bias families. Canonical metrics
+// are resolved authoritatively from the registry first (see below), so this
+// never overrides a real direction.
+//
+// ui-tone-2: `direction|leak|bias` were added so an UN-registered, worsening
+// dispersion metric (e.g. `approach_direction_left_pct`) is classified
+// lower-better and does NOT paint a GREEN ↑ on a getting-worse leak.
+const NEGATIVE_METRIC_PATTERN =
+  /severity|score_to_par|scoring_par|miss|stddev|dispersion|penalty|delta|proximity|compound|big_number|fatigue|direction|leak|bias/i;
 
-/** "Less is better" — severity, miss, dispersion, penalty counts, etc. */
+/** "Less is better". Authoritative source is the metric registry's `direction`
+ *  (keeps tone in sync with the 28-metric StandingBar config); the regex is a
+ *  fallback for non-registry composite metric strings. */
 function isNegativePolarityMetric(metric: string): boolean {
+  const cfg = getMetricRenderConfig(metric);
+  if (cfg) return cfg.direction === 'lower_better';
   return NEGATIVE_METRIC_PATTERN.test(metric);
 }
 

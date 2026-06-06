@@ -28,13 +28,14 @@ import type {
   InsightMovement,
 } from '@/lib/coachhelm/v2/insights/types';
 import type { Database } from '@/lib/types/database';
-import { assembleThemes } from '@/lib/coachhelm/v3/themes/assemble';
+import { assembleThemes, sanitizeProse } from '@/lib/coachhelm/v3/themes/assemble';
 import type { AssembledThemes, AssembledEvidence, RootDriver, ThemeTrend } from '@/lib/coachhelm/v3/themes/types';
 import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
 import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
+import { cappedStrokesImpact } from '@/lib/coachhelm/v3/ranking/score';
 
 // ---------------------------------------------------------------------------
 // Shared shape — EvidenceInsight. Downstream components import this type.
@@ -163,6 +164,47 @@ const INSIGHT_SELECT = `
   )
 ` as const;
 
+/**
+ * Read-path engine filter (audit EC-1 / FID-1/FID-2). The delivery surfaces
+ * must only ever render the modern v3 system. Stale v2 rows (e.g. the
+ * `par_scoring_parN` rows that mix a to-par player value against a raw-stroke
+ * team average → an impossible 42-stroke `strokes_impact`) poison ranking and
+ * must never reach a coach/player. Every fetcher applies this via PostgREST
+ * `.or()`: a row qualifies if it was stamped `engine_version='v3'` OR carries
+ * a `v3:%` signature (belt-and-suspenders for the handful of rows where one
+ * field lags the other). Stale v2 rows match neither and are excluded in-DB.
+ */
+const V3_ENGINE_FILTER = "engine_version.eq.v3,signature.like.v3:%" as const;
+
+/**
+ * Normalize a metric id to a canonical *subject* key so cross-version aliases
+ * collapse to one row in dedupe (audit ASM-1 / the par_scoring alias). The v2
+ * generator emits `par_scoring_par4` for the same subject the v3 generator
+ * emits as `scoring_par_4`; without this they dedupe as two distinct metrics
+ * and a coach sees the same par-4 scoring leak rendered twice.
+ */
+function canonicalMetricSubject(metric: string | null | undefined): string {
+  if (!metric) return '';
+  const m = metric.toLowerCase();
+  // par_scoring_parN  ≡  scoring_par_N  →  scoring_par_N
+  const v2Par = m.match(/^par_scoring_par(\d)$/);
+  if (v2Par) return `scoring_par_${v2Par[1]}`;
+  return m;
+}
+
+/**
+ * Composite rank score for the read-path feeds (audit RANK-1). `|impact| ×
+ * confidence`, with `|impact|` clamped to the shared ranking ceiling first so
+ * a stale scale-mixed row can never top the feed. Confidence is floored at a
+ * small positive so a high-impact row with a null/zero confidence still sorts
+ * ahead of a zero-impact one.
+ */
+function feedRankScore(insight: EvidenceInsight): number {
+  const impact = cappedStrokesImpact(insight.evidence?.strokes_impact ?? 0);
+  const confidence = Math.max(0.1, insight.evidence?.confidence ?? 0);
+  return impact * confidence;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -200,6 +242,7 @@ export async function getTopInsightForPlayer(
     .select(INSIGHT_SELECT)
     .eq('player_id', playerId)
     .not('evidence', 'is', null)
+    .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
     .eq('priority', 'urgent')
@@ -222,6 +265,7 @@ export async function getTopInsightForPlayer(
     .select(INSIGHT_SELECT)
     .eq('player_id', playerId)
     .not('evidence', 'is', null)
+    .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
     .order('created_at', { ascending: false })
@@ -294,16 +338,23 @@ export async function getInsightsForPlayer(
 
   const limit = Math.min(Math.max(opts.limit ?? 10, 1), 50);
 
+  // Pull a wider set than `limit` so the in-app rank-by-impact below has room
+  // to favor |strokes_impact| × confidence over recency before trimming (audit
+  // RANK-1 / RANK-4 — the created_at-only player feed made the impact backfill
+  // a no-op on player cards and dropped a high-impact older row at the window).
+  const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
+
   const runQuery = () => {
     let query = supabase
       .from('golf_coach_insights')
       .select(INSIGHT_SELECT)
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
+      .or(V3_ENGINE_FILTER)
       .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
       .neq('status', 'dismissed')
       .order('created_at', { ascending: false })
-      .limit(limit);
+      .limit(PRE_RANK_FETCH);
 
     if (opts.categories && opts.categories.length > 0) {
       query = query.in('category', opts.categories);
@@ -358,8 +409,8 @@ export async function getInsightsForPlayer(
 
   // Client-side filters. We keep them here (not in the SQL) because the
   // `evidence` JSONB's shape isn't indexed for these fields, and at
-  // limit=50 the post-filter cost is negligible.
-  return insights.filter((insight) => {
+  // PRE_RANK_FETCH ≤ 100 the post-filter cost is negligible.
+  const filtered = insights.filter((insight) => {
     if (opts.minConfidence != null) {
       const confidence = insight.evidence.confidence;
       if (!Number.isFinite(confidence) || confidence < opts.minConfidence) return false;
@@ -370,6 +421,18 @@ export async function getInsightsForPlayer(
     }
     return true;
   });
+
+  // RANK-1: order the player feed by |strokes_impact| × confidence (ceiling-
+  // clamped) — the same composite the engine ranks with — so the high-leverage
+  // leak leads the card stack instead of whatever was created most recently.
+  // Stable tie-break on created_at DESC keeps equal-score rows newest-first.
+  return filtered
+    .sort((a, b) => {
+      const diff = feedRankScore(b) - feedRankScore(a);
+      if (diff !== 0) return diff;
+      return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+    })
+    .slice(0, limit);
 }
 
 /**
@@ -402,17 +465,23 @@ export async function getInsightsForCoach(
 
   const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
 
-  // Pull a wider set so the in-app rank-and-cut has room to favor impact +
-  // confidence over recency. We then trim to `limit` after the EvidencePanel
-  // mapping drops anything missing required scalar fields.
-  const PRE_RANK_FETCH = Math.min(50, limit * 4);
+  // RANK-4: order the candidate window by the in-DB impact magnitude (NULLS
+  // LAST), not `created_at`, so a high-impact older row is NOT dropped at the
+  // pre-rank cap before the in-app composite rank runs. `created_at` is the
+  // secondary order so equal-impact rows stay newest-first. Once the
+  // strokes_impact backfill is deployed every v3 leak carries a real magnitude;
+  // pre-backfill (all 0) this degrades gracefully to created_at order. We still
+  // widen the window to give the |impact| × confidence rank room to reorder.
+  const PRE_RANK_FETCH = Math.min(100, Math.max(50, limit * 5));
 
   let query = supabase
     .from('golf_coach_insights')
     .select(INSIGHT_SELECT)
     .not('evidence', 'is', null)
+    .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
+    .order('evidence->strokes_impact', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(PRE_RANK_FETCH);
 
@@ -443,20 +512,18 @@ export async function getInsightsForCoach(
     .map(mapRowToEvidenceInsight)
     .filter((r): r is EvidenceInsight => r !== null);
 
-  // Rank by |strokes_impact| × confidence — the same composite the engine
-  // uses internally to decide which insights matter — and dedupe across
-  // categories so the feed doesn't show three overlapping putting rows.
+  // Rank by |strokes_impact| × confidence (ceiling-clamped — the same composite
+  // the engine uses internally to decide which insights matter) and dedupe
+  // across categories so the feed doesn't show three overlapping putting rows.
+  // The dedupe key canonicalizes the metric subject so a v2 `par_scoring_par4`
+  // and a v3 `scoring_par_4` for the same player collapse to one row (ASM-1).
   const seenSignatures = new Set<string>();
   const ranked = mapped
     .slice()
-    .sort((a, b) => {
-      const impact = (insight: EvidenceInsight) =>
-        Math.abs(insight.evidence?.strokes_impact ?? 0) *
-        Math.max(0.1, insight.evidence?.confidence ?? 0);
-      return impact(b) - impact(a);
-    })
+    .sort((a, b) => feedRankScore(b) - feedRankScore(a))
     .filter((insight) => {
-      const sig = `${insight.player_id}:${insight.category}:${insight.evidence?.metric ?? insight.title}`;
+      const subject = canonicalMetricSubject(insight.evidence?.metric) || insight.title;
+      const sig = `${insight.player_id}:${insight.category}:${subject}`;
       if (seenSignatures.has(sig)) return false;
       seenSignatures.add(sig);
       return true;
@@ -468,13 +535,14 @@ export async function getInsightsForCoach(
 /**
  * Returns the single insight to feature on a round-review takeaway card.
  *
- * Strategy (in order):
- *   1. Prefer insights whose `metadata.related_round_ids` includes this round.
- *      Generators that have round-level provenance tag it here.
- *   2. Fall back to "highest-impact insight created or updated within 24h of
- *      this round's `round_date`." `golf_rounds` doesn't carry `submitted_at`
- *      so we anchor on `round_date` instead — the naming in the contract was
- *      a near miss.
+ * Strategy: highest-impact insight created or updated within 24h of this
+ * round's `round_date`. (`golf_rounds` carries no `submitted_at`, so we anchor
+ * on `round_date`.)
+ *
+ * NOTE: an earlier `metadata.related_round_ids` JSONB-containment primary match
+ * was removed — no generator ever stamped that key, so the query was dead and
+ * always fell through to the temporal window below. Re-introduce a primary tag
+ * match here only once a generator actually writes `related_round_ids`.
  */
 export async function getRoundTakeawayInsight(
   playerId: string,
@@ -490,36 +558,9 @@ export async function getRoundTakeawayInsight(
   const access = await verifyPlayerAccess(playerId, user.id, supabase);
   if (!access.allowed) return null;
 
-  // 1. Direct tag match via JSONB containment. Cheap when the generator has
-  //    already stamped the round id into metadata.
-  const { data: tagged, error: taggedError } = await supabase
-    .from('golf_coach_insights')
-    .select(INSIGHT_SELECT)
-    .eq('player_id', playerId)
-    .not('evidence', 'is', null)
-    .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
-    .neq('status', 'dismissed')
-    .contains('metadata', { related_round_ids: [roundId] })
-    .order('created_at', { ascending: false })
-    .limit(5);
-
-  if (taggedError) {
-    await logServerError(
-      `getRoundTakeawayInsight.tagged failed: ${taggedError.message}`,
-      { action: 'insight-delivery.getRoundTakeawayInsight', featureArea: 'insights', playerId, roundId },
-    );
-  } else if (tagged && tagged.length > 0) {
-    const ranked = (tagged as unknown as RawInsightRowWithDrills[])
-      .map(mapRowToEvidenceInsight)
-      .filter((r): r is EvidenceInsight => r !== null)
-      .sort((a, b) => rankScore(b) - rankScore(a));
-    if (ranked[0]) return ranked[0];
-  }
-
-  // 2. Temporal fallback. Pull the round's date, look for insights created or
-  //    updated within a 24-hour window on either side, and pick the highest
-  //    impact one. This is approximate but catches generators that don't
-  //    stamp related_round_ids.
+  // Temporal match. Pull the round's date, look for insights created or
+  // updated within a 24-hour window on either side, and pick the highest-impact
+  // one. Approximate, but it's the only round↔insight link we currently have.
   const { data: round, error: roundError } = await supabase
     .from('golf_rounds')
     .select('round_date')
@@ -548,6 +589,7 @@ export async function getRoundTakeawayInsight(
     .select(INSIGHT_SELECT)
     .eq('player_id', playerId)
     .not('evidence', 'is', null)
+    .or(V3_ENGINE_FILTER)
     .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
     .neq('status', 'dismissed')
     .gte('updated_at', windowStart)
@@ -713,6 +755,7 @@ async function assembleForPlayer(
       .select(INSIGHT_SELECT)
       .eq('player_id', playerId)
       .not('evidence', 'is', null)
+      .or(V3_ENGINE_FILTER)
       .in('lifecycle_state', [...VISIBLE_LIFECYCLE_STATES])
       .eq('status', 'active')
       .order('created_at', { ascending: false })
@@ -806,7 +849,11 @@ function mapRowLoose(row: RawInsightRowWithDrills): EvidenceInsight | null {
     player_id: row.player_id,
     category: (row.category as InsightCategory | null) ?? null,
     title: row.title,
-    content: row.content ?? '',
+    // Strip authoring artifacts ("(Research doc §N)", "The standing card below
+    // shows…") that the generators bake into copy — the themes path sanitizes
+    // at assemble time, but the flat path returns content straight to the coach
+    // feed / Hub / round review / digest email, so sanitize here too.
+    content: sanitizeProse(row.content),
     signature: row.signature ?? null,
     evidence,
     metadata: normalizeMetadata(row.metadata),
@@ -914,7 +961,10 @@ function mapRowToEvidenceInsight(row: RawInsightRowWithDrills): EvidenceInsight 
     player_id: row.player_id,
     category: (row.category as InsightCategory | null) ?? null,
     title: row.title,
-    content: row.content ?? '',
+    // Strip authoring artifacts before the flat path returns content to the
+    // coach feed / Hub / round review / digest email (themes path sanitizes
+    // separately at assemble time).
+    content: sanitizeProse(row.content),
     signature: row.signature ?? null,
     evidence,
     metadata: normalizeMetadata(row.metadata),
@@ -961,9 +1011,12 @@ function extractDrills(
 }
 
 /** Ranking function: strokes_impact magnitude * confidence. Matches the
- *  Rule 8 SQL fallback we use when urgent-priority doesn't short-circuit. */
+ *  Rule 8 SQL fallback we use when urgent-priority doesn't short-circuit.
+ *  |strokes_impact| is ceiling-clamped first (audit EC-1) so a stale
+ *  scale-mixed row can never dominate the single-pick Hub / round-takeaway
+ *  surfaces either — defense-in-depth behind the v3 read-path filter. */
 function rankScore(insight: EvidenceInsight): number {
-  const impact = Math.abs(Number(insight.evidence.strokes_impact ?? 0));
+  const impact = cappedStrokesImpact(insight.evidence.strokes_impact ?? 0);
   const confidence = Number(insight.evidence.confidence ?? 0);
   return impact * confidence;
 }

@@ -233,4 +233,38 @@ describe('ApproachMissGenerator.aggregate (green-hit + on-green proximity)', () 
     const agg = await new ApproachMissGenerator(PLAYER_ID, '125_175ft').aggregate();
     expect(agg).toBeNull(); // no shots bucketed into 125-175 yd
   });
+
+  // am-3 (armed-landmine guard): playerValue feeds the counterfactual and MUST
+  // be the metric's registered unit — FEET (on-green proximity) — NEVER the
+  // green-hit PERCENT. If requiresStanding ever flips to true, the base would
+  // otherwise feed e.g. "70 feet" vs an ~18 ft Tour target → a fabricated gap.
+  it('sets playerValue to the on-green proximity FEET, not the green-hit %', async () => {
+    // 3 greens at 18/20/22 ft (avg 20 ft), 2 off-green misses → green-hit 60%.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'),
+      shot(100, 20, 'feet', 'green'),
+      shot(100, 22, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough'),
+      shot(100, 35, 'yards', 'rough'),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.green_hit_pct).toBe(60);
+    // playerValue is the FEET proximity (20), never the 60(%) green-hit.
+    expect(agg!.playerValue).toBe(20);
+    expect(agg!.playerValue).toBe(agg!.proximity_when_hit_feet);
+    expect(agg!.playerValue).not.toBe(agg!.green_hit_pct);
+  });
+
+  it('playerValue is NaN (safely ignored by the base) when proximity is unreadable', async () => {
+    // 6 attempts, only 2 greens → proximity null → playerValue NaN.
+    mockLoadApproachShots.mockResolvedValue([
+      shot(100, 18, 'feet', 'green'),
+      shot(100, 22, 'feet', 'green'),
+      shot(100, 40, 'yards', 'rough'), shot(100, 35, 'yards', 'rough'),
+      shot(100, 30, 'yards', 'sand'), shot(100, 45, 'yards', 'rough'),
+    ]);
+    const agg = await new ApproachMissGenerator(PLAYER_ID, '50_125ft').aggregate();
+    expect(agg!.proximity_when_hit_feet).toBeNull();
+    expect(Number.isNaN(agg!.playerValue)).toBe(true);
+  });
 });

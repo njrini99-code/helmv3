@@ -22,7 +22,11 @@ import {
   COUNTERFACTUAL_SUPPRESS_THRESHOLD,
   type CounterfactualProjection,
 } from './types';
-import { getCounterfactualConfig } from './lookup-tables';
+import {
+  getCounterfactualCeiling,
+  getCounterfactualConfig,
+  getCohortPlausibilityBound,
+} from './lookup-tables';
 
 export interface ComputeCounterfactualInput {
   metric_id: MetricId | string;
@@ -32,6 +36,14 @@ export interface ComputeCounterfactualInput {
   pga_value: number;
   /** Player's current 30-day scoring average. Null when not enough rounds. */
   player_30d_scoring_avg: number | null;
+  /**
+   * College/division COHORT baseline for this metric (golf_player_standing.level_avg).
+   * When present + finite this is the PRIMARY realistic target the gap is measured
+   * to (domain doc §349: college-primary, Tour-ceiling) — it stops overstating
+   * every elite-amateur weakness. Falls back to `pga_value` (Tour ceiling) when
+   * null, so the engine is unchanged until the cohort RPC populates `level_avg`.
+   */
+  cohort_value?: number | null;
 }
 
 /**
@@ -46,13 +58,29 @@ export function computeCounterfactual(
     return zeroProjection(input.player_30d_scoring_avg, 'unknown_metric');
   }
 
-  // Gap = how much the player would need to MOVE to reach PGA. For
-  // higher_better metrics, positive gap means player needs to gain
-  // value (pga - player). For lower_better, positive gap means player
-  // needs to lose value (player - pga).
+  // Target = the realistic baseline the gap is measured to: the college/division
+  // COHORT average when available (domain doc §349 college-primary), else the
+  // Tour value as a fallback ceiling. Until the cohort RPC populates level_avg
+  // this is exactly the old PGA-gap behavior.
+  //
+  // DC-COHORT-1: only trust the cohort when it passes per-metric plausibility
+  // bounds. The V1 cohort is the app-population average over heavily-synthetic
+  // demo data; an implausible value (e.g. sg_putting −3.94, sand-save 14.8%,
+  // proximity better than Tour) is a data artifact, not a target. Reject it and
+  // fall back to pga_value rather than gap to a fabricated baseline.
+  const cohortUsable =
+    input.cohort_value != null &&
+    Number.isFinite(input.cohort_value) &&
+    isCohortPlausible(input.metric_id, input.cohort_value, input.direction, input.pga_value);
+  const target = cohortUsable ? (input.cohort_value as number) : input.pga_value;
+
+  // Gap = how much the player would need to MOVE to reach the target. For
+  // higher_better metrics, positive gap means player needs to gain value
+  // (target - player). For lower_better, positive gap means player needs to
+  // lose value (player - target).
   const gap = input.direction === 'higher_better'
-    ? input.pga_value - input.player_value
-    : input.player_value - input.pga_value;
+    ? target - input.player_value
+    : input.player_value - target;
 
   // No gap (or player is past PGA) — no projection to show.
   if (gap <= 0) {
@@ -62,7 +90,16 @@ export function computeCounterfactual(
     };
   }
 
-  const strokes_saved_per_round = gap * cfg.stroke_impact_per_unit;
+  const raw_strokes_saved_per_round = gap * cfg.stroke_impact_per_unit;
+
+  // CF-1/CF-2: clamp each projection to a per-metric ceiling. No single-metric
+  // leak realistically saves more than ~2.5 strokes/round (tighter on the
+  // factor-10 par-scoring family and the slow-to-close pressure deltas), so a
+  // large gap × factor is treated as descriptive — capped before it ranks as a
+  // double-digit "saves N strokes/round" claim.
+  const ceiling = getCounterfactualCeiling(cfg);
+  const clamped = raw_strokes_saved_per_round > ceiling;
+  const strokes_saved_per_round = clamped ? ceiling : raw_strokes_saved_per_round;
 
   if (strokes_saved_per_round < COUNTERFACTUAL_SUPPRESS_THRESHOLD) {
     return {
@@ -83,6 +120,7 @@ export function computeCounterfactual(
       weeks_to_typical_close: cfg.coachable_timeframe_weeks,
       suppressed: true,
       suppress_reason: 'no_baseline',
+      clamped,
     };
   }
 
@@ -92,7 +130,38 @@ export function computeCounterfactual(
     strokes_saved_per_round,
     weeks_to_typical_close: cfg.coachable_timeframe_weeks,
     suppressed: false,
+    clamped,
   };
+}
+
+/**
+ * DC-COHORT-1: is a cohort `level_avg` plausible enough to be a counterfactual
+ * target? Rejects out-of-band cohort values (synthetic-data artifacts) so the
+ * gap falls back to the Tour `pga_value` instead of an impossible baseline.
+ * Returns true (cohort usable) for metrics with no declared bounds.
+ */
+function isCohortPlausible(
+  metricId: string,
+  cohortValue: number,
+  direction: Direction,
+  pgaValue: number,
+): boolean {
+  const bound = getCohortPlausibilityBound(metricId);
+  if (!bound) return true;
+
+  if (bound.min != null && cohortValue < bound.min) return false;
+  if (bound.max != null && cohortValue > bound.max) return false;
+
+  // A college cohort cannot be at/past the Tour on a skill metric — for
+  // higher_better that's cohort >= pga, for lower_better that's cohort <= pga.
+  if (bound.not_better_than_pga) {
+    const cohortBeatsPga = direction === 'higher_better'
+      ? cohortValue >= pgaValue
+      : cohortValue <= pgaValue;
+    if (cohortBeatsPga) return false;
+  }
+
+  return true;
 }
 
 function zeroProjection(

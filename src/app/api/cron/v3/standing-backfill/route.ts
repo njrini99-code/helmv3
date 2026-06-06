@@ -36,6 +36,7 @@ import { requireCronAuth } from '@/lib/cron/auth';
 import {
   STANDING_REFRESH_METRIC_IDS,
   ROUND_REFRESH_METRIC_IDS,
+  SHOT_REFRESH_METRIC_IDS,
   TEAMS_PER_CHUNK,
 } from '@/lib/coachhelm/v3/standing/refresh';
 
@@ -100,6 +101,7 @@ async function handle(): Promise<NextResponse> {
   const rowsByMetric: Record<string, number> = {};
   for (const m of STANDING_REFRESH_METRIC_IDS) rowsByMetric[m] = 0;
   for (const m of ROUND_REFRESH_METRIC_IDS) rowsByMetric[m] = 0;
+  for (const m of SHOT_REFRESH_METRIC_IDS) rowsByMetric[m] = 0;
 
   let chunksProcessed = 0;
   for (let i = 0; i < teamIds.length; i += TEAMS_PER_CHUNK) {
@@ -142,6 +144,23 @@ async function handle(): Promise<NextResponse> {
         await logServerError(
           `standing-backfill round-RPC chunk ${chunksProcessed}: ${roundResult.error.message ?? 'unknown'}`,
           { action: 'cron.v3.standing-backfill.round-rpc' },
+        );
+      }
+
+      // Companion shot-metrics RPC (approach proximity by band). Non-blocking.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const shotResult = await (supabase as any).rpc('refresh_player_standing_shot_metrics', {
+        p_team_ids: chunk,
+      });
+      if (!shotResult.error) {
+        for (const row of (shotResult.data ?? []) as Array<{ out_metric_id: string; out_rows_upserted: number }>) {
+          rowsByMetric[row.out_metric_id] =
+            (rowsByMetric[row.out_metric_id] ?? 0) + (row.out_rows_upserted ?? 0);
+        }
+      } else {
+        await logServerError(
+          `standing-backfill shot-RPC chunk ${chunksProcessed}: ${shotResult.error.message ?? 'unknown'}`,
+          { action: 'cron.v3.standing-backfill.shot-rpc' },
         );
       }
     } catch (err) {

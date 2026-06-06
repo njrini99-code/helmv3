@@ -30,16 +30,126 @@ import {
   type ComputeCounterfactualInput,
 } from '@/lib/coachhelm/v3/counterfactual/compute';
 import { loadPlayerScoringBaseline } from '@/lib/coachhelm/v3/counterfactual/baseline-loader';
+import type { CounterfactualProjection } from '@/lib/coachhelm/v3/counterfactual/types';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
+import { calcConfidence, type InsightConfidenceFactors } from '@/lib/coachhelm/v2/insights/types';
 import { logServerError } from '@/lib/server-error-logger';
 
 import type {
   ComposedContent,
   GeneratorAggregate,
   InsightCategory,
+  InsightPriority,
   MetricId,
   RunResult,
 } from './types';
+
+/** Severity ordering for the upgrade-only leverage-priority floor below. */
+const PRIORITY_RANK: Record<InsightPriority, number> = {
+  low: 0,
+  medium: 1,
+  high: 2,
+  urgent: 3,
+};
+
+/**
+ * Backfill `strokes_impact` from the counterfactual's real per-round stroke
+ * value. Generators hard-code `strokes_impact: 0`; the genuine number lives in
+ * `counterfactual.strokes_saved_per_round`. Flat surfaces (Hub signal card,
+ * coach feed, round takeaway, morning digest, EvidencePanel) rank/render off
+ * `strokes_impact`, so without this they read 0. Suppressed / absent /
+ * non-positive → keep the generator's composed value (ranks low — correct).
+ * Pure + exported for direct unit testing.
+ */
+export function backfilledStrokesImpact(
+  composedImpact: number,
+  counterfactual: CounterfactualProjection | null,
+): number {
+  if (
+    counterfactual &&
+    counterfactual.suppressed !== true &&
+    Number.isFinite(counterfactual.strokes_saved_per_round) &&
+    counterfactual.strokes_saved_per_round > 0
+  ) {
+    return counterfactual.strokes_saved_per_round;
+  }
+  return composedImpact;
+}
+
+/**
+ * SV-1: optional per-round dispersion an aggregate may expose so the base can
+ * compute a GENUINE recency/variance instead of the placeholder 1.0/0.5. Both
+ * are duck-typed (the base `GeneratorAggregate` doesn't require them) — a
+ * generator opts in by returning either field; absent → honest sample-adequacy
+ * (calcConfidence drops the placeholders). Nothing is fabricated here.
+ */
+export interface DispersionSignals {
+  /** Per-round stddev of the metric in the SAME unit as `playerValue`. */
+  stddev?: number;
+  /** A scale for the stddev → variance-confidence map (default 20). A spread
+   *  ≥ scale reads as "high variance" (0); 0 spread reads as "tight" (1). */
+  stddev_scale?: number;
+  /** ISO round dates contributing to the aggregate (any order). */
+  round_dates?: string[];
+}
+
+/**
+ * Compute genuinely-measured recency + variance from per-round dispersion an
+ * aggregate exposes (SV-1). Returns `null` unless BOTH a real per-round stddev
+ * AND ≥1 parseable round date are present — only then can the full
+ * `factors_measured: true` blend be claimed without fabricating either term.
+ * When null, the caller keeps the generator's placeholder factors flagged
+ * unmeasured, and calcConfidence surfaces honest sample-adequacy (no fabricated
+ * +0.45 floor). Pure + exported.
+ *
+ * - variance: `clamp01(1 - stddev / scale)` — mirrors the v2 approach-analytics
+ *   convention (smaller spread → higher confidence).
+ * - recency: fraction of contributing rounds inside the freshness half-window
+ *   (`windowDays / 2`), the same "fully-recent if all within window/2" contract
+ *   the InsightConfidenceFactors.recency doc describes.
+ */
+export function computeMeasuredFactors(
+  signals: DispersionSignals | undefined,
+  windowDays: number,
+  now: number = Date.now(),
+): { recency: number; variance: number; factors_measured: true } | null {
+  if (!signals) return null;
+  if (!Number.isFinite(signals.stddev)) return null;
+  const dates = (signals.round_dates ?? []).filter((d) => Number.isFinite(Date.parse(d)));
+  if (dates.length === 0) return null;
+
+  const clamp01 = (n: number): number =>
+    !Number.isFinite(n) ? 0 : n < 0 ? 0 : n > 1 ? 1 : n;
+
+  // Variance: smaller spread → higher confidence (default 20-unit scale).
+  const scale = signals.stddev_scale && signals.stddev_scale > 0 ? signals.stddev_scale : 20;
+  const variance = clamp01(1 - (signals.stddev as number) / scale);
+
+  // Recency: share of rounds within the freshness half-window.
+  const halfWindowMs = (Math.max(1, windowDays) / 2) * 86400_000;
+  const fresh = dates.filter((d) => now - Date.parse(d) <= halfWindowMs).length;
+  const recency = clamp01(fresh / dates.length);
+
+  return { recency, variance, factors_measured: true };
+}
+
+/**
+ * Upgrade-only priority floor from counterfactual leverage: ≥1.0 strokes/rd →
+ * high, ≥0.5 → medium. Keeps a high-leverage but "descriptive" (priority:'low')
+ * insight from being buried below the Alert Center's ['urgent','high'] filter
+ * and the practice-plan top-3. Never downgrades. Pure + exported for testing.
+ */
+export function leveragePriorityFloor(
+  current: InsightPriority | undefined,
+  counterfactual: CounterfactualProjection | null,
+): InsightPriority | undefined {
+  if (!counterfactual || counterfactual.suppressed === true) return current;
+  const s = counterfactual.strokes_saved_per_round;
+  if (!Number.isFinite(s)) return current;
+  const floor: InsightPriority | null = s >= 1.0 ? 'high' : s >= 0.5 ? 'medium' : null;
+  if (floor && PRIORITY_RANK[floor] > PRIORITY_RANK[current ?? 'low']) return floor;
+  return current;
+}
 
 export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggregate> {
   // Generator identity — concrete classes override
@@ -107,10 +217,39 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
 
       const composed = this.composeContent(agg);
 
+      // Centralize the canonical confidence calc (design contract Rule 1).
+      // Generators stamp `confidence: 0` + `confidence_factors`; compute the
+      // real confidence here so EVERY v3 row ships a usable value. The flat
+      // read-path ranker is `|strokes_impact| × confidence`, so a hard-coded 0
+      // confidence would zero out the score regardless of strokes_impact.
+      //
+      // SV-1: recency/variance are placeholders unless the aggregate exposes
+      // per-round dispersion. When it does, replace them with genuinely-measured
+      // factors (factors_measured=true → blended). When it doesn't, flag them
+      // unmeasured (factors_measured=false) so calcConfidence surfaces honest
+      // sample-adequacy instead of the fabricated +0.45 floor. Nothing invented.
+      const measured = computeMeasuredFactors(
+        agg as DispersionSignals,
+        composed.evidence.window_days,
+      );
+      const confidenceFactors: InsightConfidenceFactors = measured
+        ? { ...composed.evidence.confidence_factors, ...measured }
+        : { ...composed.evidence.confidence_factors, factors_measured: false };
+      let evidence = {
+        ...composed.evidence,
+        confidence_factors: confidenceFactors,
+        confidence: calcConfidence({ confidence_factors: confidenceFactors }),
+      };
+
+      // A generator may pin priority:'low' for a descriptive standing row, but
+      // a real counterfactual leak must be eligible for the Alert Center
+      // (['urgent','high']) + the practice-plan top-3. We floor priority from
+      // the counterfactual magnitude below — upgrade-only, never a downgrade.
+      let effectivePriority: InsightPriority | undefined = composed.priority;
+
       // Counterfactual + standing injection — only when we actually have
       // a standing row (requiresStanding=true generators). Diagnostic
       // generators (requiresStanding=false) ship without these.
-      let evidence = composed.evidence;
       if (standing) {
         let counterfactual: ReturnType<typeof computeCounterfactual> | null = null;
         const cfg = METRIC_RENDER_CONFIG[this.metricId];
@@ -121,24 +260,39 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
             direction: cfg.direction,
             player_value: agg.playerValue,
             pga_value: standing.pga_value,
+            // College/division cohort target (Tour stays the ceiling fallback).
+            // Null until the cohort RPC populates level_avg → unchanged behavior.
+            cohort_value: standing.level_avg,
             player_30d_scoring_avg: baseline,
           };
           counterfactual = computeCounterfactual(cfInput);
         }
 
+        // Backfill strokes_impact + floor priority from the counterfactual's
+        // real per-round leverage (see the pure helpers above). The themes path
+        // reads the counterfactual directly and is unaffected.
+        const cfStrokes = backfilledStrokesImpact(evidence.strokes_impact, counterfactual);
+        effectivePriority = leveragePriorityFloor(effectivePriority, counterfactual);
+
         evidence = {
-          ...composed.evidence,
+          ...evidence,
           standing: {
             metric_id: standing.metric_id,
             player_value: standing.player_value,
             team_avg: standing.team_avg,
             team_n: standing.team_n,
             team_pct: standing.team_pct,
+            // College/division cohort baseline — null until the cohort RPC lands;
+            // carried so the StandingBar can render college + Tour markers.
+            level_avg: standing.level_avg,
+            level_n: standing.level_n,
+            level_pct: standing.level_pct,
             pga_value: standing.pga_value,
             pga_delta: standing.pga_delta,
             computed_at: standing.computed_at,
           },
           counterfactual,
+          strokes_impact: cfStrokes,
         } as typeof composed.evidence;
       }
 
@@ -150,7 +304,7 @@ export abstract class BaseGenerator<A extends GeneratorAggregate = GeneratorAggr
         signature: `${V3_SIGNATURE_PREFIX}${composed.signature}`,
         title: composed.title,
         content: composed.content,
-        priority: composed.priority,
+        priority: effectivePriority,
         evidence: evidence as typeof composed.evidence,
       });
 

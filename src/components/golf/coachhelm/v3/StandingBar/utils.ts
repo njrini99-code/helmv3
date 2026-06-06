@@ -24,6 +24,25 @@ export function toScalePct(value: number, scale: { min: number; max: number }): 
   return Math.max(0, Math.min(100, pct));
 }
 
+/**
+ * CF-3: the reference ("P") marker is mislabeled "PGA" for strokes-gained
+ * metrics. SG is a zero-sum, field-relative quantity — the "0" reference is
+ * the FIELD AVERAGE (Tour-relative baseline), not a PGA Tour player's score.
+ * Labeling it "PGA 0.00" implies the Tour shoots flat-zero, overstating every
+ * elite-amateur weakness. For sg_* metrics the reference reads "Field Avg";
+ * for every other metric the PGA Tour value is a genuine Tour standard and
+ * keeps the "PGA" label.
+ *
+ * `short` is the compact marker label ("Field Avg" / "PGA"); `long` is the
+ * a11y phrase ("Field average" / "PGA Tour").
+ */
+export function pgaReferenceLabel(metric_id: string): { short: string; long: string } {
+  if (/^sg_/.test(metric_id)) {
+    return { short: 'Field Avg', long: 'Field average' };
+  }
+  return { short: 'PGA', long: 'PGA Tour' };
+}
+
 /** Display formatter per unit. */
 export function formatValue(value: number, unit: Unit): string {
   switch (unit) {
@@ -73,9 +92,22 @@ export function deltaVsTeam(
  *   <25 → "Bottom X% on your team"
  *
  * Returns empty string for cold-start (no team_pct).
+ *
+ * EC-2: `team_n` is an OPTIONAL tiny-N guard. `team_pct` is a PERCENT_RANK()
+ * that degenerates to 0/100 for the only/worst row on a tiny roster — which
+ * produced "Bottom 1% on your team" for a team of one. When `team_n` is passed
+ * and below the team-marker floor (TEAM_MARKER_MIN_N), we suppress the caption
+ * entirely. Omitting `team_n` keeps the legacy permissive behavior so callers
+ * that already gate upstream (e.g. via shouldShowTeamMarker) are unaffected.
  */
-export function teamCohortText(team_pct: number | null | undefined): string {
+export function teamCohortText(
+  team_pct: number | null | undefined,
+  team_n?: number | null,
+): string {
   if (team_pct === null || team_pct === undefined || !Number.isFinite(team_pct)) {
+    return '';
+  }
+  if (team_n !== undefined && team_n !== null && team_n < TEAM_MARKER_MIN_N) {
     return '';
   }
   const pct = Math.round(team_pct);
@@ -131,7 +163,9 @@ export function deriveAriaLabel(props: StandingBarProps): string {
   if (props.ariaLabel) return props.ariaLabel;
   const you = formatValue(props.player_value, props.unit);
   const pga = formatValue(props.pga_value, props.unit);
-  const parts = [`${props.metric_label}. You: ${you}.`, `PGA Tour: ${pga}.`];
+  // CF-3: SG metrics anchor to the FIELD AVERAGE (0), not a PGA Tour score.
+  const refLabel = pgaReferenceLabel(props.metric_id).long;
+  const parts = [`${props.metric_label}. You: ${you}.`, `${refLabel}: ${pga}.`];
   if (props.team_avg !== null && (props.team_n ?? 0) >= TEAM_MARKER_MIN_N) {
     parts.push(`Team average: ${formatValue(props.team_avg, props.unit)}.`);
   }

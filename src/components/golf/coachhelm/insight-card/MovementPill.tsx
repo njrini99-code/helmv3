@@ -21,6 +21,22 @@ export interface MovementPillProps {
   className?: string;
 }
 
+/**
+ * ui-tone-3: format a movement magnitude given as a signed fraction
+ * (`percent_change`, e.g. 0.12 = +12%, 3.99 = +399%). Below 100% we keep the
+ * familiar "12%" wording; at/above 100% the percent reads as comical noise
+ * ("↑399%"), so we switch to a multiplier ("4.0x") which is both honest and
+ * compact. Returns null when there's no measurable movement.
+ */
+export function formatMovementMagnitude(fraction: number): string | null {
+  const pct = Math.abs(Number(fraction) || 0);
+  if (pct <= 0) return null;
+  // At/above a full doubling, percent labels stop being readable — show the
+  // multiple of the prior value instead (1.0 fraction = 2.0x the old value).
+  if (pct >= 1) return `${(pct + 1).toFixed(1)}x`;
+  return `${Math.round(pct * 100)}%`;
+}
+
 export function MovementPill({ insight, className }: MovementPillProps) {
   const prefersReducedMotion = useReducedMotion();
   const movement = (insight.metadata?.movement ?? null) as InsightMovement | null;
@@ -31,8 +47,7 @@ export function MovementPill({ insight, className }: MovementPillProps) {
     if (!movement) return null;
     const improvement = isImprovement(movement.direction, insight.evidence.metric);
     const arrow = movement.direction === 'up' ? '↑' : '↓';
-    const pct = Math.abs(Number(movement.percent_change ?? 0));
-    const pctLabel = pct > 0 ? `${Math.round(pct * 100)}%` : null;
+    const pctLabel = formatMovementMagnitude(Number(movement.percent_change ?? 0));
     const delta = Math.abs(Number(movement.to ?? 0) - Number(movement.from ?? 0));
     return { improvement, arrow, pctLabel, delta };
   }, [movement, insight.evidence.metric]);

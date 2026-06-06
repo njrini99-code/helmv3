@@ -11,6 +11,29 @@
 
 import type { CompositeRule, CompositeMatch, CompositeContent, EvidenceInsight } from '../types';
 
+/**
+ * Absolute-skill floor (lag3putt-2 / PDC-1).
+ *
+ * `team_pct = PERCENT_RANK()` is 0 for the only/worst row on a tiny team,
+ * so a 94.8%-from-3-5ft putter on a team of two gets flagged "weak" on
+ * team rank alone. Putt make-% metrics are `higher_better`, so a player
+ * is only genuinely weak when their make-% is also below the PGA baseline.
+ * Require `player_value < pga_value` (with a small tolerance) so a putter
+ * who already beats Tour isn't dragged into a 3-putt-cascade card by a
+ * degenerate team percentile. When `pga_value` is missing (legacy/0), fall
+ * back to the team-rank gate alone — no regression vs prior behavior.
+ */
+function belowPgaFloor(i: EvidenceInsight): boolean {
+  const standing = i.evidence.standing;
+  if (!standing) return true; // no baseline to compare → defer to team gate
+  const pga = standing.pga_value;
+  if (typeof pga !== 'number' || pga <= 0) return true; // unset baseline
+  const player = standing.player_value;
+  if (typeof player !== 'number') return true;
+  // higher_better: weak means make-% below Tour (1 pt tolerance for noise).
+  return player < pga - 1;
+}
+
 function isWeakLagPutt(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'putt_distance') return false;
   // Long buckets: anything 15+ ft (the v3 generator ships 15_25ft/25_plus_ft;
@@ -23,14 +46,14 @@ function isWeakLagPutt(i: EvidenceInsight): boolean {
     sig.includes('20_plus_ft');
   if (!isLong) return false;
   const teamPct = i.evidence.standing?.team_pct;
-  return typeof teamPct === 'number' && teamPct < 40;
+  return typeof teamPct === 'number' && teamPct < 40 && belowPgaFloor(i);
 }
 
 function isWeakShortPutt(i: EvidenceInsight): boolean {
   if (i.insight_type !== 'putt_distance') return false;
   if (!i.signature.includes('3_5ft')) return false;
   const teamPct = i.evidence.standing?.team_pct;
-  return typeof teamPct === 'number' && teamPct < 50;
+  return typeof teamPct === 'number' && teamPct < 50 && belowPgaFloor(i);
 }
 
 const rule: CompositeRule = {

@@ -9,6 +9,14 @@
  * the putt-bias, amplifying the cost. Research doc §5: sand shots are
  * predictable when the green-side is right; when miss-side and putt-
  * bias overlap, the player is "short-siding themselves" repeatedly.
+ *
+ * DORMANT (BLOCKED on putt-bias revival): this rule needs a `putt_bias`
+ * insight, but gen:putt-bias never emits today (break-direction cache
+ * cols are 100% NULL — audit §5). `detect()` already no-ops correctly
+ * when no putt_bias insight is present (the isPuttBias guard below), so
+ * the rule fails safe rather than silently mis-firing. It will revive
+ * automatically once putt-bias produces rows; no logic change needed
+ * here. Tracked as a cross-file dependency on the putt-bias generator.
  */
 
 import type { CompositeRule, EvidenceInsight, CompositeMatch, CompositeContent } from '../types';
@@ -51,11 +59,12 @@ const rule: CompositeRule = {
     return {
       title: `Bunker + ${dir}-bias putt pattern is compounding`,
       content:
-        `You're at ${sandPct}% sand save AND consistently missing ${dir} on ` +
-        `break putts. When bunker shots leak ${dir}-of-pin and your putts ` +
-        `tend to miss ${dir}, you're effectively short-siding yourself ` +
-        `twice in a row. Worth a session focused on splash-out distance ` +
-        `control so the bunker shot stops setting up the bias.`,
+        `Two short-game leaks are showing up together: ${sandPct}% sand save ` +
+        `AND a tendency to miss ${dir} on break putts. These are separate ` +
+        `skills — one is splash-out distance control, the other is green-` +
+        `reading — but they're stacking on the same holes and compounding the ` +
+        `cost. Worth a session on bunker distance control plus some ${dir}-` +
+        `break read work to stop the two from piling up.`,
       signature: `bunker_${dir}_bias_amp`,
       evidence: {
         metric: 'scrambling_pct_sand',

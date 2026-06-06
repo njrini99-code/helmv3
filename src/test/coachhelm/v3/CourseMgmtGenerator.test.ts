@@ -3,13 +3,22 @@ import { CourseMgmtGenerator } from '@/lib/coachhelm/v3/generators/course-mgmt';
 
 const PLAYER_ID = 'p-1';
 
-function makeAgg(variant: 'penalty' | 'big_number', value: number, rounds = 20) {
+function makeAgg(
+  variant: 'penalty' | 'big_number',
+  value: number,
+  rounds = 20,
+  anchor: { anchor_value?: number | null; anchor_is_cohort?: boolean } = {},
+) {
   return {
     sampleN: rounds,
     playerValue: value,
     metric_value: value,
     variant,
     rounds_played: rounds,
+    // cm-1: cohort/PGA anchor the prose + priority key off. Default null →
+    // composeContent falls back to the raw PGA anchors (pre-cm-1 behavior).
+    anchor_value: anchor.anchor_value ?? null,
+    anchor_is_cohort: anchor.anchor_is_cohort ?? false,
   };
 }
 
@@ -48,5 +57,50 @@ describe('CourseMgmtGenerator', () => {
     expect(c.signature).toBe('course_management:big_number');
     expect(c.evidence.unit).toBe('percent');
     expect(c.evidence.comparison_value).toBe(2);
+  });
+
+  // cm-1: priority + prose anchor to the cohort the counterfactual uses, not
+  // the raw PGA value. An at/below-cohort player must NOT get a HIGH "3× Tour"
+  // card whose strokes_impact is 0.
+  describe('cm-1 cohort anchoring', () => {
+    it('penalty: at/below cohort is LOW (not a HIGH 3× Tour card)', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      // 0.9/rd is 3× the PGA 0.3, but the player's cohort also averages 0.9 →
+      // no gap to close → descriptive (low), matching the zero counterfactual.
+      const c = g.composeContent(makeAgg('penalty', 0.9, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
+      expect(c.priority).toBe('low');
+      expect(c.content).toContain('division cohort averages ~0.9');
+      expect(c.content).toContain('PGA Tour ~0.3');
+    });
+
+    it('penalty: well above cohort escalates to HIGH', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      const c = g.composeContent(makeAgg('penalty', 1.4, 20, { anchor_value: 0.9, anchor_is_cohort: true }));
+      expect(c.priority).toBe('high'); // 1.4 - 0.9 = 0.5 > 0.3 highMargin
+    });
+
+    it('penalty: PGA fallback (no cohort) preserves the pre-cm-1 thresholds', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'penalty');
+      // anchor_value null → falls back to PGA default 0.3: >0.6 high, >0.3 medium.
+      expect(g.composeContent(makeAgg('penalty', 0.7, 20)).priority).toBe('high');
+      expect(g.composeContent(makeAgg('penalty', 0.5, 20)).priority).toBe('medium');
+      expect(g.composeContent(makeAgg('penalty', 0.2, 20)).priority).toBe('low');
+    });
+
+    it('big_number: at/below cohort is LOW; above escalates', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+      const atCohort = g.composeContent(makeAgg('big_number', 6, 20, { anchor_value: 6, anchor_is_cohort: true }));
+      expect(atCohort.priority).toBe('low');
+      expect(atCohort.content).toContain('division cohort averages ~6.0%');
+      const above = g.composeContent(makeAgg('big_number', 9, 20, { anchor_value: 6, anchor_is_cohort: true }));
+      expect(above.priority).toBe('high'); // 9 - 6 = 3 > 2 highMargin
+    });
+
+    it('big_number: PGA fallback preserves pre-cm-1 thresholds (4% high / 2% medium)', () => {
+      const g = new CourseMgmtGenerator(PLAYER_ID, 'big_number');
+      expect(g.composeContent(makeAgg('big_number', 5, 20)).priority).toBe('high');
+      expect(g.composeContent(makeAgg('big_number', 3, 20)).priority).toBe('medium');
+      expect(g.composeContent(makeAgg('big_number', 1.5, 20)).priority).toBe('low');
+    });
   });
 });

@@ -25,6 +25,7 @@ import {
   teamCohortText,
   shouldShowTeamMarker,
   deriveAriaLabel,
+  pgaReferenceLabel,
 } from '@/components/golf/coachhelm/v3/StandingBar';
 
 // ---------------------------------------------------------------------------
@@ -108,6 +109,37 @@ describe('teamCohortText', () => {
   it('says "Bottom X%" for low percentiles', () => {
     expect(teamCohortText(18)).toBe('Bottom 18% on your team');
   });
+
+  // EC-2: a percentile is noise on a tiny roster — suppress when team_n < 5.
+  it('suppresses the caption when team_n is below the floor (EC-2)', () => {
+    // "Bottom 1% on a team of one" is exactly the bug being closed.
+    expect(teamCohortText(1, 1)).toBe('');
+    expect(teamCohortText(0, 2)).toBe('');
+    expect(teamCohortText(100, 4)).toBe('');
+  });
+
+  it('still renders the caption once team_n reaches the floor', () => {
+    expect(teamCohortText(18, 5)).toBe('Bottom 18% on your team');
+    expect(teamCohortText(95, 8)).toBe('Top 5% on your team');
+  });
+
+  it('omitting team_n keeps the legacy permissive behavior', () => {
+    expect(teamCohortText(18)).toBe('Bottom 18% on your team');
+  });
+});
+
+describe('pgaReferenceLabel (CF-3)', () => {
+  it('labels SG metrics "Field Avg" (the SG "0" is the field average)', () => {
+    expect(pgaReferenceLabel('sg_total')).toEqual({ short: 'Field Avg', long: 'Field average' });
+    expect(pgaReferenceLabel('sg_putting').short).toBe('Field Avg');
+    expect(pgaReferenceLabel('sg_approach').long).toBe('Field average');
+  });
+
+  it('labels non-SG metrics "PGA" (a genuine Tour standard)', () => {
+    expect(pgaReferenceLabel('putts_made_10_15ft_pct')).toEqual({ short: 'PGA', long: 'PGA Tour' });
+    expect(pgaReferenceLabel('gir_pct').short).toBe('PGA');
+    expect(pgaReferenceLabel('penalty_rate_per_round').long).toBe('PGA Tour');
+  });
 });
 
 describe('shouldShowTeamMarker', () => {
@@ -154,6 +186,20 @@ describe('deriveAriaLabel', () => {
       scale: { min: -1, max: 1 }, size: 'card',
     };
     expect(deriveAriaLabel(props)).not.toContain('Team average');
+  });
+
+  // CF-3: the SG reference is the field average, so the a11y phrase reads
+  // "Field average:" not "PGA Tour:".
+  it('uses "Field average" in the a11y label for SG metrics (CF-3)', () => {
+    const props: StandingBarProps = {
+      metric_id: 'sg_total', metric_label: 'SG: Total',
+      player_value: 0.5, team_avg: null, pga_value: 0,
+      direction: 'higher_better', unit: 'strokes',
+      scale: { min: -1, max: 1 }, size: 'card',
+    };
+    const label = deriveAriaLabel(props);
+    expect(label).toContain('Field average:');
+    expect(label).not.toContain('PGA Tour:');
   });
 });
 
@@ -205,6 +251,38 @@ describe('StandingBar render states — card', () => {
   it('empty: shows empty hint', () => {
     render(<StandingBar {...HAPPY} state="empty" />);
     expect(screen.getByText(/Log 5 rounds/)).toBeTruthy();
+  });
+
+  // CF-3: SG metrics anchor to the field average (0), not a PGA Tour score.
+  it('relabels the reference as "Field Avg" for SG metrics (CF-3)', () => {
+    render(
+      <StandingBar
+        {...HAPPY}
+        metric_id="sg_putting"
+        metric_label="SG: Putting"
+        player_value={0.4}
+        team_avg={0.1}
+        pga_value={0}
+        unit="strokes"
+        scale={{ min: -1.5, max: 1.5 }}
+      />,
+    );
+    expect(screen.getByText(/Field Avg 0\.00/)).toBeTruthy();
+    expect(screen.queryByText(/PGA 0\.00/)).toBeNull();
+  });
+
+  it('keeps the "PGA" reference label for non-SG metrics (CF-3)', () => {
+    render(<StandingBar {...HAPPY} />);
+    expect(screen.getByText(/PGA 36%/)).toBeTruthy();
+    expect(screen.queryByText(/Field Avg/)).toBeNull();
+  });
+
+  // EC-2: cohort caption must not render when the team marker is hidden —
+  // even if a team_avg slipped through on a tiny roster.
+  it('suppresses the cohort caption on a tiny roster (EC-2)', () => {
+    render(<StandingBar {...HAPPY} team_n={2} team_avg={41} team_pct={1} />);
+    expect(screen.queryByText('Below team average')).toBeNull();
+    expect(screen.queryByText(/Bottom .* on your team/)).toBeNull();
   });
 });
 

@@ -863,7 +863,12 @@ export function getShotTypeFromState(
   if (state.currentShot === 1 && currentHole?.par === 3) return 'approach';
   if (state.currentShot === 1 && currentHole?.par !== 3) return 'tee';
   const distanceInYards = state.distanceUnit === 'feet' ? state.distanceToHole / 3 : state.distanceToHole;
-  if (distanceInYards <= 30) return 'around_green';
+  // Around-green vs approach split at 50 yd to the hole — matches
+  // AROUND_GREEN_THRESHOLD_YARDS in the stats calculator and the v3 approach
+  // bucketer (both treat <50 yd as around-green). Previously split at 30 yd,
+  // which orphaned 31-49 yd shots: stored as 'approach' yet excluded from every
+  // approach distance bucket (≥50) AND from ATG efficiency.
+  if (distanceInYards < 50) return 'around_green';
   return 'approach';
 }
 

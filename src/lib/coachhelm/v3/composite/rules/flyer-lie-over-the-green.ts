@@ -12,12 +12,30 @@
  * the player's own fairway-lie proximity at the same distance band.
  *
  * Uses ctx.flyer_lie_shots.
+ *
+ * DISABLED (BLOCKED on rough-severity capture): the supplemental loader
+ * filters `lie_before = 'light_rough'`, but the golf_shots CHECK
+ * constraint only permits `tee|fairway|rough|sand|green|other|penalty` —
+ * so `flyer_lie_shots` is ALWAYS empty and this rule has never fired. The
+ * fix is not "filter on 'rough'": the plain `'rough'` bucket conflates
+ * flyer-prone light rough with deep rough (where the ball comes out dead,
+ * the opposite failure mode), so firing on it would mislabel the leak.
+ * Until the schema captures rough severity (light vs heavy/deep), `detect`
+ * returns null unconditionally rather than leaving a rule that silently
+ * depends on data that can never exist. See audit §5 (flyer-lie-over-the-
+ * green) + the loader cross-file note.
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
 
 const MIN_ATTEMPTS = 10;
 const POOR_PROXIMITY_FT = 35;
+
+/**
+ * Hard kill-switch — flip to `true` only once the schema captures rough
+ * severity and the loader is updated to select a flyer-prone subset.
+ */
+const RULE_ENABLED = false;
 
 const rule: CompositeRule = {
   id: 'flyer_lie_over_the_green',
@@ -26,6 +44,8 @@ const rule: CompositeRule = {
   category: 'approach',
 
   detect(_insights, ctx) {
+    // Explicitly dead until rough-severity is captured — see file header.
+    if (!RULE_ENABLED) return null;
     if (!ctx || ctx.flyer_lie_shots.length === 0) return null;
     const shots = ctx.flyer_lie_shots;
     if (shots.length < MIN_ATTEMPTS) return null;

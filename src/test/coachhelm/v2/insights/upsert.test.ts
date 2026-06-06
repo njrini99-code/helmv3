@@ -306,6 +306,52 @@ describe('upsertInsight', () => {
     expect(payload.lifecycle_state).toBeUndefined();
   });
 
+  // DI-1 (2026-06-06): the dedup lookup must NOT filter on created_at. The
+  // global UNIQUE NULLS NOT DISTINCT constraint that insertNew upserts against
+  // has no time window, so a windowed lookup would miss rows older than 30 days
+  // and (with ignoreDuplicates:true) silently drop their recomputed evidence —
+  // freezing the lifecycle. The lookup is now scoped only by the unique key.
+  it('DI-1: dedup lookup does not filter by created_at', async () => {
+    const { client, calls } = createFakeSupabase({
+      selectResult: { data: [], error: null },
+    });
+    await upsertInsight(client, baseInput());
+
+    // The dedup lookup is the golf_coach_insights SELECT keyed on signature
+    // (ownership resolution SELECTs other tables first).
+    const lookupCall = calls.find(
+      (c) => c.op === 'select' && c.table === 'golf_coach_insights',
+    );
+    expect(lookupCall).toBeDefined();
+    expect(lookupCall!.filters?.signature).toBe('player-1:putt_make_rate:6_10ft');
+    // No created_at lower-bound filter — would have been recorded as
+    // `created_at__gte` by the fake builder.
+    expect(lookupCall!.filters).not.toHaveProperty('created_at__gte');
+  });
+
+  it('DI-1: an existing row older than the old 30d window still routes to UPDATE (no insert, evidence refreshed)', async () => {
+    // The fake builder no longer narrows by created_at, so a row that would
+    // have fallen outside the retired 30-day window is still found and updated.
+    const stale = {
+      id: 'stale-1',
+      evidence: baseEvidence({ your_value: 0.38 }),
+      metadata: { movement_count: 0 },
+      lifecycle_state: 'detected' as const,
+    };
+    const { client, calls } = createFakeSupabase({
+      selectResult: { data: [stale], error: null },
+    });
+    // Big move so it lands in the movement branch and refreshes evidence.
+    await upsertInsight(client, baseInput({ evidence: baseEvidence({ your_value: 0.55 }) }));
+
+    expect(calls.some((c) => c.op === 'insert')).toBe(false);
+    const updateCall = calls.find((c) => c.op === 'update');
+    expect(updateCall).toBeDefined();
+    expect(updateCall!.filters?.id).toBe('stale-1');
+    const payload = updateCall!.payload as { evidence: InsightEvidence };
+    expect(payload.evidence.your_value).toBeCloseTo(0.55);
+  });
+
   it('3rd movement promotes detected → matured', async () => {
     // Simulate: existing row already had 2 prior movements tracked.
     const existing = {

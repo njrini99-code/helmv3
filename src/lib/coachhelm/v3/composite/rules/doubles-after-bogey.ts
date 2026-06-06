@@ -6,14 +6,27 @@
  * Compounding-mistake pattern — the bogey itself isn't the leak,
  * the over-correction on the next hole is.
  *
- * Threshold: ≥10 bogey opportunities AND ≥20% compound rate.
+ * Threshold: ≥10 bogey opportunities, spread across ≥2 rounds AND from
+ * ≥3 rounds in the window, AND ≥20% compound rate.
  * Uses ctx.hole_scores.
+ *
+ * The round guards (DAB-1/DAB-2) stop a single blow-up round from
+ * minting an "urgent" 3.5-strokes/round card: one 15-bogey collapse can
+ * clear the 10-opportunity floor on its own, and dividing its compounded
+ * count by `rounds = 1` inflates the per-round magnitude that ranks the
+ * card #1. Requiring ≥3 rounds (matches closing-hole-fatigue / front-9-
+ * starter) AND bogeys in ≥2 distinct rounds makes this a genuine pattern.
  */
 
 import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
 
 const MIN_OPPORTUNITIES = 10;
 const MIN_RATE = 0.20;
+// Sibling ctx rules (closing-hole-fatigue, front-9-starter) gate on ≥3 rounds.
+const MIN_ROUNDS = 3;
+// The bogey opportunities themselves must span ≥2 rounds, so a single
+// outlier round can't produce the whole signal.
+const MIN_ROUNDS_WITH_BOGEY = 2;
 
 const rule: CompositeRule = {
   id: 'doubles_after_bogey',
@@ -30,20 +43,28 @@ const rule: CompositeRule = {
       if (!byRound.has(h.round_id)) byRound.set(h.round_id, new Map());
       byRound.get(h.round_id)!.set(h.hole_number, { par: h.par, score: h.score });
     }
+    // DAB-1: need enough rounds for a per-round rate to mean anything.
+    if (byRound.size < MIN_ROUNDS) return null;
 
     let opportunities = 0;
     let compounded = 0;
-    for (const holes of byRound.values()) {
+    const roundsWithBogey = new Set<string>();
+    for (const [roundId, holes] of byRound.entries()) {
       for (const [holeNum, h] of holes.entries()) {
         const next = holes.get(holeNum + 1);
         if (!next) continue;
         const isBogey = h.score >= h.par + 1;
         if (!isBogey) continue;
         opportunities += 1;
+        roundsWithBogey.add(roundId);
         if (next.score >= next.par + 2) compounded += 1;
       }
     }
     if (opportunities < MIN_OPPORTUNITIES) return null;
+    // DAB-2: the bogey opportunities must span ≥2 rounds — otherwise one
+    // blow-up round can clear the floor alone and (÷ rounds) inflate the
+    // per-round magnitude into a #1-ranked "urgent" card.
+    if (roundsWithBogey.size < MIN_ROUNDS_WITH_BOGEY) return null;
     const rate = compounded / opportunities;
     if (rate < MIN_RATE) return null;
 
@@ -53,6 +74,9 @@ const rule: CompositeRule = {
         opportunities,
         compounded,
         rate,
+        // Round count in the window — used to express strokes_impact PER ROUND
+        // so it's comparable with the other composites' per-round magnitudes.
+        rounds: byRound.size,
       },
     };
   },
@@ -61,7 +85,12 @@ const rule: CompositeRule = {
     const opps = Number(match.signals.opportunities ?? 0);
     const compounded = Number(match.signals.compounded ?? 0);
     const rate = Number(match.signals.rate ?? 0);
+    const rounds = Math.max(1, Number(match.signals.rounds ?? 1));
     const ratePct = Math.round(rate * 100);
+    // ~0.5 wasted stroke per compound mistake, expressed PER ROUND so it ranks
+    // on the same scale as the other (per-round) composite magnitudes — the
+    // raw 90-day count would otherwise systematically out-rank them.
+    const strokesPerRound = (compounded * 0.5) / rounds;
     return {
       title: 'Bogeys turning into doubles too often',
       content:
@@ -84,7 +113,7 @@ const rule: CompositeRule = {
         window_days: 90,
         window_start: '',
         window_end: '',
-        strokes_impact: compounded * 0.5, // each compound is ~half-stroke wasted vs healthy recovery
+        strokes_impact: strokesPerRound, // per-round (see strokesPerRound above)
         strokes_impact_method: 'peer_delta',
         confidence: opps >= 20 ? 0.8 : 0.6,
         confidence_factors: {

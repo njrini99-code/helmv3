@@ -14,9 +14,14 @@
  *   putts_made_3_5ft_pct
  *   putts_made_5_10ft_pct
  *   putts_made_10_15ft_pct
+ *   putts_made_15_25ft_pct   (lag — maps to cache 15_20ft, ~5ft edge approx)
+ *   putts_made_25_plus_ft_pct (lag — maps to cache 20_plus_ft)
  *
- * Other distance buckets (15-25, 25+) currently have no v3 standing
- * data (cache bucket misalignment) and so this generator skips them.
+ * NOTE: the cache buckets the lag metrics read are 15-20 / 20+ ft, while the v3
+ * metric edges are 15-25 / 25+. The ~5ft offset is an accepted V1 approximation
+ * (the standing RPC maps the same columns) — refine to exact 15-25/25+ via
+ * shot-level putt_distance_feet aggregation when warranted. Lag is the domain's
+ * #1 3-putt driver, so an approximate standing beats no insight.
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -30,24 +35,48 @@ import type {
 } from '@/lib/coachhelm/v3/engine/types';
 import { METRIC_RENDER_CONFIG } from '@/lib/coachhelm/v3/standing/metric-config';
 
-type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft';
+type PuttBucketKey = '3_5ft' | '5_10ft' | '10_15ft' | '15_25ft' | '25_plus_ft';
 
 const BUCKET_TO_METRIC_ID: Record<PuttBucketKey, MetricId> = {
-  '3_5ft':  'putts_made_3_5ft_pct',
-  '5_10ft': 'putts_made_5_10ft_pct',
-  '10_15ft':'putts_made_10_15ft_pct',
+  '3_5ft':    'putts_made_3_5ft_pct',
+  '5_10ft':   'putts_made_5_10ft_pct',
+  '10_15ft':  'putts_made_10_15ft_pct',
+  '15_25ft':  'putts_made_15_25ft_pct',
+  '25_plus_ft':'putts_made_25_plus_ft_pct',
 };
 
+// Lag buckets map to the cache's 15_20 / 20_plus columns (~5ft edge approx; see
+// header). The standing RPC uses the SAME mapping so generator + standing agree.
 const BUCKET_TO_CACHE_COLUMN: Record<PuttBucketKey, string> = {
-  '3_5ft':  'putt_make_pct_3_5ft',
-  '5_10ft': 'putt_make_pct_5_10ft',
-  '10_15ft':'putt_make_pct_10_15ft',
+  '3_5ft':    'putt_make_pct_3_5ft',
+  '5_10ft':   'putt_make_pct_5_10ft',
+  '10_15ft':  'putt_make_pct_10_15ft',
+  '15_25ft':  'putt_make_pct_15_20ft',
+  '25_plus_ft':'putt_make_pct_20_plus_ft',
 };
 
 const BUCKET_LABEL: Record<PuttBucketKey, string> = {
-  '3_5ft':  '3-5 ft',
-  '5_10ft': '5-10 ft',
-  '10_15ft':'10-15 ft',
+  '3_5ft':    '3-5 ft',
+  '5_10ft':   '5-10 ft',
+  '10_15ft':  '10-15 ft',
+  '15_25ft':  '15-25 ft',
+  '25_plus_ft':'25+ ft',
+};
+
+/**
+ * PGA Tour make % by distance (gen-putt-distance-1). Mirrors
+ * `golf_pga_standards.pga_tour_value` (2024 season) for these metric_ids — the
+ * same value the StandingBar renders from the DB. The old `comparison_value: 0`
+ * made the WhyPopover read "95% vs 0% PGA" (an inverted, nonsensical anchor);
+ * this is the real Tour reference so the flat comparison line agrees with the
+ * standing bar. Source: golf_pga_standards (verified live 2026-06-06).
+ */
+const PGA_MAKE_PCT_BY_BUCKET: Record<PuttBucketKey, number> = {
+  '3_5ft':     90.5,
+  '5_10ft':    62.2,
+  '10_15ft':   35.7,
+  '15_25ft':   15.4,
+  '25_plus_ft': 5.5,
 };
 
 interface PuttDistanceAggregate extends GeneratorAggregate {
@@ -107,12 +136,14 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
     const cfg = METRIC_RENDER_CONFIG[this.metricId];
     const valueDisp = `${Math.round(agg.playerValue)}%`;
     const label = BUCKET_LABEL[agg.bucket];
+    // Real PGA Tour make % for this bucket (gen-putt-distance-1) — replaces the
+    // hard-coded 0 that produced the inverted "X% vs 0% PGA" WhyPopover anchor.
+    const pgaValue = PGA_MAKE_PCT_BY_BUCKET[agg.bucket];
 
     const title = `${label} putting: ${valueDisp}`;
     const content =
       `Across your last ${agg.rounds_played} rounds you're making ${valueDisp} ` +
-      `of putts from ${label}. The standing card below shows how that ` +
-      `compares to your team and the PGA Tour baseline.`;
+      `of putts from ${label} (PGA Tour ~${pgaValue.toFixed(0)}%).`;
 
     const signature = `putt_distance:${agg.bucket}`;
 
@@ -128,7 +159,8 @@ export class PuttDistanceGenerator extends BaseGenerator<PuttDistanceAggregate> 
         unit: 'percent',
         your_value: agg.playerValue,
         your_value_display: valueDisp,
-        comparison_value: 0,
+        // Real PGA Tour make % (gen-putt-distance-1) — was hard-coded 0.
+        comparison_value: pgaValue,
         comparison_label: 'PGA Tour avg',
         comparison_source: 'pga_baseline',
         sample_n: agg.rounds_played,

@@ -418,6 +418,28 @@ export function normalizeToFeet(distance: number | null | undefined, unit: strin
   return unit === 'yards' ? distance * 3 : distance;
 }
 
+/**
+ * Longest realistic putt, in feet. Anything beyond this is a unit/entry error
+ * (e.g. a putt distance recorded in yards then ×3'd to a 390-foot "putt").
+ */
+/** @internal - exported for testing */
+export const MAX_PUTT_FEET = 120;
+
+/**
+ * Putt distances are ALWAYS feet, regardless of the stored `distance_unit`.
+ *
+ * SG-2: putts mis-stored with `distance_unit === 'yards'` were being ×3'd by
+ * `normalizeToFeet`, producing impossible 390-foot putts. A putt is on the
+ * green by definition, so the raw value is the distance in feet — never convert
+ * it. We additionally clamp to {@link MAX_PUTT_FEET} so a stray yards-as-feet
+ * tail (or a fat-fingered entry) can't poison putting SG.
+ */
+/** @internal - exported for testing */
+export function normalizePuttFeet(distance: number | null | undefined): number {
+  if (distance == null) return 0;
+  return Math.min(Math.max(distance, 0), MAX_PUTT_FEET);
+}
+
 /** @internal - exported for testing */
 export function normalizeShotType(shotType: string | null | undefined): string | null {
   if (!shotType) return null;
@@ -526,7 +548,15 @@ export const AROUND_GREEN_THRESHOLD_YARDS = 50;
 // Source: PGA Tour Strokes Gained methodology
 
 const STROKES_GAINED_BENCHMARKS = {
-  // From tee (by distance in yards) — includes par 3 and short par 4 distances
+  // From tee (by distance in yards) — one continuous curve covering par-3 / short
+  // par-4 tee shots (100yd) through long par-5s (600yd).
+  //
+  // DC-SG-3: previously tee shots < 400yd were silently re-routed to the FAIRWAY
+  // table, whose longest anchor is 275yd. Nearest-neighbour then snapped every
+  // 276-399yd tee shot to the 275yd fairway value (3.58) and the curve jumped to
+  // the 400yd tee value (4.08) — a ~0.5-stroke discontinuity exactly at the
+  // handoff. A single continuous tee table (interpolated, see getExpectedStrokes)
+  // removes the seam: the 100-375yd anchors below are continuous with 400+.
   tee: {
     100: 2.92, 125: 2.99, 150: 3.05, 175: 3.12, 200: 3.20,
     225: 3.29, 250: 3.37, 275: 3.45, 300: 3.56, 325: 3.65,
@@ -554,47 +584,81 @@ const STROKES_GAINED_BENCHMARKS = {
   },
 
   // From green (putting, by distance in feet)
+  //
+  // DC-SG-1: the 10→15ft gap (1.61→1.78) was the coarsest part of the make-rate
+  // curve, where nearest-neighbour snapping was most visible (a 13ft putt snapped
+  // to the 15ft anchor). Finer 12 / 18 / 22ft anchors plus linear interpolation
+  // (see getExpectedStrokes) smooth the 10-25ft band.
   green: {
     1: 1.00, 2: 1.01, 3: 1.04, 4: 1.13, 5: 1.23,
     6: 1.34, 7: 1.42, 8: 1.50, 9: 1.56, 10: 1.61,
-    15: 1.78, 20: 1.87, 25: 1.94, 30: 1.99, 40: 2.06,
-    50: 2.12, 60: 2.18,
+    12: 1.69, 15: 1.78, 18: 1.84, 20: 1.87, 22: 1.90,
+    25: 1.94, 30: 1.99, 40: 2.06, 50: 2.12, 60: 2.18,
   },
 
 };
+
+/**
+ * Look up an expected-strokes value from a {distance: strokes} benchmark table
+ * using LINEAR INTERPOLATION between the two bracketing anchors.
+ *
+ * DC-SG-1/DC-SG-3: the previous nearest-neighbour lookup snapped a query to the
+ * single closest anchor, so e.g. a 13ft putt jumped to the 15ft value and the
+ * whole curve was a staircase. Interpolating between bracketing anchors makes the
+ * curve continuous and distance-sensitive. Queries below the first / above the
+ * last anchor clamp to that anchor (no extrapolation).
+ */
+function interpolateBenchmark(table: Record<number, number>, distance: number): number {
+  const distances = Object.keys(table).map(Number).sort((a, b) => a - b);
+  if (distances.length === 0) return 0;
+
+  const first = distances[0]!;
+  const last = distances[distances.length - 1]!;
+
+  // Clamp outside the table range (avoid extrapolating past calibrated anchors).
+  if (distance <= first) return table[first]!;
+  if (distance >= last) return table[last]!;
+
+  // Find the bracketing anchors and interpolate.
+  for (let i = 0; i < distances.length - 1; i++) {
+    const lo = distances[i]!;
+    const hi = distances[i + 1]!;
+    if (distance >= lo && distance <= hi) {
+      const t = (distance - lo) / (hi - lo);
+      return table[lo]! + t * (table[hi]! - table[lo]!);
+    }
+  }
+  // Unreachable (clamped above), but keep TS exhaustive.
+  return table[last]!;
+}
 
 // Helper to get expected strokes from position
 /** @internal - exported for testing */
 export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
-    // Putting - use feet
-    const distances = Object.keys(STROKES_GAINED_BENCHMARKS.green).map(Number).sort((a, b) => a - b);
-    const closest = distances.reduce((prev, curr) =>
-      Math.abs(curr - distanceFeet) < Math.abs(prev - distanceFeet) ? curr : prev
-    );
-    return STROKES_GAINED_BENCHMARKS.green[closest as keyof typeof STROKES_GAINED_BENCHMARKS.green] || 2.0;
+    // Putting — distance is feet, never converted (see normalizePuttFeet), and
+    // interpolated across the green make-rate curve.
+    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet);
   }
 
-  // FIX: Tee shots under 400 yards (par 3s, short par 4s) should use fairway benchmark
-  // The tee benchmark only covers 400-600 yards (long par 4s and par 5s)
-  // Tee box conditions are similar to fairway, so this gives accurate expected strokes
-  let effectiveLie = lie;
-  if (lie === 'tee' && distanceYards < 400) {
-    effectiveLie = 'fairway';
-  }
+  // DC-SG-3: tee shots use a single continuous tee curve (100-600yd). The old
+  // <400yd → fairway re-route created a discontinuity at the 400yd handoff; the
+  // tee table now covers the short distances directly.
+  let benchmarkTable = STROKES_GAINED_BENCHMARKS[lie as keyof typeof STROKES_GAINED_BENCHMARKS] as
+    | Record<number, number>
+    | undefined;
 
-  const benchmarkTable = STROKES_GAINED_BENCHMARKS[effectiveLie as keyof typeof STROKES_GAINED_BENCHMARKS];
+  // SG-1: unmapped / non-tabulated lies ('other', 'recovery', 'water', and any
+  // unrecognised value) previously collapsed to a flat 3.50 with ZERO distance
+  // sensitivity — fabricating ±1-stroke SG that flipped sign with distance.
+  // Route them to the rough table so the estimate stays distance-sensitive
+  // (rough is the most defensible "ball in a bad/unknown lie" baseline).
   if (!benchmarkTable || typeof benchmarkTable !== 'object') {
-    // Fallback to rough benchmarks for unknown lie types
-    return 3.50;
+    benchmarkTable = STROKES_GAINED_BENCHMARKS.rough;
   }
 
-  const distances = Object.keys(benchmarkTable).map(Number).sort((a, b) => a - b);
-  const closest = distances.reduce((prev, curr) =>
-    Math.abs(curr - distanceYards) < Math.abs(prev - distanceYards) ? curr : prev
-  );
-  return (benchmarkTable as Record<number, number>)[closest] || 3.5;
+  return interpolateBenchmark(benchmarkTable, distanceYards);
 }
 
 // Calculate Strokes Gained for a shot
@@ -611,7 +675,10 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
 
   const lieBefore = shot.lie_before;
   const distBefore = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
-  const distBeforeFeet = normalizeToFeet(shot.distance_to_hole_before, shot.distance_unit_before);
+  // SG-2: when the ball is on the green the distance is a PUTT — always feet,
+  // never unit-converted, and clamped (a yards-as-feet tail would ×3 into a
+  // 390-foot "putt"). Only consumed by the green branch below.
+  const distBeforeFeet = normalizePuttFeet(shot.distance_to_hole_before);
 
   // Use lie_after if available, otherwise derive from result
   // Result values like 'fairway', 'rough', 'sand', 'green', 'hole' map to lie types
@@ -625,11 +692,17 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
   // Get expected strokes after (0 if holed)
   let expectedAfter = 0;
   if (shot.result !== 'hole') {
+    // SG-2: a putt's remaining distance is a PUTT — feet, never converted, clamped.
+    // (An approach that lands on the green keeps unit-aware conversion: its
+    // proximity is legitimately recorded in feet OR yards.)
+    const isPutt = lieBefore === 'green';
     let distAfterYards = shot.distance_to_hole_after != null
       ? normalizeToYards(shot.distance_to_hole_after, shot.distance_unit_after)
       : null;
     let distAfterFeet = shot.distance_to_hole_after != null
-      ? normalizeToFeet(shot.distance_to_hole_after, shot.distance_unit_after)
+      ? (isPutt
+          ? normalizePuttFeet(shot.distance_to_hole_after)
+          : normalizeToFeet(shot.distance_to_hole_after, shot.distance_unit_after))
       : null;
 
     // Fallback estimation when distance_to_hole_after is missing
@@ -665,6 +738,30 @@ export function getStrokesGainedCategory(shot: RawShot, par: number): 'tee' | 'a
   if (shotType === 'putting') return 'putting';
   if (shotType === 'tee') return par === 3 ? 'approach' : 'tee';
   if (shotType === 'around_green') return 'around_green';
+  return 'approach';
+}
+
+/**
+ * SG-4: attribute a penalty stroke to the OFFENDING category.
+ *
+ * A penalty shot has `shot_type === 'penalty'` and carries no real lie/result of
+ * its own, so it can't be categorised by `getStrokesGainedCategory`. The stroke
+ * that actually went wrong was hit from the penalty shot's `lie_before` /
+ * distance-to-hole — so we categorise by that position:
+ *   - on the tee (and not a par 3) → tee
+ *   - on/around the green          → around_green
+ *   - otherwise (in play)          → approach (long game)
+ *
+ * Returns 'approach' as the conservative default when position is unknown.
+ */
+/** @internal - exported for testing */
+export function getPenaltyCategory(shot: RawShot, par: number): 'tee' | 'approach' | 'around_green' {
+  if (shot.lie_before === 'tee') return par === 3 ? 'approach' : 'tee';
+  if (shot.lie_before === 'green') return 'around_green';
+  if (shot.distance_to_hole_before != null) {
+    const distYards = normalizeToYards(shot.distance_to_hole_before, shot.distance_unit_before);
+    if (distYards <= AROUND_GREEN_THRESHOLD_YARDS) return 'around_green';
+  }
   return 'approach';
 }
 
@@ -1901,8 +1998,30 @@ function aggregateRoundStats(rounds: Array<{
 
       // Strokes Gained - process each shot
       for (const shot of hole.shots) {
-        // Skip penalty shots
-        if (shot.result === 'penalty') continue;
+        // SG-4: a penalty stroke is a pure lost stroke (the stroke counted but
+        // made no progress to the hole → exactly -1.0 SG). Previously these were
+        // skipped, so the four SG categories under-counted the round by every
+        // penalty stroke and SG:Total no longer reconciled with the score.
+        // Charge -1.0 to the OFFENDING category (where the errant shot was hit
+        // from) to keep SG additive (sgTotal = sum of the 4 categories).
+        const isPenaltyShot =
+          shot.result === 'penalty' ||
+          shot.is_penalty === true ||
+          shot.shot_type === 'penalty';
+        if (isPenaltyShot) {
+          const penaltyCategory = getPenaltyCategory(shot, hole.par);
+          if (penaltyCategory === 'tee') {
+            sgTee -= 1;
+            sgTeeCount++;
+          } else if (penaltyCategory === 'around_green') {
+            sgAroundGreen -= 1;
+            sgAroundGreenCount++;
+          } else {
+            sgApproach -= 1;
+            sgApproachCount++;
+          }
+          continue;
+        }
 
         const sg = calculateStrokesGainedForShot(shot);
         const category = getStrokesGainedCategory(shot, hole.par);

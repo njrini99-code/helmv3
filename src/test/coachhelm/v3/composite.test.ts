@@ -10,7 +10,61 @@ import { describe, it, expect } from 'vitest';
 import pressureDecel from '@/lib/coachhelm/v3/composite/rules/pressure-decel-chain';
 import bunkerMissSide from '@/lib/coachhelm/v3/composite/rules/bunker-miss-side-amplifier';
 import longApproach3Putt from '@/lib/coachhelm/v3/composite/rules/long-approach-3putt-cascade';
+import lagDistance3Putt from '@/lib/coachhelm/v3/composite/rules/lag-distance-3putt';
+import { isSubsumedBy } from '@/lib/coachhelm/v3/composite/synthesis';
 import type { EvidenceInsight } from '@/lib/coachhelm/v3/composite/types';
+
+/**
+ * Putt-distance insight with an explicit standing baseline. Used by the
+ * absolute-skill-floor tests (lag3putt-2 / PDC-1): a tiny-team `team_pct = 0`
+ * must NOT flag a player whose make-% already beats the PGA baseline.
+ */
+function puttInsight(over: {
+  signature: string;
+  your_value: number;
+  team_pct: number;
+  pga_value: number;
+}): EvidenceInsight {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const evidence: any = {
+    metric: 'putt_distance',
+    metric_label: 'putt_distance',
+    unit: 'percent',
+    your_value: over.your_value,
+    your_value_display: `${over.your_value}%`,
+    comparison_value: over.pga_value,
+    comparison_label: '',
+    comparison_source: 'pga_baseline',
+    sample_n: 10,
+    window_days: 90,
+    window_start: '',
+    window_end: '',
+    strokes_impact: 0,
+    strokes_impact_method: 'peer_delta',
+    confidence: 0.5,
+    confidence_factors: { sample_adequacy: 0.5, recency: 1, variance: 0.5 },
+    standing: {
+      metric_id: 'putt_distance',
+      player_value: over.your_value,
+      team_avg: 0,
+      team_n: 2,
+      team_pct: over.team_pct,
+      pga_value: over.pga_value,
+      pga_delta: null,
+      computed_at: '2026-05-25T00:00:00.000Z',
+    },
+  };
+  return {
+    id: `insight-${over.signature}`,
+    insight_type: 'putt_distance',
+    category: 'putt_distance',
+    signature: over.signature,
+    player_id: 'p-1',
+    evidence,
+    engine_version: 'v3',
+    created_at: '2026-05-25T00:00:00.000Z',
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Insight fixture builder
@@ -21,8 +75,12 @@ function makeInsight(over: Partial<EvidenceInsight> & {
   signature: string;
   your_value?: number;
   team_pct?: number | null;
+  /** On-green proximity (feet) for approach_miss — lands in evidence.detail,
+   *  NOT your_value (which is the green-hit PERCENT post the reach/dial-in
+   *  redesign). */
+  proximity_feet?: number | null;
 }): EvidenceInsight {
-  const { type, signature, your_value, team_pct, ...rest } = over;
+  const { type, signature, your_value, team_pct, proximity_feet, ...rest } = over;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const evidence: any = {
     metric: type,
@@ -53,6 +111,9 @@ function makeInsight(over: Partial<EvidenceInsight> & {
       pga_delta: null,
       computed_at: '2026-05-25T00:00:00.000Z',
     };
+  }
+  if (proximity_feet !== undefined) {
+    evidence.detail = { proximity_when_hit_feet: proximity_feet };
   }
   return {
     id: `insight-${signature}`,
@@ -151,22 +212,49 @@ describe('bunker_miss_side_amplifier', () => {
 // ---------------------------------------------------------------------------
 
 describe('long_approach_3putt_cascade', () => {
-  it('fires when 175+ approach proximity is poor + 10-15 ft putts weak', () => {
+  it('fires on poor on-green proximity (feet) + weak 10-15 ft putts — NOT on green-hit %', () => {
     const insights: EvidenceInsight[] = [
-      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:175_plus_ft', your_value: 60 }),
+      // your_value is the green-hit PERCENT (45% — a reach signal); the dial-in
+      // proximity (60 ft, > Tour 45) is what fires the cascade and is displayed.
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 45,
+        proximity_feet: 60,
+      }),
       makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
     ];
     const match = longApproach3Putt.detect(insights);
     expect(match).not.toBeNull();
     const composed = longApproach3Putt.compose(match!);
     expect(composed.title).toContain('Long approaches are leaking 3-putts');
-    expect(composed.content).toContain('60 ft');
+    expect(composed.content).toContain('60 ft'); // the real proximity, not the 45% green-hit
+    expect(composed.content).not.toContain('45 ft'); // must never print the percent as feet
     expect(composed.content).toContain('22%');
   });
 
-  it('does NOT fire when long approach proximity is good', () => {
+  it('does NOT fire on a GOOD ball-striker (high green-hit %, no recorded proximity)', () => {
     const insights: EvidenceInsight[] = [
-      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:175_plus_ft', your_value: 42 }),
+      // 70% greens hit, proximity null (the old bug fired here because >50 matched the percent).
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 70,
+        proximity_feet: null,
+      }),
+      makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
+    ];
+    expect(longApproach3Putt.detect(insights)).toBeNull();
+  });
+
+  it('does NOT fire when on-green proximity is good (≤ 50 ft)', () => {
+    const insights: EvidenceInsight[] = [
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 55,
+        proximity_feet: 42,
+      }),
       makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 22, team_pct: 30 }),
     ];
     expect(longApproach3Putt.detect(insights)).toBeNull();
@@ -174,7 +262,12 @@ describe('long_approach_3putt_cascade', () => {
 
   it('does NOT fire when mid putts are above team avg', () => {
     const insights: EvidenceInsight[] = [
-      makeInsight({ type: 'approach_miss', signature: 'v3:approach_miss:175_plus_ft', your_value: 60 }),
+      makeInsight({
+        type: 'approach_miss',
+        signature: 'v3:approach_miss:175_plus_ft',
+        your_value: 45,
+        proximity_feet: 60,
+      }),
       makeInsight({ type: 'putt_distance', signature: 'v3:putt_distance:10_15ft', your_value: 40, team_pct: 70 }),
     ];
     expect(longApproach3Putt.detect(insights)).toBeNull();
@@ -182,46 +275,95 @@ describe('long_approach_3putt_cascade', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Absolute-skill floor (lag3putt-2 / PDC-1)
+// ---------------------------------------------------------------------------
+
+describe('absolute-skill floor', () => {
+  // PGA make-% anchors (higher_better): 3-5 ft ~93%, 15+ ft ~22%.
+  const PGA_3_5 = 93;
+  const PGA_LONG = 22;
+
+  it('lag_distance_3putt does NOT fire for an elite 3-5 ft putter at team_pct=0', () => {
+    // 94.8% from 3-5 ft beats the PGA floor → must not be flagged "weak"
+    // even though a team of two puts them at PERCENT_RANK 0.
+    const insights = [
+      puttInsight({ signature: 'v3:putt_distance:25_plus_ft', your_value: 8, team_pct: 0, pga_value: PGA_LONG }),
+      puttInsight({ signature: 'v3:putt_distance:3_5ft', your_value: 94.8, team_pct: 0, pga_value: PGA_3_5 }),
+    ];
+    expect(lagDistance3Putt.detect(insights)).toBeNull();
+  });
+
+  it('lag_distance_3putt STILL fires when both buckets are genuinely below PGA', () => {
+    const insights = [
+      puttInsight({ signature: 'v3:putt_distance:25_plus_ft', your_value: 8, team_pct: 30, pga_value: PGA_LONG }),
+      puttInsight({ signature: 'v3:putt_distance:3_5ft', your_value: 75, team_pct: 30, pga_value: PGA_3_5 }),
+    ];
+    expect(lagDistance3Putt.detect(insights)).not.toBeNull();
+  });
+
+  it('lag_distance_3putt falls back to team gate when pga_value is unset (no regression)', () => {
+    // pga_value 0 → floor defers to the team-rank gate (prior behavior).
+    const insights = [
+      puttInsight({ signature: 'v3:putt_distance:25_plus_ft', your_value: 8, team_pct: 30, pga_value: 0 }),
+      puttInsight({ signature: 'v3:putt_distance:3_5ft', your_value: 75, team_pct: 30, pga_value: 0 }),
+    ];
+    expect(lagDistance3Putt.detect(insights)).not.toBeNull();
+  });
+
+  it('pressure_decel_chain does NOT fire for an elite short putter at team_pct=0', () => {
+    const insights: EvidenceInsight[] = [
+      makeInsight({ type: 'pressure_gap', signature: 'v3:pressure_gap:practice_vs_tournament', your_value: 1.5 }),
+      puttInsight({ signature: 'v3:putt_distance:3_5ft', your_value: 94.8, team_pct: 0, pga_value: PGA_3_5 }),
+    ];
+    expect(pressureDecel.detect(insights)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Subset suppression (the conflict-resolution logic the runner applies)
 // ---------------------------------------------------------------------------
 
-describe('subset suppression (synthesis runner logic)', () => {
-  it('suppresses a rule whose source_insight_ids ⊆ another rule that also fired', () => {
-    // Simulate two matches: ruleA (3 sources) and ruleB (2 of those 3).
-    // ruleB.source_insight_ids ⊆ ruleA.source_insight_ids → ruleB suppressed.
-    type M = { source_insight_ids: string[] };
-    const ruleA: M = { source_insight_ids: ['i-1', 'i-2', 'i-3'] };
-    const ruleB: M = { source_insight_ids: ['i-1', 'i-2'] };
-    const matches = [
-      { rule: { id: 'A' }, match: ruleA },
-      { rule: { id: 'B' }, match: ruleB },
-    ];
-    // Same logic as synthesis.ts
-    const survivors = matches.filter((cand) =>
-      !matches.some(
-        (other) =>
-          other !== cand &&
-          cand.match.source_insight_ids.length < other.match.source_insight_ids.length &&
-          cand.match.source_insight_ids.every((id) => other.match.source_insight_ids.includes(id)),
-      ),
-    );
-    expect(survivors.map((s) => s.rule.id)).toEqual(['A']);
+describe('subset suppression (isSubsumedBy — the real synthesis predicate)', () => {
+  // Mirror of the runner's filter, but using the EXPORTED predicate so the
+  // contract is tested directly rather than reimplemented.
+  function survivors(matches: { id: string; ids: string[] }[]): string[] {
+    return matches
+      .filter((cand) => !matches.some((other) => other !== cand && isSubsumedBy(cand.ids, other.ids)))
+      .map((m) => m.id);
+  }
+
+  it('suppresses a rule whose source_insight_ids ⊂ another rule that also fired', () => {
+    expect(
+      survivors([
+        { id: 'A', ids: ['i-1', 'i-2', 'i-3'] },
+        { id: 'B', ids: ['i-1', 'i-2'] },
+      ]),
+    ).toEqual(['A']);
   });
 
-  it('keeps independent matches that don\'t overlap', () => {
-    type M = { source_insight_ids: string[] };
-    const matches = [
-      { rule: { id: 'A' }, match: { source_insight_ids: ['i-1', 'i-2'] } as M },
-      { rule: { id: 'B' }, match: { source_insight_ids: ['i-3', 'i-4'] } as M },
-    ];
-    const survivors = matches.filter((cand) =>
-      !matches.some(
-        (other) =>
-          other !== cand &&
-          cand.match.source_insight_ids.length < other.match.source_insight_ids.length &&
-          cand.match.source_insight_ids.every((id) => other.match.source_insight_ids.includes(id)),
-      ),
-    );
-    expect(survivors.map((s) => s.rule.id)).toEqual(['A', 'B']);
+  it("keeps independent matches that don't overlap", () => {
+    expect(
+      survivors([
+        { id: 'A', ids: ['i-1', 'i-2'] },
+        { id: 'B', ids: ['i-3', 'i-4'] },
+      ]),
+    ).toEqual(['A', 'B']);
+  });
+
+  it('does NOT suppress ctx composites (empty source_insight_ids) when an insight-driven composite fires', () => {
+    // Regression for the empty-array vacuous-subset bug: an insight-driven
+    // composite (≥1 source) must NOT delete every ctx composite ([]).
+    expect(
+      survivors([
+        { id: 'insight_driven', ids: ['i-1', 'i-2'] },
+        { id: 'closing_hole_fatigue', ids: [] },
+        { id: 'doubles_after_bogey', ids: [] },
+      ]),
+    ).toEqual(['insight_driven', 'closing_hole_fatigue', 'doubles_after_bogey']);
+  });
+
+  it('empty-vs-empty never suppress each other', () => {
+    expect(isSubsumedBy([], [])).toBe(false);
+    expect(isSubsumedBy([], ['x'])).toBe(false);
   });
 });
