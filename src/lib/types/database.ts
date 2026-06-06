@@ -11110,6 +11110,10 @@ export type Database = {
         Returns: undefined
       }
       mark_task_reminder_sent: { Args: { p_task_id: string }; Returns: boolean }
+      prune_stale_player_standing: {
+        Args: { p_cutoff: string; p_team_ids: string[] }
+        Returns: number
+      }
       recalculate_baseball_season_stats: {
         Args: { p_player_id: string; p_season_year?: number; p_team_id: string }
         Returns: undefined
@@ -11163,6 +11167,12 @@ export type Database = {
           p_shots: Json
         }
         Returns: Json
+      }
+      select_stalest_teams: {
+        Args: { p_limit: number }
+        Returns: {
+          team_id: string
+        }[]
       }
       sg_estimate_from_holes: {
         Args: { p_round_id: string }

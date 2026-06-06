@@ -61,6 +61,10 @@ $$;
 
 COMMENT ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) IS 'v3 SC1 (2026-06-06). Scoped orphan/stale cleanup for golf_player_standing. Deletes rows for players on p_team_ids whose computed_at is older than p_cutoff — i.e. rows the refresh run just completed did NOT re-write because the player no longer qualifies. The cron captures p_cutoff before invoking the refresh RPCs. Returns rows removed. Trusted SECURITY DEFINER; row-scoped DELETE (never a global wipe).';
 
-GRANT ALL ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) TO "service_role";
+-- Service-role ONLY. This is a destructive (DELETE) SECURITY DEFINER function
+-- invoked solely by the standing cron via createAdminClient(). Granting it to
+-- anon/authenticated would reintroduce the SEC-RLS-1 class fixed in
+-- 20260606090000 — an unauthenticated caller could DELETE standing rows through
+-- PostgREST. Lock to service_role.
+REVOKE ALL ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."prune_stale_player_standing"("uuid"[], timestamp with time zone) TO "service_role";

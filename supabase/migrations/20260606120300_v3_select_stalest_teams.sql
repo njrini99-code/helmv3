@@ -44,6 +44,8 @@ $$;
 
 COMMENT ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) IS 'v3 PERF-2 (2026-06-06). Returns up to p_limit team ids ordered by real standing freshness (oldest active-player computed_at, NULLS FIRST so never-refreshed teams come first), tie-broken by created_at. Replaces the cron''s created_at-ASC proxy that starved every team past the first-created 50. STABLE read-only SECURITY DEFINER.';
 
-GRANT ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "service_role";
+-- Service-role ONLY. Read-only SECURITY DEFINER helper invoked solely by the
+-- standing cron via createAdminClient(). Don't expose SECURITY DEFINER functions
+-- to anon/authenticated (SEC-RLS-1 class, fixed in 20260606090000).
+REVOKE ALL ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) FROM PUBLIC, "anon", "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."select_stalest_teams"("p_limit" integer) TO "service_role";
