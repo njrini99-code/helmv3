@@ -8,6 +8,7 @@
     "check:env": "node scripts/check-required-env.mjs",
     "check:ledger": "node scripts/check-migration-ledger.mjs",
     "check:types-drift": "bash scripts/check-types-drift.sh",
+    "check:stats": "tsx -r dotenv/config scripts/verify-stats-consistency.ts",
     "prebuild": "node scripts/check-required-env.mjs && node scripts/stamp-sw.mjs",
     "build": "next build --webpack",
     "start": "next start",
