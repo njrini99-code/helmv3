@@ -1,0 +1,42 @@
+-- Auto-save partial-round UPDATE: make the `authenticated` grant table-wide.
+--
+-- Recurrence of the fix in migration 20260603040000.
+--
+-- Root cause
+-- ----------
+-- The May-27 baseline (20260527000000) granted `authenticated`
+-- SELECT/INSERT/DELETE on golf_rounds plus a COLUMN-LEVEL UPDATE allowlist
+-- over the user-controlled scoring/course columns. Migration 20260603040000
+-- extended that allowlist by four identity columns but, by its own note,
+-- deliberately stayed column-scoped.
+--
+-- Postgres runs the per-column UPDATE-privilege check against every column
+-- named in an UPDATE's SET list, regardless of whether the SET value differs
+-- from the stored value. The moment the table gains a column outside the
+-- allowlist (strokes_gained_*, coachhelm_analyzed_at / failed_at /
+-- failure_reason, ai_recap*) and any UPDATE path touches it, the whole
+-- statement fails with
+--   ERROR 42501: permission denied for table golf_rounds
+-- which surfaces as "Auto-save server error: Failed to save round. Please
+-- try again." in the round-tracking UI and trips the client circuit breaker.
+-- This regressed in production again (92 auto-save failures, 2026-06-02 ->
+-- 2026-06-06) after the strokes_gained_* / coachhelm_* columns landed.
+--
+-- Fix
+-- ---
+-- Grant UPDATE table-wide so the allowlist can no longer drift out of sync
+-- with the schema. This matches the table-wide UPDATE grants already adopted
+-- for the same class of bug on:
+--   * golf_round_reviews  -> migration 20260602190000
+--   * golf_coach_insights -> migration 20260528011000
+--
+-- Security
+-- --------
+-- Unchanged at the row level. RLS remains the row-scope guard:
+-- golf_rounds_update (player updates own rounds) and the coach/team UPDATE
+-- policies still decide WHICH rows the authenticated role may modify. This
+-- GRANT only widens WHICH columns the role may SET, on rows it can already
+-- update. SELECT, INSERT and DELETE are already table-wide for authenticated.
+--
+-- Idempotent: re-running GRANT is a no-op in Postgres.
+GRANT UPDATE ON TABLE public.golf_rounds TO authenticated;
