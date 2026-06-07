@@ -786,6 +786,10 @@ interface CalculatedHoleStats {
   chipLie: string | null;      // Lie of the chip/pitch shot (for scrambling stats)
   chipDistance: number | null; // Distance of the chip/pitch shot (for scrambling by distance)
   firstPuttDistance: number | null;
+  // All-putt make% by distance band: EVERY putt on the hole, made = holed.
+  // The conventional PGA "putts made from distance" (matches golf_pga_standards
+  // + the cache writer update_player_putt_make_pct), not first-putt-only.
+  puttMakeByBand: Record<string, { made: number; total: number }>;
   firstPuttLeave: number | null;
   firstPuttBreak: string | null;
   firstPuttSlope: string | null;
@@ -823,6 +827,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     chipLie: null,
     chipDistance: null,
     firstPuttDistance: null,
+    puttMakeByBand: {},
     firstPuttLeave: null,
     firstPuttBreak: null,
     firstPuttSlope: null,
@@ -964,6 +969,19 @@ export function calculateHoleStatsFromShots(
   const firstPuttBreak = firstPutt ? (firstPutt.putt_break ?? null) : null;
   const firstPuttSlope = firstPutt ? (firstPutt.putt_slope ?? null) : null;
 
+  // All-putt make% by distance band: every putt on the hole, bucketed by ITS OWN
+  // start distance, made = holed. This is the conventional PGA "make % from
+  // distance" (matches golf_pga_standards + the cache writer), not first-putt
+  // only — a 0-3ft tap-in is a real make from 0-3ft.
+  const puttMakeByBand: Record<string, { made: number; total: number }> = {};
+  for (const p of puttingShots) {
+    if (p.distance_to_hole_before === null) continue;
+    const band = getPuttDistanceBucket(normalizePuttFeet(p.distance_to_hole_before));
+    if (!puttMakeByBand[band]) puttMakeByBand[band] = { made: 0, total: 0 };
+    puttMakeByBand[band].total++;
+    if (p.result === 'hole' || p.putt_made === true) puttMakeByBand[band].made++;
+  }
+
   // Scrambling = missed GIR but made par or better
   const scrambleAttempt = !greenInRegulation;
   const scrambleMade = scrambleAttempt && (score <= holeInfo.par);
@@ -1048,6 +1066,7 @@ export function calculateHoleStatsFromShots(
     chipLie,
     chipDistance,
     firstPuttDistance,
+    puttMakeByBand,
     firstPuttLeave,
     firstPuttBreak,
     firstPuttSlope,
@@ -1833,10 +1852,16 @@ function aggregateRoundStats(rounds: Array<{
         firstPuttDistances.push(hole.firstPuttDistance);
         firstPuttDistanceBandCounts[bucket] = (firstPuttDistanceBandCounts[bucket] ?? 0) + 1;
 
-        // Make %
-        if (!puttMake[bucket]) puttMake[bucket] = { made: 0, total: 0 };
-        puttMake[bucket].total++;
-        if (hole.putts === 1) puttMake[bucket].made++;
+        // Make % — ALL-PUTT (every putt on the hole, made = holed), merged from
+        // the hole's per-band tallies. Conventional PGA "make % from distance"
+        // (matches golf_pga_standards + the cache writer). Was first-putt-only
+        // with made = 1-putt, which mislabeled the rate and conflicted with the
+        // leak-map/cache grid shown on the same tab.
+        for (const [band, mc] of Object.entries(hole.puttMakeByBand)) {
+          if (!puttMake[band]) puttMake[band] = { made: 0, total: 0 };
+          puttMake[band].total += mc.total;
+          puttMake[band].made += mc.made;
+        }
 
         // Proximity (leave distance)
         if (hole.firstPuttLeave !== null) {

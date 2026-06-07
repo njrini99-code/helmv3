@@ -1505,9 +1505,15 @@ describe('legacy-band regression guard (putt make% aggregate bands)', () => {
   const rounds = [makeRoundInfo({ holes_played: holes.length })];
   const stats = calculateStatsFromShots(shots, holes, rounds);
 
-  it('routes each first-putt distance into the correct legacy make% band (50% each)', () => {
+  // ALL-PUTT make% (every putt counts, made = holed — conventional PGA "make
+  // from distance"). Each band has one made + one missed first putt → 50%, EXCEPT
+  // 0-3ft, which also absorbs every miss hole's holed 2ft comeback tap-in (8 of
+  // them) on top of its own 3 putts (2 made) = 10/11 = 90.9%. This is the correct
+  // all-putt behavior and is exactly why 0-3ft make% runs high.
+  it('routes each putt distance into the correct make% band (all-putt: 50% each, 0-3ft higher from comebacks)', () => {
     for (const band of BANDS) {
-      expect(stats[band.field], `${band.feet}ft expected in ${String(band.field)} (bucket ${band.bucket})`).toBe(50);
+      const expected = band.bucket === '0_3' ? 90.9 : 50;
+      expect(stats[band.field], `${band.feet}ft expected in ${String(band.field)} (bucket ${band.bucket})`).toBe(expected);
     }
   });
 
