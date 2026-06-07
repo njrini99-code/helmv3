@@ -273,15 +273,14 @@ export async function POST(request: Request) {
     // ── Increment template usage count ──
     if (templateId && sent > 0) {
       try {
-        const { data: tpl } = await supabase
-          .from('crm_email_templates' as 'crm_contact_log')
+        const { data: tpl } = (await fromUntyped(supabase, 'crm_email_templates')
           .select('usage_count')
           .eq('id', templateId)
-          .single() as { data: { usage_count: number } | null };
+          .single()) as { data: { usage_count: number | null } | null };
 
         if (tpl) {
           await fromUntyped(supabase, 'crm_email_templates')
-            .update({ usage_count: (tpl.usage_count ?? 0) + 1 } as Record<string, unknown>)
+            .update({ usage_count: (tpl.usage_count ?? 0) + 1 })
             .eq('id', templateId);
         }
       } catch {
