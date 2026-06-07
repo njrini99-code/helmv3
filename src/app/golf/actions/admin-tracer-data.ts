@@ -1060,7 +1060,14 @@ export async function getTracerData(): Promise<TracerData> {
     );
     const liveRounds = completedRounds.length;
     const totalHolesPlayed = completedRounds.reduce((sum, r) => sum + Math.max(r.holes_played || 18, 1), 0);
-    const totalScore = completedRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
+    // Scoring average is 18-hole rounds ONLY in the canonical cache
+    // (SUM(total_score)/COUNT over total_score IS NOT NULL AND holes_played = 18),
+    // whereas putts/penalties/percentages normalize across all holes. Mirror
+    // each exactly so the tracer doesn't flag false scoring-average mismatches.
+    const rounds18 = completedRounds.filter(
+      (r) => r.total_score != null && (r.holes_played ?? 18) === 18
+    );
+    const totalScore18 = rounds18.reduce((sum, r) => sum + (r.total_score || 0), 0);
     const totalPutts = completedRounds.reduce((sum, r) => sum + (r.total_putts || 0), 0);
     const totalFairwaysHit = completedRounds.reduce((sum, r) => sum + (r.total_fairways_hit || 0), 0);
     const totalFairways = completedRounds.reduce((sum, r) => sum + (r.total_fairways || 0), 0);
@@ -1074,8 +1081,8 @@ export async function getTracerData(): Promise<TracerData> {
       cached_rounds: cached.rounds_played || 0,
       live_rounds: liveRounds,
       cached_scoring_avg: cached.scoring_average ? Number(cached.scoring_average) : null,
-      live_scoring_avg: totalHolesPlayed > 0
-        ? Math.round(((totalScore / totalHolesPlayed) * 18) * 10) / 10
+      live_scoring_avg: rounds18.length > 0
+        ? Math.round((totalScore18 / rounds18.length) * 100) / 100
         : null,
       cached_putts_per_round: cached.putts_per_round ? Number(cached.putts_per_round) : null,
       live_putts_per_round: totalHolesPlayed > 0
@@ -1414,8 +1421,9 @@ export async function fixRoundData(
       const newTotalScore = holes.reduce((sum, h) => sum + h.score!, 0);
       const newScoreToPar = holes.reduce((sum, h) => sum + (h.score! - (h.par || 0)), 0);
       const newTotalPutts = holes.reduce((sum, h) => sum + (h.putts || 0), 0);
-      const newFairwaysHit = holes.filter(h => h.fairway_hit === true).length;
-      const newFairwaysTotal = holes.filter(h => h.fairway_hit != null).length;
+      // Fairway stats are par-4/5 only, denominator = holes with a recorded result.
+      const newFairwaysHit = holes.filter(h => h.fairway_hit === true && (h.par || 0) >= 4).length;
+      const newFairwaysTotal = holes.filter(h => (h.par || 0) >= 4 && h.fairway_hit != null).length;
       const newGir = holes.filter(h => h.gir === true).length;
       const newGirTotal = holes.filter(h => h.gir != null).length;
 

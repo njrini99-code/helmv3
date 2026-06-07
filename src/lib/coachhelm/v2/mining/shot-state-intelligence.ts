@@ -532,7 +532,9 @@ export class ShotStateIntelligence {
         .in('round_id', batch)
         .order('round_id', { ascending: true })
         .order('hole_number', { ascending: true })
-        .order('shot_number', { ascending: true });
+        .order('shot_number', { ascending: true })
+        // Batching round IDs avoids .in() URL limits but not the 1000-row cap.
+        .limit(50000);
 
       shots.push(...((data ?? []) as RawShotRow[]));
     }
@@ -549,7 +551,8 @@ export class ShotStateIntelligence {
       const { data } = await supabase
         .from('golf_holes')
         .select('round_id, hole_number, par, score')
-        .in('round_id', batch);
+        .in('round_id', batch)
+        .limit(50000); // lift PostgREST 1000-row default cap (per-batch)
 
       holes.push(...((data ?? []) as HoleRow[]));
     }

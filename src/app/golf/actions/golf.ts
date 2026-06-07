@@ -1152,7 +1152,10 @@ export async function submitGolfRoundComprehensive(
     const totalToPar = totalScore - totalPar;
     const totalPutts = data.holes.reduce((sum, h) => sum + h.putts, 0);
     const fairwaysHit = data.holes.filter(h => h.fairwayHit === true && h.par >= 4).length;
-    const fairwaysTotal = data.holes.filter(h => h.par >= 4).length;
+    // Denominator = par-4/5 holes where a fairway result was actually recorded.
+    // Counting every par-4/5 (incl. holes with no fairway_hit logged) inflates the
+    // denominator and deflates driving accuracy (e.g. 121/203=59.6% vs 121/199=60.8%).
+    const fairwaysTotal = data.holes.filter(h => h.par >= 4 && h.fairwayHit != null).length;
     // Server-calculate GIR from shot data for accuracy
     const greensInReg = data.holes.filter(h => calculateGirFromShots(h.shots, h.par)).length;
 
@@ -4492,7 +4495,7 @@ export interface QualifierLeaderboardEntry {
   roundsCompleted: number;
   totalScore: number;
   totalToPar: number;
-  averageScore: number;
+  averageScore: number | null;
   roundScores: Array<{
     roundNumber: number;
     score: number;
@@ -4617,7 +4620,10 @@ export async function getQualifierLeaderboard(
         const totalScore = playerRounds.reduce((sum, r) => sum + (r.total_score || 0), 0);
         const totalToPar = playerRounds.reduce((sum, r) => sum + (r.score_to_par || 0), 0);
         const roundsCompleted = playerRounds.length;
-        const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : 0;
+        // Per-round average for this qualifier (display only — ranking is by
+        // cumulative to-par below). null, not 0, when the player has no
+        // completed rounds so the UI renders "—" rather than a fake "0.0".
+        const averageScore = roundsCompleted > 0 ? totalScore / roundsCompleted : null;
 
         const roundScores = playerRounds.map((r) => ({
           roundNumber: r.qualifier_round_number || 0,

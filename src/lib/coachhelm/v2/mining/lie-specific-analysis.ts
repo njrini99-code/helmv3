@@ -540,9 +540,27 @@ function calculateConfidence(sampleSize: number): number {
 class LieSpecificAnalyzer {
   private playerId: string;
   private shots: RawShot[] = [];
+  /** `${round_id}:${hole_number}` → shot_number of the holing shot, for true
+   *  up-and-down reconstruction (holed within 2 strokes of an around-green shot). */
+  private holeOutByHole: Map<string, number> = new Map();
 
   constructor(playerId: string) {
     this.playerId = playerId;
+  }
+
+  /**
+   * True up-and-down: the around-green shot reached the hole within 2 strokes
+   * (the shot itself + at most one putt). Replaces the old "finished within 6 ft"
+   * proximity proxy. Validated against prod: aggregate true rate ≈ proxy rate,
+   * but this measures the actual outcome rather than a finish-distance heuristic.
+   */
+  private isUpAndDown(shot: RawShot): boolean {
+    const holeOut = this.holeOutByHole.get(`${shot.round_id}:${shot.hole_number}`);
+    return (
+      holeOut != null &&
+      holeOut >= shot.shot_number &&
+      holeOut - shot.shot_number <= 1
+    );
   }
 
   /**
@@ -617,13 +635,27 @@ class LieSpecificAnalyzer {
       .not('shot_type', 'in', '("putt","putting")')
       .order('round_id')
       .order('hole_number')
-      .order('shot_number');
+      .order('shot_number')
+      .limit(50000); // lift PostgREST 1000-row default cap
 
     if (error || !shots) {
       return;
     }
 
     this.shots = shots as RawShot[];
+
+    // Build the per-hole hole-out lookup (earliest shot whose result holed out)
+    // for true up-and-down reconstruction.
+    this.holeOutByHole = new Map();
+    for (const s of this.shots) {
+      if (s.result === 'hole' || s.result === 'holed') {
+        const key = `${s.round_id}:${s.hole_number}`;
+        const prev = this.holeOutByHole.get(key);
+        if (prev == null || s.shot_number < prev) {
+          this.holeOutByHole.set(key, s.shot_number);
+        }
+      }
+    }
   }
 
   /**
@@ -835,7 +867,12 @@ class LieSpecificAnalyzer {
   }
 
   /**
-   * Calculates green hit rate
+   * Shot-level green-FINDING rate: the fraction of the supplied shots that
+   * finished on the green. This is deliberately a per-shot metric (it answers
+   * "did THIS approach find the green"), NOT hole-level GIR — GIR cannot be
+   * derived per distance-bracket/lie from a hole boolean, which carries no
+   * approach distance or lie. The canonical hole-level GIR % lives in
+   * golf_player_stats_cache.gir_percentage.
    */
   private calculateGreenHitRate(shots: RawShot[]): number {
     if (shots.length === 0) return 0;
@@ -1502,15 +1539,12 @@ class LieSpecificAnalyzer {
       return null;
     }
 
-    // Up and down rate (simplified: shot lands within 6 feet = likely 1 putt)
-    const closeShots = aroundGreenShots.filter((s) => {
-      const distAfter = toYards(s.distance_to_hole_after, s.distance_unit_after);
-      // Convert to feet if in yards
-      const distFeet = s.distance_unit_after === 'feet'
-        ? s.distance_to_hole_after
-        : (distAfter ?? 0) * 3;
-      return distFeet != null && distFeet <= 6;
-    });
+    // Up-and-down rate — TRUE reconstruction: the around-green shot reached the
+    // hole within 2 strokes (chip/pitch + at most one putt). Replaces the old
+    // "finished within 6 ft" proximity proxy. The cache scrambling_percentage /
+    // sand_save_percentage remain the canonical hole-level figures; this is the
+    // shot-level around-green view.
+    const closeShots = aroundGreenShots.filter((s) => this.isUpAndDown(s));
     const upAndDownRate = (closeShots.length / aroundGreenShots.length) * 100;
 
     // Average proximity after shot
@@ -1583,14 +1617,9 @@ class LieSpecificAnalyzer {
       return { shots: 0, upAndDownRate: 0, avgProximity: 0 };
     }
 
-    // Up and down rate
-    const closeShots = lieShots.filter((s) => {
-      const distYards = toYards(s.distance_to_hole_after, s.distance_unit_after);
-      const distFeet = s.distance_unit_after === 'feet'
-        ? s.distance_to_hole_after
-        : (distYards ?? 0) * 3;
-      return distFeet != null && distFeet <= 6;
-    });
+    // Up-and-down rate — TRUE reconstruction (holed within 2 strokes of the
+    // around-green shot), per lie. Was the "finished within 6 ft" proxy.
+    const closeShots = lieShots.filter((s) => this.isUpAndDown(s));
     const upAndDownRate = (closeShots.length / lieShots.length) * 100;
 
     // Average proximity
@@ -1654,22 +1683,29 @@ class LieSpecificAnalyzer {
         });
       }
 
-      // Wide dispersion
-      const benchmark = DISPERSION_BENCHMARKS.driving.dispersionRadius;
-      if (driving.dispersionRadius > benchmark * 1.5) {
+      // Wide dispersion off the tee.
+      // NOTE: DrivingAnalysis.dispersionRadius is a SYNTHETIC std-dev of fixed
+      // result-bucket constants ({fairway:0, rough:15, sand:20, penalty:35, other:10})
+      // bounded at ~17.5yd — it is NOT a measured lateral spread, so comparing it to a
+      // real-yards 25yd benchmark (×1.5 = 37.5yd) made this insight unable to fire and
+      // its "X yards wider than benchmark" body meaningless. We have no landing-coordinate
+      // data, so "wide driving" is driven instead by the genuinely-measured fairway hit
+      // rate vs the fairwayHitRate benchmark (the dangerZone/penalty insights are separate).
+      const fairwayBenchmark = DISPERSION_BENCHMARKS.driving.fairwayHitRate;
+      if (driving.fairwayHitRate < fairwayBenchmark - 10) {
         insights.push({
           id: crypto.randomUUID(),
           category: 'driving',
           headline: 'Wide Driving Dispersion',
-          body: `Your driving dispersion is ${Math.round(driving.dispersionRadius)} yards, which is ${Math.round((driving.dispersionRadius / benchmark - 1) * 100)}% wider than benchmark.`,
+          body: `You're hitting ${Math.round(driving.fairwayHitRate)}% of fairways vs a ${fairwayBenchmark}% benchmark — your tee shots are scattering off-line more than a strong college player's.`,
           evidence: [
-            `Your dispersion: ${Math.round(driving.dispersionRadius)} yards`,
-            `Benchmark: ${benchmark} yards`,
             `Fairway hit rate: ${Math.round(driving.fairwayHitRate)}%`,
+            `Benchmark: ${fairwayBenchmark}%`,
+            `Primary miss: ${this.formatMissDirection(driving.primaryMiss)} (${Math.round(driving.primaryMissFrequency)}%)`,
           ],
           severity: 'warning',
-          strokeImpact: (driving.dispersionRadius - benchmark) / 10 * 0.3, // Rough estimate
-          recommendation: 'Focus on consistent contact and tempo. Consider a shorter club for better control.',
+          strokeImpact: (fairwayBenchmark - driving.fairwayHitRate) / 100 * 14 * 0.3, // ~14 drives/round
+          recommendation: 'Focus on consistent contact and tempo. Consider a shorter club off the tee for better control.',
         });
       }
 
@@ -1956,9 +1992,18 @@ class LieSpecificAnalyzer {
     category: ShotCategory,
     bracket?: ApproachBracket
   ): DispersionPattern {
-    // Calculate distances from target
-    const distancesFromTarget = shots
-      .filter((s) => s.distance_to_hole_after != null)
+    // Dispersion (stdDeviation/avgDistanceFromTarget/maxMissDistance) measures how far
+    // MISSED shots end up off-line, and is compared against a miss-distance-spread
+    // benchmark (DISPERSION_BENCHMARKS.approach.dispersionRadius). It must therefore be
+    // computed over off-green misses only — a holed-out / on-green finish is not a miss,
+    // and its remaining-distance is a green-surface proximity (stored in feet), not a
+    // yards-measured miss distance. Including on-green finishers (a) blended feet and
+    // yards and (b) made the metric a function of GIR rate rather than dispersion.
+    // Mirrors the on-green guard in calculateAvgProximity / analyzeApproachByBracket.
+    const missShots = shots.filter(
+      (s) => s.distance_to_hole_after != null && s.result !== 'green' && s.result !== 'hole'
+    );
+    const distancesFromTarget = missShots
       .map((s) => toYards(s.distance_to_hole_after, s.distance_unit_after) ?? 0);
 
     const avgDistanceFromTarget = distancesFromTarget.length > 0

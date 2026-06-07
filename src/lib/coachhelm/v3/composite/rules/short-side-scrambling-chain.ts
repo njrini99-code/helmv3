@@ -15,6 +15,18 @@ import type { CompositeRule, CompositeMatch, CompositeContent } from '../types';
 const MIN_ATTEMPTS = 10;
 const POOR_PROXIMITY_FT = 15;
 
+/**
+ * distance_to_hole_after is stored in mixed units (golf_shots.distance_unit_after
+ * is 'feet' for most greenside leaves, 'yards' for longer ones). The proximity
+ * gate and the "{n} ft" prose are both in FEET, so yards rows must be converted
+ * (×3) before averaging — never blend feet and yards (CANON: UNITS). Without the
+ * conversion the average is systematically understated and the 15 ft gate
+ * under-fires.
+ */
+function leaveFeet(s: { distance_to_hole_after: number; distance_unit_after?: string | null }): number {
+  return s.distance_unit_after === 'yards' ? s.distance_to_hole_after * 3 : s.distance_to_hole_after;
+}
+
 const rule: CompositeRule = {
   id: 'short_side_scrambling_chain',
   name: 'Short-side scrambling chain',
@@ -26,7 +38,7 @@ const rule: CompositeRule = {
     const shots = ctx.short_game_shots;
     if (shots.length < MIN_ATTEMPTS) return null;
 
-    const sumProximity = shots.reduce((a, s) => a + s.distance_to_hole_after, 0);
+    const sumProximity = shots.reduce((a, s) => a + leaveFeet(s), 0);
     const avgProximity = sumProximity / shots.length;
     if (avgProximity <= POOR_PROXIMITY_FT) return null;
 

@@ -63,7 +63,9 @@ function makeClient(fixtures: TeeFixture[]) {
     const chain = () => thenable;
     thenable.select = vi.fn(chain);
     thenable.eq = vi.fn(chain);
-    thenable.gte = vi.fn(() => Promise.resolve({ data: shape(fixtures), error: null }));
+    thenable.gte = vi.fn(chain);
+    // fetchTeeShots now terminates the chain with .limit(50000) (truncation fix).
+    thenable.limit = vi.fn(() => Promise.resolve({ data: shape(fixtures), error: null }));
     return thenable;
   });
   return { from: fromFn };

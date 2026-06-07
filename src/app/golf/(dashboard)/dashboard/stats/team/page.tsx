@@ -9,6 +9,7 @@ import { getTeamStatsIntelligence } from '@/app/golf/actions/stats-intelligence'
 import { resolveCoachTeamId } from '@/lib/golf/resolve-team';
 import { isRedesignEnabled, fairwayScope } from '@/lib/redesign/flag';
 import { FairwayTeamStats } from '@/components/fairway/pages/coachhelm/FairwayTeamStats';
+import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
 import { getTeamLeakMaps } from '@/app/golf/actions/stats-leak-maps';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import type { Metadata } from 'next';
@@ -144,12 +145,19 @@ export default async function TeamStatsPage() {
   // Fetch ALL holes for calculating GIR and fairway stats
   const roundIds = (allRounds || []).map(r => r.id);
 
-  const { data: allHoles } = roundIds.length > 0
-    ? await supabase
-        .from('golf_holes')
-        .select('round_id, par, fairway_hit, gir, putts, score')
-        .in('round_id', roundIds)
-    : { data: [] };
+  // Paginated: PostgREST caps each request at 1000 rows. A team season exceeds
+  // 1000 golf_holes rows, which previously truncated the per-player putts / GIR%
+  // / fairway% aggregates below. Page through ALL holes with a stable order.
+  const allHoles: HoleData[] = roundIds.length > 0
+    ? ((await fetchAllRows((from, to) =>
+        supabase
+          .from('golf_holes')
+          .select('round_id, par, fairway_hit, gir, putts, score')
+          .in('round_id', roundIds)
+          .order('id', { ascending: true })
+          .range(from, to),
+      )) as HoleData[])
+    : [];
 
   // Define types for the grouped data
   type RoundData = { id: string; player_id: string; total_score: number | null; round_date: string; holes_played: number | null };
@@ -171,7 +179,7 @@ export default async function TeamStatsPage() {
     if (!holesByRound[roundId]) {
       holesByRound[roundId] = [];
     }
-    holesByRound[roundId]!.push(hole as HoleData);
+    holesByRound[roundId]!.push(hole);
   }
 
   // Calculate comprehensive stats for each player
@@ -199,7 +207,10 @@ export default async function TeamStatsPage() {
         totalStrokes9 += score;
         roundsPlayed9++;
         scores9.push(score);
-      } else {
+      } else if (hp === 18) {
+        // Strictly 18-hole rounds only, matching the canonical cache
+        // (scoring_average over holes_played = 18). Partial rounds (10-17)
+        // are excluded here; they still feed the normalized "all" average.
         totalStrokes18 += score;
         roundsPlayed18++;
         scores18.push(score);
@@ -245,10 +256,13 @@ export default async function TeamStatsPage() {
     playerRounds.forEach(round => {
       const holes = holesByRound[round.id] || [];
       holes.forEach(hole => {
-        // Fairway (only par 4s and 5s)
-        // Match the player stats calculator: every par 4 / par 5 is a fairway
-        // opportunity, even if the explicit hole flag is missing.
-        if (hole.par >= 4) {
+        // Fairway (only par 4s and 5s). Exclude holes where fairway_hit was never
+        // recorded (NULL) — mirrors the GIR rule below and the player stats page.
+        // Counting a NULL flag as a miss understated FW% and disagreed with the
+        // player page, which recovers the real outcome from tee-shot data (e.g. a
+        // re-tee after a penalty that finds the fairway). "Of the holes where we
+        // know the tee result, what fraction found the fairway" is the right rate.
+        if (hole.par >= 4 && hole.fairway_hit !== null) {
           totalFairwayOpps++;
           if (hole.fairway_hit) totalFairwayHits++;
         }

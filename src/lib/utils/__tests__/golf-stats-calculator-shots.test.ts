@@ -391,44 +391,45 @@ describe('getExpectedStrokes', () => {
   });
 
   it('interpolates the green benchmark for in-between distances (DC-SG-1)', () => {
-    // 12ft is now an explicit anchor → 1.69 (was nearest-neighbour 1.61).
-    expect(getExpectedStrokes('green', 0, 12)).toBeCloseTo(1.69, 5);
-    // 13ft interpolates between 12 (1.69) and 15 (1.78): 1.69 + (1/3)(0.09) = 1.72.
-    expect(getExpectedStrokes('green', 0, 13)).toBeCloseTo(1.72, 2);
+    // Broadie-canonical green: 10=1.61, 15=1.78. 12ft interpolates: 1.61+(2/5)(0.17)=1.678.
+    expect(getExpectedStrokes('green', 0, 12)).toBeCloseTo(1.68, 2);
+    // 13ft: 1.61 + (3/5)(0.17) = 1.712.
+    expect(getExpectedStrokes('green', 0, 13)).toBeCloseTo(1.71, 2);
   });
 
   it('uses fairway benchmark for fairway lie', () => {
-    // 150 yards from fairway → 2.99
-    expect(getExpectedStrokes('fairway', 150)).toBe(2.99);
+    // 150 yards fairway: interp 140=2.91, 180=3.08 → 2.9525 (Broadie canonical).
+    expect(getExpectedStrokes('fairway', 150)).toBeCloseTo(2.95, 2);
   });
 
   it('uses rough benchmark for rough lie', () => {
-    // 150 yards from rough → 3.15
-    expect(getExpectedStrokes('rough', 150)).toBe(3.15);
+    // 150 yards rough: interp 100=3.02, 200=3.42 → 3.22 (Broadie canonical).
+    expect(getExpectedStrokes('rough', 150)).toBeCloseTo(3.22, 2);
   });
 
   it('uses sand benchmark for sand lie', () => {
-    // 30 yards from sand → 2.60
-    expect(getExpectedStrokes('sand', 30)).toBe(2.60);
+    // 30 yards sand: interp 20=2.53, 100=3.23 → 2.6175 (Broadie canonical).
+    expect(getExpectedStrokes('sand', 30)).toBeCloseTo(2.62, 2);
   });
 
   it('uses the continuous tee curve for short tee shots (DC-SG-3)', () => {
-    // Tee at 150yd now reads its own continuous tee anchor (3.05), no longer
+    // Tee at 150yd reads its own continuous tee anchor (2.95), no longer
     // re-routed to the fairway table.
-    expect(getExpectedStrokes('tee', 150)).toBeCloseTo(3.05, 5);
+    expect(getExpectedStrokes('tee', 150)).toBeCloseTo(2.95, 5);
   });
 
   it('uses tee benchmark for 400+ yard shots', () => {
-    // Tee at 400 yards → tee benchmark: 4.08
-    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(4.08, 5);
+    // Tee at 400 yards → Broadie canonical tee benchmark: 3.99.
+    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(3.99, 5);
   });
 
-  it('routes unknown lie types to the distance-sensitive rough table (SG-1)', () => {
+  it('routes unknown lie types to the distance-sensitive fairway table (SG-1, matches DB)', () => {
     // 'water'/'other'/'recovery'/unmapped no longer collapse to a flat 3.50.
-    // They use the rough table: 100yd rough = 2.95, and the value MOVES with
-    // distance instead of being flat.
-    expect(getExpectedStrokes('water', 100)).toBeCloseTo(2.95, 5);
-    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.39, 5);
+    // They use the FAIRWAY table — matching the canonical DB sg_expected_strokes()
+    // ELSE branch — so the TS recompute agrees with the cache. 100yd fairway =
+    // 2.80, 200yd = 3.19, and the value MOVES with distance instead of being flat.
+    expect(getExpectedStrokes('water', 100)).toBeCloseTo(2.80, 5);
+    expect(getExpectedStrokes('other', 200)).toBeCloseTo(3.19, 5);
     expect(getExpectedStrokes('recovery', 100)).not.toBe(getExpectedStrokes('recovery', 200));
   });
 });
@@ -983,7 +984,7 @@ describe('getExpectedStrokes edge cases', () => {
   it('tee curve is continuous across the 400yd handoff (DC-SG-3)', () => {
     // The old fairway re-route created a ~0.5-stroke jump at 400yd. The single
     // continuous tee curve must be monotonic and change by < 0.05 stroke per yd
-    // across the seam (375→3.86, 400→4.08, interpolated between).
+    // across the seam (Broadie canonical: 300→3.71, 400→3.99, interpolated between).
     const e399 = getExpectedStrokes('tee', 399);
     const e400 = getExpectedStrokes('tee', 400);
     const e401 = getExpectedStrokes('tee', 401);
@@ -993,8 +994,8 @@ describe('getExpectedStrokes edge cases', () => {
     expect(e401 - e400).toBeLessThan(0.05);
   });
 
-  it('tee at exactly 400 yards → 4.08 anchor', () => {
-    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(4.08, 5);
+  it('tee at exactly 400 yards → 3.99 anchor', () => {
+    expect(getExpectedStrokes('tee', 400)).toBeCloseTo(3.99, 5);
   });
 
   it('green with very small putt (0.5 feet) → clamps to the 1-foot benchmark', () => {
@@ -1003,9 +1004,9 @@ describe('getExpectedStrokes edge cases', () => {
 
   it('green without feet parameter clamps to the longest green anchor', () => {
     // No distanceFeet → not the putting branch. The green table is still found
-    // (treated as feet-positions); 100 is past the 60ft max anchor so it clamps
-    // to 2.18 (matches prior behaviour).
-    expect(getExpectedStrokes('green', 100)).toBeCloseTo(2.18, 5);
+    // (treated as feet-positions); 100 is past the 90ft max anchor so it clamps
+    // to 2.40 (Broadie canonical longest green anchor).
+    expect(getExpectedStrokes('green', 100)).toBeCloseTo(2.40, 5);
   });
 
   it('sand at very close distance (20 yards) → uses benchmark', () => {
@@ -1077,9 +1078,9 @@ describe('SG-1: unknown lie fallback (rough table, distance-sensitive)', () => {
     expect(sgFar!).toBeGreaterThan(sgNear!);
   });
 
-  it('"recovery" and unmapped lies use the rough table, not 3.50', () => {
-    expect(getExpectedStrokes('recovery', 150)).toBeCloseTo(getExpectedStrokes('rough', 150), 5);
-    expect(getExpectedStrokes('totally_unknown_lie', 150)).toBeCloseTo(getExpectedStrokes('rough', 150), 5);
+  it('"recovery" and unmapped lies use the fairway table (matches DB), not 3.50', () => {
+    expect(getExpectedStrokes('recovery', 150)).toBeCloseTo(getExpectedStrokes('fairway', 150), 5);
+    expect(getExpectedStrokes('totally_unknown_lie', 150)).toBeCloseTo(getExpectedStrokes('fairway', 150), 5);
     // And the value is no longer the old flat 3.50.
     expect(getExpectedStrokes('other', 150)).not.toBe(3.5);
   });

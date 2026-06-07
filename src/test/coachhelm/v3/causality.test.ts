@@ -212,6 +212,7 @@ function buildRoundsBuilder(rows: Array<Record<string, unknown>>) {
   builder.eq = (...a: unknown[]) => record('eq', ...a);
   builder.gte = (...a: unknown[]) => record('gte', ...a);
   builder.lte = (...a: unknown[]) => record('lte', ...a);
+  builder.limit = (...a: unknown[]) => record('limit', ...a);
   // The await on the builder resolves to { data, error }
   builder.then = (resolve: (v: { data: typeof rows; error: null }) => void) =>
     resolve({ data: rows, error: null });

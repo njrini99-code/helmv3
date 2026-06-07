@@ -55,7 +55,9 @@ interface RoundCorrelationData {
   score_to_par: number;
   total_putts: number | null;
   total_gir: number | null;
+  total_gir_possible: number | null; // Per-round GIR opportunities (= holes played)
   total_fairways_hit: number | null;
+  total_fairways: number | null; // Per-round fairway opportunities (par 4s + par 5s)
   penalty_count: number; // Computed from shots
 }
 
@@ -193,7 +195,9 @@ export class CorrelationDiscovery {
         score_to_par,
         total_putts,
         total_gir,
-        total_fairways_hit
+        total_gir_possible,
+        total_fairways_hit,
+        total_fairways
       `)
       .eq('player_id', this.playerId)
       .eq('status', 'completed')
@@ -217,7 +221,8 @@ export class CorrelationDiscovery {
           putt_made,
           is_penalty
         `)
-        .in('round_id', roundIds);
+        .in('round_id', roundIds)
+        .limit(50000); // lift PostgREST 1000-row default cap
 
       if (shots) {
         this.shots = shots;
@@ -243,7 +248,9 @@ export class CorrelationDiscovery {
           score_to_par: r.score_to_par ?? 0,
           total_putts: r.total_putts,
           total_gir: r.total_gir,
+          total_gir_possible: r.total_gir_possible,
           total_fairways_hit: r.total_fairways_hit,
+          total_fairways: r.total_fairways,
           penalty_count: penaltiesByRound.get(r.id) ?? 0,
         }));
       }
@@ -260,7 +267,8 @@ export class CorrelationDiscovery {
           gir,
           fairway_hit
         `)
-        .in('round_id', roundIds);
+        .in('round_id', roundIds)
+        .limit(50000); // lift PostgREST 1000-row default cap
 
       if (holes) {
         this.holes = holes.map(h => ({
@@ -395,11 +403,16 @@ export class CorrelationDiscovery {
   private analyzeGirScoringCorrelations(): MetricCorrelation[] {
     const correlations: MetricCorrelation[] = [];
 
-    // Need rounds with both GIR and score data
-    const validRounds = this.rounds.filter(r => r.total_gir !== null);
+    // Need rounds with both GIR and score data. GIR% denominator is the
+    // per-round opportunity count (total_gir_possible = holes played), NOT a
+    // hardcoded 18 — dividing 9-hole rounds by 18 halved their GIR% and
+    // corrupted the correlation.
+    const validRounds = this.rounds.filter(
+      r => r.total_gir !== null && r.total_gir_possible !== null && r.total_gir_possible > 0,
+    );
     if (validRounds.length < 5) return correlations;
 
-    const girValues = validRounds.map(r => (r.total_gir ?? 0) / 18 * 100); // Convert to percentage
+    const girValues = validRounds.map(r => ((r.total_gir ?? 0) / (r.total_gir_possible ?? 18)) * 100); // Convert to percentage
     const scoreValues = validRounds.map(r => r.score_to_par);
 
     const correlation = this.calculatePearsonCorrelation(girValues, scoreValues);
@@ -439,15 +452,20 @@ export class CorrelationDiscovery {
 
     // Overall fairway to scoring correlation
     // Filter rounds with fairway data
-    // Standard assumption: 14 fairway opportunities per 18-hole round (par 4s + par 5s)
-    const STANDARD_FAIRWAY_OPPORTUNITIES = 14;
+    // Fallback fairway opportunities when total_fairways is missing on legacy rows
+    const FALLBACK_FAIRWAY_OPPORTUNITIES = 14;
 
     const validRounds = this.rounds.filter(r => r.total_fairways_hit !== null);
 
     if (validRounds.length < 5) return correlations;
 
+    // Per-round denominator = actual fairway opportunities (par 4s + par 5s),
+    // mirroring orchestrator.ts and outcome-validator.ts; falls back to 14 only on
+    // legacy null/zero rows. Per CANON fairway% definition.
     const fairwayPcts = validRounds.map(r =>
-      ((r.total_fairways_hit ?? 0) / STANDARD_FAIRWAY_OPPORTUNITIES) * 100
+      ((r.total_fairways_hit ?? 0) /
+        ((r.total_fairways ?? 0) > 0 ? (r.total_fairways as number) : FALLBACK_FAIRWAY_OPPORTUNITIES)) *
+      100
     );
     const scoreValues = validRounds.map(r => r.score_to_par);
 

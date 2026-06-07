@@ -14,6 +14,453 @@ export type Database = {
   }
   public: {
     Tables: {
+      _bk_coach_insights_orphans_20260606: {
+        Row: {
+          acknowledged_at: string | null
+          action_date: string | null
+          action_taken: boolean | null
+          action_type: string | null
+          addressed_at: string | null
+          archived_at: string | null
+          category: string | null
+          coach_id: string | null
+          content: string | null
+          created_at: string | null
+          dismissed: boolean | null
+          dismissed_at: string | null
+          engine_version: string | null
+          evidence: Json | null
+          id: string | null
+          insight_type: string | null
+          lifecycle_state: string | null
+          metadata: Json | null
+          outcome_measured_at: string | null
+          outcome_metric_after: number | null
+          outcome_metric_before: number | null
+          outcome_metric_name: string | null
+          outcome_notes: string | null
+          outcome_status: string | null
+          player_id: string | null
+          priority: string | null
+          resolved_at: string | null
+          signature: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          team_id: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          action_date?: string | null
+          action_taken?: boolean | null
+          action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
+          coach_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          engine_version?: string | null
+          evidence?: Json | null
+          id?: string | null
+          insight_type?: string | null
+          lifecycle_state?: string | null
+          metadata?: Json | null
+          outcome_measured_at?: string | null
+          outcome_metric_after?: number | null
+          outcome_metric_before?: number | null
+          outcome_metric_name?: string | null
+          outcome_notes?: string | null
+          outcome_status?: string | null
+          player_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          signature?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          team_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          action_date?: string | null
+          action_taken?: boolean | null
+          action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
+          coach_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          engine_version?: string | null
+          evidence?: Json | null
+          id?: string | null
+          insight_type?: string | null
+          lifecycle_state?: string | null
+          metadata?: Json | null
+          outcome_measured_at?: string | null
+          outcome_metric_after?: number | null
+          outcome_metric_before?: number | null
+          outcome_metric_name?: string | null
+          outcome_notes?: string | null
+          outcome_status?: string | null
+          player_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          signature?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          team_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _bk_coach_insights_v2active_20260606: {
+        Row: {
+          acknowledged_at: string | null
+          action_date: string | null
+          action_taken: boolean | null
+          action_type: string | null
+          addressed_at: string | null
+          archived_at: string | null
+          category: string | null
+          coach_id: string | null
+          content: string | null
+          created_at: string | null
+          dismissed: boolean | null
+          dismissed_at: string | null
+          engine_version: string | null
+          evidence: Json | null
+          id: string | null
+          insight_type: string | null
+          lifecycle_state: string | null
+          metadata: Json | null
+          outcome_measured_at: string | null
+          outcome_metric_after: number | null
+          outcome_metric_before: number | null
+          outcome_metric_name: string | null
+          outcome_notes: string | null
+          outcome_status: string | null
+          player_id: string | null
+          priority: string | null
+          resolved_at: string | null
+          signature: string | null
+          source_id: string | null
+          source_type: string | null
+          status: string | null
+          team_id: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          action_date?: string | null
+          action_taken?: boolean | null
+          action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
+          coach_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          engine_version?: string | null
+          evidence?: Json | null
+          id?: string | null
+          insight_type?: string | null
+          lifecycle_state?: string | null
+          metadata?: Json | null
+          outcome_measured_at?: string | null
+          outcome_metric_after?: number | null
+          outcome_metric_before?: number | null
+          outcome_metric_name?: string | null
+          outcome_notes?: string | null
+          outcome_status?: string | null
+          player_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          signature?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          team_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          action_date?: string | null
+          action_taken?: boolean | null
+          action_type?: string | null
+          addressed_at?: string | null
+          archived_at?: string | null
+          category?: string | null
+          coach_id?: string | null
+          content?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          dismissed_at?: string | null
+          engine_version?: string | null
+          evidence?: Json | null
+          id?: string | null
+          insight_type?: string | null
+          lifecycle_state?: string | null
+          metadata?: Json | null
+          outcome_measured_at?: string | null
+          outcome_metric_after?: number | null
+          outcome_metric_before?: number | null
+          outcome_metric_name?: string | null
+          outcome_notes?: string | null
+          outcome_status?: string | null
+          player_id?: string | null
+          priority?: string | null
+          resolved_at?: string | null
+          signature?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          team_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _bk_patterns_v2_20260606: {
+        Row: {
+          actionability: number | null
+          conditions: Json | null
+          confidence: number | null
+          conviction: number | null
+          created_at: string | null
+          dismissed_at: string | null
+          dismissed_reason: string | null
+          first_detected: string | null
+          id: string | null
+          is_active: boolean | null
+          last_occurrence: string | null
+          lifecycle_state: string | null
+          lift: number | null
+          metadata: Json | null
+          occurrence_count: number | null
+          outcome: Json | null
+          pattern_type: string | null
+          player_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          sample_size: number | null
+          severity: string | null
+          source_round_ids: string[] | null
+          stroke_impact: number | null
+          strokes_impact: number | null
+          support: number | null
+          trend: string | null
+          updated_at: string | null
+          validated_by_coach: boolean | null
+          validation_date: string | null
+          validator_coach_id: string | null
+        }
+        Insert: {
+          actionability?: number | null
+          conditions?: Json | null
+          confidence?: number | null
+          conviction?: number | null
+          created_at?: string | null
+          dismissed_at?: string | null
+          dismissed_reason?: string | null
+          first_detected?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_occurrence?: string | null
+          lifecycle_state?: string | null
+          lift?: number | null
+          metadata?: Json | null
+          occurrence_count?: number | null
+          outcome?: Json | null
+          pattern_type?: string | null
+          player_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          sample_size?: number | null
+          severity?: string | null
+          source_round_ids?: string[] | null
+          stroke_impact?: number | null
+          strokes_impact?: number | null
+          support?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          validated_by_coach?: boolean | null
+          validation_date?: string | null
+          validator_coach_id?: string | null
+        }
+        Update: {
+          actionability?: number | null
+          conditions?: Json | null
+          confidence?: number | null
+          conviction?: number | null
+          created_at?: string | null
+          dismissed_at?: string | null
+          dismissed_reason?: string | null
+          first_detected?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          last_occurrence?: string | null
+          lifecycle_state?: string | null
+          lift?: number | null
+          metadata?: Json | null
+          occurrence_count?: number | null
+          outcome?: Json | null
+          pattern_type?: string | null
+          player_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          sample_size?: number | null
+          severity?: string | null
+          source_round_ids?: string[] | null
+          stroke_impact?: number | null
+          strokes_impact?: number | null
+          support?: number | null
+          trend?: string | null
+          updated_at?: string | null
+          validated_by_coach?: boolean | null
+          validation_date?: string | null
+          validator_coach_id?: string | null
+        }
+        Relationships: []
+      }
+      _bk_sg_recalib_20260606_player_cache: {
+        Row: {
+          player_id: string | null
+          rounds_played: number | null
+          sg_approach_per_round: number | null
+          sg_around_green_per_round: number | null
+          sg_putting_per_round: number | null
+          sg_tee_per_round: number | null
+          sg_total_per_round: number | null
+          snapshot_at: string | null
+          strokes_gained_approach: number | null
+          strokes_gained_around_green: number | null
+          strokes_gained_putting: number | null
+          strokes_gained_tee: number | null
+          strokes_gained_total: number | null
+        }
+        Insert: {
+          player_id?: string | null
+          rounds_played?: number | null
+          sg_approach_per_round?: number | null
+          sg_around_green_per_round?: number | null
+          sg_putting_per_round?: number | null
+          sg_tee_per_round?: number | null
+          sg_total_per_round?: number | null
+          snapshot_at?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+        }
+        Update: {
+          player_id?: string | null
+          rounds_played?: number | null
+          sg_approach_per_round?: number | null
+          sg_around_green_per_round?: number | null
+          sg_putting_per_round?: number | null
+          sg_tee_per_round?: number | null
+          sg_total_per_round?: number | null
+          snapshot_at?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+        }
+        Relationships: []
+      }
+      _bk_sg_recalib_20260606_round_cache: {
+        Row: {
+          player_id: string | null
+          round_id: string | null
+          snapshot_at: string | null
+          strokes_gained_approach: number | null
+          strokes_gained_around_green: number | null
+          strokes_gained_putting: number | null
+          strokes_gained_tee: number | null
+          strokes_gained_total: number | null
+        }
+        Insert: {
+          player_id?: string | null
+          round_id?: string | null
+          snapshot_at?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+        }
+        Update: {
+          player_id?: string | null
+          round_id?: string | null
+          snapshot_at?: string | null
+          strokes_gained_approach?: number | null
+          strokes_gained_around_green?: number | null
+          strokes_gained_putting?: number | null
+          strokes_gained_tee?: number | null
+          strokes_gained_total?: number | null
+        }
+        Relationships: []
+      }
+      _bk_sg_recalib_20260606_standing: {
+        Row: {
+          computed_at: string | null
+          level_avg: number | null
+          level_pct: number | null
+          metric_id: string | null
+          pga_delta: number | null
+          pga_value: number | null
+          player_id: string | null
+          player_value: number | null
+          snapshot_at: string | null
+          team_avg: number | null
+          team_pct: number | null
+        }
+        Insert: {
+          computed_at?: string | null
+          level_avg?: number | null
+          level_pct?: number | null
+          metric_id?: string | null
+          pga_delta?: number | null
+          pga_value?: number | null
+          player_id?: string | null
+          player_value?: number | null
+          snapshot_at?: string | null
+          team_avg?: number | null
+          team_pct?: number | null
+        }
+        Update: {
+          computed_at?: string | null
+          level_avg?: number | null
+          level_pct?: number | null
+          metric_id?: string | null
+          pga_delta?: number | null
+          pga_value?: number | null
+          player_id?: string | null
+          player_value?: number | null
+          snapshot_at?: string | null
+          team_avg?: number | null
+          team_pct?: number | null
+        }
+        Relationships: []
+      }
       admin_analytics_events: {
         Row: {
           created_at: string
@@ -8117,7 +8564,9 @@ export type Database = {
           putt_make_pct_0_3ft: number | null
           putt_make_pct_10_15ft: number | null
           putt_make_pct_15_20ft: number | null
+          putt_make_pct_15_25ft: number | null
           putt_make_pct_20_plus_ft: number | null
+          putt_make_pct_25_plus_ft: number | null
           putt_make_pct_3_5ft: number | null
           putt_make_pct_5_10ft: number | null
           putt_make_pct_left_to_right: number | null
@@ -8196,7 +8645,9 @@ export type Database = {
           putt_make_pct_0_3ft?: number | null
           putt_make_pct_10_15ft?: number | null
           putt_make_pct_15_20ft?: number | null
+          putt_make_pct_15_25ft?: number | null
           putt_make_pct_20_plus_ft?: number | null
+          putt_make_pct_25_plus_ft?: number | null
           putt_make_pct_3_5ft?: number | null
           putt_make_pct_5_10ft?: number | null
           putt_make_pct_left_to_right?: number | null
@@ -8275,7 +8726,9 @@ export type Database = {
           putt_make_pct_0_3ft?: number | null
           putt_make_pct_10_15ft?: number | null
           putt_make_pct_15_20ft?: number | null
+          putt_make_pct_15_25ft?: number | null
           putt_make_pct_20_plus_ft?: number | null
+          putt_make_pct_25_plus_ft?: number | null
           putt_make_pct_3_5ft?: number | null
           putt_make_pct_5_10ft?: number | null
           putt_make_pct_left_to_right?: number | null
@@ -9998,6 +10451,7 @@ export type Database = {
           handicap_system: string | null
           id: string
           scoring_format: string | null
+          sg_benchmark_level: string
           team_id: string
           timezone: string | null
           updated_at: string | null
@@ -10008,6 +10462,7 @@ export type Database = {
           handicap_system?: string | null
           id?: string
           scoring_format?: string | null
+          sg_benchmark_level?: string
           team_id: string
           timezone?: string | null
           updated_at?: string | null
@@ -10018,6 +10473,7 @@ export type Database = {
           handicap_system?: string | null
           id?: string
           scoring_format?: string | null
+          sg_benchmark_level?: string
           team_id?: string
           timezone?: string | null
           updated_at?: string | null
@@ -10755,6 +11211,7 @@ export type Database = {
         Args: { p_ago30d: string }
         Returns: Json
       }
+      get_admin_platform_stat_averages: { Args: never; Returns: Json }
       get_admin_rounds_rollup: {
         Args: {
           p_ago12w: string
@@ -11200,6 +11657,14 @@ export type Database = {
           p_shots: Json
         }
         Returns: Json
+      }
+      update_player_distance_proximity: {
+        Args: { p_player_id: string }
+        Returns: undefined
+      }
+      update_player_putt_make_pct: {
+        Args: { p_player_id: string }
+        Returns: undefined
       }
       update_player_stats_strokes_gained: {
         Args: { p_player_id: string }

@@ -109,7 +109,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
 
       {/* Proximity by Distance */}
       <StatSection title="Proximity by Distance (feet from hole)" delay={0.4} collapsible>
-        <StatRow label="30-75 yards" value={stats.approachProx30_75 ? `${Math.round(stats.approachProx30_75)}'` : '-'} index={0} />
+        <StatRow label="50-75 yards" value={stats.approachProx30_75 ? `${Math.round(stats.approachProx30_75)}'` : '-'} index={0} />
         <StatRow label="75-100 yards" value={stats.approachProx75_100 ? `${Math.round(stats.approachProx75_100)}'` : '-'} index={1} />
         <StatRow label="100-125 yards" value={stats.approachProx100_125 ? `${Math.round(stats.approachProx100_125)}'` : '-'} index={2} />
         <StatRow label="125-150 yards" value={stats.approachProx125_150 ? `${Math.round(stats.approachProx125_150)}'` : '-'} index={3} />
@@ -138,7 +138,7 @@ export function ApproachStats({ stats }: { stats: GolfStats }) {
             </thead>
             <tbody>
               {[
-                { label: '30-75 yds', data: stats.approachEff30_75 },
+                { label: '50-75 yds', data: stats.approachEff30_75 },
                 { label: '75-100 yds', data: stats.approachEff75_100 },
                 { label: '100-125 yds', data: stats.approachEff100_125 },
                 { label: '125-150 yds', data: stats.approachEff125_150 },

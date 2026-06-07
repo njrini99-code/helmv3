@@ -187,13 +187,13 @@ export function ShotAnalyticsPanel({
                 />
                 <StatCard
                   label="Fairway %"
-                  value={`${data.teeStats.fairwayPct}%`}
-                  color={data.teeStats.fairwayPct >= 55 ? 'green' : data.teeStats.fairwayPct >= 45 ? 'amber' : 'red'}
+                  value={data.teeStats.fairwayPct !== null ? `${data.teeStats.fairwayPct}%` : '—'}
+                  color={data.teeStats.fairwayPct === null ? 'slate' : data.teeStats.fairwayPct >= 55 ? 'green' : data.teeStats.fairwayPct >= 45 ? 'amber' : 'red'}
                 />
                 <StatCard
                   label="GIR %"
-                  value={`${data.approachStats.girPct}%`}
-                  color={data.approachStats.girPct >= 50 ? 'green' : data.approachStats.girPct >= 35 ? 'amber' : 'red'}
+                  value={data.approachStats.girPct !== null ? `${data.approachStats.girPct}%` : '—'}
+                  color={data.approachStats.girPct === null ? 'slate' : data.approachStats.girPct >= 50 ? 'green' : data.approachStats.girPct >= 35 ? 'amber' : 'red'}
                 />
                 <StatCard
                   label="Putts/Round"
@@ -268,7 +268,7 @@ export function ShotAnalyticsPanel({
                 <div>
                   <MissPatternChart
                     data={Object.entries(data.approachStats.missBreakdown)
-                      .filter(([, pct]) => pct > 0)
+                      .filter((e): e is [string, number] => e[1] !== null && e[1] > 0)
                       .map(([direction, percentage]) => ({
                         direction,
                         percentage,
@@ -301,10 +301,11 @@ export function ShotAnalyticsPanel({
                             <span className="text-xs text-warm-500">GIR:</span>
                             <span className={cn(
                               'text-xs font-medium',
+                              range.greenHitRate === null ? 'text-warm-500' :
                               range.greenHitRate >= 50 ? 'text-primary-600' :
                               range.greenHitRate >= 30 ? 'text-amber-600' : 'text-red-600'
                             )}>
-                              {range.greenHitRate}%
+                              {range.greenHitRate !== null ? `${range.greenHitRate}%` : '—'}
                             </span>
                             {range.primaryMiss !== 'none' && (
                               <>

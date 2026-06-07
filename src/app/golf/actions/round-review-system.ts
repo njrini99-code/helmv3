@@ -464,7 +464,9 @@ function buildHoleBreakdowns(shots: ShotRow[], round: RoundData, holePars?: Hole
     const hadBunkerShot = holeShots.some(s =>
       (s.shot_type === 'around_green' || s.shot_type === 'approach') && s.lie_before === 'sand'
     );
-    const sandSaveAttempt = hadBunkerShot && !gir;
+    // A greenside-bunker visit is the sand-save attempt; do NOT gate on !gir
+    // (canonical denominator = bunker visits, matching the cache — STAGE 4).
+    const sandSaveAttempt = hadBunkerShot;
     const sandSaveSuccess = sandSaveAttempt && scoreToPar <= 0;
 
     const driveDist = teeShot?.shot_distance ? parseFloat(teeShot.shot_distance) : null;
@@ -708,7 +710,7 @@ function determineSentiment(scoreToPar: number): ReviewSentiment {
 
 function determineGrade(
   scoreToPar: number,
-  girPct: number,
+  girPct: number | null,
   fairwayPct: number | null,
   putts: number,
   playerAvgs?: { avgScore: number; avgScoreToPar: number; avgPutts: number; avgGirPct: number; avgFairwayPct: number } | null
@@ -736,9 +738,11 @@ function determineGrade(
     score += scoreVal * 2;
     factors += 2;
 
-    const girVal = relativeGrade(girPct, playerAvgs.avgGirPct, 'higher');
-    score += girVal;
-    factors++;
+    if (girPct !== null) {
+      const girVal = relativeGrade(girPct, playerAvgs.avgGirPct, 'higher');
+      score += girVal;
+      factors++;
+    }
 
     if (fairwayPct !== null) {
       const fwVal = relativeGrade(fairwayPct, playerAvgs.avgFairwayPct, 'higher');
@@ -755,9 +759,11 @@ function determineGrade(
     score += scoreVal * 2;
     factors += 2;
 
-    const girVal = girPct >= 70 ? 5 : girPct >= 60 ? 4 : girPct >= 50 ? 3 : girPct >= 40 ? 2 : 1;
-    score += girVal;
-    factors++;
+    if (girPct !== null) {
+      const girVal = girPct >= 70 ? 5 : girPct >= 60 ? 4 : girPct >= 50 ? 3 : girPct >= 40 ? 2 : 1;
+      score += girVal;
+      factors++;
+    }
 
     if (fairwayPct !== null) {
       const fwVal = fairwayPct >= 70 ? 5 : fairwayPct >= 60 ? 4 : fairwayPct >= 50 ? 3 : fairwayPct >= 40 ? 2 : 1;
@@ -820,7 +826,7 @@ function generateReviewContent(
   const shotGirHits = holes.filter(h => h.gir);
   const girHitsCount = round.total_gir ?? shotGirHits.length;
   const girTotal = round.total_gir_possible ?? holes.length;
-  const girPct = girTotal > 0 ? Math.round((girHitsCount / girTotal) * 100) : 0;
+  const girPct = girTotal > 0 ? Math.round((girHitsCount / girTotal) * 100) : null;
   // shotGirHits used for highlight descriptions (hole numbers)
 
   const scrambleAttemptsList = holes.filter(h => h.scrambleAttempt);
@@ -1036,7 +1042,7 @@ function generateReviewContent(
       });
     }
   }
-  if (girPct < 50 && girTotal > 0) {
+  if (girPct !== null && girPct < 50 && girTotal > 0) {
     const improvedGir = Math.round(girTotal * 0.5);
     const additionalGIRs = improvedGir - girHitsCount;
     if (additionalGIRs > 0) {
@@ -1095,7 +1101,9 @@ function generateReviewContent(
   };
 
   keyStats.push({ label: 'Total Putts', value: `${totalPutts}`, comparison: cmp(totalPutts, playerAvgs?.avgPutts, 'lower', 2) });
-  keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher', 5) });
+  if (girPct !== null) {
+    keyStats.push({ label: 'Greens in Reg', value: `${girHitsCount}/${girTotal} (${girPct}%)`, comparison: cmp(girPct, playerAvgs?.avgGirPct, 'higher', 5) });
+  }
   if (fairwayPct !== null) {
     keyStats.push({ label: 'Fairways', value: `${fairwaysHit}/${fairwayTotal} (${fairwayPct}%)`, comparison: cmp(fairwayPct, playerAvgs?.avgFairwayPct, 'higher', 5) });
   }
@@ -1196,7 +1204,7 @@ function generateReviewContent(
       });
     }
   }
-  if (girPct < 40) {
+  if (girPct !== null && girPct < 40) {
     areasForImprovement.push({
       area: `Low GIR (${girPct}%)`,
       recommendation: `Only hit ${girHitsCount} of ${girTotal} greens. This put constant pressure on your short game.`,

@@ -108,7 +108,8 @@ async function fetchScoredHoles(
     .eq('golf_rounds.player_id', playerId)
     .gte('golf_rounds.round_date', windowStartIso)
     .not('score', 'is', null)
-    .not('par', 'is', null);
+    .not('par', 'is', null)
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   if (error) {
     throw new Error(`course-management.fetchScoredHoles failed: ${error.message}`);

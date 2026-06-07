@@ -665,7 +665,8 @@ export async function getStatsSummary(
     .select('score, par')
     .in('round_id', roundIds)
     .not('score', 'is', null)
-    .eq('gir', false);
+    .eq('gir', false)
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -887,7 +888,11 @@ async function queryDetailedStatsWithClient(
       supabase
         .from('golf_holes')
         .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir')
-        .in('round_id', roundIds),
+        .in('round_id', roundIds)
+        // PostgREST returns at most 1000 rows by default; a season exceeds that
+        // (e.g. 1377 holes for one team), silently truncating aggregates. An
+        // explicit high limit lifts the cap in a single request.
+        .limit(50000),
       supabase
         .from('golf_shots')
         .select(`
@@ -918,7 +923,10 @@ async function queryDetailedStatsWithClient(
         `)
         .in('round_id', roundIds)
         .order('hole_number')
-        .order('shot_number'),
+        .order('shot_number')
+        // Lift PostgREST's 1000-row default cap (one team has 5796 shots); the
+        // limit applies to the top-level golf_shots rows only, not the embeds.
+        .limit(50000),
     ]);
 
     if (holesError) throw holesError;
@@ -1156,7 +1164,8 @@ export async function getSprayChartData(
       supabase
         .from('golf_holes')
         .select('id, round_id, hole_number, par')
-        .in('round_id', roundIds),
+        .in('round_id', roundIds)
+        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
       supabase
         .from('golf_shots')
         .select(`
@@ -1183,7 +1192,8 @@ export async function getSprayChartData(
         .in('round_id', roundIds)
         .in('shot_type', ['tee', 'approach'])
         .order('hole_number')
-        .order('shot_number'),
+        .order('shot_number')
+        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
     ]);
 
     if (holesError) throw holesError;
@@ -1708,7 +1718,8 @@ export async function getTeamComparison(
     .select('round_id, score, par')
     .in('round_id', teamRoundIds)
     .not('score', 'is', null)
-    .eq('gir', false);
+    .eq('gir', false)
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -2091,7 +2102,8 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     .eq('golf_rounds.status', 'completed')
     .not('score', 'is', null)
     .order('round_id')
-    .order('hole_number');
+    .order('hole_number')
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   if (!holesData || holesData.length === 0) {
     return {
@@ -2343,7 +2355,11 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
         totalStrokes9 += r.score;
         roundsPlayed9++;
         scores9.push(r.score);
-      } else {
+      } else if (r.holesPlayed === 18) {
+        // Strictly 18-hole rounds only, matching the canonical cache
+        // (scoring_average = SUM/COUNT over holes_played = 18). Partial
+        // rounds (10-17 holes) are excluded from the 18-hole bucket; they
+        // still feed the normalized "all formats" scoring_average below.
         totalStrokes18 += r.score;
         roundsPlayed18++;
         scores18.push(r.score);

@@ -1889,7 +1889,7 @@ export async function generateTeamInsight(): Promise<{
     const { data: statsRows } = await supabase
       .from('golf_player_stats_cache')
       .select(
-        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_20ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
+        'player_id, rounds_in_calculation, scoring_average, scoring_average_vs_par, strokes_gained_total, strokes_gained_tee, strokes_gained_approach, strokes_gained_around_green, strokes_gained_putting, gir_percentage, driving_accuracy_percentage, scrambling_percentage, putts_per_round, approach_proximity_average, three_putt_percentage, penalty_strokes_per_round, putt_make_pct_5_10ft, putt_make_pct_10_15ft, putt_make_pct_15_25ft, approach_miss_left_pct, approach_miss_right_pct, approach_miss_short_pct, approach_miss_long_pct, par3_average, par4_average, par5_average, last_5_average, improvement_trend, trend_direction, best_round, worst_round'
       )
       .in('player_id', playerIds);
 

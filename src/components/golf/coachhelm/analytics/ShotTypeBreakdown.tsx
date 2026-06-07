@@ -32,9 +32,9 @@ const THRESHOLDS = {
   inside5ft: { excellent: 90, good: 80, needsWork: 70 },
 };
 
-function getBarColor(value: number, metric: keyof typeof THRESHOLDS, lowerIsBetter = false): string {
+function getBarColor(value: number | null, metric: keyof typeof THRESHOLDS, lowerIsBetter = false): string {
   const threshold = THRESHOLDS[metric];
-  if (!threshold) return '#94a3b8';
+  if (value === null || !threshold) return '#94a3b8'; // neutral gray for "no data"
 
   if (lowerIsBetter) {
     if (value <= threshold.excellent) return '#16A34A'; // Green
@@ -49,9 +49,9 @@ function getBarColor(value: number, metric: keyof typeof THRESHOLDS, lowerIsBett
   }
 }
 
-function getPerformanceLabel(value: number, metric: keyof typeof THRESHOLDS, lowerIsBetter = false): string {
+function getPerformanceLabel(value: number | null, metric: keyof typeof THRESHOLDS, lowerIsBetter = false): string {
   const threshold = THRESHOLDS[metric];
-  if (!threshold) return '';
+  if (value === null || !threshold) return ''; // no badge when there's no data
 
   if (lowerIsBetter) {
     if (value <= threshold.excellent) return 'Excellent';
@@ -68,7 +68,7 @@ function getPerformanceLabel(value: number, metric: keyof typeof THRESHOLDS, low
 
 interface BarItemProps {
   label: string;
-  value: number;
+  value: number | null;
   maxValue?: number;
   suffix?: string;
   color: string;
@@ -90,7 +90,8 @@ function BarItem({
   delay = 0,
 }: BarItemProps) {
   const prefersReducedMotion = useReducedMotion();
-  const percentage = Math.min((value / maxValue) * 100, 100);
+  // null value = no data → empty bar + "—" readout.
+  const percentage = value === null ? 0 : Math.min((value / maxValue) * 100, 100);
 
   return (
     <div className="space-y-1.5">
@@ -112,8 +113,8 @@ function BarItem({
           )}
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{value}</span>
-          <span className="text-xs text-warm-500">{suffix}</span>
+          <span className="text-[17px] font-medium text-warm-900 tracking-[-0.012em]">{value === null ? '—' : value}</span>
+          {value !== null && <span className="text-xs text-warm-500">{suffix}</span>}
         </div>
       </div>
 
@@ -173,18 +174,18 @@ export function ShotTypeBreakdown({
               delay={0.1}
             />
 
-            {(teeStats.leftMissPct > 0 || teeStats.rightMissPct > 0) && (
+            {((teeStats.leftMissPct ?? 0) > 0 || (teeStats.rightMissPct ?? 0) > 0) && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-warm-500">Miss Left</span>
-                    <span className="text-sm font-medium text-warm-700">{teeStats.leftMissPct}%</span>
+                    <span className="text-sm font-medium text-warm-700">{teeStats.leftMissPct ?? 0}%</span>
                   </div>
                   <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-blue-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
-                      animate={{ width: `${teeStats.leftMissPct}%` }}
+                      animate={{ width: `${teeStats.leftMissPct ?? 0}%` }}
                       transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.2 } : undefined)}
                     />
                   </div>
@@ -192,13 +193,13 @@ export function ShotTypeBreakdown({
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-warm-500">Miss Right</span>
-                    <span className="text-sm font-medium text-warm-700">{teeStats.rightMissPct}%</span>
+                    <span className="text-sm font-medium text-warm-700">{teeStats.rightMissPct ?? 0}%</span>
                   </div>
                   <div className="h-1.5 bg-warm-100 rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-purple-400 rounded-full"
                       initial={animated ? { width: 0 } : undefined}
-                      animate={{ width: `${teeStats.rightMissPct}%` }}
+                      animate={{ width: `${teeStats.rightMissPct ?? 0}%` }}
                       transition={prefersReducedMotion ? { duration: 0 } : (animated ? { duration: 0.4, delay: 0.25 } : undefined)}
                     />
                   </div>
@@ -256,7 +257,7 @@ export function ShotTypeBreakdown({
               <span className="text-xs text-warm-500">Miss Patterns</span>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(approachStats.missBreakdown)
-                  .filter(([, pct]) => pct > 5)
+                  .filter((e): e is [string, number] => e[1] !== null && e[1] > 5)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 4)
                   .map(([dir, pct]) => (
@@ -306,7 +307,7 @@ export function ShotTypeBreakdown({
               delay={0.25}
             />
 
-            {aroundGreenStats.sandSavePct > 0 && (
+            {(aroundGreenStats.sandSavePct ?? 0) > 0 && (
               <BarItem
                 label="Sand Save %"
                 value={aroundGreenStats.sandSavePct}
@@ -343,19 +344,19 @@ export function ShotTypeBreakdown({
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">1-Putt</span>
-                <span className="font-medium text-primary-600">{puttingStats.onePuttRate}%</span>
+                <span className="font-medium text-primary-600">{puttingStats.onePuttRate ?? '—'}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">2-Putt</span>
-                <span className="font-medium text-warm-600">{puttingStats.twoPuttRate}%</span>
+                <span className="font-medium text-warm-600">{puttingStats.twoPuttRate ?? '—'}%</span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-warm-500">3+ Putt</span>
                 <span className={cn(
                   'font-medium',
-                  puttingStats.threePuttRate > 10 ? 'text-red-600' : 'text-warm-600'
+                  (puttingStats.threePuttRate ?? 0) > 10 ? 'text-red-600' : 'text-warm-600'
                 )}>
-                  {puttingStats.threePuttRate}%
+                  {puttingStats.threePuttRate ?? '—'}%
                 </span>
               </div>
             </div>

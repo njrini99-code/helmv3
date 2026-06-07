@@ -41,15 +41,18 @@ type TeeClub = 'driver' | 'non_driver';
 
 interface TeeShotRow {
   club: TeeClub;
-  fairwayHit: boolean;
+  // null = no fairway result recorded for the hole; must NOT be counted as a
+  // miss (canonical fairway denominator is par-4/5 holes with fairway_hit
+  // recorded). Preserve null so the denominator excludes it.
+  fairwayHit: boolean | null;
   shotDistance: number | null; // yards, derived from hole_yardage - distance_to_hole_after
 }
 
 interface TeeGroupStats {
   club: TeeClub;
-  attempts: number;
+  attempts: number; // tee shots with a RECORDED fairway result (fairway denominator)
   fwHit: number;
-  fwPct: number;
+  fwPct: number | null; // null when no recorded fairway results (no data, not 0%)
   avgDistance: number;
   stddevDistance: number;
 }
@@ -165,7 +168,8 @@ async function fetchTeeShots(
     )
     .eq('shot_type', 'tee')
     .eq('golf_rounds.player_id', playerId)
-    .gte('golf_rounds.round_date', windowStartIso);
+    .gte('golf_rounds.round_date', windowStartIso)
+    .limit(50000); // lift PostgREST 1000-row default cap
 
   if (error) {
     throw new Error(`tee-strategy.fetchTeeShots failed: ${error.message}`);
@@ -184,7 +188,7 @@ async function fetchTeeShots(
 
     rows.push({
       club: r.club_type,
-      fairwayHit: hole.fairway_hit === true,
+      fairwayHit: hole.fairway_hit ?? null,
       shotDistance: deriveShotDistance(r),
     });
   }
@@ -211,8 +215,12 @@ function deriveShotDistance(row: JoinedRow): number | null {
 
 function summarizeGroup(rows: TeeShotRow[], club: TeeClub): TeeGroupStats {
   const group = rows.filter((r) => r.club === club);
-  const attempts = group.length;
-  const fwHit = group.filter((r) => r.fairwayHit).length;
+  // Fairway denominator = tee shots with a RECORDED fairway result. Shots with
+  // a null fairway_hit are excluded (not counted as misses).
+  const recorded = group.filter((r) => r.fairwayHit !== null);
+  const attempts = recorded.length;
+  const fwHit = recorded.filter((r) => r.fairwayHit === true).length;
+  // Distance is independent of fairway recording — use every tee shot.
   const distances = group
     .map((r) => r.shotDistance)
     .filter((d): d is number => typeof d === 'number' && Number.isFinite(d));
@@ -231,7 +239,7 @@ function summarizeGroup(rows: TeeShotRow[], club: TeeClub): TeeGroupStats {
     club,
     attempts,
     fwHit,
-    fwPct: attempts > 0 ? fwHit / attempts : 0,
+    fwPct: attempts > 0 ? fwHit / attempts : null,
     avgDistance,
     stddevDistance: Math.sqrt(variance),
   };
@@ -249,6 +257,8 @@ async function emitComparison(
   windowEnd: string,
 ): Promise<void> {
   const { driver, nonDriver } = comparison;
+  // Both groups must have recorded fairway results to compare accuracy.
+  if (driver.fwPct === null || nonDriver.fwPct === null) return;
   const fwGap = driver.fwPct - nonDriver.fwPct; // negative when driver worse
   const distGap = driver.avgDistance - nonDriver.avgDistance; // positive when driver longer
 

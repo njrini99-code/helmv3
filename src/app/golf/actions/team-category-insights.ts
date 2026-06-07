@@ -170,8 +170,11 @@ function roundMetricValue(
     case 'scoring': {
       const scoreToPar = round.score_to_par as number | null;
       if (scoreToPar == null) return null;
+      // Scoring is measured on 18-hole rounds only (matches the canonical
+      // scoring_average), so skip partial/9-hole rounds rather than scaling
+      // a 9-hole score_to_par up to a fictional 18-hole figure.
       const holes = (round.holes_played as number | null) ?? 18;
-      return holes > 0 ? (scoreToPar / holes) * 18 : null;
+      return holes === 18 ? scoreToPar : null;
     }
     default:
       return null;
@@ -516,7 +519,11 @@ export async function getTeamOverview(
           .in('round_id', batch)
           .order('round_id')
           .order('hole_number')
-          .order('shot_number');
+          .order('shot_number')
+          // Batching the round-ID array dodges .in() URL-length limits but NOT
+          // PostgREST's 1000-row default: a 100-round batch is ~7400 shots and
+          // would silently truncate without an explicit limit.
+          .limit(50000);
         if (shotsData) {
           allShotsRaw.push(...(shotsData as unknown as Array<Record<string, unknown>>));
         }

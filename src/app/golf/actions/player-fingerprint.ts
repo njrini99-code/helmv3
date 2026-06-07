@@ -906,13 +906,20 @@ function clamp(v: number, min: number, max: number): number {
 }
 
 function computeScoringAverage(rounds: RoundRow[]): number | null {
-  const scored = rounds.filter((r) => typeof r.total_score === 'number');
+  // Scoring average is defined over 18-hole rounds only; mixing 9-hole
+  // rounds in deflates the average. Treat missing holes_played as 18.
+  const scored = rounds.filter(
+    (r) => typeof r.total_score === 'number' && (r.holes_played ?? 18) === 18,
+  );
   if (scored.length === 0) return null;
   return avgOf(scored.map((r) => r.total_score as number));
 }
 
 function computeScoringVsPar(rounds: RoundRow[]): number | null {
-  const scored = rounds.filter((r) => typeof r.score_to_par === 'number');
+  // 18-hole rounds only, mirroring computeScoringAverage.
+  const scored = rounds.filter(
+    (r) => typeof r.score_to_par === 'number' && (r.holes_played ?? 18) === 18,
+  );
   if (scored.length === 0) return null;
   return avgOf(scored.map((r) => r.score_to_par as number));
 }

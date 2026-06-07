@@ -30,6 +30,7 @@
  */
 
 import { BaseGenerator } from '@/lib/coachhelm/v3/engine/generator-base';
+import { round } from '@/lib/golf/stat-formulas';
 import {
   loadApproachShots,
   bucketApproachDistance,
@@ -129,7 +130,9 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
 
     const greenShots = inBucket.filter(reachedGreen);
     const greenHitN = greenShots.length;
-    const greenHitPct = (100 * greenHitN) / inBucket.length;
+    // 1 dp to match the canonical pct() display contract (inBucket.length > 0
+    // guaranteed by the early return above).
+    const greenHitPct = round((100 * greenHitN) / inBucket.length, 1);
 
     // Proximity is ON-GREEN ONLY (feet), averaged over green-finding shots — never the
     // off-green (yards) misses, which used to be ×3'd into a fake proximity.
@@ -159,7 +162,8 @@ export class ApproachMissGenerator extends BaseGenerator<ApproachMissAggregate> 
       green_hit_n: greenHitN,
       green_hit_pct: greenHitPct,
       proximity_when_hit_feet: proximityWhenHit,
-      penalty_rate_pct: inBucket.length > 0 ? (100 * penaltyCount) / inBucket.length : 0,
+      // inBucket.length > 0 is guaranteed by the early return; 1 dp per canonical pct().
+      penalty_rate_pct: round((100 * penaltyCount) / inBucket.length, 1),
     };
   }
 
