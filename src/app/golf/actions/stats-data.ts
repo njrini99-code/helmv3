@@ -38,6 +38,7 @@ import type {
 } from './stats-data-types';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 
 // ============================================================================
@@ -664,13 +665,14 @@ export async function getStatsSummary(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const roundIds = filteredRounds.map(r => r.id);
-  const { data: holesWithScrambling } = await supabase
+  const { data: holesWithScrambling } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('score, par')
     .in('round_id', roundIds)
     .not('score', 'is', null)
     .eq('gir', false)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   let scramblingAttempts = 0;
   let scramblingMade = 0;
@@ -889,15 +891,13 @@ async function queryDetailedStatsWithClient(
 
   try {
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
-      supabase
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('id, round_id, hole_number, par, yardage, score, putts, fairway_hit, gir, sand_save')
         .in('round_id', roundIds)
-        // PostgREST returns at most 1000 rows by default; a season exceeds that
-        // (e.g. 1377 holes for one team), silently truncating aggregates. An
-        // explicit high limit lifts the cap in a single request.
-        .limit(50000),
-      supabase
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           id,
@@ -928,9 +928,8 @@ async function queryDetailedStatsWithClient(
         .in('round_id', roundIds)
         .order('hole_number')
         .order('shot_number')
-        // Lift PostgREST's 1000-row default cap (one team has 5796 shots); the
-        // limit applies to the top-level golf_shots rows only, not the embeds.
-        .limit(50000),
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1172,12 +1171,13 @@ export async function getSprayChartData(
       : roundsData.map((round) => round.id);
 
     const [{ data: holesData, error: holesError }, { data: shotsData, error: shotsError }] = await Promise.all([
-      supabase
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('id, round_id, hole_number, par')
         .in('round_id', roundIds)
-        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
-      supabase
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_shots')
         .select(`
           id,
@@ -1204,7 +1204,8 @@ export async function getSprayChartData(
         .in('shot_type', ['tee', 'approach'])
         .order('hole_number')
         .order('shot_number')
-        .limit(50000), // lift PostgREST 1000-row default cap (see getDetailedStats)
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
     ]);
 
     if (holesError) throw holesError;
@@ -1724,13 +1725,14 @@ export async function getTeamComparison(
   // Fetch scrambling data from golf_holes — missed GIR + made par or better = scramble
   // Uses (score - par) <= 0 to match the DB trigger definition exactly
   const teamRoundIds = roundsData.map(r => r.id);
-  const { data: teamScramblingData } = await supabase
+  const { data: teamScramblingData } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('round_id, score, par')
     .in('round_id', teamRoundIds)
     .not('score', 'is', null)
     .eq('gir', false)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   // Build a map of round_id -> player_id for scrambling aggregation
   const roundToPlayer = new Map<string, string>();
@@ -2095,7 +2097,7 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
   }
 
   // Get all holes with their scores
-  const { data: holesData } = await supabase
+  const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select(`
       id,
@@ -2114,7 +2116,8 @@ export async function getWorstHoleAnalysis(playerId: string): Promise<WorstHoleR
     .not('score', 'is', null)
     .order('round_id')
     .order('hole_number')
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   if (!holesData || holesData.length === 0) {
     return {

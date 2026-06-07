@@ -15,7 +15,7 @@ function createChainableMock({
     error,
     count: Array.isArray(data) ? data.length : 0,
   };
-  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'filter'];
+  const methods = ['select', 'eq', 'in', 'gte', 'lte', 'not', 'order', 'limit', 'range', 'filter'];
   for (const method of methods) {
     chain[method] = vi.fn(() => chain);
   }

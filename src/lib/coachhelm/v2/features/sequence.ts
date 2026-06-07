@@ -9,6 +9,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type { SequenceFeatures } from '../types';
 
 interface HoleData {
@@ -56,13 +57,14 @@ export async function extractSequenceFeatures(
   const roundIds = rounds.map((r) => r.id);
 
   // Get hole data for these rounds
-  const { data: holes, error: holesError } = await supabase
+  const { data: holes, error: holesError } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('hole_number, score, par, round_id')
     .in('round_id', roundIds)
     .order('round_id')
     .order('hole_number')
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   if (holesError || !holes || holes.length < 36) {
     return null;

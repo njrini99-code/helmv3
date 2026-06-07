@@ -12,6 +12,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { fromUntyped } from '@/lib/supabase/untyped';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type {
   ApproachShotWithLie,
   CompositeContext,
@@ -50,12 +51,13 @@ export async function loadHoleScores(
   const roundIds = await recentCompletedRoundIds(supabase, playerId, windowDays);
   if (roundIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select('round_id, hole_number, par, score')
     .in('round_id', roundIds)
     .not('score', 'is', null)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
   if (error || !data) return [];
 
   return data

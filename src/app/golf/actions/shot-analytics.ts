@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/server';
 import { z } from 'zod';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // INPUT VALIDATION
@@ -285,19 +286,20 @@ export async function getPlayerShotAnalytics(
     const roundIds = rounds.map(r => r.id);
 
     // Get holes data
-    const { data: holesData } = await supabase
+    const { data: holesData } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_holes')
       .select(`
         id, round_id, hole_number, par, score, putts,
         fairway_hit, gir, up_and_down, sand_save
       `)
       .in('round_id', roundIds)
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     const holes = (holesData || []) as HoleRow[];
 
     // Get shot-level data
-    const { data: shotsData } = await supabase
+    const { data: shotsData } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select(`
         id, round_id, hole_number, shot_number, shot_type, club_type,
@@ -306,7 +308,8 @@ export async function getPlayerShotAnalytics(
         miss_direction, result, putt_distance_feet, putt_made
       `)
       .in('round_id', roundIds)
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     const shots = (shotsData || []) as ShotRow[];
 

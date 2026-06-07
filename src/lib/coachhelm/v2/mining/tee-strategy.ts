@@ -19,6 +19,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
@@ -147,7 +148,7 @@ async function fetchTeeShots(
 ): Promise<TeeShotRow[]> {
   const windowStartIso = windowStart.toISOString().slice(0, 10);
 
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_shots')
     .select(
       `
@@ -169,7 +170,8 @@ async function fetchTeeShots(
     .eq('shot_type', 'tee')
     .eq('golf_rounds.player_id', playerId)
     .gte('golf_rounds.round_date', windowStartIso)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   if (error) {
     throw new Error(`tee-strategy.fetchTeeShots failed: ${error.message}`);

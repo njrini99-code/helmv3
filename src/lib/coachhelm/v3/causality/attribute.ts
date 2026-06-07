@@ -26,6 +26,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import {
   lookupMetricSource,
   ALL_SCORING_COLUMNS,
@@ -200,7 +201,7 @@ async function averageHoleLevelByPar(
   startIso: string,
   endIso: string,
 ): Promise<WindowResult> {
-  const { data } = await sb
+  const { data } = await fetchAllRowsResult((from, to) => sb
     .from('golf_holes')
     .select('score, par, round_id, golf_rounds!inner(round_date, status, player_id)')
     .eq('golf_rounds.player_id', player_id)
@@ -208,7 +209,8 @@ async function averageHoleLevelByPar(
     .eq('par', source.par_filter)
     .gte('golf_rounds.round_date', startIso.slice(0, 10))
     .lte('golf_rounds.round_date', endIso.slice(0, 10))
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
   type Row = Record<string, unknown>;
   const diffs: number[] = [];
   const roundIds = new Set<string>();

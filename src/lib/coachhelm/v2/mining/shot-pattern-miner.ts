@@ -12,6 +12,7 @@
 
 import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import type {
   ShotPattern,
   ShotPatternAnalysis,
@@ -191,14 +192,15 @@ export class ShotPatternMiner {
     // Get all shots from those rounds. Project only the columns the miner
     // actually consumes (was `select('*')`). Keep this list in sync with the
     // `RawShot` interface above — under-projecting will silently drop fields.
-    const { data: shots, error } = await supabase
+    const { data: shots, error } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select('id,round_id,hole_number,shot_number,shot_type,club_type,lie_before,distance_to_hole_before,distance_unit_before,distance_to_hole_after,distance_unit_after,miss_direction,shot_distance,result')
       .in('round_id', roundIds)
       .order('round_id')
       .order('hole_number')
       .order('shot_number')
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     if (error || !shots) {
       return;

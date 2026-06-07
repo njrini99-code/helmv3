@@ -29,6 +29,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 // ============================================================================
 // TYPES
@@ -628,7 +629,7 @@ class LieSpecificAnalyzer {
     const roundIds = rounds.map((r) => r.id);
 
     // Get all shots from those rounds (excluding putts)
-    const { data: shots, error } = await supabase
+    const { data: shots, error } = await fetchAllRowsResult((from, to) => supabase
       .from('golf_shots')
       .select('*')
       .in('round_id', roundIds)
@@ -636,7 +637,8 @@ class LieSpecificAnalyzer {
       .order('round_id')
       .order('hole_number')
       .order('shot_number')
-      .limit(50000); // lift PostgREST 1000-row default cap
+      .order('id', { ascending: true })
+      .range(from, to)); // paginate past PostgREST 1000-row cap
 
     if (error || !shots) {
       return;

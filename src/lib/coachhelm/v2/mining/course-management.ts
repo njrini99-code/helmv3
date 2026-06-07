@@ -18,6 +18,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/types/database';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { upsertInsight, attachDrills, GATED_OUT } from '../insights/upsert';
 import type { InsightEvidence } from '../insights/types';
@@ -90,7 +91,7 @@ async function fetchScoredHoles(
   playerId: string,
   windowStartIso: string,
 ): Promise<HoleRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllRowsResult((from, to) => supabase
     .from('golf_holes')
     .select(
       `
@@ -109,7 +110,8 @@ async function fetchScoredHoles(
     .gte('golf_rounds.round_date', windowStartIso)
     .not('score', 'is', null)
     .not('par', 'is', null)
-    .limit(50000); // lift PostgREST 1000-row default cap
+    .order('id', { ascending: true })
+    .range(from, to)); // paginate past PostgREST 1000-row cap
 
   if (error) {
     throw new Error(`course-management.fetchScoredHoles failed: ${error.message}`);

@@ -13,6 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fromUntyped } from '@/lib/supabase/untyped';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 import { logServerError } from '@/lib/server-error-logger';
 import { GENOME_DIMENSIONS } from './registry';
 import type {
@@ -68,18 +69,20 @@ export async function computeGenomeForPlayer(player_id: string): Promise<Compute
 
   if (roundIds.length > 0) {
     const [{ data: holes }, { data: shotRows }] = await Promise.all([
-      supabase
+      fetchAllRowsResult((from, to) => supabase
         .from('golf_holes')
         .select('round_id, hole_number, par, score')
         .in('round_id', roundIds)
         .not('score', 'is', null)
-        .limit(50000), // lift PostgREST 1000-row default cap
-      fromUntyped(supabase, 'golf_shots')
+        .order('id', { ascending: true })
+        .range(from, to)), // paginate past PostgREST 1000-row cap
+      fetchAllRowsResult<GenomeShot>((from, to) => fromUntyped(supabase, 'golf_shots')
         .select(
           'round_id, hole_number, shot_type, club_type, lie_before, lie_after, distance_to_hole_before, distance_to_hole_after, distance_unit_after, miss_direction, is_penalty',
         )
         .in('round_id', roundIds)
-        .limit(50000) as { data: GenomeShot[] | null; error: unknown }, // lift 1000-row cap
+        .order('id', { ascending: true })
+        .range(from, to) as unknown as PromiseLike<{ data: GenomeShot[] | null; error: { message: string } | null }>),
     ]);
     hole_scores = (holes ?? [])
       .filter((h): h is { round_id: string; hole_number: number; par: number; score: number } =>
