@@ -120,7 +120,7 @@ export function QualifierViewTabs({ leaderboard, numRounds = 1, showLiveLeaderbo
                       ) : '-'}
                     </td>
                     <td className="py-3 pr-4 text-sm text-warm-600 text-right">
-                      {entry.averageScore > 0 ? entry.averageScore.toFixed(1) : '-'}
+                      {entry.averageScore != null && entry.averageScore > 0 ? entry.averageScore.toFixed(1) : '-'}
                     </td>
                   </tr>
                 );

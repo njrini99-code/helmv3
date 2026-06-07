@@ -36,6 +36,7 @@ import { getGolfSessionProfile } from '@/lib/auth/session';
 import { loadPlayerStandingMap } from '@/lib/coachhelm/v3/standing/loader';
 import { logServerError } from '@/lib/server-error-logger';
 import { describeError } from '@/lib/utils/describe-error';
+import { round } from '@/lib/golf/stat-formulas';
 
 import { verifyPlayerAccess } from './stats-data';
 import type {
@@ -238,7 +239,7 @@ async function buildPuttBuckets(
       metric_id: band.metric_id,
       bucket_id: band.bucket_id,
       label: band.label,
-      team_value: n > 0 ? (100 * (made.get(band.bucket_id) ?? 0)) / n : null,
+      team_value: n > 0 ? round((100 * (made.get(band.bucket_id) ?? 0)) / n, 1) : null,
       pga_value: ref?.pga_tour_value ?? null,
       div1_value: ref?.div1_avg_value ?? null,
       sample_n: n,
@@ -300,7 +301,7 @@ async function buildApproachBuckets(
       metric_id: band.metric_id,
       bucket_id: band.bucket_id,
       label: band.label,
-      team_value: n > 0 ? (sumFt.get(band.bucket_id) ?? 0) / n : null,
+      team_value: n > 0 ? round((sumFt.get(band.bucket_id) ?? 0) / n, 1) : null,
       pga_value: ref?.pga_tour_value ?? null,
       div1_value: ref?.div1_avg_value ?? null,
       sample_n: n,

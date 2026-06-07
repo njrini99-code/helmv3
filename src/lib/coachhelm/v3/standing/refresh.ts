@@ -36,14 +36,16 @@ export const STANDING_REFRESH_METRIC_IDS: readonly MetricId[] = [
   'scoring_par_3',
   'scoring_par_4',
   'scoring_par_5',
-  // NOTE: the 5 putt_make_pct_* metrics (putts_made_3_5ft_pct / 5_10ft_pct /
-  // 10_15ft_pct / 15_25ft_pct / 25_plus_ft_pct) WERE listed here, but the cache
-  // columns they bind to (putt_make_pct_3_5ft … 20_plus_ft) are never populated
-  // by refresh_player_stats_cache — they are 100% NULL in prod (SC2). The RPC
-  // binding therefore yielded 0 rows, so the cron declared them "covered" while
-  // they silently produced nothing. They are moved to
-  // STANDING_REFRESH_DEFERRED_METRIC_IDS below until the cache writer (the SQL
-  // refresh_player_stats_cache RPC) computes per-band make % from putt distances.
+  // Re-promoted 2026-06-06: refresh_player_stats_cache now populates the per-band
+  // putt make % via update_player_putt_make_pct() (migrations 20260606160000 /
+  // 170000), and refresh_player_standing binds 15_25/25_plus to the true
+  // putt_make_pct_15_25ft / 25_plus_ft columns (migration 20260606180000). All 5
+  // bands now upsert real rows that match raw-shot truth.
+  'putts_made_3_5ft_pct',
+  'putts_made_5_10ft_pct',
+  'putts_made_10_15ft_pct',
+  'putts_made_15_25ft_pct',
+  'putts_made_25_plus_ft_pct',
 ] as const;
 
 /**
@@ -78,16 +80,9 @@ export const SHOT_REFRESH_METRIC_IDS: readonly MetricId[] = [
  * Documented here so the cron can return a `metrics_skipped_v1` list.
  */
 export const STANDING_REFRESH_DEFERRED_METRIC_IDS: readonly MetricId[] = [
-  // SC2 (2026-06-06): the 5 putt-make-% metrics are deferred — the cache columns
-  // they bind to are 100% NULL in prod (refresh_player_stats_cache never computes
-  // per-band make % from putt distances), so the RPC binding yielded 0 rows while
-  // the cron mislabeled them "covered". Re-promote to STANDING_REFRESH_METRIC_IDS
-  // once the SQL cache writer populates putt_make_pct_3_5ft … 20_plus_ft.
-  'putts_made_3_5ft_pct',
-  'putts_made_5_10ft_pct',
-  'putts_made_10_15ft_pct',
-  'putts_made_15_25ft_pct',
-  'putts_made_25_plus_ft_pct',
+  // The 5 putt-make-% metrics were re-promoted to STANDING_REFRESH_METRIC_IDS on
+  // 2026-06-06 once update_player_putt_make_pct() began populating the per-band
+  // cache columns (previously 100% NULL — SC2).
   // No public Tour benchmark; computed by W22 PuttBiasGenerator
   'putt_miss_bias_high_pct',
   'putt_miss_bias_low_pct',

@@ -114,8 +114,13 @@ interface TeeStrategyAggregate extends GeneratorAggregate {
 
 function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): GroupStats {
   const subset = rows.filter((r) => r.club_type === club);
-  const attempts = subset.length;
-  const fairwayHits = subset.filter((r) => r.fairway_hit).length;
+  // Fairway denominator = tee shots with a RECORDED fairway result. A null
+  // fairway_hit means "not recorded" and must NOT count as a miss (canonical
+  // fairway denominator: par-4/5 holes with fairway_hit IS NOT NULL).
+  const recorded = subset.filter((r) => r.fairway_hit !== null);
+  const attempts = recorded.length;
+  const fairwayHits = recorded.filter((r) => r.fairway_hit === true).length;
+  // Distance is independent of fairway recording — use every tee shot.
   const distances = subset
     .map((r) => r.shot_distance)
     .filter((d): d is number => typeof d === 'number');
@@ -125,6 +130,8 @@ function summarize(rows: TeeStrategyShot[], club: 'driver' | 'non_driver'): Grou
   return {
     attempts,
     fairwayHits,
+    // attempts === 0 is unreachable in the insight path (the aggregate gate at
+    // MIN_DRIVER_ATTEMPTS / MIN_NON_DRIVER_ATTEMPTS returns null first).
     fairwayPct: attempts > 0 ? fairwayHits / attempts : 0,
     avgDistance,
   };

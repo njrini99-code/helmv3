@@ -32,7 +32,7 @@ export interface StatsRow {
   penalty_strokes_per_round: number | null;
   putt_make_pct_5_10ft: number | null;
   putt_make_pct_10_15ft: number | null;
-  putt_make_pct_15_20ft: number | null;
+  putt_make_pct_15_25ft: number | null;
   approach_miss_left_pct: number | null;
   approach_miss_right_pct: number | null;
   approach_miss_short_pct: number | null;
@@ -398,16 +398,19 @@ function detectPuttingDistancePatterns(
 ): MinedPattern[] {
   const patterns: MinedPattern[] = [];
 
+  // Benchmarks are D1 averages from golf_pga_standards (div1_avg_value) — the
+  // appropriate comparison point for college players. PGA Tour values
+  // (62.2 / 35.7 / 15.4) would flag an average D1 putter as a weakness.
   const puttBenchmarks = {
-    putt_make_pct_5_10ft: 45,
+    putt_make_pct_5_10ft: 50,
     putt_make_pct_10_15ft: 25,
-    putt_make_pct_15_20ft: 15,
+    putt_make_pct_15_25ft: 12,
   };
 
   const puttLabels: Record<string, string> = {
     putt_make_pct_5_10ft: '5-10 feet',
     putt_make_pct_10_15ft: '10-15 feet',
-    putt_make_pct_15_20ft: '15-20 feet',
+    putt_make_pct_15_25ft: '15-25 feet',
   };
 
   for (const [id, stats] of statsMap) {

@@ -342,20 +342,27 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
 
   const rounds = roundsData;
 
-  // Normalize scoring to 18-hole equivalents
-  let totalStrokes = 0;
-  let totalHoles = 0;
+  // Scoring average is defined over 18-hole rounds only (matches the canonical
+  // golf_player_stats_cache.scoring_average = SUM(total_score)/COUNT over rounds
+  // with holes_played = 18). Best round is normalized to 18 holes, matching the
+  // cache's best_round_normalized = MIN(total_score * 18 / holes_played).
+  let totalStrokes18 = 0;
+  let roundsCount18 = 0;
+  let totalToPar18 = 0;
+  let roundsToParCount18 = 0;
   const normalizedScores: number[] = [];
-  const normalizedToParScores: number[] = [];
   for (const r of rounds) {
     const hp = r.holes_played ?? 18;
     if (r.total_score !== null) {
-      totalStrokes += r.total_score;
-      totalHoles += hp;
       normalizedScores.push(Math.round(r.total_score * (18 / hp)));
+      if (hp === 18) {
+        totalStrokes18 += r.total_score;
+        roundsCount18 += 1;
+      }
     }
-    if (r.score_to_par !== null) {
-      normalizedToParScores.push(r.score_to_par * (18 / hp));
+    if (r.score_to_par !== null && hp === 18) {
+      totalToPar18 += r.score_to_par;
+      roundsToParCount18 += 1;
     }
   }
 
@@ -380,11 +387,11 @@ export async function getPlayerQuickSummary(playerId: string): Promise<QuickSumm
     success: true,
     data: {
       roundsPlayed: rounds.length,
-      scoringAverage: totalHoles > 0
-        ? Math.round((totalStrokes / totalHoles) * 18 * 100) / 100
+      scoringAverage: roundsCount18 > 0
+        ? Math.round((totalStrokes18 / roundsCount18) * 100) / 100
         : null,
-      avgScoreToPar: normalizedToParScores.length > 0
-        ? Math.round((normalizedToParScores.reduce((a, b) => a + b, 0) / normalizedToParScores.length) * 100) / 100
+      avgScoreToPar: roundsToParCount18 > 0
+        ? Math.round((totalToPar18 / roundsToParCount18) * 100) / 100
         : null,
       bestRound: normalizedScores.length > 0 ? Math.min(...normalizedScores) : null,
       girPercentage: totalGirOpps > 0 ? Math.round((totalGir / totalGirOpps) * 100 * 10) / 10 : null,

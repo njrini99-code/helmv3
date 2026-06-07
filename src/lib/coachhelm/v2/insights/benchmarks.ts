@@ -17,6 +17,11 @@
  * The generators import resolveTeamAverage + resolvePgaBenchmark and stamp
  * the result onto InsightEvidence.{comparison_*, secondary_*}. The UI
  * renders both as ticks on a horizontal scale in EvidencePanel.
+ *
+ * NOTE (2026-06-06): this module is currently unconsumed — the v3 generators
+ * read PGA benchmarks from the golf_pga_standards table (the single source of
+ * truth). If reviving this module, prefer querying golf_pga_standards over the
+ * hardcoded PGA_BENCHMARKS below so values stay in sync.
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -42,12 +47,15 @@ export const PGA_BENCHMARKS: Record<string, PgaBenchmark> = {
   par_scoring_par4: { value: 0.04, label: 'PGA Tour avg' },
   par_scoring_par5: { value: -0.45, label: 'PGA Tour avg' },
 
-  // Putting make-rate by bucket (0..1 fraction)
-  putt_make_pct_3_5ft: { value: 0.85, label: 'PGA Tour avg' },
-  putt_make_pct_5_10ft: { value: 0.55, label: 'PGA Tour avg' },
-  putt_make_pct_10_15ft: { value: 0.30, label: 'PGA Tour avg' },
-  putt_make_pct_15_20ft: { value: 0.18, label: 'PGA Tour avg' },
-  putt_make_pct_20_25ft: { value: 0.12, label: 'PGA Tour avg' },
+  // Putting make-rate by bucket (0..1 fraction). Values are PGA Tour averages
+  // from golf_pga_standards (putts_made_*_pct ÷ 100). The 15_20/20_25 buckets
+  // are legacy bands the canonical table no longer carries (it uses 15_25 / 25+);
+  // they keep approximate values for backward shape only.
+  putt_make_pct_3_5ft: { value: 0.905, label: 'PGA Tour avg' },
+  putt_make_pct_5_10ft: { value: 0.622, label: 'PGA Tour avg' },
+  putt_make_pct_10_15ft: { value: 0.357, label: 'PGA Tour avg' },
+  putt_make_pct_15_20ft: { value: 0.154, label: 'PGA Tour avg' },
+  putt_make_pct_20_25ft: { value: 0.055, label: 'PGA Tour avg' },
 
   // Approach proximity (in feet, lower is better)
   approach_proximity_50_100y:  { value: 18, label: 'PGA Tour avg' },

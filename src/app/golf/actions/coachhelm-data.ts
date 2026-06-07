@@ -248,7 +248,7 @@ export async function getPlayerProfile(
     // Fetch player's recent rounds (last 30)
     const { data: roundsData, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, total_score, round_date, total_putts, total_gir, total_fairways_hit, holes_played')
+      .select('id, score_to_par, total_score, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('total_score', 'is', null)
@@ -269,11 +269,13 @@ export async function getPlayerProfile(
         scoreToPar: r.score_to_par ?? 0,
         totalScore: r.total_score ?? 0,
         puttsPerRound: r.total_putts ?? 0,
-        girPct: r.holes_played && r.total_gir != null
-          ? (r.total_gir / r.holes_played) * 100
+        // Canonical denominators: GIR over greens-possible, fairway over par-4/5
+        // holes with a recorded fairway result (NOT holes_played, which over-counts).
+        girPct: r.total_gir != null && r.total_gir_possible != null && r.total_gir_possible > 0
+          ? (r.total_gir / r.total_gir_possible) * 100
           : 0,
-        fairwayPct: r.holes_played && r.total_fairways_hit != null
-          ? (r.total_fairways_hit / r.holes_played) * 100
+        fairwayPct: r.total_fairways_hit != null && r.total_fairways != null && r.total_fairways > 0
+          ? (r.total_fairways_hit / r.total_fairways) * 100
           : 0,
       },
     }));
@@ -488,7 +490,7 @@ export async function getPlayerTrendAnalysis(
     // Fetch player's rounds (last 30)
     const { data: roundsData, error: roundsError } = await supabase
       .from('golf_rounds')
-      .select('id, score_to_par, round_date, total_putts, total_gir, total_fairways_hit, holes_played')
+      .select('id, score_to_par, round_date, total_putts, total_gir, total_gir_possible, total_fairways_hit, total_fairways, holes_played')
       .eq('player_id', playerId)
       .eq('status', 'completed')
       .not('score_to_par', 'is', null)
@@ -511,11 +513,13 @@ export async function getPlayerTrendAnalysis(
       metrics: {
         scoreToPar: r.score_to_par ?? 0,
         puttsPerRound: r.total_putts ?? 0,
-        girPct: r.holes_played && r.total_gir != null
-          ? (r.total_gir / r.holes_played) * 100
+        // Canonical denominators: GIR over greens-possible, fairway over par-4/5
+        // holes with a recorded fairway result (NOT holes_played, which over-counts).
+        girPct: r.total_gir != null && r.total_gir_possible != null && r.total_gir_possible > 0
+          ? (r.total_gir / r.total_gir_possible) * 100
           : 0,
-        fairwayPct: r.holes_played && r.total_fairways_hit != null
-          ? (r.total_fairways_hit / r.holes_played) * 100
+        fairwayPct: r.total_fairways_hit != null && r.total_fairways != null && r.total_fairways > 0
+          ? (r.total_fairways_hit / r.total_fairways) * 100
           : 0,
       },
     }));

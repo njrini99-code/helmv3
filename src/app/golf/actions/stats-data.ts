@@ -2355,7 +2355,11 @@ export async function getCoachRosterStats(teamId: string): Promise<CoachRosterPl
         totalStrokes9 += r.score;
         roundsPlayed9++;
         scores9.push(r.score);
-      } else {
+      } else if (r.holesPlayed === 18) {
+        // Strictly 18-hole rounds only, matching the canonical cache
+        // (scoring_average = SUM/COUNT over holes_played = 18). Partial
+        // rounds (10-17 holes) are excluded from the 18-hole bucket; they
+        // still feed the normalized "all formats" scoring_average below.
         totalStrokes18 += r.score;
         roundsPlayed18++;
         scores18.push(r.score);

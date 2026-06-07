@@ -524,6 +524,19 @@ interface RawTeamsScoringPayload {
 }
 
 /**
+ * Platform-wide stat averages over ALL players (AVG ignores NULLs per column),
+ * from `public.get_admin_platform_stat_averages()`. Replaces the top-50-biased
+ * averages previously derived from `player_stats_top50`.
+ */
+interface RawPlatformStatAverages {
+  scoring_average: number | null;
+  driving_accuracy_percentage: number | null;
+  gir_percentage: number | null;
+  putts_per_round: number | null;
+  player_count?: number | null;
+}
+
+/**
  * Average scoring helpers. Mirrors the TS-side aggregation in admin-data.ts
  * L1799-L1815 so the orchestrator receives a ready-to-use `platformAverages`.
  */
@@ -566,7 +579,7 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
   // statement_timeout (code=57014) or empty payload on one RPC degrades just
   // that subtree; the other two still populate. Caller (admin-data.ts) checks
   // the `degradation` flags and shows a banner.
-  const [baseballSettled, errorsSettled, teamsSettled] = await Promise.allSettled([
+  const [baseballSettled, errorsSettled, teamsSettled, platformAvgSettled] = await Promise.allSettled([
     rpc<RollupBBaseballRaw>('get_admin_baseball_rollup', { p_ago30d: ago30d }),
     rpc<RawErrorsPayload>('get_admin_errors_rollup', {
       p_ago7d: ago7d,
@@ -575,6 +588,7 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
     rpc<RawTeamsScoringPayload>('get_admin_teams_scoring_rollup', {
       p_ago7d: ago7d,
     }),
+    rpc<RawPlatformStatAverages>('get_admin_platform_stat_averages', {}),
   ]);
 
   function resolveRpc<T>(
@@ -648,9 +662,22 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
     },
   );
 
+  const platformAvgRpc = resolveRpc<RawPlatformStatAverages>(
+    'get_admin_platform_stat_averages',
+    platformAvgSettled,
+    {
+      scoring_average: null,
+      driving_accuracy_percentage: null,
+      gir_percentage: null,
+      putts_per_round: null,
+      player_count: 0,
+    },
+  );
+
   const baseballRaw = baseballRpc.value;
   const errorsRaw = errorsRpc.value;
   const teamsRaw = teamsRpc.value;
+  const platformAvgRaw = platformAvgRpc.value;
 
   const degradation: RollupBDegradation = {
     baseballRollupDegraded: baseballRpc.degraded,
@@ -736,14 +763,23 @@ export async function fetchAdminRollupB(): Promise<RollupB> {
   // C7 — teams / rosters / scoring / demo / communication
   // -------------------------------------------------------------------------
   const statsRows = teamsRaw.player_stats_top50 ?? [];
-  const platformScoringAvg = avgOfNonNull(statsRows.map((r) => r.scoring_average));
-  const platformFairwayPct = avgOfNonNull(
-    statsRows.map((r) => r.driving_accuracy_percentage),
-  );
-  const platformGirPct = avgOfNonNull(statsRows.map((r) => r.gir_percentage));
-  const platformPuttsPerRound = avgOfNonNull(
-    statsRows.map((r) => r.putts_per_round),
-  );
+  // Platform averages over ALL players (get_admin_platform_stat_averages, which
+  // AVGs the full golf_player_stats_cache). The top-50 set is biased toward the
+  // best scorers, so it is only a degraded-RPC fallback — never the default.
+  const numOrNull = (v: number | null | undefined): number | null =>
+    v != null && Number.isFinite(Number(v)) ? Number(v) : null;
+  const platformScoringAvg =
+    numOrNull(platformAvgRaw.scoring_average) ??
+    avgOfNonNull(statsRows.map((r) => r.scoring_average));
+  const platformFairwayPct =
+    numOrNull(platformAvgRaw.driving_accuracy_percentage) ??
+    avgOfNonNull(statsRows.map((r) => r.driving_accuracy_percentage));
+  const platformGirPct =
+    numOrNull(platformAvgRaw.gir_percentage) ??
+    avgOfNonNull(statsRows.map((r) => r.gir_percentage));
+  const platformPuttsPerRound =
+    numOrNull(platformAvgRaw.putts_per_round) ??
+    avgOfNonNull(statsRows.map((r) => r.putts_per_round));
 
   const teamsScoring: RollupBTeamsScoring = {
     teams: teamsRaw.teams ?? [],

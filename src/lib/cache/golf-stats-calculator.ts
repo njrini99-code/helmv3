@@ -709,7 +709,7 @@ function buildLiveStatsSnapshot(
       ? Math.round((scoreSum18 / rounds18.length) * 100) / 100
       : null,
     livePuttsPerRound: totalHolesPlayed > 0
-      ? Math.round(((totalPutts / totalHolesPlayed) * 18) * 10) / 10
+      ? Math.round(((totalPutts / totalHolesPlayed) * 18) * 100) / 100
       : null,
     liveFairwayPct: totalFairways > 0
       ? Math.round(((totalFairwaysHit / totalFairways) * 100) * 10) / 10

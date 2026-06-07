@@ -5,6 +5,7 @@ import { fromUntyped } from '@/lib/supabase/untyped';
 import { revalidatePath } from 'next/cache';
 import { logServerError } from '@/lib/server-error-logger';
 import { verifyPlayerAccess as sharedVerifyPlayerAccess } from '@/lib/auth/verify-player-access';
+import { pct } from '@/lib/golf/stat-formulas';
 
 // UUID format validation
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -106,12 +107,12 @@ const MAX_GENERATION_ATTEMPTS = 3;
  * Calculate key stats from round data
  */
 function calculateKeyStats(round: RoundDataForReview): ReviewKeyStats {
-  const fairway_pct = round.total_fairways_hit != null && round.total_fairways && round.total_fairways > 0
-    ? Math.round((round.total_fairways_hit / round.total_fairways) * 100)
+  const fairway_pct = round.total_fairways_hit != null && round.total_fairways != null
+    ? pct(round.total_fairways_hit, round.total_fairways)
     : null;
 
-  const gir_pct = round.total_gir != null && round.total_gir_possible && round.total_gir_possible > 0
-    ? Math.round((round.total_gir / round.total_gir_possible) * 100)
+  const gir_pct = round.total_gir != null && round.total_gir_possible != null
+    ? pct(round.total_gir, round.total_gir_possible)
     : null;
 
   // Note: putts_per_gir cannot be accurately calculated from round-level data alone.

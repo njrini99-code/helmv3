@@ -164,6 +164,10 @@ function approachDistanceYards(row: ShotDriverInput): number | null {
   return row.distance_unit_before === 'feet' ? raw / 3 : raw;
 }
 
+// Prose-only percentage: rounded to whole numbers for readable narrative
+// ("miss left 45% of the time"), NOT the canonical 1dp stat value. Call sites
+// already guard total > 0 before building prose, so the 0-on-empty fallback is
+// unreachable in practice; it exists only as a defensive default.
 function pct(n: number, total: number): number {
   if (total <= 0) return 0;
   return Math.round((n / total) * 100);

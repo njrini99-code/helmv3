@@ -547,53 +547,44 @@ export const AROUND_GREEN_THRESHOLD_YARDS = 50;
 // PGA Tour benchmark data - average strokes to hole out from each position
 // Source: PGA Tour Strokes Gained methodology
 
+// Broadie "Every Shot Counts" / ShotLink expected-strokes anchors. MUST stay
+// identical to the DB function public.sg_expected_strokes() and PGA_BASELINE_DATA
+// in src/lib/golf/strokes-gained.ts (recalibrated 2026-06-06, migration
+// 20260606140000) so the shot-derived player-page SG matches the DB/cache SG.
+// interpolateBenchmark() interpolates linearly between anchors and clamps outside
+// the range — so anchors-only is exact at the published points and continuous
+// between, with no nearest-neighbour seam (the DC-SG-1/DC-SG-3 fixes).
 const STROKES_GAINED_BENCHMARKS = {
-  // From tee (by distance in yards) — one continuous curve covering par-3 / short
-  // par-4 tee shots (100yd) through long par-5s (600yd).
-  //
-  // DC-SG-3: previously tee shots < 400yd were silently re-routed to the FAIRWAY
-  // table, whose longest anchor is 275yd. Nearest-neighbour then snapped every
-  // 276-399yd tee shot to the 275yd fairway value (3.58) and the curve jumped to
-  // the 400yd tee value (4.08) — a ~0.5-stroke discontinuity exactly at the
-  // handoff. A single continuous tee table (interpolated, see getExpectedStrokes)
-  // removes the seam: the 100-375yd anchors below are continuous with 400+.
+  // From tee (yards) — par-3/short tee shots (80yd) through long par-5s (600yd).
   tee: {
-    100: 2.92, 125: 2.99, 150: 3.05, 175: 3.12, 200: 3.20,
-    225: 3.29, 250: 3.37, 275: 3.45, 300: 3.56, 325: 3.65,
-    350: 3.73, 375: 3.86,
-    400: 4.08, 425: 4.17, 450: 4.27, 475: 4.37, 500: 4.47,
-    525: 4.57, 550: 4.68, 575: 4.79, 600: 4.91,
+    600: 4.85, 540: 4.65, 400: 3.99, 300: 3.71, 240: 3.25,
+    200: 3.12, 150: 2.95, 120: 2.88, 100: 2.82, 80: 2.78,
   },
 
-  // From fairway (by distance in yards)
+  // From fairway (yards)
   fairway: {
-    50: 2.59, 75: 2.70, 100: 2.80, 125: 2.90, 150: 2.99,
-    175: 3.08, 200: 3.19, 225: 3.32, 250: 3.45, 275: 3.58,
+    540: 4.78, 400: 4.11, 300: 3.78, 240: 3.45, 200: 3.19,
+    180: 3.08, 140: 2.91, 100: 2.80, 80: 2.75, 20: 2.40,
   },
 
-  // From rough (by distance in yards)
+  // From rough (yards)
   rough: {
-    50: 2.76, 75: 2.86, 100: 2.95, 125: 3.05, 150: 3.15,
-    175: 3.26, 200: 3.39, 225: 3.53, 250: 3.68, 275: 3.84,
+    540: 4.97, 400: 4.30, 300: 3.90, 240: 3.64, 200: 3.42,
+    100: 3.02, 20: 2.59,
   },
 
-  // From sand (by distance in yards)
+  // From sand (yards)
   sand: {
-    20: 2.53, 30: 2.60, 40: 2.73, 50: 2.90, 75: 3.20,
-    100: 3.40, 125: 3.60, 150: 3.80,
+    540: 5.36, 400: 4.69, 300: 4.04, 240: 3.84, 200: 3.55,
+    100: 3.23, 20: 2.53,
   },
 
-  // From green (putting, by distance in feet)
-  //
-  // DC-SG-1: the 10→15ft gap (1.61→1.78) was the coarsest part of the make-rate
-  // curve, where nearest-neighbour snapping was most visible (a 13ft putt snapped
-  // to the 15ft anchor). Finer 12 / 18 / 22ft anchors plus linear interpolation
-  // (see getExpectedStrokes) smooth the 10-25ft band.
+  // From green (putting, by distance in FEET) — Broadie Tour expected putts.
   green: {
-    1: 1.00, 2: 1.01, 3: 1.04, 4: 1.13, 5: 1.23,
+    1: 1.00, 2: 1.00, 3: 1.04, 4: 1.13, 5: 1.23,
     6: 1.34, 7: 1.42, 8: 1.50, 9: 1.56, 10: 1.61,
-    12: 1.69, 15: 1.78, 18: 1.84, 20: 1.87, 22: 1.90,
-    25: 1.94, 30: 1.99, 40: 2.06, 50: 2.12, 60: 2.18,
+    15: 1.78, 20: 1.87, 30: 1.98, 40: 2.06, 50: 2.14,
+    60: 2.21, 90: 2.40,
   },
 
 };
@@ -652,10 +643,12 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
   // SG-1: unmapped / non-tabulated lies ('other', 'recovery', 'water', and any
   // unrecognised value) previously collapsed to a flat 3.50 with ZERO distance
   // sensitivity — fabricating ±1-stroke SG that flipped sign with distance.
-  // Route them to the rough table so the estimate stays distance-sensitive
-  // (rough is the most defensible "ball in a bad/unknown lie" baseline).
+  // Route them to the FAIRWAY table: it keeps the estimate distance-sensitive
+  // AND matches the canonical DB sg_expected_strokes() ELSE branch (which uses
+  // the fairway curve for unknown lies), so the TS recompute agrees with the
+  // cache SG instead of diverging for malformed lies.
   if (!benchmarkTable || typeof benchmarkTable !== 'object') {
-    benchmarkTable = STROKES_GAINED_BENCHMARKS.rough;
+    benchmarkTable = STROKES_GAINED_BENCHMARKS.fairway;
   }
 
   return interpolateBenchmark(benchmarkTable, distanceYards);
@@ -997,10 +990,14 @@ export function calculateHoleStatsFromShots(
     ? normalizeToYards(aroundGreenShot.distance_to_hole_before, aroundGreenShot.distance_unit_before)
     : null;
 
-  // Sand save = missed GIR AND the chip/pitch shot was FROM sand, made par or better
-  // FIXED: Previously checked lastShotBeforeGreen which could be the approach shot
-  // Now correctly checks if the actual chip shot (around_green) was from a bunker
-  const sandSaveAttempt = !greenInRegulation && aroundGreenShot?.lie_before === 'sand';
+  // Sand save = a greenside-bunker visit (around_green shot FROM sand), scored par or
+  // better. The denominator is the bunker visit itself — do NOT also gate on
+  // !greenInRegulation: a greenside-bunker visit is a sand-save opportunity even on a
+  // (correctly) GIR hole, e.g. a par-5 whose regulation 3rd shot is played from a
+  // greenside bunker onto the green. Gating on greenInRegulation (which derives from
+  // the gir column) would drop those legit bunker visits. Denominator matches the DB
+  // cache + shot-level ground truth (team 248 greenside-bunker visits).
+  const sandSaveAttempt = aroundGreenShot?.lie_before === 'sand';
   const sandSaveMade = sandSaveAttempt && (score <= holeInfo.par);
 
   // Penalties
@@ -1395,9 +1392,11 @@ function aggregateRoundStats(rounds: Array<{
 
   // Accumulators
   let totalScore = 0;
-  let totalPar = 0;
   let totalScore18 = 0;
   let totalScore9 = 0;
+  let totalScoreToPar18 = 0; // strictly-18-hole rounds only (canonical scoring_average_vs_par)
+  let bestRoundNormalized: number | null = null; // min over all rounds, normalized to 18
+  let worstRoundNormalized: number | null = null;
   let practiceScore = 0;
   let qualifyingScore = 0;
   let tournamentScore = 0;
@@ -1536,11 +1535,27 @@ function aggregateRoundStats(rounds: Array<{
     totalScore += round.totalScore;
     stats.holesPlayed += round.holes.length;
 
-    // Determine 9-hole vs 18-hole format
+    // Determine 9-hole vs 18-hole format. Only STRICTLY-18 rounds feed the
+    // 18-hole scoring bucket (matches the canonical cache:
+    // COALESCE(holes_played,18)=18). Partial rounds (10-17 holes) are excluded
+    // from BOTH format buckets so they can't masquerade as full 18-hole rounds.
     const holesInRound = round.roundInfo.holes_played ?? round.holes.length;
-    const is9Hole = holesInRound <= 9;
+    const is9Hole = holesInRound <= 9; // for round-type (practice/qual/tourney) gating below
 
-    if (is9Hole) {
+    // Best/worst (overall) is normalized to an 18-hole equivalent across ALL
+    // rounds, mirroring the cache best_round_normalized = MIN(total_score * 18
+    // / holes_played).
+    if (holesInRound > 0) {
+      const normalized = round.totalScore * (18 / holesInRound);
+      if (bestRoundNormalized === null || normalized < bestRoundNormalized) {
+        bestRoundNormalized = normalized;
+      }
+      if (worstRoundNormalized === null || normalized > worstRoundNormalized) {
+        worstRoundNormalized = normalized;
+      }
+    }
+
+    if (holesInRound <= 9) {
       totalScore9 += round.totalScore;
       stats.roundsPlayed9++;
       if (stats.bestRound9 === null || round.totalScore < stats.bestRound9) {
@@ -1549,9 +1564,11 @@ function aggregateRoundStats(rounds: Array<{
       if (stats.worstRound9 === null || round.totalScore > stats.worstRound9) {
         stats.worstRound9 = round.totalScore;
       }
-    } else {
+    } else if (holesInRound === 18) {
       totalScore18 += round.totalScore;
       stats.roundsPlayed18++;
+      const roundPar = round.holes.reduce((s, h) => s + h.par, 0);
+      totalScoreToPar18 += round.totalScore - roundPar;
       if (stats.bestRound18 === null || round.totalScore < stats.bestRound18) {
         stats.bestRound18 = round.totalScore;
       }
@@ -1581,7 +1598,6 @@ function aggregateRoundStats(rounds: Array<{
     // Process each hole
     for (const hole of round.holes) {
       const scoreToPar = hole.score - hole.par;
-      totalPar += hole.par;
 
       // Scoring counts
       if (scoreToPar <= -2) stats.totalEagles++;
@@ -2076,14 +2092,15 @@ function aggregateRoundStats(rounds: Array<{
   // Scoring average: 18-hole rounds only (NCAA-style)
   stats.scoringAverage = stats.scoringAverage18;
 
-  // Best/worst: prefer 18-hole, fallback to 9-hole
-  stats.bestRound = stats.bestRound18 ?? stats.bestRound9;
-  stats.worstRound = stats.worstRound18 ?? stats.worstRound9;
+  // Best/worst (overall): normalized to 18 holes across all rounds (matches the
+  // cache best_round_normalized). Per-format bestRound18/9 stay raw for the
+  // hole-format toggle.
+  stats.bestRound = bestRoundNormalized !== null ? Math.round(bestRoundNormalized) : null;
+  stats.worstRound = worstRoundNormalized !== null ? Math.round(worstRoundNormalized) : null;
 
-  // Normalize avgScoreToPar to 18-hole equivalent
-  stats.avgScoreToPar = stats.holesPlayed > 0
-    ? Math.round((((totalScore - totalPar) / stats.holesPlayed) * 18) * 100) / 100
-    : null;
+  // Scoring average vs par: 18-hole rounds only (matches cache scoring_average_vs_par),
+  // NOT a normalize-all-holes figure.
+  stats.avgScoreToPar = safeAverage(totalScoreToPar18, stats.roundsPlayed18);
   stats.birdiesPerRound = safeAverage(stats.totalBirdies, rounds.length);
   stats.eaglesPerRound = safeAverage(stats.totalEagles, rounds.length);
   stats.parsPerRound = safeAverage(stats.totalPars, rounds.length);

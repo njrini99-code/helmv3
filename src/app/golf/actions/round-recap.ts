@@ -28,6 +28,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { compose } from '@/lib/coachhelm/v3/llm/compose';
+import { pct } from '@/lib/golf/stat-formulas';
 
 interface RoundContext {
   id: string;
@@ -122,12 +123,12 @@ async function generateLLMRecap(
   const stp = round.score_to_par ?? 0;
   const scoreChip = stp === 0 ? 'E' : stp > 0 ? `+${stp}` : `${stp}`;
   const fir =
-    round.total_fairways && round.total_fairways > 0 && round.total_fairways_hit !== null
-      ? Math.round(((round.total_fairways_hit ?? 0) / round.total_fairways) * 100)
+    round.total_fairways_hit !== null && round.total_fairways !== null
+      ? pct(round.total_fairways_hit, round.total_fairways)
       : null;
   const gir =
-    round.total_gir_possible && round.total_gir_possible > 0 && round.total_gir !== null
-      ? Math.round(((round.total_gir ?? 0) / round.total_gir_possible) * 100)
+    round.total_gir !== null && round.total_gir_possible !== null
+      ? pct(round.total_gir, round.total_gir_possible)
       : null;
 
   const facts: string[] = [
@@ -222,12 +223,12 @@ function buildDeterministicRecap(
   const stp = round.score_to_par ?? 0;
   const score = round.total_score ?? 0;
   const fir =
-    round.total_fairways && round.total_fairways > 0 && round.total_fairways_hit !== null
-      ? Math.round(((round.total_fairways_hit ?? 0) / round.total_fairways) * 100)
+    round.total_fairways_hit !== null && round.total_fairways !== null
+      ? pct(round.total_fairways_hit, round.total_fairways)
       : null;
   const gir =
-    round.total_gir_possible && round.total_gir_possible > 0 && round.total_gir !== null
-      ? Math.round(((round.total_gir ?? 0) / round.total_gir_possible) * 100)
+    round.total_gir !== null && round.total_gir_possible !== null
+      ? pct(round.total_gir, round.total_gir_possible)
       : null;
 
   // Pick the lede thread by what's most defining

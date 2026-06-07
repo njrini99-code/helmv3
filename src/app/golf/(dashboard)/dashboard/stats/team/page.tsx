@@ -207,7 +207,10 @@ export default async function TeamStatsPage() {
         totalStrokes9 += score;
         roundsPlayed9++;
         scores9.push(score);
-      } else {
+      } else if (hp === 18) {
+        // Strictly 18-hole rounds only, matching the canonical cache
+        // (scoring_average over holes_played = 18). Partial rounds (10-17)
+        // are excluded here; they still feed the normalized "all" average.
         totalStrokes18 += score;
         roundsPlayed18++;
         scores18.push(score);

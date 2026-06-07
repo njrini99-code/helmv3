@@ -34,7 +34,6 @@ import { buildShotDrivers } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import type { ShotDriverInput } from '@/lib/coachhelm/v3/themes/shot-drivers';
 import { computeSgTrends } from '@/lib/coachhelm/v3/themes/trend';
 import type { SgRoundSample } from '@/lib/coachhelm/v3/themes/trend';
-import { getDetailedStatsAsAdmin } from '@/app/golf/actions/stats-data';
 import { cappedStrokesImpact } from '@/lib/coachhelm/v3/ranking/score';
 
 // ---------------------------------------------------------------------------
@@ -811,14 +810,26 @@ async function assembleForPlayer(
     .filter((r): r is EvidenceInsight => r !== null);
 
   // SG fetch is best-effort: a failure must NOT fail the themes scaffold.
+  // Source SG from the canonical golf_player_stats_cache (sg_*_per_round) — the
+  // SAME values the standing/counterfactual read — NOT a shot-level recompute.
+  // getDetailedStatsAsAdmin recomputes SG from raw shots capped at 100 rounds
+  // (+ the 1000-row PostgREST limit), so it could disagree with the standing SG
+  // shown on the same page for high-volume players. The cache averages over ALL
+  // completed rounds.
   let sgByCategory: Partial<Record<InsightCategory, number | null>> = {};
   try {
-    const stats = await getDetailedStatsAsAdmin(playerId, 'overall');
+    const { data: sgRow } = await supabase
+      .from('golf_player_stats_cache')
+      .select('sg_putting_per_round, sg_approach_per_round, sg_tee_per_round, sg_around_green_per_round')
+      .eq('player_id', playerId)
+      .maybeSingle();
+    const num = (v: unknown): number | null =>
+      v != null && Number.isFinite(Number(v)) ? Number(v) : null;
     sgByCategory = {
-      putting: stats.sgPuttingPerRound,
-      approach: stats.sgApproachPerRound,
-      tee: stats.sgTeePerRound,
-      short_game: stats.sgAroundGreenPerRound,
+      putting: num(sgRow?.sg_putting_per_round),
+      approach: num(sgRow?.sg_approach_per_round),
+      tee: num(sgRow?.sg_tee_per_round),
+      short_game: num(sgRow?.sg_around_green_per_round),
     };
   } catch (sgErr) {
     void logServerError(

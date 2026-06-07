@@ -170,8 +170,11 @@ function roundMetricValue(
     case 'scoring': {
       const scoreToPar = round.score_to_par as number | null;
       if (scoreToPar == null) return null;
+      // Scoring is measured on 18-hole rounds only (matches the canonical
+      // scoring_average), so skip partial/9-hole rounds rather than scaling
+      // a 9-hole score_to_par up to a fictional 18-hole figure.
       const holes = (round.holes_played as number | null) ?? 18;
-      return holes > 0 ? (scoreToPar / holes) * 18 : null;
+      return holes === 18 ? scoreToPar : null;
     }
     default:
       return null;

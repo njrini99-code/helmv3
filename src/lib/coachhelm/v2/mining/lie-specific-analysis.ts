@@ -540,9 +540,27 @@ function calculateConfidence(sampleSize: number): number {
 class LieSpecificAnalyzer {
   private playerId: string;
   private shots: RawShot[] = [];
+  /** `${round_id}:${hole_number}` → shot_number of the holing shot, for true
+   *  up-and-down reconstruction (holed within 2 strokes of an around-green shot). */
+  private holeOutByHole: Map<string, number> = new Map();
 
   constructor(playerId: string) {
     this.playerId = playerId;
+  }
+
+  /**
+   * True up-and-down: the around-green shot reached the hole within 2 strokes
+   * (the shot itself + at most one putt). Replaces the old "finished within 6 ft"
+   * proximity proxy. Validated against prod: aggregate true rate ≈ proxy rate,
+   * but this measures the actual outcome rather than a finish-distance heuristic.
+   */
+  private isUpAndDown(shot: RawShot): boolean {
+    const holeOut = this.holeOutByHole.get(`${shot.round_id}:${shot.hole_number}`);
+    return (
+      holeOut != null &&
+      holeOut >= shot.shot_number &&
+      holeOut - shot.shot_number <= 1
+    );
   }
 
   /**
@@ -625,6 +643,19 @@ class LieSpecificAnalyzer {
     }
 
     this.shots = shots as RawShot[];
+
+    // Build the per-hole hole-out lookup (earliest shot whose result holed out)
+    // for true up-and-down reconstruction.
+    this.holeOutByHole = new Map();
+    for (const s of this.shots) {
+      if (s.result === 'hole' || s.result === 'holed') {
+        const key = `${s.round_id}:${s.hole_number}`;
+        const prev = this.holeOutByHole.get(key);
+        if (prev == null || s.shot_number < prev) {
+          this.holeOutByHole.set(key, s.shot_number);
+        }
+      }
+    }
   }
 
   /**
@@ -836,7 +867,12 @@ class LieSpecificAnalyzer {
   }
 
   /**
-   * Calculates green hit rate
+   * Shot-level green-FINDING rate: the fraction of the supplied shots that
+   * finished on the green. This is deliberately a per-shot metric (it answers
+   * "did THIS approach find the green"), NOT hole-level GIR — GIR cannot be
+   * derived per distance-bracket/lie from a hole boolean, which carries no
+   * approach distance or lie. The canonical hole-level GIR % lives in
+   * golf_player_stats_cache.gir_percentage.
    */
   private calculateGreenHitRate(shots: RawShot[]): number {
     if (shots.length === 0) return 0;
@@ -1503,15 +1539,12 @@ class LieSpecificAnalyzer {
       return null;
     }
 
-    // Up and down rate (simplified: shot lands within 6 feet = likely 1 putt)
-    const closeShots = aroundGreenShots.filter((s) => {
-      const distAfter = toYards(s.distance_to_hole_after, s.distance_unit_after);
-      // Convert to feet if in yards
-      const distFeet = s.distance_unit_after === 'feet'
-        ? s.distance_to_hole_after
-        : (distAfter ?? 0) * 3;
-      return distFeet != null && distFeet <= 6;
-    });
+    // Up-and-down rate — TRUE reconstruction: the around-green shot reached the
+    // hole within 2 strokes (chip/pitch + at most one putt). Replaces the old
+    // "finished within 6 ft" proximity proxy. The cache scrambling_percentage /
+    // sand_save_percentage remain the canonical hole-level figures; this is the
+    // shot-level around-green view.
+    const closeShots = aroundGreenShots.filter((s) => this.isUpAndDown(s));
     const upAndDownRate = (closeShots.length / aroundGreenShots.length) * 100;
 
     // Average proximity after shot
@@ -1584,14 +1617,9 @@ class LieSpecificAnalyzer {
       return { shots: 0, upAndDownRate: 0, avgProximity: 0 };
     }
 
-    // Up and down rate
-    const closeShots = lieShots.filter((s) => {
-      const distYards = toYards(s.distance_to_hole_after, s.distance_unit_after);
-      const distFeet = s.distance_unit_after === 'feet'
-        ? s.distance_to_hole_after
-        : (distYards ?? 0) * 3;
-      return distFeet != null && distFeet <= 6;
-    });
+    // Up-and-down rate — TRUE reconstruction (holed within 2 strokes of the
+    // around-green shot), per lie. Was the "finished within 6 ft" proxy.
+    const closeShots = lieShots.filter((s) => this.isUpAndDown(s));
     const upAndDownRate = (closeShots.length / lieShots.length) * 100;
 
     // Average proximity

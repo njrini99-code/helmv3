@@ -1020,22 +1020,22 @@ function StrengthRadarInstrument({ shot }: { shot: PlayerShotAnalytics | null })
     if (!shot || shot.roundsAnalyzed === 0) return [];
     const out: GenomeAxis[] = [];
     if (shot.teeStats.totalDrives > 0) {
-      out.push({ label: 'Driving', value: clamp01to100(shot.teeStats.fairwayPct) });
+      out.push({ label: 'Driving', value: clamp01to100(shot.teeStats.fairwayPct ?? 0) });
     }
     if (shot.approachStats.totalApproaches > 0) {
-      out.push({ label: 'Approach', value: clamp01to100(shot.approachStats.girPct) });
+      out.push({ label: 'Approach', value: clamp01to100(shot.approachStats.girPct ?? 0) });
     }
     if (shot.aroundGreenStats.totalShots > 0) {
       out.push({
         label: 'Around green',
-        value: clamp01to100(shot.aroundGreenStats.upAndDownPct),
+        value: clamp01to100(shot.aroundGreenStats.upAndDownPct ?? 0),
       });
     }
     if (shot.puttingStats.totalPutts > 0) {
       // share of putts that were NOT a three-putt — higher is stronger putting
       out.push({
         label: 'Putting',
-        value: clamp01to100(100 - shot.puttingStats.threePuttRate),
+        value: clamp01to100(100 - (shot.puttingStats.threePuttRate ?? 0)),
       });
     }
     return out;

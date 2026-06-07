@@ -2,8 +2,9 @@
  * Route + metric-list tests for the v3 standing-refresh cron.
  *
  * Covers the standing-cron-db audit fixes:
- *   - SC2: the 5 putt_make_pct_* metrics are deferred (not "covered"), and the
- *     cron asserts on any covered-but-0-rows metric (metrics_covered_zero_rows).
+ *   - SC2: the 5 putt_make_pct_* metrics are now COVERED (re-promoted 2026-06-06
+ *     once update_player_putt_make_pct populated the per-band cache columns); the
+ *     cron still asserts on any covered-but-0-rows metric (metrics_covered_zero_rows).
  *   - SC1: the orphan prune RPC (prune_stale_player_standing) is invoked with a
  *     pre-refresh cutoff and its count is surfaced (orphans_pruned).
  *   - PERF-2: team selection uses select_stalest_teams (freshness-ordered), with
@@ -100,16 +101,19 @@ interface Body {
   orphans_pruned: number;
 }
 
-describe('standing-refresh refresh.ts metric lists (SC2)', () => {
-  it('does NOT declare any putt_make_pct_* metric covered', () => {
+describe('standing-refresh refresh.ts metric lists (SC2 → re-promoted 2026-06-06)', () => {
+  // After update_player_putt_make_pct() began populating the per-band cache
+  // columns, the 5 putt_make_pct_* metrics were re-promoted from deferred to
+  // covered (they now upsert real, raw-shot-matching rows).
+  it('declares all 5 putt_make_pct_* metrics covered', () => {
     for (const m of PUTT_MAKE_PCT_METRICS) {
-      expect(STANDING_REFRESH_METRIC_IDS).not.toContain(m);
+      expect(STANDING_REFRESH_METRIC_IDS).toContain(m);
     }
   });
 
-  it('defers all 5 putt_make_pct_* metrics', () => {
+  it('no longer defers any putt_make_pct_* metric', () => {
     for (const m of PUTT_MAKE_PCT_METRICS) {
-      expect(STANDING_REFRESH_DEFERRED_METRIC_IDS).toContain(m);
+      expect(STANDING_REFRESH_DEFERRED_METRIC_IDS).not.toContain(m);
     }
   });
 

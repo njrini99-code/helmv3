@@ -21,11 +21,11 @@ export interface ScoringOpportunity {
 export interface ScrambleAnalysis {
   totalScrambleAttempts: number;
   scrambleSuccesses: number;
-  scrambleRate: number;
+  scrambleRate: number | null; // null = no scramble attempts (no data, not 0%)
   sandSaveAttempts: number;
   sandSaveSuccesses: number;
-  sandSaveRate: number;
-  upAndDownRate: number;
+  sandSaveRate: number | null; // null = no greenside-bunker visits
+  upAndDownRate: number | null; // alias of scrambleRate
 }
 
 // ---------------------------------------------------------------------------
@@ -116,8 +116,8 @@ export function identifyScoringOpportunities(
  */
 export function calculateConversionRate(
   opportunities: ScoringOpportunity[],
-): number {
-  if (opportunities.length === 0) return 0;
+): number | null {
+  if (opportunities.length === 0) return null; // no scoring opportunities → no data
 
   const converted = opportunities.filter((o) => o.converted).length;
   return converted / opportunities.length;
@@ -150,34 +150,37 @@ export function calculateScrambleRate(
   let sandSaveSuccesses = 0;
 
   for (const hole of holes) {
-    // Only count missed GIRs
-    if (hole.gir) continue;
-
-    totalScrambleAttempts++;
     const madePar = hole.score <= hole.par;
 
-    if (madePar) {
-      scrambleSuccesses++;
-    }
-
-    // Sand save: missed GIR + played from sand
+    // Sand save: a greenside-bunker visit. Per the canonical definition the
+    // denominator is bunker visits — NOT gated on the gir column, which is
+    // mislabeled on real bunker holes (a hole can carry gir=true yet still
+    // have a genuine greenside-bunker up-and-down). Count it independently of
+    // the missed-GIR scramble gate below.
     if (hole.sandShot) {
       sandSaveAttempts++;
       if (madePar) {
         sandSaveSuccesses++;
       }
     }
+
+    // Scramble: missed GIR but still made par or better.
+    if (hole.gir) continue;
+    totalScrambleAttempts++;
+    if (madePar) {
+      scrambleSuccesses++;
+    }
   }
 
   const scrambleRate =
     totalScrambleAttempts > 0
       ? scrambleSuccesses / totalScrambleAttempts
-      : 0;
+      : null;
 
   const sandSaveRate =
     sandSaveAttempts > 0
       ? sandSaveSuccesses / sandSaveAttempts
-      : 0;
+      : null;
 
   return {
     totalScrambleAttempts,

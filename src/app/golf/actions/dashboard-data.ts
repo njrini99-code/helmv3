@@ -429,15 +429,14 @@ export async function getCoachDashboardData(
                 else roundsByPlayer.set(r.player_id, [r]);
             }
 
-            // Team scoring average + trend (normalized to 18-hole equivalents)
+            // Team scoring average + trend — 18-hole rounds only, matching the
+            // canonical cache scoring_average (update_player_stats_complete uses
+            // v_rounds_18). Normalizing 9-hole rounds would diverge from the
+            // per-player scoring averages shown elsewhere.
             const normalizedScores = allRounds
-                .filter(r => r.total_score != null && r.total_score > 0)
-                .map(r => {
-                    const holes = (r as { holes_played?: number | null }).holes_played ?? 18;
-                    if (holes <= 0) return null;
-                    return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
-                })
-                .filter((s): s is number => s !== null);
+                .filter(r => r.total_score != null && r.total_score > 0
+                    && (((r as { holes_played?: number | null }).holes_played ?? 18) === 18))
+                .map(r => r.total_score!);
             if (normalizedScores.length > 0) {
                 teamScoringAverage = normalizedScores.reduce((a, b) => a + b, 0) / normalizedScores.length;
             }
@@ -812,7 +811,9 @@ export async function getPlayerDashboardData(
         }
     }
 
-    // Compute stats (normalized to 18-hole equivalents)
+    // best round / trend use 18-hole-normalized scores (matches the cache's
+    // normalized best_round). Scoring AVERAGE, however, is 18-hole-rounds-only to
+    // match the canonical cache scoring_average (update_player_stats_complete).
     const normalizedScores = rounds
         .filter(r => r.total_score != null && r.total_score > 0)
         .map(r => {
@@ -821,7 +822,11 @@ export async function getPlayerDashboardData(
             return holes < 18 ? (r.total_score! / holes) * 18 : r.total_score!;
         })
         .filter((s): s is number => s !== null);
-    const scoringAverage = normalizedScores.length > 0 ? normalizedScores.reduce((a, b) => a + b, 0) / normalizedScores.length : null;
+    const eighteenHoleScores = rounds
+        .filter(r => r.total_score != null && r.total_score > 0
+            && (((r as { holes_played?: number | null }).holes_played ?? 18) === 18))
+        .map(r => r.total_score!);
+    const scoringAverage = eighteenHoleScores.length > 0 ? eighteenHoleScores.reduce((a, b) => a + b, 0) / eighteenHoleScores.length : null;
     const bestRound = normalizedScores.length > 0 ? Math.min(...normalizedScores) : null;
     const recentTrend = computeTrend(normalizedScores);
 
@@ -873,11 +878,20 @@ export async function getPlayerDashboardData(
             return hp > 0 && hp < 18 ? (r.total_putts * 18) / hp : r.total_putts;
         });
 
-    // Secondary stats
-    const firValues = rounds.slice(0, 20)
-        .filter(r => r.total_fairways_hit !== null && r.total_fairways && r.total_fairways > 0)
-        .map(r => (r.total_fairways_hit! / r.total_fairways!) * 100);
-    const firPct = firValues.length > 0 ? Number((firValues.reduce((a, b) => a + b, 0) / firValues.length).toFixed(1)) : null;
+    // Secondary stats — FIR% is a WEIGHTED aggregate (sum hit / sum recorded
+    // fairway opportunities) over ALL rounds, mirroring avgGir above and the
+    // coach/team/stats pages. (Was an unweighted per-round mean capped at the
+    // last 20 rounds, which over-weighted low-opportunity rounds and could
+    // disagree with the player's own Stats page.)
+    let firHitTotal = 0;
+    let firPossibleTotal = 0;
+    for (const r of rounds) {
+        if (r.total_fairways_hit !== null && r.total_fairways && r.total_fairways > 0) {
+            firHitTotal += r.total_fairways_hit;
+            firPossibleTotal += r.total_fairways;
+        }
+    }
+    const firPct = firPossibleTotal > 0 ? Number(((firHitTotal / firPossibleTotal) * 100).toFixed(1)) : null;
 
     // Birdies per round — sourced from the maintained stats cache (golf_player_stats_cache
     // is trigger-refreshed on round submit). `birdies` is the season total over
