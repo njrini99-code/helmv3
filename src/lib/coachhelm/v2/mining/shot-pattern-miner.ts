@@ -10,6 +10,7 @@
  * Example insight: "From 140-160 yards, you miss long_right 67% of the time"
  */
 
+import { createHash } from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type {
   ShotPattern,
@@ -19,6 +20,36 @@ import type {
   MissTendency,
   DispersionPattern,
 } from '../types';
+
+/**
+ * Deterministic shot-pattern id from (player_id, situation signature).
+ *
+ * SUSTAINABILITY (2026-06-07): shot patterns previously used
+ * `crypto.randomUUID()` ids, so `upsert(onConflict:'id')` was effectively an
+ * INSERT — every analyzeShotPatterns run (nightly roster-sweep + per-round
+ * submit) APPENDED a fresh row per situation, silting golf_patterns_v2 into the
+ * tens of thousands (29,591 observed before the 2026-06-07 purge). A
+ * situation is uniquely `(player, distanceRange.label, lie)`, so a stable id
+ * derived from it collapses re-runs to ONE row per situation (a true in-place
+ * upsert) — no clean-slate delete needed, no silt, coach lifecycle preserved.
+ * Mirrors `deterministicPatternId` in pattern-miner.ts (round-level miner).
+ *
+ * Format: a SHA-256 of `${playerId}::${signature}` rendered as an RFC-4122
+ * UUID so the existing `id uuid` column + `onConflict:'id'` accept it.
+ */
+export function deterministicShotPatternId(playerId: string, signature: string): string {
+  const hash = createHash('sha256').update(`${playerId}::${signature}`).digest();
+  const bytes = Buffer.from(hash.subarray(0, 16));
+  bytes[6] = ((bytes[6] ?? 0) & 0x0f) | 0x50; // version 5-ish (name-based)
+  bytes[8] = ((bytes[8] ?? 0) & 0x3f) | 0x80; // RFC 4122 variant
+  const hex = bytes.toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
+/** Stable signature for a shot pattern: the situation that defines it. */
+export function shotPatternSignature(distanceLabel: string, lie: string): string {
+  return `shot_dispersion::${distanceLabel}::${lie}`;
+}
 
 /**
  * Pattern actionability score derived from the strongest tendency's frequency.
@@ -357,7 +388,10 @@ export class ShotPatternMiner {
       );
 
       const pattern: ShotPattern = {
-        id: crypto.randomUUID(),
+        id: deterministicShotPatternId(
+          this.playerId,
+          shotPatternSignature(stats.range.label, 'all'),
+        ),
         playerId: this.playerId,
         situation: {
           distanceRange: stats.range,
@@ -392,7 +426,10 @@ export class ShotPatternMiner {
             this.generateInsight(stats.range, lieTendencies, lieDispersion, lie);
 
           patterns.push({
-            id: crypto.randomUUID(),
+            id: deterministicShotPatternId(
+              this.playerId,
+              shotPatternSignature(stats.range.label, lie),
+            ),
             playerId: this.playerId,
             situation: {
               distanceRange: stats.range,
@@ -724,11 +761,12 @@ export class ShotPatternMiner {
     const MIN_STROKE_IMPACT = 0.1;
 
     // Build all rows up front, then batch-upsert in one round-trip instead of
-    // O(N) sequential calls. `golf_patterns_v2` has no unique constraint on
-    // `(player_id, signature)` (verified in migrations 031/062/063 — only
-    // `id` is unique, and pattern.id is `crypto.randomUUID()` per run), so
-    // `onConflict: 'id'` is effectively an insert. Keeping it preserves
-    // idempotency if the same `pattern.id` is re-saved within a single call.
+    // O(N) sequential calls. `golf_patterns_v2` has only `id` unique. As of
+    // 2026-06-07 `pattern.id` is DETERMINISTIC per (player, distanceRange, lie)
+    // via deterministicShotPatternId(), so `onConflict: 'id'` is a true in-place
+    // upsert — re-runs (nightly sweep, per-round submit) collapse to ONE row per
+    // situation instead of appending fresh random-uuid rows every run (the cause
+    // of the prior 29k-row silt). No clean-slate delete needed.
     const rows = patterns
       .map((pattern) => {
         const strokeImpact = this.computeShotStrokeImpact(pattern);
