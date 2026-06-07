@@ -166,6 +166,64 @@ export function genderScaleFactor(gender: TeamGender | null | undefined): number
 }
 
 // ============================================================================
+// SELECTABLE PER-TEAM SG BASELINES (coach setting)
+// ============================================================================
+
+/**
+ * The SG baseline a team's Strokes Gained is computed against — a coach setting
+ * (Coaching Intelligence) persisted in golf_team_settings.sg_baseline. Each maps
+ * to a uniform expected-strokes scale factor; the DB recomputes the team's stored
+ * SG when changed (see sg_baseline_scale / sg_scale_for_player, migration
+ * 20260607200000). KEEP THE SCALES IN SYNC WITH THE DB sg_baseline_scale().
+ */
+export type SgBaselineKey =
+  | 'pga_tour'
+  | 'womens'
+  | 'scratch'
+  | 'ncaa_d1'
+  | 'ncaa_d2'
+  | 'ncaa_d3';
+
+export interface SgBaselineOption {
+  key: SgBaselineKey;
+  label: string;
+  scale: number;
+  description: string;
+}
+
+export const SG_BASELINE_OPTIONS: SgBaselineOption[] = [
+  { key: 'pga_tour', label: 'PGA Tour',    scale: 1.0,           description: 'Men’s professional (Broadie / ShotLink) — the strictest reference.' },
+  { key: 'womens',   label: 'Women’s',     scale: WOMENS_SG_SCALE, description: 'Women’s baseline — corrects the shorter-tee / longer-approach bias.' },
+  { key: 'scratch',  label: 'Scratch',     scale: 1.028,         description: 'Scratch amateur (~72 scoring).' },
+  { key: 'ncaa_d1',  label: 'NCAA D1',     scale: 1.057,         description: 'Division I college (~74 scoring).' },
+  { key: 'ncaa_d2',  label: 'NCAA D2',     scale: 1.100,         description: 'Division II college (~77 scoring).' },
+  { key: 'ncaa_d3',  label: 'NCAA D3',     scale: 1.143,         description: 'Division III college (~80 scoring).' },
+];
+
+const SG_BASELINE_SCALE_BY_KEY: Record<SgBaselineKey, number> = SG_BASELINE_OPTIONS.reduce(
+  (acc, o) => { acc[o.key] = o.scale; return acc; },
+  {} as Record<SgBaselineKey, number>,
+);
+
+/** Scale factor for a baseline key (defaults to 1.0 / PGA Tour for unknown keys). */
+export function sgBaselineScale(key: SgBaselineKey | null | undefined): number {
+  return key ? (SG_BASELINE_SCALE_BY_KEY[key] ?? 1.0) : 1.0;
+}
+
+/** The default baseline for a team when none is set: women's teams -> Women's, else PGA Tour. */
+export function defaultSgBaseline(gender: TeamGender | null | undefined): SgBaselineKey {
+  return gender === 'womens' ? 'womens' : 'pga_tour';
+}
+
+/** The effective baseline for a team: its explicit setting, else the gender default. */
+export function effectiveSgBaseline(
+  setting: SgBaselineKey | null | undefined,
+  gender: TeamGender | null | undefined,
+): SgBaselineKey {
+  return setting ?? defaultSgBaseline(gender);
+}
+
+// ============================================================================
 // BASELINE DATA SETS
 // ============================================================================
 

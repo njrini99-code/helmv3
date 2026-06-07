@@ -8,7 +8,8 @@ import {
     SensitivitySlider,
     ThresholdSlider,
     WeightDistributor,
-    AlertTypeToggles
+    AlertTypeToggles,
+    SgBaselineSelector
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -404,6 +405,14 @@ function LegacyCoachingIntelligenceSettingsPage() {
                             ) : null}
                         </section>
                     </AnimatedItem>
+                ) : null}
+
+                {/* Strokes Gained baseline (per-team) */}
+                {teamId ? (
+                    <AnimatedItem><section className="bg-cream-100/75 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-warm-900">
+                        <h2 className="text-body font-medium text-warm-900 tracking-[-0.005em]">Strokes Gained baseline</h2>
+                        <SgBaselineSelector />
+                    </section></AnimatedItem>
                 ) : null}
 
                 {/* Display Preferences Section */}

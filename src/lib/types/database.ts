@@ -10451,6 +10451,7 @@ export type Database = {
           handicap_system: string | null
           id: string
           scoring_format: string | null
+          sg_baseline: string | null
           sg_benchmark_level: string
           team_id: string
           timezone: string | null
@@ -10462,6 +10463,7 @@ export type Database = {
           handicap_system?: string | null
           id?: string
           scoring_format?: string | null
+          sg_baseline?: string | null
           sg_benchmark_level?: string
           team_id: string
           timezone?: string | null
@@ -10473,6 +10475,7 @@ export type Database = {
           handicap_system?: string | null
           id?: string
           scoring_format?: string | null
+          sg_baseline?: string | null
           sg_benchmark_level?: string
           team_id?: string
           timezone?: string | null
@@ -11590,6 +11593,7 @@ export type Database = {
         Args: { p_round_id: string }
         Returns: undefined
       }
+      recompute_team_sg: { Args: { p_team_id: string }; Returns: undefined }
       refresh_crm_coach_engagement: { Args: never; Returns: undefined }
       refresh_player_standing: {
         Args: { p_team_ids: string[] }
@@ -11634,6 +11638,7 @@ export type Database = {
           team_id: string
         }[]
       }
+      sg_baseline_scale: { Args: { p_key: string }; Returns: number }
       sg_estimate_from_holes: {
         Args: { p_round_id: string }
         Returns: {
@@ -11650,6 +11655,7 @@ export type Database = {
             Returns: number
           }
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
+      sg_scale_for_player: { Args: { p_player_id: string }; Returns: number }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       submit_round_atomic: {
