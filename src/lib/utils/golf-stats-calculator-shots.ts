@@ -626,12 +626,12 @@ function interpolateBenchmark(table: Record<number, number>, distance: number): 
 
 // Helper to get expected strokes from position
 /** @internal - exported for testing */
-export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number): number {
+export function getExpectedStrokes(lie: string | null, distanceYards: number, distanceFeet?: number, scale = 1): number {
   if (!lie) return 0;
   if (lie === 'green' && distanceFeet !== undefined) {
     // Putting — distance is feet, never converted (see normalizePuttFeet), and
     // interpolated across the green make-rate curve.
-    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet);
+    return interpolateBenchmark(STROKES_GAINED_BENCHMARKS.green, distanceFeet) * scale;
   }
 
   // DC-SG-3: tee shots use a single continuous tee curve (100-600yd). The old
@@ -652,13 +652,17 @@ export function getExpectedStrokes(lie: string | null, distanceYards: number, di
     benchmarkTable = STROKES_GAINED_BENCHMARKS.fairway;
   }
 
-  return interpolateBenchmark(benchmarkTable, distanceYards);
+  // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) multiplies the
+  // expected-strokes curve, mirroring the DB sg_expected_strokes(...,p_scale)
+  // (RETURN v_es * COALESCE(p_scale,1.0)). The -1 stroke charged per shot stays
+  // UNSCALED (applied by the caller), so SG = scale·E_before − 1 − scale·E_after.
+  return interpolateBenchmark(benchmarkTable, distanceYards) * scale;
 }
 
 // Calculate Strokes Gained for a shot
 // Returns null when data is incomplete (cannot calculate accurately)
 /** @internal - exported for testing */
-export function calculateStrokesGainedForShot(shot: RawShot): number | null {
+export function calculateStrokesGainedForShot(shot: RawShot, scale = 1): number | null {
   // Strokes Gained = Expected strokes BEFORE - (1 + Expected strokes AFTER)
 
   // CRITICAL: Cannot calculate SG without lie_before and distance_to_hole_before
@@ -680,8 +684,8 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
 
   // Get expected strokes before
   const expectedBefore = lieBefore === 'green'
-    ? getExpectedStrokes('green', 0, distBeforeFeet)
-    : getExpectedStrokes(lieBefore, distBefore);
+    ? getExpectedStrokes('green', 0, distBeforeFeet, scale)
+    : getExpectedStrokes(lieBefore, distBefore, undefined, scale);
 
   // Get expected strokes after (0 if holed)
   let expectedAfter = 0;
@@ -717,8 +721,8 @@ export function calculateStrokesGainedForShot(shot: RawShot): number | null {
     }
 
     expectedAfter = lieAfter === 'green'
-      ? getExpectedStrokes('green', 0, distAfterFeet!)
-      : getExpectedStrokes(lieAfter!, distAfterYards!);
+      ? getExpectedStrokes('green', 0, distAfterFeet!, scale)
+      : getExpectedStrokes(lieAfter!, distAfterYards!, undefined, scale);
   }
 
   // Strokes Gained = what was expected - what it cost (1 stroke + remaining expected)
@@ -1064,8 +1068,13 @@ export function calculateHoleStatsFromShots(
 export function calculateStatsFromShots(
   shots: RawShot[],
   holes: HoleInfo[],
-  rounds: RoundInfo[]
+  rounds: RoundInfo[],
+  opts?: { sgScale?: number }
 ): GolfStats {
+  // Per-team SG baseline scale (1.0 = PGA Tour/men's; women's 1.083; NCAA D1/D2/D3).
+  // Resolve via the DB sg_scale_for_player RPC in the caller and pass it here so the
+  // TS engine's SG matches the DB cache (which already applies the scale).
+  const sgScale = opts?.sgScale ?? 1;
   // Group shots by round
   const shotsByRound = new Map<string, RawShot[]>();
   for (const shot of shots) {
@@ -1132,7 +1141,7 @@ export function calculateStatsFromShots(
   }
 
   // Now aggregate stats across all rounds
-  return aggregateRoundStats(roundsWithStats);
+  return aggregateRoundStats(roundsWithStats, sgScale);
 }
 
 // ============================================================================
@@ -1143,7 +1152,7 @@ function aggregateRoundStats(rounds: Array<{
   roundInfo: RoundInfo;
   holes: CalculatedHoleStats[];
   totalScore: number;
-}>): GolfStats {
+}>, sgScale = 1): GolfStats {
   const stats: GolfStats = {
     roundsPlayed: rounds.length,
     holesPlayed: 0,
@@ -2078,7 +2087,7 @@ function aggregateRoundStats(rounds: Array<{
           continue;
         }
 
-        const sg = calculateStrokesGainedForShot(shot);
+        const sg = calculateStrokesGainedForShot(shot, sgScale);
         const category = getStrokesGainedCategory(shot, hole.par);
 
         // Accumulate by category - only when SG is calculable (not null)

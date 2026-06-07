@@ -1007,7 +1007,13 @@ async function queryDetailedStatsWithClient(
       };
     });
 
-    const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo);
+    // Per-team SG baseline scale (women's 1.083, NCAA D1/D2/D3, etc.) so the
+    // Stats page SG matches the DB cache, which already applies it. Resolved via
+    // the same DB function the cache uses (sg_scale_for_player) = single source.
+    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
+
+    const computed = calculateStatsFromShots(shots, holesInfo, roundsInfo, { sgScale });
     computed.truncated = truncated;
     return serializeDetailedStats(computed);
   } catch (error) {

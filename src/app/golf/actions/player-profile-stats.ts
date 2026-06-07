@@ -249,8 +249,12 @@ export async function getPlayerProfileStats(
       };
     }
 
-    // 6. Calculate comprehensive stats
-    const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo);
+    // 6. Calculate comprehensive stats. Apply the per-team SG baseline scale
+    // (women's 1.083, NCAA tiers) via the same DB function the cache uses, so
+    // this surface's SG matches the cache.
+    const { data: sgScaleRaw } = await supabase.rpc('sg_scale_for_player', { p_player_id: playerId });
+    const sgScale = typeof sgScaleRaw === 'number' && sgScaleRaw > 0 ? sgScaleRaw : 1;
+    const stats = calculateStatsFromShots(rawShots, holesInfo, roundsInfo, { sgScale });
 
     return {
       success: true,
