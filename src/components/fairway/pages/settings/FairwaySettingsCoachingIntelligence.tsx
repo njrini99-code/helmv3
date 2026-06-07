@@ -35,6 +35,7 @@ import {
   ThresholdSlider,
   WeightDistributor,
   AlertTypeToggles,
+  SgBaselineSelector,
 } from '@/components/golf/coachhelm/settings';
 import { THRESHOLD_RANGES } from '@/lib/coachhelm/constants';
 import type { CoachPhilosophy } from '@/lib/coachhelm/types';
@@ -371,6 +372,16 @@ export function FairwaySettingsCoachingIntelligence() {
                   : null}
               </p>
             ) : null}
+          </Surface>
+        ) : null}
+
+        {/* Strokes Gained baseline (per-team) */}
+        {teamId ? (
+          <Surface elevation="border" padding="lg" className="text-text-primary">
+            <div className="mb-3 flex flex-col gap-1">
+              <h2 className="font-fw-display text-h2 text-text-primary">Strokes Gained baseline</h2>
+            </div>
+            <SgBaselineSelector />
           </Surface>
         ) : null}
 
