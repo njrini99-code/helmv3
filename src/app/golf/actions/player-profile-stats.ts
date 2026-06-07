@@ -156,7 +156,10 @@ export async function getPlayerProfileStats(
     // 4. Fetch hole info for the rounds
     const { data: holesData } = await supabase
       .from('golf_holes')
-      .select('round_id, hole_number, par, yardage')
+      // gir/score/sand_save are canonical inputs: without them the calculator
+      // falls back to shot-count for score and re-derives GIR from shot results,
+      // which corrupts scrambling, sand-save, and any score/par-based stat.
+      .select('round_id, hole_number, par, yardage, gir, score, putts, fairway_hit, sand_save')
       .in('round_id', roundIdsToFetch)
       .limit(50000); // lift PostgREST 1000-row default cap
 
@@ -179,6 +182,11 @@ export async function getPlayerProfileStats(
       hole_number: h.hole_number,
       par: h.par,
       yardage: h.yardage ?? null,
+      gir: h.gir ?? null,
+      score: h.score ?? null,
+      putts: h.putts ?? null,
+      fairway_hit: h.fairway_hit ?? null,
+      sand_save: h.sand_save ?? null,
     }));
 
     // Transform shots to RawShot format - don't filter out shots with missing distances

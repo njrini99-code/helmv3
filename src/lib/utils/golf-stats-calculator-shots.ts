@@ -55,6 +55,7 @@ export interface HoleInfo {
   putts?: number | null;
   fairway_hit?: boolean | null;
   gir?: boolean | null;
+  sand_save?: boolean | null; // canonical greenside-bunker up-and-down flag (golf_holes.sand_save)
 }
 
 export interface RoundInfo {
@@ -775,6 +776,7 @@ interface CalculatedHoleStats {
   approachShotNumber: number | null; // Shot number of the approach attempt
   approachDistance: number | null;
   approachLie: string | null;
+  approachRawLie: string | null; // un-remapped lie (tee NOT folded into fairway) — GIR-by-lie split
   approachProximity: number | null;
   approachMissDirection: string | null; // Where approach missed when not GIR
   chipLie: string | null;      // Lie of the chip/pitch shot (for scrambling stats)
@@ -811,6 +813,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
     approachShotNumber: null,
     approachDistance: null,
     approachLie: null,
+    approachRawLie: null,
     approachProximity: null,
     approachMissDirection: null,
     chipLie: null,
@@ -836,7 +839,7 @@ function createHoleStatsFromKnownHole(hole: HoleInfo): CalculatedHoleStats {
 /** @internal - exported for testing */
 export function calculateHoleStatsFromShots(
   shots: RawShot[],
-  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir'>
+  holeInfoOrPar: number | Pick<HoleInfo, 'hole_number' | 'par' | 'score' | 'putts' | 'fairway_hit' | 'gir' | 'sand_save'>
 ): CalculatedHoleStats {
   // Sort shots by shot number
   const sortedShots = [...shots].sort((a, b) => a.shot_number - b.shot_number);
@@ -852,6 +855,7 @@ export function calculateHoleStatsFromShots(
         putts: null,
         fairway_hit: null,
         gir: null,
+        // sand_save intentionally left undefined → shot-derived fallback below
       }
     : holeInfoOrPar;
 
@@ -997,8 +1001,23 @@ export function calculateHoleStatsFromShots(
   // greenside bunker onto the green. Gating on greenInRegulation (which derives from
   // the gir column) would drop those legit bunker visits. Denominator matches the DB
   // cache + shot-level ground truth (team 248 greenside-bunker visits).
-  const sandSaveAttempt = aroundGreenShot?.lie_before === 'sand';
-  const sandSaveMade = sandSaveAttempt && (score <= holeInfo.par);
+  // Sand save = up-and-down from a greenside bunker. Prefer the canonical
+  // golf_holes.sand_save flag (the SAME source the DB cache uses, per
+  // stat-formulas) so the engine and cache agree: attempt = flag is non-null
+  // (a greenside-bunker visit was recorded), made = flag === true. The old
+  // `score <= par` rule wrongly credited GIR pars (green reached in regulation,
+  // never in a bunker) as saves. When the flag is absent (number-only path),
+  // fall back to shot-derived detection requiring an actual up-and-down: a
+  // greenside-bunker visit on a missed green, holed in <=2 from the sand shot.
+  const sandFlag = holeInfo.sand_save;
+  const sandShotIdx = aroundGreenShot ? normalizedShots.indexOf(aroundGreenShot) : -1;
+  const strokesFromSand = sandShotIdx >= 0 ? normalizedShots.length - sandShotIdx : Infinity;
+  const sandSaveAttempt = sandFlag !== undefined
+    ? sandFlag !== null
+    : aroundGreenShot?.lie_before === 'sand';
+  const sandSaveMade = sandFlag !== undefined
+    ? sandFlag === true
+    : (aroundGreenShot?.lie_before === 'sand' && !greenInRegulation && strokesFromSand <= 2);
 
   // Penalties
   const penalties = normalizedShots.filter(s => s.is_penalty).length;
@@ -1019,6 +1038,7 @@ export function calculateHoleStatsFromShots(
     approachShotNumber: approachShot?.shot_number ?? null,
     approachDistance,
     approachLie,
+    approachRawLie: rawLie,
     approachProximity,
     approachMissDirection,
     chipLie,
@@ -1595,8 +1615,14 @@ function aggregateRoundStats(rounds: Array<{
       stats.tournamentRounds++;
     }
 
-    // Process each hole
-    for (const hole of round.holes) {
+    // Process each hole. Streak counters reset at every round boundary (a
+    // birdie/par/no-3-putt run cannot span two rounds) and holes are walked in
+    // hole_number order so the run reflects true play order, not DB row order.
+    currentBirdieStreak = 0;
+    currentParStreak = 0;
+    current3PuttStreak = 0;
+    const orderedHoles = [...round.holes].sort((a, b) => a.holeNumber - b.holeNumber);
+    for (const hole of orderedHoles) {
       const scoreToPar = hole.score - hole.par;
 
       // Scoring counts
@@ -1738,9 +1764,12 @@ function aggregateRoundStats(rounds: Array<{
         }
       }
 
-      // GIR by approach lie
-      if (hole.approachLie) {
-        const girLie = hole.approachLie;
+      // GIR by approach lie — use the UN-remapped lie so par-3 tee shots (which
+      // line 918 folds into 'fairway' for proximity) are NOT counted as fairway
+      // approaches. "GIR from the fairway" must mean an approach genuinely played
+      // from the fairway, else par-3 tee shots inflate the fairway denominator.
+      if (hole.approachRawLie) {
+        const girLie = hole.approachRawLie;
         if (girLie === 'fairway' || girLie === 'rough' || girLie === 'sand') {
           girByLie[girLie].total++;
           if (hole.greenInRegulation) {
@@ -2145,7 +2174,11 @@ function aggregateRoundStats(rounds: Array<{
   stats.missRightPctNonDriver = safePercent(teeMissNonDriver.right, nonDriverMisses);
 
   stats.girPercentage = safePercent(stats.girTotal, stats.girOpportunities);
-  stats.girPerRound = safeAverage(stats.girTotal, rounds.length);
+  // 18-hole-normalized (matches puttsPerRound above and the DB cache contract);
+  // a raw divide by round count under-reports when a 9-hole round is present.
+  stats.girPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.girTotal / stats.holesPlayed) * 18) * 100) / 100
+    : null;
   stats.girPctPar3 = safePercent(girPar3.made, girPar3.total);
   stats.girPctPar4 = safePercent(girPar4.made, girPar4.total);
   stats.girPctPar5 = safePercent(girPar5.made, girPar5.total);
@@ -2540,7 +2573,11 @@ function aggregateRoundStats(rounds: Array<{
   stats.sandSavePercentage = safePercent(stats.sandSavesMade, stats.sandSaveAttempts);
 
   // Penalties
-  stats.penaltiesPerRound = safeAverage(stats.totalPenalties, rounds.length);
+  // 18-hole-normalized to match the DB cache (update_player_stats_complete:
+  // total_penalties / total_holes * 18) and stat-formulas.computePerRound18.
+  stats.penaltiesPerRound = stats.holesPlayed > 0
+    ? Math.round(((stats.totalPenalties / stats.holesPlayed) * 18) * 100) / 100
+    : null;
 
   return stats;
 }
