@@ -133,6 +133,39 @@ export const BENCHMARK_LEVELS: BenchmarkLevel[] = [
 ];
 
 // ============================================================================
+// GENDER BASELINE (women's SG scaling)
+// ============================================================================
+
+/**
+ * Women's Strokes-Gained baseline scale factor.
+ *
+ * Women's-team players drive shorter, so they face longer approaches that the
+ * men's Broadie curve over-penalizes — reading their SG ~5-6 strokes/round too
+ * negative (e.g. -12 to -29 SG/round). Scaling the men's expected-strokes curve
+ * by this single telescoping-preserving factor lands women's SG at ~-(over par),
+ * the same band as men's (verified: women's per-round residual -6.0 -> -0.20).
+ *
+ * AUTHORITATIVE SOURCE OF TRUTH IS THE DATABASE: stored + displayed SG is
+ * computed by the gender-aware DB functions sg_expected_strokes /
+ * recalculate_round_strokes_gained / calculate_round_strokes_gained
+ * (migration 20260607170000), keyed off golf_teams.gender (20260607160000).
+ * This constant mirrors the DB factor so any TS-side SG recompute or benchmark
+ * display agrees. KEEP IN SYNC with the DB `v_womens_scale` constant.
+ */
+export const WOMENS_SG_SCALE = 1.083;
+
+export type TeamGender = 'mens' | 'womens';
+
+/**
+ * SG expected-strokes scale factor for a team's gender. Men's (and unknown) is
+ * 1.0 (the men's PGA Tour / Broadie baseline, unchanged); women's applies
+ * {@link WOMENS_SG_SCALE}. Mirrors the DB `CASE WHEN gender='womens' ...` logic.
+ */
+export function genderScaleFactor(gender: TeamGender | null | undefined): number {
+  return gender === 'womens' ? WOMENS_SG_SCALE : 1.0;
+}
+
+// ============================================================================
 // BASELINE DATA SETS
 // ============================================================================
 

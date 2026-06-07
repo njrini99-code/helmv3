@@ -10493,6 +10493,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          gender: string
           id: string
           join_code: string
           logo_url: string | null
@@ -10508,6 +10509,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          gender?: string
           id?: string
           join_code: string
           logo_url?: string | null
@@ -10523,6 +10525,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          gender?: string
           id?: string
           join_code?: string
           logo_url?: string | null
@@ -11640,10 +11643,12 @@ export type Database = {
           sg_putting: number
         }[]
       }
-      sg_expected_strokes: {
-        Args: { p_distance_yards: number; p_lie: string }
-        Returns: number
-      }
+      sg_expected_strokes:
+        | { Args: { p_distance_yards: number; p_lie: string }; Returns: number }
+        | {
+            Args: { p_distance_yards: number; p_lie: string; p_scale?: number }
+            Returns: number
+          }
       sg_normalize_lie: { Args: { p_lie: string }; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
